@@ -8,6 +8,7 @@
 
 import Foundation
 import BSON
+//import Venice
 
 public enum MongoError : ErrorType {
     case MongoDatabaseUnableToConnect, MongoDatabaseAlreadyConnected, InvalidBodyLength, InvalidDatabaseName, InvalidFullCollectionName, InvalidCollectionName, MongoDatabaseNotYetConnected, BrokenCollectionObject, BrokenDatabaseObject, InvalidAction
@@ -16,8 +17,9 @@ public enum MongoError : ErrorType {
 public typealias ResponseHandler = ((reply: ResponseMessage) -> Void)
 
 public class Server : NSObject, NSStreamDelegate {
-    internal var inputStream: NSInputStream?
+    //internal var mongoSocket: TCPClientSocket?
     internal var outputStream: NSOutputStream?
+    internal var inputStream: NSInputStream?
     private var connected = false
     private var inputOpen = false
     private var outputOpen = false
@@ -30,7 +32,6 @@ public class Server : NSObject, NSStreamDelegate {
     public init(host: String, port: Int, autoConnect: Bool = false) throws {
         self.host = host
         self.port = port
-        
         super.init()
         
         if autoConnect {
@@ -63,22 +64,22 @@ public class Server : NSObject, NSStreamDelegate {
     }
     
     public func connect() throws {
-        NSStream.getStreamsToHostWithName(host, port: port, inputStream: &inputStream, outputStream: &outputStream)
-        
-        guard inputStream != nil && outputStream != nil else {
-            throw MongoError.MongoDatabaseUnableToConnect
+        guard outputStream == nil && inputStream == nil else {
+            throw MongoError.MongoDatabaseAlreadyConnected
         }
         
         if connected {
             throw MongoError.MongoDatabaseAlreadyConnected
         }
         
+        NSStream.getStreamsToHostWithName(self.host, port: self.port, inputStream: &inputStream, outputStream: &outputStream)
+        
         inputStream!.delegate = self
         outputStream!.delegate = self
         
         inputStream!.scheduleInRunLoop(.mainRunLoop(), forMode: NSDefaultRunLoopMode)
         outputStream!.scheduleInRunLoop(.mainRunLoop(), forMode: NSDefaultRunLoopMode)
-        
+
         inputStream!.open()
         outputStream!.open()
         
@@ -86,17 +87,14 @@ public class Server : NSObject, NSStreamDelegate {
     }
     
     public func disconnect() throws {
-        guard connected && inputStream != nil && outputStream != nil else {
+        guard connected && outputStream != nil && inputStream != nil else {
             throw MongoError.MongoDatabaseNotYetConnected
         }
         
+        inputStream?.close()
+        outputStream?.close()
+        
         connected = false
-        
-        inputStream!.close()
-        outputStream!.close()
-        
-        inputStream = nil
-        outputStream = nil
     }
     
     @objc public func stream(stream: NSStream, handleEvent eventCode: NSStreamEvent) {
@@ -127,9 +125,7 @@ public class Server : NSObject, NSStreamDelegate {
                             responseHandlers.removeValueForKey(handler.1.requestID)
                         }
                         
-                    } catch (_) {
-                        responseHandlers.removeValueForKey(0)
-                    }
+                    } catch (_) {}
                 }
                 break
             default:
@@ -151,7 +147,7 @@ public class Server : NSObject, NSStreamDelegate {
     }
     
     public func sendMessage(message: Message, handler: ResponseHandler? = nil) throws {
-        if !connected && outputStream == nil {
+        if !connected || outputStream == nil {
             throw MongoError.MongoDatabaseUnableToConnect
         }
         
@@ -161,6 +157,6 @@ public class Server : NSObject, NSStreamDelegate {
             responseHandlers[message.requestID] = (handler, message)
         }
         
-        outputStream!.write(messageData, maxLength: messageData.count)
+        outputStream?.write(messageData, maxLength: messageData.count)
     }
 }

@@ -31,7 +31,7 @@ class MongoKittenTests: XCTestCase {
         
         do {
             // Should fail
-            try server.connect()
+            try server2.connect()
             XCTFail()
             
         } catch(_) { }
@@ -114,13 +114,20 @@ class MongoKittenTests: XCTestCase {
         let expectation = expectationWithDescription("Trying to get a response to my query")
         
         let queryMsg = try! QueryMessage(collection: collection, query: query, flags: [])
+        var done = false
         
         try! server.sendMessage(queryMsg) { reply in
+            done = true
+            for d in reply.documents {
+                print(d)
+            }
             expectation.fulfill()
         }
         
         waitForExpectationsWithTimeout(10) { error in
-            XCTFail()
+            if !done {
+                XCTFail()
+            }
         }
     }
     

@@ -4,11 +4,13 @@
   },
   "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
     "14502BA339D6D5207A23319C456924A2D72458F0" : 0,
+    "900D198C3FB851E8F8E01B008846A319DD357A70" : 0,
     "686ABC7D4D16AC8C2BF9FA66CA941F6EB6F984F7" : 0
   },
   "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "628BEB2D-9256-4825-AE7A-2542FAC219FD",
   "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
     "14502BA339D6D5207A23319C456924A2D72458F0" : "MongoKitten\/BSON\/Carthage\/Checkouts\/SwiftSequence\/",
+    "900D198C3FB851E8F8E01B008846A319DD357A70" : "MongoKitten\/Venice\/",
     "686ABC7D4D16AC8C2BF9FA66CA941F6EB6F984F7" : "MongoKitten\/BSON\/"
   },
   "DVTSourceControlWorkspaceBlueprintNameKey" : "MongoKitten",
@@ -24,6 +26,11 @@
       "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/github.com\/planteam\/BSON.git",
       "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
       "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "686ABC7D4D16AC8C2BF9FA66CA941F6EB6F984F7"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/github.com\/Zewo\/Venice.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "900D198C3FB851E8F8E01B008846A319DD357A70"
     }
   ]
 }

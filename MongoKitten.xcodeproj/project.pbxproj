@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0A2DFD201C5F453500A364B5 /* UpdateMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A2DFD1F1C5F453500A364B5 /* UpdateMessage.swift */; };
 		0A36C5BE1C5FD27E009208DC /* DeleteMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A36C5BD1C5FD27E009208DC /* DeleteMessage.swift */; };
+		0A38AEF91C63C3DE00475DC1 /* Venice.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0A38AEF41C63C36B00475DC1 /* Venice.framework */; };
 		0A3D53C51C62456E00AAA4AD /* Helper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A3D53C41C62456E00AAA4AD /* Helper.swift */; };
 		0A4246E51C60DD7200158D8E /* QueryMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4246E41C60DD7200158D8E /* QueryMessage.swift */; };
 		0A4246E81C60DD7700158D8E /* ResponseMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4246E71C60DD7700158D8E /* ResponseMessage.swift */; };
@@ -25,6 +26,27 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		0A38AEF31C63C36B00475DC1 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0A38AEED1C63C36B00475DC1 /* Venice.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = B01ACD051C2DE7F20072A3FD;
+			remoteInfo = Venice;
+		};
+		0A38AEF51C63C36B00475DC1 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0A38AEED1C63C36B00475DC1 /* Venice.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = B01ACD0F1C2DE7F20072A3FD;
+			remoteInfo = VeniceTests;
+		};
+		0A38AEF71C63C3D500475DC1 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0A38AEED1C63C36B00475DC1 /* Venice.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = B01ACD041C2DE7F20072A3FD;
+			remoteInfo = Venice;
+		};
 		0AB8426E1C5EA80E005CC6B4 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 0AB842591C5EA80D005CC6B4 /* Project object */;
@@ -58,6 +80,7 @@
 /* Begin PBXFileReference section */
 		0A2DFD1F1C5F453500A364B5 /* UpdateMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UpdateMessage.swift; sourceTree = "<group>"; };
 		0A36C5BD1C5FD27E009208DC /* DeleteMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DeleteMessage.swift; sourceTree = "<group>"; };
+		0A38AEED1C63C36B00475DC1 /* Venice.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Venice.xcodeproj; path = Venice/Xcode/Venice.xcodeproj; sourceTree = "<group>"; };
 		0A3D53C41C62456E00AAA4AD /* Helper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Helper.swift; sourceTree = "<group>"; };
 		0A4246E41C60DD7200158D8E /* QueryMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = QueryMessage.swift; sourceTree = "<group>"; };
 		0A4246E71C60DD7700158D8E /* ResponseMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ResponseMessage.swift; sourceTree = "<group>"; };
@@ -81,6 +104,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0A38AEF91C63C3DE00475DC1 /* Venice.framework in Frameworks */,
 				0AB8428F1C5EA943005CC6B4 /* BSON.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -96,6 +120,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0A38AEEE1C63C36B00475DC1 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				0A38AEF41C63C36B00475DC1 /* Venice.framework */,
+				0A38AEF61C63C36B00475DC1 /* VeniceTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		0AB842581C5EA80D005CC6B4 = {
 			isa = PBXGroup;
 			children = (
@@ -142,6 +175,7 @@
 		0AB8427C1C5EA8BE005CC6B4 /* Dependencies */ = {
 			isa = PBXGroup;
 			children = (
+				0A38AEED1C63C36B00475DC1 /* Venice.xcodeproj */,
 				0AB842831C5EA931005CC6B4 /* BSON.xcodeproj */,
 			);
 			name = Dependencies;
@@ -195,6 +229,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				0A38AEF81C63C3D500475DC1 /* PBXTargetDependency */,
 				0AB8428E1C5EA93E005CC6B4 /* PBXTargetDependency */,
 			);
 			name = MongoKitten;
@@ -253,6 +288,10 @@
 					ProductGroup = 0AB842841C5EA931005CC6B4 /* Products */;
 					ProjectRef = 0AB842831C5EA931005CC6B4 /* BSON.xcodeproj */;
 				},
+				{
+					ProductGroup = 0A38AEEE1C63C36B00475DC1 /* Products */;
+					ProjectRef = 0A38AEED1C63C36B00475DC1 /* Venice.xcodeproj */;
+				},
 			);
 			projectRoot = "";
 			targets = (
@@ -263,6 +302,20 @@
 /* End PBXProject section */
 
 /* Begin PBXReferenceProxy section */
+		0A38AEF41C63C36B00475DC1 /* Venice.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = Venice.framework;
+			remoteRef = 0A38AEF31C63C36B00475DC1 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		0A38AEF61C63C36B00475DC1 /* VeniceTests.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = VeniceTests.xctest;
+			remoteRef = 0A38AEF51C63C36B00475DC1 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
 		0AB8428A1C5EA931005CC6B4 /* BSON.framework */ = {
 			isa = PBXReferenceProxy;
 			fileType = wrapper.framework;
@@ -326,6 +379,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		0A38AEF81C63C3D500475DC1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = Venice;
+			targetProxy = 0A38AEF71C63C3D500475DC1 /* PBXContainerItemProxy */;
+		};
 		0AB8426F1C5EA80E005CC6B4 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 0AB842611C5EA80D005CC6B4 /* MongoKitten */;

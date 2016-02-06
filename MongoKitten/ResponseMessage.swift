@@ -81,10 +81,6 @@ public struct ResponseMessage : Message {
     }
     
     public init(collection: Collection, requestID: Int32, responseTo: Int32, cursorId: Int64, startingFrom: Int32, numberReturned: Int32, documents: [Document], flags: Flags) throws {
-        guard let database: Database = collection.database else {
-            throw MongoError.BrokenCollectionObject
-        }
-        
         self.collection = collection
         self.responseTo = responseTo
         self.cursorId = cursorId

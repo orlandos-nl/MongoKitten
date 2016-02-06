@@ -60,3 +60,9 @@ public func --=(left: Collection, right: Document) -> Bool {
         return false
     }
 }
+
+internal postfix func *(data: [UInt8]) -> [Int8] {
+    return data.map() {
+        Int8($0)
+    }
+}

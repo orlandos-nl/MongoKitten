@@ -1,0 +1,3 @@
+[submodule "BSON"]
+	path = BSON
+	url = https://github.com/planteam/BSON.git
