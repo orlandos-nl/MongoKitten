@@ -62,15 +62,11 @@ public class Collection {
     
     // Create
     
-    public func insert(document: Document) throws {
-        try insertAll([document])
+    public func insert(document: Document, flags: InsertMessage.Flags = []) throws {
+        try insert([document], flags: flags)
     }
     
-    public func insert(documents: [Document]) throws {
-        try insertAll(documents)
-    }
-    
-    public func insertAll(documents: [Document], flags: InsertMessage.Flags = []) throws {
+    public func insert(documents: [Document], flags: InsertMessage.Flags = []) throws {
         guard let database: Database = database else {
             throw MongoError.BrokenCollectionObject
         }
@@ -94,10 +90,6 @@ public class Collection {
         
     }
     
-    public func findAll() throws {
-        
-    }
-    
     // Update
     
     public func update(from: Document, to: Document, flags: UpdateMessage.Flags = []) throws {
@@ -118,10 +110,6 @@ public class Collection {
         try update(from, to: to, flags: [.Upsert])
     }
     
-    public func updateAll(from: Document, to: Document) throws {
-        try update(from, to: to, flags: [.MultiUpdate])
-    }
-    
     // Delete
     
     public func remove(document: Document, flags: DeleteMessage.Flags = []) throws {
@@ -140,10 +128,6 @@ public class Collection {
     
     public func removeOne(document: Document) throws {
         try remove(document, flags: [.RemoveOne])
-    }
-    
-    public func removeAll(document: Document) throws {
-        try remove(document)
     }
     // TODO: Implement subscript assignment for "update"
 }
