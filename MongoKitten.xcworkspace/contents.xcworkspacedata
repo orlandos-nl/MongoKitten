@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workspace
+   version = "1.0">
+   <FileRef
+      location = "group:MongoKitten.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:Xcode/Dependencies/When/When.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:Xcode/Dependencies/BSON/BSON.xcodeproj">
+   </FileRef>
+</Workspace>

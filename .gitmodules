@@ -1,3 +1,6 @@
 [submodule "BSON"]
-	path = BSON
+	path = Xcode/Dependencies/BSON
 	url = https://github.com/planteam/BSON.git
+[submodule "Xcode/Dependencies/When"]
+	path = Xcode/Dependencies/When
+	url = https://github.com/PlanTeam/When.git

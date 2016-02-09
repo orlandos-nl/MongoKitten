@@ -9,45 +9,22 @@
 /* Begin PBXBuildFile section */
 		0A2DFD201C5F453500A364B5 /* UpdateMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A2DFD1F1C5F453500A364B5 /* UpdateMessage.swift */; };
 		0A36C5BE1C5FD27E009208DC /* DeleteMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A36C5BD1C5FD27E009208DC /* DeleteMessage.swift */; };
-		0A38AEF91C63C3DE00475DC1 /* Venice.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0A38AEF41C63C36B00475DC1 /* Venice.framework */; };
 		0A3D53C51C62456E00AAA4AD /* Helper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A3D53C41C62456E00AAA4AD /* Helper.swift */; };
 		0A4246E51C60DD7200158D8E /* QueryMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4246E41C60DD7200158D8E /* QueryMessage.swift */; };
 		0A4246E81C60DD7700158D8E /* ResponseMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4246E71C60DD7700158D8E /* ResponseMessage.swift */; };
-		0AB2CBC61C69E5370009405F /* Package.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB2CBC51C69E5370009405F /* Package.swift */; };
-		0AB842661C5EA80D005CC6B4 /* MongoKitten.h in Headers */ = {isa = PBXBuildFile; fileRef = 0AB842651C5EA80D005CC6B4 /* MongoKitten.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		0AB8426D1C5EA80E005CC6B4 /* MongoKitten.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AB842621C5EA80D005CC6B4 /* MongoKitten.framework */; };
 		0AB842721C5EA80E005CC6B4 /* MongoKittenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842711C5EA80E005CC6B4 /* MongoKittenTests.swift */; };
-		0AB8428F1C5EA943005CC6B4 /* BSON.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AB8428A1C5EA931005CC6B4 /* BSON.framework */; };
 		0AB842911C5EC46C005CC6B4 /* Server.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842901C5EC46C005CC6B4 /* Server.swift */; };
 		0AB842931C5EC48A005CC6B4 /* Database.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842921C5EC48A005CC6B4 /* Database.swift */; };
 		0AB842951C5EC495005CC6B4 /* Collection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842941C5EC495005CC6B4 /* Collection.swift */; };
 		0AB842981C5EC4BA005CC6B4 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842971C5EC4BA005CC6B4 /* Message.swift */; };
 		0AB8429A1C5EC5D0005CC6B4 /* OperationCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842991C5EC5D0005CC6B4 /* OperationCode.swift */; };
 		0AB8429C1C5EC600005CC6B4 /* InsertMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB8429B1C5EC600005CC6B4 /* InsertMessage.swift */; };
+		F2B9F6FF1C6A420D004383A9 /* BSON.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F2B9F6FE1C6A420D004383A9 /* BSON.framework */; };
+		F2B9F7011C6A4210004383A9 /* When.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F2B9F7001C6A4210004383A9 /* When.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		0A38AEF31C63C36B00475DC1 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 0A38AEED1C63C36B00475DC1 /* Venice.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = B01ACD051C2DE7F20072A3FD;
-			remoteInfo = Venice;
-		};
-		0A38AEF51C63C36B00475DC1 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 0A38AEED1C63C36B00475DC1 /* Venice.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = B01ACD0F1C2DE7F20072A3FD;
-			remoteInfo = VeniceTests;
-		};
-		0A38AEF71C63C3D500475DC1 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 0A38AEED1C63C36B00475DC1 /* Venice.xcodeproj */;
-			proxyType = 1;
-			remoteGlobalIDString = B01ACD041C2DE7F20072A3FD;
-			remoteInfo = Venice;
-		};
 		0AB8426E1C5EA80E005CC6B4 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 0AB842591C5EA80D005CC6B4 /* Project object */;
@@ -55,50 +32,28 @@
 			remoteGlobalIDString = 0AB842611C5EA80D005CC6B4;
 			remoteInfo = MongoKitten;
 		};
-		0AB842891C5EA931005CC6B4 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 0AB842831C5EA931005CC6B4 /* BSON.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = F20A95531C5383440054AB52;
-			remoteInfo = BSON;
-		};
-		0AB8428B1C5EA931005CC6B4 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 0AB842831C5EA931005CC6B4 /* BSON.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = F20A955D1C5383440054AB52;
-			remoteInfo = BSONTests;
-		};
-		0AB8428D1C5EA93E005CC6B4 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 0AB842831C5EA931005CC6B4 /* BSON.xcodeproj */;
-			proxyType = 1;
-			remoteGlobalIDString = F20A95521C5383440054AB52;
-			remoteInfo = BSON;
-		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		0A2DFD1F1C5F453500A364B5 /* UpdateMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UpdateMessage.swift; sourceTree = "<group>"; };
 		0A36C5BD1C5FD27E009208DC /* DeleteMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DeleteMessage.swift; sourceTree = "<group>"; };
-		0A38AEED1C63C36B00475DC1 /* Venice.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Venice.xcodeproj; path = Venice/Xcode/Venice.xcodeproj; sourceTree = "<group>"; };
 		0A3D53C41C62456E00AAA4AD /* Helper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Helper.swift; sourceTree = "<group>"; };
 		0A4246E41C60DD7200158D8E /* QueryMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = QueryMessage.swift; sourceTree = "<group>"; };
 		0A4246E71C60DD7700158D8E /* ResponseMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ResponseMessage.swift; sourceTree = "<group>"; };
 		0AB2CBC51C69E5370009405F /* Package.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
 		0AB842621C5EA80D005CC6B4 /* MongoKitten.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = MongoKitten.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		0AB842651C5EA80D005CC6B4 /* MongoKitten.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MongoKitten.h; sourceTree = "<group>"; };
-		0AB842671C5EA80D005CC6B4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		0AB8426C1C5EA80E005CC6B4 /* MongoKittenTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MongoKittenTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0AB842711C5EA80E005CC6B4 /* MongoKittenTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MongoKittenTests.swift; sourceTree = "<group>"; };
-		0AB842731C5EA80E005CC6B4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		0AB842831C5EA931005CC6B4 /* BSON.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = BSON.xcodeproj; path = BSON/BSON.xcodeproj; sourceTree = "<group>"; };
 		0AB842901C5EC46C005CC6B4 /* Server.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Server.swift; sourceTree = "<group>"; };
 		0AB842921C5EC48A005CC6B4 /* Database.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Database.swift; sourceTree = "<group>"; };
 		0AB842941C5EC495005CC6B4 /* Collection.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Collection.swift; sourceTree = "<group>"; };
 		0AB842971C5EC4BA005CC6B4 /* Message.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
 		0AB842991C5EC5D0005CC6B4 /* OperationCode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OperationCode.swift; sourceTree = "<group>"; };
 		0AB8429B1C5EC600005CC6B4 /* InsertMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = InsertMessage.swift; sourceTree = "<group>"; };
+		F2B9F6FC1C6A41C7004383A9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = Xcode/Info.plist; sourceTree = "<group>"; };
+		F2B9F6FD1C6A41C7004383A9 /* TestInfo.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = TestInfo.plist; path = Xcode/TestInfo.plist; sourceTree = "<group>"; };
+		F2B9F6FE1C6A420D004383A9 /* BSON.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = BSON.framework; path = "../../../Library/Developer/Xcode/DerivedData/MongoKitten-gmavkjnhenxzhlbeqllcjomziaaw/Build/Products/Debug/BSON.framework"; sourceTree = "<group>"; };
+		F2B9F7001C6A4210004383A9 /* When.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = When.framework; path = Xcode/Dependencies/When/build/Debug/When.framework; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -106,8 +61,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0A38AEF91C63C3DE00475DC1 /* Venice.framework in Frameworks */,
-				0AB8428F1C5EA943005CC6B4 /* BSON.framework in Frameworks */,
+				F2B9F7011C6A4210004383A9 /* When.framework in Frameworks */,
+				F2B9F6FF1C6A420D004383A9 /* BSON.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -122,23 +77,13 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		0A38AEEE1C63C36B00475DC1 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				0A38AEF41C63C36B00475DC1 /* Venice.framework */,
-				0A38AEF61C63C36B00475DC1 /* VeniceTests.xctest */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
 		0AB842581C5EA80D005CC6B4 = {
 			isa = PBXGroup;
 			children = (
 				0AB2CBC51C69E5370009405F /* Package.swift */,
-				0AB8427C1C5EA8BE005CC6B4 /* Dependencies */,
-				0AB842641C5EA80D005CC6B4 /* MongoKitten */,
-				0AB842701C5EA80E005CC6B4 /* MongoKittenTests */,
-				0AB842631C5EA80D005CC6B4 /* Products */,
+				0AB842641C5EA80D005CC6B4 /* Sources */,
+				0AB842701C5EA80E005CC6B4 /* Tests */,
+				F2B9F6FB1C6A41B8004383A9 /* Crap */,
 			);
 			sourceTree = "<group>";
 		};
@@ -151,46 +96,25 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		0AB842641C5EA80D005CC6B4 /* MongoKitten */ = {
+		0AB842641C5EA80D005CC6B4 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
 				0AB842961C5EC4A7005CC6B4 /* Messages */,
-				0AB842651C5EA80D005CC6B4 /* MongoKitten.h */,
-				0AB842671C5EA80D005CC6B4 /* Info.plist */,
 				0AB842901C5EC46C005CC6B4 /* Server.swift */,
 				0AB842921C5EC48A005CC6B4 /* Database.swift */,
 				0AB842941C5EC495005CC6B4 /* Collection.swift */,
 				0AB842991C5EC5D0005CC6B4 /* OperationCode.swift */,
 				0A3D53C41C62456E00AAA4AD /* Helper.swift */,
 			);
-			path = MongoKitten;
+			path = Sources;
 			sourceTree = "<group>";
 		};
-		0AB842701C5EA80E005CC6B4 /* MongoKittenTests */ = {
+		0AB842701C5EA80E005CC6B4 /* Tests */ = {
 			isa = PBXGroup;
 			children = (
 				0AB842711C5EA80E005CC6B4 /* MongoKittenTests.swift */,
-				0AB842731C5EA80E005CC6B4 /* Info.plist */,
 			);
-			path = MongoKittenTests;
-			sourceTree = "<group>";
-		};
-		0AB8427C1C5EA8BE005CC6B4 /* Dependencies */ = {
-			isa = PBXGroup;
-			children = (
-				0A38AEED1C63C36B00475DC1 /* Venice.xcodeproj */,
-				0AB842831C5EA931005CC6B4 /* BSON.xcodeproj */,
-			);
-			name = Dependencies;
-			sourceTree = "<group>";
-		};
-		0AB842841C5EA931005CC6B4 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				0AB8428A1C5EA931005CC6B4 /* BSON.framework */,
-				0AB8428C1C5EA931005CC6B4 /* BSONTests.xctest */,
-			);
-			name = Products;
+			path = Tests;
 			sourceTree = "<group>";
 		};
 		0AB842961C5EC4A7005CC6B4 /* Messages */ = {
@@ -206,6 +130,18 @@
 			name = Messages;
 			sourceTree = "<group>";
 		};
+		F2B9F6FB1C6A41B8004383A9 /* Crap */ = {
+			isa = PBXGroup;
+			children = (
+				0AB842631C5EA80D005CC6B4 /* Products */,
+				F2B9F7001C6A4210004383A9 /* When.framework */,
+				F2B9F6FE1C6A420D004383A9 /* BSON.framework */,
+				F2B9F6FC1C6A41C7004383A9 /* Info.plist */,
+				F2B9F6FD1C6A41C7004383A9 /* TestInfo.plist */,
+			);
+			name = Crap;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -213,7 +149,6 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0AB842661C5EA80D005CC6B4 /* MongoKitten.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -232,8 +167,6 @@
 			buildRules = (
 			);
 			dependencies = (
-				0A38AEF81C63C3D500475DC1 /* PBXTargetDependency */,
-				0AB8428E1C5EA93E005CC6B4 /* PBXTargetDependency */,
 			);
 			name = MongoKitten;
 			productName = MongoKitten;
@@ -286,16 +219,6 @@
 			mainGroup = 0AB842581C5EA80D005CC6B4;
 			productRefGroup = 0AB842631C5EA80D005CC6B4 /* Products */;
 			projectDirPath = "";
-			projectReferences = (
-				{
-					ProductGroup = 0AB842841C5EA931005CC6B4 /* Products */;
-					ProjectRef = 0AB842831C5EA931005CC6B4 /* BSON.xcodeproj */;
-				},
-				{
-					ProductGroup = 0A38AEEE1C63C36B00475DC1 /* Products */;
-					ProjectRef = 0A38AEED1C63C36B00475DC1 /* Venice.xcodeproj */;
-				},
-			);
 			projectRoot = "";
 			targets = (
 				0AB842611C5EA80D005CC6B4 /* MongoKitten */,
@@ -303,37 +226,6 @@
 			);
 		};
 /* End PBXProject section */
-
-/* Begin PBXReferenceProxy section */
-		0A38AEF41C63C36B00475DC1 /* Venice.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = Venice.framework;
-			remoteRef = 0A38AEF31C63C36B00475DC1 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		0A38AEF61C63C36B00475DC1 /* VeniceTests.xctest */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.cfbundle;
-			path = VeniceTests.xctest;
-			remoteRef = 0A38AEF51C63C36B00475DC1 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		0AB8428A1C5EA931005CC6B4 /* BSON.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = BSON.framework;
-			remoteRef = 0AB842891C5EA931005CC6B4 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		0AB8428C1C5EA931005CC6B4 /* BSONTests.xctest */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.cfbundle;
-			path = BSONTests.xctest;
-			remoteRef = 0AB8428B1C5EA931005CC6B4 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-/* End PBXReferenceProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
 		0AB842601C5EA80D005CC6B4 /* Resources */ = {
@@ -357,7 +249,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0AB2CBC61C69E5370009405F /* Package.swift in Sources */,
 				0A3D53C51C62456E00AAA4AD /* Helper.swift in Sources */,
 				0A4246E51C60DD7200158D8E /* QueryMessage.swift in Sources */,
 				0AB842951C5EC495005CC6B4 /* Collection.swift in Sources */,
@@ -383,20 +274,10 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		0A38AEF81C63C3D500475DC1 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			name = Venice;
-			targetProxy = 0A38AEF71C63C3D500475DC1 /* PBXContainerItemProxy */;
-		};
 		0AB8426F1C5EA80E005CC6B4 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 0AB842611C5EA80D005CC6B4 /* MongoKitten */;
 			targetProxy = 0AB8426E1C5EA80E005CC6B4 /* PBXContainerItemProxy */;
-		};
-		0AB8428E1C5EA93E005CC6B4 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			name = BSON;
-			targetProxy = 0AB8428D1C5EA93E005CC6B4 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -496,8 +377,12 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Xcode/Dependencies/When/build/Debug",
+				);
 				FRAMEWORK_VERSION = A;
-				INFOPLIST_FILE = MongoKitten/Info.plist;
+				INFOPLIST_FILE = "$(SRCROOT)/Xcode/Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.planteam.MongoKitten;
@@ -516,8 +401,12 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Xcode/Dependencies/When/build/Debug",
+				);
 				FRAMEWORK_VERSION = A;
-				INFOPLIST_FILE = MongoKitten/Info.plist;
+				INFOPLIST_FILE = "$(SRCROOT)/Xcode/Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.planteam.MongoKitten;
@@ -530,7 +419,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
-				INFOPLIST_FILE = MongoKittenTests/Info.plist;
+				INFOPLIST_FILE = Xcode/TestInfo.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.planteam.MongoKittenTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -541,7 +430,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
-				INFOPLIST_FILE = MongoKittenTests/Info.plist;
+				INFOPLIST_FILE = Xcode/TestInfo.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.planteam.MongoKittenTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
