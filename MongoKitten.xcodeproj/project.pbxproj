@@ -13,6 +13,7 @@
 		0A3D53C51C62456E00AAA4AD /* Helper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A3D53C41C62456E00AAA4AD /* Helper.swift */; };
 		0A4246E51C60DD7200158D8E /* QueryMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4246E41C60DD7200158D8E /* QueryMessage.swift */; };
 		0A4246E81C60DD7700158D8E /* ResponseMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4246E71C60DD7700158D8E /* ResponseMessage.swift */; };
+		0AB2CBC61C69E5370009405F /* Package.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB2CBC51C69E5370009405F /* Package.swift */; };
 		0AB842661C5EA80D005CC6B4 /* MongoKitten.h in Headers */ = {isa = PBXBuildFile; fileRef = 0AB842651C5EA80D005CC6B4 /* MongoKitten.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		0AB8426D1C5EA80E005CC6B4 /* MongoKitten.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AB842621C5EA80D005CC6B4 /* MongoKitten.framework */; };
 		0AB842721C5EA80E005CC6B4 /* MongoKittenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842711C5EA80E005CC6B4 /* MongoKittenTests.swift */; };
@@ -84,6 +85,7 @@
 		0A3D53C41C62456E00AAA4AD /* Helper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Helper.swift; sourceTree = "<group>"; };
 		0A4246E41C60DD7200158D8E /* QueryMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = QueryMessage.swift; sourceTree = "<group>"; };
 		0A4246E71C60DD7700158D8E /* ResponseMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ResponseMessage.swift; sourceTree = "<group>"; };
+		0AB2CBC51C69E5370009405F /* Package.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
 		0AB842621C5EA80D005CC6B4 /* MongoKitten.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = MongoKitten.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		0AB842651C5EA80D005CC6B4 /* MongoKitten.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MongoKitten.h; sourceTree = "<group>"; };
 		0AB842671C5EA80D005CC6B4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -132,6 +134,7 @@
 		0AB842581C5EA80D005CC6B4 = {
 			isa = PBXGroup;
 			children = (
+				0AB2CBC51C69E5370009405F /* Package.swift */,
 				0AB8427C1C5EA8BE005CC6B4 /* Dependencies */,
 				0AB842641C5EA80D005CC6B4 /* MongoKitten */,
 				0AB842701C5EA80E005CC6B4 /* MongoKittenTests */,
@@ -354,6 +357,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0AB2CBC61C69E5370009405F /* Package.swift in Sources */,
 				0A3D53C51C62456E00AAA4AD /* Helper.swift in Sources */,
 				0A4246E51C60DD7200158D8E /* QueryMessage.swift in Sources */,
 				0AB842951C5EC495005CC6B4 /* Collection.swift in Sources */,
