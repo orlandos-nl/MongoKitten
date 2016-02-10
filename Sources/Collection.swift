@@ -8,6 +8,7 @@
 
 import Foundation
 import BSON
+import When
 
 public class Collection {
     let database: Database?
@@ -63,10 +64,10 @@ public class Collection {
     // Create
     
     public func insert(document: Document, flags: InsertMessage.Flags = []) throws {
-        try insert([document], flags: flags)
+        try insertAll([document], flags: flags)
     }
     
-    public func insert(documents: [Document], flags: InsertMessage.Flags = []) throws {
+    public func insertAll(documents: [Document], flags: InsertMessage.Flags = []) throws {
         guard let database: Database = database else {
             throw MongoError.BrokenCollectionObject
         }
@@ -82,12 +83,28 @@ public class Collection {
     
     // Read
     
-    public func find() throws {
+    public func find(query: Document, flags: QueryMessage.Flags = [], numbersToSkip: Int32 = 0, numbersToReturn: Int32 = 0) throws -> Completer<[Document]> {
+        let completer = Completer<[Document]>()
         
+        let queryMsg = try QueryMessage(collection: self, query: query, flags: [], numbersToSkip: numbersToSkip, numbersToReturn: numbersToReturn)
+        
+        try self.database?.server.sendMessage(queryMsg) { reply in
+            completer.complete(reply.documents)
+        }
+        
+        return completer
     }
     
-    public func findOne() throws {
+    public func findOne(query: Document, flags: QueryMessage.Flags = [], numbersToSkip: Int32 = 0) throws -> ThrowingCompleter<Document?> {
+        let completer = ThrowingCompleter<Document?>()
         
+        let documentsFuture = try find(query, flags: flags, numbersToSkip: numbersToSkip)
+        
+        documentsFuture.future.then { documents in
+            completer.complete(documents.first)
+        }
+        
+        return completer
     }
     
     // Update
