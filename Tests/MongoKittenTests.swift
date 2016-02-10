@@ -8,6 +8,7 @@
 
 import XCTest
 import BSON
+import When
 @testable import MongoKitten
 
 class MongoKittenTests: XCTestCase {
@@ -19,6 +20,8 @@ class MongoKittenTests: XCTestCase {
         super.setUp()
         
         try! server.connect()
+        
+        server["test"]["test"] --= []
     }
     
     override func tearDown() {
@@ -106,26 +109,33 @@ class MongoKittenTests: XCTestCase {
         collection = database["test"]
         
         try! collection.insert(["query": "test"])
+        try! collection.insertAll([["double": 2], ["double": 2]])
         
-        let query: Document = [
-            "query": "test"
-        ]
+        let expectation1 = expectationWithDescription("Getting one document")
+        let expectation2 = expectationWithDescription("Getting two documents")
         
-        let expectation = expectationWithDescription("Trying to get a response to my query")
+        var done1 = false
+        var done2 = false
         
-        let queryMsg = try! QueryMessage(collection: collection, query: query, flags: [])
-        var done = false
+        try! collection.findOne(["query": "test"]).future.then { document in
+            XCTAssert(document!["query"] as! String == "test")
+            expectation1.fulfill()
+            done1 = true
+        }
         
-        try! server.sendMessage(queryMsg) { reply in
-            done = true
-            for d in reply.documents {
-                print(d)
+        try! collection.find(["double": 2]).future.then { documents in
+            XCTAssert(documents.count == 2)
+            
+            for document in documents{
+                XCTAssert(document["double"] as! Int == 2)
             }
-            expectation.fulfill()
+            
+            expectation2.fulfill()
+            done2 = true
         }
         
         waitForExpectationsWithTimeout(10) { error in
-            if !done {
+            if !done1 || !done2 {
                 XCTFail()
             }
         }
@@ -149,7 +159,7 @@ class MongoKittenTests: XCTestCase {
             "string": "Hello, I'm a string!"
             ])
         
-        try! collection.insertAll([["hont": "kad"], ["fancy": 3.14], ["documents": true]])
+        try! collection.insert([["hont": "kad"], ["fancy": 3.14], ["documents": true]])
         
         let document: Document = ["insert": ["using", "operators"]]
         let response = collection += document
