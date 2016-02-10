@@ -29,27 +29,27 @@ internal struct QueryMessage : Message {
     internal let operationCode = OperationCode.Query
     internal let query: Document
     internal let returnFields: Document?
-    internal let flags: Int32
+    internal let flags: QueryFlags
     
     internal func generateBsonMessage() throws -> [UInt8] {
         var body = [UInt8]()
         
         // Yes. Flags before collection. Consistent eh?
-        body += flags.bsonData
+        body += flags.rawValue.bsonData
         body += collection.fullName.cStringBsonData
         body += numbersToSkip.bsonData
         body += numbersToReturn.bsonData
         
         body += query.bsonData
         
-        if let returnFields: Document = returnFields {
+        if let returnFields = returnFields {
             body += returnFields.bsonData
         }
         
-        var header = try generateHeader(body.count)
-        header += body
+        let header = try generateHeader(body.count)
+        let message = header + body
         
-        return header
+        return message
     }
     
     internal init(collection: Collection, query: Document, flags: QueryFlags, numbersToSkip: Int32 = 0, numbersToReturn: Int32 = 0, returnFields: Document? = nil) throws {
@@ -58,7 +58,7 @@ internal struct QueryMessage : Message {
         self.query = query
         self.numbersToSkip = numbersToSkip
         self.numbersToReturn = numbersToReturn
-        self.flags = flags.rawValue
+        self.flags = flags
         self.returnFields = returnFields
     }
 }

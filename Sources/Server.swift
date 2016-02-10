@@ -9,6 +9,7 @@
 import Foundation
 import BSON
 //import Venice
+import When
 
 public enum MongoError : ErrorType {
     case MongoDatabaseUnableToConnect, MongoDatabaseAlreadyConnected, InvalidBodyLength, InvalidAction, MongoDatabaseNotYetConnected, InsertFailure(documents: [Document]), QueryFailure(query: Document), UpdateFailure(from: Document, to: Document), RemoveFailure(query: Document), HandlerNotFound
@@ -30,13 +31,25 @@ public class Server : NSObject, NSStreamDelegate {
     internal var responseHandlers = [Int32:(ResponseHandler, Message)]()
     internal var fullBuffer = [UInt8]()
     
+    private class SocketThread : NSThread {
+        weak var owner: Server?
+        
+        private override func main() {
+            owner?.inputStream!.scheduleInRunLoop(.currentRunLoop(), forMode: NSDefaultRunLoopMode)
+            owner?.outputStream!.scheduleInRunLoop(.currentRunLoop(), forMode: NSDefaultRunLoopMode)
+        }
+    }
+    private let socketThread = SocketThread()
+    
     public init(host: String, port: Int, autoConnect: Bool = false) throws {
         self.host = host
         self.port = port
         super.init()
         
+        socketThread.owner = self
+        
         if autoConnect {
-            try self.connect()
+            try !>self.connect()
         }
     }
     
@@ -59,42 +72,43 @@ public class Server : NSObject, NSStreamDelegate {
         return lastRequestID
     }
     
-    public func connect() throws {
-        guard outputStream == nil && inputStream == nil else {
-            throw MongoError.MongoDatabaseAlreadyConnected
+    public func connect() -> ThrowingFuture<Void> {
+        return ThrowingFuture {
+            guard self.outputStream == nil && self.inputStream == nil else {
+                throw MongoError.MongoDatabaseAlreadyConnected
+            }
+            
+            if self.connected {
+                throw MongoError.MongoDatabaseAlreadyConnected
+            }
+            
+            NSStream.getStreamsToHostWithName(self.host, port: self.port, inputStream: &self.inputStream, outputStream: &self.outputStream)
+            
+            self.inputStream!.delegate = self
+            self.outputStream!.delegate = self
+            
+            self.socketThread.start()
+            
+            self.inputStream!.open()
+            self.outputStream!.open()
+            
+            self.connected = true
         }
-        
-        if connected {
-            throw MongoError.MongoDatabaseAlreadyConnected
-        }
-        
-        NSStream.getStreamsToHostWithName(self.host, port: self.port, inputStream: &inputStream, outputStream: &outputStream)
-        
-        inputStream!.delegate = self
-        outputStream!.delegate = self
-        
-        inputStream!.scheduleInRunLoop(.mainRunLoop(), forMode: NSDefaultRunLoopMode)
-        outputStream!.scheduleInRunLoop(.mainRunLoop(), forMode: NSDefaultRunLoopMode)
-
-        inputStream!.open()
-        outputStream!.open()
-        
-        connected = true
     }
     
     public func disconnect() throws {
-        guard connected && outputStream != nil && inputStream != nil else {
+        guard let inputStream = inputStream, outputStream = outputStream where connected else {
             throw MongoError.MongoDatabaseNotYetConnected
         }
         
-        inputStream?.close()
-        outputStream?.close()
+        inputStream.close()
+        outputStream.close()
         
         connected = false
     }
     
     @objc public func stream(stream: NSStream, handleEvent eventCode: NSStreamEvent) {
-        if stream === inputStream {
+        if stream == inputStream {
             switch eventCode {
             case NSStreamEvent.ErrorOccurred:
                 print("InputStream error occured")
@@ -166,17 +180,17 @@ public class Server : NSObject, NSStreamDelegate {
      - returns: `true` if the message was sent sucessfully
      */
     internal func sendMessage(message: Message, handler: ResponseHandler? = nil) throws -> Bool {
-        if !connected || outputStream == nil {
+        guard let outputStream = outputStream where connected else {
             throw MongoError.MongoDatabaseUnableToConnect
         }
         
         let messageData = try message.generateBsonMessage()
         
-        if let handler: ResponseHandler = handler {
+        if let handler = handler {
             responseHandlers[message.requestID] = (handler, message)
         }
         
-        guard let output: Int = outputStream?.write(messageData, maxLength: messageData.count) else {
+        guard let output: Int = outputStream.write(messageData, maxLength: messageData.count) else {
             return false
         }
         

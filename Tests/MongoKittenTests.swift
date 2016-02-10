@@ -19,7 +19,7 @@ class MongoKittenTests: XCTestCase {
     override func setUp() {
         super.setUp()
         
-        try! server.connect()
+        try! !>server.connect()
         
         try! !>server["test"]["test"].remove([])
     }
@@ -34,7 +34,7 @@ class MongoKittenTests: XCTestCase {
         
         do {
             // Should fail
-            try server2.connect()
+            try !>server2.connect()
             XCTFail()
             
         } catch(_) { }
@@ -158,20 +158,8 @@ class MongoKittenTests: XCTestCase {
         database = server["test"]
         collection = database["test"]
         
-        collection.insert(["honten": "hoien"]).onError { _ in
-            XCTFail()
-        }
-        
-        collection.update(["honten": "hoien"], updated: ["honten": 3]).onError { _ in
-            XCTFail()
-        }
+        try! !>collection.insert(["honten": "hoien"])
+        try! !>collection.find(["honten": "hoien"])
+        try! !>collection.update(["honten": "hoien"], updated: ["honten": 3])
     }
-    
-    func testPerformanceExample() {
-        // This is an example of a performance test case.
-        self.measureBlock {
-            // Put the code you want to measure the time of here.
-        }
-    }
-    
 }
