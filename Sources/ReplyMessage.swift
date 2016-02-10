@@ -1,5 +1,5 @@
 //
-//  ResponseMessage.swift
+//  ReplyMessage.swift
 //  MongoKitten
 //
 //  Created by Joannis Orlandos on 02/02/16.
@@ -9,7 +9,7 @@
 import Foundation
 import BSON
 
-public struct ResponseMessage : Message {
+public struct ReplyMessage : Message {
     public let collection: Collection
     
     public let requestID: Int32
@@ -58,26 +58,6 @@ public struct ResponseMessage : Message {
         self.numberReturned = try Int32.instantiate(bsonData: data[32...35]*)
         self.documents = try Document.instantiateAll(data[36..<data.endIndex]*)
         self.collection = collection
-    }
-    
-    static func getResponseIdFromResponse(data: [UInt8]) throws -> Int32 {
-        guard let length: Int32 = try Int32.instantiate(bsonData: data[0...3]*) else {
-            throw DeserializationError.ParseError
-        }
-        
-        if length != Int32(data.count) {
-            throw DeserializationError.InvalidDocumentLength
-        }
-        
-        let responseTo = try Int32.instantiate(bsonData: data[8...11]*)
-        
-        let operationCode: Int32 = try Int32.instantiate(bsonData: data[12...15]*)
-        
-        if operationCode != OperationCode.Reply.rawValue {
-            throw DeserializationError.InvalidOperation
-        }
-        
-        return responseTo
     }
     
     public init(collection: Collection, requestID: Int32, responseTo: Int32, cursorId: Int64, startingFrom: Int32, numberReturned: Int32, documents: [Document], flags: Flags) throws {
