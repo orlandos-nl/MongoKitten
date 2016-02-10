@@ -9,23 +9,23 @@
 import Foundation
 import BSON
 
-public struct InsertMessage : Message {
-    public let collection: Collection
+public struct InsertFlags : OptionSetType {
+    public let rawValue: Int32
+    public init(rawValue: Int32) { self.rawValue = rawValue }
     
-    public let requestID: Int32
-    public let responseTo: Int32 = 0
-    public let operationCode = OperationCode.Insert
-    public let documents: [Document]
-    public let flags: Int32
+    internal static let ContinueOnError = InsertFlags(rawValue: 1 << 0)
+}
+
+internal struct InsertMessage : Message {
+    internal let collection: Collection
     
-    public struct Flags : OptionSetType {
-        public let rawValue: Int32
-        public init(rawValue: Int32) { self.rawValue = rawValue }
-        
-        public static let ContinueOnError = Flags(rawValue: 1 << 0)
-    }
+    internal let requestID: Int32
+    internal let responseTo: Int32 = 0
+    internal let operationCode = OperationCode.Insert
+    internal let documents: [Document]
+    internal let flags: Int32
     
-    public func generateBsonMessage() throws -> [UInt8] {
+    internal func generateBsonMessage() throws -> [UInt8] {
         var body = [UInt8]()
         
         body += flags.bsonData
@@ -41,14 +41,10 @@ public struct InsertMessage : Message {
         return header
     }
     
-    public init(collection: Collection, insertedDocuments: [Document], flags: Flags) throws {
-        guard let database: Database = collection.database else {
-            throw MongoError.BrokenCollectionObject
-        }
-        
+    internal init(collection: Collection, insertedDocuments: [Document], flags: InsertFlags) {
         self.collection = collection
         self.documents = insertedDocuments
-        self.requestID = database.server.getNextMessageID()
+        self.requestID = collection.database.server.getNextMessageID()
         self.flags = flags.rawValue
     }
 }

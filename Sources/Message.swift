@@ -9,7 +9,7 @@
 import Foundation
 
 
-public protocol Message {
+internal protocol Message {
     var collection: Collection {get}
     
     var requestID: Int32 {get}

@@ -9,32 +9,32 @@
 import Foundation
 import BSON
 
-public struct ReplyMessage : Message {
-    public let collection: Collection
+internal struct ReplyMessage : Message {
+    internal let collection: Collection
     
-    public let requestID: Int32
-    public let cursorId: Int64
-    public let responseTo: Int32
-    public let startingFrom: Int32
-    public let numberReturned: Int32
-    public let operationCode = OperationCode.Reply
-    public let documents: [Document]
-    public let flags: Int32
+    internal let requestID: Int32
+    internal let cursorId: Int64
+    internal let responseTo: Int32
+    internal let startingFrom: Int32
+    internal let numberReturned: Int32
+    internal let operationCode = OperationCode.Reply
+    internal let documents: [Document]
+    internal let flags: Int32
     
-    public func generateBsonMessage() throws -> [UInt8] {
+    internal func generateBsonMessage() throws -> [UInt8] {
         throw MongoError.InvalidAction
     }
     
-    public struct Flags : OptionSetType {
-        public let rawValue: Int32
-        public init(rawValue: Int32) { self.rawValue = rawValue }
+    internal struct Flags : OptionSetType {
+        internal let rawValue: Int32
+        internal init(rawValue: Int32) { self.rawValue = rawValue }
         
-        public static let CursorNotFound = Flags(rawValue: 0 << 0)
-        public static let QueryFailure = Flags(rawValue: 1 << 0)
-        public static let AwaitCapable = Flags(rawValue: 2 << 0)
+        internal static let CursorNotFound = Flags(rawValue: 0 << 0)
+        internal static let QueryFailure = Flags(rawValue: 1 << 0)
+        internal static let AwaitCapable = Flags(rawValue: 2 << 0)
     }
     
-    public init(collection: Collection, data: [UInt8]) throws {
+    internal init(collection: Collection, data: [UInt8]) throws {
         guard let length: Int32 = try Int32.instantiate(bsonData: data[0...3]*) else {
             throw DeserializationError.ParseError
         }
@@ -60,7 +60,7 @@ public struct ReplyMessage : Message {
         self.collection = collection
     }
     
-    public init(collection: Collection, requestID: Int32, responseTo: Int32, cursorId: Int64, startingFrom: Int32, numberReturned: Int32, documents: [Document], flags: Flags) throws {
+    internal init(collection: Collection, requestID: Int32, responseTo: Int32, cursorId: Int64, startingFrom: Int32, numberReturned: Int32, documents: [Document], flags: Flags) throws {
         self.collection = collection
         self.responseTo = responseTo
         self.cursorId = cursorId

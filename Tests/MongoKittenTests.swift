@@ -21,7 +21,7 @@ class MongoKittenTests: XCTestCase {
         
         try! server.connect()
         
-        server["test"]["test"] --= []
+        try! !>server["test"]["test"].remove([])
     }
     
     override func tearDown() {
@@ -38,7 +38,6 @@ class MongoKittenTests: XCTestCase {
             XCTFail()
             
         } catch(_) { }
-
         
         do {
             // This one should work
@@ -49,10 +48,10 @@ class MongoKittenTests: XCTestCase {
             XCTFail()
         } catch(_) {}
         
-        do {
-            try server2["test"]["test"].insert(["shouldnt": "beinserted"])
+        server2["test"]["test"].insert(["shouldnt": "beinserted"]).then { _ in
             XCTFail()
-        } catch(_) {}
+            }.onError { _ in
+        }
     }
     
     func testSubscripting() {
@@ -61,6 +60,7 @@ class MongoKittenTests: XCTestCase {
         
         if let collectionDatabase: Database = collection.database {
             XCTAssert(collectionDatabase.name == database.name)
+            XCTAssert(collection.fullName == "test.test")
             
         } else {
             XCTFail()
@@ -74,12 +74,6 @@ class MongoKittenTests: XCTestCase {
         let db2 = server["test"]
         let coll2 = db2["test"]
         
-        do {
-            _ = try Collection(server: server, fullCollectionName: ".test")
-            
-            XCTFail()
-        } catch(_) {}
-        
         if db2.name != database.name {
             XCTFail()
         }
@@ -87,29 +81,14 @@ class MongoKittenTests: XCTestCase {
         if coll2.name != collection.name {
             XCTFail()
         }
-        
-        do {
-            let _ = try Collection(server: server, fullCollectionName: ".hont")
-            XCTFail()
-        } catch(_) {}
-        
-        do {
-            let _ = try Database(server: server, databaseName: "")
-            XCTFail()
-        } catch (_) {}
-        
-        do {
-            let _ = try Collection(database: database, collectionName: "")
-            XCTFail()
-        } catch(_) {}
     }
     
     func testQuery() {
         database = server["test"]
         collection = database["test"]
         
-        try! collection.insert(["query": "test"])
-        try! collection.insertAll([["double": 2], ["double": 2]])
+        collection.insert(["query": "test"])
+        collection.insertAll([["double": 2], ["double": 2]])
         
         let expectation1 = expectationWithDescription("Getting one document")
         let expectation2 = expectationWithDescription("Getting two documents")
@@ -117,13 +96,15 @@ class MongoKittenTests: XCTestCase {
         var done1 = false
         var done2 = false
         
-        try! collection.findOne(["query": "test"]).future.then { document in
+        collection.findOne(["query": "test"]).then { document in
             XCTAssert(document!["query"] as! String == "test")
             expectation1.fulfill()
             done1 = true
+            }.onError { error in
+                XCTFail()
         }
         
-        try! collection.find(["double": 2]).future.then { documents in
+        collection.find(["double": 2]).then { documents in
             XCTAssert(documents.count == 2)
             
             for document in documents{
@@ -132,9 +113,11 @@ class MongoKittenTests: XCTestCase {
             
             expectation2.fulfill()
             done2 = true
+            }.onError { error in
+                XCTFail()
         }
         
-        waitForExpectationsWithTimeout(10) { error in
+        waitForExpectationsWithTimeout(1) { error in
             if !done1 || !done2 {
                 XCTFail()
             }
@@ -145,7 +128,7 @@ class MongoKittenTests: XCTestCase {
         database = server["test"]
         collection = database["test"]
         
-        try! collection.insert([
+        collection.insert([
             "double": 53.2,
             "64bit-integer": 52,
             "32bit-integer": Int32(20),
@@ -157,14 +140,16 @@ class MongoKittenTests: XCTestCase {
             "null": Null(),
             "binary": Binary(data: [0x01, 0x02]),
             "string": "Hello, I'm a string!"
-            ])
+            ]).onError { _ in
+                XCTFail()
+        }
         
-        try! collection.insert([["hont": "kad"], ["fancy": 3.14], ["documents": true]])
+        collection.insert([["hont": "kad"], ["fancy": 3.14], ["documents": true]]).onError { _ in
+            XCTFail()
+        }
         
         let document: Document = ["insert": ["using", "operators"]]
-        let response = collection += document
-        
-        if !response {
+        collection.insert(document).onError { _ in
             XCTFail()
         }
     }
@@ -173,8 +158,13 @@ class MongoKittenTests: XCTestCase {
         database = server["test"]
         collection = database["test"]
         
-        try! collection.insert(["honten": "hoien"])
-        try! collection.update(["honten": "hoien"], to: ["honten": 3])
+        collection.insert(["honten": "hoien"]).onError { _ in
+            XCTFail()
+        }
+        
+        collection.update(["honten": "hoien"], updated: ["honten": 3]).onError { _ in
+            XCTFail()
+        }
     }
     
     func testPerformanceExample() {

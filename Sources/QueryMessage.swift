@@ -9,29 +9,29 @@
 import Foundation
 import BSON
 
-public struct QueryMessage : Message {
-    public let collection: Collection
+public struct QueryFlags : OptionSetType {
+    public let rawValue: Int32
+    public init(rawValue: Int32) { self.rawValue = rawValue }
     
-    public let requestID: Int32
-    public let numbersToSkip: Int32
-    public let numbersToReturn: Int32
-    public let responseTo: Int32 = 0
-    public let operationCode = OperationCode.Query
-    public let query: Document
-    public let returnFields: Document?
-    public let flags: Int32
+    internal static let TailableCursor = QueryFlags(rawValue: 1 << 0)
+    internal static let NoCursorTimeout = QueryFlags(rawValue: 4 << 0)
+    internal static let AwaitData = QueryFlags(rawValue: 5 << 0)
+    internal static let Exhaust = QueryFlags(rawValue: 6 << 0)
+}
+
+internal struct QueryMessage : Message {
+    internal let collection: Collection
     
-    public struct Flags : OptionSetType {
-        public let rawValue: Int32
-        public init(rawValue: Int32) { self.rawValue = rawValue }
-        
-        public static let TailableCursor = Flags(rawValue: 1 << 0)
-        public static let NoCursorTimeout = Flags(rawValue: 4 << 0)
-        public static let AwaitData = Flags(rawValue: 5 << 0)
-        public static let Exhaust = Flags(rawValue: 6 << 0)
-    }
+    internal let requestID: Int32
+    internal let numbersToSkip: Int32
+    internal let numbersToReturn: Int32
+    internal let responseTo: Int32 = 0
+    internal let operationCode = OperationCode.Query
+    internal let query: Document
+    internal let returnFields: Document?
+    internal let flags: Int32
     
-    public func generateBsonMessage() throws -> [UInt8] {
+    internal func generateBsonMessage() throws -> [UInt8] {
         var body = [UInt8]()
         
         // Yes. Flags before collection. Consistent eh?
@@ -52,12 +52,8 @@ public struct QueryMessage : Message {
         return header
     }
     
-    public init(collection: Collection, query: Document, flags: Flags, numbersToSkip: Int32 = 0, numbersToReturn: Int32 = 0, returnFields: Document? = nil) throws {
-        guard let database: Database = collection.database else {
-            throw MongoError.BrokenCollectionObject
-        }
-        
-        self.requestID = database.server.getNextMessageID()
+    internal init(collection: Collection, query: Document, flags: QueryFlags, numbersToSkip: Int32 = 0, numbersToReturn: Int32 = 0, returnFields: Document? = nil) throws {
+        self.requestID = collection.database.server.getNextMessageID()
         self.collection = collection
         self.query = query
         self.numbersToSkip = numbersToSkip

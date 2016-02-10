@@ -11,10 +11,10 @@ import BSON
 //import Venice
 
 public enum MongoError : ErrorType {
-    case MongoDatabaseUnableToConnect, MongoDatabaseAlreadyConnected, InvalidBodyLength, InvalidDatabaseName, InvalidFullCollectionName, InvalidCollectionName, MongoDatabaseNotYetConnected, BrokenCollectionObject, BrokenDatabaseObject, InvalidAction, HandlerNotFound
+    case MongoDatabaseUnableToConnect, MongoDatabaseAlreadyConnected, InvalidBodyLength, InvalidAction, MongoDatabaseNotYetConnected, InsertFailure(documents: [Document]), QueryFailure(query: Document), UpdateFailure(from: Document, to: Document), RemoveFailure(query: Document), HandlerNotFound
 }
 
-public typealias ResponseHandler = ((reply: ReplyMessage) -> Void)
+internal typealias ResponseHandler = ((reply: ReplyMessage) -> Void)
 
 public class Server : NSObject, NSStreamDelegate {
     //internal var mongoSocket: TCPClientSocket?
@@ -41,25 +41,20 @@ public class Server : NSObject, NSStreamDelegate {
     }
     
     public subscript (database: String) -> Database {
+        let database = database.stringByReplacingOccurrencesOfString(".", withString: "")
+        
         if let database: Database = databases[database] {
             return database
         }
         
-        let database = database.stringByReplacingOccurrencesOfString(".", withString: "")
-        
-        if database.isEmpty {
-            print("Trying to access empty collection")
-            abort()
-        }
-        
-        let databaseObject = try! Database(server: self, databaseName: database)
+        let databaseObject = Database(server: self, databaseName: database)
         
         databases[database] = databaseObject
         
         return databaseObject
     }
     
-    func getNextMessageID() -> Int32 {
+    internal func getNextMessageID() -> Int32 {
         lastRequestID += 1
         return lastRequestID
     }
@@ -162,7 +157,15 @@ public class Server : NSObject, NSStreamDelegate {
         }
     }
     
-    public func sendMessage(message: Message, handler: ResponseHandler? = nil) throws {
+    /**
+     Send given message to the server.
+     
+     - parameter message: A message to send to the server
+     - parameter handler: The handler will be executed when a response is received. Note the server does not respond to every message.
+     
+     - returns: `true` if the message was sent sucessfully
+     */
+    internal func sendMessage(message: Message, handler: ResponseHandler? = nil) throws -> Bool {
         if !connected || outputStream == nil {
             throw MongoError.MongoDatabaseUnableToConnect
         }
@@ -173,6 +176,10 @@ public class Server : NSObject, NSStreamDelegate {
             responseHandlers[message.requestID] = (handler, message)
         }
         
-        outputStream?.write(messageData, maxLength: messageData.count)
+        guard let output: Int = outputStream?.write(messageData, maxLength: messageData.count) else {
+            return false
+        }
+        
+        return output >= 0
     }
 }

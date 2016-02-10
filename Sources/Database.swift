@@ -9,36 +9,25 @@
 import Foundation
 
 public class Database {
-    let server: Server
-    let name: String
+    public let server: Server
+    public let name: String
     internal var collections = [String:Collection]()
     
-    public init(server: Server, databaseName name: String) throws {
+    internal init(server: Server, databaseName name: String) {
         let name = name.stringByReplacingOccurrencesOfString(".", withString: "")
         
         self.server = server
-        
-        if name.characters.count <= 0 {
-            self.name = ""
-            throw MongoError.InvalidDatabaseName
-        }
-        
         self.name = name
     }
     
     public subscript (collection: String) -> Collection {
+        let collection = collection.stringByReplacingOccurrencesOfString(".", withString: "")
+        
         if let collection: Collection = collections[collection] {
             return collection
         }
         
-        let collection = collection.stringByReplacingOccurrencesOfString(".", withString: "")
-        
-        if collection.isEmpty {
-            print("Trying to access empty collection")
-            abort()
-        }
-        
-        let collectionObject = try! Collection(database: self, collectionName: collection)
+        let collectionObject = Collection(database: self, collectionName: collection)
         
         collections[collection] = collectionObject
         
