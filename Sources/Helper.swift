@@ -54,7 +54,7 @@ public func -=(left: Collection, right: Document) -> Bool {
 infix operator --= {}
 public func --=(left: Collection, right: Document) -> Bool {
     do {
-        try left.removeAll(right)
+        try left.remove(right)
         return true
     } catch(_) {
         return false
