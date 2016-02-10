@@ -11,10 +11,10 @@ import BSON
 //import Venice
 
 public enum MongoError : ErrorType {
-    case MongoDatabaseUnableToConnect, MongoDatabaseAlreadyConnected, InvalidBodyLength, InvalidDatabaseName, InvalidFullCollectionName, InvalidCollectionName, MongoDatabaseNotYetConnected, BrokenCollectionObject, BrokenDatabaseObject, InvalidAction
+    case MongoDatabaseUnableToConnect, MongoDatabaseAlreadyConnected, InvalidBodyLength, InvalidDatabaseName, InvalidFullCollectionName, InvalidCollectionName, MongoDatabaseNotYetConnected, BrokenCollectionObject, BrokenDatabaseObject, InvalidAction, HandlerNotFound
 }
 
-public typealias ResponseHandler = ((reply: ResponseMessage) -> Void)
+public typealias ResponseHandler = ((reply: ReplyMessage) -> Void)
 
 public class Server : NSObject, NSStreamDelegate {
     //internal var mongoSocket: TCPClientSocket?
@@ -28,6 +28,7 @@ public class Server : NSObject, NSStreamDelegate {
     internal var lastRequestID: Int32 = -1
     internal var databases = [String:Database]()
     internal var responseHandlers = [Int32:(ResponseHandler, Message)]()
+    internal var fullBuffer = [UInt8]()
     
     public init(host: String, port: Int, autoConnect: Bool = false) throws {
         self.host = host
@@ -105,28 +106,43 @@ public class Server : NSObject, NSStreamDelegate {
             case NSStreamEvent.OpenCompleted:
                 inputOpen = true
             case NSStreamEvent.HasBytesAvailable:
-                var fullBuffer = [UInt8]()
-                var buffer = [UInt8](count: 256, repeatedValue: 0)
+                var buffer = [UInt8]()
                 var readBytes: Int
                 
                 repeat {
-                    readBytes = inputStream!.read(&buffer, maxLength: buffer.capacity)
-                    fullBuffer.appendContentsOf(buffer[0..<readBytes])
+                    var tempBuffer = [UInt8](count: 256, repeatedValue: 0)
+                    
+                    readBytes = inputStream!.read(&tempBuffer, maxLength: tempBuffer.capacity)
+                    buffer.appendContentsOf(tempBuffer[0..<readBytes])
                     
                 } while(readBytes > 0 && readBytes == 256)
                 
-                if fullBuffer.count > 0 {
-                    do {
-                        let responseId = try ResponseMessage.getResponseIdFromResponse(fullBuffer)
-                        
-                        if let handler: (ResponseHandler, Message) = responseHandlers[responseId] {
-                            let response = try! ResponseMessage.init(collection: handler.1.collection, data: fullBuffer);
-                            handler.0(reply: response)
-                            responseHandlers.removeValueForKey(handler.1.requestID)
+                fullBuffer += buffer
+                
+                do {
+                    while fullBuffer.count >= 36 {
+                        guard let length: Int = Int(try Int32.instantiate(bsonData: fullBuffer[0...3]*)) else {
+                            throw DeserializationError.ParseError
                         }
                         
-                    } catch (_) {}
-                }
+                        guard length <= fullBuffer.count else {
+                            throw MongoError.InvalidBodyLength
+                        }
+                        
+                        let responseData = fullBuffer[0..<length]*
+                        let responseId = try Int32.instantiate(bsonData: fullBuffer[8...11]*)
+                        
+                        if let handler: (ResponseHandler, Message) = responseHandlers[responseId] {
+                            let response = try ReplyMessage.init(collection: handler.1.collection, data: responseData)
+                            handler.0(reply: response)
+                            responseHandlers.removeValueForKey(handler.1.requestID)
+                            
+                            fullBuffer.removeRange(0..<length)
+                        } else {
+                            throw MongoError.HandlerNotFound
+                        }
+                    }
+                } catch _ { }
                 break
             default:
                 break
