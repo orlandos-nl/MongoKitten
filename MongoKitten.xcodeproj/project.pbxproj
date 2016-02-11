@@ -37,6 +37,7 @@
 /* Begin PBXFileReference section */
 		0A2DFD1F1C5F453500A364B5 /* UpdateMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UpdateMessage.swift; sourceTree = "<group>"; };
 		0A36C5BD1C5FD27E009208DC /* DeleteMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DeleteMessage.swift; sourceTree = "<group>"; };
+		0A3A652F1C6C990300B91670 /* MyPlayground.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; path = MyPlayground.playground; sourceTree = "<group>"; };
 		0A4246E41C60DD7200158D8E /* QueryMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = QueryMessage.swift; sourceTree = "<group>"; };
 		0A4246E71C60DD7700158D8E /* ReplyMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReplyMessage.swift; sourceTree = "<group>"; };
 		0A46706F1C6B9BE500101CCD /* Helper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Helper.swift; sourceTree = "<group>"; };
@@ -80,6 +81,7 @@
 		0AB842581C5EA80D005CC6B4 = {
 			isa = PBXGroup;
 			children = (
+				0A3A652F1C6C990300B91670 /* MyPlayground.playground */,
 				0AB2CBC51C69E5370009405F /* Package.swift */,
 				0AB842641C5EA80D005CC6B4 /* Sources */,
 				0AB842701C5EA80E005CC6B4 /* Tests */,

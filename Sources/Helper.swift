@@ -9,6 +9,8 @@
 import Foundation
 
 postfix operator * {}
+
+/// Will convert an ArraySlice<UInt8> to [UInt8]
 internal postfix func * (slice: ArraySlice<UInt8>) -> [UInt8] {
     return Array(slice)
 }

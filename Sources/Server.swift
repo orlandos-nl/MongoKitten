@@ -8,70 +8,80 @@
 
 import Foundation
 import BSON
-//import Venice
 import When
 
+
 public enum MongoError : ErrorType {
-    case MongoDatabaseUnableToConnect, MongoDatabaseAlreadyConnected, InvalidBodyLength, InvalidAction, MongoDatabaseNotYetConnected, InsertFailure(documents: [Document]), QueryFailure(query: Document), UpdateFailure(from: Document, to: Document), RemoveFailure(query: Document), HandlerNotFound
+    case MongoDatabaseUnableToConnect
+    case MongoDatabaseAlreadyConnected
+    case InvalidBodyLength
+    case InvalidAction
+    case MongoDatabaseNotYetConnected
+    case InsertFailure(documents: [Document])
+    case QueryFailure(query: Document)
+    case UpdateFailure(from: Document, to: Document)
+    case RemoveFailure(query: Document)
+    case HandlerNotFound
 }
 
+/// A ResponseHandler is a closure that receives a MongoReply to process it
+/// It's internal because ReplyMessages are an internal struct that is used for direct communication with MongoDB only
 internal typealias ResponseHandler = ((reply: ReplyMessage) -> Void)
 
+/// A server object is the core of MongoKitten. From this you can get databases which can provide you with collections from where you can do actions
 public class Server : NSObject, NSStreamDelegate {
-    //internal var mongoSocket: TCPClientSocket?
-    internal var outputStream: NSOutputStream?
-    internal var inputStream: NSInputStream?
+    /// Is the socket connected?
     private var connected = false
+    
+    /// Is input open
     private var inputOpen = false
+    
+    /// Is output open
     private var outputOpen = false
+    
+    /// The MongoDB-server's hostname
     private let host: String
+    
+    /// The MongoDB-server's port
     private let port: Int
+    
+    /// The last Request we sent.. -1 if no request was sent
     internal var lastRequestID: Int32 = -1
-    internal var databases = [String:Database]()
+    
+    /// A dictionary that keeps track of all Find-request's IDs and their responseHandlers
     internal var responseHandlers = [Int32:(ResponseHandler, Message)]()
+    
+    /// The full buffer of received bytes from MongoDB
     internal var fullBuffer = [UInt8]()
     
-    private class SocketThread : NSThread {
-        weak var owner: Server?
-        
-        private override func main() {
-            owner?.inputStream!.scheduleInRunLoop(.currentRunLoop(), forMode: NSDefaultRunLoopMode)
-            owner?.outputStream!.scheduleInRunLoop(.currentRunLoop(), forMode: NSDefaultRunLoopMode)
-        }
-    }
-    private let socketThread = SocketThread()
-    
-    public init(host: String, port: Int, autoConnect: Bool = false) throws {
+    /// Initializes a server with a given host and port. Optionally automatically connects
+    /// - parameter host: The host we'll connect with for the MongoDB Server
+    /// - parameter port: The port we'll connect on with the MongoDB Server
+    /// - parameter autoConnect: Whether we automatically connect
+    public init(host: String, port: Int = 27017, autoConnect: Bool = false) throws {
         self.host = host
         self.port = port
         super.init()
-        
-        socketThread.owner = self
         
         if autoConnect {
             try !>self.connect()
         }
     }
     
+    /// This subscript returns a Database struct given a String
     public subscript (database: String) -> Database {
         let database = database.stringByReplacingOccurrencesOfString(".", withString: "")
         
-        if let database: Database = databases[database] {
-            return database
-        }
-        
-        let databaseObject = Database(server: self, databaseName: database)
-        
-        databases[database] = databaseObject
-        
-        return databaseObject
+        return Database(server: self, databaseName: database)
     }
     
+    /// Generates a messageID for the next Message
     internal func getNextMessageID() -> Int32 {
         lastRequestID += 1
         return lastRequestID
     }
     
+    /// Connects with the MongoDB Server using the given information in the initializer
     public func connect() -> ThrowingFuture<Void> {
         return ThrowingFuture {
             guard self.outputStream == nil && self.inputStream == nil else {
@@ -96,6 +106,7 @@ public class Server : NSObject, NSStreamDelegate {
         }
     }
     
+    /// Disconnects from the MongoDB server
     public func disconnect() throws {
         guard let inputStream = inputStream, outputStream = outputStream where connected else {
             throw MongoError.MongoDatabaseNotYetConnected
@@ -156,7 +167,7 @@ public class Server : NSObject, NSStreamDelegate {
             default:
                 break
             }
-            
+
         } else if stream == outputStream {
             switch eventCode {
             case NSStreamEvent.ErrorOccurred:
