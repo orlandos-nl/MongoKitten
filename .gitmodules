@@ -4,3 +4,6 @@
 [submodule "Xcode/Dependencies/When"]
 	path = Xcode/Dependencies/When
 	url = https://github.com/PlanTeam/When.git
+[submodule "Xcode/Dependencies/PlanTCP"]
+	path = Xcode/Dependencies/PlanTCP
+	url = https://github.com/planteam/plantcp.git

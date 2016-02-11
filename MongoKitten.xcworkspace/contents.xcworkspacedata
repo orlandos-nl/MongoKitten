@@ -10,4 +10,7 @@
    <FileRef
       location = "group:Xcode/Dependencies/BSON/BSON.xcodeproj">
    </FileRef>
+   <FileRef
+      location = "group:Xcode/Dependencies/PlanTCP/PlanTCP.xcodeproj">
+   </FileRef>
 </Workspace>

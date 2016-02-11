@@ -22,6 +22,7 @@
 		0AB8429C1C5EC600005CC6B4 /* InsertMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB8429B1C5EC600005CC6B4 /* InsertMessage.swift */; };
 		F2B9F6FF1C6A420D004383A9 /* BSON.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F2B9F6FE1C6A420D004383A9 /* BSON.framework */; };
 		F2B9F7011C6A4210004383A9 /* When.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F2B9F7001C6A4210004383A9 /* When.framework */; };
+		F2CC563B1C6CD0C5009BA6E2 /* PlanTCP.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F2CC563A1C6CD0C5009BA6E2 /* PlanTCP.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -54,6 +55,8 @@
 		F2B9F6FD1C6A41C7004383A9 /* TestInfo.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = TestInfo.plist; path = Xcode/TestInfo.plist; sourceTree = "<group>"; };
 		F2B9F6FE1C6A420D004383A9 /* BSON.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = BSON.framework; path = "../../../Library/Developer/Xcode/DerivedData/MongoKitten-gmavkjnhenxzhlbeqllcjomziaaw/Build/Products/Debug/BSON.framework"; sourceTree = "<group>"; };
 		F2B9F7001C6A4210004383A9 /* When.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = When.framework; path = Xcode/Dependencies/When/build/Debug/When.framework; sourceTree = "<group>"; };
+		F2CC563A1C6CD0C5009BA6E2 /* PlanTCP.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PlanTCP.framework; path = Xcode/Dependencies/PlanTCP/build/Debug/PlanTCP.framework; sourceTree = "<group>"; };
+		F2CC563C1C6CD56C009BA6E2 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,6 +64,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F2CC563B1C6CD0C5009BA6E2 /* PlanTCP.framework in Frameworks */,
 				F2B9F7011C6A4210004383A9 /* When.framework in Frameworks */,
 				F2B9F6FF1C6A420D004383A9 /* BSON.framework in Frameworks */,
 			);
@@ -80,6 +84,7 @@
 		0AB842581C5EA80D005CC6B4 = {
 			isa = PBXGroup;
 			children = (
+				F2CC563C1C6CD56C009BA6E2 /* README.md */,
 				0AB2CBC51C69E5370009405F /* Package.swift */,
 				0AB842641C5EA80D005CC6B4 /* Sources */,
 				0AB842701C5EA80E005CC6B4 /* Tests */,
@@ -133,6 +138,7 @@
 		F2B9F6FB1C6A41B8004383A9 /* Crap */ = {
 			isa = PBXGroup;
 			children = (
+				F2CC563A1C6CD0C5009BA6E2 /* PlanTCP.framework */,
 				0AB842631C5EA80D005CC6B4 /* Products */,
 				F2B9F7001C6A4210004383A9 /* When.framework */,
 				F2B9F6FE1C6A420D004383A9 /* BSON.framework */,
@@ -380,6 +386,7 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Xcode/Dependencies/When/build/Debug",
+					"$(PROJECT_DIR)/Xcode/Dependencies/PlanTCP/build/Debug",
 				);
 				FRAMEWORK_VERSION = A;
 				INFOPLIST_FILE = "$(SRCROOT)/Xcode/Info.plist";
@@ -404,6 +411,7 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Xcode/Dependencies/When/build/Debug",
+					"$(PROJECT_DIR)/Xcode/Dependencies/PlanTCP/build/Debug",
 				);
 				FRAMEWORK_VERSION = A;
 				INFOPLIST_FILE = "$(SRCROOT)/Xcode/Info.plist";

@@ -73,9 +73,7 @@ public class Collection {
             }
             
             let message = InsertMessage(collection: self, insertedDocuments: newDocuments, flags: flags)
-            if try self.database.server.sendMessage(message) == false {
-                throw MongoError.InsertFailure(documents: documents)
-            }
+            try self.database.server.sendMessage(message)
             
             return newDocuments
         }
@@ -94,12 +92,8 @@ public class Collection {
             
             let queryMsg = try QueryMessage(collection: self, query: query, flags: [], numbersToSkip: numbersToSkip, numbersToReturn: numbersToReturn)
             
-            let result = try self.database.server.sendMessage(queryMsg) { reply in
+            try self.database.server.sendMessage(queryMsg) { reply in
                 completer.complete(reply.documents)
-            }
-            
-            if !result {
-                throw MongoError.QueryFailure(query: query)
             }
         }.future
     }
@@ -142,10 +136,7 @@ public class Collection {
             
             let message = try UpdateMessage(collection: self, find: query, replace: updated, flags: flags)
             
-            if try self.database.server.sendMessage(message) == false {
-                throw MongoError.UpdateFailure(from: query, to: updated)
-            }
-            
+            try self.database.server.sendMessage(message)
             return oldDocuments
         }
     }
@@ -161,9 +152,7 @@ public class Collection {
             
             let message = DeleteMessage(collection: self, query: query, flags: flags)
             
-            guard let works: Bool = try self.database.server.sendMessage(message) where works else {
-                throw MongoError.RemoveFailure(query: query)
-            }
+            try self.database.server.sendMessage(message)
             
             return oldDocuments
         }

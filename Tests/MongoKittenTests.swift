@@ -19,14 +19,16 @@ class MongoKittenTests: XCTestCase {
     override func setUp() {
         super.setUp()
         
-        try! !>server.connect()
+        if !server.connected {
+            try! !>server.connect()
+        }
         
         try! !>server["test"]["test"].remove([])
     }
     
     override func tearDown() {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
-        try! server.disconnect()
+//        try! server.disconnect()
     }
     
     func testSetup() {
@@ -140,17 +142,17 @@ class MongoKittenTests: XCTestCase {
             "null": Null(),
             "binary": Binary(data: [0x01, 0x02]),
             "string": "Hello, I'm a string!"
-            ]).onError { _ in
-                XCTFail()
+            ]).onError { error in
+                XCTFail("\(error)")
         }
         
-        collection.insert([["hont": "kad"], ["fancy": 3.14], ["documents": true]]).onError { _ in
-            XCTFail()
+        collection.insert([["hont": "kad"], ["fancy": 3.14], ["documents": true]]).onError { error in
+            XCTFail("\(error)")
         }
         
         let document: Document = ["insert": ["using", "operators"]]
-        collection.insert(document).onError { _ in
-            XCTFail()
+        collection.insert(document).onError { error in
+            XCTFail("\(error)")
         }
     }
     

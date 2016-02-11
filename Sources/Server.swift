@@ -9,7 +9,7 @@
 import Foundation
 import BSON
 import When
-
+import PlanTCP
 
 public enum MongoError : ErrorType {
     case MongoDatabaseUnableToConnect
@@ -30,20 +30,36 @@ internal typealias ResponseHandler = ((reply: ReplyMessage) -> Void)
 
 /// A server object is the core of MongoKitten. From this you can get databases which can provide you with collections from where you can do actions
 public class Server : NSObject, NSStreamDelegate {
+    
+    /// This thread checks for new data from MongoDB
+    private class ServerThread : NSThread {
+        weak var owner: Server!
+        
+        private override func main() {
+            while true {
+                if cancelled {
+                    return
+                }
+                
+                do {
+                    let data = try owner.tcpClient.receive()
+                    owner.handleData(data)
+                } catch {
+                    let _ = try? owner.disconnect()
+                    return
+                }
+            }
+        }
+    }
+    
     /// Is the socket connected?
-    private var connected = false
-    
-    /// Is input open
-    private var inputOpen = false
-    
-    /// Is output open
-    private var outputOpen = false
+    public var connected: Bool { return tcpClient.connected }
     
     /// The MongoDB-server's hostname
     private let host: String
     
     /// The MongoDB-server's port
-    private let port: Int
+    private let port: UInt16
     
     /// The last Request we sent.. -1 if no request was sent
     internal var lastRequestID: Int32 = -1
@@ -54,14 +70,20 @@ public class Server : NSObject, NSStreamDelegate {
     /// The full buffer of received bytes from MongoDB
     internal var fullBuffer = [UInt8]()
     
+    private var tcpClient: TCPClient
+    private let serverThread = ServerThread()
+    
     /// Initializes a server with a given host and port. Optionally automatically connects
     /// - parameter host: The host we'll connect with for the MongoDB Server
     /// - parameter port: The port we'll connect on with the MongoDB Server
     /// - parameter autoConnect: Whether we automatically connect
-    public init(host: String, port: Int = 27017, autoConnect: Bool = false) throws {
+    public init(host: String, port: UInt16 = 27017, autoConnect: Bool = false) throws {
         self.host = host
         self.port = port
+        self.tcpClient = TCPClient(server: host, port: port)
         super.init()
+        
+        serverThread.owner = self
         
         if autoConnect {
             try !>self.connect()
@@ -84,102 +106,60 @@ public class Server : NSObject, NSStreamDelegate {
     /// Connects with the MongoDB Server using the given information in the initializer
     public func connect() -> ThrowingFuture<Void> {
         return ThrowingFuture {
-            guard self.outputStream == nil && self.inputStream == nil else {
-                throw MongoError.MongoDatabaseAlreadyConnected
-            }
-            
             if self.connected {
                 throw MongoError.MongoDatabaseAlreadyConnected
             }
             
-            NSStream.getStreamsToHostWithName(self.host, port: self.port, inputStream: &self.inputStream, outputStream: &self.outputStream)
-            
-            self.inputStream!.delegate = self
-            self.outputStream!.delegate = self
-            
-            self.socketThread.start()
-            
-            self.inputStream!.open()
-            self.outputStream!.open()
-            
-            self.connected = true
+            try self.tcpClient.connect()
+            self.serverThread.start()
+        }
+    }
+    
+    /// Throws an error if the database is not connected yet
+    private func assertConnected() throws {
+        guard connected else {
+            throw MongoError.MongoDatabaseNotYetConnected
         }
     }
     
     /// Disconnects from the MongoDB server
     public func disconnect() throws {
-        guard let inputStream = inputStream, outputStream = outputStream where connected else {
-            throw MongoError.MongoDatabaseNotYetConnected
-        }
-        
-        inputStream.close()
-        outputStream.close()
-        
-        connected = false
+        try assertConnected()
+        serverThread.cancel()
+        try tcpClient.disconnect()
     }
     
-    @objc public func stream(stream: NSStream, handleEvent eventCode: NSStreamEvent) {
-        if stream == inputStream {
-            switch eventCode {
-            case NSStreamEvent.ErrorOccurred:
-                print("InputStream error occured")
-            case NSStreamEvent.OpenCompleted:
-                inputOpen = true
-            case NSStreamEvent.HasBytesAvailable:
-                var buffer = [UInt8]()
-                var readBytes: Int
+    /// Called by the server thread to handle MongoDB Wire messages
+    private func handleData(incoming: [UInt8]) {
+        fullBuffer += incoming
+        
+        do {
+            while fullBuffer.count >= 36 {
+                guard let length: Int = Int(try Int32.instantiate(bsonData: fullBuffer[0...3]*)) else {
+                    throw DeserializationError.ParseError
+                }
                 
-                repeat {
-                    var tempBuffer = [UInt8](count: 256, repeatedValue: 0)
+                guard length <= fullBuffer.count else {
+                    throw MongoError.InvalidBodyLength
+                }
+                
+                let responseData = fullBuffer[0..<length]*
+                let responseId = try Int32.instantiate(bsonData: fullBuffer[8...11]*)
+                
+                if let handler: (ResponseHandler, Message) = responseHandlers[responseId] {
+                    let response = try ReplyMessage.init(collection: handler.1.collection, data: responseData)
+                    handler.0(reply: response)
+                    responseHandlers.removeValueForKey(handler.1.requestID)
                     
-                    readBytes = inputStream!.read(&tempBuffer, maxLength: tempBuffer.capacity)
-                    buffer.appendContentsOf(tempBuffer[0..<readBytes])
-                    
-                } while(readBytes > 0 && readBytes == 256)
-                
-                fullBuffer += buffer
-                
-                do {
-                    while fullBuffer.count >= 36 {
-                        guard let length: Int = Int(try Int32.instantiate(bsonData: fullBuffer[0...3]*)) else {
-                            throw DeserializationError.ParseError
-                        }
-                        
-                        guard length <= fullBuffer.count else {
-                            throw MongoError.InvalidBodyLength
-                        }
-                        
-                        let responseData = fullBuffer[0..<length]*
-                        let responseId = try Int32.instantiate(bsonData: fullBuffer[8...11]*)
-                        
-                        if let handler: (ResponseHandler, Message) = responseHandlers[responseId] {
-                            let response = try ReplyMessage.init(collection: handler.1.collection, data: responseData)
-                            handler.0(reply: response)
-                            responseHandlers.removeValueForKey(handler.1.requestID)
-                            
-                            fullBuffer.removeRange(0..<length)
-                        } else {
-                            throw MongoError.HandlerNotFound
-                        }
-                    }
-                } catch _ { }
-                break
-            default:
-                break
+                    fullBuffer.removeRange(0..<length)
+                } else {
+                    throw MongoError.HandlerNotFound
+                }
             }
-
-        } else if stream == outputStream {
-            switch eventCode {
-            case NSStreamEvent.ErrorOccurred:
-                print("OutputStream error occured")
-            case NSStreamEvent.OpenCompleted:
-                outputOpen = true
-            case NSStreamEvent.HasSpaceAvailable:
-                break
-            default:
-                break
-            }
+        } catch let error {
+            print("MONGODB ERROR ON INCOMING DATA: \(error)")
         }
+
     }
     
     /**
@@ -190,10 +170,8 @@ public class Server : NSObject, NSStreamDelegate {
      
      - returns: `true` if the message was sent sucessfully
      */
-    internal func sendMessage(message: Message, handler: ResponseHandler? = nil) throws -> Bool {
-        guard let outputStream = outputStream where connected else {
-            throw MongoError.MongoDatabaseUnableToConnect
-        }
+    internal func sendMessage(message: Message, handler: ResponseHandler? = nil) throws {
+        try assertConnected()
         
         let messageData = try message.generateBsonMessage()
         
@@ -201,10 +179,6 @@ public class Server : NSObject, NSStreamDelegate {
             responseHandlers[message.requestID] = (handler, message)
         }
         
-        guard let output: Int = outputStream.write(messageData, maxLength: messageData.count) else {
-            return false
-        }
-        
-        return output >= 0
+        try tcpClient.send(messageData)
     }
 }

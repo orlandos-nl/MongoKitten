@@ -12,10 +12,10 @@ import BSON
 /// The flags that are used by the Reply message
 internal struct ReplyFlags : OptionSetType {
     /// The raw value in Int32
-    public let rawValue: Int32
+    internal let rawValue: Int32
     
     /// You can initialize this with an Int32 and compare the number with an array of ReplyFlags
-    public init(rawValue: Int32) { self.rawValue = rawValue }
+    internal init(rawValue: Int32) { self.rawValue = rawValue }
     
     /// The server could not find the cursor we tried to use
     internal static let CursorNotFound = InsertFlags(rawValue: 0 << 0)
