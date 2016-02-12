@@ -11,16 +11,36 @@ import BSON
 import When
 import PlanTCP
 
+/// All MongoDB errors
 public enum MongoError : ErrorType {
+    /// Can't connect to the MongoDB Server
     case MongoDatabaseUnableToConnect
+    
+    /// Can't connect since we're already connected
     case MongoDatabaseAlreadyConnected
+    
+    /// The body of this message is an invalid length
     case InvalidBodyLength
+    
+    /// -
     case InvalidAction
+    
+    /// We can't do this action because we're not yet connected
     case MongoDatabaseNotYetConnected
+    
+    /// Can't insert given documents
     case InsertFailure(documents: [Document])
+    
+    /// Can't query for documents matching given query
     case QueryFailure(query: Document)
+    
+    /// Can't update documents with the given selector and update
     case UpdateFailure(from: Document, to: Document)
+    
+    /// Can't remove documents matching the given query
     case RemoveFailure(query: Document)
+    
+    /// Can't find a handler for this reply
     case HandlerNotFound
 }
 
