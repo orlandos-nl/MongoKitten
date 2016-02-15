@@ -7,3 +7,5 @@
 [submodule "Xcode/Dependencies/PlanTCP"]
 	path = Xcode/Dependencies/PlanTCP
 	url = https://github.com/planteam/plantcp.git
+[submodule "Xcode/Dependencies/BSON"]
+	master = master
