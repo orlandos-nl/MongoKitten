@@ -160,7 +160,8 @@ public class Server : NSObject, NSStreamDelegate {
                 }
                 
                 guard length <= fullBuffer.count else {
-                    throw MongoError.InvalidBodyLength
+                    // Ignore: Wait for more data
+                    return
                 }
                 
                 let responseData = fullBuffer[0..<length]*

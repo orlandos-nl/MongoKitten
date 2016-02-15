@@ -16,6 +16,10 @@ class MongoKittenTests: XCTestCase {
     var database: Database!
     var collection: Collection!
     
+    func eraseTestDatabase() {
+        try! !>server["test"]["test"].remove([])
+    }
+    
     override func setUp() {
         super.setUp()
         
@@ -23,7 +27,7 @@ class MongoKittenTests: XCTestCase {
             try! !>server.connect()
         }
         
-        try! !>server["test"]["test"].remove([])
+        eraseTestDatabase()
     }
     
     override func tearDown() {
@@ -163,5 +167,29 @@ class MongoKittenTests: XCTestCase {
         try! !>collection.insert(["honten": "hoien"])
         try! !>collection.find(["honten": "hoien"])
         try! !>collection.update(["honten": "hoien"], updated: ["honten": 3])
+    }
+    
+    // MARK: - Insert Performance
+    func testSmallTransactionInsertPerformance() {
+        // Test inserting lots of small documents in multiple transactions
+        let collection = server["test"]["test"]
+        let doc: Document = ["test": "Beautiful string", "4": 32480.2, "henk": *["hallo", 4]]
+        self.measureBlock {
+            for _ in 0...1000 {
+                try! !>collection.insert(doc)
+            }
+        }
+    }
+    
+    func testMassiveTransactionInsertPerformance() {
+        // Test inserting lots of small documents in a single transaction
+        let collection = server["test"]["test"]
+        let doc: Document = ["test": "Beautiful string", "4": 32480.2, "henk": *["hallo", 4]]
+        
+        // Test inserting a batch of small documents
+        let arr = Array(count: 1000, repeatedValue: doc)
+        self.measureBlock {
+            try! !>collection.insertAll(arr)
+        }
     }
 }
