@@ -186,6 +186,8 @@ public class Server : NSObject, NSStreamDelegate {
     /**
      Send given message to the server.
      
+     This method executes on the thread of the caller and returns when done.
+     
      - parameter message: A message to send to the server
      - parameter handler: The handler will be executed when a response is received. Note the server does not respond to every message.
      

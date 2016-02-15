@@ -61,16 +61,15 @@ public class Collection {
     /// - returns: Returns a future that you can await (synchronously) or asynchronously bind an action to. This future may throw and you'll need to handle the error if one occurs or your application will crash. This future if successful will return all Documents that should be inserted along with their ObjectId
     public func insertAll(documents: [Document], flags: InsertFlags = []) -> ThrowingFuture<[Document]> {
         return ThrowingFuture<[Document]> {
-            var newDocuments = [Document]()
-            newDocuments.reserveCapacity(documents.count)
-            
-            for var document in documents {
-                if !document.keys.contains("_id") {
-                    document.updateValue(ObjectId(), forKey: "_id")
+            let newDocuments = documents.map({ (input: Document) -> Document in
+                if input["_id"] == nil {
+                    var output = input
+                    output["_id"] = ObjectId()
+                    return output
+                } else {
+                    return input
                 }
-                
-                newDocuments.append(document)
-            }
+            })
             
             let message = InsertMessage(collection: self, insertedDocuments: newDocuments, flags: flags)
             try self.database.server.sendMessage(message)
