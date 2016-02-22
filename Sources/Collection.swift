@@ -37,7 +37,7 @@ public class Collection {
         self.name = collectionName
     }
     
-    // CRUD Operations
+    // MARK: - CRUD Operations
     
     // Create
     
@@ -96,22 +96,13 @@ public class Collection {
         return Cursor(collection: self, reply: response, chunkSize: fetchChunkSize)
     }
     
-    /// Looks for one Document matching the query and returns it in the Future
+    /// Looks for one Document matching the query and returns it
     /// - parameter query: An optional BSON Document that will be used as a selector. All Documents in the response will match at least this Query's fields. By default all collection information will be selected
     /// - parameter flags: An optional list of QueryFlags that will be used with this Find/Query Operation. See QueryFlags for more details
-    /// - parameter numbersToSkip: An optional integer that will tell MongoDB not to use the first X results in the found Document
-    /// - returns: Returns a future that you can await or asynchronously bind an action to. If you don't catch the error your application will crash. The future will return the first Document matching the given parameters or nil if none are found
-//    public func findOne(query: Document, flags: QueryFlags = [], numbersToSkip: Int32 = 0) -> ThrowingFuture<Document?> {
-//        let completer = ThrowingCompleter<Document?>()
-//        
-//        let documentsFuture = find(query, flags: flags, numbersToSkip: numbersToSkip, numbersToReturn: 1)
-//        
-//        documentsFuture.then { documents in
-//            completer.complete(documents.first)
-//        }
-//        
-//        return completer.future
-//    }
+    /// - returns: The first document matching the query or nil if none found
+    public func findOne(query: Document = [], flags: QueryFlags = []) throws -> Document? {
+        return try self.find(query, flags: flags, fetchChunkSize: 1).generate().next()
+    }
     
     // Update
     
@@ -120,55 +111,17 @@ public class Collection {
     /// - parameter updated: The information that will be updated/added
     /// - parameter flags: The flags that will be used for this UpdateOperation. See UpdateFlags for more details
     /// - returns: Returns a future that you can await or asynchronously bind an action to. If you don't catch the error your application will crash. The future will return all changed Documents before they were changed
-//    public func update(query: Document, updated: Document, flags: UpdateFlags = []) -> ThrowingFuture<[Document]> {
-//        return ThrowingFuture<[Document]> {
-//            let oldDocuments: [Document]
-//            
-//            if flags.contains([.MultiUpdate]) {
-//                oldDocuments = try !>self.find(query)
-//            } else if let oldDocument = try !>self.findOne(query) {
-//                oldDocuments = [oldDocument]
-//            } else {
-//                return []
-//            }
-//            
-//            let message = try UpdateMessage(collection: self, find: query, replace: updated, flags: flags)
-//            
-//            try self.database.server.sendMessage(message)
-//            return oldDocuments
-//        }
-//    }
+    public func update(query: Document, updated: Document, flags: UpdateFlags = []) throws {
+        let message = try UpdateMessage(collection: self, find: query, replace: updated, flags: flags)
+        try self.database.server.sendMessageSync(message)
+    }
     
     // Delete
     /// Will remove all Documents matching the query
     /// - parameter document: The Document selector that will be use dto find th Document that will be removed1
     /// - parameter flags: The flags that will be used for this UpdateOperation. See DeleteFlags for more details
-    /// - returns: Returns a future that you can await or asynchronously bind an action to. If you don't catch the error your application will crash. The future will return the all Documents that were found and removed.
-//    public func remove(query: Document, flags: DeleteFlags = []) -> ThrowingFuture<[Document]> {
-//        return ThrowingFuture<[Document]> {
-//            let oldDocuments = try !>self.find(query)
-//            
-//            let message = DeleteMessage(collection: self, query: query, flags: flags)
-//            
-//            try self.database.server.sendMessage(message)
-//            
-//            return oldDocuments
-//        }
-//    }
-    
-    /// Will remove the first Document matching the query
-    /// - parameter document: The Document selector that will be use dto find th Document that will be removed
-    /// - returns: Returns a future that you can await or asynchronously bind an action to. If you don't catch the error your application will crash. The future will return the Document if one was found and removed. If there were no removed documents this will reutrn nil
-//    public func removeOne(document: Document) -> ThrowingFuture<Document?> {
-//        let completer = ThrowingCompleter<Document?>()
-//        
-//        let documentsFuture = remove(document, flags: [.RemoveOne])
-//        
-//        documentsFuture.then { documents in
-//            completer.complete(documents.first)
-//        }
-//        
-//        return completer.future
-//    }
-    // TODO: Implement subscript assignment for "update"
+    public func remove(query: Document, flags: DeleteFlags = []) throws {
+            let message = DeleteMessage(collection: self, query: query, flags: flags)
+            try self.database.server.sendMessageSync(message)
+    }
 }

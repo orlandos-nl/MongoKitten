@@ -9,19 +9,127 @@
 import XCTest
 import BSON
 import When
-@testable import MongoKitten
+import MongoKitten
 
 class MongoKittenTests: XCTestCase {
-    var database: Database!
-    var collection: Collection!
+    var server: Server = try! Server(host: "127.0.0.1", port: 27017, autoConnect: false)
+    var collection: Collection { return server["mongokitten-unittest"]["testcol"] }
     
-    func testNewCode() {
-        let server = try! Server(host: "127.0.0.1", port: 27017, autoConnect: true)
+    override func setUp() {
+        super.setUp()
         
-        self.measureBlock {
-            for doc in try! server["test"]["hont"].find() {
-                print(doc)
+        if !server.connected {
+            try! server.connectSync()
+        }
+        
+        
+        // Erase the testing collection:
+        try! collection.remove([])
+    }
+    
+    override func tearDown() {
+        // Put teardown code here. This method is called after the invocation of each test method in the class.
+        //        try! server.disconnect()
+    }
+    
+    func testSetup() {
+        let server2 = try! Server(host: "127.0.0.1", port: 27017, autoConnect: true)
+        
+        do {
+            // Should fail
+            try server2.connectSync()
+            XCTFail()
+            
+        } catch { }
+        
+        // This one should work
+        try! server2.disconnect()
+        
+        do {
+            // This one should NOT work
+            try server2.disconnect()
+            XCTFail()
+        } catch {}
+        
+        do {
+            try server2["test"]["test"].insertSync(["shouldnt": "beinserted"])
+            XCTFail()
+        } catch {}
+    }
+    
+    func testQuery() {
+        try! collection.insertSync(["query": "test"])
+        try! collection.insertAllSync([["double": 2], ["double": 2]])
+        
+        do {
+            let document = try! collection.findOne(["query": "test"])
+            
+            XCTAssert(document!["query"] as! String == "test")
+        }
+        
+        do {
+            let documents = try! collection.find(["double": 2])
+            
+            var count = 0
+            for document in documents{
+                count += 1
+                XCTAssert(document["double"] as! Int == 2)
             }
+            
+            XCTAssert(count == 2)
+        }
+    }
+    
+    func testInsert() {
+        try! collection.insertSync([
+            "double": 53.2,
+            "64bit-integer": 52,
+            "32bit-integer": Int32(20),
+            "embedded-document": *["double": 44.3, "_id": ObjectId()],
+            "embedded-array": *[44, 33, 22, 11, 10, 9],
+            "identifier": ObjectId(),
+            "datetime": NSDate(),
+            "bool": false,
+            "null": Null(),
+            "binary": Binary(data: [0x01, 0x02]),
+            "string": "Hello, I'm a string!"
+            ])
+        
+        try! collection.insertSync([["hont": "kad"], ["fancy": 3.14], ["documents": true]])
+        
+        // TODO: validate!
+    }
+    
+    func testUpdate() {
+        try! collection.insertSync(["honten": "hoien"])
+        try! collection.update(["honten": "hoien"], updated: ["honten": 3])
+        
+        let doc = try! collection.findOne()!
+        XCTAssert(doc["honten"] as! Int == 3)
+        
+    }
+    
+    // MARK: - Insert Performance
+    func testSmallTransactionInsertPerformance() {
+        // Test inserting lots of small documents in multiple transactions
+        let collection = server["test"]["test"]
+        let doc: Document = ["test": "Beautiful string", "4": 32480.2, "henk": *["hallo", 4]]
+        self.measureBlock {
+            for _ in 0...1000 {
+                try! collection.insertSync(doc)
+            }
+        }
+    }
+    
+    func testMassiveTransactionInsertPerformance() {
+        // Test inserting lots of small documents in a single transaction
+        let collection = server["test"]["test"]
+        let doc: Document = ["test": "Beautiful string", "4": 32480.2, "henk": *["hallo", 4]]
+        
+        // Test inserting a batch of small documents
+        let arr = Array(count: 1000, repeatedValue: doc)
+        self.measureBlock {
+            try! collection.insertAllSync(arr)
         }
     }
 }
