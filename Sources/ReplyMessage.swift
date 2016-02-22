@@ -29,9 +29,6 @@ internal struct ReplyFlags : OptionSetType {
 
 /// The reply that will only ever be sent from a server
 internal struct ReplyMessage : Message {
-    /// The collection that this reply is being sent in name of
-    internal let collection: Collection
-    
     /// The request's identifier
     internal let requestID: Int32
     
@@ -64,9 +61,8 @@ internal struct ReplyMessage : Message {
     }
     
     /// Initialize with the collection and reply binary data
-    /// - parameter collection: The collection this data belongs to
     /// - parameter data: The binary data that this message should consist of
-    internal init(collection: Collection, data: [UInt8]) throws {
+    internal init(data: [UInt8]) throws {
         guard let length: Int32 = try Int32.instantiate(bsonData: data[0...3]*) else {
             throw DeserializationError.ParseError
         }
@@ -89,6 +85,5 @@ internal struct ReplyMessage : Message {
         self.startingFrom = try Int32.instantiate(bsonData: data[28...31]*)
         self.numberReturned = try Int32.instantiate(bsonData: data[32...35]*)
         self.documents = try Document.instantiateAll(data[36..<data.endIndex]*)
-        self.collection = collection
     }
 }

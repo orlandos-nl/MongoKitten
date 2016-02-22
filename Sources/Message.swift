@@ -11,9 +11,6 @@ import Foundation
 
 /// Message is the base of all Mongo Messages
 internal protocol Message {
-    /// The collection this message applies to
-    var collection: Collection {get}
-    
     /// The requestID for this message
     var requestID: Int32 {get}
     

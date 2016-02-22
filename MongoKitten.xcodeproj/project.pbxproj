@@ -20,9 +20,13 @@
 		0AB842981C5EC4BA005CC6B4 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842971C5EC4BA005CC6B4 /* Message.swift */; };
 		0AB8429A1C5EC5D0005CC6B4 /* OperationCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842991C5EC5D0005CC6B4 /* OperationCode.swift */; };
 		0AB8429C1C5EC600005CC6B4 /* InsertMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB8429B1C5EC600005CC6B4 /* InsertMessage.swift */; };
+		F222D7DB1C7B139900778D2F /* Cursor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F222D7DA1C7B139900778D2F /* Cursor.swift */; };
+		F293D0341C7B0392003D6100 /* MongoError.swift in Sources */ = {isa = PBXBuildFile; fileRef = F293D0331C7B0392003D6100 /* MongoError.swift */; };
 		F2B9F6FF1C6A420D004383A9 /* BSON.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F2B9F6FE1C6A420D004383A9 /* BSON.framework */; };
 		F2B9F7011C6A4210004383A9 /* When.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F2B9F7001C6A4210004383A9 /* When.framework */; };
 		F2CC563B1C6CD0C5009BA6E2 /* PlanTCP.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F2CC563A1C6CD0C5009BA6E2 /* PlanTCP.framework */; };
+		F2F7D1581C7B2C6000EAB956 /* GetMoreMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F7D1571C7B2C6000EAB956 /* GetMoreMessage.swift */; };
+		F2F7D15C1C7B31A700EAB956 /* KillCursorsMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F7D15B1C7B31A700EAB956 /* KillCursorsMessage.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -51,12 +55,16 @@
 		0AB842971C5EC4BA005CC6B4 /* Message.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
 		0AB842991C5EC5D0005CC6B4 /* OperationCode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OperationCode.swift; sourceTree = "<group>"; };
 		0AB8429B1C5EC600005CC6B4 /* InsertMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = InsertMessage.swift; sourceTree = "<group>"; };
+		F222D7DA1C7B139900778D2F /* Cursor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Cursor.swift; sourceTree = "<group>"; };
+		F293D0331C7B0392003D6100 /* MongoError.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MongoError.swift; sourceTree = "<group>"; };
 		F2B9F6FC1C6A41C7004383A9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = Xcode/Info.plist; sourceTree = "<group>"; };
 		F2B9F6FD1C6A41C7004383A9 /* TestInfo.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = TestInfo.plist; path = Xcode/TestInfo.plist; sourceTree = "<group>"; };
 		F2B9F6FE1C6A420D004383A9 /* BSON.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = BSON.framework; path = "../../../Library/Developer/Xcode/DerivedData/MongoKitten-gmavkjnhenxzhlbeqllcjomziaaw/Build/Products/Debug/BSON.framework"; sourceTree = "<group>"; };
 		F2B9F7001C6A4210004383A9 /* When.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = When.framework; path = Xcode/Dependencies/When/build/Debug/When.framework; sourceTree = "<group>"; };
 		F2CC563A1C6CD0C5009BA6E2 /* PlanTCP.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PlanTCP.framework; path = Xcode/Dependencies/PlanTCP/build/Debug/PlanTCP.framework; sourceTree = "<group>"; };
 		F2CC563C1C6CD56C009BA6E2 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		F2F7D1571C7B2C6000EAB956 /* GetMoreMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GetMoreMessage.swift; sourceTree = "<group>"; };
+		F2F7D15B1C7B31A700EAB956 /* KillCursorsMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = KillCursorsMessage.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -110,6 +118,8 @@
 				0A46706F1C6B9BE500101CCD /* Helper.swift */,
 				0AB842941C5EC495005CC6B4 /* Collection.swift */,
 				0AB842991C5EC5D0005CC6B4 /* OperationCode.swift */,
+				F293D0331C7B0392003D6100 /* MongoError.swift */,
+				F222D7DA1C7B139900778D2F /* Cursor.swift */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -131,6 +141,8 @@
 				0A2DFD1F1C5F453500A364B5 /* UpdateMessage.swift */,
 				0A36C5BD1C5FD27E009208DC /* DeleteMessage.swift */,
 				0A4246E71C60DD7700158D8E /* ReplyMessage.swift */,
+				F2F7D1571C7B2C6000EAB956 /* GetMoreMessage.swift */,
+				F2F7D15B1C7B31A700EAB956 /* KillCursorsMessage.swift */,
 			);
 			name = Messages;
 			sourceTree = "<group>";
@@ -255,7 +267,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F222D7DB1C7B139900778D2F /* Cursor.swift in Sources */,
 				0A4670701C6B9BE500101CCD /* Helper.swift in Sources */,
+				F2F7D15C1C7B31A700EAB956 /* KillCursorsMessage.swift in Sources */,
 				0A4246E51C60DD7200158D8E /* QueryMessage.swift in Sources */,
 				0AB842951C5EC495005CC6B4 /* Collection.swift in Sources */,
 				0AB842981C5EC4BA005CC6B4 /* Message.swift in Sources */,
@@ -264,6 +278,8 @@
 				0AB842911C5EC46C005CC6B4 /* Server.swift in Sources */,
 				0A2DFD201C5F453500A364B5 /* UpdateMessage.swift in Sources */,
 				0AB8429C1C5EC600005CC6B4 /* InsertMessage.swift in Sources */,
+				F293D0341C7B0392003D6100 /* MongoError.swift in Sources */,
+				F2F7D1581C7B2C6000EAB956 /* GetMoreMessage.swift in Sources */,
 				0A36C5BE1C5FD27E009208DC /* DeleteMessage.swift in Sources */,
 				0AB8429A1C5EC5D0005CC6B4 /* OperationCode.swift in Sources */,
 			);

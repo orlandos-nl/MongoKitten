@@ -11,67 +11,17 @@ import BSON
 import When
 import PlanTCP
 
-/// All MongoDB errors
-public enum MongoError : ErrorType {
-    /// Can't connect to the MongoDB Server
-    case MongoDatabaseUnableToConnect
-    
-    /// Can't connect since we're already connected
-    case MongoDatabaseAlreadyConnected
-    
-    /// The body of this message is an invalid length
-    case InvalidBodyLength
-    
-    /// -
-    case InvalidAction
-    
-    /// We can't do this action because we're not yet connected
-    case MongoDatabaseNotYetConnected
-    
-    /// Can't insert given documents
-    case InsertFailure(documents: [Document])
-    
-    /// Can't query for documents matching given query
-    case QueryFailure(query: Document)
-    
-    /// Can't update documents with the given selector and update
-    case UpdateFailure(from: Document, to: Document)
-    
-    /// Can't remove documents matching the given query
-    case RemoveFailure(query: Document)
-    
-    /// Can't find a handler for this reply
-    case HandlerNotFound
-}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+// This file contains the low level code. This code is synchronous and is used by the async client API. //
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 /// A ResponseHandler is a closure that receives a MongoReply to process it
 /// It's internal because ReplyMessages are an internal struct that is used for direct communication with MongoDB only
 internal typealias ResponseHandler = ((reply: ReplyMessage) -> Void)
 
 /// A server object is the core of MongoKitten. From this you can get databases which can provide you with collections from where you can do actions
-public class Server : NSObject, NSStreamDelegate {
-    
-    /// This thread checks for new data from MongoDB
-    private class ServerThread : NSThread {
-        weak var owner: Server!
-        
-        private override func main() {
-            while true {
-                if cancelled {
-                    return
-                }
-                
-                do {
-                    let data = try owner.tcpClient.receive()
-                    owner.handleData(data)
-                } catch {
-                    let _ = try? owner.disconnect()
-                    return
-                }
-            }
-        }
-    }
-    
+public class Server {
     /// Is the socket connected?
     public var connected: Bool { return tcpClient.connected }
     
@@ -84,14 +34,16 @@ public class Server : NSObject, NSStreamDelegate {
     /// The last Request we sent.. -1 if no request was sent
     internal var lastRequestID: Int32 = -1
     
-    /// A dictionary that keeps track of all Find-request's IDs and their responseHandlers
-    internal var responseHandlers = [Int32:(ResponseHandler, Message)]()
-    
     /// The full buffer of received bytes from MongoDB
     internal var fullBuffer = [UInt8]()
     
+    
+    private var incomingResponses = [(id: Int32, message: ReplyMessage, date: NSDate)]()
+    private var responseHandlers = [Int32:ResponseHandler]()
+    private var waitingForResponses = [Int32:NSCondition]()
+    
     private var tcpClient: TCPClient
-    private let serverThread = ServerThread()
+    private let backgroundQueue = dispatch_get_global_queue(QOS_CLASS_BACKGROUND, 0)
     
     /// Initializes a server with a given host and port. Optionally automatically connects
     /// - parameter host: The host we'll connect with for the MongoDB Server
@@ -101,12 +53,9 @@ public class Server : NSObject, NSStreamDelegate {
         self.host = host
         self.port = port
         self.tcpClient = TCPClient(server: host, port: port)
-        super.init()
-        
-        serverThread.owner = self
         
         if autoConnect {
-            try !>self.connect()
+            try self.connectSync()
         }
     }
     
@@ -124,15 +73,31 @@ public class Server : NSObject, NSStreamDelegate {
     }
     
     /// Connects with the MongoDB Server using the given information in the initializer
-    public func connect() -> ThrowingFuture<Void> {
-        return ThrowingFuture {
-            if self.connected {
-                throw MongoError.MongoDatabaseAlreadyConnected
-            }
-            
-            try self.tcpClient.connect()
-            self.serverThread.start()
+    public func connectSync() throws {
+        if self.connected {
+            throw MongoError.MongoDatabaseAlreadyConnected
         }
+        
+        try self.tcpClient.connect()
+        dispatch_async(backgroundQueue, backgroundLoop)
+    }
+    
+    private func backgroundLoop() {
+        guard self.connected else { return }
+        
+        do {
+            try self.receive()
+            
+            // Handle callbacks, locks etc on the responses
+            for response in incomingResponses {
+                waitingForResponses[response.id]?.broadcast()
+                responseHandlers[response.id]?(reply: response.message)
+            }
+        } catch {
+            print("The MongoDB background loop encountered an error: \(error)")
+        }
+        
+        dispatch_async(backgroundQueue, backgroundLoop)
     }
     
     /// Throws an error if the database is not connected yet
@@ -145,12 +110,13 @@ public class Server : NSObject, NSStreamDelegate {
     /// Disconnects from the MongoDB server
     public func disconnect() throws {
         try assertConnected()
-        serverThread.cancel()
         try tcpClient.disconnect()
     }
     
     /// Called by the server thread to handle MongoDB Wire messages
-    private func handleData(incoming: [UInt8]) {
+    private func receive() throws {
+        let incoming = try tcpClient.receive()
+        
         fullBuffer += incoming
         
         do {
@@ -166,21 +132,34 @@ public class Server : NSObject, NSStreamDelegate {
                 
                 let responseData = fullBuffer[0..<length]*
                 let responseId = try Int32.instantiate(bsonData: fullBuffer[8...11]*)
+                let response = try ReplyMessage.init(data: responseData)
                 
-                if let handler: (ResponseHandler, Message) = responseHandlers[responseId] {
-                    let response = try ReplyMessage.init(collection: handler.1.collection, data: responseData)
-                    handler.0(reply: response)
-                    responseHandlers.removeValueForKey(handler.1.requestID)
-                    
-                    fullBuffer.removeRange(0..<length)
-                } else {
-                    throw MongoError.HandlerNotFound
-                }
+                incomingResponses.append((responseId, response, NSDate()))
+                
+                fullBuffer.removeRange(0..<length)
             }
-        } catch let error {
-            print("MONGODB ERROR ON INCOMING DATA: \(error)")
         }
-
+    }
+    
+    internal func awaitResponse(requestId: Int32, timeout: NSTimeInterval = 10) throws -> ReplyMessage {
+        let condition = NSCondition()
+        condition.lock()
+        waitingForResponses[requestId] = condition
+        
+        if condition.waitUntilDate(NSDate(timeIntervalSinceNow: timeout)) == false {
+            throw MongoError.Timeout
+        }
+        
+        condition.unlock()
+        
+        for (index, response) in incomingResponses.enumerate() {
+            if response.id == requestId {
+                return incomingResponses.removeAtIndex(index).message
+            }
+        }
+        
+        // If we get here, something is very, very wrong.
+        throw MongoError.InternalInconsistency
     }
     
     /**
@@ -188,20 +167,17 @@ public class Server : NSObject, NSStreamDelegate {
      
      This method executes on the thread of the caller and returns when done.
      
-     - parameter message: A message to send to the server
-     - parameter handler: The handler will be executed when a response is received. Note the server does not respond to every message.
+     - parameter message: A message to send to  the server
      
-     - returns: `true` if the message was sent sucessfully
+     - returns: The request ID of the sent message
      */
-    internal func sendMessage(message: Message, handler: ResponseHandler? = nil) throws {
+    internal func sendMessageSync(message: Message) throws -> Int32 {
         try assertConnected()
         
         let messageData = try message.generateBsonMessage()
         
-        if let handler = handler {
-            responseHandlers[message.requestID] = (handler, message)
-        }
-        
         try tcpClient.send(messageData)
+        
+        return message.requestID
     }
 }
