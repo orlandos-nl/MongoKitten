@@ -88,12 +88,12 @@ public class Collection {
     /// TODO: Above doc is out of date
     /// - returns: An array with zero or more found documents.
     @warn_unused_result
-    public func find(query: Document = [], flags: QueryFlags = [], fetchChunkSize: Int32 = 10) throws -> Cursor {
+    public func find(query: Document = [], flags: QueryFlags = [], fetchChunkSize: Int32 = 10) throws -> Cursor<Document> {
         let queryMsg = try QueryMessage(collection: self, query: query, flags: [], numbersToSkip: 0, numbersToReturn: fetchChunkSize)
         
         let id = try self.database.server.sendMessageSync(queryMsg)
         let response = try self.database.server.awaitResponse(id)
-        return Cursor(collection: self, reply: response, chunkSize: fetchChunkSize)
+        return Cursor(namespace: self.fullName, server: database.server, reply: response, chunkSize: fetchChunkSize, transform: { $0 })
     }
     
     /// Looks for one Document matching the query and returns it

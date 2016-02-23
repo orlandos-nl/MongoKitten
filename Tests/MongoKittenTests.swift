@@ -13,7 +13,8 @@ import MongoKitten
 
 class MongoKittenTests: XCTestCase {
     var server: Server = try! Server(host: "127.0.0.1", port: 27017, autoConnect: false)
-    var collection: Collection { return server["mongokitten-unittest"]["testcol"] }
+    var testDatabase: Database { return server["mongokitten-unittest"] }
+    var testCollection: Collection { return testDatabase["testcol"] }
     
     override func setUp() {
         super.setUp()
@@ -23,8 +24,10 @@ class MongoKittenTests: XCTestCase {
         }
         
         
-        // Erase the testing collection:
-        try! collection.remove([])
+        // Erase the testing database:
+        for aCollection in try! testDatabase.getCollections() {
+            try! aCollection.remove([])
+        }
     }
     
     override func tearDown() {
@@ -58,17 +61,17 @@ class MongoKittenTests: XCTestCase {
     }
     
     func testQuery() {
-        try! collection.insertSync(["query": "test"])
-        try! collection.insertAllSync([["double": 2], ["double": 2]])
+        try! testCollection.insertSync(["query": "test"])
+        try! testCollection.insertAllSync([["double": 2], ["double": 2]])
         
         do {
-            let document = try! collection.findOne(["query": "test"])
+            let document = try! testCollection.findOne(["query": "test"])
             
             XCTAssert(document!["query"] as! String == "test")
         }
         
         do {
-            let documents = try! collection.find(["double": 2])
+            let documents = try! testCollection.find(["double": 2])
             
             var count = 0
             for document in documents{
@@ -81,7 +84,7 @@ class MongoKittenTests: XCTestCase {
     }
     
     func testInsert() {
-        try! collection.insertSync([
+        try! testCollection.insertSync([
             "double": 53.2,
             "64bit-integer": 52,
             "32bit-integer": Int32(20),
@@ -95,16 +98,35 @@ class MongoKittenTests: XCTestCase {
             "string": "Hello, I'm a string!"
             ])
         
-        try! collection.insertSync([["hont": "kad"], ["fancy": 3.14], ["documents": true]])
+        try! testCollection.insertAllSync([["hont": "kad"], ["fancy": 3.14], ["documents": true]])
         
         // TODO: validate!
     }
     
-    func testUpdate() {
-        try! collection.insertSync(["honten": "hoien"])
-        try! collection.update(["honten": "hoien"], updated: ["honten": 3])
+    func testListCollectionsWithoutCollections() {
+        // TODO: Finish this test
+        let _ = try! testDatabase.getCollectionInfos()
+    }
+    
+    func testListCollectionsWithCollections() {
+        // TODO: Finish this test
+        try! testDatabase["collection1"].insertSync(["test"])
+        try! testDatabase["collection2"].insertSync(["otherTest"])
         
-        let doc = try! collection.findOne()!
+        let _ = Array(try! testDatabase.getCollectionInfos())
+        
+        for collection in try! testDatabase.getCollections() {
+            let contents = Array(try! collection.find())
+            print(contents)
+        }
+        
+    }
+    
+    func testUpdate() {
+        try! testCollection.insertSync(["honten": "hoien"])
+        try! testCollection.update(["honten": "hoien"], updated: ["honten": 3])
+        
+        let doc = try! testCollection.findOne()!
         XCTAssert(doc["honten"] as! Int == 3)
         
     }

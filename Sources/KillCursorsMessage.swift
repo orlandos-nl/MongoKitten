@@ -39,8 +39,8 @@ internal struct KillCursorsMessage : Message {
         return header + body
     }
     
-    internal init(collection: Collection, cursorIDs: [Int64]) throws {
-        self.requestID = collection.database.server.getNextMessageID()
+    internal init(server: Server, cursorIDs: [Int64]) throws {
+        self.requestID = server.getNextMessageID()
         self.cursorIDs = cursorIDs
     }
 }

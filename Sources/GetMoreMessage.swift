@@ -10,7 +10,7 @@ import Foundation
 
 internal struct GetMoreMessage : Message {
     /// The collection we'll search in for the documents
-    let collection: Collection
+    let namespace: String
     
     /// The request ID of this message that can be replied to.
     /// We will get a reply on this message
@@ -37,7 +37,7 @@ internal struct GetMoreMessage : Message {
         var body = [UInt8]()
         
         body += zero.bsonData
-        body += collection.fullName.cStringBsonData
+        body += namespace.cStringBsonData
         body += numberToReturn.bsonData
         body += cursorID.bsonData
         
@@ -46,9 +46,9 @@ internal struct GetMoreMessage : Message {
         return header + body
     }
     
-    internal init(collection: Collection, cursorID: Int64, numberToReturn: Int32 = 0) throws {
-        self.requestID = collection.database.server.getNextMessageID()
-        self.collection = collection
+    internal init(namespace: String, server: Server, cursorID: Int64, numberToReturn: Int32 = 0) throws {
+        self.requestID = server.getNextMessageID()
+        self.namespace = namespace
         self.numberToReturn = numberToReturn
         self.cursorID = cursorID
     }

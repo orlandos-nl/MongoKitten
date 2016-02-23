@@ -42,6 +42,11 @@ public enum MongoError : ErrorType {
     
     case Timeout
     
+    case CommandFailure
+    
+    /// Thrown when the initialization of a cursor, on request of the server, failed because of missing data.
+    case CursorInitializationError(cursorDocument: Document)
+    
     /// If you get one of these, it's probably a bug on our side. Sorry. Please file a ticket :)
     case InternalInconsistency
 }

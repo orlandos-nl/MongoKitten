@@ -94,7 +94,13 @@ public class Server {
                 responseHandlers[response.id]?(reply: response.message)
             }
         } catch {
-            print("The MongoDB background loop encountered an error: \(error)")
+            // A receive failure is to be expected if the socket has been closed
+            if self.connected {
+                print("The MongoDB background loop encountered an error: \(error)")
+                abort()
+            } else {
+                return
+            }
         }
         
         dispatch_async(backgroundQueue, backgroundLoop)
