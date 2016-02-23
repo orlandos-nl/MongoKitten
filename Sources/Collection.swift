@@ -17,10 +17,10 @@ import When
 /// A Mongo Collection. Cannot be publically initialized. But you can get a collection object by subscripting a Database with a String
 public class Collection {
     /// The Database this collection is in
-    public let database: Database
+    public private(set) var database: Database
     
     /// The collection name
-    public let name: String
+    public private(set) var name: String
     
     /// The full (computed) collection name. Created by adding the Database's name with the Collection's name with a dot to seperate them
     /// Will be empty
@@ -128,5 +128,30 @@ public class Collection {
     /// The drop command removes an entire collection from a database. This command also removes any indexes associated with the dropped collection.
     public func drop() throws {
         try self.database.executeCommand(["drop": self.name])
+    }
+    
+    /// Changes the name of an existing collection. This method supports renames within a single database only. To move the collection to a different database, use the `move` method on `Collection`.
+    /// - parameter newName: The new name for this collection
+    public func rename(newName: String) throws {
+        try self.move(toDatabase: database, newName: newName)
+    }
+    
+    /// Move this collection to another database. Can also rename the collection in one go.
+    /// **Users must have access to the admin database to run this command.**
+    /// - parameter toDatabase: The database to move this collection to
+    /// - parameter newName: The new name for this collection
+    public func move(toDatabase newDb: Database, newName: String? = nil, dropTarget: Bool? = nil) throws {
+        // TODO: Fail if the target database exists.
+        var command: Document = [
+            "renameCollection": self.fullName,
+            "to": "\(newDb.name).\(newName ?? self.name)"
+        ]
+        
+        if let dropTarget = dropTarget { command["dropTarget"] = dropTarget }
+        
+        try self.database.server["admin"].executeCommand(command)
+        
+        self.database = newDb
+        self.name = newName ?? name
     }
 }

@@ -138,6 +138,22 @@ class MongoKittenTests: XCTestCase {
         
     }
     
+    func testRenameCollection() {
+        let reference = Int64(NSDate().timeIntervalSince1970)
+        
+        let renameCollection = testDatabase["oldcollectionname"]
+        try! renameCollection.insertSync(["referencestuff": reference])
+        try! renameCollection.rename("newcollectionname")
+        
+        XCTAssert(renameCollection.name == "newcollectionname")
+        
+        let document = try! renameCollection.findOne()!
+        XCTAssert(document["referencestuff"]!.int64Value == reference)
+        
+        let sameDocument = try! testDatabase["newcollectionname"].findOne()!
+        XCTAssert(sameDocument["referencestuff"]!.int64Value == reference)
+    }
+    
     // MARK: - Insert Performance
     func testSmallTransactionInsertPerformance() {
         // Test inserting lots of small documents in multiple transactions
