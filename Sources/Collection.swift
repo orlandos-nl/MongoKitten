@@ -121,7 +121,12 @@ public class Collection {
     /// - parameter document: The Document selector that will be use dto find th Document that will be removed1
     /// - parameter flags: The flags that will be used for this UpdateOperation. See DeleteFlags for more details
     public func remove(query: Document, flags: DeleteFlags = []) throws {
-            let message = DeleteMessage(collection: self, query: query, flags: flags)
-            try self.database.server.sendMessageSync(message)
+        let message = DeleteMessage(collection: self, query: query, flags: flags)
+        try self.database.server.sendMessageSync(message)
+    }
+    
+    /// The drop command removes an entire collection from a database. This command also removes any indexes associated with the dropped collection.
+    public func drop() throws {
+        try self.database.executeCommand(["drop": self.name])
     }
 }

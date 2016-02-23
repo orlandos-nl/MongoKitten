@@ -26,7 +26,7 @@ class MongoKittenTests: XCTestCase {
         
         // Erase the testing database:
         for aCollection in try! testDatabase.getCollections() {
-            try! aCollection.remove([])
+            try! aCollection.drop()
         }
     }
     
@@ -110,15 +110,22 @@ class MongoKittenTests: XCTestCase {
     
     func testListCollectionsWithCollections() {
         // TODO: Finish this test
-        try! testDatabase["collection1"].insertSync(["test"])
-        try! testDatabase["collection2"].insertSync(["otherTest"])
         
-        let _ = Array(try! testDatabase.getCollectionInfos())
-        
-        for collection in try! testDatabase.getCollections() {
-            let contents = Array(try! collection.find())
-            print(contents)
+        // Create 200 collections, yay!
+        // okay, the daemon crashes on 200 collections. 50 for now
+        for i in 0..<50 {
+            try! testDatabase["collection\(i)"].insertSync(["Test document for collection \(i)"])
         }
+        
+        let info = Array(try! testDatabase.getCollectionInfos())
+        XCTAssert(info.count == 50)
+        
+        var counter = 0
+        for collection in try! testDatabase.getCollections() {
+            XCTAssert(Array(try! collection.find()).first![0]!.stringValue!.containsString("Test document for collection"))
+            counter += 1
+        }
+        XCTAssert(counter == 50)
         
     }
     
