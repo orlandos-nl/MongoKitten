@@ -21,6 +21,7 @@
 		0AB8429A1C5EC5D0005CC6B4 /* OperationCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842991C5EC5D0005CC6B4 /* OperationCode.swift */; };
 		0AB8429C1C5EC600005CC6B4 /* InsertMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB8429B1C5EC600005CC6B4 /* InsertMessage.swift */; };
 		F222D7DB1C7B139900778D2F /* Cursor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F222D7DA1C7B139900778D2F /* Cursor.swift */; };
+		F22CA28F1C7DF8F800FC9DBA /* Feature Checklist.md in Resources */ = {isa = PBXBuildFile; fileRef = F22CA28E1C7DF8F800FC9DBA /* Feature Checklist.md */; };
 		F293D0341C7B0392003D6100 /* MongoError.swift in Sources */ = {isa = PBXBuildFile; fileRef = F293D0331C7B0392003D6100 /* MongoError.swift */; };
 		F2B9F6FF1C6A420D004383A9 /* BSON.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F2B9F6FE1C6A420D004383A9 /* BSON.framework */; };
 		F2B9F7011C6A4210004383A9 /* When.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F2B9F7001C6A4210004383A9 /* When.framework */; };
@@ -56,6 +57,7 @@
 		0AB842991C5EC5D0005CC6B4 /* OperationCode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OperationCode.swift; sourceTree = "<group>"; };
 		0AB8429B1C5EC600005CC6B4 /* InsertMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = InsertMessage.swift; sourceTree = "<group>"; };
 		F222D7DA1C7B139900778D2F /* Cursor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Cursor.swift; sourceTree = "<group>"; };
+		F22CA28E1C7DF8F800FC9DBA /* Feature Checklist.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = "Feature Checklist.md"; sourceTree = "<group>"; };
 		F293D0331C7B0392003D6100 /* MongoError.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MongoError.swift; sourceTree = "<group>"; };
 		F2B9F6FC1C6A41C7004383A9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = Xcode/Info.plist; sourceTree = "<group>"; };
 		F2B9F6FD1C6A41C7004383A9 /* TestInfo.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = TestInfo.plist; path = Xcode/TestInfo.plist; sourceTree = "<group>"; };
@@ -92,6 +94,7 @@
 		0AB842581C5EA80D005CC6B4 = {
 			isa = PBXGroup;
 			children = (
+				F22CA28E1C7DF8F800FC9DBA /* Feature Checklist.md */,
 				F2CC563C1C6CD56C009BA6E2 /* README.md */,
 				0AB2CBC51C69E5370009405F /* Package.swift */,
 				0AB842641C5EA80D005CC6B4 /* Sources */,
@@ -250,6 +253,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F22CA28F1C7DF8F800FC9DBA /* Feature Checklist.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
