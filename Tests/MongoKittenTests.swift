@@ -23,6 +23,14 @@ class MongoKittenTests: XCTestCase {
             try! server.connectSync()
         }
         
+        // "Warm up" the server
+        let collection = server["test"]["test"]
+        let doc: Document = ["test": "Beautiful string", "4": 32480.2, "henk": *["hallo", 4]]
+        let arr = Array(count: 1000, repeatedValue: doc)
+        self.measureBlock {
+            try! collection.insertAllSync(arr)
+        }
+        
         
         // Erase the testing database:
         for aCollection in try! testDatabase.getCollections() {
