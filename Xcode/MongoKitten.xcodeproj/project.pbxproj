@@ -38,6 +38,13 @@
 			remoteGlobalIDString = 0AB842611C5EA80D005CC6B4;
 			remoteInfo = MongoKitten;
 		};
+		F27F83991C849F990071B81F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0AB842591C5EA80D005CC6B4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F27F83941C849F610071B81F;
+			remoteInfo = "SPM Dependencies";
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
@@ -58,6 +65,7 @@
 		0AB8429B1C5EC600005CC6B4 /* InsertMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = InsertMessage.swift; sourceTree = "<group>"; };
 		F222D7DA1C7B139900778D2F /* Cursor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Cursor.swift; sourceTree = "<group>"; };
 		F22CA28E1C7DF8F800FC9DBA /* Feature Checklist.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = "Feature Checklist.md"; path = "../Feature Checklist.md"; sourceTree = "<group>"; };
+		F27F83981C849F740071B81F /* Dependencies.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = Dependencies.sh; sourceTree = "<group>"; };
 		F293D0331C7B0392003D6100 /* MongoError.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MongoError.swift; sourceTree = "<group>"; };
 		F2AB4DA61C843D05004D8D5C /* BlueSocket.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = BlueSocket.a; path = ../.build/debug/BlueSocket.a; sourceTree = "<group>"; };
 		F2AB4DA71C843D05004D8D5C /* BSON.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = BSON.a; path = ../.build/debug/BSON.a; sourceTree = "<group>"; };
@@ -155,6 +163,7 @@
 		F2B9F6FB1C6A41B8004383A9 /* Crap */ = {
 			isa = PBXGroup;
 			children = (
+				F27F83981C849F740071B81F /* Dependencies.sh */,
 				F2AB4DA61C843D05004D8D5C /* BlueSocket.a */,
 				F2AB4DA71C843D05004D8D5C /* BSON.a */,
 				F2AB4DA81C843D05004D8D5C /* When.a */,
@@ -177,12 +186,28 @@
 		};
 /* End PBXHeadersBuildPhase section */
 
+/* Begin PBXLegacyTarget section */
+		F27F83941C849F610071B81F /* SPM Dependencies */ = {
+			isa = PBXLegacyTarget;
+			buildArgumentsString = "$(ACTION)";
+			buildConfigurationList = F27F83951C849F610071B81F /* Build configuration list for PBXLegacyTarget "SPM Dependencies" */;
+			buildPhases = (
+			);
+			buildToolPath = "$(SRCROOT)/Dependencies.sh";
+			buildWorkingDirectory = "";
+			dependencies = (
+			);
+			name = "SPM Dependencies";
+			passBuildSettingsInEnvironment = 1;
+			productName = "SPM Dependencies";
+		};
+/* End PBXLegacyTarget section */
+
 /* Begin PBXNativeTarget section */
 		0AB842611C5EA80D005CC6B4 /* MongoKitten */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 0AB842761C5EA80E005CC6B4 /* Build configuration list for PBXNativeTarget "MongoKitten" */;
 			buildPhases = (
-				F2ABF5391C843B5B00C7540F /* Run 'swift build' */,
 				0AB8425D1C5EA80D005CC6B4 /* Sources */,
 				0AB8425E1C5EA80D005CC6B4 /* Frameworks */,
 				0AB8425F1C5EA80D005CC6B4 /* Headers */,
@@ -191,6 +216,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				F27F839A1C849F990071B81F /* PBXTargetDependency */,
 			);
 			name = MongoKitten;
 			productName = MongoKitten;
@@ -231,6 +257,9 @@
 					0AB8426B1C5EA80E005CC6B4 = {
 						CreatedOnToolsVersion = 7.2;
 					};
+					F27F83941C849F610071B81F = {
+						CreatedOnToolsVersion = 7.3;
+					};
 				};
 			};
 			buildConfigurationList = 0AB8425C1C5EA80D005CC6B4 /* Build configuration list for PBXProject "MongoKitten" */;
@@ -247,6 +276,7 @@
 			targets = (
 				0AB842611C5EA80D005CC6B4 /* MongoKitten */,
 				0AB8426B1C5EA80E005CC6B4 /* MongoKittenTests */,
+				F27F83941C849F610071B81F /* SPM Dependencies */,
 			);
 		};
 /* End PBXProject section */
@@ -268,23 +298,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		F2ABF5391C843B5B00C7540F /* Run 'swift build' */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "Run 'swift build'";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "swift build --chdir \"$SRCROOT\"";
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		0AB8425D1C5EA80D005CC6B4 /* Sources */ = {
@@ -324,6 +337,11 @@
 			isa = PBXTargetDependency;
 			target = 0AB842611C5EA80D005CC6B4 /* MongoKitten */;
 			targetProxy = 0AB8426E1C5EA80E005CC6B4 /* PBXContainerItemProxy */;
+		};
+		F27F839A1C849F990071B81F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F27F83941C849F610071B81F /* SPM Dependencies */;
+			targetProxy = F27F83991C849F990071B81F /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -487,6 +505,31 @@
 			};
 			name = Release;
 		};
+		F27F83961C849F610071B81F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				DEBUGGING_SYMBOLS = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		F27F83971C849F610071B81F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -516,6 +559,14 @@
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
+		};
+		F27F83951C849F610071B81F /* Build configuration list for PBXLegacyTarget "SPM Dependencies" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F27F83961C849F610071B81F /* Debug */,
+				F27F83971C849F610071B81F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
 		};
 /* End XCConfigurationList section */
 	};
