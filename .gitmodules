@@ -1,11 +1,2 @@
-[submodule "BSON"]
-	path = Xcode/Dependencies/BSON
-	url = https://github.com/planteam/BSON.git
-[submodule "Xcode/Dependencies/When"]
-	path = Xcode/Dependencies/When
-	url = https://github.com/PlanTeam/When.git
-[submodule "Xcode/Dependencies/PlanTCP"]
-	path = Xcode/Dependencies/PlanTCP
-	url = https://github.com/planteam/plantcp.git
 [submodule "Xcode/Dependencies/BSON"]
 	master = master

@@ -9,7 +9,7 @@
 import Foundation
 import BSON
 import When
-import PlanTCP
+import BlueSocket
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 // This file contains the low level code. This code is synchronous and is used by the async client API. //
@@ -23,13 +23,13 @@ internal typealias ResponseHandler = ((reply: ReplyMessage) -> Void)
 /// A server object is the core of MongoKitten. From this you can get databases which can provide you with collections from where you can do actions
 public class Server {
     /// Is the socket connected?
-    public var connected: Bool { return tcpClient.connected }
+    public var connected: Bool { return socket.connected }
     
     /// The MongoDB-server's hostname
     private let host: String
     
     /// The MongoDB-server's port
-    private let port: UInt16
+    private let port: Int32
     
     /// The last Request we sent.. -1 if no request was sent
     internal var lastRequestID: Int32 = -1
@@ -42,17 +42,17 @@ public class Server {
     private var responseHandlers = [Int32:ResponseHandler]()
     private var waitingForResponses = [Int32:NSCondition]()
     
-    private var tcpClient: TCPClient
+    private var socket: BlueSocket
     private let backgroundQueue = dispatch_get_global_queue(QOS_CLASS_BACKGROUND, 0)
     
     /// Initializes a server with a given host and port. Optionally automatically connects
     /// - parameter host: The host we'll connect with for the MongoDB Server
     /// - parameter port: The port we'll connect on with the MongoDB Server
     /// - parameter autoConnect: Whether we automatically connect
-    public init(host: String, port: UInt16 = 27017, autoConnect: Bool = false) throws {
+    public init(host: String, port: Int32 = 27017, autoConnect: Bool = false) throws {
         self.host = host
         self.port = port
-        self.tcpClient = TCPClient(server: host, port: port)
+        self.socket = try .defaultConfigured()
         
         if autoConnect {
             try self.connectSync()
@@ -78,7 +78,7 @@ public class Server {
             throw MongoError.MongoDatabaseAlreadyConnected
         }
         
-        try self.tcpClient.connect()
+        try self.socket.connectTo(self.host, port: self.port)
         dispatch_async(backgroundQueue, backgroundLoop)
     }
     
@@ -97,7 +97,6 @@ public class Server {
             // A receive failure is to be expected if the socket has been closed
             if self.connected {
                 print("The MongoDB background loop encountered an error: \(error)")
-                abort()
             } else {
                 return
             }
@@ -116,14 +115,25 @@ public class Server {
     /// Disconnects from the MongoDB server
     public func disconnect() throws {
         try assertConnected()
-        try tcpClient.disconnect()
+        socket.close()
     }
     
     /// Called by the server thread to handle MongoDB Wire messages
-    private func receive() throws {
-        let incoming = try tcpClient.receive()
-        
-        fullBuffer += incoming
+    private func receive(bufferSize: Int32 = 1024) throws {
+        do {
+            var incomingBuffer = [UInt8](count: Int(bufferSize), repeatedValue: 0)
+            var incomingCount = 0
+            try incomingBuffer.withUnsafeMutableBufferPointer {
+                incomingCount = try socket.readData(UnsafeMutablePointer($0.baseAddress), bufSize: $0.count)
+            }
+            fullBuffer += incomingBuffer[0..<incomingCount]
+        } catch let error as BlueSocketError {
+            if error.errorCode == Int32(BlueSocket.SOCKET_ERR_RECV_BUFFER_TOO_SMALL) {
+                try self.receive(error.bufferSizeNeeded)
+            } else {
+                throw error
+            }
+        }
         
         do {
             while fullBuffer.count >= 36 {
@@ -182,7 +192,7 @@ public class Server {
         
         let messageData = try message.generateBsonMessage()
         
-        try tcpClient.send(messageData)
+        try socket.writeData(messageData, bufSize: messageData.count)
         
         return message.requestID
     }

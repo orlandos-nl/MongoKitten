@@ -23,9 +23,9 @@
 		F222D7DB1C7B139900778D2F /* Cursor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F222D7DA1C7B139900778D2F /* Cursor.swift */; };
 		F22CA28F1C7DF8F800FC9DBA /* Feature Checklist.md in Resources */ = {isa = PBXBuildFile; fileRef = F22CA28E1C7DF8F800FC9DBA /* Feature Checklist.md */; };
 		F293D0341C7B0392003D6100 /* MongoError.swift in Sources */ = {isa = PBXBuildFile; fileRef = F293D0331C7B0392003D6100 /* MongoError.swift */; };
-		F2B9F6FF1C6A420D004383A9 /* BSON.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F2B9F6FE1C6A420D004383A9 /* BSON.framework */; };
-		F2B9F7011C6A4210004383A9 /* When.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F2B9F7001C6A4210004383A9 /* When.framework */; };
-		F2CC563B1C6CD0C5009BA6E2 /* PlanTCP.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F2CC563A1C6CD0C5009BA6E2 /* PlanTCP.framework */; };
+		F2AB4DA91C843D05004D8D5C /* BlueSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F2AB4DA61C843D05004D8D5C /* BlueSocket.a */; };
+		F2AB4DAA1C843D05004D8D5C /* BSON.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F2AB4DA71C843D05004D8D5C /* BSON.a */; };
+		F2AB4DAB1C843D05004D8D5C /* When.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F2AB4DA81C843D05004D8D5C /* When.a */; };
 		F2F7D1581C7B2C6000EAB956 /* GetMoreMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F7D1571C7B2C6000EAB956 /* GetMoreMessage.swift */; };
 		F2F7D15C1C7B31A700EAB956 /* KillCursorsMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F7D15B1C7B31A700EAB956 /* KillCursorsMessage.swift */; };
 /* End PBXBuildFile section */
@@ -46,7 +46,7 @@
 		0A4246E41C60DD7200158D8E /* QueryMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = QueryMessage.swift; sourceTree = "<group>"; };
 		0A4246E71C60DD7700158D8E /* ReplyMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReplyMessage.swift; sourceTree = "<group>"; };
 		0A46706F1C6B9BE500101CCD /* Helper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Helper.swift; sourceTree = "<group>"; };
-		0AB2CBC51C69E5370009405F /* Package.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
+		0AB2CBC51C69E5370009405F /* Package.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Package.swift; path = ../Package.swift; sourceTree = "<group>"; };
 		0AB842621C5EA80D005CC6B4 /* MongoKitten.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = MongoKitten.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		0AB8426C1C5EA80E005CC6B4 /* MongoKittenTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MongoKittenTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0AB842711C5EA80E005CC6B4 /* MongoKittenTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MongoKittenTests.swift; sourceTree = "<group>"; };
@@ -57,14 +57,14 @@
 		0AB842991C5EC5D0005CC6B4 /* OperationCode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OperationCode.swift; sourceTree = "<group>"; };
 		0AB8429B1C5EC600005CC6B4 /* InsertMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = InsertMessage.swift; sourceTree = "<group>"; };
 		F222D7DA1C7B139900778D2F /* Cursor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Cursor.swift; sourceTree = "<group>"; };
-		F22CA28E1C7DF8F800FC9DBA /* Feature Checklist.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = "Feature Checklist.md"; sourceTree = "<group>"; };
+		F22CA28E1C7DF8F800FC9DBA /* Feature Checklist.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = "Feature Checklist.md"; path = "../Feature Checklist.md"; sourceTree = "<group>"; };
 		F293D0331C7B0392003D6100 /* MongoError.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MongoError.swift; sourceTree = "<group>"; };
-		F2B9F6FC1C6A41C7004383A9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = Xcode/Info.plist; sourceTree = "<group>"; };
-		F2B9F6FD1C6A41C7004383A9 /* TestInfo.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = TestInfo.plist; path = Xcode/TestInfo.plist; sourceTree = "<group>"; };
-		F2B9F6FE1C6A420D004383A9 /* BSON.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = BSON.framework; path = "../../../Library/Developer/Xcode/DerivedData/MongoKitten-gmavkjnhenxzhlbeqllcjomziaaw/Build/Products/Debug/BSON.framework"; sourceTree = "<group>"; };
-		F2B9F7001C6A4210004383A9 /* When.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = When.framework; path = Xcode/Dependencies/When/build/Debug/When.framework; sourceTree = "<group>"; };
-		F2CC563A1C6CD0C5009BA6E2 /* PlanTCP.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PlanTCP.framework; path = Xcode/Dependencies/PlanTCP/build/Debug/PlanTCP.framework; sourceTree = "<group>"; };
-		F2CC563C1C6CD56C009BA6E2 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		F2AB4DA61C843D05004D8D5C /* BlueSocket.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = BlueSocket.a; path = ../.build/debug/BlueSocket.a; sourceTree = "<group>"; };
+		F2AB4DA71C843D05004D8D5C /* BSON.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = BSON.a; path = ../.build/debug/BSON.a; sourceTree = "<group>"; };
+		F2AB4DA81C843D05004D8D5C /* When.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = When.a; path = ../.build/debug/When.a; sourceTree = "<group>"; };
+		F2B9F6FC1C6A41C7004383A9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		F2B9F6FD1C6A41C7004383A9 /* TestInfo.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = TestInfo.plist; sourceTree = "<group>"; };
+		F2CC563C1C6CD56C009BA6E2 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
 		F2F7D1571C7B2C6000EAB956 /* GetMoreMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GetMoreMessage.swift; sourceTree = "<group>"; };
 		F2F7D15B1C7B31A700EAB956 /* KillCursorsMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = KillCursorsMessage.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -74,9 +74,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F2CC563B1C6CD0C5009BA6E2 /* PlanTCP.framework in Frameworks */,
-				F2B9F7011C6A4210004383A9 /* When.framework in Frameworks */,
-				F2B9F6FF1C6A420D004383A9 /* BSON.framework in Frameworks */,
+				F2AB4DA91C843D05004D8D5C /* BlueSocket.a in Frameworks */,
+				F2AB4DAA1C843D05004D8D5C /* BSON.a in Frameworks */,
+				F2AB4DAB1C843D05004D8D5C /* When.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -124,7 +124,8 @@
 				F293D0331C7B0392003D6100 /* MongoError.swift */,
 				F222D7DA1C7B139900778D2F /* Cursor.swift */,
 			);
-			path = Sources;
+			name = Sources;
+			path = ../Sources;
 			sourceTree = "<group>";
 		};
 		0AB842701C5EA80E005CC6B4 /* Tests */ = {
@@ -132,7 +133,8 @@
 			children = (
 				0AB842711C5EA80E005CC6B4 /* MongoKittenTests.swift */,
 			);
-			path = Tests;
+			name = Tests;
+			path = ../Tests;
 			sourceTree = "<group>";
 		};
 		0AB842961C5EC4A7005CC6B4 /* Messages */ = {
@@ -153,10 +155,10 @@
 		F2B9F6FB1C6A41B8004383A9 /* Crap */ = {
 			isa = PBXGroup;
 			children = (
-				F2CC563A1C6CD0C5009BA6E2 /* PlanTCP.framework */,
+				F2AB4DA61C843D05004D8D5C /* BlueSocket.a */,
+				F2AB4DA71C843D05004D8D5C /* BSON.a */,
+				F2AB4DA81C843D05004D8D5C /* When.a */,
 				0AB842631C5EA80D005CC6B4 /* Products */,
-				F2B9F7001C6A4210004383A9 /* When.framework */,
-				F2B9F6FE1C6A420D004383A9 /* BSON.framework */,
 				F2B9F6FC1C6A41C7004383A9 /* Info.plist */,
 				F2B9F6FD1C6A41C7004383A9 /* TestInfo.plist */,
 			);
@@ -180,6 +182,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 0AB842761C5EA80E005CC6B4 /* Build configuration list for PBXNativeTarget "MongoKitten" */;
 			buildPhases = (
+				F2ABF5391C843B5B00C7540F /* Run 'swift build' */,
 				0AB8425D1C5EA80D005CC6B4 /* Sources */,
 				0AB8425E1C5EA80D005CC6B4 /* Frameworks */,
 				0AB8425F1C5EA80D005CC6B4 /* Headers */,
@@ -265,6 +268,23 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		F2ABF5391C843B5B00C7540F /* Run 'swift build' */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Run 'swift build'";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "swift build --chdir \"$SRCROOT\"";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		0AB8425D1C5EA80D005CC6B4 /* Sources */ = {
@@ -404,12 +424,17 @@
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				FRAMEWORK_VERSION = A;
-				INFOPLIST_FILE = "$(SRCROOT)/Xcode/Info.plist";
+				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../.build/debug",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.planteam.MongoKitten;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/../.build/debug/";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
@@ -424,12 +449,17 @@
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				FRAMEWORK_VERSION = A;
-				INFOPLIST_FILE = "$(SRCROOT)/Xcode/Info.plist";
+				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../.build/debug",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.planteam.MongoKitten;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/../.build/debug/";
 			};
 			name = Release;
 		};
@@ -437,10 +467,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
-				INFOPLIST_FILE = Xcode/TestInfo.plist;
+				INFOPLIST_FILE = TestInfo.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.planteam.MongoKittenTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/../.build/debug/";
 			};
 			name = Debug;
 		};
@@ -448,10 +479,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
-				INFOPLIST_FILE = Xcode/TestInfo.plist;
+				INFOPLIST_FILE = TestInfo.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.planteam.MongoKittenTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/../.build/debug/";
 			};
 			name = Release;
 		};
