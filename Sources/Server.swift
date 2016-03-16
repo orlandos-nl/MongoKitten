@@ -55,7 +55,7 @@ public class Server {
         self.socket = try .defaultConfigured()
         
         if autoConnect {
-            try self.connectSync()
+            try self.connect()
         }
     }
     
@@ -73,7 +73,7 @@ public class Server {
     }
     
     /// Connects with the MongoDB Server using the given information in the initializer
-    public func connectSync() throws {
+    public func connect() throws {
         if self.connected {
             throw MongoError.MongoDatabaseAlreadyConnected
         }
@@ -187,7 +187,7 @@ public class Server {
      
      - returns: The request ID of the sent message
      */
-    internal func sendMessageSync(message: Message) throws -> Int32 {
+    internal func sendMessage(message: Message) throws -> Int32 {
         try assertConnected()
         
         let messageData = try message.generateBsonMessage()

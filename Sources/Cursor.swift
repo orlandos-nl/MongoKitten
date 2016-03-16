@@ -61,7 +61,7 @@ public final class Cursor<T> {
     private func getMore() {
         do {
             let request = try GetMoreMessage(namespace: namespace, server: server, cursorID: cursorID, numberToReturn: chunkSize)
-            let requestId = try server.sendMessageSync(request)
+            let requestId = try server.sendMessage(request)
             let reply = try server.awaitResponse(requestId)
             self.data += reply.documents.flatMap(transform)
             self.cursorID = reply.cursorId
@@ -75,7 +75,7 @@ public final class Cursor<T> {
         if cursorID != 0 {
             do {
                 let killCursorsMessage = try KillCursorsMessage(server: server, cursorIDs: [self.cursorID])
-                try server.sendMessageSync(killCursorsMessage)
+                try server.sendMessage(killCursorsMessage)
             } catch {
                 print("Error while cleaning up MongoDB cursor \(self): \(error)")
             }
@@ -86,7 +86,7 @@ public final class Cursor<T> {
 extension Cursor : SequenceType {
     public func generate() -> AnyGenerator<T> {
         return AnyGenerator {
-            if self.data.isEmpty {
+            if self.data.isEmpty && self.cursorID != 0 {
                 // Get more data!
                 self.getMore()
             }

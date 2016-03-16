@@ -77,6 +77,8 @@ public func |=(inout lhs: Query, rhs: Document) {
 }
 
 public struct Query {
-    public internal(set)
-    var data: Document
+    public var data: Document
+    private init(data: Document) {
+        self.data = data
+    }
 }

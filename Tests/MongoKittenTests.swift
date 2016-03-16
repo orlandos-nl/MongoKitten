@@ -38,7 +38,7 @@ class MongoKittenTests: XCTestCase {
         
         do {
             // Should fail
-            try server2.connectSync()
+            try server2.connect()
             XCTFail()
             
         } catch { }
@@ -53,19 +53,19 @@ class MongoKittenTests: XCTestCase {
         } catch {}
         
         do {
-            try server2["test"]["test"].insertSync(["shouldnt": "beinserted"])
+            try server2["test"]["test"].insert(["shouldnt": "beinserted"])
             XCTFail()
         } catch {}
     }
     
     func testOperators() {
-        let amazingQuery: Query = "hont" == 3 && ("haai" == 5 || "haai" == 4) && "bier" <= 5 && "biertje" >= 6 && "henk" --> [3, 4] && "bob" !--> [5, 2]
+        let amazingQuery: Query = "hont" == 3 && ("haai" == 5 || "haai" == 4) && "bier" <= 5 && "biertje" >= 6
         
         print(amazingQuery.data)
     }
     
     func testInsert() {
-        try! testCollection.insertSync([
+        try! testCollection.insert([
             "double": 53.2,
             "64bit-integer": 52,
             "32bit-integer": Int32(20),
@@ -79,7 +79,7 @@ class MongoKittenTests: XCTestCase {
             "string": "Hello, I'm a string!"
             ])
         
-        try! testCollection.insertAllSync([["hont": "kad"], ["fancy": 3.14], ["documents": true]])
+        try! testCollection.insertAll([["hont": "kad"], ["fancy": 3.14], ["documents": true]])
         
         // TODO: validate!
     }
@@ -95,7 +95,7 @@ class MongoKittenTests: XCTestCase {
         // Create 200 collections, yay!
         // okay, the daemon crashes on 200 collections. 50 for now
         for i in 0..<50 {
-            try! testDatabase["collection\(i)"].insertSync(["Test document for collection \(i)"])
+            try! testDatabase["collection\(i)"].insert(["Test document for collection \(i)"])
         }
         
         let info = Array(try! testDatabase.getCollectionInfos())
@@ -103,7 +103,11 @@ class MongoKittenTests: XCTestCase {
         
         var counter = 0
         for collection in try! testDatabase.getCollections() {
-            XCTAssert(Array(try! collection.find()).first![0]!.stringValue!.containsString("Test document for collection"))
+            let cur = try! collection.find()
+            let first = Array(cur).first!
+            let str = first[1]!.stringValue!
+            XCTAssert(str.containsString("Test document for collection"))
+            
             counter += 1
         }
         XCTAssert(counter == 50)
@@ -111,7 +115,7 @@ class MongoKittenTests: XCTestCase {
     }
     
     func testUpdate() {
-        try! testCollection.insertSync(["honten": "hoien"])
+        try! testCollection.insert(["honten": "hoien"])
         try! testCollection.update(["honten": "hoien"], updated: ["honten": 3])
         
         let doc = try! testCollection.findOne()!
@@ -123,7 +127,7 @@ class MongoKittenTests: XCTestCase {
         let reference = Int64(NSDate().timeIntervalSince1970)
         
         let renameCollection = testDatabase["oldcollectionname"]
-        try! renameCollection.insertSync(["referencestuff": reference])
+        try! renameCollection.insert(["referencestuff": reference])
         try! renameCollection.rename("newcollectionname")
         
         XCTAssert(renameCollection.name == "newcollectionname")

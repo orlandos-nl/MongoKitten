@@ -19,7 +19,7 @@ final class TestManager {
     
     static func connect() throws {
         if !server.connected {
-            try server.connectSync()
+            try server.connect()
         }
     }
     
@@ -50,6 +50,6 @@ final class TestManager {
         }
         
         // insert
-        testingUsers = try testCollection.insertAllSync(testingUsers)
+        testingUsers = try testCollection.insertAll(testingUsers)
     }
 }

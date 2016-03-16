@@ -7,6 +7,7 @@
 //
 
 import XCTest
+import MongoKitten
 
 class ReadTests: XCTestCase {
     lazy var testDatabase = TestManager.testDatabase
@@ -46,24 +47,20 @@ class ReadTests: XCTestCase {
 //    }
     
     func testQuery() {
+        let user = TestManager.testingUsers.first!
+        
         // FindOne
         do {
-            let document = try! testCollection.findOne(["query": "test"])
+            let document = try! testCollection.findOne("_id" == user["_id"]!)
             
-            XCTAssert(document!["query"] as! String == "test")
+            XCTAssert(document?["name"]?.stringValue == user["name"]!.stringValue!)
         }
         
         // Find
         do {
-            let documents = try! testCollection.find(["double": 2])
+            let documents = Array(try! testCollection.find("_id" == user["_id"]!))
             
-            var count = 0
-            for document in documents{
-                count += 1
-                XCTAssert(document["double"] as! Int == 2)
-            }
-            
-            XCTAssert(count == 2)
+            XCTAssert(documents.count == 1)
         }
         
         // Find with nothing to find
@@ -76,6 +73,10 @@ class ReadTests: XCTestCase {
                 XCTFail()
             }
         }
+    }
+    
+    func testReadmeCode() {
+        
     }
 
 }

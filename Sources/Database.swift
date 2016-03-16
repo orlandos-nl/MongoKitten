@@ -34,7 +34,7 @@ public class Database {
     internal func executeCommand(command: Document) throws -> ReplyMessage {
         let cmd = self["$cmd"]
         let commandMessage = try QueryMessage(collection: cmd, query: command, flags: [], numbersToReturn: 1)
-        let id = try server.sendMessageSync(commandMessage)
+        let id = try server.sendMessage(commandMessage)
         return try server.awaitResponse(id)
     }
     
