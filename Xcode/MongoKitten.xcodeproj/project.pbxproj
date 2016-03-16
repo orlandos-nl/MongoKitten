@@ -26,6 +26,7 @@
 		F222D7DB1C7B139900778D2F /* Cursor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F222D7DA1C7B139900778D2F /* Cursor.swift */; };
 		F22CA28F1C7DF8F800FC9DBA /* Feature Checklist.md in Resources */ = {isa = PBXBuildFile; fileRef = F22CA28E1C7DF8F800FC9DBA /* Feature Checklist.md */; };
 		F293D0341C7B0392003D6100 /* MongoError.swift in Sources */ = {isa = PBXBuildFile; fileRef = F293D0331C7B0392003D6100 /* MongoError.swift */; };
+		F293F6F71C984D8D00ED7E03 /* Query.swift in Sources */ = {isa = PBXBuildFile; fileRef = F293F6F61C984D8D00ED7E03 /* Query.swift */; };
 		F2AB4DA91C843D05004D8D5C /* BlueSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F2AB4DA61C843D05004D8D5C /* BlueSocket.a */; };
 		F2AB4DAA1C843D05004D8D5C /* BSON.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F2AB4DA71C843D05004D8D5C /* BSON.a */; };
 		F2AB4DAB1C843D05004D8D5C /* When.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F2AB4DA81C843D05004D8D5C /* When.a */; };
@@ -74,6 +75,7 @@
 		F22CA28E1C7DF8F800FC9DBA /* Feature Checklist.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = "Feature Checklist.md"; path = "../Feature Checklist.md"; sourceTree = "<group>"; };
 		F27F83981C849F740071B81F /* Dependencies.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = Dependencies.sh; sourceTree = "<group>"; };
 		F293D0331C7B0392003D6100 /* MongoError.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MongoError.swift; sourceTree = "<group>"; };
+		F293F6F61C984D8D00ED7E03 /* Query.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Query.swift; sourceTree = "<group>"; };
 		F2AB4DA61C843D05004D8D5C /* BlueSocket.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = BlueSocket.a; path = ../.build/debug/BlueSocket.a; sourceTree = "<group>"; };
 		F2AB4DA71C843D05004D8D5C /* BSON.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = BSON.a; path = ../.build/debug/BSON.a; sourceTree = "<group>"; };
 		F2AB4DA81C843D05004D8D5C /* When.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = When.a; path = ../.build/debug/When.a; sourceTree = "<group>"; };
@@ -138,6 +140,7 @@
 				0AB842991C5EC5D0005CC6B4 /* OperationCode.swift */,
 				F293D0331C7B0392003D6100 /* MongoError.swift */,
 				F222D7DA1C7B139900778D2F /* Cursor.swift */,
+				F293F6F61C984D8D00ED7E03 /* Query.swift */,
 			);
 			name = Sources;
 			path = ../Sources;
@@ -327,6 +330,7 @@
 				0A2DFD201C5F453500A364B5 /* UpdateMessage.swift in Sources */,
 				0AB8429C1C5EC600005CC6B4 /* InsertMessage.swift in Sources */,
 				F293D0341C7B0392003D6100 /* MongoError.swift in Sources */,
+				F293F6F71C984D8D00ED7E03 /* Query.swift in Sources */,
 				F2F7D1581C7B2C6000EAB956 /* GetMoreMessage.swift in Sources */,
 				0A36C5BE1C5FD27E009208DC /* DeleteMessage.swift in Sources */,
 				0AB8429A1C5EC5D0005CC6B4 /* OperationCode.swift in Sources */,
@@ -460,9 +464,14 @@
 				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../.build/debug",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.planteam.MongoKitten;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/../.build/debug/";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
@@ -480,9 +489,14 @@
 				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../.build/debug",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.planteam.MongoKitten;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/../.build/debug/";
 			};
 			name = Release;
 		};

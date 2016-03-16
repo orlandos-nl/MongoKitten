@@ -96,6 +96,10 @@ public class Collection {
         return Cursor(namespace: self.fullName, server: database.server, reply: response, chunkSize: fetchChunkSize, transform: { $0 })
     }
     
+    public func find(query: Query) throws -> Cursor<Document> {
+        return try self.find(query.data)
+    }
+    
     /// Looks for one Document matching the query and returns it
     /// - parameter query: An optional BSON Document that will be used as a selector. All Documents in the response will match at least this Query's fields. By default all collection information will be selected
     /// - parameter flags: An optional list of QueryFlags that will be used with this Find/Query Operation. See QueryFlags for more details
