@@ -20,6 +20,9 @@
 		0AB842981C5EC4BA005CC6B4 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842971C5EC4BA005CC6B4 /* Message.swift */; };
 		0AB8429A1C5EC5D0005CC6B4 /* OperationCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842991C5EC5D0005CC6B4 /* OperationCode.swift */; };
 		0AB8429C1C5EC600005CC6B4 /* InsertMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB8429B1C5EC600005CC6B4 /* InsertMessage.swift */; };
+		F208B3D11C85E15700693820 /* ReadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F208B3D01C85E15700693820 /* ReadTests.swift */; };
+		F208B3D31C85E16A00693820 /* TestManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F208B3D21C85E16A00693820 /* TestManager.swift */; };
+		F208B3D51C85E54700693820 /* SwiftRandom.swift in Sources */ = {isa = PBXBuildFile; fileRef = F208B3D41C85E54700693820 /* SwiftRandom.swift */; };
 		F222D7DB1C7B139900778D2F /* Cursor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F222D7DA1C7B139900778D2F /* Cursor.swift */; };
 		F22CA28F1C7DF8F800FC9DBA /* Feature Checklist.md in Resources */ = {isa = PBXBuildFile; fileRef = F22CA28E1C7DF8F800FC9DBA /* Feature Checklist.md */; };
 		F293D0341C7B0392003D6100 /* MongoError.swift in Sources */ = {isa = PBXBuildFile; fileRef = F293D0331C7B0392003D6100 /* MongoError.swift */; };
@@ -63,6 +66,10 @@
 		0AB842971C5EC4BA005CC6B4 /* Message.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
 		0AB842991C5EC5D0005CC6B4 /* OperationCode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OperationCode.swift; sourceTree = "<group>"; };
 		0AB8429B1C5EC600005CC6B4 /* InsertMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = InsertMessage.swift; sourceTree = "<group>"; };
+		F208B3CF1C85DF9900693820 /* SPM.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = SPM.xcconfig; sourceTree = "<group>"; };
+		F208B3D01C85E15700693820 /* ReadTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReadTests.swift; sourceTree = "<group>"; };
+		F208B3D21C85E16A00693820 /* TestManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TestManager.swift; sourceTree = "<group>"; };
+		F208B3D41C85E54700693820 /* SwiftRandom.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SwiftRandom.swift; sourceTree = "<group>"; };
 		F222D7DA1C7B139900778D2F /* Cursor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Cursor.swift; sourceTree = "<group>"; };
 		F22CA28E1C7DF8F800FC9DBA /* Feature Checklist.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = "Feature Checklist.md"; path = "../Feature Checklist.md"; sourceTree = "<group>"; };
 		F27F83981C849F740071B81F /* Dependencies.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = Dependencies.sh; sourceTree = "<group>"; };
@@ -140,6 +147,9 @@
 			isa = PBXGroup;
 			children = (
 				0AB842711C5EA80E005CC6B4 /* MongoKittenTests.swift */,
+				F208B3D01C85E15700693820 /* ReadTests.swift */,
+				F208B3D21C85E16A00693820 /* TestManager.swift */,
+				F208B3D41C85E54700693820 /* SwiftRandom.swift */,
 			);
 			name = Tests;
 			path = ../Tests;
@@ -170,6 +180,7 @@
 				0AB842631C5EA80D005CC6B4 /* Products */,
 				F2B9F6FC1C6A41C7004383A9 /* Info.plist */,
 				F2B9F6FD1C6A41C7004383A9 /* TestInfo.plist */,
+				F208B3CF1C85DF9900693820 /* SPM.xcconfig */,
 			);
 			name = Crap;
 			sourceTree = "<group>";
@@ -327,6 +338,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				0AB842721C5EA80E005CC6B4 /* MongoKittenTests.swift in Sources */,
+				F208B3D31C85E16A00693820 /* TestManager.swift in Sources */,
+				F208B3D51C85E54700693820 /* SwiftRandom.swift in Sources */,
+				F208B3D11C85E15700693820 /* ReadTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -434,6 +448,7 @@
 		};
 		0AB842771C5EA80E005CC6B4 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = F208B3CF1C85DF9900693820 /* SPM.xcconfig */;
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -445,14 +460,9 @@
 				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(SRCROOT)/../.build/debug",
-				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.planteam.MongoKitten;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
-				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/../.build/debug/";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
@@ -470,14 +480,9 @@
 				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(SRCROOT)/../.build/debug",
-				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.planteam.MongoKitten;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
-				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/../.build/debug/";
 			};
 			name = Release;
 		};
@@ -567,6 +572,7 @@
 				F27F83971C849F610071B81F /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

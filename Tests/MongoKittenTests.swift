@@ -12,26 +12,25 @@ import When
 import MongoKitten
 
 class MongoKittenTests: XCTestCase {
-    var server: Server = try! Server(host: "127.0.0.1", port: 27017, autoConnect: false)
-    var testDatabase: Database { return server["mongokitten-unittest"] }
-    var testCollection: Collection { return testDatabase["testcol"] }
+    
+    lazy var testDatabase = TestManager.testDatabase
+    lazy var testCollection = TestManager.testCollection
+    lazy var server = TestManager.server
     
     override func setUp() {
         super.setUp()
         
-        if !server.connected {
-            try! server.connectSync()
-        }
-        
-        // Erase the testing database:
-        for aCollection in try! testDatabase.getCollections() {
-            try! aCollection.drop()
+        do {
+            try TestManager.connect()
+            try TestManager.dropAllTestingCollections()
+        } catch {
+            XCTFail("Error while setting up tests: \(error)")
         }
     }
     
     override func tearDown() {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
-        //        try! server.disconnect()
+        
     }
     
     func testSetup() {
@@ -57,29 +56,6 @@ class MongoKittenTests: XCTestCase {
             try server2["test"]["test"].insertSync(["shouldnt": "beinserted"])
             XCTFail()
         } catch {}
-    }
-    
-    func testQuery() {
-        try! testCollection.insertSync(["query": "test"])
-        try! testCollection.insertAllSync([["double": 2], ["double": 2]])
-        
-        do {
-            let document = try! testCollection.findOne(["query": "test"])
-            
-            XCTAssert(document!["query"] as! String == "test")
-        }
-        
-        do {
-            let documents = try! testCollection.find(["double": 2])
-            
-            var count = 0
-            for document in documents{
-                count += 1
-                XCTAssert(document["double"] as! Int == 2)
-            }
-            
-            XCTAssert(count == 2)
-        }
     }
     
     func testInsert() {
