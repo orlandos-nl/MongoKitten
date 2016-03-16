@@ -120,3 +120,7 @@ Due to a limitation in Swift, when embedding a document or array in a BSON docum
 ```swift
 try collection.insert(["henk": *["fred", "harriebob"]])
 ```
+
+## License
+
+MongoKitten is licensed under the MIT license.
