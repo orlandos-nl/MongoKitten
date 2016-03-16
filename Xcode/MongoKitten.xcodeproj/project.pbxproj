@@ -27,9 +27,6 @@
 		F22CA28F1C7DF8F800FC9DBA /* Feature Checklist.md in Resources */ = {isa = PBXBuildFile; fileRef = F22CA28E1C7DF8F800FC9DBA /* Feature Checklist.md */; };
 		F293D0341C7B0392003D6100 /* MongoError.swift in Sources */ = {isa = PBXBuildFile; fileRef = F293D0331C7B0392003D6100 /* MongoError.swift */; };
 		F293F6F71C984D8D00ED7E03 /* QueryBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = F293F6F61C984D8D00ED7E03 /* QueryBuilder.swift */; };
-		F2AB4DA91C843D05004D8D5C /* BlueSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F2AB4DA61C843D05004D8D5C /* BlueSocket.a */; };
-		F2AB4DAA1C843D05004D8D5C /* BSON.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F2AB4DA71C843D05004D8D5C /* BSON.a */; };
-		F2AB4DAB1C843D05004D8D5C /* When.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F2AB4DA81C843D05004D8D5C /* When.a */; };
 		F2F7D1581C7B2C6000EAB956 /* GetMoreMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F7D1571C7B2C6000EAB956 /* GetMoreMessage.swift */; };
 		F2F7D15C1C7B31A700EAB956 /* KillCursorsMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F7D15B1C7B31A700EAB956 /* KillCursorsMessage.swift */; };
 /* End PBXBuildFile section */
@@ -76,9 +73,6 @@
 		F27F83981C849F740071B81F /* Dependencies.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = Dependencies.sh; sourceTree = "<group>"; };
 		F293D0331C7B0392003D6100 /* MongoError.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MongoError.swift; sourceTree = "<group>"; };
 		F293F6F61C984D8D00ED7E03 /* QueryBuilder.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = QueryBuilder.swift; sourceTree = "<group>"; };
-		F2AB4DA61C843D05004D8D5C /* BlueSocket.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = BlueSocket.a; path = ../.build/debug/BlueSocket.a; sourceTree = "<group>"; };
-		F2AB4DA71C843D05004D8D5C /* BSON.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = BSON.a; path = ../.build/debug/BSON.a; sourceTree = "<group>"; };
-		F2AB4DA81C843D05004D8D5C /* When.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = When.a; path = ../.build/debug/When.a; sourceTree = "<group>"; };
 		F2B9F6FC1C6A41C7004383A9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		F2B9F6FD1C6A41C7004383A9 /* TestInfo.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = TestInfo.plist; sourceTree = "<group>"; };
 		F2CC563C1C6CD56C009BA6E2 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
@@ -91,9 +85,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F2AB4DA91C843D05004D8D5C /* BlueSocket.a in Frameworks */,
-				F2AB4DAA1C843D05004D8D5C /* BSON.a in Frameworks */,
-				F2AB4DAB1C843D05004D8D5C /* When.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -177,9 +168,6 @@
 			isa = PBXGroup;
 			children = (
 				F27F83981C849F740071B81F /* Dependencies.sh */,
-				F2AB4DA61C843D05004D8D5C /* BlueSocket.a */,
-				F2AB4DA71C843D05004D8D5C /* BSON.a */,
-				F2AB4DA81C843D05004D8D5C /* When.a */,
 				0AB842631C5EA80D005CC6B4 /* Products */,
 				F2B9F6FC1C6A41C7004383A9 /* Info.plist */,
 				F2B9F6FD1C6A41C7004383A9 /* TestInfo.plist */,

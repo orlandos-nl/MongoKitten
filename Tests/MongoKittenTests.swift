@@ -8,7 +8,6 @@
 
 import XCTest
 import BSON
-import When
 import MongoKitten
 
 class MongoKittenTests: XCTestCase {

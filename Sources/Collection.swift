@@ -8,7 +8,6 @@
 
 import Foundation
 import BSON
-import When
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 // This file contains the low level code. This code is synchronous and is used by the async client API. //
