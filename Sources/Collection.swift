@@ -45,10 +45,10 @@ public class Collection {
     /// - parameter document: The BSON Document to be inserted
     /// - parameter flags: An optional list of InsertFlags that will be used with this Insert Operation
     /// - returns: The inserted document. The document will have a value for the "_id"-field.
-    public func insertSync(document: Document, flags: InsertFlags = []) throws -> Document {
+    public func insert(document: Document, flags: InsertFlags = []) throws -> Document {
         // Create and return a future that executes the closure asynchronously
         // Use the insertAll to insert this single document
-        let result = try self.insertAllSync([document], flags: flags)
+        let result = try self.insertAll([document], flags: flags)
         
         guard let newDocument: Document = result.first else {
             throw MongoError.InsertFailure(documents: [document])
@@ -61,7 +61,7 @@ public class Collection {
     /// - parameter document: The BSON Documents to be inserted
     /// - parameter flags: An optional list of InsertFlags that will be used with this Insert Operation. See InsertFlags for more details
     /// - returns: An array with copies of the inserted documents. If the documents had no "_id" field when they were inserted, it is added in the returned documents.
-    public func insertAllSync(documents: [Document], flags: InsertFlags = []) throws -> [Document] {
+    public func insertAll(documents: [Document], flags: InsertFlags = []) throws -> [Document] {
         let newDocuments = documents.map({ (input: Document) -> Document in
             if input["_id"] == nil {
                 var output = input
@@ -73,7 +73,7 @@ public class Collection {
         })
         
         let message = InsertMessage(collection: self, insertedDocuments: newDocuments, flags: flags)
-        try self.database.server.sendMessageSync(message)
+        try self.database.server.sendMessage(message)
         
         return newDocuments
     }
@@ -91,9 +91,13 @@ public class Collection {
     public func find(query: Document = [], flags: QueryFlags = [], fetchChunkSize: Int32 = 10) throws -> Cursor<Document> {
         let queryMsg = try QueryMessage(collection: self, query: query, flags: [], numbersToSkip: 0, numbersToReturn: fetchChunkSize)
         
-        let id = try self.database.server.sendMessageSync(queryMsg)
+        let id = try self.database.server.sendMessage(queryMsg)
         let response = try self.database.server.awaitResponse(id)
         return Cursor(namespace: self.fullName, server: database.server, reply: response, chunkSize: fetchChunkSize, transform: { $0 })
+    }
+    
+    public func find(query: Query) throws -> Cursor<Document> {
+        return try self.find(query.data)
     }
     
     /// Looks for one Document matching the query and returns it
@@ -102,6 +106,10 @@ public class Collection {
     /// - returns: The first document matching the query or nil if none found
     public func findOne(query: Document = [], flags: QueryFlags = []) throws -> Document? {
         return try self.find(query, flags: flags, fetchChunkSize: 1).generate().next()
+    }
+    
+    public func findOne(query: Query) throws -> Document? {
+        return try self.findOne(query.data)
     }
     
     // Update
@@ -113,7 +121,11 @@ public class Collection {
     /// - returns: Returns a future that you can await or asynchronously bind an action to. If you don't catch the error your application will crash. The future will return all changed Documents before they were changed
     public func update(query: Document, updated: Document, flags: UpdateFlags = []) throws {
         let message = try UpdateMessage(collection: self, find: query, replace: updated, flags: flags)
-        try self.database.server.sendMessageSync(message)
+        try self.database.server.sendMessage(message)
+    }
+    
+    public func update(query: Query, updated: Document) throws {
+        try self.update(query.data, updated: updated)
     }
     
     // Delete
@@ -122,7 +134,11 @@ public class Collection {
     /// - parameter flags: The flags that will be used for this UpdateOperation. See DeleteFlags for more details
     public func remove(query: Document, flags: DeleteFlags = []) throws {
         let message = DeleteMessage(collection: self, query: query, flags: flags)
-        try self.database.server.sendMessageSync(message)
+        try self.database.server.sendMessage(message)
+    }
+    
+    public func remove(query: Query) throws {
+        try self.remove(query.data)
     }
     
     /// The drop command removes an entire collection from a database. This command also removes any indexes associated with the dropped collection.
