@@ -9,6 +9,9 @@
 import XCTest
 
 class ReadTests: XCTestCase {
+    lazy var testDatabase = TestManager.testDatabase
+    lazy var testCollection = TestManager.testCollection
+    lazy var server = TestManager.server
 
     override func setUp() {
         super.setUp()
@@ -27,20 +30,20 @@ class ReadTests: XCTestCase {
         super.tearDown()
     }
     
-    func testSimpleFindOne() {
-        do {
-            let sample = TestManager.testingUsers[Int.random(0, TestManager.testingUsers.count)]
-            guard let retreived = try TestManager.testCollection.findOne(["_id": sample["_id"]!.objectIdValue!]) else {
-                XCTFail("The document was not retreived")
-            }
-            
-            for (key, value) in sample {
-                XCTAssert(retreived[key]! == value)
-            }
-        } catch {
-            XCTFail("An error was thrown: \(error)")
-        }
-    }
+//    func testSimpleFindOne() {
+//        do {
+//            let sample = TestManager.testingUsers[Int.random(0, TestManager.testingUsers.count)]
+//            guard let retreived = try TestManager.testCollection.findOne(["_id": sample["_id"]!.objectIdValue!]) else {
+//                XCTFail("The document was not retreived")
+//            }
+//            
+//            for (key, value) in sample {
+//                XCTAssert(retreived[key]! == value)
+//            }
+//        } catch {
+//            XCTFail("An error was thrown: \(error)")
+//        }
+//    }
     
     func testQuery() {
         // FindOne

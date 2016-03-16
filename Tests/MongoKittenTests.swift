@@ -58,6 +58,12 @@ class MongoKittenTests: XCTestCase {
         } catch {}
     }
     
+    func testOperators() {
+        let amazingQuery: Query = "hont" == 3 && ("haai" == 5 || "haai" == 4) && "bier" <= 5 && "biertje" >= 6 && "henk" --> [3, 4] && "bob" !--> [5, 2]
+        
+        print(amazingQuery.data)
+    }
+    
     func testInsert() {
         try! testCollection.insertSync([
             "double": 53.2,

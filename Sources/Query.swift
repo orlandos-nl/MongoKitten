@@ -9,14 +9,6 @@
 import Foundation
 import BSON
 
-infix operator ~> {} // $in
-infix operator !~> {} // $nin
-infix operator => {} // $all
-
-func test() {
-    let _: Query = "tracks" => [22,23,34]
-}
-
 // MARK: Equations
 /// Equals
 public func ==(key: String, pred: BSONElement) -> Query {
@@ -67,21 +59,24 @@ public func ||(lhs: Query, rhs: Query) -> Query {
     }
 }
 
-/// MongoDB: `$in`
-public func ~>(key: String, pred: [BSONElement]) -> Query {
-    return Query(data: [key: *["$in": Document(array: pred)]])
+
+public func &=(inout lhs: Query, rhs: Document) {
+    lhs.data += rhs
 }
 
-/// MongoDB: `$nin`
-public func !~>(key: String, pred: [BSONElement]) -> Query {
-    return Query(data: [key: *["$nin": Document(array: pred)]])
+public func &=(inout lhs: Query, rhs: Query) {
+    lhs = lhs && rhs
 }
 
-/// MongoDB: `$all`
-public func =>(key: String, pred: [BSONElement]) -> Query {
-    return Query(data: [key: *["$all": Document(array: pred)]])
+public func |=(inout lhs: Query, rhs: Query) {
+    lhs = lhs || rhs
+}
+
+public func |=(inout lhs: Query, rhs: Document) {
+    lhs = lhs || Query(data: rhs)
 }
 
 public struct Query {
-    internal var data: Document
+    public internal(set)
+    var data: Document
 }
