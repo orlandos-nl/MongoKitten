@@ -43,6 +43,8 @@ public class Server {
     
     private var socket: BlueSocket
     
+    private let backgroundQueue = backgroundThread()
+    
     /// Initializes a server with a given host and port. Optionally automatically connects
     /// - parameter host: The host we'll connect with for the MongoDB Server
     /// - parameter port: The port we'll connect on with the MongoDB Server
@@ -77,7 +79,7 @@ public class Server {
         }
         
         try self.socket.connectTo(self.host, port: self.port)
-        Background(backgroundLoop)
+        Background(backgroundQueue, backgroundLoop)
     }
     
     private func backgroundLoop() {
@@ -100,7 +102,7 @@ public class Server {
             }
         }
         
-        Background(backgroundLoop)
+        Background(backgroundQueue, backgroundLoop)
     }
     
     /// Throws an error if the database is not connected yet
