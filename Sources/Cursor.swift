@@ -22,8 +22,12 @@ public final class Cursor<T> {
     let transform: Transformer
     
     /// If firstDataSet is nil, reply.documents will be passed to transform as initial data
-    internal convenience init(namespace: String, server: Server, reply: ReplyMessage, chunkSize: Int32, transform: Transformer) {
-        self.init(namespace: namespace, server: server, cursorID: reply.cursorId, initialData: reply.documents.flatMap(transform), chunkSize: chunkSize, transform: transform)
+    internal convenience init?(namespace: String, server: Server, reply: Message, chunkSize: Int32, transform: Transformer) {
+        guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
+            return nil
+        }
+        
+        self.init(namespace: namespace, server: server, cursorID: cursorID, initialData: documents.flatMap(transform), chunkSize: chunkSize, transform: transform)
     }
     
     internal convenience init(cursorDocument cursor: Document, server: Server, chunkSize: Int32, transform: Transformer) throws {
@@ -60,11 +64,16 @@ public final class Cursor<T> {
     
     private func getMore() {
         do {
-            let request = try GetMoreMessage(namespace: namespace, server: server, cursorID: cursorID, numberToReturn: chunkSize)
+            let request = Message.GetMore(requestID: server.getNextMessageID(), namespace: namespace, numberToReturn: chunkSize, cursor: cursorID)
             let requestId = try server.sendMessage(request)
             let reply = try server.awaitResponse(requestId)
-            self.data += reply.documents.flatMap(transform)
-            self.cursorID = reply.cursorId
+            
+            guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
+                throw MongoError.InternalInconsistency
+            }
+            
+            self.data += documents.flatMap(transform)
+            self.cursorID = cursorID
         } catch {
             print("Error fetching extra data from the server in \(self) with error: \(error)")
             abort()
@@ -74,7 +83,7 @@ public final class Cursor<T> {
     deinit {
         if cursorID != 0 {
             do {
-                let killCursorsMessage = try KillCursorsMessage(server: server, cursorIDs: [self.cursorID])
+                let killCursorsMessage = Message.KillCursors(requestID: server.getNextMessageID(), cursorIDs: [self.cursorID])
                 try server.sendMessage(killCursorsMessage)
             } catch {
                 print("Error while cleaning up MongoDB cursor \(self): \(error)")

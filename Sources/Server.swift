@@ -17,7 +17,7 @@ import BlueSocket
 
 /// A ResponseHandler is a closure that receives a MongoReply to process it
 /// It's internal because ReplyMessages are an internal struct that is used for direct communication with MongoDB only
-internal typealias ResponseHandler = ((reply: ReplyMessage) -> Void)
+internal typealias ResponseHandler = ((reply: Message) -> Void)
 
 /// A server object is the core of MongoKitten. From this you can get databases which can provide you with collections from where you can do actions
 public class Server {
@@ -37,7 +37,7 @@ public class Server {
     internal var fullBuffer = [UInt8]()
     
     
-    private var incomingResponses = [(id: Int32, message: ReplyMessage, date: NSDate)]()
+    private var incomingResponses = [(id: Int32, message: Message, date: NSDate)]()
     private var responseHandlers = [Int32:ResponseHandler]()
     private var waitingForResponses = [Int32:NSCondition]()
     
@@ -148,16 +148,16 @@ public class Server {
                 
                 let responseData = fullBuffer[0..<length]*
                 let responseId = try Int32.instantiate(bsonData: fullBuffer[8...11]*)
-                let response = try ReplyMessage.init(data: responseData)
+                let reply = try Message.ReplyFromBSON(responseData)
                 
-                incomingResponses.append((responseId, response, NSDate()))
+                incomingResponses.append((responseId, reply, NSDate()))
                 
                 fullBuffer.removeRange(0..<length)
             }
         }
     }
     
-    internal func awaitResponse(requestId: Int32, timeout: NSTimeInterval = 10) throws -> ReplyMessage {
+    internal func awaitResponse(requestId: Int32, timeout: NSTimeInterval = 10) throws -> Message {
         let condition = NSCondition()
         condition.lock()
         waitingForResponses[requestId] = condition

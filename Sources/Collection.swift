@@ -71,7 +71,8 @@ public class Collection {
             }
         })
         
-        let message = InsertMessage(collection: self, insertedDocuments: newDocuments, flags: flags)
+        let message = Message.Insert(requestID: database.server.getNextMessageID(), flags: flags, collection: self, documents: documents)
+        
         try self.database.server.sendMessage(message)
         
         return newDocuments
@@ -87,12 +88,17 @@ public class Collection {
     /// TODO: Above doc is out of date
     /// - returns: An array with zero or more found documents.
     @warn_unused_result
-    public func find(query: Document = [], flags: QueryFlags = [], fetchChunkSize: Int32 = 10) throws -> Cursor<Document> {
-        let queryMsg = try QueryMessage(collection: self, query: query, flags: [], numbersToSkip: 0, numbersToReturn: fetchChunkSize)
+    public func find(query: Document = [], flags: QueryFlags = [], fetchChunkSize: Int32 = 10, numbersToSkip: Int32 = 0, numbersToReturn: Int32 = 0, returnFields: Document? = nil) throws -> Cursor<Document> {
+        let queryMsg = Message.Query(requestID: database.server.getNextMessageID(), flags: flags, collection: self, numbersToSkip: numbersToSkip, numbersToReturn: numbersToReturn, query: query, returnFields: returnFields)
         
         let id = try self.database.server.sendMessage(queryMsg)
         let response = try self.database.server.awaitResponse(id)
-        return Cursor(namespace: self.fullName, server: database.server, reply: response, chunkSize: fetchChunkSize, transform: { $0 })
+        
+        guard let cursor = Cursor(namespace: self.fullName, server: database.server, reply: response, chunkSize: fetchChunkSize, transform: { $0 }) else {
+            throw MongoError.InternalInconsistency
+        }
+        
+        return cursor
     }
     
     public func find(query: Query) throws -> Cursor<Document> {
@@ -119,7 +125,7 @@ public class Collection {
     /// - parameter flags: The flags that will be used for this UpdateOperation. See UpdateFlags for more details
     /// - returns: Returns a future that you can await or asynchronously bind an action to. If you don't catch the error your application will crash. The future will return all changed Documents before they were changed
     public func update(query: Document, updated: Document, flags: UpdateFlags = []) throws {
-        let message = try UpdateMessage(collection: self, find: query, replace: updated, flags: flags)
+        let message = Message.Update(requestID: database.server.getNextMessageID(), collection: self, flags: flags, findDocument: query, replaceDocument: updated)
         try self.database.server.sendMessage(message)
     }
     
@@ -132,7 +138,7 @@ public class Collection {
     /// - parameter document: The Document selector that will be use dto find th Document that will be removed1
     /// - parameter flags: The flags that will be used for this UpdateOperation. See DeleteFlags for more details
     public func remove(query: Document, flags: DeleteFlags = []) throws {
-        let message = DeleteMessage(collection: self, query: query, flags: flags)
+        let message = Message.Delete(requestID: database.server.getNextMessageID(), collection: self, flags: flags, removeDocument: query)
         try self.database.server.sendMessage(message)
     }
     

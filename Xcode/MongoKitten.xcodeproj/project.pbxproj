@@ -7,19 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0A2DFD201C5F453500A364B5 /* UpdateMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A2DFD1F1C5F453500A364B5 /* UpdateMessage.swift */; };
-		0A36C5BE1C5FD27E009208DC /* DeleteMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A36C5BD1C5FD27E009208DC /* DeleteMessage.swift */; };
-		0A4246E51C60DD7200158D8E /* QueryMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4246E41C60DD7200158D8E /* QueryMessage.swift */; };
-		0A4246E81C60DD7700158D8E /* ReplyMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4246E71C60DD7700158D8E /* ReplyMessage.swift */; };
 		0A4670701C6B9BE500101CCD /* Helper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A46706F1C6B9BE500101CCD /* Helper.swift */; };
 		0A4670751C6BA8B200101CCD /* MongoKitten.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AB842621C5EA80D005CC6B4 /* MongoKitten.framework */; };
+		0A4D92411C9AE408003D79E0 /* Flags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4D92401C9AE408003D79E0 /* Flags.swift */; };
 		0AB842721C5EA80E005CC6B4 /* MongoKittenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842711C5EA80E005CC6B4 /* MongoKittenTests.swift */; };
 		0AB842911C5EC46C005CC6B4 /* Server.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842901C5EC46C005CC6B4 /* Server.swift */; };
 		0AB842931C5EC48A005CC6B4 /* Database.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842921C5EC48A005CC6B4 /* Database.swift */; };
 		0AB842951C5EC495005CC6B4 /* Collection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842941C5EC495005CC6B4 /* Collection.swift */; };
 		0AB842981C5EC4BA005CC6B4 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842971C5EC4BA005CC6B4 /* Message.swift */; };
 		0AB8429A1C5EC5D0005CC6B4 /* OperationCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842991C5EC5D0005CC6B4 /* OperationCode.swift */; };
-		0AB8429C1C5EC600005CC6B4 /* InsertMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB8429B1C5EC600005CC6B4 /* InsertMessage.swift */; };
 		8065BD1D1C9A302D00169519 /* Dispatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8065BD1C1C9A302D00169519 /* Dispatch.swift */; };
 		F208B3D11C85E15700693820 /* ReadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F208B3D01C85E15700693820 /* ReadTests.swift */; };
 		F208B3D31C85E16A00693820 /* TestManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F208B3D21C85E16A00693820 /* TestManager.swift */; };
@@ -28,8 +24,6 @@
 		F22CA28F1C7DF8F800FC9DBA /* Feature Checklist.md in Resources */ = {isa = PBXBuildFile; fileRef = F22CA28E1C7DF8F800FC9DBA /* Feature Checklist.md */; };
 		F293D0341C7B0392003D6100 /* MongoError.swift in Sources */ = {isa = PBXBuildFile; fileRef = F293D0331C7B0392003D6100 /* MongoError.swift */; };
 		F293F6F71C984D8D00ED7E03 /* QueryBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = F293F6F61C984D8D00ED7E03 /* QueryBuilder.swift */; };
-		F2F7D1581C7B2C6000EAB956 /* GetMoreMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F7D1571C7B2C6000EAB956 /* GetMoreMessage.swift */; };
-		F2F7D15C1C7B31A700EAB956 /* KillCursorsMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F7D15B1C7B31A700EAB956 /* KillCursorsMessage.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -50,11 +44,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		0A2DFD1F1C5F453500A364B5 /* UpdateMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UpdateMessage.swift; sourceTree = "<group>"; };
-		0A36C5BD1C5FD27E009208DC /* DeleteMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DeleteMessage.swift; sourceTree = "<group>"; };
-		0A4246E41C60DD7200158D8E /* QueryMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = QueryMessage.swift; sourceTree = "<group>"; };
-		0A4246E71C60DD7700158D8E /* ReplyMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReplyMessage.swift; sourceTree = "<group>"; };
 		0A46706F1C6B9BE500101CCD /* Helper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Helper.swift; sourceTree = "<group>"; };
+		0A4D92401C9AE408003D79E0 /* Flags.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Flags.swift; sourceTree = "<group>"; };
 		0AB2CBC51C69E5370009405F /* Package.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Package.swift; path = ../Package.swift; sourceTree = "<group>"; };
 		0AB842621C5EA80D005CC6B4 /* MongoKitten.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = MongoKitten.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		0AB8426C1C5EA80E005CC6B4 /* MongoKittenTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MongoKittenTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -64,7 +55,6 @@
 		0AB842941C5EC495005CC6B4 /* Collection.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Collection.swift; sourceTree = "<group>"; };
 		0AB842971C5EC4BA005CC6B4 /* Message.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
 		0AB842991C5EC5D0005CC6B4 /* OperationCode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OperationCode.swift; sourceTree = "<group>"; };
-		0AB8429B1C5EC600005CC6B4 /* InsertMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = InsertMessage.swift; sourceTree = "<group>"; };
 		8065BD1C1C9A302D00169519 /* Dispatch.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Dispatch.swift; sourceTree = "<group>"; };
 		F208B3CF1C85DF9900693820 /* SPM.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = SPM.xcconfig; sourceTree = "<group>"; };
 		F208B3D01C85E15700693820 /* ReadTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReadTests.swift; sourceTree = "<group>"; };
@@ -78,8 +68,6 @@
 		F2B9F6FC1C6A41C7004383A9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		F2B9F6FD1C6A41C7004383A9 /* TestInfo.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = TestInfo.plist; sourceTree = "<group>"; };
 		F2CC563C1C6CD56C009BA6E2 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
-		F2F7D1571C7B2C6000EAB956 /* GetMoreMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GetMoreMessage.swift; sourceTree = "<group>"; };
-		F2F7D15B1C7B31A700EAB956 /* KillCursorsMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = KillCursorsMessage.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -156,13 +144,7 @@
 			isa = PBXGroup;
 			children = (
 				0AB842971C5EC4BA005CC6B4 /* Message.swift */,
-				0AB8429B1C5EC600005CC6B4 /* InsertMessage.swift */,
-				0A4246E41C60DD7200158D8E /* QueryMessage.swift */,
-				0A2DFD1F1C5F453500A364B5 /* UpdateMessage.swift */,
-				0A36C5BD1C5FD27E009208DC /* DeleteMessage.swift */,
-				0A4246E71C60DD7700158D8E /* ReplyMessage.swift */,
-				F2F7D1571C7B2C6000EAB956 /* GetMoreMessage.swift */,
-				F2F7D15B1C7B31A700EAB956 /* KillCursorsMessage.swift */,
+				0A4D92401C9AE408003D79E0 /* Flags.swift */,
 			);
 			name = Messages;
 			sourceTree = "<group>";
@@ -312,19 +294,13 @@
 				F222D7DB1C7B139900778D2F /* Cursor.swift in Sources */,
 				8065BD1D1C9A302D00169519 /* Dispatch.swift in Sources */,
 				0A4670701C6B9BE500101CCD /* Helper.swift in Sources */,
-				F2F7D15C1C7B31A700EAB956 /* KillCursorsMessage.swift in Sources */,
-				0A4246E51C60DD7200158D8E /* QueryMessage.swift in Sources */,
 				0AB842951C5EC495005CC6B4 /* Collection.swift in Sources */,
 				0AB842981C5EC4BA005CC6B4 /* Message.swift in Sources */,
 				0AB842931C5EC48A005CC6B4 /* Database.swift in Sources */,
-				0A4246E81C60DD7700158D8E /* ReplyMessage.swift in Sources */,
 				0AB842911C5EC46C005CC6B4 /* Server.swift in Sources */,
-				0A2DFD201C5F453500A364B5 /* UpdateMessage.swift in Sources */,
-				0AB8429C1C5EC600005CC6B4 /* InsertMessage.swift in Sources */,
 				F293D0341C7B0392003D6100 /* MongoError.swift in Sources */,
 				F293F6F71C984D8D00ED7E03 /* QueryBuilder.swift in Sources */,
-				F2F7D1581C7B2C6000EAB956 /* GetMoreMessage.swift in Sources */,
-				0A36C5BE1C5FD27E009208DC /* DeleteMessage.swift in Sources */,
+				0A4D92411C9AE408003D79E0 /* Flags.swift in Sources */,
 				0AB8429A1C5EC5D0005CC6B4 /* OperationCode.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

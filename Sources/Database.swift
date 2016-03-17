@@ -31,9 +31,9 @@ public class Database {
         return Collection(database: self, collectionName: collection)
     }
     
-    internal func executeCommand(command: Document) throws -> ReplyMessage {
+    internal func executeCommand(command: Document) throws -> Message {
         let cmd = self["$cmd"]
-        let commandMessage = try QueryMessage(collection: cmd, query: command, flags: [], numbersToReturn: 1)
+        let commandMessage = Message.Query(requestID: server.getNextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: command, returnFields: nil)
         let id = try server.sendMessage(commandMessage)
         return try server.awaitResponse(id)
     }
@@ -46,7 +46,11 @@ public class Database {
         
         let reply = try executeCommand(request)
         
-        guard let result = reply.documents.first, code = result["ok"]?.intValue, cursor = result["cursor"] as? Document where code == 1 else {
+        guard case .Reply(_, _, _, _, _, _, let documents) = reply else {
+            throw MongoError.InternalInconsistency
+        }
+        
+        guard let result = documents.first, code = result["ok"]?.intValue, cursor = result["cursor"] as? Document where code == 1 else {
             throw MongoError.CommandFailure
         }
         
