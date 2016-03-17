@@ -42,7 +42,6 @@ public class Server {
     private var waitingForResponses = [Int32:NSCondition]()
     
     private var socket: BlueSocket
-    private let backgroundQueue = dispatch_get_global_queue(QOS_CLASS_BACKGROUND, 0)
     
     /// Initializes a server with a given host and port. Optionally automatically connects
     /// - parameter host: The host we'll connect with for the MongoDB Server
@@ -78,7 +77,7 @@ public class Server {
         }
         
         try self.socket.connectTo(self.host, port: self.port)
-        dispatch_async(backgroundQueue, backgroundLoop)
+        Background(backgroundLoop)
     }
     
     private func backgroundLoop() {
@@ -101,7 +100,7 @@ public class Server {
             }
         }
         
-        dispatch_async(backgroundQueue, backgroundLoop)
+        Background(backgroundLoop)
     }
     
     /// Throws an error if the database is not connected yet
