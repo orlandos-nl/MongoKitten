@@ -20,6 +20,7 @@
 		0AB842981C5EC4BA005CC6B4 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842971C5EC4BA005CC6B4 /* Message.swift */; };
 		0AB8429A1C5EC5D0005CC6B4 /* OperationCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842991C5EC5D0005CC6B4 /* OperationCode.swift */; };
 		0AB8429C1C5EC600005CC6B4 /* InsertMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB8429B1C5EC600005CC6B4 /* InsertMessage.swift */; };
+		8065BD1D1C9A302D00169519 /* Dispatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8065BD1C1C9A302D00169519 /* Dispatch.swift */; };
 		F208B3D11C85E15700693820 /* ReadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F208B3D01C85E15700693820 /* ReadTests.swift */; };
 		F208B3D31C85E16A00693820 /* TestManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F208B3D21C85E16A00693820 /* TestManager.swift */; };
 		F208B3D51C85E54700693820 /* SwiftRandom.swift in Sources */ = {isa = PBXBuildFile; fileRef = F208B3D41C85E54700693820 /* SwiftRandom.swift */; };
@@ -64,6 +65,7 @@
 		0AB842971C5EC4BA005CC6B4 /* Message.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
 		0AB842991C5EC5D0005CC6B4 /* OperationCode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OperationCode.swift; sourceTree = "<group>"; };
 		0AB8429B1C5EC600005CC6B4 /* InsertMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = InsertMessage.swift; sourceTree = "<group>"; };
+		8065BD1C1C9A302D00169519 /* Dispatch.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Dispatch.swift; sourceTree = "<group>"; };
 		F208B3CF1C85DF9900693820 /* SPM.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = SPM.xcconfig; sourceTree = "<group>"; };
 		F208B3D01C85E15700693820 /* ReadTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReadTests.swift; sourceTree = "<group>"; };
 		F208B3D21C85E16A00693820 /* TestManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TestManager.swift; sourceTree = "<group>"; };
@@ -126,6 +128,7 @@
 				0AB842961C5EC4A7005CC6B4 /* Messages */,
 				0AB842901C5EC46C005CC6B4 /* Server.swift */,
 				0AB842921C5EC48A005CC6B4 /* Database.swift */,
+				8065BD1C1C9A302D00169519 /* Dispatch.swift */,
 				0A46706F1C6B9BE500101CCD /* Helper.swift */,
 				0AB842941C5EC495005CC6B4 /* Collection.swift */,
 				0AB842991C5EC5D0005CC6B4 /* OperationCode.swift */,
@@ -307,6 +310,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F222D7DB1C7B139900778D2F /* Cursor.swift in Sources */,
+				8065BD1D1C9A302D00169519 /* Dispatch.swift in Sources */,
 				0A4670701C6B9BE500101CCD /* Helper.swift in Sources */,
 				F2F7D15C1C7B31A700EAB956 /* KillCursorsMessage.swift in Sources */,
 				0A4246E51C60DD7200158D8E /* QueryMessage.swift in Sources */,
