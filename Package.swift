@@ -8,3 +8,6 @@ let package = Package(
         .Package(url: "https://github.com/johnno1962/NSLinux.git", majorVersion: 1, minor: 1)
     ]
 )
+
+let lib = Product(name: "MongoKitten", type: .Library(.Dynamic), modules: "MongoKitten")
+products.append(lib)
