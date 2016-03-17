@@ -31,9 +31,12 @@ fi
 
 linkerflags="\$(inherited)"
 
-for f in .build/debug/*.a; do
-  fname=$("basename" $f ".a")
-  # linkerflags+=" -l$fname"
+for f in .build/debug/*/*.o; do
+  mname=$(basename $(dirname $f) .build)
+  echo "Module name: $mname"
+  if [[ $mname == $PROJECT_NAME ]]; then
+    continue
+  fi
   linkerflags+=" \$(SRCROOT)/../$f"
 done
 

@@ -126,7 +126,7 @@ public class Server {
                 incomingCount = try socket.readData(UnsafeMutablePointer($0.baseAddress), bufSize: $0.count)
             }
             fullBuffer += incomingBuffer[0..<incomingCount]
-        } catch let error as BlueSocketError {
+        } catch let error as BlueSocket.Error {
             if error.errorCode == Int32(BlueSocket.SOCKET_ERR_RECV_BUFFER_TOO_SMALL) {
                 try self.receive(error.bufferSizeNeeded)
             } else {

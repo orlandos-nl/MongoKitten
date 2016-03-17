@@ -60,19 +60,19 @@ public func ||(lhs: Query, rhs: Query) -> Query {
 }
 
 
-public func &=(inout lhs: Query, rhs: Document) {
+public func &=(lhs: inout Query, rhs: Document) {
     lhs.data += rhs
 }
 
-public func &=(inout lhs: Query, rhs: Query) {
+public func &=(lhs: inout Query, rhs: Query) {
     lhs = lhs && rhs
 }
 
-public func |=(inout lhs: Query, rhs: Query) {
+public func |=(lhs: inout Query, rhs: Query) {
     lhs = lhs || rhs
 }
 
-public func |=(inout lhs: Query, rhs: Document) {
+public func |=(lhs: inout Query, rhs: Document) {
     lhs = lhs || Query(data: rhs)
 }
 
