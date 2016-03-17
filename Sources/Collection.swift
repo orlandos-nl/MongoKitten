@@ -71,7 +71,7 @@ public class Collection {
             }
         })
         
-        let message = Message.Insert(requestID: database.server.getNextMessageID(), flags: flags, collection: self, documents: documents)
+        let message = Message.Insert(requestID: database.server.getNextMessageID(), flags: flags, collection: self, documents: newDocuments)
         
         try self.database.server.sendMessage(message)
         
