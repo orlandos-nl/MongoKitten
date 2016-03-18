@@ -9,7 +9,7 @@
 /* Begin PBXBuildFile section */
 		0A4670701C6B9BE500101CCD /* Helper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A46706F1C6B9BE500101CCD /* Helper.swift */; };
 		0A4670751C6BA8B200101CCD /* MongoKitten.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AB842621C5EA80D005CC6B4 /* MongoKitten.framework */; };
-		0A4D92411C9AE408003D79E0 /* Flags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4D92401C9AE408003D79E0 /* Flags.swift */; };
+		0A50990A1C9C2EAC00135938 /* Flags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5099091C9C2EAC00135938 /* Flags.swift */; };
 		0AB842721C5EA80E005CC6B4 /* MongoKittenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842711C5EA80E005CC6B4 /* MongoKittenTests.swift */; };
 		0AB842911C5EC46C005CC6B4 /* Server.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842901C5EC46C005CC6B4 /* Server.swift */; };
 		0AB842931C5EC48A005CC6B4 /* Database.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842921C5EC48A005CC6B4 /* Database.swift */; };
@@ -45,7 +45,7 @@
 
 /* Begin PBXFileReference section */
 		0A46706F1C6B9BE500101CCD /* Helper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Helper.swift; sourceTree = "<group>"; };
-		0A4D92401C9AE408003D79E0 /* Flags.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Flags.swift; sourceTree = "<group>"; };
+		0A5099091C9C2EAC00135938 /* Flags.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Flags.swift; sourceTree = "<group>"; };
 		0AB2CBC51C69E5370009405F /* Package.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Package.swift; path = ../Package.swift; sourceTree = "<group>"; };
 		0AB842621C5EA80D005CC6B4 /* MongoKitten.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = MongoKitten.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		0AB8426C1C5EA80E005CC6B4 /* MongoKittenTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MongoKittenTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -143,8 +143,8 @@
 		0AB842961C5EC4A7005CC6B4 /* Messages */ = {
 			isa = PBXGroup;
 			children = (
+				0A5099091C9C2EAC00135938 /* Flags.swift */,
 				0AB842971C5EC4BA005CC6B4 /* Message.swift */,
-				0A4D92401C9AE408003D79E0 /* Flags.swift */,
 			);
 			name = Messages;
 			sourceTree = "<group>";
@@ -295,12 +295,12 @@
 				8065BD1D1C9A302D00169519 /* Dispatch.swift in Sources */,
 				0A4670701C6B9BE500101CCD /* Helper.swift in Sources */,
 				0AB842951C5EC495005CC6B4 /* Collection.swift in Sources */,
+				0A50990A1C9C2EAC00135938 /* Flags.swift in Sources */,
 				0AB842981C5EC4BA005CC6B4 /* Message.swift in Sources */,
 				0AB842931C5EC48A005CC6B4 /* Database.swift in Sources */,
 				0AB842911C5EC46C005CC6B4 /* Server.swift in Sources */,
 				F293D0341C7B0392003D6100 /* MongoError.swift in Sources */,
 				F293F6F71C984D8D00ED7E03 /* QueryBuilder.swift in Sources */,
-				0A4D92411C9AE408003D79E0 /* Flags.swift in Sources */,
 				0AB8429A1C5EC5D0005CC6B4 /* OperationCode.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -446,6 +446,7 @@
 		};
 		0AB842781C5EA80E005CC6B4 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = F208B3CF1C85DF9900693820 /* SPM.xcconfig */;
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
 				COMBINE_HIDPI_IMAGES = YES;

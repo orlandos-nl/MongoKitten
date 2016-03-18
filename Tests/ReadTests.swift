@@ -53,7 +53,7 @@ class ReadTests: XCTestCase {
         do {
             let document = try! testCollection.findOne("_id" == user["_id"]!)
             
-            XCTAssert(document?["name"]?.stringValue == user["name"]!.stringValue!)
+            XCTAssertEqual(document?["name"]?.stringValue, user["name"]!.stringValue!)
         }
         
         // Find

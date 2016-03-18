@@ -78,7 +78,7 @@ class MongoKittenTests: XCTestCase {
             "string": "Hello, I'm a string!"
             ])
         
-        try! testCollection.insertAll([["hont": "kad"], ["fancy": 3.14], ["documents": true]])
+        try! testCollection.insert([["hont": "kad"], ["fancy": 3.14], ["documents": true]])
         
         // TODO: validate!
     }
@@ -86,6 +86,29 @@ class MongoKittenTests: XCTestCase {
     func testListCollectionsWithoutCollections() {
         // TODO: Finish this test
         let _ = try! testDatabase.getCollectionInfos()
+    }
+    
+    func testCollectionCount() {
+        let c = try! TestManager.testCollection.count()
+        
+        guard let count = c else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssert(count == TestManager.testingUsers.count)
+    }
+    
+    func testCollectionDistinct() {
+        try! TestManager.testCollection.insert([
+                                                 ["honten": 3, "henk": true],
+                                                 ["honten": 2, "baas": true],
+                                                 ["honten": 1, "potato": 4],
+                                                 ["honten": 1, "nope": Null()]
+                                                 ])
+        
+        let d = try! TestManager.testCollection.distinct("honten", query: nil)
+        XCTAssertEqual(d?.count, 3)
     }
     
     func testListCollectionsWithCollections() {
@@ -139,26 +162,4 @@ class MongoKittenTests: XCTestCase {
     }
     
     // MARK: - Insert Performance
-//    func testSmallTransactionInsertPerformance() {
-//        // Test inserting lots of small documents in multiple transactions
-//        let collection = server["test"]["test"]
-//        let doc: Document = ["test": "Beautiful string", "4": 32480.2, "henk": *["hallo", 4]]
-//        self.measureBlock {
-//            for _ in 0...1000 {
-//                try! collection.insertSync(doc)
-//            }
-//        }
-//    }
-//    
-//    func testMassiveTransactionInsertPerformance() {
-//        // Test inserting lots of small documents in a single transaction
-//        let collection = server["test"]["test"]
-//        let doc: Document = ["test": "Beautiful string", "4": 32480.2, "henk": *["hallo", 4]]
-//        
-//        // Test inserting a batch of small documents
-//        let arr = Array(count: 1000, repeatedValue: doc)
-//        self.measureBlock {
-//            try! collection.insertAllSync(arr)
-//        }
-//    }
 }

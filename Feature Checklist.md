@@ -1,5 +1,8 @@
 # MongoKitten Feature Checklist
 
+- GridFS support
+    - Basic file storage and indexing
+    - Per-chunk file reading
 - Basic CRUD
 	- findOne
 	- find (dbcommand)
@@ -9,33 +12,16 @@
 - Connection pooling
 - DBRef
 - Database Commands
-	- Collection.Count
-	- Collection.Distinct
 	- Collection.Group
 	- Collection.MapReduce
 - Geospatial Commands
 - Parallel Collection Scan ???
 - Plan Cache ????
-- User management
-	- Create
-	- Update
-	- Drop, DropAll
-	- Grant, Revoke
-	- Info
-- Role management
-	- Create
-	- Update
-	- Drop
-	- DropAll
-	- Grant
-	- etc
 - Replication Commands [TBD]
 - Sharding Commands [TBD]
 - Administration
-	- Rename collection **done**
 	- Copydb?
 	- Drop database
-	- list collections **done**
 	- Collection create, clone
 	- create, list, drop indexes
 	- connection status
@@ -57,6 +43,16 @@
 	- getLog
 	- hostInfo
 	- features
-- GridFS support
-	- Basic file storage and indexing
-	- Per-chunk file reading
+- User management
+    - Create
+    - Update
+    - Drop, DropAll
+    - Grant, Revoke
+    - Info
+- Role management
+    - Create
+    - Update
+    - Drop
+    - DropAll
+    - Grant
+    - etc

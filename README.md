@@ -86,7 +86,7 @@ let docs: [Document] = [
 	["username": "Harrie", "password": "Bob"]
 ]
 
-try collection.insertAll(docs)
+try collection.insert(docs)
 ```
 
 ### Listing collections

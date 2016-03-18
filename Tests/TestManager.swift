@@ -50,6 +50,6 @@ final class TestManager {
         }
         
         // insert
-        testingUsers = try testCollection.insertAll(testingUsers)
+        testingUsers = try testCollection.insert(testingUsers)
     }
 }
