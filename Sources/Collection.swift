@@ -222,8 +222,6 @@ public class Collection {
         }
         
         let reply = try self.database.executeCommand(command)
-        
-        print(reply)
     }
     
     public func update(query: Document, updated: Document, upsert: Bool = false, multi: Bool = false, ordered: Bool? = nil) throws {
@@ -259,8 +257,6 @@ public class Collection {
         }
         
         let reply = try self.database.executeCommand(command)
-        
-        print(reply)
     }
     
     public func remove(deletes: [(query: Query, limit: Int32)], ordered: Bool? = nil) throws {

@@ -58,9 +58,7 @@ class MongoKittenTests: XCTestCase {
     }
     
     func testOperators() {
-        let amazingQuery: Query = "hont" == 3 && ("haai" == 5 || "haai" == 4) && "bier" <= 5 && "biertje" >= 6
-        
-        print(amazingQuery.data)
+        let _: Query = "hont" == 3 && ("haai" == 5 || "haai" == 4) && "bier" <= 5 && "biertje" >= 6
     }
     
     func testInsert() {
