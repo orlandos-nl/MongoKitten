@@ -23,15 +23,9 @@ enum Message {
         switch self {
         case .Reply(let requestIdentifier, _, _, _, _, _, _):
             return requestIdentifier
-        case .Update(let requestIdentifier, _, _, _, _):
-            return requestIdentifier
-        case .Insert(let requestIdentifier, _, _, _):
-            return requestIdentifier
         case .Query(let requestIdentifier, _, _, _, _, _, _):
             return requestIdentifier
         case .GetMore(let requestIdentifier, _, _, _):
-            return requestIdentifier
-        case .Delete(let requestIdentifier, _, _, _):
             return requestIdentifier
         case .KillCursors(let requestIdentifier, _):
             return requestIdentifier
@@ -42,16 +36,10 @@ enum Message {
         switch self {
         case .Reply:
             return 1
-        case .Update:
-            return 2001
-        case .Insert:
-            return 2002
         case .Query:
             return 2004
         case .GetMore:
             return 2005
-        case .Delete:
-            return 2006
         case .KillCursors:
             return 2007
         }
@@ -85,23 +73,6 @@ enum Message {
         switch self {
         case .Reply:
             throw MongoError.InvalidAction
-        case .Update(let requestIdentifier, let collection, let flags, let findDocument, let replaceDocument):
-            body += Int32(0).bsonData
-            body += collection.fullName.cStringBsonData
-            body += flags.rawValue.bsonData
-            body += findDocument.bsonData
-            body += replaceDocument.bsonData
-            
-            requestID = requestIdentifier
-        case .Insert(let requestIdentifier, let flags, let collection, let documents):
-            body += flags.rawValue.bsonData
-            body += collection.fullName.cStringBsonData
-            
-            for document in documents {
-                body += document.bsonData
-            }
-            
-            requestID = requestIdentifier
         case .Query(let requestIdentifier, let flags, let collection, let numbersToSkip, let numbersToReturn, let query, let returnFields):
             body += flags.rawValue.bsonData
             body += collection.fullName.cStringBsonData
@@ -122,13 +93,6 @@ enum Message {
             body += cursorID.bsonData
             
             requestID = requestIdentifier
-        case .Delete(let requestIdentifier, let collection, let flags, let removeDocument):
-            body += Int32(0).bsonData
-            body += collection.fullName.cStringBsonData
-            body += flags.rawValue.bsonData
-            body += removeDocument.bsonData
-            
-            requestID = requestIdentifier
         case .KillCursors(let requestIdentifier, let cursorIDs):
             body += Int32(0).bsonData
             body += cursorIDs.map { $0.bsonData }.reduce([]) { $0 + $1 }
@@ -147,10 +111,7 @@ enum Message {
     }
     
     case Reply(requestID: Int32, responseTo: Int32, flags: ReplyFlags, cursorID: Int64, startingFrom: Int32, numbersReturned: Int32, documents: [Document])
-    case Update(requestID: Int32, collection: Collection, flags: UpdateFlags, findDocument: Document, replaceDocument: Document)
-    case Insert(requestID: Int32, flags: InsertFlags, collection: Collection, documents: [Document])
     case Query(requestID: Int32, flags: QueryFlags, collection: Collection, numbersToSkip: Int32, numbersToReturn: Int32, query: Document, returnFields: Document?)
     case GetMore(requestID: Int32, namespace: String, numberToReturn: Int32, cursor: Int64)
-    case Delete(requestID: Int32, collection: Collection, flags: DeleteFlags, removeDocument: Document)
     case KillCursors(requestID: Int32, cursorIDs: [Int64])
 }
