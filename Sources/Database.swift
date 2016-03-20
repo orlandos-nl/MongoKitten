@@ -58,7 +58,7 @@ public class Database {
         let reply = try executeCommand(request)
         
         guard case .Reply(_, _, _, _, _, _, let documents) = reply else {
-            throw MongoError.InternalInconsistency
+            throw InternalMongoError.IncorrectReply(reply: reply)
         }
         
         guard let result = documents.first, code = result["ok"]?.intValue, cursor = result["cursor"] as? Document where code == 1 else {
@@ -155,33 +155,33 @@ extension Database {
         }
         
         guard let stringResponse = response["payload"]?.stringValue else {
-            throw MongoError.InternalInconsistency
+            throw MongoAuthenticationError.AuthenticationFailure
         }
         
         guard let conversationId = response["conversationId"] else {
-            throw MongoError.InternalInconsistency
+            throw MongoAuthenticationError.AuthenticationFailure
         }
         
         guard let finalResponse = String(bytes: [UInt8](base64: stringResponse), encoding: NSUTF8StringEncoding) else {
-            throw MongoError.InternalInconsistency
+            throw MongoAuthenticationError.Base64Failure
         }
         
         let dictionaryResponse = self.parseResponse(finalResponse)
         
         guard let v = dictionaryResponse["v"]?.stringValue else {
-            throw MongoError.InternalInconsistency
+            throw MongoAuthenticationError.AuthenticationFailure
         }
         
         let serverSignature = [UInt8](base64: v)
         
         guard serverSignature == signature else {
-            throw MongoError.InternalInconsistency
+            throw MongoAuthenticationError.ServerSignatureInvalid
         }
         
-        let response = try self.executeCommand([
-                                                                           "saslContinue": Int32(1),
-                                                                           "conversationId": conversationId,
-                                                                           "payload": ""
+        _ = try self.executeCommand([
+                                                   "saslContinue": Int32(1),
+                                                   "conversationId": conversationId,
+                                                   "payload": ""
             ])
     }
     
@@ -191,28 +191,28 @@ extension Database {
         }
         
         guard let conversationId = continuation.response["conversationId"] else {
-            throw MongoError.InternalInconsistency
+            throw MongoAuthenticationError.AuthenticationFailure
         }
         
         var basicHeader = [UInt8]()
         basicHeader.appendContentsOf("n,,".utf8)
         
         guard let header = basicHeader.toBase64() else {
-            throw MongoError.InternalInconsistency
+            throw MongoAuthenticationError.Base64Failure
         }
         
         guard let stringResponse = continuation.response["payload"]?.stringValue else {
-            throw MongoError.InternalInconsistency
+            throw MongoAuthenticationError.AuthenticationFailure
         }
         
         guard let decodedStringResponse = String(bytes: [UInt8](base64: stringResponse), encoding: NSUTF8StringEncoding) else {
-            throw MongoError.InternalInconsistency
+            throw MongoAuthenticationError.Base64Failure
         }
         
         let dictionaryResponse = self.parseResponse(decodedStringResponse)
         
         guard let nonce = dictionaryResponse["r"], let stringSalt = dictionaryResponse["s"], let stringIterations = dictionaryResponse["i"], let iterations = Int(stringIterations) where String(nonce[nonce.startIndex..<nonce.startIndex.advancedBy(24)]) == continuation.nonce else {
-            throw MongoError.InternalInconsistency
+            throw MongoAuthenticationError.AuthenticationFailure
         }
         
         let noProof = "c=\(header),r=\(nonce)"
@@ -246,21 +246,21 @@ extension Database {
         let serverSignature = try Authenticator.HMAC(key: serverKey, variant: .sha1).authenticate(authenticationMessageBytes)
         
         guard let proof = clientProof.toBase64() else {
-            throw MongoError.InternalInconsistency
+            throw MongoAuthenticationError.Base64Failure
         }
         
         guard let payload = "\(noProof),p=\(proof)".cStringBsonData.toBase64() else {
-            throw MongoError.InternalInconsistency
+            throw MongoAuthenticationError.Base64Failure
         }
         
         let response = try self.executeCommand([
-                                                                           "saslContinue": Int32(1),
-                                                                           "conversationId": conversationId,
-                                                                           "payload": payload
+                                                   "saslContinue": Int32(1),
+                                                   "conversationId": conversationId,
+                                                   "payload": payload
             ])
         
         guard case .Reply(_, _, _, _, _, _, let documents) = response, let responseDocument = documents.first else {
-            throw MongoError.InternalInconsistency
+            throw InternalMongoError.IncorrectReply(reply: response)
         }
         
         try self.completeSASLAuthentication(payload, signature: serverSignature, response: responseDocument)
@@ -273,17 +273,17 @@ extension Database {
         let fixedUsername = details.username.stringByReplacingOccurrencesOfString("=", withString: "=3D").stringByReplacingOccurrencesOfString(",", withString: "=2C")
         
         guard let payload = "n,,n=\(fixedUsername),r=\(nonce)".cStringBsonData.toBase64() else {
-            throw MongoError.InternalInconsistency
+            throw MongoAuthenticationError.Base64Failure
         }
         
         let response = try self.executeCommand([
-                                                                           "saslStart": Int32(1),
-                                                                           "mechanism": "SCRAM-SHA-1",
-                                                                           "payload": payload
+                                                   "saslStart": Int32(1),
+                                                   "mechanism": "SCRAM-SHA-1",
+                                                   "payload": payload
             ])
         
         guard case .Reply(_, _, _, _, _, _, let documents) = response, let responseDocument = documents.first else {
-            throw MongoError.InternalInconsistency
+            throw InternalMongoError.IncorrectReply(reply: response)
         }
         
         try self.challenge(details, continuation: (nonce: nonce, response: responseDocument))
@@ -291,26 +291,25 @@ extension Database {
     
     private func authenticateCR(details: (username: String, password: String)) throws {
         let response = try self.executeCommand([
-                                                                           "getNonce": Int32(1)
+                                                   "getNonce": Int32(1)
             ])
         
         guard case .Reply(_, _, _, _, _, _, let documents) = response, let document = documents.first, let nonce = document["nonce"]?.stringValue else {
-            //throw MongoError.InvalidResponse(response: response)
-            throw MongoError.InternalInconsistency
+            throw InternalMongoError.IncorrectReply(reply: response)
         }
         
         let digest = "\(details.username):mongo:\(details.password)".cStringBsonData.md5().toHexString()
         let key = "\(nonce)\(details.username)\(digest)".cStringBsonData.md5().toHexString()
         
         let successResponse = try self.executeCommand([
-                                                                                  "authenticate": 1,
-                                                                                  "nonce": nonce,
-                                                                                  "user": details.username,
-                                                                                  "key": key
+                                                          "authenticate": 1,
+                                                          "nonce": nonce,
+                                                          "user": details.username,
+                                                          "key": key
             ])
         
         guard case .Reply(_, _, _, _, _, _, let successDocuments) = successResponse, let successDocument = successDocuments.first, let ok = successDocument["ok"]?.intValue where ok == 1 else {
-            throw MongoError.InternalInconsistency
+            throw InternalMongoError.IncorrectReply(reply: successResponse)
         }
     }
 }

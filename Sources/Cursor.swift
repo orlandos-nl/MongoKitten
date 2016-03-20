@@ -69,7 +69,7 @@ public final class Cursor<T> {
             let reply = try server.awaitResponse(requestId)
             
             guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
-                throw MongoError.InternalInconsistency
+                throw InternalMongoError.IncorrectReply(reply: reply)
             }
             
             self.data += documents.flatMap(transform)

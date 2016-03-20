@@ -47,6 +47,20 @@ public enum MongoError : ErrorType {
     /// Thrown when the initialization of a cursor, on request of the server, failed because of missing data.
     case CursorInitializationError(cursorDocument: Document)
     
+    case InvalidReply
+    
+    case InvalidResponse(documents: [Document])
+    
     /// If you get one of these, it's probably a bug on our side. Sorry. Please file a ticket :)
     case InternalInconsistency
+}
+
+public enum MongoAuthenticationError : ErrorType {
+    case Base64Failure
+    case AuthenticationFailure
+    case ServerSignatureInvalid
+}
+
+internal enum InternalMongoError : ErrorType {
+    case IncorrectReply(reply: Message)
 }

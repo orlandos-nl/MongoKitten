@@ -108,7 +108,7 @@ public class Collection {
         let id = try self.database.server.sendMessage(queryMsg)
         let response = try self.database.server.awaitResponse(id)
         guard let cursor = Cursor(namespace: self.fullName, server: database.server, reply: response, chunkSize: fetchChunkSize, transform: { $0 }) else {
-            throw MongoError.InternalInconsistency
+            throw MongoError.InvalidReply
         }
         
         return cursor
@@ -156,7 +156,7 @@ public class Collection {
             command += ["limit": limit]
         }
         
-        command += ["batchSize": 10]
+        command += ["batchSize": Int32(10)]
         
         if let sort = sort {
             command += ["sort": sort]
@@ -165,11 +165,11 @@ public class Collection {
         let reply = try database.executeCommand(command)
         
         guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
-            throw MongoError.InternalInconsistency
+            throw InternalMongoError.IncorrectReply(reply: reply)
         }
         
         guard let returnedElements = documents.first?["cursor"]?.documentValue?["firstBatch"]?.documentValue?.arrayValue else {
-            throw MongoError.InternalInconsistency
+            throw MongoError.InvalidResponse(documents: documents)
         }
         
         var returnedDocuments = [Document]()
@@ -316,7 +316,7 @@ public class Collection {
         let reply = try self.database.executeCommand(command)
         
         guard case .Reply(_, _, _, _, _, _, let documents) = reply else {
-            throw MongoError.InternalInconsistency
+            throw InternalMongoError.IncorrectReply(reply: reply)
         }
         
         return documents.first?["n"]?.intValue
@@ -332,7 +332,7 @@ public class Collection {
         let reply = try self.database.executeCommand(command)
         
         guard case .Reply(_, _, _, _, _, _, let documents) = reply else {
-            throw MongoError.InternalInconsistency
+            throw InternalMongoError.IncorrectReply(reply: reply)
         }
         
         return documents.first?["values"]?.documentValue?.arrayValue
