@@ -33,7 +33,7 @@ class MongoKittenTests: XCTestCase {
     }
     
     func testSetup() {
-        let server2 = try! Server(host: "orlandos.nl", port: 27017, authentication: (username: "mongokitten-unittest-user", password: "mongokitten-unittest-password"), autoConnect: true)
+        let server2 = try! Server(host: "127.0.0.1", port: 27017, authentication: (username: "mongokitten-unittest-user", password: "mongokitten-unittest-password"), autoConnect: true)
         
         do {
             // Should fail
