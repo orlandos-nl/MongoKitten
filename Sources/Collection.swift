@@ -296,7 +296,7 @@ public class Collection {
         
         if let dropTarget = dropTarget { command["dropTarget"] = dropTarget }
         
-        try self.database.server["admin"]!.executeCommand(command)
+        try self.database.server["admin"].executeCommand(command)
         
         self.database = newDb
         self.name = newName ?? name

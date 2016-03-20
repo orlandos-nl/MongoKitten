@@ -70,7 +70,7 @@ public class Server {
     }
     
     /// This subscript returns a Database struct given a String
-    public subscript (database: String) -> Database? {
+    public subscript (database: String) -> Database {
         let database = database.stringByReplacingOccurrencesOfString(".", withString: "")
         
         return Database(server: self, databaseName: database, authenticationDetails: authDetails)
