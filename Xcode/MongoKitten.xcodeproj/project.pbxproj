@@ -27,19 +27,19 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		0A5101CF1C9EA00D0032E21C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0AB842591C5EA80D005CC6B4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F27F83941C849F610071B81F;
+			remoteInfo = "SPM Dependencies";
+		};
 		0AB8426E1C5EA80E005CC6B4 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 0AB842591C5EA80D005CC6B4 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 0AB842611C5EA80D005CC6B4;
 			remoteInfo = MongoKitten;
-		};
-		F27F83991C849F990071B81F /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 0AB842591C5EA80D005CC6B4 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = F27F83941C849F610071B81F;
-			remoteInfo = "SPM Dependencies";
 		};
 /* End PBXContainerItemProxy section */
 
@@ -203,7 +203,7 @@
 			buildRules = (
 			);
 			dependencies = (
-				F27F839A1C849F990071B81F /* PBXTargetDependency */,
+				0A5101D01C9EA00D0032E21C /* PBXTargetDependency */,
 			);
 			name = MongoKitten;
 			productName = MongoKitten;
@@ -319,15 +319,15 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		0A5101D01C9EA00D0032E21C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F27F83941C849F610071B81F /* SPM Dependencies */;
+			targetProxy = 0A5101CF1C9EA00D0032E21C /* PBXContainerItemProxy */;
+		};
 		0AB8426F1C5EA80E005CC6B4 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 0AB842611C5EA80D005CC6B4 /* MongoKitten */;
 			targetProxy = 0AB8426E1C5EA80E005CC6B4 /* PBXContainerItemProxy */;
-		};
-		F27F839A1C849F990071B81F /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = F27F83941C849F610071B81F /* SPM Dependencies */;
-			targetProxy = F27F83991C849F990071B81F /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 

@@ -31,9 +31,10 @@ fi
 
 linkerflags="\$(inherited)"
 
-for f in .build/debug/*/*.o; do
+files=$(find .build -name '*.o')
+
+for f in $files; do
   mname=$(basename $(dirname $f) .build)
-  echo "Module name: $mname"
   if [[ $mname == $PROJECT_NAME ]]; then
     continue
   fi

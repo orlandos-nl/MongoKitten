@@ -7,8 +7,8 @@ let package = Package(
         .Package(url: "https://github.com/IBM-Swift/BlueSocket.git", majorVersion: 0),
         .Package(url: "https://github.com/johnno1962/NSLinux.git", majorVersion: 1, minor: 1),
         .Package(url: "https://github.com/swiftx/c7.git", majorVersion: 0, minor: 1),
+        .Package(url: "https://github.com/Joannis/CryptoSwift.git", majorVersion: 0),
     ]
 )
 
 let lib = Product(name: "MongoKitten", type: .Library(.Dynamic), modules: "MongoKitten")
-products.append(lib)

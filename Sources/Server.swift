@@ -6,7 +6,14 @@
 //  Copyright © 2016 PlanTeam. All rights reserved.
 //
 
+#if os(Linux)
+    import Glibc
+#else
+    import Darwin.C
+#endif
+
 import Foundation
+import CryptoSwift
 import BSON
 import BlueSocket
 
@@ -30,6 +37,8 @@ public class Server {
     /// The MongoDB-server's port
     private let port: Int32
     
+    private let authDetails: (username: String, password: String)?
+    
     /// The last Request we sent.. -1 if no request was sent
     internal var lastRequestID: Int32 = -1
     
@@ -49,10 +58,11 @@ public class Server {
     /// - parameter host: The host we'll connect with for the MongoDB Server
     /// - parameter port: The port we'll connect on with the MongoDB Server
     /// - parameter autoConnect: Whether we automatically connect
-    public init(host: String, port: Int32 = 27017, autoConnect: Bool = false) throws {
+    public init(host: String, port: Int32 = 27017, authentication: (username: String, password: String)? = nil, autoConnect: Bool = false) throws {
         self.host = host
         self.port = port
         self.socket = try .defaultConfigured()
+        self.authDetails = authentication
         
         if autoConnect {
             try self.connect()
@@ -60,10 +70,10 @@ public class Server {
     }
     
     /// This subscript returns a Database struct given a String
-    public subscript (database: String) -> Database {
+    public subscript (database: String) -> Database? {
         let database = database.stringByReplacingOccurrencesOfString(".", withString: "")
         
-        return Database(server: self, databaseName: database)
+        return Database(server: self, databaseName: database, authenticationDetails: authDetails)
     }
     
     /// Generates a messageID for the next Message

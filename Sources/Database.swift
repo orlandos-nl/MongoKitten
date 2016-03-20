@@ -6,6 +6,7 @@
 //  Copyright © 2016 PlanTeam. All rights reserved.
 //
 
+import CryptoSwift
 import Foundation
 import BSON
 
@@ -17,11 +18,21 @@ public class Database {
     /// The database's name
     public let name: String
     
-    internal init(server: Server, databaseName name: String) {
+    public private(set) var authenticated = true
+    
+    internal init(server: Server, databaseName name: String, authenticationDetails: (username: String, password: String)? = nil) {
         let name = name.stringByReplacingOccurrencesOfString(".", withString: "")
         
         self.server = server
         self.name = name
+        
+        if let details = authenticationDetails {
+            do {
+                try authenticateSASL(details)
+            } catch {
+                self.authenticated = false
+            }
+        }
     }
     
     /// This subscript is used to get a collection by providing a name as a String
@@ -62,6 +73,244 @@ public class Database {
         return Cursor(base: infoCursor) { collectionInfo in
             guard let name = collectionInfo["name"]?.stringValue else { return nil }
             return self[name]
+        }
+    }
+}
+
+extension Database {
+    private func generateNonce() -> String {
+        let allowedCharacters = "!\"#'$%&()*+-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_$"
+        
+        var randomString = ""
+        
+        for _ in 0..<24 {
+            let randomNumber: Int
+            
+            #if os(Linux)
+                randomNumber = Int(random() % allowedCharacters.characters.count)
+            #else
+                randomNumber = Int(arc4random_uniform(UInt32(allowedCharacters.characters.count)))
+            #endif
+            
+            let letter = allowedCharacters[allowedCharacters.startIndex.advancedBy(randomNumber)]
+            
+            randomString.append(letter)
+        }
+        
+        return randomString
+    }
+    
+    private func parseResponse(response: String) -> [String: String] {
+        var parsedResponse = [String: String]()
+        
+        for part in response.characters.split(",") where String(part).characters.count >= 3 {
+            let part = String(part)
+            
+            if let first = part.characters.first {
+                parsedResponse[String(first)] = part[part.startIndex.advancedBy(2)..<part.endIndex]
+            }
+        }
+        
+        return parsedResponse
+    }
+    
+    private func digest(password: String, data: [UInt8]) throws -> [UInt8] {
+        var passwordBytes = [UInt8]()
+        passwordBytes.appendContentsOf(password.utf8)
+        
+        return try Authenticator.HMAC(key: passwordBytes, variant: .sha1).authenticate(data)
+    }
+    
+    private func xor(left: [UInt8], _ right: [UInt8]) -> [UInt8] {
+        var result = [UInt8]()
+        let loops = min(left.count, right.count)
+        
+        result.reserveCapacity(loops)
+        
+        for i in 0..<loops {
+            result.append(left[i] ^ right[i])
+        }
+        
+        return result
+    }
+    
+    private func hi(password: String, salt: [UInt8], iterations: Int) throws -> [UInt8] {
+        var salt = salt
+        salt.appendContentsOf([0, 0, 0, 1])
+        
+        var ui = try digest(password, data: salt)
+        var u1 = ui
+        
+        for _ in 0..<iterations - 1 {
+            u1 = try digest(password, data: u1)
+            ui = xor(ui, u1)
+        }
+        
+        return ui
+    }
+    
+    private func completeSASLAuthentication(payload: String, signature: [UInt8], response: Document) throws {
+        if response["done"]?.boolValue == true {
+            return
+        }
+        
+        guard let stringResponse = response["payload"]?.stringValue else {
+            throw MongoError.InternalInconsistency
+        }
+        
+        guard let conversationId = response["conversationId"] else {
+            throw MongoError.InternalInconsistency
+        }
+        
+        guard let finalResponse = String(bytes: [UInt8](base64: stringResponse), encoding: NSUTF8StringEncoding) else {
+            throw MongoError.InternalInconsistency
+        }
+        
+        let dictionaryResponse = self.parseResponse(finalResponse)
+        
+        guard let v = dictionaryResponse["v"]?.stringValue else {
+            throw MongoError.InternalInconsistency
+        }
+        
+        let serverSignature = [UInt8](base64: v)
+        
+        guard serverSignature == signature else {
+            throw MongoError.InternalInconsistency
+        }
+        
+        let response = try self.executeCommand([
+                                                                           "saslContinue": Int32(1),
+                                                                           "conversationId": conversationId,
+                                                                           "payload": ""
+            ])
+    }
+    
+    private func challenge(details: (username: String, password: String), continuation: (nonce: String, response: Document)) throws {
+        if continuation.response["done"]?.boolValue == true {
+            return
+        }
+        
+        guard let conversationId = continuation.response["conversationId"] else {
+            throw MongoError.InternalInconsistency
+        }
+        
+        var basicHeader = [UInt8]()
+        basicHeader.appendContentsOf("n,,".utf8)
+        
+        guard let header = basicHeader.toBase64() else {
+            throw MongoError.InternalInconsistency
+        }
+        
+        guard let stringResponse = continuation.response["payload"]?.stringValue else {
+            throw MongoError.InternalInconsistency
+        }
+        
+        guard let decodedStringResponse = String(bytes: [UInt8](base64: stringResponse), encoding: NSUTF8StringEncoding) else {
+            throw MongoError.InternalInconsistency
+        }
+        
+        let dictionaryResponse = self.parseResponse(decodedStringResponse)
+        
+        guard let nonce = dictionaryResponse["r"], let stringSalt = dictionaryResponse["s"], let stringIterations = dictionaryResponse["i"], let iterations = Int(stringIterations) where String(nonce[nonce.startIndex..<nonce.startIndex.advancedBy(24)]) == continuation.nonce else {
+            throw MongoError.InternalInconsistency
+        }
+        
+        let noProof = "c=\(header),r=\(nonce)"
+        
+        var digestBytes = [UInt8]()
+        digestBytes.appendContentsOf("\(details.username):mongo:\(details.password)".utf8)
+        
+        let digest = digestBytes.md5().toHexString()
+        let salt = [UInt8](base64: stringSalt)
+        
+        let saltedPassword = try hi(digest, salt: salt, iterations: iterations)
+        var ck = [UInt8]()
+        ck.appendContentsOf("Client Key".utf8)
+        
+        var sk = [UInt8]()
+        sk.appendContentsOf("Server Key".utf8)
+        
+        let clientKey = try Authenticator.HMAC(key: saltedPassword, variant: .sha1).authenticate(ck)
+        let storedKey = clientKey.sha1()
+        
+        let fixedUsername = details.username.stringByReplacingOccurrencesOfString("=", withString: "=3D").stringByReplacingOccurrencesOfString(",", withString: "=2C")
+        
+        let authenticationMessage = "n=\(fixedUsername),r=\(continuation.nonce),\(decodedStringResponse),\(noProof)"
+        
+        var authenticationMessageBytes = [UInt8]()
+        authenticationMessageBytes.appendContentsOf(authenticationMessage.utf8)
+        
+        let clientSignature = try Authenticator.HMAC(key: storedKey, variant: .sha1).authenticate(authenticationMessageBytes)
+        let clientProof = xor(clientKey, clientSignature)
+        let serverKey = try Authenticator.HMAC(key: saltedPassword, variant: .sha1).authenticate(sk)
+        let serverSignature = try Authenticator.HMAC(key: serverKey, variant: .sha1).authenticate(authenticationMessageBytes)
+        
+        guard let proof = clientProof.toBase64() else {
+            throw MongoError.InternalInconsistency
+        }
+        
+        guard let payload = "\(noProof),p=\(proof)".cStringBsonData.toBase64() else {
+            throw MongoError.InternalInconsistency
+        }
+        
+        let response = try self.executeCommand([
+                                                                           "saslContinue": Int32(1),
+                                                                           "conversationId": conversationId,
+                                                                           "payload": payload
+            ])
+        
+        guard case .Reply(_, _, _, _, _, _, let documents) = response, let responseDocument = documents.first else {
+            throw MongoError.InternalInconsistency
+        }
+        
+        try self.completeSASLAuthentication(payload, signature: serverSignature, response: responseDocument)
+    }
+    
+    // TODO: Support authentication DBs
+    private func authenticateSASL(details: (username: String, password: String)) throws {
+        let nonce = generateNonce()
+        
+        let fixedUsername = details.username.stringByReplacingOccurrencesOfString("=", withString: "=3D").stringByReplacingOccurrencesOfString(",", withString: "=2C")
+        
+        guard let payload = "n,,n=\(fixedUsername),r=\(nonce)".cStringBsonData.toBase64() else {
+            throw MongoError.InternalInconsistency
+        }
+        
+        let response = try self.executeCommand([
+                                                                           "saslStart": Int32(1),
+                                                                           "mechanism": "SCRAM-SHA-1",
+                                                                           "payload": payload
+            ])
+        
+        guard case .Reply(_, _, _, _, _, _, let documents) = response, let responseDocument = documents.first else {
+            throw MongoError.InternalInconsistency
+        }
+        
+        try self.challenge(details, continuation: (nonce: nonce, response: responseDocument))
+    }
+    
+    private func authenticateCR(details: (username: String, password: String)) throws {
+        let response = try self.executeCommand([
+                                                                           "getNonce": Int32(1)
+            ])
+        
+        guard case .Reply(_, _, _, _, _, _, let documents) = response, let document = documents.first, let nonce = document["nonce"]?.stringValue else {
+            //throw MongoError.InvalidResponse(response: response)
+            throw MongoError.InternalInconsistency
+        }
+        
+        let digest = "\(details.username):mongo:\(details.password)".cStringBsonData.md5().toHexString()
+        let key = "\(nonce)\(details.username)\(digest)".cStringBsonData.md5().toHexString()
+        
+        let successResponse = try self.executeCommand([
+                                                                                  "authenticate": 1,
+                                                                                  "nonce": nonce,
+                                                                                  "user": details.username,
+                                                                                  "key": key
+            ])
+        
+        guard case .Reply(_, _, _, _, _, _, let successDocuments) = successResponse, let successDocument = successDocuments.first, let ok = successDocument["ok"]?.intValue where ok == 1 else {
+            throw MongoError.InternalInconsistency
         }
     }
 }
