@@ -26,7 +26,9 @@ final class TestManager {
     static func dropAllTestingCollections() throws {
         // Erase the testing database:
         for aCollection in try! testDatabase.getCollections() {
-            try! aCollection.drop()
+            if !aCollection.name.containsString("system") {
+                try! aCollection.drop()
+            }
         }
     }
     
