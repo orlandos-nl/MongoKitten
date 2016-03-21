@@ -87,7 +87,9 @@ public class Collection {
                 command["ordered"] = ordered
             }
             
-            try database.executeCommand(command)
+            guard case .Reply(_, _, _, _, _, _, let replyDocuments) = try self.database.executeCommand(command) where replyDocuments.first?["ok"]?.int32Value == 1 else {
+                throw MongoError.InsertFailure(documents: documents)
+            }
         }
         
         return newDocuments
@@ -221,7 +223,9 @@ public class Collection {
             command["ordered"] = ordered
         }
         
-        let reply = try self.database.executeCommand(command)
+        guard case .Reply(_, _, _, _, _, _, let documents) = try self.database.executeCommand(command) where documents.first?["ok"]?.int32Value == 1 else {
+            throw MongoError.UpdateFailure(updates: updates)
+        }
     }
     
     public func update(query: Document, updated: Document, upsert: Bool = false, multi: Bool = false, ordered: Bool? = nil) throws {
@@ -239,11 +243,11 @@ public class Collection {
     }
     
     // Delete
-    public func remove(deletes: [(query: Document, limit: Int32)], ordered: Bool? = nil) throws {
+    public func remove(removals: [(query: Document, limit: Int32)], ordered: Bool? = nil) throws {
         var command: Document = ["delete": self.name]
         var newDeletes = [BSONElement]()
         
-        for d in deletes {
+        for d in removals {
             newDeletes.append(*[
                                    "q": d.query,
                                    "limit": d.limit
@@ -256,7 +260,9 @@ public class Collection {
             command["ordered"] = ordered
         }
         
-        let reply = try self.database.executeCommand(command)
+        guard case .Reply(_, _, _, _, _, _, let documents) = try self.database.executeCommand(command) where documents.first?["ok"]?.int32Value == 1 else {
+            throw MongoError.RemoveFailure(removals: removals)
+        }
     }
     
     public func remove(deletes: [(query: Query, limit: Int32)], ordered: Bool? = nil) throws {

@@ -150,6 +150,10 @@ extension Database {
     }
     
     private func completeSASLAuthentication(payload: String, signature: [UInt8], response: Document) throws {
+        guard response["ok"]?.int32Value == 1 else {
+            throw MongoAuthenticationError.IncorrectCredentials
+        }
+        
         if response["done"]?.boolValue == true {
             return
         }
@@ -178,14 +182,23 @@ extension Database {
             throw MongoAuthenticationError.ServerSignatureInvalid
         }
         
-        _ = try self.executeCommand([
+        let response = try self.executeCommand([
                                                    "saslContinue": Int32(1),
                                                    "conversationId": conversationId,
                                                    "payload": ""
             ])
+        
+        guard case .Reply(_, _, _, _, _, _, let documents) = response, let responseDocument = documents.first else {
+            throw InternalMongoError.IncorrectReply(reply: response)
+        }
+        
+        try self.completeSASLAuthentication(payload, signature: serverSignature, response: responseDocument)
     }
     
     private func challenge(details: (username: String, password: String), continuation: (nonce: String, response: Document)) throws {
+        guard continuation.response["ok"]?.int32Value == 1 else {
+            throw MongoAuthenticationError.IncorrectCredentials
+        }
         if continuation.response["done"]?.boolValue == true {
             return
         }

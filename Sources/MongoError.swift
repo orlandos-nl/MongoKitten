@@ -32,10 +32,10 @@ public enum MongoError : ErrorType {
     case QueryFailure(query: Document)
     
     /// Can't update documents with the given selector and update
-    case UpdateFailure(from: Document, to: Document)
+    case UpdateFailure(updates: [(query: Document, update: Document, upsert: Bool, multi: Bool)])
     
     /// Can't remove documents matching the given query
-    case RemoveFailure(query: Document)
+    case RemoveFailure(removals: [(query: Document, limit: Int32)])
     
     /// Can't find a handler for this reply
     case HandlerNotFound
@@ -59,6 +59,7 @@ public enum MongoAuthenticationError : ErrorType {
     case Base64Failure
     case AuthenticationFailure
     case ServerSignatureInvalid
+    case IncorrectCredentials
 }
 
 internal enum InternalMongoError : ErrorType {
