@@ -124,6 +124,8 @@ try collection.remove("age" > 24)
 
 ## Notes
 
+Because we're using `CryptoSwift` in our authentication we're having issues with *release builds*. Currently.. if you want to compile `MongoKitten`'s dependency you'll need to run `swift build` without `--configuration release`. This primarily affects users of `Heroku` where the most popular buildpack is making use of the `--configuration release` parameters.
+
 Due to a limitation in Swift, when embedding a document or array in a BSON document literal, you need to use the `*` prefix operator:
 
 ```swift
