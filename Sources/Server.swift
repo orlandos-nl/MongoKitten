@@ -57,8 +57,13 @@ public class Server {
     /// TOOD: Replace with C7 compliant sockets
     private var socket: BlueSocket
     
+    /// Did we initialize?
+    private var initialized = false
+    
     /// The background thread for sending and receiving data
     private let backgroundQueue = backgroundThread()
+    
+    internal private(set) var serverData: (maxWriteBatchSize: Int32, maxWireVersion: Int32, minWireVersion: Int32)?
     
     /// Initializes a server with a given host and port. Optionally automatically connects
     /// - parameter host: The host we'll connect with for the MongoDB Server
@@ -79,7 +84,35 @@ public class Server {
     public subscript (database: String) -> Database {
         let database = database.stringByReplacingOccurrencesOfString(".", withString: "")
         
-        return Database(server: self, databaseName: database, authenticationDetails: authDetails)
+        let db = Database(server: self, databaseName: database)
+        
+        do {
+            if !initialized {
+                let result = try db.isMaster()
+                
+                if let batchSize = result["maxWriteBatchSize"]?.int32Value, let minWireVersion = result["minWireVersion"]?.int32Value, let maxWireVersion = result["maxWireVersion"]?.int32Value {
+                    serverData = (maxWriteBatchSize: batchSize, maxWireVersion: maxWireVersion, minWireVersion: minWireVersion)
+                    
+                    initialized = true
+                }
+            }
+        } catch {}
+        
+        if let details = authDetails {
+            do {
+                let protocolVersion = serverData?.maxWireVersion ?? 0
+                
+                if protocolVersion >= 3 {
+                    try db.authenticateSASL(details)
+                } else {
+                    try db.authenticateCR(details)
+                }
+            } catch {
+                db.authenticated = false
+            }
+        }
+        
+        return db
     }
     
     /// Generates a messageID for the next Message

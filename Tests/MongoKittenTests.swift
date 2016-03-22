@@ -52,7 +52,7 @@ class MongoKittenTests: XCTestCase {
         } catch {}
         
         do {
-            try server2["test"]["test"].insert(["shouldnt": "beinserted"])
+            _ = try server2["test"]["test"].insert(["shouldnt": "beinserted"])
             XCTFail()
         } catch {}
     }
@@ -62,7 +62,7 @@ class MongoKittenTests: XCTestCase {
     }
     
     func testInsert() {
-        try! testCollection.insert([
+        _ = try! testCollection.insert([
             "double": 53.2,
             "64bit-integer": 52,
             "32bit-integer": Int32(20),
@@ -76,7 +76,7 @@ class MongoKittenTests: XCTestCase {
             "string": "Hello, I'm a string!"
             ])
         
-        try! testCollection.insert([["hont": "kad"], ["fancy": 3.14], ["documents": true]])
+        _ = try! testCollection.insert([["hont": "kad"], ["fancy": 3.14], ["documents": true]])
         
         // TODO: validate!
     }
@@ -98,7 +98,7 @@ class MongoKittenTests: XCTestCase {
     }
     
     func testCollectionDistinct() {
-        try! TestManager.testCollection.insert([
+        _ = try! TestManager.testCollection.insert([
                                                  ["honten": 3, "henk": true],
                                                  ["honten": 2, "baas": true],
                                                  ["honten": 1, "potato": 4],
@@ -136,7 +136,7 @@ class MongoKittenTests: XCTestCase {
 //    }
     
     func testUpdate() {
-        try! testCollection.insert(["honten": "hoien"])
+        _ = try! testCollection.insert(["honten": "hoien"])
         try! testCollection.update(["honten": "hoien"], updated: ["honten": 3])
         
         let doc = try! testCollection.findOne()!
@@ -148,7 +148,7 @@ class MongoKittenTests: XCTestCase {
         let reference = Int64(NSDate().timeIntervalSince1970)
         
         let renameCollection = testDatabase["oldcollectionname"]
-        try! renameCollection.insert(["referencestuff": reference])
+        _ = try! renameCollection.insert(["referencestuff": reference])
         try! renameCollection.rename("newcollectionname")
         
         XCTAssert(renameCollection.name == "newcollectionname")

@@ -18,21 +18,13 @@ public class Database {
     /// The database's name
     public let name: String
     
-    public private(set) var authenticated = true
+    public internal(set) var authenticated = true
     
-    internal init(server: Server, databaseName name: String, authenticationDetails: (username: String, password: String)? = nil) {
+    internal init(server: Server, databaseName name: String) {
         let name = name.stringByReplacingOccurrencesOfString(".", withString: "")
         
         self.server = server
         self.name = name
-        
-        if let details = authenticationDetails {
-            do {
-                try authenticateSASL(details)
-            } catch {
-                self.authenticated = false
-            }
-        }
     }
     
     /// This subscript is used to get a collection by providing a name as a String
@@ -42,7 +34,28 @@ public class Database {
         return Collection(database: self, collectionName: collection)
     }
     
+    @warn_unused_result
+    internal func documentsInMessage(message: Message) throws -> [Document] {
+        guard case .Reply(_, _, _, _, _, _, let documents) = message else {
+            throw InternalMongoError.IncorrectReply(reply: message)
+        }
+        
+        return documents
+    }
+    
+    @warn_unused_result
+    internal func firstDocumentInMessage(message: Message) throws -> Document {
+        let documents = try documentsInMessage(message)
+        
+        guard let document = documents.first else {
+            throw InternalMongoError.IncorrectReply(reply: message)
+        }
+        
+        return document
+    }
+    
     /// Executes a command on this database using a query message
+    @warn_unused_result
     internal func executeCommand(command: Document) throws -> Message {
         let cmd = self["$cmd"]
         let commandMessage = Message.Query(requestID: server.getNextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: command, returnFields: nil)
@@ -50,6 +63,7 @@ public class Database {
         return try server.awaitResponse(id)
     }
     
+    @warn_unused_result
     public func getCollectionInfos(filter filter: Document? = nil) throws -> Cursor<Document> {
         var request: Document = ["listCollections": 1]
         if let filter = filter {
@@ -58,11 +72,9 @@ public class Database {
         
         let reply = try executeCommand(request)
         
-        guard case .Reply(_, _, _, _, _, _, let documents) = reply else {
-            throw InternalMongoError.IncorrectReply(reply: reply)
-        }
+        let result = try firstDocumentInMessage(reply)
         
-        guard let result = documents.first, code = result["ok"]?.intValue, cursor = result["cursor"] as? Document where code == 1 else {
+        guard let code = result["ok"]?.intValue, cursor = result["cursor"] as? Document where code == 1 else {
             throw MongoError.CommandFailure
         }
         
@@ -70,12 +82,20 @@ public class Database {
     }
     
     /// Gets the collections in this database
+    @warn_unused_result
     public func getCollections(filter filter: Document? = nil) throws -> Cursor<Collection> {
         let infoCursor = try self.getCollectionInfos(filter: filter)
         return Cursor(base: infoCursor) { collectionInfo in
             guard let name = collectionInfo["name"]?.stringValue else { return nil }
             return self[name]
         }
+    }
+    
+    @warn_unused_result
+    internal func isMaster() throws -> Document {
+        let response = try self.executeCommand(["ismaster": Int32(1)])
+        
+        return try firstDocumentInMessage(response)
     }
 }
 
@@ -309,7 +329,7 @@ extension Database {
     /// Authenticates to this database using SASL
     /// TODO: Support authentication DBs
     /// TODO: Set a timeout for connecting
-    private func authenticateSASL(details: (username: String, password: String)) throws {
+    internal func authenticateSASL(details: (username: String, password: String)) throws {
         let nonce = generateNonce()
         
         let fixedUsername = details.username.stringByReplacingOccurrencesOfString("=", withString: "=3D").stringByReplacingOccurrencesOfString(",", withString: "=2C")
@@ -324,24 +344,24 @@ extension Database {
                                                    "payload": payload
             ])
         
-        guard case .Reply(_, _, _, _, _, _, let documents) = response, let responseDocument = documents.first else {
-            throw InternalMongoError.IncorrectReply(reply: response)
-        }
+        let responseDocument = try firstDocumentInMessage(response)
         
         try self.challenge(details, continuation: (nonce: nonce, response: responseDocument))
     }
     
     /// Authenticate with MongoDB Challenge Response
     /// TODO: Set a timeout for connecting
-    private func authenticateCR(details: (username: String, password: String)) throws {
+    internal func authenticateCR(details: (username: String, password: String)) throws {
         // Get the server's nonce
         let response = try self.executeCommand([
                                                    "getNonce": Int32(1)
             ])
         
         // Get the server's challenge
-        guard case .Reply(_, _, _, _, _, _, let documents) = response, let document = documents.first, let nonce = document["nonce"]?.stringValue else {
-            throw InternalMongoError.IncorrectReply(reply: response)
+        let document = try firstDocumentInMessage(response)
+        
+        guard let nonce = document["nonce"]?.stringValue else {
+            throw MongoAuthenticationError.AuthenticationFailure
         }
         
         // Digest our password and prepare it for sending
@@ -356,8 +376,10 @@ extension Database {
                                                           "key": key
             ])
         
+        let successDocument = try firstDocumentInMessage(successResponse)
+        
         // Check for success
-        guard case .Reply(_, _, _, _, _, _, let successDocuments) = successResponse, let successDocument = successDocuments.first, let ok = successDocument["ok"]?.intValue where ok == 1 else {
+        guard let ok = successDocument["ok"]?.intValue where ok == 1 else {
             throw InternalMongoError.IncorrectReply(reply: successResponse)
         }
     }

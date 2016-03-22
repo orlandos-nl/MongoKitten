@@ -43,6 +43,7 @@ public class Collection {
     /// Insert a single document in this collection and adds a BSON ObjectId if none is present
     /// - parameter document: The BSON Document to be inserted
     /// - returns: The inserted document. The document will have a value for the "_id"-field.
+    @warn_unused_result
     public func insert(document: Document) throws -> Document {
         let result = try self.insert([document])
         
@@ -57,6 +58,7 @@ public class Collection {
     /// - parameter documents: The BSON Documents that should be inserted
     /// - parameter ordered: On true we'll stop inserting when one document fails. On false we'll ignore failed inserts
     /// - returns: The documents with their (if applicable) updated ObjectIds
+    @warn_unused_result
     public func insert(documents: [Document], ordered: Bool? = nil) throws -> [Document] {
         var documents = documents
         var newDocuments = [Document]()
@@ -147,13 +149,13 @@ public class Collection {
     /// - parameter flags: The Query Flags that we'll use for this query
     /// - parameter fetchChunkSize: The initial amount of returned Documents. We recommend at least one Document.
     /// - returns: The first Document in the Response
+    @warn_unused_result
     public func queryOne(query: Query, flags: QueryFlags = []) throws -> Document? {
         return try self.queryOne(query.data, flags: flags)
     }
     
     /// Finds Documents in this collection
-    /// Cannot be used for DBCommands but only works on MongoDB 3.2 and higher.
-    /// For MongoDB below version 3.2 use `query` with caution.
+    /// Cannot be used for DBCommands when using MongoDB 3.2 or higher
     /// - parameter filter: The filter we're using to match Documents in this collection against
     /// - parameter sort: The Sort Specification used to sort the found Documents
     /// - parameter projection: The Projection Specification used to filter which fields to return
@@ -163,58 +165,73 @@ public class Collection {
     /// - returns: A cursor pointing to the found Documents
     @warn_unused_result
     public func find(filter: Document? = nil, sort: Document? = nil, projection: Document? = nil, skip: Int32? = nil, limit: Int32? = nil, batchSize: Int32 = 10) throws -> Cursor<Document> {
-        var command: Document = ["find": self.name]
+        let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
-        if let filter = filter {
-            command += ["filter": filter]
-        }
-        
-        if let sort = sort {
-            command += ["sort": sort]
-        }
-        
-        if let projection = projection {
-            command += ["projection": projection]
-        }
-        
-        if let skip = skip {
-            command += ["skip": skip]
-        }
-        
-        if let limit = limit {
-            command += ["limit": limit]
-        }
-        
-        command += ["batchSize": Int32(10)]
-        
-        if let sort = sort {
-            command += ["sort": sort]
-        }
-        
-        let reply = try database.executeCommand(command)
-        
-        guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
-            throw InternalMongoError.IncorrectReply(reply: reply)
-        }
-        
-        guard let returnedElements = documents.first?["cursor"]?.documentValue?["firstBatch"]?.documentValue?.arrayValue else {
-            throw MongoError.InvalidResponse(documents: documents)
-        }
-        
-        var returnedDocuments = [Document]()
-        
-        for element in returnedElements {
-            if let document: Document = element.documentValue {
-                returnedDocuments.append(document)
+        switch protocolVersion {
+        case 4:
+            var command: Document = ["find": self.name]
+            
+            if let filter = filter {
+                command += ["filter": filter]
             }
+            
+            if let sort = sort {
+                command += ["sort": sort]
+            }
+            
+            if let projection = projection {
+                command += ["projection": projection]
+            }
+            
+            if let skip = skip {
+                command += ["skip": skip]
+            }
+            
+            if let limit = limit {
+                command += ["limit": limit]
+            }
+            
+            command += ["batchSize": Int32(10)]
+            
+            if let sort = sort {
+                command += ["sort": sort]
+            }
+            
+            let reply = try database.executeCommand(command)
+            
+            guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
+                throw InternalMongoError.IncorrectReply(reply: reply)
+            }
+            
+            guard let returnedElements = documents.first?["cursor"]?.documentValue?["firstBatch"]?.documentValue?.arrayValue else {
+                throw MongoError.InvalidResponse(documents: documents)
+            }
+            
+            var returnedDocuments = [Document]()
+            
+            for element in returnedElements {
+                if let document: Document = element.documentValue {
+                    returnedDocuments.append(document)
+                }
+            }
+            
+            return Cursor(namespace: self.fullName, server: database.server, cursorID: cursorID, initialData: returnedDocuments, chunkSize: batchSize, transform: { $0 })
+        default:
+            let queryMsg = Message.Query(requestID: database.server.getNextMessageID(), flags: [], collection: self, numbersToSkip: skip ?? 0, numbersToReturn: batchSize, query: filter ?? [], returnFields: projection)
+            
+            let id = try self.database.server.sendMessage(queryMsg)
+            let reply = try self.database.server.awaitResponse(id)
+            
+            guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
+                throw InternalMongoError.IncorrectReply(reply: reply)
+            }
+            
+            return Cursor(namespace: self.fullName, server: database.server, cursorID: cursorID, initialData: documents, chunkSize: batchSize, transform: { $0 })
         }
-        
-        return Cursor(namespace: self.fullName, server: database.server, cursorID: cursorID, initialData: returnedDocuments, chunkSize: batchSize, transform: { $0 })
     }
     
     /// Finds Documents in this collection
-    /// Cannot be used for DBCommands but only works on MongoDB 3.2 and higher.
-    /// For MongoDB below version 3.2 use `query` with caution.
+    /// Cannot be used for DBCommands when using MongoDB 3.2 or higher
     /// - parameter filter: The QueryBuilder filter we're using to match Documents in this collection against
     /// - parameter sort: The Sort Specification used to sort the found Documents
     /// - parameter projection: The Projection Specification used to filter which fields to return
@@ -228,8 +245,7 @@ public class Collection {
     }
     
     /// Finds Documents in this collection
-    /// Cannot be used for DBCommands but only works on MongoDB 3.2 and higher.
-    /// For MongoDB below version 3.2 use `query` with caution.
+    /// Cannot be used for DBCommands when using MongoDB 3.2 or higher
     /// - parameter filter: The Document filter we're using to match Documents in this collection against
     /// - parameter sort: The Sort Specification used to sort the found Documents
     /// - parameter projection: The Projection Specification used to filter which fields to return
@@ -238,12 +254,11 @@ public class Collection {
     @warn_unused_result
     public func findOne(filter: Document? = nil, sort: Document? = nil, projection: Document? = nil, skip: Int32? = nil) throws -> Document? {
         return try self.find(filter, sort: sort, projection: projection, skip: skip, limit:
-        1).generate().next()
+            1).generate().next()
     }
     
     /// Finds Documents in this collection
-    /// Cannot be used for DBCommands but only works on MongoDB 3.2 and higher.
-    /// For MongoDB below version 3.2 use `query` with caution.
+    /// Cannot be used for DBCommands when using MongoDB 3.2 or higher
     /// - parameter filter: The QueryBuilder filter we're using to match Documents in this collection against
     /// - parameter sort: The Sort Specification used to sort the found Documents
     /// - parameter projection: The Projection Specification used to filter which fields to return
@@ -264,16 +279,20 @@ public class Collection {
     ///     `multi`: Update all matching Documents instead of just one?
     /// - parameter ordered: If true, stop updating when one operation fails - defaults to true
     public func update(updates: [(query: Document, update: Document, upsert: Bool, multi: Bool)], ordered: Bool? = nil) throws {
+        let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
+        
+        switch protocolVersion {
+        case 2...4:
         var command: Document = ["update": self.name]
         var newUpdates = [BSONElement]()
         
         for u in updates {
             newUpdates.append(*[
-                               "q": u.query,
-                               "u": u.update,
-                               "upsert": u.upsert,
-                               "multi": u.multi
-                               ])
+                                   "q": u.query,
+                                   "u": u.update,
+                                   "upsert": u.upsert,
+                                   "multi": u.multi
+                ])
         }
         
         command["updates"] = Document(array: newUpdates)
@@ -284,6 +303,22 @@ public class Collection {
         
         guard case .Reply(_, _, _, _, _, _, let documents) = try self.database.executeCommand(command) where documents.first?["ok"]?.int32Value == 1 else {
             throw MongoError.UpdateFailure(updates: updates)
+        }
+        default:
+            for update in updates {
+                var flags: UpdateFlags = []
+                
+                if update.multi {
+                    flags.insert(UpdateFlags.MultiUpdate)
+                }
+                
+                if update.upsert {
+                    flags.insert(UpdateFlags.Upsert)
+                }
+                
+                let message = Message.Update(requestID: database.server.getNextMessageID(), collection: self, flags: flags, findDocument: update.query, replaceDocument: update.update)
+                try self.database.server.sendMessage(message)
+            }
         }
     }
     
@@ -326,6 +361,10 @@ public class Collection {
     /// - parameter removals: A list of filters to match documents against. Any given filter can be used infinite amount of removals if `0` or otherwise as often as specified in the limit
     /// - parameter ordered: If true, stop removing when one operation fails - defaults to true
     public func remove(removals: [(query: Document, limit: Int32)], ordered: Bool? = nil) throws {
+        let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
+        
+        switch protocolVersion {
+        case 2...4:
         var command: Document = ["delete": self.name]
         var newDeletes = [BSONElement]()
         
@@ -342,8 +381,32 @@ public class Collection {
             command["ordered"] = ordered
         }
         
-        guard case .Reply(_, _, _, _, _, _, let documents) = try self.database.executeCommand(command) where documents.first?["ok"]?.int32Value == 1 else {
+        let reply = try self.database.executeCommand(command)
+        let documents = try database.documentsInMessage(reply)
+        
+        guard documents.first?["ok"]?.int32Value == 1 else {
             throw MongoError.RemoveFailure(removals: removals)
+        }
+            // If we're talking to an older MongoDB server
+        default:
+            for removal in removals {
+                var flags: DeleteFlags = []
+                
+                // If the limit is 0, make the for loop run exactly once so the message sends
+                // If the limit is not 0, set the limit properly
+                let limit = removal.limit == 0 ? 1 : removal.limit
+                
+                // If the limit is not '0' and thus removes a set amount of documents. Set it to RemoveOne so we'll remove one document at a time using the older method
+                if removal.limit != 0 {
+                    flags.insert(DeleteFlags.RemoveOne)
+                }
+                
+                let message = Message.Delete(requestID: database.server.getNextMessageID(), collection: self, flags: flags, removeDocument: removal.query)
+                
+                for _ in 0..<limit {
+                    try self.database.server.sendMessage(message)
+                }
+            }
         }
     }
     
@@ -374,7 +437,7 @@ public class Collection {
     
     /// The drop command removes an entire collection from a database. This command also removes any indexes associated with the dropped collection.
     public func drop() throws {
-        try self.database.executeCommand(["drop": self.name])
+        _ = try self.database.executeCommand(["drop": self.name])
     }
     
     /// Changes the name of an existing collection. This method supports renames within a single database only. To move the collection to a different database, use the `move` method on `Collection`.
@@ -390,13 +453,13 @@ public class Collection {
     public func move(toDatabase newDb: Database, newName: String? = nil, dropTarget: Bool? = nil) throws {
         // TODO: Fail if the target database exists.
         var command: Document = [
-            "renameCollection": self.fullName,
-            "to": "\(newDb.name).\(newName ?? self.name)"
+                                    "renameCollection": self.fullName,
+                                    "to": "\(newDb.name).\(newName ?? self.name)"
         ]
         
         if let dropTarget = dropTarget { command["dropTarget"] = dropTarget }
         
-        try self.database.server["admin"].executeCommand(command)
+        _ = try self.database.server["admin"].executeCommand(command)
         
         self.database = newDb
         self.name = newName ?? name
