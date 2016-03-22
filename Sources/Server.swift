@@ -37,6 +37,7 @@ public class Server {
     /// The MongoDB-server's port
     private let port: Int32
     
+    /// The authentication details that are used to connect with the MongoDB server
     private let authDetails: (username: String, password: String)?
     
     /// The last Request we sent.. -1 if no request was sent
@@ -45,13 +46,18 @@ public class Server {
     /// The full buffer of received bytes from MongoDB
     internal var fullBuffer = [UInt8]()
     
-    
+    /// A cache for incoming responses
     private var incomingResponses = [(id: Int32, message: Message, date: NSDate)]()
+    
+    /// Contains a map from an ID to a handler. The handlers handle the `incomingResponses`
     private var responseHandlers = [Int32:ResponseHandler]()
+    
     private var waitingForResponses = [Int32:NSCondition]()
     
+    /// TOOD: Replace with C7 compliant sockets
     private var socket: BlueSocket
     
+    /// The background thread for sending and receiving data
     private let backgroundQueue = backgroundThread()
     
     /// Initializes a server with a given host and port. Optionally automatically connects

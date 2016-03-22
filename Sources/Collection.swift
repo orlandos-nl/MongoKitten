@@ -42,12 +42,9 @@ public class Collection {
     
     /// Insert a single document in this collection and adds a BSON ObjectId if none is present
     /// - parameter document: The BSON Document to be inserted
-    /// - parameter flags: An optional list of InsertFlags that will be used with this Insert Operation
     /// - returns: The inserted document. The document will have a value for the "_id"-field.
-    public func insert(document: Document, ordered: Bool? = nil) throws -> Document {
-        // Create and return a future that executes the closure asynchronously
-        // Use the insert to insert this single document
-        let result = try self.insert([document], ordered: ordered)
+    public func insert(document: Document) throws -> Document {
+        let result = try self.insert([document])
         
         guard let newDocument: Document = result.first else {
             throw MongoError.InsertFailure(documents: [document])
@@ -56,10 +53,10 @@ public class Collection {
         return newDocument
     }
     
-    /// Inserts all given document in this collection and adds a BSON ObjectId if none is present
-    /// - parameter document: The BSON Documents to be inserted
-    /// - parameter flags: An optional list of InsertFlags that will be used with this Insert Operation. See InsertFlags for more details
-    /// - returns: An array with copies of the inserted documents. If the documents had no "_id" field when they were inserted, it is added in the returned documents.
+    /// Inserts multiple documents in this collection and adds a BSON ObjectId to documents that do not have an "_id" field
+    /// - parameter documents: The BSON Documents that should be inserted
+    /// - parameter ordered: On true we'll stop inserting when one document fails. On false we'll ignore failed inserts
+    /// - returns: The documents with their (if applicable) updated ObjectIds
     public func insert(documents: [Document], ordered: Bool? = nil) throws -> [Document] {
         var documents = documents
         var newDocuments = [Document]()
@@ -96,13 +93,14 @@ public class Collection {
     }
     
     // Read
-    /// Looks for all Documents matching the query and returns them
-    /// - parameter query: An optional BSON Document that will be used as a selector. All Documents in the response will match at least this Query's fields. By default all collection information will be selected
-    /// - parameter flags: An optional list of QueryFlags that will be used with this Find/Query Operation. See InsertFlags for more details
-    /// - parameter numbersToSkip: An optional integer that will tell MongoDB not to include the first X results in the found Documents
-    /// - parameter numbersToReturn: Optional integer that will tell MongoDB to return the first X results that are not skipped.
-    /// TODO: Above doc is out of date
-    /// - returns: An array with zero or more found documents.
+    
+    /// Queries this collection with a Document
+    /// Can be used for DBCommands as well as find commands.
+    /// For MongoDB server 3.2 and higher we'd recommend using the `find` method in this Collection for security.
+    /// - parameter query: The document that we're matching against in this collection
+    /// - parameter flags: The Query Flags that we'll use for this query
+    /// - parameter fetchChunkSize: The initial amount of returned Documents. We recommend at least one Document.
+    /// - returns: A Cursor pointing to the response Documents.
     @warn_unused_result
     public func query(query: Document = [], flags: QueryFlags = [], fetchChunkSize: Int32 = 10) throws -> Cursor<Document> {
         let queryMsg = Message.Query(requestID: database.server.getNextMessageID(), flags: flags, collection: self, numbersToSkip: 0, numbersToReturn: fetchChunkSize, query: query, returnFields: nil)
@@ -116,26 +114,55 @@ public class Collection {
         return cursor
     }
     
-    public func query(query: Query) throws -> Cursor<Document> {
-        return try self.query(query.data)
+    
+    /// Queries this collection with a Document (which comes from the Query)
+    /// Can be used for DBCommands as well as find commands.
+    /// For MongoDB server 3.2 and higher we'd recommend using the `find` method in this Collection for security.
+    /// - parameter query: The Query that we're matching against in this collection. This query is from the MongoKitten QueryBuilder.
+    /// - parameter flags: The Query Flags that we'll use for this query
+    /// - parameter fetchChunkSize: The initial amount of returned Documents. We recommend at least one Document.
+    /// - returns: A Cursor pointing to the response Documents.
+    @warn_unused_result
+    public func query(query: Query, flags: QueryFlags = [], fetchChunkSize: Int32 = 10) throws -> Cursor<Document> {
+        return try self.query(query.data, flags: flags, fetchChunkSize: fetchChunkSize)
     }
     
-    /// Looks for one Document matching the query and returns it
-    /// - parameter query: An optional BSON Document that will be used as a selector. All Documents in the response will match at least this Query's fields. By default all collection information will be selected
-    /// - parameter flags: An optional list of QueryFlags that will be used with this Find/Query Operation. See QueryFlags for more details
-    /// - returns: The first document matching the query or nil if none found
+    /// Queries this collection with a Document and returns the first result
+    /// Can be used for DBCommands as well as find commands.
+    /// For MongoDB server 3.2 and higher we'd recommend using the `find` method in this Collection for security.
+    /// - parameter query: The document that we're matching against in this collection
+    /// - parameter flags: The Query Flags that we'll use for this query
+    /// - parameter fetchChunkSize: The initial amount of returned Documents. We recommend at least one Document.
+    /// - returns: The first Document in the Response
+    @warn_unused_result
     public func queryOne(query: Document = [], flags: QueryFlags = []) throws -> Document? {
         return try self.query(query, flags: flags, fetchChunkSize: 1).generate().next()
     }
     
-    public func queryOne(query: Query) throws -> Document? {
-        return try self.queryOne(query.data)
+    
+    /// Queries this collection with a Document (which comes from the Query)
+    /// Can be used for DBCommands as well as find commands.
+    /// For MongoDB server 3.2 and higher we'd recommend using the `find` method in this Collection for security.
+    /// - parameter query: The Query that we're matching against in this collection. This query is from the MongoKitten QueryBuilder.
+    /// - parameter flags: The Query Flags that we'll use for this query
+    /// - parameter fetchChunkSize: The initial amount of returned Documents. We recommend at least one Document.
+    /// - returns: The first Document in the Response
+    public func queryOne(query: Query, flags: QueryFlags = []) throws -> Document? {
+        return try self.queryOne(query.data, flags: flags)
     }
     
-    
+    /// Finds Documents in this collection
+    /// Cannot be used for DBCommands but only works on MongoDB 3.2 and higher.
+    /// For MongoDB below version 3.2 use `query` with caution.
+    /// - parameter filter: The filter we're using to match Documents in this collection against
+    /// - parameter sort: The Sort Specification used to sort the found Documents
+    /// - parameter projection: The Projection Specification used to filter which fields to return
+    /// - parameter skip: The amount of Documents to skip before returning the matching Documents
+    /// - parameter limit: The maximum amount of matching documents to return
+    /// - parameter batchSize: The initial amount of Documents to return.
+    /// - returns: A cursor pointing to the found Documents
     @warn_unused_result
     public func find(filter: Document? = nil, sort: Document? = nil, projection: Document? = nil, skip: Int32? = nil, limit: Int32? = nil, batchSize: Int32 = 10) throws -> Cursor<Document> {
-        
         var command: Document = ["find": self.name]
         
         if let filter = filter {
@@ -185,25 +212,57 @@ public class Collection {
         return Cursor(namespace: self.fullName, server: database.server, cursorID: cursorID, initialData: returnedDocuments, chunkSize: batchSize, transform: { $0 })
     }
     
+    /// Finds Documents in this collection
+    /// Cannot be used for DBCommands but only works on MongoDB 3.2 and higher.
+    /// For MongoDB below version 3.2 use `query` with caution.
+    /// - parameter filter: The QueryBuilder filter we're using to match Documents in this collection against
+    /// - parameter sort: The Sort Specification used to sort the found Documents
+    /// - parameter projection: The Projection Specification used to filter which fields to return
+    /// - parameter skip: The amount of Documents to skip before returning the matching Documents
+    /// - parameter limit: The maximum amount of matching documents to return
+    /// - parameter batchSize: The initial amount of Documents to return.
+    /// - returns: A cursor pointing to the found Documents
     @warn_unused_result
     public func find(filter: Query, sort: Document? = nil, projection: Document? = nil, skip: Int32? = nil, limit: Int32? = nil, batchSize: Int32 = 0) throws -> Cursor<Document> {
         return try find(filter.data, sort: sort, projection: projection, skip: skip, limit: limit, batchSize: batchSize)
     }
     
+    /// Finds Documents in this collection
+    /// Cannot be used for DBCommands but only works on MongoDB 3.2 and higher.
+    /// For MongoDB below version 3.2 use `query` with caution.
+    /// - parameter filter: The Document filter we're using to match Documents in this collection against
+    /// - parameter sort: The Sort Specification used to sort the found Documents
+    /// - parameter projection: The Projection Specification used to filter which fields to return
+    /// - parameter skip: The amount of Documents to skip before returning the matching Documents
+    /// - returns: The found Document
     @warn_unused_result
-    public func findOne(filter: Document? = nil, sort: Document? = nil, projection: Document? = nil, skip: Int32? = nil, batchSize: Int32 = 0) throws -> Document? {
+    public func findOne(filter: Document? = nil, sort: Document? = nil, projection: Document? = nil, skip: Int32? = nil) throws -> Document? {
         return try self.find(filter, sort: sort, projection: projection, skip: skip, limit:
-        1, batchSize: batchSize).generate().next()
+        1).generate().next()
     }
     
+    /// Finds Documents in this collection
+    /// Cannot be used for DBCommands but only works on MongoDB 3.2 and higher.
+    /// For MongoDB below version 3.2 use `query` with caution.
+    /// - parameter filter: The QueryBuilder filter we're using to match Documents in this collection against
+    /// - parameter sort: The Sort Specification used to sort the found Documents
+    /// - parameter projection: The Projection Specification used to filter which fields to return
+    /// - parameter skip: The amount of Documents to skip before returning the matching Documents
+    /// - returns: The found Document
     @warn_unused_result
-    public func findOne(filter: Query, sort: Document? = nil, projection: Document? = nil, skip: Int32? = nil, batchSize: Int32 = 0) throws -> Document? {
-        return try findOne(filter.data, sort: sort, projection: projection, skip: skip, batchSize: batchSize)
+    public func findOne(filter: Query, sort: Document? = nil, projection: Document? = nil, skip: Int32? = nil) throws -> Document? {
+        return try findOne(filter.data, sort: sort, projection: projection, skip: skip)
     }
     
     // Update
     
-    
+    /// Updates a list of Documents using a counterpart Document.
+    /// - parameter updates: A list of updates to be executed.
+    ///     `query`: A filter to narrow down which Documents you want to update
+    ///     `update`: The fields and values to update
+    ///     `upsert`: If there isn't anything to update.. insert?
+    ///     `multi`: Update all matching Documents instead of just one?
+    /// - parameter ordered: If true, stop updating when one operation fails - defaults to true
     public func update(updates: [(query: Document, update: Document, upsert: Bool, multi: Bool)], ordered: Bool? = nil) throws {
         var command: Document = ["update": self.name]
         var newUpdates = [BSONElement]()
@@ -228,21 +287,44 @@ public class Collection {
         }
     }
     
+    /// Updates a Document with some new Keys and Values
+    /// - parameter query: The filter to use when searching for Documents to update
+    /// - parameter updated: The data to update these Documents with
+    /// - parameter upsert: Insert when we can't find anything to update
+    /// - parameter multi: Updates more than one result if true
+    /// - parameter ordered: If true, stop updating when one operation fails - defaults to true
     public func update(query: Document, updated: Document, upsert: Bool = false, multi: Bool = false, ordered: Bool? = nil) throws {
         return try self.update([(query: query, update: updated, upsert: upsert, multi: multi)], ordered: ordered)
     }
     
-    public func update(updates: [(query: Query, update: Query, upsert: Bool, multi: Bool)], ordered: Bool? = nil) throws {
-        let newUpdates = updates.map { (query: $0.query.data, update: $0.update.data, upsert: $0.upsert, multi: $0.multi) }
+    /// Updates a list of Documents using a counterpart Document.
+    /// - parameter updates: A list of updates to be executed.
+    ///     `query`: A QueryBuilder filter to narrow down which Documents you want to update
+    ///     `update`: The fields and values to update
+    ///     `upsert`: If there isn't anything to update.. insert?
+    ///     `multi`: Update all matching Documents instead of just one?
+    /// - parameter ordered: If true, stop updating when one operation fails - defaults to true
+    public func update(updates: [(query: Query, update: Document, upsert: Bool, multi: Bool)], ordered: Bool? = nil) throws {
+        let newUpdates = updates.map { (query: $0.query.data, update: $0.update, upsert: $0.upsert, multi: $0.multi) }
         
         try self.update(newUpdates, ordered: ordered)
     }
     
-    public func update(query: Query, updated: Query, upsert: Bool = false, multi: Bool = false, ordered: Bool? = nil) throws {
-        return try self.update([(query: query.data, update: updated.data, upsert: upsert, multi: multi)], ordered: ordered)
+    /// Updates a Document with some new Keys and Values
+    /// - parameter query: The QueryBuilder filter to use when searching for Documents to update
+    /// - parameter updated: The data to update these Documents with
+    /// - parameter upsert: Insert when we can't find anything to update
+    /// - parameter multi: Updates more than one result if true
+    /// - parameter ordered: If true, stop updating when one operation fails - defaults to true
+    public func update(query: Query, updated: Document, upsert: Bool = false, multi: Bool = false, ordered: Bool? = nil) throws {
+        return try self.update([(query: query.data, update: updated, upsert: upsert, multi: multi)], ordered: ordered)
     }
     
     // Delete
+    
+    /// Removes all Documents matching the filter if they're within limit
+    /// - parameter removals: A list of filters to match documents against. Any given filter can be used infinite amount of removals if `0` or otherwise as often as specified in the limit
+    /// - parameter ordered: If true, stop removing when one operation fails - defaults to true
     public func remove(removals: [(query: Document, limit: Int32)], ordered: Bool? = nil) throws {
         var command: Document = ["delete": self.name]
         var newDeletes = [BSONElement]()
@@ -265,15 +347,27 @@ public class Collection {
         }
     }
     
+    /// Removes all Documents matching the filter if they're within limit
+    /// - parameter removals: A list of QueryBuilder filters to match documents against. Any given filter can be used infinite amount of removals if `0` or otherwise as often as specified in the limit
+    /// - parameter ordered: If true, stop removing when one operation fails - defaults to true
     public func remove(deletes: [(query: Query, limit: Int32)], ordered: Bool? = nil) throws {
         let newDeletes = deletes.map { (query: $0.query.data, limit: $0.limit) }
         
         try self.remove(newDeletes, ordered: ordered)
     }
     
-    public func remove(query: Document, limit: Int32, ordered: Bool? = nil) throws {        try self.remove([(query: query, limit: limit)], ordered: ordered)
+    /// Removes all Documents matching the filter if they're within limit
+    /// - parameter query: The Document filter to use when finding Documents that are going to be removed
+    /// - parameter limit: The amount of times this filter can be used to find and remove a Document (0 is every document)
+    /// - parameter ordered: If true, stop removing when one operation fails - defaults to true
+    public func remove(query: Document, limit: Int32, ordered: Bool? = nil) throws {
+        try self.remove([(query: query, limit: limit)], ordered: ordered)
     }
     
+    /// Removes all Documents matching the filter if they're within limit
+    /// - parameter query: The QueryBuilder filter to use when finding Documents that are going to be removed
+    /// - parameter limit: The amount of times this filter can be used to find and remove a Document (0 is every document)
+    /// - parameter ordered: If true, stop removing when one operation fails - defaults to true
     public func remove(query: Query, limit: Int32, ordered: Bool? = nil) throws {
         try self.remove([(query: query.data, limit: limit)], ordered: ordered)
     }
@@ -308,6 +402,11 @@ public class Collection {
         self.name = newName ?? name
     }
     
+    /// Returns the amount of Documents in this collection
+    /// - parameter query: Optional. If specified limits the returned amount to anything matching this query
+    /// - parameter limit: Optional. Limits the returned amount as specified
+    /// - parameter skip: Optional. The amount of Documents to skip before counting
+    @warn_unused_result
     public func count(query: Document? = nil, limit: Int32? = nil, skip: Int32? = nil) throws -> Int? {
         var command: Document = ["count": self.fullName]
         
@@ -328,6 +427,7 @@ public class Collection {
         return documents.first?["n"]?.intValue
     }
     
+    @warn_unused_result
     public func distinct(key: String, query: Document? = nil) throws -> [BSONElement]? {
         var command: Document = ["distinct": self.name, "key": key]
         

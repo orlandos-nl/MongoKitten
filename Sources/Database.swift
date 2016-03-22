@@ -42,6 +42,7 @@ public class Database {
         return Collection(database: self, collectionName: collection)
     }
     
+    /// Executes a command on this database using a query message
     internal func executeCommand(command: Document) throws -> Message {
         let cmd = self["$cmd"]
         let commandMessage = Message.Query(requestID: server.getNextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: command, returnFields: nil)
@@ -68,6 +69,7 @@ public class Database {
         return try Cursor(cursorDocument: cursor, server: server, chunkSize: 10, transform: { $0 })
     }
     
+    /// Gets the collections in this database
     public func getCollections(filter filter: Document? = nil) throws -> Cursor<Collection> {
         let infoCursor = try self.getCollectionInfos(filter: filter)
         return Cursor(base: infoCursor) { collectionInfo in
@@ -78,6 +80,7 @@ public class Database {
 }
 
 extension Database {
+    /// Generates a random String
     private func generateNonce() -> String {
         let allowedCharacters = "!\"#'$%&()*+-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_$"
         
@@ -100,6 +103,7 @@ extension Database {
         return randomString
     }
     
+    /// Parses a SCRAM response
     private func parseResponse(response: String) -> [String: String] {
         var parsedResponse = [String: String]()
         
@@ -114,6 +118,7 @@ extension Database {
         return parsedResponse
     }
     
+    /// Used for applying SHA1_HMAC on a password and salt
     private func digest(password: String, data: [UInt8]) throws -> [UInt8] {
         var passwordBytes = [UInt8]()
         passwordBytes.appendContentsOf(password.utf8)
@@ -121,6 +126,7 @@ extension Database {
         return try Authenticator.HMAC(key: passwordBytes, variant: .sha1).authenticate(data)
     }
     
+    /// xor's two arrays of bytes
     private func xor(left: [UInt8], _ right: [UInt8]) -> [UInt8] {
         var result = [UInt8]()
         let loops = min(left.count, right.count)
@@ -134,6 +140,7 @@ extension Database {
         return result
     }
     
+    /// Applies the `hi` (PBKDF2 with HMAC as PseudoRandom Function)
     private func hi(password: String, salt: [UInt8], iterations: Int) throws -> [UInt8] {
         var salt = salt
         salt.appendContentsOf([0, 0, 0, 1])
@@ -149,11 +156,15 @@ extension Database {
         return ui
     }
     
+    /// Last step(s) in the SASL process
+    /// TODO: Set a timeout for connecting
     private func completeSASLAuthentication(payload: String, signature: [UInt8], response: Document) throws {
+        // If we failed authentication
         guard response["ok"]?.int32Value == 1 else {
             throw MongoAuthenticationError.IncorrectCredentials
         }
         
+        // If we're done
         if response["done"]?.boolValue == true {
             return
         }
@@ -195,18 +206,25 @@ extension Database {
         try self.completeSASLAuthentication(payload, signature: serverSignature, response: responseDocument)
     }
     
+    /// Respond to a challenge
+    /// TODO: Set a timeout for connecting
     private func challenge(details: (username: String, password: String), continuation: (nonce: String, response: Document)) throws {
+        // If we failed the authentication
         guard continuation.response["ok"]?.int32Value == 1 else {
             throw MongoAuthenticationError.IncorrectCredentials
         }
+        
+        // If we're done
         if continuation.response["done"]?.boolValue == true {
             return
         }
         
+        // Get our ConversationID
         guard let conversationId = continuation.response["conversationId"] else {
             throw MongoAuthenticationError.AuthenticationFailure
         }
         
+        // Create our header
         var basicHeader = [UInt8]()
         basicHeader.appendContentsOf("n,,".utf8)
         
@@ -214,6 +232,7 @@ extension Database {
             throw MongoAuthenticationError.Base64Failure
         }
         
+        // Decode the challenge
         guard let stringResponse = continuation.response["payload"]?.stringValue else {
             throw MongoAuthenticationError.AuthenticationFailure
         }
@@ -222,14 +241,17 @@ extension Database {
             throw MongoAuthenticationError.Base64Failure
         }
         
+        // Parse the challenge
         let dictionaryResponse = self.parseResponse(decodedStringResponse)
         
         guard let nonce = dictionaryResponse["r"], let stringSalt = dictionaryResponse["s"], let stringIterations = dictionaryResponse["i"], let iterations = Int(stringIterations) where String(nonce[nonce.startIndex..<nonce.startIndex.advancedBy(24)]) == continuation.nonce else {
             throw MongoAuthenticationError.AuthenticationFailure
         }
         
+        // Build up the basic information
         let noProof = "c=\(header),r=\(nonce)"
         
+        // Calculate the proof
         var digestBytes = [UInt8]()
         digestBytes.appendContentsOf("\(details.username):mongo:\(details.password)".utf8)
         
@@ -258,28 +280,35 @@ extension Database {
         let serverKey = try Authenticator.HMAC(key: saltedPassword, variant: .sha1).authenticate(sk)
         let serverSignature = try Authenticator.HMAC(key: serverKey, variant: .sha1).authenticate(authenticationMessageBytes)
         
+        // Base64 the proof
         guard let proof = clientProof.toBase64() else {
             throw MongoAuthenticationError.Base64Failure
         }
         
+        // Base64 the payload
         guard let payload = "\(noProof),p=\(proof)".cStringBsonData.toBase64() else {
             throw MongoAuthenticationError.Base64Failure
         }
         
+        // Send the proof
         let response = try self.executeCommand([
                                                    "saslContinue": Int32(1),
                                                    "conversationId": conversationId,
                                                    "payload": payload
             ])
         
+        // If we don't get a correct reply
         guard case .Reply(_, _, _, _, _, _, let documents) = response, let responseDocument = documents.first else {
             throw InternalMongoError.IncorrectReply(reply: response)
         }
         
+        // Complete Authentication
         try self.completeSASLAuthentication(payload, signature: serverSignature, response: responseDocument)
     }
     
-    // TODO: Support authentication DBs
+    /// Authenticates to this database using SASL
+    /// TODO: Support authentication DBs
+    /// TODO: Set a timeout for connecting
     private func authenticateSASL(details: (username: String, password: String)) throws {
         let nonce = generateNonce()
         
@@ -302,18 +331,24 @@ extension Database {
         try self.challenge(details, continuation: (nonce: nonce, response: responseDocument))
     }
     
+    /// Authenticate with MongoDB Challenge Response
+    /// TODO: Set a timeout for connecting
     private func authenticateCR(details: (username: String, password: String)) throws {
+        // Get the server's nonce
         let response = try self.executeCommand([
                                                    "getNonce": Int32(1)
             ])
         
+        // Get the server's challenge
         guard case .Reply(_, _, _, _, _, _, let documents) = response, let document = documents.first, let nonce = document["nonce"]?.stringValue else {
             throw InternalMongoError.IncorrectReply(reply: response)
         }
         
+        // Digest our password and prepare it for sending
         let digest = "\(details.username):mongo:\(details.password)".cStringBsonData.md5().toHexString()
         let key = "\(nonce)\(details.username)\(digest)".cStringBsonData.md5().toHexString()
         
+        // Respond to the challengge
         let successResponse = try self.executeCommand([
                                                           "authenticate": 1,
                                                           "nonce": nonce,
@@ -321,6 +356,7 @@ extension Database {
                                                           "key": key
             ])
         
+        // Check for success
         guard case .Reply(_, _, _, _, _, _, let successDocuments) = successResponse, let successDocument = successDocuments.first, let ok = successDocument["ok"]?.intValue where ok == 1 else {
             throw InternalMongoError.IncorrectReply(reply: successResponse)
         }

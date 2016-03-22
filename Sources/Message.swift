@@ -9,7 +9,10 @@
 import Foundation
 import BSON
 
+/// Message to be send or received to/from the server
 enum Message {
+    /// The MessageID this message is responding to
+    /// Will always be 0 unless it's a `Reply` message
     var responseTo: Int32 {
         switch self {
         case .Reply(_, let responseTo, _, _, _, _, _):
@@ -19,6 +22,7 @@ enum Message {
         }
     }
     
+    /// Returns the requestID for this message
     var requestID: Int32 {
         switch self {
         case .Reply(let requestIdentifier, _, _, _, _, _, _):
@@ -32,6 +36,8 @@ enum Message {
         }
     }
     
+    /// Return the OperationCode for this message
+    /// Some OPCodes aren't being used anymore since MongoDB only requires these 4 messages now
     var operationCode: Int32 {
         switch self {
         case .Reply:
@@ -45,15 +51,19 @@ enum Message {
         }
     }
     
+    /// Builds a `.Reply` object from Binary JSON
     static func ReplyFromBSON(data: [UInt8]) throws -> Message {
+        // Get the message length
         guard let length: Int32 = try Int32.instantiate(bsonData: data[0...3]*) else {
             throw DeserializationError.ParseError
         }
         
+        // Check the message length
         if length != Int32(data.count) {
             throw DeserializationError.InvalidDocumentLength
         }
         
+        /// Get our variables from the message
         let requestID = try Int32.instantiate(bsonData: data[4...7]*)
         let responseTo = try Int32.instantiate(bsonData: data[8...11]*)
         
@@ -63,13 +73,16 @@ enum Message {
         let numbersReturned = try Int32.instantiate(bsonData: data[32...35]*)
         let documents = try Document.instantiateAll(data[36..<data.endIndex]*)
         
+        // Return the constructed reply
         return Message.Reply(requestID: requestID, responseTo: responseTo, flags: ReplyFlags.init(rawValue: flags), cursorID: cursorID, startingFrom: startingFrom, numbersReturned: numbersReturned, documents: documents)
     }
     
+    /// Generates BSON From a Message
     func generateBsonMessage() throws -> [UInt8] {
         var body = [UInt8]()
         var requestID: Int32
         
+        // Generate the body
         switch self {
         case .Reply:
             throw MongoError.InvalidAction
@@ -100,7 +113,7 @@ enum Message {
             requestID = requestIdentifier
         }
         
-        // Generate the header using the variables in the protocol
+        // Generate the header using the body
         var header = [UInt8]()
         header += Int32(16 + body.count).bsonData
         header += requestID.bsonData
@@ -110,8 +123,15 @@ enum Message {
         return header + body
     }
     
+    /// The Reply message that we can receive from the server
     case Reply(requestID: Int32, responseTo: Int32, flags: ReplyFlags, cursorID: Int64, startingFrom: Int32, numbersReturned: Int32, documents: [Document])
+    
+    /// Used for CRUD operations on the server.
     case Query(requestID: Int32, flags: QueryFlags, collection: Collection, numbersToSkip: Int32, numbersToReturn: Int32, query: Document, returnFields: Document?)
+    
+    /// Get more data from the cursor's selected data
     case GetMore(requestID: Int32, namespace: String, numberToReturn: Int32, cursor: Int64)
+    
+    /// The message we send when we don't need the selected information anymore
     case KillCursors(requestID: Int32, cursorIDs: [Int64])
 }
