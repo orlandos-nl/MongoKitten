@@ -32,10 +32,10 @@ public enum MongoError : ErrorType {
     case QueryFailure(query: Document)
     
     /// Can't update documents with the given selector and update
-    case UpdateFailure(from: Document, to: Document)
+    case UpdateFailure(updates: [(query: Document, update: Document, upsert: Bool, multi: Bool)])
     
     /// Can't remove documents matching the given query
-    case RemoveFailure(query: Document)
+    case RemoveFailure(removals: [(query: Document, limit: Int32)])
     
     /// Can't find a handler for this reply
     case HandlerNotFound
@@ -47,6 +47,21 @@ public enum MongoError : ErrorType {
     /// Thrown when the initialization of a cursor, on request of the server, failed because of missing data.
     case CursorInitializationError(cursorDocument: Document)
     
+    case InvalidReply
+    
+    case InvalidResponse(documents: [Document])
+    
     /// If you get one of these, it's probably a bug on our side. Sorry. Please file a ticket :)
     case InternalInconsistency
+}
+
+public enum MongoAuthenticationError : ErrorType {
+    case Base64Failure
+    case AuthenticationFailure
+    case ServerSignatureInvalid
+    case IncorrectCredentials
+}
+
+internal enum InternalMongoError : ErrorType {
+    case IncorrectReply(reply: Message)
 }

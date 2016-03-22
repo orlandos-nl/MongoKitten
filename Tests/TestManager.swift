@@ -11,7 +11,7 @@ import BSON
 import Foundation
 
 final class TestManager {
-    static var server: Server = try! Server(host: "127.0.0.1", port: 27017, autoConnect: false)
+    static var server: Server = try! Server(host: "127.0.0.1", port: 27017, authentication: (username: "mongokitten-unittest-user", password: "mongokitten-unittest-password"), autoConnect: false)
     static var testDatabase: Database { return server["mongokitten-unittest"] }
     static var testCollection: Collection { return testDatabase["testcol"] }
     
@@ -26,7 +26,9 @@ final class TestManager {
     static func dropAllTestingCollections() throws {
         // Erase the testing database:
         for aCollection in try! testDatabase.getCollections() {
-            try! aCollection.drop()
+            if !aCollection.name.containsString("system") {
+                try! aCollection.drop()
+            }
         }
     }
     
@@ -50,6 +52,6 @@ final class TestManager {
         }
         
         // insert
-        testingUsers = try testCollection.insertAll(testingUsers)
+        testingUsers = try testCollection.insert(testingUsers)
     }
 }

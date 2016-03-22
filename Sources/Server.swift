@@ -6,7 +6,14 @@
 //  Copyright © 2016 PlanTeam. All rights reserved.
 //
 
+#if os(Linux)
+    import Glibc
+#else
+    import Darwin.C
+#endif
+
 import Foundation
+import CryptoSwift
 import BSON
 import BlueSocket
 
@@ -17,7 +24,7 @@ import BlueSocket
 
 /// A ResponseHandler is a closure that receives a MongoReply to process it
 /// It's internal because ReplyMessages are an internal struct that is used for direct communication with MongoDB only
-internal typealias ResponseHandler = ((reply: ReplyMessage) -> Void)
+internal typealias ResponseHandler = ((reply: Message) -> Void)
 
 /// A server object is the core of MongoKitten. From this you can get databases which can provide you with collections from where you can do actions
 public class Server {
@@ -30,29 +37,43 @@ public class Server {
     /// The MongoDB-server's port
     private let port: Int32
     
+    /// The authentication details that are used to connect with the MongoDB server
+    private let authDetails: (username: String, password: String)?
+    
     /// The last Request we sent.. -1 if no request was sent
     internal var lastRequestID: Int32 = -1
     
     /// The full buffer of received bytes from MongoDB
     internal var fullBuffer = [UInt8]()
     
+    /// A cache for incoming responses
+    private var incomingResponses = [(id: Int32, message: Message, date: NSDate)]()
     
-    private var incomingResponses = [(id: Int32, message: ReplyMessage, date: NSDate)]()
+    /// Contains a map from an ID to a handler. The handlers handle the `incomingResponses`
     private var responseHandlers = [Int32:ResponseHandler]()
+    
     private var waitingForResponses = [Int32:NSCondition]()
     
+    /// TOOD: Replace with C7 compliant sockets
     private var socket: BlueSocket
     
+    /// Did we initialize?
+    private var initialized = false
+    
+    /// The background thread for sending and receiving data
     private let backgroundQueue = backgroundThread()
+    
+    internal private(set) var serverData: (maxWriteBatchSize: Int32, maxWireVersion: Int32, minWireVersion: Int32)?
     
     /// Initializes a server with a given host and port. Optionally automatically connects
     /// - parameter host: The host we'll connect with for the MongoDB Server
     /// - parameter port: The port we'll connect on with the MongoDB Server
     /// - parameter autoConnect: Whether we automatically connect
-    public init(host: String, port: Int32 = 27017, autoConnect: Bool = false) throws {
+    public init(host: String, port: Int32 = 27017, authentication: (username: String, password: String)? = nil, autoConnect: Bool = false) throws {
         self.host = host
         self.port = port
         self.socket = try .defaultConfigured()
+        self.authDetails = authentication
         
         if autoConnect {
             try self.connect()
@@ -63,7 +84,35 @@ public class Server {
     public subscript (database: String) -> Database {
         let database = database.stringByReplacingOccurrencesOfString(".", withString: "")
         
-        return Database(server: self, databaseName: database)
+        let db = Database(server: self, databaseName: database)
+        
+        do {
+            if !initialized {
+                let result = try db.isMaster()
+                
+                if let batchSize = result["maxWriteBatchSize"]?.int32Value, let minWireVersion = result["minWireVersion"]?.int32Value, let maxWireVersion = result["maxWireVersion"]?.int32Value {
+                    serverData = (maxWriteBatchSize: batchSize, maxWireVersion: maxWireVersion, minWireVersion: minWireVersion)
+                    
+                    initialized = true
+                }
+            }
+        } catch {}
+        
+        if let details = authDetails {
+            do {
+                let protocolVersion = serverData?.maxWireVersion ?? 0
+                
+                if protocolVersion >= 3 {
+                    try db.authenticateSASL(details)
+                } else {
+                    try db.authenticateCR(details)
+                }
+            } catch {
+                db.authenticated = false
+            }
+        }
+        
+        return db
     }
     
     /// Generates a messageID for the next Message
@@ -148,16 +197,16 @@ public class Server {
                 
                 let responseData = fullBuffer[0..<length]*
                 let responseId = try Int32.instantiate(bsonData: fullBuffer[8...11]*)
-                let response = try ReplyMessage.init(data: responseData)
+                let reply = try Message.ReplyFromBSON(responseData)
                 
-                incomingResponses.append((responseId, response, NSDate()))
+                incomingResponses.append((responseId, reply, NSDate()))
                 
                 fullBuffer.removeRange(0..<length)
             }
         }
     }
     
-    internal func awaitResponse(requestId: Int32, timeout: NSTimeInterval = 10) throws -> ReplyMessage {
+    internal func awaitResponse(requestId: Int32, timeout: NSTimeInterval = 10) throws -> Message {
         let condition = NSCondition()
         condition.lock()
         waitingForResponses[requestId] = condition

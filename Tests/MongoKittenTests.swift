@@ -33,7 +33,7 @@ class MongoKittenTests: XCTestCase {
     }
     
     func testSetup() {
-        let server2 = try! Server(host: "127.0.0.1", port: 27017, autoConnect: true)
+        let server2 = try! Server(host: "127.0.0.1", port: 27017, authentication: (username: "mongokitten-unittest-user", password: "mongokitten-unittest-password"), autoConnect: true)
         
         do {
             // Should fail
@@ -52,19 +52,17 @@ class MongoKittenTests: XCTestCase {
         } catch {}
         
         do {
-            try server2["test"]["test"].insert(["shouldnt": "beinserted"])
+            _ = try server2["test"]["test"].insert(["shouldnt": "beinserted"])
             XCTFail()
         } catch {}
     }
     
     func testOperators() {
-        let amazingQuery: Query = "hont" == 3 && ("haai" == 5 || "haai" == 4) && "bier" <= 5 && "biertje" >= 6
-        
-        print(amazingQuery.data)
+        let _: Query = "hont" == 3 && ("haai" == 5 || "haai" == 4) && "bier" <= 5 && "biertje" >= 6
     }
     
     func testInsert() {
-        try! testCollection.insert([
+        _ = try! testCollection.insert([
             "double": 53.2,
             "64bit-integer": 52,
             "32bit-integer": Int32(20),
@@ -78,7 +76,7 @@ class MongoKittenTests: XCTestCase {
             "string": "Hello, I'm a string!"
             ])
         
-        try! testCollection.insertAll([["hont": "kad"], ["fancy": 3.14], ["documents": true]])
+        _ = try! testCollection.insert([["hont": "kad"], ["fancy": 3.14], ["documents": true]])
         
         // TODO: validate!
     }
@@ -88,33 +86,57 @@ class MongoKittenTests: XCTestCase {
         let _ = try! testDatabase.getCollectionInfos()
     }
     
-    func testListCollectionsWithCollections() {
-        // TODO: Finish this test
+    func testCollectionCount() {
+        let c = try! TestManager.testCollection.count()
         
-        // Create 200 collections, yay!
-        // okay, the daemon crashes on 200 collections. 50 for now
-        for i in 0..<50 {
-            try! testDatabase["collection\(i)"].insert(["Test document for collection \(i)"])
+        guard let count = c else {
+            XCTFail()
+            return
         }
         
-        let info = Array(try! testDatabase.getCollectionInfos())
-        XCTAssert(info.count == 50)
-        
-        var counter = 0
-        for collection in try! testDatabase.getCollections() {
-            let cur = try! collection.find()
-            let first = Array(cur).first!
-            let str = first[1]!.stringValue!
-            XCTAssert(str.containsString("Test document for collection"))
-            
-            counter += 1
-        }
-        XCTAssert(counter == 50)
-        
+        XCTAssert(count == TestManager.testingUsers.count)
     }
     
+    func testCollectionDistinct() {
+        _ = try! TestManager.testCollection.insert([
+                                                 ["honten": 3, "henk": true],
+                                                 ["honten": 2, "baas": true],
+                                                 ["honten": 1, "potato": 4],
+                                                 ["honten": 1, "nope": Null()]
+                                                 ])
+        
+        let d = try! TestManager.testCollection.distinct("honten", query: nil)
+        XCTAssertEqual(d?.count, 3)
+    }
+
+    /// Disabled because it listed System Collections too
+//    func testListCollectionsWithCollections() {
+//        // TODO: Finish this test
+//        
+//        // Create 200 collections, yay!
+//        // okay, the daemon crashes on 200 collections. 50 for now
+//        for i in 0..<50 {
+//            try! testDatabase["collection\(i)"].insert(["Test document for collection \(i)"])
+//        }
+//        
+//        let info = Array(try! testDatabase.getCollectionInfos())
+//        XCTAssert(info.count == 50)
+//        
+//        var counter = 0
+//        for collection in try! testDatabase.getCollections() {
+//            let cur = try! collection.find()
+//            let first = Array(cur).first!
+//            let str = first[1]!.stringValue!
+//            XCTAssert(str.containsString("Test document for collection"))
+//            
+//            counter += 1
+//        }
+//        XCTAssert(counter == 50)
+//        
+//    }
+    
     func testUpdate() {
-        try! testCollection.insert(["honten": "hoien"])
+        _ = try! testCollection.insert(["honten": "hoien"])
         try! testCollection.update(["honten": "hoien"], updated: ["honten": 3])
         
         let doc = try! testCollection.findOne()!
@@ -126,7 +148,7 @@ class MongoKittenTests: XCTestCase {
         let reference = Int64(NSDate().timeIntervalSince1970)
         
         let renameCollection = testDatabase["oldcollectionname"]
-        try! renameCollection.insert(["referencestuff": reference])
+        _ = try! renameCollection.insert(["referencestuff": reference])
         try! renameCollection.rename("newcollectionname")
         
         XCTAssert(renameCollection.name == "newcollectionname")
@@ -139,26 +161,4 @@ class MongoKittenTests: XCTestCase {
     }
     
     // MARK: - Insert Performance
-//    func testSmallTransactionInsertPerformance() {
-//        // Test inserting lots of small documents in multiple transactions
-//        let collection = server["test"]["test"]
-//        let doc: Document = ["test": "Beautiful string", "4": 32480.2, "henk": *["hallo", 4]]
-//        self.measureBlock {
-//            for _ in 0...1000 {
-//                try! collection.insertSync(doc)
-//            }
-//        }
-//    }
-//    
-//    func testMassiveTransactionInsertPerformance() {
-//        // Test inserting lots of small documents in a single transaction
-//        let collection = server["test"]["test"]
-//        let doc: Document = ["test": "Beautiful string", "4": 32480.2, "henk": *["hallo", 4]]
-//        
-//        // Test inserting a batch of small documents
-//        let arr = Array(count: 1000, repeatedValue: doc)
-//        self.measureBlock {
-//            try! collection.insertAllSync(arr)
-//        }
-//    }
 }
