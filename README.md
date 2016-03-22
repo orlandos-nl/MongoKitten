@@ -7,7 +7,7 @@ Native MongoDB driver for Swift, written in Swift. This library does not wrap ar
 
 ## Requirements
 
-- MongoDB 3.x or higher
+- A mongoDB server
 - Swift Development Snapshot 2016-03-01-a
 
 We don't support any other version of swift with the constantly changing syntax. This required swift version changes constantly with newer versions of `MongoKitten` and it's recommended to pin down the version in SPM.
