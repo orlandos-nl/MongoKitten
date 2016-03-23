@@ -141,8 +141,42 @@ class MongoKittenTests: XCTestCase {
         
         let doc = try! testCollection.findOne()!
         XCTAssert(doc["honten"] as! Int == 3)
-        
     }
+    
+//    func testGridFS() {
+//        let gridFS = GridFS(database: testDatabase)
+//        let data = NSData(contentsOfFile: "./maxresdefault.jpg")!
+//        
+//        let objectID = try! gridFS.storeFile(data, chunkSize: 10000)
+//        
+//        let file = try! gridFS.findOneFile(objectID)
+//        
+//        XCTAssertEqual(file!.id, objectID)
+//        
+//        var newData = [UInt8]()
+//        
+//        for chunk in try! file!.findChunks() {
+//            newData.appendContentsOf(chunk.data.data)
+//        }
+//        
+//        XCTAssertEqual(data.arrayOfBytes(), newData)
+//    }
+    
+//    func testIndexes() {self
+//        try! TestManager.fillCollectionWithSampleUsers(randomAmountBetween: 100...200)
+//        
+//        XCTAssertEqual(Array(try! testCollection.listIndexes()).count, 0)
+//        
+//        try! testCollection.createIndex([(key: "name", asc: true)], name: "mongokitten-unittest-namesindex", partialFilterExpression: nil, buildInBackground: false, unique: true)
+//        
+//        print(Array(try! testCollection.listIndexes()))
+//        
+//        XCTAssertEqual(Array(try! testCollection.listIndexes()).count, 1)
+//        
+//        try! testCollection.dropIndexes("mongokitten-unittest-namesindex")
+//        
+//        XCTAssertEqual(Array(try! testCollection.listIndexes()).count, 0)
+//    }
     
     func testRenameCollection() {
         let reference = Int64(NSDate().timeIntervalSince1970)

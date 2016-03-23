@@ -14,7 +14,7 @@
 
 import Foundation
 import CryptoSwift
-import BSON
+@_exported import BSON
 import BlueSocket
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -63,7 +63,7 @@ public class Server {
     /// The background thread for sending and receiving data
     private let backgroundQueue = backgroundThread()
     
-    internal private(set) var serverData: (maxWriteBatchSize: Int32, maxWireVersion: Int32, minWireVersion: Int32)?
+    internal private(set) var serverData: (maxWriteBatchSize: Int32, maxWireVersion: Int32, minWireVersion: Int32, maxMessageSizeBytes: Int32)?
     
     /// Initializes a server with a given host and port. Optionally automatically connects
     /// - parameter host: The host we'll connect with for the MongoDB Server
@@ -91,7 +91,9 @@ public class Server {
                 let result = try db.isMaster()
                 
                 if let batchSize = result["maxWriteBatchSize"]?.int32Value, let minWireVersion = result["minWireVersion"]?.int32Value, let maxWireVersion = result["maxWireVersion"]?.int32Value {
-                    serverData = (maxWriteBatchSize: batchSize, maxWireVersion: maxWireVersion, minWireVersion: minWireVersion)
+                    let maxMessageSizeBytes = result["maxMessageSizeBytes"]?.int32Value ?? 48000000
+                    
+                    serverData = (maxWriteBatchSize: batchSize, maxWireVersion: maxWireVersion, minWireVersion: minWireVersion, maxMessageSizeBytes: maxMessageSizeBytes)
                     
                     initialized = true
                 }

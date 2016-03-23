@@ -29,8 +29,6 @@ public class Database {
     
     /// This subscript is used to get a collection by providing a name as a String
     public subscript (collection: String) -> Collection {
-        let collection = collection.stringByReplacingOccurrencesOfString(".", withString: "")
-        
         return Collection(database: self, collectionName: collection)
     }
     

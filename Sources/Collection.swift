@@ -29,9 +29,7 @@ public class Collection {
     
     /// Initializes this collection with a database and name
     /// All dots in the name will be removed
-    internal init(database: Database, collectionName: String) {
-        let collectionName = collectionName.stringByReplacingOccurrencesOfString(".", withString: "")
-        
+    internal init(database: Database, collectionName: String) {        
         self.database = database
         self.name = collectionName
     }
@@ -54,6 +52,7 @@ public class Collection {
         return newDocument
     }
     
+    /// TODO: Detect how many bytes are being sent. Max is 48000000 bytes or 48MB
     /// Inserts multiple documents in this collection and adds a BSON ObjectId to documents that do not have an "_id" field
     /// - parameter documents: The BSON Documents that should be inserted
     /// - parameter ordered: On true we'll stop inserting when one document fails. On false we'll ignore failed inserts
@@ -490,6 +489,10 @@ public class Collection {
         return documents.first?["n"]?.intValue
     }
     
+    /// Returns all distinct values for a key in this collection. Allows filtering using query
+    /// - parameter key: The key that we distinct on
+    /// - parameter query: The Document query used to filter through the returned results
+    /// - returns: A list of all distinct values for this key
     @warn_unused_result
     public func distinct(key: String, query: Document? = nil) throws -> [BSONElement]? {
         var command: Document = ["distinct": self.name, "key": key]
@@ -498,12 +501,86 @@ public class Collection {
             command["query"] = query
         }
         
-        let reply = try self.database.executeCommand(command)
-        
-        guard case .Reply(_, _, _, _, _, _, let documents) = reply else {
-            throw InternalMongoError.IncorrectReply(reply: reply)
+        return try database.firstDocumentInMessage(try self.database.executeCommand(command))["values"]?.documentValue?.arrayValue
+    }
+    
+    /// Returns all distinct values for a key in this collection. Allows filtering using query
+    /// - parameter key: The key that we distinct on
+    /// - parameter query: The query used to filter through the returned results
+    /// - returns: A list of all distinct values for this key
+    @warn_unused_result
+    public func distinct(key: String, query: Query) throws -> [BSONElement]? {
+        return try self.distinct(key, query: query.data)
+    }
+    
+    public func createIndex(keys: [(key: String, asc: Bool)], name: String, partialFilterExpression: Document?, buildInBackground: Bool, unique: Bool) throws {
+        try self.createIndexes([(keys: keys, name: name, partialFilterExpression: partialFilterExpression, buildInBackground: buildInBackground, unique: unique)])
+    }
+    
+    /// Creates an index using the given parameters
+    public func createIndexes(indexes: [(keys: [(key: String, asc: Bool)], name: String, partialFilterExpression: Document?, buildInBackground: Bool, unique: Bool)]) throws {
+        guard let wireVersion = database.server.serverData?.maxWireVersion where wireVersion > 2 else {
+            throw MongoError.UnsupportedOperations
+        }
+
+        var indexesDoc: Document = []
+
+        for index in indexes {
+            var keys: Document = []
+            
+            for key in index.keys {
+                keys[key.key] = key.asc ? Int32(1) : Int32(-1)
+            }
+            
+            keys.enforceArray()
+            
+            var indexDocument = *[
+                                               "key": keys,
+                                               "name": index.name
+            ]
+            
+            if let filter = index.partialFilterExpression {
+                indexDocument["partialFilterExpression"] = filter
+            }
+            
+            if index.buildInBackground {
+                indexDocument["background"] = true
+            }
+            
+            if index.unique {
+                indexDocument["unique"] = true
+            }
+            
+            indexesDoc += indexDocument
         }
         
-        return documents.first?["values"]?.documentValue?.arrayValue
+        indexesDoc.enforceArray()
+        
+        _ = try database.executeCommand(["createIndexes": self.name, "indexes": indexesDoc])
+    }
+    
+    /// Remove the index specified
+    /// Warning: Write-locks the database whilst this process is executed
+    /// - parameter indexname: The index name (as specified when creating the index) that will removed. `*` for all indexes
+    public func dropIndexes(indexName: String) throws {
+        _ = try database.executeCommand(["dropIndexes": self.name, "index": indexName])
+    }
+    
+    /// TODO: Make this work?
+    /// Lists all indexes for this collection
+    /// - returns: A Cursor pointing to the Index results
+    @warn_unused_result
+    public func listIndexes() throws -> Cursor<Document> {
+        guard let wireVersion = database.server.serverData?.maxWireVersion where wireVersion > 3 else {
+            throw MongoError.UnsupportedOperations
+        }
+        
+        let result = try database.firstDocumentInMessage(try database.executeCommand(["listIndexes": self.name]))
+        
+        guard let cursorDocument = result["cursor"]?.documentValue else {
+            throw MongoError.CursorInitializationError(cursorDocument: result)
+        }
+        
+        return try Cursor(cursorDocument: cursorDocument, server: database.server, chunkSize: 10, transform: { $0 })
     }
 }

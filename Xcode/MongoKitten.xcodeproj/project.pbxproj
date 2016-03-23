@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		0A4670701C6B9BE500101CCD /* Helper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A46706F1C6B9BE500101CCD /* Helper.swift */; };
 		0A4670751C6BA8B200101CCD /* MongoKitten.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AB842621C5EA80D005CC6B4 /* MongoKitten.framework */; };
+		0A4DA3B81CA1F57500DA2DB0 /* GridFS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4DA3B71CA1F57500DA2DB0 /* GridFS.swift */; };
+		0A4DA3C01CA2102400DA2DB0 /* maxresdefault.jpg in CopyFiles */ = {isa = PBXBuildFile; fileRef = 0A4DA3B91CA20D0C00DA2DB0 /* maxresdefault.jpg */; };
 		0A50990A1C9C2EAC00135938 /* Flags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5099091C9C2EAC00135938 /* Flags.swift */; };
 		0AB842721C5EA80E005CC6B4 /* MongoKittenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842711C5EA80E005CC6B4 /* MongoKittenTests.swift */; };
 		0AB842911C5EC46C005CC6B4 /* Server.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842901C5EC46C005CC6B4 /* Server.swift */; };
@@ -43,8 +45,23 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		0A4DA3BB1CA20D7000DA2DB0 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 12;
+			dstPath = .;
+			dstSubfolderSpec = 7;
+			files = (
+				0A4DA3C01CA2102400DA2DB0 /* maxresdefault.jpg in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		0A46706F1C6B9BE500101CCD /* Helper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Helper.swift; sourceTree = "<group>"; };
+		0A4DA3B71CA1F57500DA2DB0 /* GridFS.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GridFS.swift; sourceTree = "<group>"; };
+		0A4DA3B91CA20D0C00DA2DB0 /* maxresdefault.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = maxresdefault.jpg; sourceTree = "<group>"; };
 		0A5099091C9C2EAC00135938 /* Flags.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Flags.swift; sourceTree = "<group>"; };
 		0AB2CBC51C69E5370009405F /* Package.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Package.swift; path = ../Package.swift; sourceTree = "<group>"; };
 		0AB842621C5EA80D005CC6B4 /* MongoKitten.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = MongoKitten.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -119,6 +136,7 @@
 				8065BD1C1C9A302D00169519 /* Dispatch.swift */,
 				0A46706F1C6B9BE500101CCD /* Helper.swift */,
 				0AB842941C5EC495005CC6B4 /* Collection.swift */,
+				0A4DA3B71CA1F57500DA2DB0 /* GridFS.swift */,
 				0AB842991C5EC5D0005CC6B4 /* OperationCode.swift */,
 				F293D0331C7B0392003D6100 /* MongoError.swift */,
 				F222D7DA1C7B139900778D2F /* Cursor.swift */,
@@ -131,6 +149,7 @@
 		0AB842701C5EA80E005CC6B4 /* Tests */ = {
 			isa = PBXGroup;
 			children = (
+				0A4DA3B91CA20D0C00DA2DB0 /* maxresdefault.jpg */,
 				0AB842711C5EA80E005CC6B4 /* MongoKittenTests.swift */,
 				F208B3D01C85E15700693820 /* ReadTests.swift */,
 				F208B3D21C85E16A00693820 /* TestManager.swift */,
@@ -217,6 +236,7 @@
 				0AB842681C5EA80E005CC6B4 /* Sources */,
 				0AB8426A1C5EA80E005CC6B4 /* Resources */,
 				0AB842691C5EA80E005CC6B4 /* Frameworks */,
+				0A4DA3BB1CA20D7000DA2DB0 /* CopyFiles */,
 			);
 			buildRules = (
 			);
@@ -301,6 +321,7 @@
 				0AB842911C5EC46C005CC6B4 /* Server.swift in Sources */,
 				F293D0341C7B0392003D6100 /* MongoError.swift in Sources */,
 				F293F6F71C984D8D00ED7E03 /* QueryBuilder.swift in Sources */,
+				0A4DA3B81CA1F57500DA2DB0 /* GridFS.swift in Sources */,
 				0AB8429A1C5EC5D0005CC6B4 /* OperationCode.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -349,7 +370,7 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_IDENTITY = "";
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
@@ -396,7 +417,7 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_IDENTITY = "";
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
@@ -472,6 +493,7 @@
 		0AB8427A1C5EA80E005CC6B4 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "";
 				COMBINE_HIDPI_IMAGES = YES;
 				INFOPLIST_FILE = TestInfo.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
@@ -484,6 +506,7 @@
 		0AB8427B1C5EA80E005CC6B4 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "";
 				COMBINE_HIDPI_IMAGES = YES;
 				INFOPLIST_FILE = TestInfo.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";

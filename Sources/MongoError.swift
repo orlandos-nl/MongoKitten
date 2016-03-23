@@ -53,6 +53,8 @@ public enum MongoError : ErrorType {
     
     /// If you get one of these, it's probably a bug on our side. Sorry. Please file a ticket :)
     case InternalInconsistency
+    
+    case UnsupportedOperations
 }
 
 public enum MongoAuthenticationError : ErrorType {
