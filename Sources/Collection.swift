@@ -374,7 +374,7 @@ public class Collection {
                 ])
         }
         
-        command["updates"] = Document(array: newDeletes)
+        command["deletes"] = Document(array: newDeletes)
         
         if let ordered = ordered {
             command["ordered"] = ordered
