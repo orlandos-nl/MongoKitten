@@ -55,6 +55,8 @@ public enum MongoError : ErrorType {
     case InternalInconsistency
     
     case UnsupportedOperations
+    
+    case InvalidChunkSize(chunkSize: Int)
 }
 
 public enum MongoAuthenticationError : ErrorType {

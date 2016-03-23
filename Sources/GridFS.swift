@@ -10,14 +10,17 @@ import CryptoSwift
 import BSON
 import Foundation
 
+/// A GridFS instance similar to a collection
 public class GridFS {
     private let files: Collection
     private let chunks: Collection
     
+    /// Initializes a GridFS Collection (bucket) in a given database
     public init(database: Database, bucketName: String = "fs") {
         files = database["\(bucketName).files"]
         chunks = database["\(bucketName).chunks"]
         
+        // Make indexes
         do {
             try chunks.createIndex([(key: "files_id", asc: true), (key: "n", asc: true)], name: "chunksindex", partialFilterExpression: nil, buildInBackground: true, unique: true)
         } catch {}
@@ -27,10 +30,18 @@ public class GridFS {
         } catch {}
     }
     
+    /// Get the chunks matching the file's ObjectID
+    /// - parameter fileID: The ObjectID belonging to the file
+    /// - returns: A cursor pointing to all chunks in the right order
     public func getFileCursor(fileID: ObjectId) throws -> Cursor<Document> {
         return try chunks.find(["files_id": fileID], sort: ["n": 1], projection: ["data": 1])
     }
     
+    /// Finds all files matching an ObjectId (only one), MD5 hash (usually one) and filename (possibly more than one)
+    /// - parameter id: Optional. Will select any Documents matching this ID (only one or none at all)
+    /// - parameter md5: Optional. Will select any Documents matching this MD5 hash
+    /// - parameter filename: Optional. Will select any Documents matching this filename
+    /// - returns: A cursor pointing to all found files
     public func findFiles(id: ObjectId? = nil, md5: String? = nil, filename: String? = nil) throws -> Cursor<GridFSFile> {
         var filter = *[]
         
@@ -53,6 +64,11 @@ public class GridFS {
         return gridFSCursor
     }
     
+    /// Finds one file matching an ObjectId (only one), MD5 hash (usually one) and filename (possibly more than one)
+    /// - parameter id: Optional. Will select any Documents matching this ID (only one or none at all)
+    /// - parameter md5: Optional. Will select any Documents matching this MD5 hash
+    /// - parameter filename: Optional. Will select any Documents matching this filename
+    /// - returns: The found file -- if any
     public func findOneFile(id: ObjectId? = nil, md5: String? = nil, filename: String? = nil) throws -> GridFSFile? {
         var filter = *[]
         
@@ -75,16 +91,45 @@ public class GridFS {
         return GridFSFile(document: document, chunksCollection: chunks, filesCollection: files)
     }
     
-    public func storeFile(data: NSData, filename: String? = nil, chunkSize: Int = 255000) throws -> ObjectId {
-        return try self.storeFile(data.arrayOfBytes(), filename: filename, chunkSize: chunkSize)
+    /// Stores a file given NSData, an optonal filename and using a chunksize
+    /// - parameter data: An NSData object containing the information to be stored
+    /// - parameter filename: Optional. The filename used to store this file
+    /// - parameter chunkSize: The amount of data to be put into one chunks (maximum 15900000
+    /// - returns: The ObjectID refering to the File in GridFS
+    public func storeFile(data: NSData, filename: String? = nil, chunkSize: Int = 255000, contentType: String? = nil, metadata: BSONElement? = nil) throws -> ObjectId {
+        return try self.storeFile(data.arrayOfBytes(), filename: filename, chunkSize: chunkSize, contentType: contentType, metadata: metadata)
     }
     
-    public func storeFile(data: [UInt8], filename: String? = nil, chunkSize: Int = 255000) throws -> ObjectId {
+    /// Stores a file given NSData, an optonal filename and using a chunksize
+    /// - parameter data: An NSData object containing the information to be stored
+    /// - parameter filename: Optional. The filename used to store this file
+    /// - parameter chunkSize: The amount of data to be put into one chunks (maximum 15900000
+    /// - returns: The ObjectID refering to the File in GridFS
+    public func storeFile(data: [UInt8], filename: String? = nil, chunkSize: Int = 255000, contentType: String? = nil, metadata: BSONElement? = nil) throws -> ObjectId {
+        guard chunkSize < 16900000 else {
+            throw MongoError.InvalidChunkSize(chunkSize: chunkSize)
+        }
+        
         var data = data
         let id = ObjectId()
         let dataSize = data.count
         
-        _ = try files.insert(["_id": id, "length": dataSize, "chunkSize": Int32(chunkSize), "uploadDate": NSDate.init(timeIntervalSinceNow: 0), "md5": data.md5().toHexString()])
+        var insertData = *["_id": id, "length": dataSize, "chunkSize": Int32(chunkSize), "uploadDate": NSDate.init(timeIntervalSinceNow: 0), "md5": data.md5().toHexString()]
+        
+        // Not supported yet
+//        if let aliases = aliases {
+//            
+//        }
+        
+        if let contentType = contentType {
+            insertData += ["contentType": contentType]
+        }
+        
+        if let metadata = metadata {
+            insertData += ["metadata": metadata]
+        }
+        
+        _ = try files.insert(insertData)
         
         var n = 0
         
