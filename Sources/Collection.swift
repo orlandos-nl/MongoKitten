@@ -364,7 +364,7 @@ public class Collection {
         
         switch protocolVersion {
         case 2...4:
-        var command: Document = ["deletes": self.name]
+        var command: Document = ["delete": self.name]
         var newDeletes = [BSONElement]()
         
         for d in removals {
