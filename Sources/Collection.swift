@@ -364,7 +364,7 @@ public class Collection {
         
         switch protocolVersion {
         case 2...4:
-        var command: Document = ["delete": self.name]
+        var command: Document = ["deletes": self.name]
         var newDeletes = [BSONElement]()
         
         for d in removals {
@@ -469,7 +469,7 @@ public class Collection {
     /// - parameter limit: Optional. Limits the returned amount as specified
     /// - parameter skip: Optional. The amount of Documents to skip before counting
     @warn_unused_result
-    public func count(query: Document? = nil, limit: Int32? = nil, skip: Int32? = nil) throws -> Int? {
+    public func count(query: Document? = nil, limit: Int32? = nil, skip: Int32? = nil) throws -> Int {
         var command: Document = ["count": self.fullName]
         
         if let query = query {
@@ -482,11 +482,20 @@ public class Collection {
         
         let reply = try self.database.executeCommand(command)
         
-        guard case .Reply(_, _, _, _, _, _, let documents) = reply else {
+        guard case .Reply(_, _, _, _, _, _, let documents) = reply, let document = documents.first, let n = document["n"]?.intValue else {
             throw InternalMongoError.IncorrectReply(reply: reply)
         }
         
-        return documents.first?["n"]?.intValue
+        return n
+    }
+    
+    /// Returns the amount of Documents in this collection
+    /// - parameter query: Optional. If specified limits the returned amount to anything matching this query
+    /// - parameter limit: Optional. Limits the returned amount as specified
+    /// - parameter skip: Optional. The amount of Documents to skip before counting
+    @warn_unused_result
+    public func count(query: Query, limit: Int32? = nil, skip: Int32? = nil) throws -> Int {
+        return try count(query.data, limit: limit, skip: skip)
     }
     
     /// Returns all distinct values for a key in this collection. Allows filtering using query
