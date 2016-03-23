@@ -51,6 +51,26 @@ do {
 }
 ```
 
+### Connecting to a server with authentication
+
+```swift
+import MongoKitten
+import BSON
+
+do {
+	let server = try Server(host: "127.0.0.1", authentication = (username: "my-user", password: "my-pass"))
+	try server.connect()
+	
+	let collection = server["nicedatabase"]["nicecollection"]
+	
+	for user in try collection.find("username" == "harriebob") {
+		// do something with the user
+	}
+} catch {
+	// do something with the error
+}
+```
+
 ### More complex queries
 ```swift
 var q: Query = "username" == "henk" && "age" > 24
@@ -120,6 +140,50 @@ try collection.update("username" == "henk", ["$set": ["username": "fred"]], flag
 
 // Delete:
 try collection.remove("age" > 24)
+```
+
+### GridFS
+
+```swift
+// Make a GridFS Collection within the database 'mydatabase'
+let gridFS = GridFS(database: server["mydatabase"])
+
+// Find all bytes corresponding to this image
+let data = NSData(contentsOfFile: "./myimage.jpg")!
+
+// Store the file in GridFS with maximum 10000 bytes per chunk (255000 is the recommended default) and doesn't need to be set
+// Store the ObjectID corresponding to the file in a constant variable
+let objectID = try! gridFS.storeFile(data, chunkSize: 10000)
+
+// Retreive the file from GridFS
+let file = try! gridFS.findOneFile(objectID)
+
+// Make a buffer to store this file's data in
+var buffer = [UInt8]()
+
+// Loop over all chunks of data in the file
+for chunk in try! file!.findChunks() {
+    // Append the chunk to the buffer
+    buffer.appendContentsOf(chunk.data.data)
+}
+
+return buffer
+```
+
+### GridFS example usage
+
+Imagine running a video streaming site. One of your users uploads a video. This will be stored in GridFS within 255000-byte chunks.
+
+Now one user starts watching the video. You'll load the video chunk-by-chunk without keeping all of the video's buffer in memory.
+
+The user quits the video about 40% through the video. Let's say chunk 58 of 144 of your video. Now you'll want to start continueing the video where it left off without receving all the unneccesary chunks.
+
+We'd do that like this:
+
+```swift
+for var chunk in try file.findChunks(skip: 57) {
+	...
+}
 ```
 
 ## Notes

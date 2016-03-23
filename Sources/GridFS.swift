@@ -186,6 +186,7 @@ public struct GridFSFile {
     /// The collection where this file is stored
     let filesCollection: Collection
     
+    /// Initializes from a file-collection Document
     internal init?(document: Document, chunksCollection: Collection, filesCollection: Collection) {
         guard let id = document["_id"]?.objectIdValue,
             length = document["length"]?.int32Value,
@@ -220,6 +221,7 @@ public struct GridFSFile {
         self.metadata = document["metadata"]
     }
     
+    /// Finds all or specific chunks
     public func findChunks(skip: Int32 = 0, limit: Int32 = 0) throws -> Cursor<GridFSChunk> {
         let cursor = try chunksCollection.find(["files_id": id], sort: ["n": 1], skip: skip, limit: limit)
         
@@ -227,15 +229,27 @@ public struct GridFSFile {
     }
 }
 
+/// A GridFS Byte Chunk that's part of a file
 public struct GridFSChunk {
+    /// The ID of this chunk
     public let id: ObjectId
+    
+    /// The ID of the file that this chunk is a part of
     public let filesID: ObjectId
+    
+    /// Which chunk we are
     public let n: Int32
+    
+    /// The data for our chunk
     public let data: Binary
     
+    /// The chunk Collection which this chunk is in
     let chunksCollection: Collection
+    
+    /// The files collection where our file is stored
     let filesCollection: Collection
     
+    /// Initializes with a Document found when looking for chunks
     internal init?(document: Document, chunksCollection: Collection, filesCollection: Collection) {
         guard let id = document["_id"]?.objectIdValue,
             filesID = document["files_id"]?.objectIdValue,
