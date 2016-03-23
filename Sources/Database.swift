@@ -6,7 +6,6 @@
 //  Copyright © 2016 PlanTeam. All rights reserved.
 //
 
-import CryptoSwift
 import Foundation
 import BSON
 

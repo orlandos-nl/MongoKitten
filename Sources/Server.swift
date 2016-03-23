@@ -13,7 +13,6 @@
 #endif
 
 import Foundation
-import CryptoSwift
 @_exported import BSON
 import BlueSocket
 

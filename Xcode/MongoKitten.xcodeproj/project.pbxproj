@@ -9,6 +9,20 @@
 /* Begin PBXBuildFile section */
 		0A4670701C6B9BE500101CCD /* Helper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A46706F1C6B9BE500101CCD /* Helper.swift */; };
 		0A4670751C6BA8B200101CCD /* MongoKitten.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AB842621C5EA80D005CC6B4 /* MongoKitten.framework */; };
+		0A4D3C9C1CA27D32005FAAD7 /* HashProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4D3C9B1CA27D32005FAAD7 /* HashProtocol.swift */; };
+		0A4D3C9E1CA27D36005FAAD7 /* MD5.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4D3C9D1CA27D36005FAAD7 /* MD5.swift */; };
+		0A4D3CA01CA27D78005FAAD7 /* IntExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4D3C9F1CA27D78005FAAD7 /* IntExtension.swift */; };
+		0A4D3CA21CA27DA0005FAAD7 /* Generics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4D3CA11CA27DA0005FAAD7 /* Generics.swift */; };
+		0A4D3CA41CA27DC6005FAAD7 /* IntegerConvertible.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4D3CA31CA27DC6005FAAD7 /* IntegerConvertible.swift */; };
+		0A4D3CA61CA27DEB005FAAD7 /* Operators.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4D3CA51CA27DEB005FAAD7 /* Operators.swift */; };
+		0A4D3CA81CA27E0E005FAAD7 /* BytesSequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4D3CA71CA27E0E005FAAD7 /* BytesSequence.swift */; };
+		0A4D3CAA1CA27EED005FAAD7 /* Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4D3CA91CA27EED005FAAD7 /* Utils.swift */; };
+		0A4D3CAC1CA27F4A005FAAD7 /* NSData+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4D3CAB1CA27F4A005FAAD7 /* NSData+Extension.swift */; };
+		0A4D3CAE1CA27FA1005FAAD7 /* CSArrayType+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4D3CAD1CA27FA1005FAAD7 /* CSArrayType+Extension.swift */; };
+		0A4D3CB41CA2806A005FAAD7 /* HMAC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4D3CB31CA2806A005FAAD7 /* HMAC.swift */; };
+		0A4D3CB61CA280B5005FAAD7 /* Authenticator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4D3CB51CA280B5005FAAD7 /* Authenticator.swift */; };
+		0A4D3CB91CA28452005FAAD7 /* Hash.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4D3CB71CA28452005FAAD7 /* Hash.swift */; };
+		0A4D3CBA1CA28452005FAAD7 /* SHA1.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4D3CB81CA28452005FAAD7 /* SHA1.swift */; };
 		0A4DA3B81CA1F57500DA2DB0 /* GridFS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4DA3B71CA1F57500DA2DB0 /* GridFS.swift */; };
 		0A50990A1C9C2EAC00135938 /* Flags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5099091C9C2EAC00135938 /* Flags.swift */; };
 		0AB842721C5EA80E005CC6B4 /* MongoKittenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842711C5EA80E005CC6B4 /* MongoKittenTests.swift */; };
@@ -58,6 +72,20 @@
 
 /* Begin PBXFileReference section */
 		0A46706F1C6B9BE500101CCD /* Helper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Helper.swift; sourceTree = "<group>"; };
+		0A4D3C9B1CA27D32005FAAD7 /* HashProtocol.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HashProtocol.swift; sourceTree = "<group>"; };
+		0A4D3C9D1CA27D36005FAAD7 /* MD5.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MD5.swift; sourceTree = "<group>"; };
+		0A4D3C9F1CA27D78005FAAD7 /* IntExtension.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = IntExtension.swift; sourceTree = "<group>"; };
+		0A4D3CA11CA27DA0005FAAD7 /* Generics.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Generics.swift; sourceTree = "<group>"; };
+		0A4D3CA31CA27DC6005FAAD7 /* IntegerConvertible.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = IntegerConvertible.swift; sourceTree = "<group>"; };
+		0A4D3CA51CA27DEB005FAAD7 /* Operators.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Operators.swift; sourceTree = "<group>"; };
+		0A4D3CA71CA27E0E005FAAD7 /* BytesSequence.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BytesSequence.swift; sourceTree = "<group>"; };
+		0A4D3CA91CA27EED005FAAD7 /* Utils.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Utils.swift; sourceTree = "<group>"; };
+		0A4D3CAB1CA27F4A005FAAD7 /* NSData+Extension.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "NSData+Extension.swift"; sourceTree = "<group>"; };
+		0A4D3CAD1CA27FA1005FAAD7 /* CSArrayType+Extension.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "CSArrayType+Extension.swift"; sourceTree = "<group>"; };
+		0A4D3CB31CA2806A005FAAD7 /* HMAC.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HMAC.swift; sourceTree = "<group>"; };
+		0A4D3CB51CA280B5005FAAD7 /* Authenticator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Authenticator.swift; sourceTree = "<group>"; };
+		0A4D3CB71CA28452005FAAD7 /* Hash.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Hash.swift; sourceTree = "<group>"; };
+		0A4D3CB81CA28452005FAAD7 /* SHA1.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SHA1.swift; sourceTree = "<group>"; };
 		0A4DA3B71CA1F57500DA2DB0 /* GridFS.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GridFS.swift; sourceTree = "<group>"; };
 		0A5099091C9C2EAC00135938 /* Flags.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Flags.swift; sourceTree = "<group>"; };
 		0AB2CBC51C69E5370009405F /* Package.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Package.swift; path = ../Package.swift; sourceTree = "<group>"; };
@@ -103,6 +131,27 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0A4D3C9A1CA27D1E005FAAD7 /* CryptoSwift */ = {
+			isa = PBXGroup;
+			children = (
+				0A4D3CB71CA28452005FAAD7 /* Hash.swift */,
+				0A4D3CB81CA28452005FAAD7 /* SHA1.swift */,
+				0A4D3CB51CA280B5005FAAD7 /* Authenticator.swift */,
+				0A4D3C9B1CA27D32005FAAD7 /* HashProtocol.swift */,
+				0A4D3CA91CA27EED005FAAD7 /* Utils.swift */,
+				0A4D3CA51CA27DEB005FAAD7 /* Operators.swift */,
+				0A4D3CAB1CA27F4A005FAAD7 /* NSData+Extension.swift */,
+				0A4D3CA71CA27E0E005FAAD7 /* BytesSequence.swift */,
+				0A4D3C9D1CA27D36005FAAD7 /* MD5.swift */,
+				0A4D3CAD1CA27FA1005FAAD7 /* CSArrayType+Extension.swift */,
+				0A4D3C9F1CA27D78005FAAD7 /* IntExtension.swift */,
+				0A4D3CA31CA27DC6005FAAD7 /* IntegerConvertible.swift */,
+				0A4D3CA11CA27DA0005FAAD7 /* Generics.swift */,
+				0A4D3CB31CA2806A005FAAD7 /* HMAC.swift */,
+			);
+			name = CryptoSwift;
+			sourceTree = "<group>";
+		};
 		0AB842581C5EA80D005CC6B4 = {
 			isa = PBXGroup;
 			children = (
@@ -127,6 +176,7 @@
 		0AB842641C5EA80D005CC6B4 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				0A4D3C9A1CA27D1E005FAAD7 /* CryptoSwift */,
 				0AB842961C5EC4A7005CC6B4 /* Messages */,
 				0AB842901C5EC46C005CC6B4 /* Server.swift */,
 				0AB842921C5EC48A005CC6B4 /* Database.swift */,
@@ -307,6 +357,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0A4D3C9E1CA27D36005FAAD7 /* MD5.swift in Sources */,
 				F222D7DB1C7B139900778D2F /* Cursor.swift in Sources */,
 				8065BD1D1C9A302D00169519 /* Dispatch.swift in Sources */,
 				0A4670701C6B9BE500101CCD /* Helper.swift in Sources */,
@@ -314,11 +365,24 @@
 				0A50990A1C9C2EAC00135938 /* Flags.swift in Sources */,
 				0AB842981C5EC4BA005CC6B4 /* Message.swift in Sources */,
 				0AB842931C5EC48A005CC6B4 /* Database.swift in Sources */,
+				0A4D3CA01CA27D78005FAAD7 /* IntExtension.swift in Sources */,
+				0A4D3CA81CA27E0E005FAAD7 /* BytesSequence.swift in Sources */,
+				0A4D3CA21CA27DA0005FAAD7 /* Generics.swift in Sources */,
 				0AB842911C5EC46C005CC6B4 /* Server.swift in Sources */,
 				F293D0341C7B0392003D6100 /* MongoError.swift in Sources */,
 				F293F6F71C984D8D00ED7E03 /* QueryBuilder.swift in Sources */,
+				0A4D3CB41CA2806A005FAAD7 /* HMAC.swift in Sources */,
 				0A4DA3B81CA1F57500DA2DB0 /* GridFS.swift in Sources */,
+				0A4D3CAC1CA27F4A005FAAD7 /* NSData+Extension.swift in Sources */,
+				0A4D3CAA1CA27EED005FAAD7 /* Utils.swift in Sources */,
+				0A4D3CA41CA27DC6005FAAD7 /* IntegerConvertible.swift in Sources */,
+				0A4D3C9C1CA27D32005FAAD7 /* HashProtocol.swift in Sources */,
+				0A4D3CB91CA28452005FAAD7 /* Hash.swift in Sources */,
 				0AB8429A1C5EC5D0005CC6B4 /* OperationCode.swift in Sources */,
+				0A4D3CBA1CA28452005FAAD7 /* SHA1.swift in Sources */,
+				0A4D3CB61CA280B5005FAAD7 /* Authenticator.swift in Sources */,
+				0A4D3CA61CA27DEB005FAAD7 /* Operators.swift in Sources */,
+				0A4D3CAE1CA27FA1005FAAD7 /* CSArrayType+Extension.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
