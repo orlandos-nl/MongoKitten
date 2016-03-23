@@ -422,7 +422,7 @@ public class Collection {
     /// - parameter query: The Document filter to use when finding Documents that are going to be removed
     /// - parameter limit: The amount of times this filter can be used to find and remove a Document (0 is every document)
     /// - parameter ordered: If true, stop removing when one operation fails - defaults to true
-    public func remove(query: Document, limit: Int32, ordered: Bool? = nil) throws {
+    public func remove(query: Document, limit: Int32 = 0, ordered: Bool? = nil) throws {
         try self.remove([(query: query, limit: limit)], ordered: ordered)
     }
     
@@ -430,7 +430,7 @@ public class Collection {
     /// - parameter query: The QueryBuilder filter to use when finding Documents that are going to be removed
     /// - parameter limit: The amount of times this filter can be used to find and remove a Document (0 is every document)
     /// - parameter ordered: If true, stop removing when one operation fails - defaults to true
-    public func remove(query: Query, limit: Int32, ordered: Bool? = nil) throws {
+    public func remove(query: Query, limit: Int32 = 0, ordered: Bool? = nil) throws {
         try self.remove([(query: query.data, limit: limit)], ordered: ordered)
     }
     

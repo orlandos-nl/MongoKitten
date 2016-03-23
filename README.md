@@ -14,9 +14,11 @@ We don't support any other version of swift with the constantly changing syntax.
 
 Note: other versions of `swift` and `MongoDB` may or may not work. We do not support them.
 
+# Tutorial
+
 ## Setup
 
-Add to your Package.swift:
+Add `MongoKitten` to your Package.swift:
 
 ```swift
 import PackageDescription
@@ -29,120 +31,153 @@ let package = Package(
 )
 ```
 
-## Usage
-
-### Connecting to a server and doing a simple query
+Import the MongoKitten library:
 
 ```swift
 import MongoKitten
-import BSON
+```
 
+Connect to your local MongoDB server:
+
+```swift
 do {
 	let server = try Server(host: "127.0.0.1")
-	try server.connect()
-	
-	let collection = server["nicedatabase"]["nicecollection"]
-	
-	for user in try collection.find("username" == "harriebob") {
-		// do something with the user
-	}
+
 } catch {
-	// do something with the error
+	print("MongoDB is not available on the given host and port")
 }
 ```
 
-### Connecting to a server with authentication
+Or an external server with an account:
 
 ```swift
-import MongoKitten
-import BSON
-
-do {
-	let server = try Server(host: "127.0.0.1", authentication = (username: "my-user", password: "my-pass"))
-	try server.connect()
-	
-	let collection = server["nicedatabase"]["nicecollection"]
-	
-	for user in try collection.find("username" == "harriebob") {
-		// do something with the user
-	}
-} catch {
-	// do something with the error
-}
+let server = try Server(host: "example.com", port: 27017, authentication: (username: "my-user", password: "my-pass"))
 ```
 
-### More complex queries
+Select a database to use for your application:
+
 ```swift
-var q: Query = "username" == "henk" && "age" > 24
-
-if userDefinedThing {
-	q &= "male" == true
-}
-
-// You can initialize an array with a Cursor to fetch all data at once:
-let results = try Array(collection.find(q))
+let database = server["mydatabase"]
 ```
 
+And select your collections to use from the database:
+
 ```swift
-for u in try collection.find("username" == "Robbert" || "username" == "Joannis") {
-	// ....
-	// break from the loop when finished and the driver won't fetch additional data:
-	if gotWhatsNeeded {
-		break
-	}
-}
+let userCollection = database["users"]
+let otherCollection = database["otherdata"]
 ```
 
-You can do a custom query by not using the query operators:
+## Creating Documents
+
+In `MongoKitten` we use our own `BSON` library for working with MongoDB Documents.
+
+You can create a simple user document like this:
 
 ```swift
-let r = try collection.find(["username": "henk"])
-```
-
-### Inserting a document
-
-```swift
-try collection.insert(["username": "henk", "password": "fred"])
-```
-
-### Inserting multiple documents
-
-```swift
-let docs: [Document] = [
-	["username": "Bob", "password": "Fred"],
-	["username": "Harrie", "password": "Bob"]
+let userDocument: Document = [
+	"username": "Joannis",
+	"password": "myPassword",
+	"age": 19,
+	"male": true
 ]
-
-try collection.insert(docs)
 ```
 
-### Listing collections
+If you want to embed documents or arrays you'll need the `*` prefix operator before your embedded document like this:
 
 ```swift
-let collections = try database.getCollections() // returns a Cursor<Collection>
-for collection in collections {
-	// ...
+let testDocument: Document = [
+	"example": "data",
+	"embeddedDocument": *[
+		"name": "Henk",
+		"male": false,
+		"age": 12,
+		"pets": *["dog", "dog", "cat", "mouse"]
+	]
+]
+```
+
+## Inserting Documents
+
+Using the above document you can insert the data in the collection.
+
+```swift
+try userCollection.insert(testDocument)
+```
+
+In the collection's insert method you can also insert a group of Documents: `[Document]`
+
+```swift
+try userCollection.insert([testDocument, testDocument, testDocument])
+```
+
+## Finding data
+
+To find the Documents in the collection we'll want to use `find` or `findOne` on the collection.
+
+```swift
+// Lists all Documents in the Collection
+let resultUsers = try userCollection.find()
+```
+
+This returns a cursor that you can use to loop over users. `MongoKitten`'s `Cursor` by default loads 10 Documents at a time from `MongoDB` which is customizable to a bigger or smaller amount of Documents.
+
+This allows us to provide a smaller delay when looping over data. This also allows the application to remove the cursor halfway through the Documents without downloading Documents that aren't being used.
+
+Looping over the above results is easy:
+
+```swift
+for userDocument in resultUsers {
+	 print(userDocument)
+	
+    if userDocument["username"]?.stringValue == "harriebob" {
+        print(userDocument)
+    }
 }
 ```
 
-### Full CRUD
+If you do want all Documents in one array. For example when exporting all data in a collection to CSV you can use `Array()`:
 
 ```swift
-// Create:
-try collection.insert(["username": "henk", "age": 245])
-
-// Read:
-try collection.find("username" == "henk") // Cursor<Document>
-try collection.findOne("username" == "henk") // Document?
-
-// Update:
-try collection.update("username" == "henk", ["$set": ["username": "fred"]], flags: [.Upsert])
-
-// Delete:
-try collection.remove("age" > 24)
+let allUserDocuments = Array(resultUsers)
 ```
 
-### GridFS
+### QueryBuilder
+
+We also have a query builder which can be easily used to create filters when searching for Documents.
+
+```swift
+let q: Query = "username" == "harriebob" && "age" > 24
+
+let result = try userCollection.findOne(q)
+```
+
+Or simpler:
+
+```swift
+let newResult = try userCollection.findOne("username" == "harriebob" && "age" > 24)
+```
+
+## Updating data
+
+Updating data is simple too:
+
+```swift
+try userCollection.update(["username": "bob"], updated: ["username": "anotherbob"])
+```
+
+## Deleting data
+
+Deleting is possible using a document and a query
+
+```swift
+// Delete using a document
+try userCollection.remove(["username": "klaas"])
+
+// Delete using a query:
+try userCollection.remove("age" >= 24)
+```
+
+## GridFS
 
 ```swift
 // Make a GridFS Collection within the database 'mydatabase'
@@ -166,8 +201,6 @@ for chunk in try! file!.findChunks() {
     // Append the chunk to the buffer
     buffer.appendContentsOf(chunk.data.data)
 }
-
-return buffer
 ```
 
 ### GridFS example usage
@@ -181,19 +214,13 @@ The user quits the video about 40% through the video. Let's say chunk 58 of 144 
 We'd do that like this:
 
 ```swift
-for var chunk in try file.findChunks(skip: 57) {
-	...
+do {
+    for chunk in try file.findChunks(skip: 57) {
+	    // process the chunks
+    }
+} catch {
+    print("Couldn't get the chunks")
 }
-```
-
-## Notes
-
-Because we're using `CryptoSwift` in our authentication we're having issues with *release builds*. Currently.. if you want to compile `MongoKitten`'s dependency you'll need to run `swift build` without `--configuration release`. This primarily affects users of `Heroku` where the most popular buildpack is making use of the `--configuration release` parameters.
-
-Due to a limitation in Swift, when embedding a document or array in a BSON document literal, you need to use the `*` prefix operator:
-
-```swift
-try collection.insert(["henk": *["fred", "harriebob"]])
 ```
 
 ## Security notes
