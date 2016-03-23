@@ -151,18 +151,39 @@ public class GridFS {
     }
 }
 
+/// A file in GridFS
 public struct GridFSFile {
+    /// The ObjectID for this file
     public let id: ObjectId
+    
+    /// The amount of bytes in this file
     public let length: Int32
+    
+    /// The amount of data per chunk
     public let chunkSize: Int32
+    
+    /// The date on which this file has been uploaded
     public let uploadDate: NSDate
+    
+    /// The file's MD5 hash
     public let md5: String
+    
+    /// The file's name (if any)
     public let filename: String?
+    
+    /// The file's content-type (MIME) (if any)
     public let contentType: String?
+    
+    /// The aliases for this file (if any)
     public let aliases: [String]?
+    
+    /// The metadata for this file (if any)
     public let metadata: BSONElement?
     
+    /// The collection where the chunks are stored
     let chunksCollection: Collection
+    
+    /// The collection where this file is stored
     let filesCollection: Collection
     
     internal init?(document: Document, chunksCollection: Collection, filesCollection: Collection) {
