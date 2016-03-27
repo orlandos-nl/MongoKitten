@@ -17,7 +17,7 @@ internal postfix func * (slice: ArraySlice<Byte>) -> [Byte] {
 
 internal func replaceOccurrences(in string: String, where matching: String, with replacement: String) -> String {
     #if os(Linux)
-        return string.stringByReplacingOccurrencesOf(matching, withString: replacement)
+        return string.stringByReplacingOccurrencesOfString(matching, withString: replacement)
     #else
         return string.replacingOccurrences(of: matching, with: replacement)
     #endif
