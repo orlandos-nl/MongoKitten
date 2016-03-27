@@ -92,7 +92,7 @@ public class Server {
     /// - parameter database: The database's name
     /// - returns: A database instance for the requested database
     public subscript (database: String) -> Database {
-        let database = database.replacingOccurrences(of: ".", with: "")
+        let database = replaceOccurrences(in: database, where: ".", with: "")
         
         let db = Database(database: database, at: self)
         
@@ -206,9 +206,15 @@ public class Server {
         condition.lock()
         waitingForResponses[requestId] = condition
         
-        if condition.wait(until: NSDate(timeIntervalSinceNow: timeout)) == false {
-            throw MongoError.Timeout
-        }
+        #if os(Linux)
+            if condition.waitUntilDate(NSDate(timeIntervalSinceNow: timeout)) == false {
+                throw MongoError.Timeout
+            }
+        #else
+            if condition.wait(until: NSDate(timeIntervalSinceNow: timeout)) == false {
+                throw MongoError.Timeout
+            }
+        #endif
         
         condition.unlock()
         

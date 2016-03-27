@@ -14,3 +14,11 @@ postfix operator * {}
 internal postfix func * (slice: ArraySlice<Byte>) -> [Byte] {
     return Array(slice)
 }
+
+internal func replaceOccurrences(in string: String, where matching: String, with replacement: String) -> String {
+    #if os(Linux)
+        return string.stringByReplacingOccurrencesOf(matching, withString: replacement)
+    #else
+        return string.replacingOccurrences(of: matching, with: replacement)
+    #endif
+}

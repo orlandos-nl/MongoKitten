@@ -28,7 +28,11 @@ internal extension CSArrayType where Iterator.Element == Byte {
             return nil
         }
         
-        return NSData(bytes: bytesArray).base64EncodedString([])
+        #if os(Linux)
+            return NSData(bytes: bytesArray).base64EncodedStringWithOptions([])
+        #else
+            return NSData(bytes: bytesArray).base64EncodedString([])
+        #endif
     }
     
     internal init(base64: String) {

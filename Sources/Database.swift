@@ -21,7 +21,7 @@ public class Database {
     
     internal init(database: String, at server: Server) {
         self.server = server
-        self.name = database.replacingOccurrences(of: ".", with: "")
+        self.name = replaceOccurrences(in: database, where: ".", with: "")
     }
     
     /// This subscript is used to get a collection by providing a name as a String
@@ -283,7 +283,7 @@ extension Database {
         let clientKey = try Authenticator.HMAC(key: saltedPassword, variant: .sha1).authenticate(ck)
         let storedKey = clientKey.sha1()
         
-        let fixedUsername = details.username.replacingOccurrences(of: "=", with: "=3D").replacingOccurrences(of: ",", with: "=2C")
+        let fixedUsername = replaceOccurrences(in: replaceOccurrences(in: details.username, where: "=", with: "=3D"), where: ",", with: "=2C")
         
         let authenticationMessage = "n=\(fixedUsername),r=\(previousInformation.nonce),\(decodedStringResponse),\(noProof)"
         
@@ -327,8 +327,8 @@ extension Database {
     internal func authenticate(SASL details: (username: String, password: String)) throws {
         let nonce = randomNonce()
         
-        let fixedUsername = details.username.replacingOccurrences(of: "=", with: "=3D").replacingOccurrences(of: ",", with: "=2C")
-        
+        let fixedUsername = replaceOccurrences(in: replaceOccurrences(in: details.username, where: "=", with: "=3D"), where: ",", with: "=2C")
+
         guard let payload = "n,,n=\(fixedUsername),r=\(nonce)".cStringBsonData.toBase64() else {
             throw MongoAuthenticationError.Base64Failure
         }
