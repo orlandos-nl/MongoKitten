@@ -5,7 +5,7 @@ let package = Package(
     dependencies: [
         .Package(url: "https://github.com/PlanTeam/BSON.git", majorVersion: 1, minor: 2),
         .Package(url: "https://github.com/SwiftX/C7.git", majorVersion: 0, minor: 1),
-        .Package(url: "https://github.com/Zewo/TCP.git", majorVersion: 0, minor: 4),
+        .Package(url: "https://github.com/ketzusaka/Hummingbird", majorVersion: 1, minor: 1),
     ]
 )
 

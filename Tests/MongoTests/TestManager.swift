@@ -19,9 +19,7 @@ final class TestManager {
     static var testingUsers = [Document]()
     
     static func connect() throws {
-        if !server.isConnected {
-            try server.connect()
-        }
+        try server.connect()
     }
     
     static func dropAllTestingCollections() throws {

@@ -12,7 +12,7 @@
     import Darwin.C
 #endif
 
-import TCP
+import Hummingbird
 
 @_exported import C7
 @_exported import BSON
@@ -30,9 +30,6 @@ internal typealias ResponseHandler = ((reply: Message) -> Void)
 
 /// A server object is the core of MongoKitten. From this you can get databases which can provide you with collections from where you can do actions
 public class Server {
-    /// Is the socket connected?
-    public var isConnected: Bool { return !(stream?.closed ?? true) }
-    
     /// The authentication details that are used to connect with the MongoDB server
     private let authDetails: (username: String, password: String)?
     
@@ -50,11 +47,8 @@ public class Server {
     
     private var waitingForResponses = [Int32:NSCondition]()
     
-    /// C7 compliant Streaming Client bound to the MongoDB Server
-    private var client: StreamClient
-
-    /// C7 compliant Stream connected to the MongoDB Server
-    private var stream: Stream?
+    /// HummingBird Socket bound to the MongoDB Server
+    private var client: Socket
     
     /// Did we initialize?
     private var isInitialized = false
@@ -62,30 +56,39 @@ public class Server {
     /// The background thread for sending and receiving data
     private let backgroundQueue = backgroundThread()
     
+    private let host: String
+    private let port: Int
+
     internal private(set) var serverData: (maxWriteBatchSize: Int32, maxWireVersion: Int32, minWireVersion: Int32, maxMessageSizeBytes: Int32)?
     
     /// Initializes a MongoDB Client instance on a given connection
     /// - parameter client: The Stream Client connected to the MongoDB Serer
     /// - parameter authentication: The optional Login Credentials for the account on the server
     /// - parameter autoConnect: Whether we automatically connect
-    public init(_ client: StreamClient, using authentication: (username: String, password: String)? = nil, automatically connecting: Bool = false) throws {
-        self.client = client
+//    public init(_ client: StreamClient, using authentication: (username: String, password: String)? = nil, automatically connecting: Bool = false) throws {
+//        self.client = client
+//
+//        self.authDetails = authentication
+//        
+//        if connecting {
+//            try self.connect()
+//        }
+//    }
+    
+    /// Initializes a MongoDB Client Instance on a given port with a given host
+    /// - parameter host: The host we'll connect to
+    /// - parameter port: The port we'll connect on
+    /// - parameter authentication: The optional authentication details we'll use when connecting to the server
+    public init(at host: String, port: Int = 27017, using authentication: (username: String, password: String)? = nil, automatically connecting: Bool = false) throws {
+        self.client = try Socket.makeStreamSocket()
+        self.host = host
+        self.port = port
 
         self.authDetails = authentication
         
         if connecting {
             try self.connect()
         }
-    }
-    
-    /// Initializes a MongoDB Client Instance on a given port with a given host
-    /// - parameter host: The host we'll connect to
-    /// - parameter port: The port we'll connect on
-    /// - parameter authentication: The optional authentication details we'll use when connecting to the server
-    public convenience init(at host: String, port: Int = 27017, using authentication: (username: String, password: String)? = nil, automatically connecting: Bool = false) throws {
-        let client: StreamClient = try TCPStreamClient(address: host, port: port)
-        
-        try self.init(client, using: authentication, automatically: connecting)
     }
 
     /// This subscript returns a Database struct given a String
@@ -135,17 +138,11 @@ public class Server {
     
     /// Connects with the MongoDB Server using the given information in the initializer
     public func connect() throws {
-        if self.isConnected {
-            throw MongoError.MongoDatabaseAlreadyConnected
-        }
-        
-        self.stream = try client.connect()
+        try client.connect(toTarget: host, onPort: "\(port)")
         Background(backgroundQueue, backgroundLoop)
     }
     
     private func backgroundLoop() {
-        guard self.isConnected else { return }
-        
         do {
             try self.receive()
             
@@ -156,40 +153,28 @@ public class Server {
             }
         } catch {
             // A receive failure is to be expected if the socket has been closed
-            if self.isConnected {
-                print("The MongoDB background loop encountered an error: \(error)")
-            } else {
-                return
-            }
+//            if self.isConnected {
+//                print("The MongoDB background loop encountered an error: \(error)")
+//            } else {
+//                return
+//            }
+            return
         }
         
         Background(backgroundQueue, backgroundLoop)
     }
     
-    /// Throws an error if the database is not connected yet
-    private func assertConnected() throws {
-        guard isConnected else {
-            throw MongoError.MongoDatabaseNotYetConnected
-        }
-    }
-    
     /// Disconnects from the MongoDB server
     public func disconnect() throws {
-        try assertConnected()
-        guard let success = stream?.close() where success else {
-            throw MongoError.CannotDisconnect
-        }
+        try client.close()
         
         isInitialized = false
     }
     
     /// Called by the server thread to handle MongoDB Wire messages
-    private func receive(bufferSize: Int32 = 1024) throws {
-        guard let result = try stream?.receive() else {
-            throw MongoError.MongoDatabaseNotYetConnected
-        }
-
-        fullBuffer += result
+    private func receive(bufferSize: Int = 1024) throws {
+        let incomingBuffer: [Byte] = try client.receive(maximumBytes: bufferSize)
+        fullBuffer += incomingBuffer
         
         do {
             while fullBuffer.count >= 36 {
@@ -244,12 +229,9 @@ public class Server {
      - returns: The request ID of the sent message
      */
     internal func send(message message: Message) throws -> Int32 {
-        try assertConnected()
-        
         let messageData = try message.generateData()
         
-        try stream?.send(messageData)
-        try stream?.flush()
+        try client.send(messageData)
         
         return message.requestID
     }

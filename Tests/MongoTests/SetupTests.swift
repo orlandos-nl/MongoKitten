@@ -21,10 +21,11 @@ class SetupTests: XCTestCase {
         
         do {
             try TestManager.connect()
-            try TestManager.dropAllTestingCollections()
         } catch {
-            XCTFail("Error while setting up tests: \(error)")
+            
         }
+        
+        try! TestManager.dropAllTestingCollections()
     }
     
     override func tearDown() {
