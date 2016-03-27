@@ -8,7 +8,7 @@ Native MongoDB driver for Swift, written in Swift. This library does not wrap ar
 ## Requirements
 
 - A mongoDB server
-- Swift Development Snapshot 2016-03-01-a
+- Swift Development Snapshot 2016-03-24-a
 
 We don't support any other version of swift with the constantly changing syntax. This required swift version changes constantly with newer versions of `MongoKitten` and it's recommended to pin down the version in SPM.
 
@@ -194,7 +194,7 @@ let objectID = try! gridFS.storeFile(data, chunkSize: 10000)
 let file = try! gridFS.findOneFile(objectID)
 
 // Make a buffer to store this file's data in
-var buffer = [UInt8]()
+var buffer = [Byte]()
 
 // Loop over all chunks of data in the file
 for chunk in try! file!.findChunks() {

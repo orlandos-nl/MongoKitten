@@ -10,7 +10,7 @@ import Foundation
 
 postfix operator * {}
 
-/// Will convert an ArraySlice<UInt8> to [UInt8]
-internal postfix func * (slice: ArraySlice<UInt8>) -> [UInt8] {
+/// Will convert an ArraySlice<Byte> to [Byte]
+internal postfix func * (slice: ArraySlice<Byte>) -> [Byte] {
     return Array(slice)
 }

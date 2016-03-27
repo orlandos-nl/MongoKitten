@@ -20,27 +20,19 @@
     import Darwin
 #endif
 
-
-/* array of bits */
-extension Int {
-    init(bits: [Bit]) {
-        self.init(bitPattern: integerFromBitsArray(bits) as UInt)
-    }
-}
-
 /* array of bytes */
 extension Int {
     /** Array of bytes with optional padding (little-endian) */
-    public func bytes(totalBytes: Int = sizeof(Int)) -> [UInt8] {
+    internal func bytes(totalBytes: Int = sizeof(Int)) -> [Byte] {
         return arrayOfBytes(self, length: totalBytes)
     }
     
-    public static func withBytes(bytes: ArraySlice<UInt8>) -> Int {
+    internal static func withBytes(bytes: ArraySlice<Byte>) -> Int {
         return Int.withBytes(Array(bytes))
     }
     
     /** Int with array bytes (little-endian) */
-    public static func withBytes(bytes: [UInt8]) -> Int {
+    internal static func withBytes(bytes: [Byte]) -> Int {
         return integerWithBytes(bytes)
     }
 }

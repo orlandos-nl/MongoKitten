@@ -6,12 +6,15 @@
 //  Copyright © 2016 PlanTeam. All rights reserved.
 //
 
+import C7
+import TCP
 import MongoKitten
 import BSON
 import Foundation
 
 final class TestManager {
-    static var server: Server = try! Server(host: "127.0.0.1", port: 27017, authentication: (username: "mongokitten-unittest-user", password: "mongokitten-unittest-password"), autoConnect: false)
+    static let c: SocketClient = TCPStreamClient("127.0.0.1", port: 27017)
+    static var serverServer = try! Server(client: c, autoConnect: true, authentication: (username: "mongokitten-unittest-user", password: "mongokitten-unittest-password"), autoConnect: false)
     static var testDatabase: Database { return server["mongokitten-unittest"] }
     static var testCollection: Collection { return testDatabase["testcol"] }
     

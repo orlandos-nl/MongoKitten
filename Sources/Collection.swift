@@ -29,9 +29,9 @@ public class Collection {
     
     /// Initializes this collection with a database and name
     /// All dots in the name will be removed
-    internal init(database: Database, collectionName: String) {        
+    internal init(named name: String, in database: Database) {
         self.database = database
-        self.name = collectionName
+        self.name = name
     }
     
     // MARK: - CRUD Operations
@@ -58,7 +58,7 @@ public class Collection {
     /// - parameter ordered: On true we'll stop inserting when one document fails. On false we'll ignore failed inserts
     /// - returns: The documents with their (if applicable) updated ObjectIds
     @warn_unused_result
-    public func insert(documents: [Document], ordered: Bool? = nil) throws -> [Document] {
+    public func insert(documents: [Document], stoppingOnError ordered: Bool? = nil) throws -> [Document] {
         var documents = documents
         var newDocuments = [Document]()
         
@@ -85,7 +85,7 @@ public class Collection {
                 command["ordered"] = ordered
             }
             
-            guard case .Reply(_, _, _, _, _, _, let replyDocuments) = try self.database.executeCommand(command) where replyDocuments.first?["ok"]?.int32Value == 1 else {
+            guard case .Reply(_, _, _, _, _, _, let replyDocuments) = try self.database.execute(command: command) where replyDocuments.first?["ok"]?.int32Value == 1 else {
                 throw MongoError.InsertFailure(documents: documents)
             }
         }
@@ -103,11 +103,11 @@ public class Collection {
     /// - parameter fetchChunkSize: The initial amount of returned Documents. We recommend at least one Document.
     /// - returns: A Cursor pointing to the response Documents.
     @warn_unused_result
-    public func query(query: Document = [], flags: QueryFlags = [], fetchChunkSize: Int32 = 10) throws -> Cursor<Document> {
-        let queryMsg = Message.Query(requestID: database.server.getNextMessageID(), flags: flags, collection: self, numbersToSkip: 0, numbersToReturn: fetchChunkSize, query: query, returnFields: nil)
+    public func query(matching filter: Document = [], usingFlags flags: QueryFlags = [], fetching fetchChunkSize: Int32 = 10) throws -> Cursor<Document> {
+        let queryMsg = Message.Query(requestID: database.server.nextMessageID(), flags: flags, collection: self, numbersToSkip: 0, numbersToReturn: fetchChunkSize, query: filter, returnFields: nil)
         
-        let id = try self.database.server.sendMessage(queryMsg)
-        let response = try self.database.server.awaitResponse(id)
+        let id = try self.database.server.send(message: queryMsg)
+        let response = try self.database.server.await(response: id)
         guard let cursor = Cursor(namespace: self.fullName, server: database.server, reply: response, chunkSize: fetchChunkSize, transform: { $0 }) else {
             throw MongoError.InvalidReply
         }
@@ -124,8 +124,8 @@ public class Collection {
     /// - parameter fetchChunkSize: The initial amount of returned Documents. We recommend at least one Document.
     /// - returns: A Cursor pointing to the response Documents.
     @warn_unused_result
-    public func query(query: Query, flags: QueryFlags = [], fetchChunkSize: Int32 = 10) throws -> Cursor<Document> {
-        return try self.query(query.data, flags: flags, fetchChunkSize: fetchChunkSize)
+    public func query(matching filter: Query, usingFlags flags: QueryFlags = [], fetching fetchChunkSize: Int32 = 10) throws -> Cursor<Document> {
+        return try self.query(matching: filter.data, usingFlags: flags, fetching: fetchChunkSize)
     }
     
     /// Queries this collection with a Document and returns the first result
@@ -136,8 +136,8 @@ public class Collection {
     /// - parameter fetchChunkSize: The initial amount of returned Documents. We recommend at least one Document.
     /// - returns: The first Document in the Response
     @warn_unused_result
-    public func queryOne(query: Document = [], flags: QueryFlags = []) throws -> Document? {
-        return try self.query(query, flags: flags, fetchChunkSize: 1).generate().next()
+    public func queryOne(matching filter: Document = [], usingFlags flags: QueryFlags = []) throws -> Document? {
+        return try self.query(matching: filter, usingFlags: flags, fetching: 1).makeIterator().next()
     }
     
     
@@ -149,8 +149,8 @@ public class Collection {
     /// - parameter fetchChunkSize: The initial amount of returned Documents. We recommend at least one Document.
     /// - returns: The first Document in the Response
     @warn_unused_result
-    public func queryOne(query: Query, flags: QueryFlags = []) throws -> Document? {
-        return try self.queryOne(query.data, flags: flags)
+    public func queryOne(matching filter: Query, usingFlags flags: QueryFlags = []) throws -> Document? {
+        return try self.queryOne(matching: filter.data, usingFlags: flags)
     }
     
     /// Finds Documents in this collection
@@ -163,7 +163,7 @@ public class Collection {
     /// - parameter batchSize: The initial amount of Documents to return.
     /// - returns: A cursor pointing to the found Documents
     @warn_unused_result
-    public func find(filter: Document? = nil, sort: Document? = nil, projection: Document? = nil, skip: Int32? = nil, limit: Int32? = nil, batchSize: Int32 = 10) throws -> Cursor<Document> {
+    public func find(matching filter: Document? = nil, sortedBy sort: Document? = nil, projecting projection: Document? = nil, skipping skip: Int32? = nil, limitedTo limit: Int32? = nil, withBatchSize batchSize: Int32 = 10) throws -> Cursor<Document> {
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
         switch protocolVersion {
@@ -196,7 +196,7 @@ public class Collection {
                 command += ["sort": sort]
             }
             
-            let reply = try database.executeCommand(command)
+            let reply = try database.execute(command: command)
             
             guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
                 throw InternalMongoError.IncorrectReply(reply: reply)
@@ -216,10 +216,10 @@ public class Collection {
             
             return Cursor(namespace: self.fullName, server: database.server, cursorID: cursorID, initialData: returnedDocuments, chunkSize: batchSize, transform: { $0 })
         default:
-            let queryMsg = Message.Query(requestID: database.server.getNextMessageID(), flags: [], collection: self, numbersToSkip: skip ?? 0, numbersToReturn: batchSize, query: filter ?? [], returnFields: projection)
+            let queryMsg = Message.Query(requestID: database.server.nextMessageID(), flags: [], collection: self, numbersToSkip: skip ?? 0, numbersToReturn: batchSize, query: filter ?? [], returnFields: projection)
             
-            let id = try self.database.server.sendMessage(queryMsg)
-            let reply = try self.database.server.awaitResponse(id)
+            let id = try self.database.server.send(message: queryMsg)
+            let reply = try self.database.server.await(response: id)
             
             guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
                 throw InternalMongoError.IncorrectReply(reply: reply)
@@ -239,8 +239,8 @@ public class Collection {
     /// - parameter batchSize: The initial amount of Documents to return.
     /// - returns: A cursor pointing to the found Documents
     @warn_unused_result
-    public func find(filter: Query, sort: Document? = nil, projection: Document? = nil, skip: Int32? = nil, limit: Int32? = nil, batchSize: Int32 = 0) throws -> Cursor<Document> {
-        return try find(filter.data, sort: sort, projection: projection, skip: skip, limit: limit, batchSize: batchSize)
+    public func find(matching filter: Query, sortedBy sort: Document? = nil, projecting projection: Document? = nil, skipping skip: Int32? = nil, limitedTo limit: Int32? = nil, withBatchSize batchSize: Int32 = 0) throws -> Cursor<Document> {
+        return try find(matching: filter.data, sortedBy: sort, projecting: projection, skipping: skip, limitedTo: limit, withBatchSize: batchSize)
     }
     
     /// Finds Documents in this collection
@@ -251,9 +251,9 @@ public class Collection {
     /// - parameter skip: The amount of Documents to skip before returning the matching Documents
     /// - returns: The found Document
     @warn_unused_result
-    public func findOne(filter: Document? = nil, sort: Document? = nil, projection: Document? = nil, skip: Int32? = nil) throws -> Document? {
-        return try self.find(filter, sort: sort, projection: projection, skip: skip, limit:
-            1).generate().next()
+    public func findOne(matching filter: Document? = nil, sortedBy sort: Document? = nil, projecting projection: Document? = nil, skipping skip: Int32? = nil) throws -> Document? {
+        return try self.find(matching: filter, sortedBy: sort, projecting: projection, skipping: skip, limitedTo:
+            1).makeIterator().next()
     }
     
     /// Finds Documents in this collection
@@ -264,8 +264,8 @@ public class Collection {
     /// - parameter skip: The amount of Documents to skip before returning the matching Documents
     /// - returns: The found Document
     @warn_unused_result
-    public func findOne(filter: Query, sort: Document? = nil, projection: Document? = nil, skip: Int32? = nil) throws -> Document? {
-        return try findOne(filter.data, sort: sort, projection: projection, skip: skip)
+    public func findOne(matching filter: Query, sortedBy sort: Document? = nil, projecting projection: Document? = nil, skipping skip: Int32? = nil) throws -> Document? {
+        return try findOne(matching: filter.data, sortedBy: sort, projecting: projection, skipping: skip)
     }
     
     // Update
@@ -277,7 +277,7 @@ public class Collection {
     ///     `upsert`: If there isn't anything to update.. insert?
     ///     `multi`: Update all matching Documents instead of just one?
     /// - parameter ordered: If true, stop updating when one operation fails - defaults to true
-    public func update(updates: [(query: Document, update: Document, upsert: Bool, multi: Bool)], ordered: Bool? = nil) throws {
+    public func update(updates: [(filter: Document, to: Document, upserting: Bool, multiple: Bool)], stoppingOnError ordered: Bool? = nil) throws {
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
         switch protocolVersion {
@@ -287,10 +287,10 @@ public class Collection {
         
         for u in updates {
             newUpdates.append(*[
-                                   "q": u.query,
-                                   "u": u.update,
-                                   "upsert": u.upsert,
-                                   "multi": u.multi
+                                   "q": u.filter,
+                                   "u": u.to,
+                                   "upsert": u.upserting,
+                                   "multi": u.multiple
                 ])
         }
         
@@ -300,23 +300,23 @@ public class Collection {
             command["ordered"] = ordered
         }
         
-        guard case .Reply(_, _, _, _, _, _, let documents) = try self.database.executeCommand(command) where documents.first?["ok"]?.int32Value == 1 else {
+        guard case .Reply(_, _, _, _, _, _, let documents) = try self.database.execute(command: command) where documents.first?["ok"]?.int32Value == 1 else {
             throw MongoError.UpdateFailure(updates: updates)
         }
         default:
             for update in updates {
                 var flags: UpdateFlags = []
                 
-                if update.multi {
+                if update.multiple {
                     flags.insert(UpdateFlags.MultiUpdate)
                 }
                 
-                if update.upsert {
+                if update.upserting {
                     flags.insert(UpdateFlags.Upsert)
                 }
                 
-                let message = Message.Update(requestID: database.server.getNextMessageID(), collection: self, flags: flags, findDocument: update.query, replaceDocument: update.update)
-                try self.database.server.sendMessage(message)
+                let message = Message.Update(requestID: database.server.nextMessageID(), collection: self, flags: flags, findDocument: update.filter, replaceDocument: update.to)
+                try self.database.server.send(message: message)
             }
         }
     }
@@ -327,8 +327,8 @@ public class Collection {
     /// - parameter upsert: Insert when we can't find anything to update
     /// - parameter multi: Updates more than one result if true
     /// - parameter ordered: If true, stop updating when one operation fails - defaults to true
-    public func update(query: Document, updated: Document, upsert: Bool = false, multi: Bool = false, ordered: Bool? = nil) throws {
-        return try self.update([(query: query, update: updated, upsert: upsert, multi: multi)], ordered: ordered)
+    public func update(matching filter: Document, to updated: Document, upserting upsert: Bool = false, multiple multi: Bool = false, stoppingOnError ordered: Bool? = nil) throws {
+        return try self.update([(filter: filter, to: updated, upserting: upsert, multiple: multi)], stoppingOnError: ordered)
     }
     
     /// Updates a list of Documents using a counterpart Document.
@@ -338,10 +338,10 @@ public class Collection {
     ///     `upsert`: If there isn't anything to update.. insert?
     ///     `multi`: Update all matching Documents instead of just one?
     /// - parameter ordered: If true, stop updating when one operation fails - defaults to true
-    public func update(updates: [(query: Query, update: Document, upsert: Bool, multi: Bool)], ordered: Bool? = nil) throws {
-        let newUpdates = updates.map { (query: $0.query.data, update: $0.update, upsert: $0.upsert, multi: $0.multi) }
+    public func update(updates: [(filter: Query, to: Document, upserting: Bool, multiple: Bool)], stoppingOnError ordered: Bool? = nil) throws {
+        let newUpdates = updates.map { (filter: $0.filter.data, to: $0.to, upserting: $0.upserting, multiple: $0.multiple) }
         
-        try self.update(newUpdates, ordered: ordered)
+        try self.update(newUpdates, stoppingOnError: ordered)
     }
     
     /// Updates a Document with some new Keys and Values
@@ -350,16 +350,16 @@ public class Collection {
     /// - parameter upsert: Insert when we can't find anything to update
     /// - parameter multi: Updates more than one result if true
     /// - parameter ordered: If true, stop updating when one operation fails - defaults to true
-    public func update(query: Query, updated: Document, upsert: Bool = false, multi: Bool = false, ordered: Bool? = nil) throws {
-        return try self.update([(query: query.data, update: updated, upsert: upsert, multi: multi)], ordered: ordered)
+    public func update(matching filter: Query, to updated: Document, upserting upsert: Bool = false, multiple multi: Bool = false, stoppingOnError ordered: Bool? = nil) throws {
+        return try self.update([(filter: filter.data, to: updated, upserting: upsert, multiple: multi)], stoppingOnError: ordered)
     }
     
     // Delete
     
     /// Removes all Documents matching the filter if they're within limit
-    /// - parameter removals: A list of filters to match documents against. Any given filter can be used infinite amount of removals if `0` or otherwise as often as specified in the limit
-    /// - parameter ordered: If true, stop removing when one operation fails - defaults to true
-    public func remove(removals: [(query: Document, limit: Int32)], ordered: Bool? = nil) throws {
+    /// - parameter matching: A list of filters to match documents against. Any given filter can be used infinite amount of removals if `0` or otherwise as often as specified in the limit
+    /// - parameter stoppingOnError: If true, stop removing when one operation fails - defaults to true
+    public func remove(matching removals: [(filter: Document, limit: Int32)], stoppingOnError ordered: Bool? = nil) throws {
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
         switch protocolVersion {
@@ -369,7 +369,7 @@ public class Collection {
         
         for d in removals {
             newDeletes.append(*[
-                                   "q": d.query,
+                                   "q": d.filter,
                                    "limit": d.limit
                 ])
         }
@@ -380,8 +380,8 @@ public class Collection {
             command["ordered"] = ordered
         }
         
-        let reply = try self.database.executeCommand(command)
-        let documents = try database.documentsInMessage(reply)
+        let reply = try self.database.execute(command: command)
+        let documents = try database.allDocuments(in: reply)
         
         guard documents.first?["ok"]?.int32Value == 1 else {
             throw MongoError.RemoveFailure(removals: removals)
@@ -400,87 +400,87 @@ public class Collection {
                     flags.insert(DeleteFlags.RemoveOne)
                 }
                 
-                let message = Message.Delete(requestID: database.server.getNextMessageID(), collection: self, flags: flags, removeDocument: removal.query)
+                let message = Message.Delete(requestID: database.server.nextMessageID(), collection: self, flags: flags, removeDocument: removal.filter)
                 
                 for _ in 0..<limit {
-                    try self.database.server.sendMessage(message)
+                    try self.database.server.send(message: message)
                 }
             }
         }
     }
     
     /// Removes all Documents matching the filter if they're within limit
-    /// - parameter removals: A list of QueryBuilder filters to match documents against. Any given filter can be used infinite amount of removals if `0` or otherwise as often as specified in the limit
-    /// - parameter ordered: If true, stop removing when one operation fails - defaults to true
-    public func remove(deletes: [(query: Query, limit: Int32)], ordered: Bool? = nil) throws {
-        let newDeletes = deletes.map { (query: $0.query.data, limit: $0.limit) }
+    /// - parameter matching: A list of QueryBuilder filters to match documents against. Any given filter can be used infinite amount of removals if `0` or otherwise as often as specified in the limit
+    /// - parameter stoppingOnError: If true, stop removing when one operation fails - defaults to true
+    public func remove(matching removals: [(filter: Query, limit: Int32)], stoppingOnError ordered: Bool? = nil) throws {
+        let newRemovals = removals.map { (filter: $0.filter.data, limit: $0.limit) }
         
-        try self.remove(newDeletes, ordered: ordered)
+        try self.remove(matching: newRemovals, stoppingOnError: ordered)
     }
     
     /// Removes all Documents matching the filter if they're within limit
-    /// - parameter query: The Document filter to use when finding Documents that are going to be removed
-    /// - parameter limit: The amount of times this filter can be used to find and remove a Document (0 is every document)
-    /// - parameter ordered: If true, stop removing when one operation fails - defaults to true
-    public func remove(query: Document, limit: Int32 = 0, ordered: Bool? = nil) throws {
-        try self.remove([(query: query, limit: limit)], ordered: ordered)
+    /// - parameter matching: The Document filter to use when finding Documents that are going to be removed
+    /// - parameter limitedTo: The amount of times this filter can be used to find and remove a Document (0 is every document)
+    /// - parameter stoppingOnError: If true, stop removing when one operation fails - defaults to true
+    public func remove(matching filter: Document, limitedTo limit: Int32 = 0, stoppingOnError ordered: Bool? = nil) throws {
+        try self.remove(matching: [(filter: filter, limit: limit)], stoppingOnError: ordered)
     }
     
     /// Removes all Documents matching the filter if they're within limit
-    /// - parameter query: The QueryBuilder filter to use when finding Documents that are going to be removed
-    /// - parameter limit: The amount of times this filter can be used to find and remove a Document (0 is every document)
-    /// - parameter ordered: If true, stop removing when one operation fails - defaults to true
-    public func remove(query: Query, limit: Int32 = 0, ordered: Bool? = nil) throws {
-        try self.remove([(query: query.data, limit: limit)], ordered: ordered)
+    /// - parameter matching: The QueryBuilder filter to use when finding Documents that are going to be removed
+    /// - parameter limitedTo: The amount of times this filter can be used to find and remove a Document (0 is every document)
+    /// - parameter stoppingOnError: If true, stop removing when one operation fails - defaults to true
+    public func remove(matching filter: Query, limitedTo limit: Int32 = 0, stoppingOnError ordered: Bool? = nil) throws {
+        try self.remove(matching: [(filter: filter.data, limit: limit)], stoppingOnError: ordered)
     }
     
     /// The drop command removes an entire collection from a database. This command also removes any indexes associated with the dropped collection.
     public func drop() throws {
-        _ = try self.database.executeCommand(["drop": self.name])
+        _ = try self.database.execute(command: ["drop": self.name])
     }
     
     /// Changes the name of an existing collection. This method supports renames within a single database only. To move the collection to a different database, use the `move` method on `Collection`.
-    /// - parameter newName: The new name for this collection
-    public func rename(newName: String) throws {
-        try self.move(toDatabase: database, newName: newName)
+    /// - parameter to: The new name for this collection
+    public func rename(to newName: String) throws {
+        try self.move(to: database, named: newName)
     }
     
     /// Move this collection to another database. Can also rename the collection in one go.
     /// **Users must have access to the admin database to run this command.**
-    /// - parameter toDatabase: The database to move this collection to
-    /// - parameter newName: The new name for this collection
-    public func move(toDatabase newDb: Database, newName: String? = nil, dropTarget: Bool? = nil) throws {
+    /// - parameter to: The database to move this collection to
+    /// - parameter named: The new name for this collection
+    public func move(to database: Database, named newName: String? = nil, overwriting dropOldTarget: Bool? = nil) throws {
         // TODO: Fail if the target database exists.
         var command: Document = [
                                     "renameCollection": self.fullName,
-                                    "to": "\(newDb.name).\(newName ?? self.name)"
+                                    "to": "\(database.name).\(newName ?? self.name)"
         ]
         
-        if let dropTarget = dropTarget { command["dropTarget"] = dropTarget }
+        if let dropOldTarget = dropOldTarget { command["dropTarget"] = dropOldTarget }
         
-        _ = try self.database.server["admin"].executeCommand(command)
+        _ = try self.database.server["admin"].execute(command: command)
         
-        self.database = newDb
+        self.database = database
         self.name = newName ?? name
     }
     
     /// Returns the amount of Documents in this collection
-    /// - parameter query: Optional. If specified limits the returned amount to anything matching this query
-    /// - parameter limit: Optional. Limits the returned amount as specified
-    /// - parameter skip: Optional. The amount of Documents to skip before counting
+    /// - parameter filteringBy: Optional. If specified limits the returned amount to anything matching this query
+    /// - parameter limitedTo: Optional. Limits the returned amount as specified
+    /// - parameter skipping: Optional. The amount of Documents to skip before counting
     @warn_unused_result
-    public func count(query: Document? = nil, limit: Int32? = nil, skip: Int32? = nil) throws -> Int {
+    public func count(usingFilter filter: Document? = nil, limitedTo limit: Int32? = nil, skipping skip: Int32? = nil) throws -> Int {
         var command: Document = ["count": self.fullName]
         
-        if let query = query {
-            command["query"] = query
+        if let filter = filter {
+            command["query"] = filter
         }
         
         if let skip = skip {
             command["skip"] = skip
         }
         
-        let reply = try self.database.executeCommand(command)
+        let reply = try self.database.execute(command: command)
         
         guard case .Reply(_, _, _, _, _, _, let documents) = reply, let document = documents.first, let n = document["n"]?.intValue else {
             throw InternalMongoError.IncorrectReply(reply: reply)
@@ -490,12 +490,12 @@ public class Collection {
     }
     
     /// Returns the amount of Documents in this collection
-    /// - parameter query: Optional. If specified limits the returned amount to anything matching this query
-    /// - parameter limit: Optional. Limits the returned amount as specified
-    /// - parameter skip: Optional. The amount of Documents to skip before counting
+    /// - parameter filteringBy: Optional. If specified limits the returned amount to anything matching this query
+    /// - parameter limitedTo: Optional. Limits the returned amount as specified
+    /// - parameter skipping: Optional. The amount of Documents to skip before counting
     @warn_unused_result
-    public func count(query: Query, limit: Int32? = nil, skip: Int32? = nil) throws -> Int {
-        return try count(query.data, limit: limit, skip: skip)
+    public func count(filteringBy query: Query, limitedTo limit: Int32? = nil, skipping skip: Int32? = nil) throws -> Int {
+        return try count(usingFilter: query.data, limitedTo: limit, skipping: skip)
     }
     
     /// Returns all distinct values for a key in this collection. Allows filtering using query
@@ -503,14 +503,14 @@ public class Collection {
     /// - parameter query: The Document query used to filter through the returned results
     /// - returns: A list of all distinct values for this key
     @warn_unused_result
-    public func distinct(key: String, query: Document? = nil) throws -> [BSONElement]? {
+    public func distinct(key: String, usingFilter filter: Document? = nil) throws -> [BSONElement]? {
         var command: Document = ["distinct": self.name, "key": key]
         
-        if let query = query {
-            command["query"] = query
+        if let filter = filter {
+            command["query"] = filter
         }
         
-        return try database.firstDocumentInMessage(try self.database.executeCommand(command))["values"]?.documentValue?.arrayValue
+        return try database.firstDocument(in: try self.database.execute(command: command))["values"]?.documentValue?.arrayValue
     }
     
     /// Returns all distinct values for a key in this collection. Allows filtering using query
@@ -518,16 +518,16 @@ public class Collection {
     /// - parameter query: The query used to filter through the returned results
     /// - returns: A list of all distinct values for this key
     @warn_unused_result
-    public func distinct(key: String, query: Query) throws -> [BSONElement]? {
-        return try self.distinct(key, query: query.data)
+    public func distinct(key: String, usingFilter query: Query) throws -> [BSONElement]? {
+        return try self.distinct(key, usingFilter: query.data)
     }
     
-    public func createIndex(keys: [(key: String, asc: Bool)], name: String, partialFilterExpression: Document?, buildInBackground: Bool, unique: Bool) throws {
-        try self.createIndexes([(keys: keys, name: name, partialFilterExpression: partialFilterExpression, buildInBackground: buildInBackground, unique: unique)])
+    public func createIndex(with keys: [(key: String, ascending: Bool)], named name: String, filter: Document?, buildInBackground: Bool, unique: Bool) throws {
+        try self.create(indexes: [(name: name, keys: keys, filter: filter, buildInBackground: buildInBackground, unique: unique)])
     }
     
     /// Creates an index using the given parameters
-    public func createIndexes(indexes: [(keys: [(key: String, asc: Bool)], name: String, partialFilterExpression: Document?, buildInBackground: Bool, unique: Bool)]) throws {
+    public func create(indexes indexes: [(name: String, keys: [(key: String, ascending: Bool)], filter: Document?, buildInBackground: Bool, unique: Bool)]) throws {
         guard let wireVersion = database.server.serverData?.maxWireVersion where wireVersion > 2 else {
             throw MongoError.UnsupportedOperations
         }
@@ -538,7 +538,7 @@ public class Collection {
             var keys: Document = []
             
             for key in index.keys {
-                keys[key.key] = key.asc ? Int32(1) : Int32(-1)
+                keys[key.key] = key.ascending ? Int32(1) : Int32(-1)
             }
             
             keys.enforceArray()
@@ -548,7 +548,7 @@ public class Collection {
                                                "name": index.name
             ]
             
-            if let filter = index.partialFilterExpression {
+            if let filter = index.filter {
                 indexDocument["partialFilterExpression"] = filter
             }
             
@@ -565,14 +565,14 @@ public class Collection {
         
         indexesDoc.enforceArray()
         
-        _ = try database.executeCommand(["createIndexes": self.name, "indexes": indexesDoc])
+        _ = try database.execute(command: ["createIndexes": self.name, "indexes": indexesDoc])
     }
     
     /// Remove the index specified
     /// Warning: Write-locks the database whilst this process is executed
-    /// - parameter indexname: The index name (as specified when creating the index) that will removed. `*` for all indexes
+    /// - parameter indexName: The index name (as specified when creating the index) that will removed. `*` for all indexes
     public func dropIndexes(indexName: String) throws {
-        _ = try database.executeCommand(["dropIndexes": self.name, "index": indexName])
+        _ = try database.execute(command: ["dropIndexes": self.name, "index": indexName])
     }
     
     /// TODO: Make this work?
@@ -584,7 +584,7 @@ public class Collection {
             throw MongoError.UnsupportedOperations
         }
         
-        let result = try database.firstDocumentInMessage(try database.executeCommand(["listIndexes": self.name]))
+        let result = try database.firstDocument(in: try database.execute(command: ["listIndexes": self.name]))
         
         guard let cursorDocument = result["cursor"]?.documentValue else {
             throw MongoError.CursorInitializationError(cursorDocument: result)

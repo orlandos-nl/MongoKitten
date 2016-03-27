@@ -8,15 +8,15 @@
 
 final class SHA1 : HashProtocol {
     static let size:Int = 20 // 160 / 8
-    let message: [UInt8]
+    let message: [Byte]
     
-    init(_ message: [UInt8]) {
+    init(_ message: [Byte]) {
         self.message = message
     }
     
     private let h:[UInt32] = [0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0]
     
-    func calculate() -> [UInt8] {
+    func calculate() -> [Byte] {
         var tmpMessage = self.prepare(64)
         
         // hash values
@@ -30,7 +30,7 @@ final class SHA1 : HashProtocol {
         for chunk in BytesSequence(chunkSize: chunkSizeBytes, data: tmpMessage) {
             // break chunk into sixteen 32-bit words M[j], 0 ≤ j ≤ 15, big-endian
             // Extend the sixteen 32-bit words into eighty 32-bit words:
-            var M:[UInt32] = [UInt32](count: 80, repeatedValue: 0)
+            var M:[UInt32] = [UInt32](repeating: 0, count: 80)
             for x in 0..<M.count {
                 switch (x) {
                 case 0...15:
@@ -93,11 +93,11 @@ final class SHA1 : HashProtocol {
         }
         
         // Produce the final hash value (big-endian) as a 160 bit number:
-        var result = [UInt8]()
+        var result = [Byte]()
         result.reserveCapacity(hh.count / 4)
         hh.forEach {
             let item = $0.bigEndian
-            result += [UInt8(item & 0xff), UInt8((item >> 8) & 0xff), UInt8((item >> 16) & 0xff), UInt8((item >> 24) & 0xff)]
+            result += [Byte(item & 0xff), Byte((item >> 8) & 0xff), Byte((item >> 16) & 0xff), Byte((item >> 24) & 0xff)]
         }
         return result
     }

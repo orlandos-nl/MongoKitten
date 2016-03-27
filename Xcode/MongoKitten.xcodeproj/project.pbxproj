@@ -27,12 +27,12 @@
 		0A4D3CBF1CA2B5AA005FAAD7 /* SetupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4D3CBE1CA2B5AA005FAAD7 /* SetupTests.swift */; };
 		0A4DA3B81CA1F57500DA2DB0 /* GridFS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4DA3B71CA1F57500DA2DB0 /* GridFS.swift */; };
 		0A50990A1C9C2EAC00135938 /* Flags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5099091C9C2EAC00135938 /* Flags.swift */; };
+		0A51E4D71CA74E5D00F92EEB /* Dispatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A51E4D61CA74E5D00F92EEB /* Dispatch.swift */; };
 		0AB842911C5EC46C005CC6B4 /* Server.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842901C5EC46C005CC6B4 /* Server.swift */; };
 		0AB842931C5EC48A005CC6B4 /* Database.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842921C5EC48A005CC6B4 /* Database.swift */; };
 		0AB842951C5EC495005CC6B4 /* Collection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842941C5EC495005CC6B4 /* Collection.swift */; };
 		0AB842981C5EC4BA005CC6B4 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842971C5EC4BA005CC6B4 /* Message.swift */; };
 		0AB8429A1C5EC5D0005CC6B4 /* OperationCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842991C5EC5D0005CC6B4 /* OperationCode.swift */; };
-		8065BD1D1C9A302D00169519 /* Dispatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8065BD1C1C9A302D00169519 /* Dispatch.swift */; };
 		F208B3D31C85E16A00693820 /* TestManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F208B3D21C85E16A00693820 /* TestManager.swift */; };
 		F208B3D51C85E54700693820 /* SwiftRandom.swift in Sources */ = {isa = PBXBuildFile; fileRef = F208B3D41C85E54700693820 /* SwiftRandom.swift */; };
 		F222D7DB1C7B139900778D2F /* Cursor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F222D7DA1C7B139900778D2F /* Cursor.swift */; };
@@ -90,6 +90,7 @@
 		0A4D3CBE1CA2B5AA005FAAD7 /* SetupTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SetupTests.swift; sourceTree = "<group>"; };
 		0A4DA3B71CA1F57500DA2DB0 /* GridFS.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GridFS.swift; sourceTree = "<group>"; };
 		0A5099091C9C2EAC00135938 /* Flags.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Flags.swift; sourceTree = "<group>"; };
+		0A51E4D61CA74E5D00F92EEB /* Dispatch.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Dispatch.swift; sourceTree = "<group>"; };
 		0AB2CBC51C69E5370009405F /* Package.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Package.swift; path = ../Package.swift; sourceTree = "<group>"; };
 		0AB842621C5EA80D005CC6B4 /* MongoKitten.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = MongoKitten.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		0AB8426C1C5EA80E005CC6B4 /* MongoKittenTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MongoKittenTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -98,7 +99,6 @@
 		0AB842941C5EC495005CC6B4 /* Collection.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Collection.swift; sourceTree = "<group>"; };
 		0AB842971C5EC4BA005CC6B4 /* Message.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
 		0AB842991C5EC5D0005CC6B4 /* OperationCode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OperationCode.swift; sourceTree = "<group>"; };
-		8065BD1C1C9A302D00169519 /* Dispatch.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Dispatch.swift; sourceTree = "<group>"; };
 		F208B3CF1C85DF9900693820 /* SPM.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = SPM.xcconfig; sourceTree = "<group>"; };
 		F208B3D21C85E16A00693820 /* TestManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TestManager.swift; sourceTree = "<group>"; };
 		F208B3D41C85E54700693820 /* SwiftRandom.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SwiftRandom.swift; sourceTree = "<group>"; };
@@ -179,8 +179,8 @@
 				0A4D3C9A1CA27D1E005FAAD7 /* CryptoSwift */,
 				0AB842961C5EC4A7005CC6B4 /* Messages */,
 				0AB842901C5EC46C005CC6B4 /* Server.swift */,
+				0A51E4D61CA74E5D00F92EEB /* Dispatch.swift */,
 				0AB842921C5EC48A005CC6B4 /* Database.swift */,
-				8065BD1C1C9A302D00169519 /* Dispatch.swift */,
 				0A46706F1C6B9BE500101CCD /* Helper.swift */,
 				0AB842941C5EC495005CC6B4 /* Collection.swift */,
 				0A4DA3B71CA1F57500DA2DB0 /* GridFS.swift */,
@@ -359,7 +359,6 @@
 			files = (
 				0A4D3C9E1CA27D36005FAAD7 /* MD5.swift in Sources */,
 				F222D7DB1C7B139900778D2F /* Cursor.swift in Sources */,
-				8065BD1D1C9A302D00169519 /* Dispatch.swift in Sources */,
 				0A4670701C6B9BE500101CCD /* Helper.swift in Sources */,
 				0AB842951C5EC495005CC6B4 /* Collection.swift in Sources */,
 				0A50990A1C9C2EAC00135938 /* Flags.swift in Sources */,
@@ -383,6 +382,7 @@
 				0A4D3CB61CA280B5005FAAD7 /* Authenticator.swift in Sources */,
 				0A4D3CA61CA27DEB005FAAD7 /* Operators.swift in Sources */,
 				0A4D3CAE1CA27FA1005FAAD7 /* CSArrayType+Extension.swift in Sources */,
+				0A51E4D71CA74E5D00F92EEB /* Dispatch.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -453,6 +453,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.11;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				OTHER_LDFLAGS = "";
 				SDKROOT = macosx;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				VERSIONING_SYSTEM = "apple-generic";
@@ -493,6 +494,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.11;
 				MTL_ENABLE_DEBUG_INFO = NO;
+				OTHER_LDFLAGS = "";
 				SDKROOT = macosx;
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";

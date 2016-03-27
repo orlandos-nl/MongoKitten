@@ -9,12 +9,15 @@
 import struct BSON.Document
 
 /// All MongoDB errors
-public enum MongoError : ErrorType {
+public enum MongoError : ErrorProtocol {
     /// Can't connect to the MongoDB Server
     case MongoDatabaseUnableToConnect
     
     /// Can't connect since we're already connected
     case MongoDatabaseAlreadyConnected
+    
+    /// Can't disconnect the socket
+    case CannotDisconnect
     
     /// The body of this message is an invalid length
     case InvalidBodyLength
@@ -32,10 +35,10 @@ public enum MongoError : ErrorType {
     case QueryFailure(query: Document)
     
     /// Can't update documents with the given selector and update
-    case UpdateFailure(updates: [(query: Document, update: Document, upsert: Bool, multi: Bool)])
+    case UpdateFailure(updates: [(filter: Document, to: Document, upserting: Bool, multiple: Bool)])
     
     /// Can't remove documents matching the given query
-    case RemoveFailure(removals: [(query: Document, limit: Int32)])
+    case RemoveFailure(removals: [(filter: Document, limit: Int32)])
     
     /// Can't find a handler for this reply
     case HandlerNotFound
@@ -57,15 +60,17 @@ public enum MongoError : ErrorType {
     case UnsupportedOperations
     
     case InvalidChunkSize(chunkSize: Int)
+    
+    case NegativeBytesRequested(start: Int, end: Int)
 }
 
-public enum MongoAuthenticationError : ErrorType {
+public enum MongoAuthenticationError : ErrorProtocol {
     case Base64Failure
     case AuthenticationFailure
     case ServerSignatureInvalid
     case IncorrectCredentials
 }
 
-internal enum InternalMongoError : ErrorType {
+internal enum InternalMongoError : ErrorProtocol {
     case IncorrectReply(reply: Message)
 }

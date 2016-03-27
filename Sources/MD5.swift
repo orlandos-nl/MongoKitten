@@ -8,9 +8,9 @@
 
 final class MD5 : HashProtocol  {
     static let size:Int = 16 // 128 / 8
-    let message: Array<UInt8>
+    let message: Array<Byte>
     
-    init (_ message: Array<UInt8>) {
+    init (_ message: Array<Byte>) {
         self.message = message
     }
     
@@ -40,7 +40,7 @@ final class MD5 : HashProtocol  {
     
     private let h:[UInt32] = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476]
     
-    func calculate() -> [UInt8] {
+    func calculate() -> [Byte] {
         var tmpMessage = prepare(64)
         tmpMessage.reserveCapacity(tmpMessage.count + 4)
         
@@ -50,7 +50,7 @@ final class MD5 : HashProtocol  {
         // Step 2. Append Length a 64-bit representation of lengthInBits
         let lengthInBits = (message.count * 8)
         let lengthBytes = lengthInBits.bytes(64 / 8)
-        tmpMessage += lengthBytes.reverse()
+        tmpMessage += lengthBytes.reversed()
         
         // Process the message in successive 512-bit chunks:
         let chunkSizeBytes = 512 / 8 // 64
@@ -105,12 +105,12 @@ final class MD5 : HashProtocol  {
             hh[3] = hh[3] &+ D
         }
         
-        var result = [UInt8]()
+        var result = [Byte]()
         result.reserveCapacity(hh.count / 4)
         
         hh.forEach {
             let itemLE = $0.littleEndian
-            result += [UInt8(itemLE & 0xff), UInt8((itemLE >> 8) & 0xff), UInt8((itemLE >> 16) & 0xff), UInt8((itemLE >> 24) & 0xff)]
+            result += [Byte(itemLE & 0xff), Byte((itemLE >> 8) & 0xff), Byte((itemLE >> 16) & 0xff), Byte((itemLE >> 24) & 0xff)]
         }
         return result
     }

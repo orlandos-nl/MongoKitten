@@ -26,7 +26,7 @@ class SetupTests: XCTestCase {
     }
     
     func testSetup() {
-        let server = try! Server(host: "localhost", port: 27017, authentication: (username: "unittest", password: "unittest-password"))
+        let server = try! Server(client: client, autoConnect: true, authentication: (username: "unittest", password: "unittest-password"))
         let database = server["mongokitten-unittest"]
         let testCollection = database["testcollection"]
         let testBucket = database["bucket.collection"]
