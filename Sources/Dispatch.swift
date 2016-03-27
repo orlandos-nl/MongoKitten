@@ -1,14 +1,7 @@
-#if os(Linux)
-    import NSLinux
-#else
-    import Foundation
-#endif
+import Strand
 
-internal func backgroundThread() -> dispatch_queue_t {
-    return dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0)
-}
+public typealias Block = () -> Void
 
-internal func Background(thread: dispatch_queue_t = backgroundThread(),
-                       _ function: () -> Void) {
-    dispatch_async(thread, function)
+public func Background(function: Block) throws {
+    let _ = try Strand(closure: function)
 }

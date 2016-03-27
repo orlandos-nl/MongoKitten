@@ -53,9 +53,6 @@ public class Server {
     /// Did we initialize?
     private var isInitialized = false
     
-    /// The background thread for sending and receiving data
-    private let backgroundQueue = backgroundThread()
-    
     private let host: String
     private let port: Int
 
@@ -139,7 +136,7 @@ public class Server {
     /// Connects with the MongoDB Server using the given information in the initializer
     public func connect() throws {
         try client.connect(toTarget: host, onPort: "\(port)")
-        Background(backgroundQueue, backgroundLoop)
+        try Background(backgroundLoop)
     }
     
     private func backgroundLoop() {
@@ -161,7 +158,13 @@ public class Server {
             return
         }
         
-        Background(backgroundQueue, backgroundLoop)
+        do {
+            try Background(backgroundLoop)
+        } catch {
+            do {
+                try disconnect()
+            } catch { print("Careful. Backgroundloop is broken") }
+        }
     }
     
     /// Disconnects from the MongoDB server
