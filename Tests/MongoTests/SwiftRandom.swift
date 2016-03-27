@@ -70,7 +70,7 @@ public extension NSDate {
         offsetComponents.minute = Int(r3)
         offsetComponents.second = Int(r4)
         
-        guard let rndDate1 = gregorian.dateByAddingComponents(offsetComponents, toDate: today, options: []) else {
+        guard let rndDate1 = gregorian.date(byAdding: offsetComponents, to: today, options: []) else {
             print("randoming failed")
             return today
         }

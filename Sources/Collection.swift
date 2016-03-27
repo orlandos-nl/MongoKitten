@@ -469,7 +469,7 @@ public class Collection {
     /// - parameter limitedTo: Optional. Limits the returned amount as specified
     /// - parameter skipping: Optional. The amount of Documents to skip before counting
     @warn_unused_result
-    public func count(usingFilter filter: Document? = nil, limitedTo limit: Int32? = nil, skipping skip: Int32? = nil) throws -> Int {
+    public func count(matching filter: Document? = nil, limitedTo limit: Int32? = nil, skipping skip: Int32? = nil) throws -> Int {
         var command: Document = ["count": self.fullName]
         
         if let filter = filter {
@@ -494,8 +494,8 @@ public class Collection {
     /// - parameter limitedTo: Optional. Limits the returned amount as specified
     /// - parameter skipping: Optional. The amount of Documents to skip before counting
     @warn_unused_result
-    public func count(filteringBy query: Query, limitedTo limit: Int32? = nil, skipping skip: Int32? = nil) throws -> Int {
-        return try count(usingFilter: query.data, limitedTo: limit, skipping: skip)
+    public func count(matching query: Query, limitedTo limit: Int32? = nil, skipping skip: Int32? = nil) throws -> Int {
+        return try count(matching: query.data, limitedTo: limit, skipping: skip)
     }
     
     /// Returns all distinct values for a key in this collection. Allows filtering using query

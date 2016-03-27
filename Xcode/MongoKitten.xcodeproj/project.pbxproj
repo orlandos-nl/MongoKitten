@@ -23,9 +23,11 @@
 		0A4D3CB61CA280B5005FAAD7 /* Authenticator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4D3CB51CA280B5005FAAD7 /* Authenticator.swift */; };
 		0A4D3CB91CA28452005FAAD7 /* Hash.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4D3CB71CA28452005FAAD7 /* Hash.swift */; };
 		0A4D3CBA1CA28452005FAAD7 /* SHA1.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4D3CB81CA28452005FAAD7 /* SHA1.swift */; };
-		0A4D3CBD1CA2B494005FAAD7 /* CollectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4D3CBB1CA2B3DC005FAAD7 /* CollectionTests.swift */; };
-		0A4D3CBF1CA2B5AA005FAAD7 /* SetupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4D3CBE1CA2B5AA005FAAD7 /* SetupTests.swift */; };
 		0A4DA3B81CA1F57500DA2DB0 /* GridFS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4DA3B71CA1F57500DA2DB0 /* GridFS.swift */; };
+		0A4EE5491CA837BF006AD31E /* CollectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AAB8F1D1CA80A640024DE47 /* CollectionTests.swift */; };
+		0A4EE54A1CA837BF006AD31E /* SetupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AAB8F1E1CA80A640024DE47 /* SetupTests.swift */; };
+		0A4EE54B1CA837BF006AD31E /* SwiftRandom.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AAB8F1F1CA80A640024DE47 /* SwiftRandom.swift */; };
+		0A4EE54C1CA837BF006AD31E /* TestManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AAB8F201CA80A640024DE47 /* TestManager.swift */; };
 		0A50990A1C9C2EAC00135938 /* Flags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5099091C9C2EAC00135938 /* Flags.swift */; };
 		0A51E4D71CA74E5D00F92EEB /* Dispatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A51E4D61CA74E5D00F92EEB /* Dispatch.swift */; };
 		0AB842911C5EC46C005CC6B4 /* Server.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842901C5EC46C005CC6B4 /* Server.swift */; };
@@ -33,8 +35,6 @@
 		0AB842951C5EC495005CC6B4 /* Collection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842941C5EC495005CC6B4 /* Collection.swift */; };
 		0AB842981C5EC4BA005CC6B4 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842971C5EC4BA005CC6B4 /* Message.swift */; };
 		0AB8429A1C5EC5D0005CC6B4 /* OperationCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB842991C5EC5D0005CC6B4 /* OperationCode.swift */; };
-		F208B3D31C85E16A00693820 /* TestManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F208B3D21C85E16A00693820 /* TestManager.swift */; };
-		F208B3D51C85E54700693820 /* SwiftRandom.swift in Sources */ = {isa = PBXBuildFile; fileRef = F208B3D41C85E54700693820 /* SwiftRandom.swift */; };
 		F222D7DB1C7B139900778D2F /* Cursor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F222D7DA1C7B139900778D2F /* Cursor.swift */; };
 		F22CA28F1C7DF8F800FC9DBA /* Feature Checklist.md in Resources */ = {isa = PBXBuildFile; fileRef = F22CA28E1C7DF8F800FC9DBA /* Feature Checklist.md */; };
 		F293D0341C7B0392003D6100 /* MongoError.swift in Sources */ = {isa = PBXBuildFile; fileRef = F293D0331C7B0392003D6100 /* MongoError.swift */; };
@@ -86,11 +86,13 @@
 		0A4D3CB51CA280B5005FAAD7 /* Authenticator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Authenticator.swift; sourceTree = "<group>"; };
 		0A4D3CB71CA28452005FAAD7 /* Hash.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Hash.swift; sourceTree = "<group>"; };
 		0A4D3CB81CA28452005FAAD7 /* SHA1.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SHA1.swift; sourceTree = "<group>"; };
-		0A4D3CBB1CA2B3DC005FAAD7 /* CollectionTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CollectionTests.swift; sourceTree = "<group>"; };
-		0A4D3CBE1CA2B5AA005FAAD7 /* SetupTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SetupTests.swift; sourceTree = "<group>"; };
 		0A4DA3B71CA1F57500DA2DB0 /* GridFS.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GridFS.swift; sourceTree = "<group>"; };
 		0A5099091C9C2EAC00135938 /* Flags.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Flags.swift; sourceTree = "<group>"; };
 		0A51E4D61CA74E5D00F92EEB /* Dispatch.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Dispatch.swift; sourceTree = "<group>"; };
+		0AAB8F1D1CA80A640024DE47 /* CollectionTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CollectionTests.swift; path = MongoTests/CollectionTests.swift; sourceTree = "<group>"; };
+		0AAB8F1E1CA80A640024DE47 /* SetupTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = SetupTests.swift; path = MongoTests/SetupTests.swift; sourceTree = "<group>"; };
+		0AAB8F1F1CA80A640024DE47 /* SwiftRandom.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = SwiftRandom.swift; path = MongoTests/SwiftRandom.swift; sourceTree = "<group>"; };
+		0AAB8F201CA80A640024DE47 /* TestManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = TestManager.swift; path = MongoTests/TestManager.swift; sourceTree = "<group>"; };
 		0AB2CBC51C69E5370009405F /* Package.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Package.swift; path = ../Package.swift; sourceTree = "<group>"; };
 		0AB842621C5EA80D005CC6B4 /* MongoKitten.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = MongoKitten.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		0AB8426C1C5EA80E005CC6B4 /* MongoKittenTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MongoKittenTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -100,8 +102,6 @@
 		0AB842971C5EC4BA005CC6B4 /* Message.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
 		0AB842991C5EC5D0005CC6B4 /* OperationCode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OperationCode.swift; sourceTree = "<group>"; };
 		F208B3CF1C85DF9900693820 /* SPM.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = SPM.xcconfig; sourceTree = "<group>"; };
-		F208B3D21C85E16A00693820 /* TestManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TestManager.swift; sourceTree = "<group>"; };
-		F208B3D41C85E54700693820 /* SwiftRandom.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SwiftRandom.swift; sourceTree = "<group>"; };
 		F222D7DA1C7B139900778D2F /* Cursor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Cursor.swift; sourceTree = "<group>"; };
 		F22CA28E1C7DF8F800FC9DBA /* Feature Checklist.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = "Feature Checklist.md"; path = "../Feature Checklist.md"; sourceTree = "<group>"; };
 		F27F83981C849F740071B81F /* Dependencies.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = Dependencies.sh; sourceTree = "<group>"; };
@@ -196,10 +196,10 @@
 		0AB842701C5EA80E005CC6B4 /* Tests */ = {
 			isa = PBXGroup;
 			children = (
-				F208B3D21C85E16A00693820 /* TestManager.swift */,
-				F208B3D41C85E54700693820 /* SwiftRandom.swift */,
-				0A4D3CBB1CA2B3DC005FAAD7 /* CollectionTests.swift */,
-				0A4D3CBE1CA2B5AA005FAAD7 /* SetupTests.swift */,
+				0AAB8F1D1CA80A640024DE47 /* CollectionTests.swift */,
+				0AAB8F1E1CA80A640024DE47 /* SetupTests.swift */,
+				0AAB8F1F1CA80A640024DE47 /* SwiftRandom.swift */,
+				0AAB8F201CA80A640024DE47 /* TestManager.swift */,
 			);
 			name = Tests;
 			path = ../Tests;
@@ -390,10 +390,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0A4D3CBD1CA2B494005FAAD7 /* CollectionTests.swift in Sources */,
-				F208B3D31C85E16A00693820 /* TestManager.swift in Sources */,
-				F208B3D51C85E54700693820 /* SwiftRandom.swift in Sources */,
-				0A4D3CBF1CA2B5AA005FAAD7 /* SetupTests.swift in Sources */,
+				0A4EE54B1CA837BF006AD31E /* SwiftRandom.swift in Sources */,
+				0A4EE5491CA837BF006AD31E /* CollectionTests.swift in Sources */,
+				0A4EE54A1CA837BF006AD31E /* SetupTests.swift in Sources */,
+				0A4EE54C1CA837BF006AD31E /* TestManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

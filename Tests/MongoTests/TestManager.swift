@@ -7,21 +7,19 @@
 //
 
 import C7
-import TCP
 import MongoKitten
 import BSON
 import Foundation
 
 final class TestManager {
-    static let c: SocketClient = TCPStreamClient("127.0.0.1", port: 27017)
-    static var serverServer = try! Server(client: c, autoConnect: true, authentication: (username: "mongokitten-unittest-user", password: "mongokitten-unittest-password"), autoConnect: false)
+    static var server = try! Server(at: "localhost", port: 27017, using: (username: "mongokitten-unittest-user", password: "mongokitten-unittest-password"), automatically: false)
     static var testDatabase: Database { return server["mongokitten-unittest"] }
-    static var testCollection: Collection { return testDatabase["testcol"] }
+    static var testCollection: MongoKitten.Collection { return testDatabase["testcol"] }
     
     static var testingUsers = [Document]()
     
     static func connect() throws {
-        if !server.connected {
+        if !server.isConnected {
             try server.connect()
         }
     }
@@ -29,7 +27,7 @@ final class TestManager {
     static func dropAllTestingCollections() throws {
         // Erase the testing database:
         for aCollection in try! testDatabase.getCollections() {
-            if !aCollection.name.containsString("system") {
+            if !aCollection.name.contains("system") {
                 try! aCollection.drop()
             }
         }

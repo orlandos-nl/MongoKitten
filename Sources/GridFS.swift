@@ -16,7 +16,7 @@ public class GridFS {
     private let chunks: Collection
     
     /// Initializes a GridFS Collection (bucket) in a given database
-    public init(database: Database, bucketName: String = "fs") throws {
+    public init(in database: Database, named bucketName: String = "fs") throws {
         files = database["\(bucketName).files"]
         chunks = database["\(bucketName).chunks"]
         
@@ -58,7 +58,7 @@ public class GridFS {
         return gridFSCursor
     }
     
-    public func write(data data: [Byte], named filename: String? = nil, withType contentType: String? = nil, usingMetadata metadata: BSONElement? = nil, inChunksOf chunkSize: Int = 255000) throws -> ObjectId {
+    public func store(data data: [Byte], named filename: String? = nil, withType contentType: String? = nil, usingMetadata metadata: BSONElement? = nil, inChunksOf chunkSize: Int = 255000) throws -> ObjectId {
         guard chunkSize < 15000000 else {
             throw MongoError.InvalidChunkSize(chunkSize: chunkSize)
         }
@@ -98,12 +98,12 @@ public class GridFS {
         return id
     }
     
-    public func write(data data: NSData, named filename: String? = nil, withType contentType: String? = nil, usingMetadata metadata: BSONElement? = nil, inChunksOf chunkSize: Int = 255000) throws -> ObjectId {
-        return try self.write(data: data.arrayOfBytes(), named: filename, withType: contentType, usingMetadata: metadata, inChunksOf: chunkSize)
+    public func store(data data: NSData, named filename: String? = nil, withType contentType: String? = nil, usingMetadata metadata: BSONElement? = nil, inChunksOf chunkSize: Int = 255000) throws -> ObjectId {
+        return try self.store(data: data.arrayOfBytes(), named: filename, withType: contentType, usingMetadata: metadata, inChunksOf: chunkSize)
     }
     
-    public func write(data data: Data, named filename: String? = nil, withType contentType: String? = nil, usingMetadata metadata: BSONElement? = nil, inChunksOf chunkSize: Int = 255000) throws -> ObjectId {
-        return try self.write(data: data.bytes, named: filename, withType: contentType, usingMetadata: metadata, inChunksOf: chunkSize)
+    public func store(data data: Data, named filename: String? = nil, withType contentType: String? = nil, usingMetadata metadata: BSONElement? = nil, inChunksOf chunkSize: Int = 255000) throws -> ObjectId {
+        return try self.store(data: data.bytes, named: filename, withType: contentType, usingMetadata: metadata, inChunksOf: chunkSize)
     }
     
     /// A file in GridFS
@@ -177,7 +177,7 @@ public class GridFS {
         }
         
         /// Finds all or specific chunks
-        public func readBytes(from start: Int = 0, to end: Int? = nil) throws -> [Byte] {
+        public func read(from start: Int = 0, to end: Int? = nil) throws -> [Byte] {
             let remainderValue = start % Int(self.chunkSize)
             let skipChunks = (start - remainderValue) / Int(self.chunkSize)
             

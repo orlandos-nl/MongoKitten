@@ -12,11 +12,12 @@
     import Darwin.C
 #endif
 
+import TCP
+
 @_exported import C7
 @_exported import BSON
 
 import Foundation
-import TCP
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 // This file contains the low level code. This code is synchronous and is used by the async client API. //
@@ -30,7 +31,7 @@ internal typealias ResponseHandler = ((reply: Message) -> Void)
 /// A server object is the core of MongoKitten. From this you can get databases which can provide you with collections from where you can do actions
 public class Server {
     /// Is the socket connected?
-    public var connected: Bool { return !(stream?.closed ?? true) }
+    public var isConnected: Bool { return !(stream?.closed ?? true) }
     
     /// The authentication details that are used to connect with the MongoDB server
     private let authDetails: (username: String, password: String)?
@@ -81,12 +82,12 @@ public class Server {
     /// - parameter host: The host we'll connect to
     /// - parameter port: The port we'll connect on
     /// - parameter authentication: The optional authentication details we'll use when connecting to the server
-    public convenience init(host: String, at port: Int = 27017, using authentication: (username: String, password: String)? = nil, automatically connecting: Bool = false) throws {
+    public convenience init(at host: String, port: Int = 27017, using authentication: (username: String, password: String)? = nil, automatically connecting: Bool = false) throws {
         let client: StreamClient = try TCPStreamClient(address: host, port: port)
-
+        
         try self.init(client, using: authentication, automatically: connecting)
     }
-    
+
     /// This subscript returns a Database struct given a String
     /// - parameter database: The database's name
     /// - returns: A database instance for the requested database
@@ -134,7 +135,7 @@ public class Server {
     
     /// Connects with the MongoDB Server using the given information in the initializer
     public func connect() throws {
-        if self.connected {
+        if self.isConnected {
             throw MongoError.MongoDatabaseAlreadyConnected
         }
         
@@ -143,7 +144,7 @@ public class Server {
     }
     
     private func backgroundLoop() {
-        guard self.connected else { return }
+        guard self.isConnected else { return }
         
         do {
             try self.receive()
@@ -155,7 +156,7 @@ public class Server {
             }
         } catch {
             // A receive failure is to be expected if the socket has been closed
-            if self.connected {
+            if self.isConnected {
                 print("The MongoDB background loop encountered an error: \(error)")
             } else {
                 return
@@ -167,7 +168,7 @@ public class Server {
     
     /// Throws an error if the database is not connected yet
     private func assertConnected() throws {
-        guard connected else {
+        guard isConnected else {
             throw MongoError.MongoDatabaseNotYetConnected
         }
     }
@@ -248,6 +249,7 @@ public class Server {
         let messageData = try message.generateData()
         
         try stream?.send(messageData)
+        try stream?.flush()
         
         return message.requestID
     }

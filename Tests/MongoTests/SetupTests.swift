@@ -10,6 +10,12 @@ import MongoKitten
 import XCTest
 
 class SetupTests: XCTestCase {
+    static var allTests: [(String, SetupTests -> () throws -> Void)] {
+        return [
+            ("testSetup", testSetup),
+        ]
+    }
+    
     override func setUp() {
         super.setUp()
         
@@ -26,7 +32,7 @@ class SetupTests: XCTestCase {
     }
     
     func testSetup() {
-        let server = try! Server(client: client, autoConnect: true, authentication: (username: "unittest", password: "unittest-password"))
+        let server = try! Server(at: "127.0.0.1", using: (username: "unittest", password: "unittest-password"), automatically: true)
         let database = server["mongokitten-unittest"]
         let testCollection = database["testcollection"]
         let testBucket = database["bucket.collection"]
