@@ -20,7 +20,8 @@ extension Array: CSArrayType {
 
 internal extension CSArrayType where Iterator.Element == Byte {
     internal func toHexString() -> String {
-        return self.lazy.reduce("") { $0 + String(format:"%02x", $1) }
+        // http://blog.flup.jp/2016/03/08/server-side-swift-tips-for-linux/
+        return self.lazy.reduce("") { $0 + (NSString(format:"%02x", $1).description) }
     }
     
     internal func toBase64() -> String? {
