@@ -17,18 +17,27 @@ public class Database {
     /// The database's name
     public let name: String
     
+    /// Are we authenticated?
     public internal(set) var isAuthenticated = true
     
+    /// Initialise this database object
+    /// - parameter database: The database to use
+    /// - parameter server: The server on which this database exists
     internal init(database: String, at server: Server) {
         self.server = server
         self.name = replaceOccurrences(in: database, where: ".", with: "")
     }
     
     /// This subscript is used to get a collection by providing a name as a String
+    /// - parameter collection: The collection/bucket to return
+    /// - returns: The requested collection in this database
     public subscript (collection: String) -> Collection {
         return Collection(named: collection, in: self)
     }
     
+    /// Gets all documents from a reply and throws if it's not a reply
+    /// - parameter in: The message in which we'll find the documents
+    /// - returns: The documents
     @warn_unused_result
     internal func allDocuments(in message: Message) throws -> [Document] {
         guard case .Reply(_, _, _, _, _, _, let documents) = message else {
@@ -38,6 +47,9 @@ public class Database {
         return documents
     }
     
+    /// Gets all documents from a reply and throws if it's not a reply
+    /// - parameter in: The message in which we'll find the documents
+    /// - returns: The first found document
     @warn_unused_result
     internal func firstDocument(in message: Message) throws -> Document {
         let documents = try allDocuments(in: message)
@@ -50,6 +62,8 @@ public class Database {
     }
     
     /// Executes a command on this database using a query message
+    /// - parameter command: The command Document to execute
+    /// - returns: A message containing the response
     @warn_unused_result
     internal func execute(command command: Document) throws -> Message {
         let cmd = self["$cmd"]
@@ -58,6 +72,9 @@ public class Database {
         return try server.await(response: id)
     }
     
+    /// All information about the collecitons in this Database
+    /// - parameter filter: The filter to apply when searching for this information
+    /// - returns: A cursor to the resulting documents with collection info
     @warn_unused_result
     public func getCollectionInfos(filter filter: Document? = nil) throws -> Cursor<Document> {
         var request: Document = ["listCollections": 1]
@@ -77,6 +94,7 @@ public class Database {
     }
     
     /// Gets the collections in this database
+    /// - parameter filter: The filter to apply when looking for Collections
     @warn_unused_result
     public func getCollections(filter filter: Document? = nil) throws -> Cursor<Collection> {
         let infoCursor = try self.getCollectionInfos(filter: filter)
@@ -86,6 +104,8 @@ public class Database {
         }
     }
     
+    /// Looks for `ismaster` information
+    /// - returns: `ismaster` response Document
     @warn_unused_result
     internal func isMaster() throws -> Document {
         let response = try self.execute(command: ["ismaster": Int32(1)])
@@ -94,6 +114,7 @@ public class Database {
     }
 }
 
+/// Authentication and encryption
 extension Database {
     /// Generates a random String
     private func randomNonce() -> String {

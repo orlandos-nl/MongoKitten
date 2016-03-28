@@ -2,6 +2,7 @@ import Strand
 
 public typealias Block = () -> Void
 
-public func Background(function: Block) throws {
+/// Execute a closure in the background
+internal func Background(function: Block) throws {
     let _ = try Strand(closure: function)
 }

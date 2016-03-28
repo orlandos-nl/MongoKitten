@@ -53,15 +53,18 @@ public class Server {
     /// Did we initialize?
     private var isInitialized = false
     
+    /// The server's hostname/IP to connect to
     private let host: String
+    
+    /// The server's port to connect to
     private let port: Int
 
     internal private(set) var serverData: (maxWriteBatchSize: Int32, maxWireVersion: Int32, minWireVersion: Int32, maxMessageSizeBytes: Int32)?
     
-    /// Initializes a MongoDB Client instance on a given connection
-    /// - parameter client: The Stream Client connected to the MongoDB Serer
-    /// - parameter authentication: The optional Login Credentials for the account on the server
-    /// - parameter autoConnect: Whether we automatically connect
+    // Initializes a MongoDB Client instance on a given connection
+    // - parameter client: The Stream Client connected to the MongoDB Serer
+    // - parameter authentication: The optional Login Credentials for the account on the server
+    // - parameter autoConnect: Whether we automatically connect
 //    public init(_ client: StreamClient, using authentication: (username: String, password: String)? = nil, automatically connecting: Bool = false) throws {
 //        self.client = client
 //
@@ -73,9 +76,10 @@ public class Server {
 //    }
     
     /// Initializes a MongoDB Client Instance on a given port with a given host
-    /// - parameter host: The host we'll connect to
+    /// - parameter at: The host we'll connect to
     /// - parameter port: The port we'll connect on
     /// - parameter authentication: The optional authentication details we'll use when connecting to the server
+    /// - parameter automatically: Connect automatically
     public init(at host: String, port: Int = 27017, using authentication: (username: String, password: String)? = nil, automatically connecting: Bool = false) throws {
         self.client = try Socket.makeStreamSocket()
         self.host = host
@@ -128,6 +132,7 @@ public class Server {
     }
     
     /// Generates a messageID for the next Message
+    /// - returns: The newly created ID for your message
     internal func nextMessageID() -> Int32 {
         lastRequestID += 1
         return lastRequestID
@@ -175,6 +180,7 @@ public class Server {
     }
     
     /// Called by the server thread to handle MongoDB Wire messages
+    /// - parameter bufferSize: The amount of bytes to fetch at a time
     private func receive(bufferSize: Int = 1024) throws {
         let incomingBuffer: [Byte] = try client.receive(maximumBytes: bufferSize)
         fullBuffer += incomingBuffer
@@ -201,7 +207,11 @@ public class Server {
         }
     }
     
-    internal func await(response requestId: Int32, with timeout: NSTimeInterval = 10) throws -> Message {
+    /// Awaits until a set amount of time for response of the server
+    /// - parameter response: The response's ID that we're awaiting a reply for
+    /// - parameter until: Until when we'll wait for a response
+    /// - returns: The reply
+    internal func await(response requestId: Int32, until timeout: NSTimeInterval = 10) throws -> Message {
         let condition = NSCondition()
         condition.lock()
         waitingForResponses[requestId] = condition
@@ -228,15 +238,9 @@ public class Server {
         throw MongoError.InternalInconsistency
     }
     
-    /**
-     Send given message to the server.
-     
-     This method executes on the thread of the caller and returns when done.
-     
-     - parameter message: A message to send to  the server
-     
-     - returns: The request ID of the sent message
-     */
+    /// Sends a message's data to the server
+    /// - parameter message: The message we're sending
+    /// - returns: The RequestID for this message
     internal func send(message message: Message) throws -> Int32 {
         let messageData = try message.generateData()
         

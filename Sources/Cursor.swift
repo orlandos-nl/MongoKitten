@@ -62,6 +62,7 @@ public final class Cursor<T> {
         self.data = base.data.flatMap(transform)
     }
     
+    /// Gets more information and puts it in the buffer
     private func getMore() {
         do {
             let request = Message.GetMore(requestID: server.nextMessageID(), namespace: namespace, numberToReturn: chunkSize, cursor: cursorID)
@@ -93,6 +94,8 @@ public final class Cursor<T> {
 }
 
 extension Cursor : Sequence {
+    /// Makes an iterator to loop over the data this cursor points to
+    /// - returns: The iterator
     public func makeIterator() -> AnyIterator<T> {
         return AnyIterator {
             if self.data.isEmpty && self.cursorID != 0 {

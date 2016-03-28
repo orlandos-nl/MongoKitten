@@ -50,17 +50,22 @@ public enum MongoError : ErrorProtocol {
     /// Thrown when the initialization of a cursor, on request of the server, failed because of missing data.
     case CursorInitializationError(cursorDocument: Document)
     
+    /// -
     case InvalidReply
     
+    /// The response with the given documents is invalid
     case InvalidResponse(documents: [Document])
     
     /// If you get one of these, it's probably a bug on our side. Sorry. Please file a ticket :)
     case InternalInconsistency
     
+    /// -
     case UnsupportedOperations
     
+    /// -
     case InvalidChunkSize(chunkSize: Int)
     
+    /// GridFS was asked to return a negative amount of bytes
     case NegativeBytesRequested(start: Int, end: Int)
 }
 

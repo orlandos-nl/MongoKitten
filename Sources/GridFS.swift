@@ -16,6 +16,8 @@ public class GridFS {
     private let chunks: Collection
     
     /// Initializes a GridFS Collection (bucket) in a given database
+    /// - parameter in: In which database does this GridFS bucket reside
+    /// - parameter named: The optional name of this GridFS bucket (by default "fs")
     public init(in database: Database, named bucketName: String = "fs") throws {
         files = database["\(bucketName).files"]
         chunks = database["\(bucketName).chunks"]
@@ -26,31 +28,52 @@ public class GridFS {
         try files.createIndex(with: [(key: "filename", ascending: true), (key: "uploadDate", ascending: true)], named: "filesindex", filter: nil, buildInBackground: true, unique: false)
     }
     
+    /// Finds using all files matching this ObjectID
+    /// - parameter byID: The ID to look for
+    /// - returns: A cursor pointing to all resulting files
     public func find(byID id: ObjectId) throws -> Cursor<File> {
         return try self.find(matching: ["_id": id])
     }
     
+    /// Finds using all files file matching this filename
+    /// - parameter filter: The filename to look for
+    /// - returns: A cursor pointing to all resulting files
     public func find(byName filename: String) throws -> Cursor<File> {
         return try self.find(matching: ["filename": filename])
     }
     
+    /// Finds using all files matching this MD5 hash
+    /// - parameter filter: The hash to look for
+    /// - returns: A cursor pointing to all resulting files
     public func find(byHash hash: String) throws -> Cursor<File> {
         return try self.find(matching: ["md5": hash])
     }
     
+    /// Finds the first file matching this ObjectID
+    /// - parameter byID: The hash to look for
+    /// - returns: The resulting file
     public func findOne(byID id: ObjectId) throws -> File? {
         return try self.find(matching: ["_id": id]).makeIterator().next()
     }
     
+    /// Finds the first file matching this filename
+    /// - parameter byName: The filename to look for
+    /// - returns: The resulting file
     public func findOne(byName filename: String) throws -> File? {
         return try self.find(matching: ["filename": filename]).makeIterator().next()
     }
     
+    /// Finds the first file matching this MD5 hash
+    /// - parameter byHash: The hash to look for
+    /// - returns: The resulting file
     public func findOne(byHash hash: String) throws -> File? {
         return try self.find(matching: ["md5": hash]).makeIterator().next()
     }
     
-    private func find(matching filter: Document) throws -> Cursor<File> {
+    /// Finds using a matching filter
+    /// - parameter filter: The filter to use
+    /// - returns: A cursor pointing to all resulting files
+    public func find(matching filter: Document) throws -> Cursor<File> {
         let cursor = try files.find(matching: filter)
         
         let gridFSCursor: Cursor<File> = Cursor(base: cursor, transform: { File(document: $0, chunksCollection: self.chunks, filesCollection: self.files) })
@@ -58,6 +81,12 @@ public class GridFS {
         return gridFSCursor
     }
     
+    /// Stores the data in GridFS
+    /// - parameter data: The data to store
+    /// - parameter named: The optional filename to use for this data
+    /// - parameter withType: The optional MIME type to use for this data
+    /// - parameter usingMetadata: The optional metadata to store with this file
+    /// - parameter inChunksOf: The amount of bytes to put in one chunk
     public func store(data data: [Byte], named filename: String? = nil, withType contentType: String? = nil, usingMetadata metadata: BSONElement? = nil, inChunksOf chunkSize: Int = 255000) throws -> ObjectId {
         guard chunkSize < 15000000 else {
             throw MongoError.InvalidChunkSize(chunkSize: chunkSize)
@@ -98,10 +127,22 @@ public class GridFS {
         return id
     }
     
+    /// Stores the data in GridFS
+    /// - parameter data: The data to store
+    /// - parameter named: The optional filename to use for this data
+    /// - parameter withType: The optional MIME type to use for this data
+    /// - parameter usingMetadata: The optional metadata to store with this file
+    /// - parameter inChunksOf: The amount of bytes to put in one chunk
     public func store(data data: NSData, named filename: String? = nil, withType contentType: String? = nil, usingMetadata metadata: BSONElement? = nil, inChunksOf chunkSize: Int = 255000) throws -> ObjectId {
         return try self.store(data: data.arrayOfBytes(), named: filename, withType: contentType, usingMetadata: metadata, inChunksOf: chunkSize)
     }
     
+    /// Stores the data in GridFS
+    /// - parameter data: The data to store
+    /// - parameter named: The optional filename to use for this data
+    /// - parameter withType: The optional MIME type to use for this data
+    /// - parameter usingMetadata: The optional metadata to store with this file
+    /// - parameter inChunksOf: The amount of bytes to put in one chunk
     public func store(data data: Data, named filename: String? = nil, withType contentType: String? = nil, usingMetadata metadata: BSONElement? = nil, inChunksOf chunkSize: Int = 255000) throws -> ObjectId {
         return try self.store(data: data.bytes, named: filename, withType: contentType, usingMetadata: metadata, inChunksOf: chunkSize)
     }

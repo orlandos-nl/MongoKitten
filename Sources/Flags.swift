@@ -28,6 +28,7 @@ public struct QueryFlags : OptionSet {
     /// You can initialize this with an Int32 and compare the number with an array of QueryFlags
     public init(rawValue: Int32) { self.rawValue = rawValue }
     
+    // Not supported
     //    internal static let TailableCursor = QueryFlags(rawValue: 1 << 0)
     //    internal static let NoCursorTimeout = QueryFlags(rawValue: 4 << 0)
     //    internal static let AwaitData = QueryFlags(rawValue: 5 << 0)
