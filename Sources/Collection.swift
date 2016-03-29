@@ -503,14 +503,14 @@ public class Collection {
     /// - parameter query: The Document query used to filter through the returned results
     /// - returns: A list of all distinct values for this key
     @warn_unused_result
-    public func distinct(key: String, usingFilter filter: Document? = nil) throws -> [BSONElement]? {
+    public func distinct(key: String, usingFilter filter: Document? = nil) throws -> [String]? {
         var command: Document = ["distinct": self.name, "key": key]
         
         if let filter = filter {
             command["query"] = filter
         }
         
-        return try database.firstDocument(in: try self.database.execute(command: command))["values"]?.documentValue?.arrayValue
+        return try database.firstDocument(in: try self.database.execute(command: command))["values"]?.documentValue?.arrayValue.flatMap({ $0.stringValue })
     }
     
     /// Returns all distinct values for a key in this collection. Allows filtering using query
@@ -518,7 +518,7 @@ public class Collection {
     /// - parameter query: The query used to filter through the returned results
     /// - returns: A list of all distinct values for this key
     @warn_unused_result
-    public func distinct(key: String, usingFilter query: Query) throws -> [BSONElement]? {
+    public func distinct(key: String, usingFilter query: Query) throws -> [String]? {
         return try self.distinct(key, usingFilter: query.data)
     }
     
