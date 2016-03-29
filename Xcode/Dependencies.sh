@@ -47,6 +47,7 @@ cat > "$SRCROOT/SPM.xcconfig" <<EOF
 LIBRARY_SEARCH_PATHS = \$(inherited) \$(SRCROOT)/../.build/debug
 SWIFT_INCLUDE_PATHS = \$(inherited) \$(SRCROOT)/../.build/debug \$(SRCROOT)/../Packages/**
 OTHER_LDFLAGS = \$(inherited) -L\$(SRCROOT)/../.build/debug $linkerflags
+LD_LIBRARY_PATH = \$(inherited) \$(SRCROOT)/../.build/debug
 EOF
 
 touch .build/debug/.dependencies-ready

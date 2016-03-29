@@ -12,9 +12,12 @@
     import Darwin.C
 #endif
 
-import Foundation
+import Hummingbird
+
+@_exported import C7
 @_exported import BSON
-import BlueSocket
+
+import Foundation
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 // This file contains the low level code. This code is synchronous and is used by the async client API. //
@@ -27,15 +30,6 @@ internal typealias ResponseHandler = ((reply: Message) -> Void)
 
 /// A server object is the core of MongoKitten. From this you can get databases which can provide you with collections from where you can do actions
 public class Server {
-    /// Is the socket connected?
-    public var connected: Bool { return socket.connected }
-    
-    /// The MongoDB-server's hostname
-    private let host: String
-    
-    /// The MongoDB-server's port
-    private let port: Int32
-    
     /// The authentication details that are used to connect with the MongoDB server
     private let authDetails: (username: String, password: String)?
     
@@ -43,7 +37,7 @@ public class Server {
     internal var lastRequestID: Int32 = -1
     
     /// The full buffer of received bytes from MongoDB
-    internal var fullBuffer = [UInt8]()
+    internal var fullBuffer = [Byte]()
     
     /// A cache for incoming responses
     private var incomingResponses = [(id: Int32, message: Message, date: NSDate)]()
@@ -53,40 +47,61 @@ public class Server {
     
     private var waitingForResponses = [Int32:NSCondition]()
     
-    /// TOOD: Replace with C7 compliant sockets
-    private var socket: BlueSocket
+    /// HummingBird Socket bound to the MongoDB Server
+    private var client: Socket
     
     /// Did we initialize?
-    private var initialized = false
+    private var isInitialized = false
     
-    /// The background thread for sending and receiving data
-    private let backgroundQueue = backgroundThread()
+    /// The server's hostname/IP to connect to
+    private let host: String
     
+    /// The server's port to connect to
+    private let port: Int
+
     internal private(set) var serverData: (maxWriteBatchSize: Int32, maxWireVersion: Int32, minWireVersion: Int32, maxMessageSizeBytes: Int32)?
     
-    /// Initializes a server with a given host and port. Optionally automatically connects
-    /// - parameter host: The host we'll connect with for the MongoDB Server
-    /// - parameter port: The port we'll connect on with the MongoDB Server
-    /// - parameter autoConnect: Whether we automatically connect
-    public init(host: String, port: Int32 = 27017, authentication: (username: String, password: String)? = nil, autoConnect: Bool = false) throws {
+    // Initializes a MongoDB Client instance on a given connection
+    // - parameter client: The Stream Client connected to the MongoDB Serer
+    // - parameter authentication: The optional Login Credentials for the account on the server
+    // - parameter autoConnect: Whether we automatically connect
+//    public init(_ client: StreamClient, using authentication: (username: String, password: String)? = nil, automatically connecting: Bool = false) throws {
+//        self.client = client
+//
+//        self.authDetails = authentication
+//        
+//        if connecting {
+//            try self.connect()
+//        }
+//    }
+    
+    /// Initializes a MongoDB Client Instance on a given port with a given host
+    /// - parameter at: The host we'll connect to
+    /// - parameter port: The port we'll connect on
+    /// - parameter authentication: The optional authentication details we'll use when connecting to the server
+    /// - parameter automatically: Connect automatically
+    public init(at host: String, port: Int = 27017, using authentication: (username: String, password: String)? = nil, automatically connecting: Bool = false) throws {
+        self.client = try Socket.makeStreamSocket()
         self.host = host
         self.port = port
-        self.socket = try .defaultConfigured()
+
         self.authDetails = authentication
         
-        if autoConnect {
+        if connecting {
             try self.connect()
         }
     }
-    
+
     /// This subscript returns a Database struct given a String
+    /// - parameter database: The database's name
+    /// - returns: A database instance for the requested database
     public subscript (database: String) -> Database {
-        let database = database.stringByReplacingOccurrencesOfString(".", withString: "")
+        let database = replaceOccurrences(in: database, where: ".", with: "")
         
-        let db = Database(server: self, databaseName: database)
+        let db = Database(database: database, at: self)
         
         do {
-            if !initialized {
+            if !isInitialized {
                 let result = try db.isMaster()
                 
                 if let batchSize = result["maxWriteBatchSize"]?.int32Value, let minWireVersion = result["minWireVersion"]?.int32Value, let maxWireVersion = result["maxWireVersion"]?.int32Value {
@@ -94,7 +109,7 @@ public class Server {
                     
                     serverData = (maxWriteBatchSize: batchSize, maxWireVersion: maxWireVersion, minWireVersion: minWireVersion, maxMessageSizeBytes: maxMessageSizeBytes)
                     
-                    initialized = true
+                    isInitialized = true
                 }
             }
         } catch {}
@@ -104,12 +119,12 @@ public class Server {
                 let protocolVersion = serverData?.maxWireVersion ?? 0
                 
                 if protocolVersion >= 3 {
-                    try db.authenticateSASL(details)
+                    try db.authenticate(SASL: details)
                 } else {
-                    try db.authenticateCR(details)
+                    try db.authenticate(mongoCR: details)
                 }
             } catch {
-                db.authenticated = false
+                db.isAuthenticated = false
             }
         }
         
@@ -117,24 +132,19 @@ public class Server {
     }
     
     /// Generates a messageID for the next Message
-    internal func getNextMessageID() -> Int32 {
+    /// - returns: The newly created ID for your message
+    internal func nextMessageID() -> Int32 {
         lastRequestID += 1
         return lastRequestID
     }
     
     /// Connects with the MongoDB Server using the given information in the initializer
     public func connect() throws {
-        if self.connected {
-            throw MongoError.MongoDatabaseAlreadyConnected
-        }
-        
-        try self.socket.connectTo(self.host, port: self.port)
-        Background(backgroundQueue, backgroundLoop)
+        try client.connect(toTarget: host, onPort: "\(port)")
+        try Background(backgroundLoop)
     }
     
     private func backgroundLoop() {
-        guard self.connected else { return }
-        
         do {
             try self.receive()
             
@@ -145,45 +155,35 @@ public class Server {
             }
         } catch {
             // A receive failure is to be expected if the socket has been closed
-            if self.connected {
-                print("The MongoDB background loop encountered an error: \(error)")
-            } else {
-                return
-            }
+//            if self.isConnected {
+//                print("The MongoDB background loop encountered an error: \(error)")
+//            } else {
+//                return
+//            }
+            return
         }
         
-        Background(backgroundQueue, backgroundLoop)
-    }
-    
-    /// Throws an error if the database is not connected yet
-    private func assertConnected() throws {
-        guard connected else {
-            throw MongoError.MongoDatabaseNotYetConnected
+        do {
+            try Background(backgroundLoop)
+        } catch {
+            do {
+                try disconnect()
+            } catch { print("Careful. Backgroundloop is broken") }
         }
     }
     
     /// Disconnects from the MongoDB server
     public func disconnect() throws {
-        try assertConnected()
-        socket.close()
+        try client.close()
+        
+        isInitialized = false
     }
     
     /// Called by the server thread to handle MongoDB Wire messages
-    private func receive(bufferSize: Int32 = 1024) throws {
-        do {
-            var incomingBuffer = [UInt8](count: Int(bufferSize), repeatedValue: 0)
-            var incomingCount = 0
-            try incomingBuffer.withUnsafeMutableBufferPointer {
-                incomingCount = try socket.readData(UnsafeMutablePointer($0.baseAddress), bufSize: $0.count)
-            }
-            fullBuffer += incomingBuffer[0..<incomingCount]
-        } catch let error as BlueSocket.Error {
-            if error.errorCode == Int32(BlueSocket.SOCKET_ERR_RECV_BUFFER_TOO_SMALL) {
-                try self.receive(error.bufferSizeNeeded)
-            } else {
-                throw error
-            }
-        }
+    /// - parameter bufferSize: The amount of bytes to fetch at a time
+    private func receive(bufferSize: Int = 1024) throws {
+        let incomingBuffer: [Byte] = try client.receive(maximumBytes: bufferSize)
+        fullBuffer += incomingBuffer
         
         do {
             while fullBuffer.count >= 36 {
@@ -198,29 +198,39 @@ public class Server {
                 
                 let responseData = fullBuffer[0..<length]*
                 let responseId = try Int32.instantiate(bsonData: fullBuffer[8...11]*)
-                let reply = try Message.ReplyFromBSON(responseData)
+                let reply = try Message.makeReply(from: responseData)
                 
                 incomingResponses.append((responseId, reply, NSDate()))
                 
-                fullBuffer.removeRange(0..<length)
+                fullBuffer.removeSubrange(0..<length)
             }
         }
     }
     
-    internal func awaitResponse(requestId: Int32, timeout: NSTimeInterval = 10) throws -> Message {
+    /// Awaits until a set amount of time for response of the server
+    /// - parameter response: The response's ID that we're awaiting a reply for
+    /// - parameter until: Until when we'll wait for a response
+    /// - returns: The reply
+    internal func await(response requestId: Int32, until timeout: NSTimeInterval = 10) throws -> Message {
         let condition = NSCondition()
         condition.lock()
         waitingForResponses[requestId] = condition
         
-        if condition.waitUntilDate(NSDate(timeIntervalSinceNow: timeout)) == false {
-            throw MongoError.Timeout
-        }
+        #if os(Linux)
+            if condition.waitUntilDate(NSDate(timeIntervalSinceNow: timeout)) == false {
+                throw MongoError.Timeout
+            }
+        #else
+            if condition.wait(until: NSDate(timeIntervalSinceNow: timeout)) == false {
+                throw MongoError.Timeout
+            }
+        #endif
         
         condition.unlock()
         
-        for (index, response) in incomingResponses.enumerate() {
+        for (index, response) in incomingResponses.enumerated() {
             if response.id == requestId {
-                return incomingResponses.removeAtIndex(index).message
+                return incomingResponses.remove(at: index).message
             }
         }
         
@@ -228,21 +238,13 @@ public class Server {
         throw MongoError.InternalInconsistency
     }
     
-    /**
-     Send given message to the server.
-     
-     This method executes on the thread of the caller and returns when done.
-     
-     - parameter message: A message to send to  the server
-     
-     - returns: The request ID of the sent message
-     */
-    internal func sendMessage(message: Message) throws -> Int32 {
-        try assertConnected()
+    /// Sends a message's data to the server
+    /// - parameter message: The message we're sending
+    /// - returns: The RequestID for this message
+    internal func send(message message: Message) throws -> Int32 {
+        let messageData = try message.generateData()
         
-        let messageData = try message.generateBsonMessage()
-        
-        try socket.writeData(messageData, bufSize: messageData.count)
+        try client.send(messageData)
         
         return message.requestID
     }

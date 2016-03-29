@@ -2,13 +2,13 @@
 
 Native MongoDB driver for Swift, written in Swift. This library does not wrap around the mongoc driver. It uses:
 
-- IBM's [BlueSocket](https://github.com/IBM-Swift/BlueSocket) for TCP connections
+- [Hummingbird](https://github.com/ketzusaka/Hummingbird) for TCP connections
 - Our own [BSON](https://github.com/PlanTeam/BSON) library, which is also 100% native Swift
 
 ## Requirements
 
 - A mongoDB server
-- Swift Development Snapshot 2016-03-01-a
+- Swift Development Snapshot 2016-03-24-a
 
 We don't support any other version of swift with the constantly changing syntax. This required swift version changes constantly with newer versions of `MongoKitten` and it's recommended to pin down the version in SPM.
 
@@ -26,7 +26,7 @@ import PackageDescription
 let package = Package(
 	name: "MyApp",
 	dependencies: [
-		.Package(url: "https://github.com/PlanTeam/MongoKitten.git", majorVersion: 0, minor: 4)
+		.Package(url: "https://github.com/PlanTeam/MongoKitten.git", majorVersion: 0, minor: 5)
 	]
 )
 ```
@@ -41,7 +41,7 @@ Connect to your local MongoDB server:
 
 ```swift
 do {
-	let server = try Server(host: "127.0.0.1")
+	let server = try Server(at: "127.0.0.1")
 
 } catch {
 	print("MongoDB is not available on the given host and port")
@@ -51,7 +51,7 @@ do {
 Or an external server with an account:
 
 ```swift
-let server = try Server(host: "example.com", port: 27017, authentication: (username: "my-user", password: "my-pass"))
+let server = try Server(at: "example.com", port: 27017, using: (username: "my-user", password: "my-pass"))
 ```
 
 Select a database to use for your application:
@@ -148,13 +148,13 @@ We also have a query builder which can be easily used to create filters when sea
 ```swift
 let q: Query = "username" == "harriebob" && "age" > 24
 
-let result = try userCollection.findOne(q)
+let result = try userCollection.findOne(matching: q)
 ```
 
 Or simpler:
 
 ```swift
-let newResult = try userCollection.findOne("username" == "harriebob" && "age" > 24)
+let newResult = try userCollection.findOne(matching: "username" == "harriebob" && "age" > 24)
 ```
 
 ## Updating data
@@ -162,7 +162,7 @@ let newResult = try userCollection.findOne("username" == "harriebob" && "age" > 
 Updating data is simple too:
 
 ```swift
-try userCollection.update(["username": "bob"], updated: ["username": "anotherbob"])
+try userCollection.update(matching: ["username": "bob"], to: ["username": "anotherbob"])
 ```
 
 ## Deleting data
@@ -171,36 +171,30 @@ Deleting is possible using a document and a query
 
 ```swift
 // Delete using a document
-try userCollection.remove(["username": "klaas"])
+try userCollection.remove(matching: ["username": "klaas"])
 
 // Delete using a query:
-try userCollection.remove("age" >= 24)
+try userCollection.remove(matching: "age" >= 24)
 ```
 
 ## GridFS
 
 ```swift
 // Make a GridFS Collection within the database 'mydatabase'
-let gridFS = GridFS(database: server["mydatabase"])
+let gridFS = GridFS(in: server["mydatabase"])
 
 // Find all bytes corresponding to this image
 let data = NSData(contentsOfFile: "./myimage.jpg")!
 
 // Store the file in GridFS with maximum 10000 bytes per chunk (255000 is the recommended default) and doesn't need to be set
 // Store the ObjectID corresponding to the file in a constant variable
-let objectID = try! gridFS.storeFile(data, chunkSize: 10000)
+let objectID = try! gridFS.store(data: data, named "myimage.jpg", withType: "image/jpeg", inChunksOf: 10000)
 
 // Retreive the file from GridFS
-let file = try! gridFS.findOneFile(objectID)
+let file = try! gridFS.findOne(byID: objectID)
 
-// Make a buffer to store this file's data in
-var buffer = [UInt8]()
-
-// Loop over all chunks of data in the file
-for chunk in try! file!.findChunks() {
-    // Append the chunk to the buffer
-    buffer.appendContentsOf(chunk.data.data)
-}
+// Get the bytes we need
+let myImageData: [Byte] = file!.read(from: 1024, to: 1234)
 ```
 
 ### GridFS example usage
@@ -210,18 +204,6 @@ Imagine running a video streaming site. One of your users uploads a video. This 
 Now one user starts watching the video. You'll load the video chunk-by-chunk without keeping all of the video's buffer in memory.
 
 The user quits the video about 40% through the video. Let's say chunk 58 of 144 of your video. Now you'll want to start continueing the video where it left off without receving all the unneccesary chunks.
-
-We'd do that like this:
-
-```swift
-do {
-    for chunk in try file.findChunks(skip: 57) {
-	    // process the chunks
-    }
-} catch {
-    print("Couldn't get the chunks")
-}
-```
 
 ## Security notes
 

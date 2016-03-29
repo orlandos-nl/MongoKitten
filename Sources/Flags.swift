@@ -9,7 +9,7 @@
 import Foundation
 
 /// The flags that can be used in an Insert Message
-public struct InsertFlags : OptionSetType {
+public struct InsertFlags : OptionSet {
     /// The raw value in Int32
     public let rawValue: Int32
     
@@ -21,13 +21,14 @@ public struct InsertFlags : OptionSetType {
 }
 
 /// The flags that can be used in a Find/Query message
-public struct QueryFlags : OptionSetType {
+public struct QueryFlags : OptionSet {
     /// The raw value in Int32
     public let rawValue: Int32
     
     /// You can initialize this with an Int32 and compare the number with an array of QueryFlags
     public init(rawValue: Int32) { self.rawValue = rawValue }
     
+    // Not supported
     //    internal static let TailableCursor = QueryFlags(rawValue: 1 << 0)
     //    internal static let NoCursorTimeout = QueryFlags(rawValue: 4 << 0)
     //    internal static let AwaitData = QueryFlags(rawValue: 5 << 0)
@@ -35,7 +36,7 @@ public struct QueryFlags : OptionSetType {
 }
 
 /// The flags that can be used in an Update Message
-public struct UpdateFlags : OptionSetType {
+public struct UpdateFlags : OptionSet {
     /// The raw value in Int32
     public let rawValue: Int32
     
@@ -50,7 +51,7 @@ public struct UpdateFlags : OptionSetType {
 }
 
 /// The flags that can be used in a Delete Message
-public struct DeleteFlags : OptionSetType {
+public struct DeleteFlags : OptionSet {
     /// The raw value in Int32
     public let rawValue: Int32
     
@@ -62,7 +63,7 @@ public struct DeleteFlags : OptionSetType {
 }
 
 /// The flags that are used by the Reply message
-internal struct ReplyFlags : OptionSetType {
+internal struct ReplyFlags : OptionSet {
     /// The raw value in Int32
     internal let rawValue: Int32
     

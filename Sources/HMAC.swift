@@ -6,9 +6,9 @@
 //  Copyright (c) 2015 Marcin Krzyzanowski. All rights reserved.
 //
 
-final public class HMAC {
+final internal class HMAC {
     
-    public enum Variant {
+    internal enum Variant {
         case sha1, md5
         
         var size:Int {
@@ -20,7 +20,7 @@ final public class HMAC {
             }
         }
         
-        func calculateHash(bytes bytes:[UInt8]) -> [UInt8]? {
+        func calculateHash(bytes bytes:[Byte]) -> [Byte]? {
             switch (self) {
             case .sha1:
                 return Hash.sha1(bytes).calculate()
@@ -34,16 +34,16 @@ final public class HMAC {
         }
     }
     
-    var key:[UInt8]
+    var key:[Byte]
     let variant:Variant
     
-    class internal func authenticate(key  key: [UInt8], message: [UInt8], variant:HMAC.Variant = .md5) -> [UInt8]? {
+    class internal func authenticate(key  key: [Byte], message: [Byte], variant:HMAC.Variant = .md5) -> [Byte]? {
         return HMAC(key, variant: variant)?.authenticate(message: message)
     }
     
     // MARK: - Private
     
-    internal init? (_ key: [UInt8], variant:HMAC.Variant = .md5) {
+    internal init? (_ key: [Byte], variant:HMAC.Variant = .md5) {
         self.variant = variant
         self.key = key
         
@@ -54,21 +54,21 @@ final public class HMAC {
         }
         
         if (key.count < variant.blockSize()) { // keys shorter than blocksize are zero-padded
-            self.key = key + [UInt8](count: variant.blockSize() - key.count, repeatedValue: 0)
+            self.key = key + [Byte](repeating: 0, count: variant.blockSize() - key.count)
         }
     }
     
-    internal func authenticate(message  message:[UInt8]) -> [UInt8]? {
-        var opad = [UInt8](count: variant.blockSize(), repeatedValue: 0x5c)
-        for (idx, _) in key.enumerate() {
+    internal func authenticate(message  message:[Byte]) -> [Byte]? {
+        var opad = [Byte](repeating: 0x5c, count: variant.blockSize())
+        for (idx, _) in key.enumerated() {
             opad[idx] = key[idx] ^ opad[idx]
         }
-        var ipad = [UInt8](count: variant.blockSize(), repeatedValue: 0x36)
-        for (idx, _) in key.enumerate() {
+        var ipad = [Byte](repeating: 0x36, count: variant.blockSize())
+        for (idx, _) in key.enumerated() {
             ipad[idx] = key[idx] ^ ipad[idx]
         }
         
-        var finalHash:[UInt8]? = nil;
+        var finalHash:[Byte]? = nil;
         if let ipadAndMessageHash = variant.calculateHash(bytes: ipad + message) {
             finalHash = variant.calculateHash(bytes: opad + ipadAndMessageHash);
         }

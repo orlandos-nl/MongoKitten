@@ -7,10 +7,10 @@
 //
 
 public enum Hash {
-    case md5(Array<UInt8>)
-    case sha1(Array<UInt8>)
+    case md5(Array<Byte>)
+    case sha1(Array<Byte>)
     
-    public func calculate() -> [UInt8] {
+    public func calculate() -> [Byte] {
         switch self {
         case md5(let bytes):
             return MD5(bytes).calculate()

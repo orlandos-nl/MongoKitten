@@ -9,9 +9,9 @@
 /**
  *  Message Authentication
  */
-public enum Authenticator {
+internal enum Authenticator {
     
-    public enum Error: ErrorType {
+    internal enum Error: ErrorProtocol {
         case AuthenticateError
     }
     
@@ -20,14 +20,14 @@ public enum Authenticator {
      
      - parameter key: 256-bit key
      */
-    case HMAC(key: [UInt8], variant:MongoKitten.HMAC.Variant)
+    case HMAC(key: [Byte], variant:MongoKitten.HMAC.Variant)
     
     /**
      Generates an authenticator for message using a one-time key and returns the 16-byte result
      
      - returns: 16-byte message authentication code
      */
-    public func authenticate(message: [UInt8]) throws -> [UInt8] {
+    internal func authenticate(message: [Byte]) throws -> [Byte] {
         switch (self) {
         case .HMAC(let key, let variant):
             guard let auth = MongoKitten.HMAC.authenticate(key: key, message: message, variant: variant) else {

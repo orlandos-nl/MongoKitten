@@ -6,27 +6,26 @@
 //  Copyright © 2016 PlanTeam. All rights reserved.
 //
 
+import C7
 import MongoKitten
 import BSON
 import Foundation
 
 final class TestManager {
-    static var server: Server = try! Server(host: "127.0.0.1", port: 27017, authentication: (username: "mongokitten-unittest-user", password: "mongokitten-unittest-password"), autoConnect: false)
+    static var server = try! Server(at: "localhost", port: 27017, using: (username: "mongokitten-unittest-user", password: "mongokitten-unittest-password"), automatically: false)
     static var testDatabase: Database { return server["mongokitten-unittest"] }
-    static var testCollection: Collection { return testDatabase["testcol"] }
+    static var testCollection: MongoKitten.Collection { return testDatabase["testcol"] }
     
     static var testingUsers = [Document]()
     
     static func connect() throws {
-        if !server.connected {
-            try server.connect()
-        }
+        try server.connect()
     }
     
     static func dropAllTestingCollections() throws {
         // Erase the testing database:
         for aCollection in try! testDatabase.getCollections() {
-            if !aCollection.name.containsString("system") {
+            if !aCollection.name.contains("system") {
                 try! aCollection.drop()
             }
         }

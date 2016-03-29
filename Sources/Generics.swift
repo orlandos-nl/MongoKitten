@@ -14,32 +14,19 @@ protocol Initiable  {
 
 extension Int:Initiable {}
 extension UInt:Initiable {}
-extension UInt8:Initiable {}
+extension Byte:Initiable {}
 extension UInt16:Initiable {}
 extension UInt32:Initiable {}
 extension UInt64:Initiable {}
 
-/** build bit pattern from array of bits */
-func integerFromBitsArray<T: UnsignedIntegerType>(bits: [Bit]) -> T
-{
-    var bitPattern:T = 0
-    for (idx,b) in bits.enumerate() {
-        if (b == Bit.One) {
-            let bit = T(UIntMax(1) << UIntMax(idx))
-            bitPattern = bitPattern | bit
-        }
-    }
-    return bitPattern
-}
-
 /// Initialize integer from array of bytes.
 /// This method may be slow
-func integerWithBytes<T: IntegerType where T:ByteConvertible, T: BitshiftOperationsType>(bytes: [UInt8]) -> T {
-    var bytes = bytes.reverse() as Array<UInt8> //FIXME: check it this is equivalent of Array(...)
+func integerWithBytes<T: Integer where T:ByteConvertible, T: BitshiftOperationsType>(bytes: [Byte]) -> T {
+    var bytes = bytes.reversed() as Array<Byte> //FIXME: check it this is equivalent of Array(...)
     if bytes.count < sizeof(T) {
         let paddingCount = sizeof(T) - bytes.count
         if (paddingCount > 0) {
-            bytes += [UInt8](count: paddingCount, repeatedValue: 0)
+            bytes += [Byte](repeating: 0, count: paddingCount)
         }
     }
     
@@ -48,7 +35,7 @@ func integerWithBytes<T: IntegerType where T:ByteConvertible, T: BitshiftOperati
     }
     
     var result: T = 0
-    for byte in bytes.reverse() {
+    for byte in bytes.reversed() {
         result = result << 8 | T(byte)
     }
     return result
@@ -56,20 +43,20 @@ func integerWithBytes<T: IntegerType where T:ByteConvertible, T: BitshiftOperati
 
 /// Array of bytes, little-endian representation. Don't use if not necessary.
 /// I found this method slow
-func arrayOfBytes<T>(value:T, length:Int? = nil) -> [UInt8] {
+func arrayOfBytes<T>(value:T, length:Int? = nil) -> [Byte] {
     let totalBytes = length ?? sizeof(T)
     
-    let valuePointer = UnsafeMutablePointer<T>.alloc(1)
-    valuePointer.memory = value
+    let valuePointer = UnsafeMutablePointer<T>.init(allocatingCapacity: 1)
+    valuePointer.pointee = value
     
-    let bytesPointer = UnsafeMutablePointer<UInt8>(valuePointer)
-    var bytes = [UInt8](count: totalBytes, repeatedValue: 0)
+    let bytesPointer = UnsafeMutablePointer<Byte>(valuePointer)
+    var bytes = [Byte](repeating: 0, count: totalBytes)
     for j in 0..<min(sizeof(T),totalBytes) {
-        bytes[totalBytes - 1 - j] = (bytesPointer + j).memory
+        bytes[totalBytes - 1 - j] = (bytesPointer + j).pointee
     }
     
-    valuePointer.destroy()
-    valuePointer.dealloc(1)
+    valuePointer.deinitialize(count:)()
+    valuePointer.deallocateCapacity(1)
     
     return bytes
 }
@@ -77,13 +64,13 @@ func arrayOfBytes<T>(value:T, length:Int? = nil) -> [UInt8] {
 // MARK: - shiftLeft
 
 // helper to be able tomake shift operation on T
-func << <T:SignedIntegerType>(lhs: T, rhs: Int) -> Int {
+func << <T:SignedInteger>(lhs: T, rhs: Int) -> Int {
     let a = lhs as! Int
     let b = rhs
     return a << b
 }
 
-func << <T:UnsignedIntegerType>(lhs: T, rhs: Int) -> UInt {
+func << <T:UnsignedInteger>(lhs: T, rhs: Int) -> UInt {
     let a = lhs as! UInt
     let b = rhs
     return a << b
@@ -91,7 +78,7 @@ func << <T:UnsignedIntegerType>(lhs: T, rhs: Int) -> UInt {
 
 // Generic function itself
 // FIXME: this generic function is not as generic as I would. It crashes for smaller types
-func shiftLeft<T: SignedIntegerType where T: Initiable>(value: T, count: Int) -> T {
+func shiftLeft<T: SignedInteger where T: Initiable>(value: T, count: Int) -> T {
     if (value == 0) {
         return 0;
     }
@@ -119,8 +106,8 @@ func shiftLeft(value: UInt, count: Int) -> UInt {
     return UInt(shiftLeft(Int(value), count: count)) //FIXME: count:
 }
 
-func shiftLeft(value: UInt8, count: Int) -> UInt8 {
-    return UInt8(shiftLeft(UInt(value), count: count))
+func shiftLeft(value: Byte, count: Int) -> Byte {
+    return Byte(shiftLeft(UInt(value), count: count))
 }
 
 func shiftLeft(value: UInt16, count: Int) -> UInt16 {

@@ -6,21 +6,23 @@
 //  Copyright © 2015 Marcin Krzyzanowski. All rights reserved.
 //
 
+import Foundation
+
 //TODO: func anyGenerator is renamed to AnyGenerator in Swift 2.2, until then it's just dirty hack for linux (because swift >= 2.2 is available for Linux)
-private func CS_AnyGenerator<Element>(body: () -> Element?) -> AnyGenerator<Element> {
-    return AnyGenerator(body: body)
+private func CS_AnyGenerator<Element>(body: () -> Element?) -> AnyIterator<Element> {
+    return AnyIterator(body: body)
 }
 
-struct BytesSequence: SequenceType {
+struct BytesSequence: Sequence {
     let chunkSize: Int
-    let data: [UInt8]
+    let data: [Byte]
     
-    func generate() -> AnyGenerator<ArraySlice<UInt8>> {
+    func makeIterator() -> AnyIterator<ArraySlice<Byte>> {
         
         var offset:Int = 0
         
         return CS_AnyGenerator {
-            let end = min(self.chunkSize, self.data.count - offset)
+            let end = Swift.min(self.chunkSize, self.data.count - offset)
             let result = self.data[offset..<offset + end]
             offset += result.count
             return result.count > 0 ? result : nil
