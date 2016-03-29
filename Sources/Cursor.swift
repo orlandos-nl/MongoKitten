@@ -47,7 +47,7 @@ public final class Cursor<T> {
         self.transform = transform
     }
     
-    internal init<B>(base: Cursor<B>, transform: (B) -> (T?)) {
+    public init<B>(base: Cursor<B>, transform: (B) -> (T?)) {
         self.namespace = base.namespace
         self.server = base.server
         self.cursorID = base.cursorID
