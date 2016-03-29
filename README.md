@@ -207,17 +207,8 @@ The user quits the video about 40% through the video. Let's say chunk 58 of 144 
 
 ## Security notes
 
-In our library we support both the use of `query` as well as `find`.
-
-`query` works on every MongoDB version. And `find` works on MongoDB 3.2 and higher.
-
-The difference might be complex but is important.
-
-`Query` is a powerful Message since it's used to run database commands as described [here](https://docs.mongodb.org/manual/reference/command/).
-
-If you use `Query` on a database in the collection `$cmd` you're able to perform CRUD operations on users, collections and other data. This can be abused in a similar way to SQL Injection.
-
-Therefore it's a good idea to check all Documents that enter the `query` command to prevent malicious behaviour.
+In our library MongoDB servers under version 3.2 can receive malicious queries when using `find`.
+They can be used to execute [DBCommands](https://docs.mongodb.org/manual/reference/command/).
 
 ## License
 
