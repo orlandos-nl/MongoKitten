@@ -2,7 +2,7 @@
 
 Native MongoDB driver for Swift, written in Swift. This library does not wrap around the mongoc driver. It uses:
 
-- IBM's [BlueSocket](https://github.com/IBM-Swift/BlueSocket) for TCP connections
+- [Hummingbird](https://github.com/ketzusaka/Hummingbird) for TCP connections
 - Our own [BSON](https://github.com/PlanTeam/BSON) library, which is also 100% native Swift
 
 ## Requirements
