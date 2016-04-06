@@ -33,8 +33,10 @@ class SetupTests: XCTestCase {
     }
     
     func testSetup() {
-        let server = try! Server(at: "127.0.0.1", using: (username: "unittest", password: "unittest-password"), automatically: true)
+        let server = try! Server(at: "127.0.0.1", using: (username: "mongokitten-unittest-user", password: "mongokitten-unittest-password"), automatically: true)
+        
         let database = server["mongokitten-unittest"]
+        
         let testCollection = database["testcollection"]
         let testBucket = database["bucket.collection"]
         

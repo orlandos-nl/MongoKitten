@@ -6,8 +6,13 @@
 //  Copyright © 2016 PlanTeam. All rights reserved.
 //
 
+import MD5
+import SCRAM
+import SHA1
 import Foundation
+import PBKDF2
 import BSON
+import HMAC
 
 /// A Mongo Database. Cannot be publically initialized. But you can get a database object by subscripting a Server with a String
 public class Database {
@@ -154,44 +159,6 @@ extension Database {
         return parsedResponse
     }
     
-    /// Used for applying SHA1_HMAC on a password and salt
-    private func digest(password: String, data: [Byte]) throws -> [Byte] {
-        var passwordBytes = [Byte]()
-        passwordBytes.append(contentsOf: password.utf8)
-        
-        return try Authenticator.HMAC(key: passwordBytes, variant: .sha1).authenticate(data)
-    }
-    
-    /// xor's two arrays of bytes
-    private func xor(left: [Byte], _ right: [Byte]) -> [Byte] {
-        var result = [Byte]()
-        let loops = min(left.count, right.count)
-        
-        result.reserveCapacity(loops)
-        
-        for i in 0..<loops {
-            result.append(left[i] ^ right[i])
-        }
-        
-        return result
-    }
-    
-    /// Applies the `hi` (PBKDF2 with HMAC as PseudoRandom Function)
-    private func hi(password: String, salt: [Byte], iterations: Int) throws -> [Byte] {
-        var salt = salt
-        salt.append(contentsOf:)(contentsOf: [0, 0, 0, 1])
-        
-        var ui = try digest(password, data: salt)
-        var u1 = ui
-        
-        for _ in 0..<iterations - 1 {
-            u1 = try digest(password, data: u1)
-            ui = xor(ui, u1)
-        }
-        
-        return ui
-    }
-    
     /// Last step(s) in the SASL process
     /// TODO: Set a timeout for connecting
     private func complete(SASL payload: String, using response: Document, verifying signature: [Byte]) throws {
@@ -244,7 +211,7 @@ extension Database {
     
     /// Respond to a challenge
     /// TODO: Set a timeout for connecting
-    private func challenge(with details: (username: String, password: String), using previousInformation: (nonce: String, response: Document)) throws {
+    private func challenge(with details: (username: String, password: String), using previousInformation: (nonce: String, response: Document, scram: SCRAMClient<SHA1>)) throws {
         // If we failed the authentication
         guard previousInformation.response["ok"]?.int32Value == 1 else {
             throw MongoAuthenticationError.IncorrectCredentials
@@ -260,14 +227,6 @@ extension Database {
             throw MongoAuthenticationError.AuthenticationFailure
         }
         
-        // Create our header
-        var basicHeader = [Byte]()
-        basicHeader.append(contentsOf:)(contentsOf: "n,,".utf8)
-        
-        guard let header = basicHeader.toBase64() else {
-            throw MongoAuthenticationError.Base64Failure
-        }
-        
         // Decode the challenge
         guard let stringResponse = previousInformation.response["payload"]?.stringValue else {
             throw MongoAuthenticationError.AuthenticationFailure
@@ -277,52 +236,17 @@ extension Database {
             throw MongoAuthenticationError.Base64Failure
         }
         
-        // Parse the challenge
-        let dictionaryResponse = self.parseResponse(decodedStringResponse)
-        
-        guard let nonce = dictionaryResponse["r"], let stringSalt = dictionaryResponse["s"], let stringIterations = dictionaryResponse["i"], let iterations = Int(stringIterations) where String(nonce[nonce.startIndex..<nonce.startIndex.advanced(by: 24)]) == previousInformation.nonce else {
-            throw MongoAuthenticationError.AuthenticationFailure
-        }
-        
-        // Build up the basic information
-        let noProof = "c=\(header),r=\(nonce)"
-        
-        // Calculate the proof
         var digestBytes = [Byte]()
-        digestBytes.append(contentsOf:)(contentsOf: "\(details.username):mongo:\(details.password)".utf8)
+        digestBytes.append(contentsOf: "\(details.username):mongo:\(details.password)".utf8)
         
-        let digest = digestBytes.md5().toHexString()
-        let salt = [Byte](base64: stringSalt)
+        var passwordBytes = [Byte]()
+        passwordBytes.append(contentsOf: MD5.calculate(digestBytes).toHexString().utf8)
         
-        let saltedPassword = try hi(digest, salt: salt, iterations: iterations)
-        var ck = [Byte]()
-        ck.append(contentsOf:)(contentsOf: "Client Key".utf8)
+        let result = try previousInformation.scram.process(challenge: decodedStringResponse, with: (username: details.username, password: passwordBytes), usingNonce: previousInformation.nonce)
         
-        var sk = [Byte]()
-        sk.append(contentsOf:)(contentsOf: "Server Key".utf8)
-        
-        let clientKey = try Authenticator.HMAC(key: saltedPassword, variant: .sha1).authenticate(ck)
-        let storedKey = clientKey.sha1()
-        
-        let fixedUsername = replaceOccurrences(in: replaceOccurrences(in: details.username, where: "=", with: "=3D"), where: ",", with: "=2C")
-        
-        let authenticationMessage = "n=\(fixedUsername),r=\(previousInformation.nonce),\(decodedStringResponse),\(noProof)"
-        
-        var authenticationMessageBytes = [Byte]()
-        authenticationMessageBytes.append(contentsOf: authenticationMessage.utf8)
-        
-        let clientSignature = try Authenticator.HMAC(key: storedKey, variant: .sha1).authenticate(authenticationMessageBytes)
-        let clientProof = xor(clientKey, clientSignature)
-        let serverKey = try Authenticator.HMAC(key: saltedPassword, variant: .sha1).authenticate(sk)
-        let serverSignature = try Authenticator.HMAC(key: serverKey, variant: .sha1).authenticate(authenticationMessageBytes)
-        
-        // Base64 the proof
-        guard let proof = clientProof.toBase64() else {
-            throw MongoAuthenticationError.Base64Failure
-        }
         
         // Base64 the payload
-        guard let payload = "\(noProof),p=\(proof)".cStringBsonData.toBase64() else {
+        guard let payload = result.proof.cStringBsonData.toBase64() else {
             throw MongoAuthenticationError.Base64Failure
         }
         
@@ -339,7 +263,7 @@ extension Database {
         }
         
         // Complete Authentication
-        try self.complete(SASL: payload, using: responseDocument, verifying: serverSignature)
+        try self.complete(SASL: payload, using: responseDocument, verifying: result.serverSignature)
     }
     
     /// Authenticates to this database using SASL
@@ -348,9 +272,11 @@ extension Database {
     internal func authenticate(SASL details: (username: String, password: String)) throws {
         let nonce = randomNonce()
         
-        let fixedUsername = replaceOccurrences(in: replaceOccurrences(in: details.username, where: "=", with: "=3D"), where: ",", with: "=2C")
-
-        guard let payload = "n,,n=\(fixedUsername),r=\(nonce)".cStringBsonData.toBase64() else {
+        let auth = SCRAMClient<SHA1>()
+        
+        let authPayload = try auth.authenticate(details.username, usingNonce: nonce)
+        
+        guard let payload = authPayload.cStringBsonData.toBase64() else {
             throw MongoAuthenticationError.Base64Failure
         }
         
@@ -362,7 +288,7 @@ extension Database {
         
         let responseDocument = try firstDocument(in: response)
         
-        try self.challenge(with: details, using: (nonce: nonce, response: responseDocument))
+        try self.challenge(with: details, using: (nonce: nonce, response: responseDocument, scram: auth))
     }
     
     /// Authenticate with MongoDB Challenge Response
@@ -381,8 +307,11 @@ extension Database {
         }
         
         // Digest our password and prepare it for sending
-        let digest = "\(details.username):mongo:\(details.password)".cStringBsonData.md5().toHexString()
-        let key = "\(nonce)\(details.username)\(digest)".cStringBsonData.md5().toHexString()
+        var bytes = [Byte]()
+        bytes.append(contentsOf: "\(details.username):mongo:\(details.password)".utf8)
+        
+        let digest = MD5.calculate(bytes).toHexString()
+        let key = MD5.calculate("\(nonce)\(details.username)\(digest)".cStringBsonData).toHexString()
         
         // Respond to the challengge
         let successResponse = try self.execute(command: [

@@ -9,6 +9,7 @@
 import C7
 import BSON
 import Foundation
+import MD5
 
 /// A GridFS instance similar to a collection
 public class GridFS {
@@ -96,7 +97,7 @@ public class GridFS {
         let id = ObjectId()
         let dataSize = data.count
         
-        var insertData = *["_id": id, "length": dataSize, "chunkSize": Int32(chunkSize), "uploadDate": NSDate.init(timeIntervalSinceNow: 0), "md5": data.md5().toHexString()]
+        var insertData = *["_id": id, "length": dataSize, "chunkSize": Int32(chunkSize), "uploadDate": NSDate.init(timeIntervalSinceNow: 0), "md5": MD5.calculate(data).toHexString()]
         
         if let contentType = contentType {
             insertData += ["contentType": contentType]
