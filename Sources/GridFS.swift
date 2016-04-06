@@ -235,7 +235,7 @@ public class GridFS {
             
             let lastByte = start + bytesRequested
             let lastChunkRemainder = lastByte % Int(self.chunkSize)
-            let finalReduction = Int(self.chunkSize) - lastChunkRemainder
+//            let finalReduction = Int(self.chunkSize) - lastChunkRemainder
             
             var endChunk = (lastByte - lastChunkRemainder) / Int(self.chunkSize)
             
@@ -245,13 +245,13 @@ public class GridFS {
             
             let cursor = try chunksCollection.find(matching: ["files_id": id], sortedBy: ["n": 1], skipping: Int32(skipChunks), limitedTo: Int32(endChunk - skipChunks))
             let chunkCursor = Cursor(base: cursor, transform: { Chunk(document: $0, chunksCollection: self.chunksCollection, filesCollection: self.filesCollection) })
-            var allData = [Byte](repeating: 0, count: (endChunk - skipChunks) * Int(self.chunkSize))
+            var allData = [Byte]()
             
             for chunk in chunkCursor {
                 allData.append(contentsOf: chunk.data.data)
             }
             
-            return Array(allData[remainderValue..<allData.count - finalReduction])
+            return allData
         }
         
         /// A GridFS Byte Chunk that's part of a file
