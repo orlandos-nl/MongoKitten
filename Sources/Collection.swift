@@ -198,23 +198,15 @@ public class Collection {
             
             let reply = try database.execute(command: command)
             
-            guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
+            guard case .Reply(_, _, _, _, _, _, let documents) = reply else {
                 throw InternalMongoError.IncorrectReply(reply: reply)
             }
             
-            guard let returnedElements = documents.first?["cursor"]?.documentValue?["firstBatch"]?.documentValue?.arrayValue else {
+            guard let responseDoc = documents.first, cursorDoc = responseDoc["cursor"]?.documentValue else {
                 throw MongoError.InvalidResponse(documents: documents)
             }
             
-            var returnedDocuments = [Document]()
-            
-            for element in returnedElements {
-                if let document: Document = element.documentValue {
-                    returnedDocuments.append(document)
-                }
-            }
-            
-            return Cursor(namespace: self.fullName, server: database.server, cursorID: cursorID, initialData: returnedDocuments, chunkSize: batchSize, transform: { $0 })
+            return try Cursor(cursorDocument: cursorDoc, server: database.server, chunkSize: 10, transform: { $0 })
         default:
             let queryMsg = Message.Query(requestID: database.server.nextMessageID(), flags: [], collection: self, numbersToSkip: skip ?? 0, numbersToReturn: batchSize, query: filter ?? [], returnFields: projection)
             
