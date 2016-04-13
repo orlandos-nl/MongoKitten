@@ -174,7 +174,7 @@ public class Server {
     
     /// Disconnects from the MongoDB server
     public func disconnect() throws {
-        try client.close()
+        client.close()
         
         isInitialized = false
     }
