@@ -12,7 +12,7 @@ import BSON
 // MARK: Equations
 /// Equals
 public func ==(key: String, pred: BSONElement) -> Query {
-    return Query(data: [key: pred])
+    return Query(data: [key: *["$eq": pred]])
 }
 
 /// MongoDB: `$ne`
@@ -43,7 +43,18 @@ public func <=(key: String, pred: BSONElement) -> Query {
 
 /// Appends `rhs` to `lhs`
 public func &&(lhs: Query, rhs: Query) -> Query {
-    return Query(data: lhs.data + rhs.data)
+    var queryDoc = lhs.data
+    
+    for (key, value) in rhs.data {
+        guard let lhsDoc = lhs.data[key]?.documentValue, rhsDoc = value.documentValue else {
+            return Query(data: lhs.data + rhs.data)
+        }
+        
+        let newDoc = lhsDoc + rhsDoc
+        queryDoc[key] = newDoc
+    }
+    
+    return Query(data: queryDoc)
 }
 
 /// MongoDB: `$or`
