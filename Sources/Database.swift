@@ -70,11 +70,11 @@ public class Database {
     /// - parameter command: The command Document to execute
     /// - returns: A message containing the response
     @warn_unused_result
-    internal func execute(command command: Document) throws -> Message {
+    internal func execute(command command: Document, until timeout: NSTimeInterval = 60) throws -> Message {
         let cmd = self["$cmd"]
         let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: command, returnFields: nil)
         let id = try server.send(message: commandMessage)
-        return try server.await(response: id)
+        return try server.await(response: id, until: timeout)
     }
     
     /// All information about the collecitons in this Database

@@ -35,13 +35,13 @@ final class TestManager {
         try server.disconnect()
     }
     
-    static func fillCollectionWithSampleUsers(randomAmountBetween amount: Range<Int> = 2..<5000) throws {
+    static func fillCollectionWithSampleUsers(amount: Int = 200) throws {
         // erase first
         try self.dropAllTestingCollections()
         testingUsers.removeAll()
         
         // generate
-        for _ in 0..<Int.random(amount) {
+        for _ in 0..<amount {
             testingUsers.append(*[
                 "name": Randoms.randomFakeName(),
                 "gender": Randoms.randomFakeGender(),

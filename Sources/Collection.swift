@@ -56,9 +56,17 @@ public class Collection {
     /// Inserts multiple documents in this collection and adds a BSON ObjectId to documents that do not have an "_id" field
     /// - parameter documents: The BSON Documents that should be inserted
     /// - parameter ordered: On true we'll stop inserting when one document fails. On false we'll ignore failed inserts
+    /// - parameter timeout: A custom timeout. The default timeout is 60 seconds + 1 second for every 50 documents, so when inserting 5000 documents at once, the timeout is 560 seconds.
     /// - returns: The documents with their (if applicable) updated ObjectIds
     @warn_unused_result
-    public func insert(documents: [Document], stoppingOnError ordered: Bool? = nil) throws -> [Document] {
+    public func insert(documents: [Document], stoppingOnError ordered: Bool? = nil, timeout customTimeout: NSTimeInterval? = nil) throws -> [Document] {
+        let timeout: NSTimeInterval
+        if let customTimeout = customTimeout {
+            timeout = customTimeout
+        } else {
+            timeout = 60 + (Double(documents.count) / 50)
+        }
+        
         var documents = documents
         var newDocuments = [Document]()
         
@@ -85,7 +93,7 @@ public class Collection {
                 command["ordered"] = ordered
             }
             
-            guard case .Reply(_, _, _, _, _, _, let replyDocuments) = try self.database.execute(command: command) where replyDocuments.first?["ok"]?.int32Value == 1 else {
+            guard case .Reply(_, _, _, _, _, _, let replyDocuments) = try self.database.execute(command: command, until: timeout) where replyDocuments.first?["ok"]?.int32Value == 1 else {
                 throw MongoError.InsertFailure(documents: documents)
             }
         }
