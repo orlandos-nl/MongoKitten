@@ -211,7 +211,7 @@ public class Server {
     /// - parameter response: The response's ID that we're awaiting a reply for
     /// - parameter until: Until when we'll wait for a response
     /// - returns: The reply
-    internal func await(response requestId: Int32, until timeout: NSTimeInterval = 10) throws -> Message {
+    internal func await(response requestId: Int32, until timeout: NSTimeInterval = 60) throws -> Message {
         let condition = NSCondition()
         condition.lock()
         waitingForResponses[requestId] = condition
