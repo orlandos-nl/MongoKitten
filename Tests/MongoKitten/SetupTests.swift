@@ -44,8 +44,4 @@ class SetupTests: XCTestCase {
         XCTAssertEqual(database.name, "mongokitten-unittest")
         XCTAssertEqual(testCollection.database.name, "mongokitten-unittest")
     }
-    
-    func testA() {
-        
-    }
 }
