@@ -1,6 +1,5 @@
 # MongoKitten
 
-[![Build Status](https://travis-ci.org/PlanTeam/MongoKitten.svg?branch=master)](https://travis-ci.org/PlanTeam/MongoKitten)
 [![Swift Version](https://img.shields.io/badge/swift-3.0-orange.svg)](https://swift.org)
 ![License](https://img.shields.io/github/license/planteam/mongokitten.svg)
 
