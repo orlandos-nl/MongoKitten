@@ -139,7 +139,7 @@ public class Server {
     }
     
     public var isConnected: Bool {
-        return !client.closed
+        return client.closed
     }
     
     /// Connects with the MongoDB Server using the given information in the initializer
