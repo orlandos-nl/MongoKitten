@@ -252,4 +252,32 @@ public class Server {
         
         return message.requestID
     }
+    
+    /// Provides a list of all existing databases along with basic statistics about them.
+    public func getDatabaseInfos() throws -> Document {
+        let request: Document = ["listDatabases": 1]
+        
+        let reply = try self["admin"].execute(command: request)
+        
+        return try firstDocument(in: reply)
+    }
+    
+    /// Returns all existing databases on this server. **Requires access to the `admin` database**
+    public func getDatabases() throws -> [Database] {
+        let infos = try getDatabaseInfos()
+        guard let databaseInfos = infos["databases"]?.documentValue else {
+            throw MongoError.CommandFailure
+        }
+        
+        var databases = [Database]()
+        for case (_, let dbDef as Document) in databaseInfos {
+            guard let name = dbDef["name"]?.stringValue else {
+                throw MongoError.CommandFailure
+            }
+            
+            databases.append(self[name])
+        }
+        
+        return databases
+    }
 }

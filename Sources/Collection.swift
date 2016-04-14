@@ -381,7 +381,7 @@ public class Collection {
         }
         
         let reply = try self.database.execute(command: command)
-        let documents = try database.allDocuments(in: reply)
+        let documents = try allDocuments(in: reply)
         
         guard documents.first?["ok"]?.int32Value == 1 else {
             throw MongoError.RemoveFailure(removals: removals)
@@ -514,7 +514,7 @@ public class Collection {
             command["query"] = filter
         }
         
-        return try database.firstDocument(in: try self.database.execute(command: command))["values"]?.documentValue?.arrayValue.flatMap({ $0.stringValue })
+        return try firstDocument(in: try self.database.execute(command: command))["values"]?.documentValue?.arrayValue.flatMap({ $0.stringValue })
     }
     
     /// Returns all distinct values for a key in this collection. Allows filtering using query
@@ -588,7 +588,7 @@ public class Collection {
             throw MongoError.UnsupportedOperations
         }
         
-        let result = try database.firstDocument(in: try database.execute(command: ["listIndexes": self.name]))
+        let result = try firstDocument(in: try database.execute(command: ["listIndexes": self.name]))
         
         guard let cursorDocument = result["cursor"]?.documentValue else {
             throw MongoError.CursorInitializationError(cursorDocument: result)
