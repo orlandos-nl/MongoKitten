@@ -31,9 +31,15 @@ final class TestManager {
     static func clean() throws {
         // Erase the testing database:
         for aCollection in try db.getCollections() {
-            if !aCollection.name.contains("system") && aCollection.name != "zips" {
-                try aCollection.drop()
-            }
+            #if os(Linux)
+                if !aCollection.name.containsString("system") && aCollection.name != "zips" {
+                    try aCollection.drop()
+                }
+            #else
+                if !aCollection.name.contains("system") && aCollection.name != "zips" {
+                    try aCollection.drop()
+                }
+            #endif
         }
         
         // Validate zips count
