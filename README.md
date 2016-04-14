@@ -14,6 +14,9 @@ We don't support any other version of swift with the constantly changing syntax.
 
 Note: other versions of `swift` and `MongoDB` may or may not work. We do not support them.
 
+#### Running Unit Tests
+The unit tests expect a test database. Run the Tools/testprep.sh script to import it.
+
 # Tutorial
 
 ## Setup

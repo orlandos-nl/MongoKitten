@@ -8,6 +8,7 @@
 
 import MongoKitten
 import XCTest
+import Foundation
 
 class SetupTests: XCTestCase {
     static var allTests: [(String, SetupTests -> () throws -> Void)] {
@@ -18,14 +19,10 @@ class SetupTests: XCTestCase {
     
     override func setUp() {
         super.setUp()
+
+        try! TestManager.connect()
         
-        do {
-            try TestManager.connect()
-        } catch {
-            
-        }
-        
-        try! TestManager.dropAllTestingCollections()
+        try! TestManager.clean()
     }
     
     override func tearDown() {

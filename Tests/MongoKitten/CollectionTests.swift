@@ -22,13 +22,8 @@ class CollectionTests: XCTestCase {
     override func setUp() {
         super.setUp()
         
-        do {
-            try TestManager.connect()
-        } catch {
-            
-        }
-        
-        try! TestManager.dropAllTestingCollections()
+        try! TestManager.connect()
+        try! TestManager.clean()
     }
     
     override func tearDown() {
@@ -36,10 +31,9 @@ class CollectionTests: XCTestCase {
     }
     
     func testDistinct() {
-        try! TestManager.fillCollectionWithSampleUsers()
-        let distinct = try! TestManager.testCollection.distinct("gender")!
+        let distinct = try! TestManager.db["zips"].distinct("state")!
         
-        XCTAssertEqual(distinct.count, 2)
+        XCTAssertEqual(distinct.count, 51)
     }
     
     func testFind() {
@@ -63,13 +57,13 @@ class CollectionTests: XCTestCase {
         
         inserts = [base, brokenUsername, brokenUsername, brokenAge, brokenDogs, brokenKittens, brokenKittens2, brokenBeers, base]
         
-        _ = try! TestManager.testCollection.insert(inserts)
+        _ = try! TestManager.wcol.insert(inserts)
         
         let query: Query = ("username" == "henk" || "username" == "bob") && "age" > 24 && "kittens" >= 2 && "kittens" != 3 && "dogs" <= 1 && "beers" < 100
         
-        let response = Array(try! TestManager.testCollection.find(matching: query))
+        let response = Array(try! TestManager.wcol.find(matching: query))
         
-        let response2 = try! TestManager.testCollection.findOne(matching: query)!
+        let response2 = try! TestManager.wcol.findOne(matching: query)!
         
         XCTAssertEqual(response.count, 2)
         
@@ -77,29 +71,10 @@ class CollectionTests: XCTestCase {
     }
     
     func testUpdate() {
-        try! TestManager.fillCollectionWithSampleUsers()
-        
-        let males = try! TestManager.testCollection.count(matching: "gender" == "Male")
-        
-        let females = try! TestManager.testCollection.count(matching: "gender" == "Female")
-        
-        try! TestManager.testCollection.update(matching: "gender" == "Male", to: ["$set": *["gender": "Female"]])
-        
-        let males2 = try! TestManager.testCollection.count(matching: "gender" == "Male")
-        
-        let females2 = try! TestManager.testCollection.count(matching: "gender" == "Female")
-        
-        XCTAssertEqual(males2, 0)
-        XCTAssertEqual(females2, males + females)
+        // TODO: Test update
     }
     
     func testDelete() {
-        try! TestManager.fillCollectionWithSampleUsers()
-        
-        try! TestManager.testCollection.remove(matching: "gender" == "Male")
-        
-        let insertedAmount = try! TestManager.testCollection.count(matching: "gender" == "male")
-        
-        XCTAssertEqual(insertedAmount, 0)
+        // TODO: Test delete
     }
 }
