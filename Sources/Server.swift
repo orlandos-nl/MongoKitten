@@ -138,14 +138,13 @@ public class Server {
         return lastRequestID
     }
     
-    public var isConnected: Bool {
-        return client.closed
-    }
+    public private(set) var isConnected = false
     
     /// Connects with the MongoDB Server using the given information in the initializer
     public func connect() throws {
         try client.connect(toTarget: host, onPort: "\(port)")
         try Background(backgroundLoop)
+        isConnected = true
     }
     
     private func backgroundLoop() {
@@ -181,6 +180,7 @@ public class Server {
         client.close()
         
         isInitialized = false
+        isConnected = false
     }
     
     /// Called by the server thread to handle MongoDB Wire messages
