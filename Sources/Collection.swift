@@ -14,7 +14,7 @@ import BSON
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /// A Mongo Collection. Cannot be publically initialized. But you can get a collection object by subscripting a Database with a String
-public class Collection {
+public final class Collection {
     /// The Database this collection is in
     public private(set) var database: Database
     

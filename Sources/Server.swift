@@ -29,7 +29,7 @@ import Foundation
 internal typealias ResponseHandler = ((reply: Message) -> Void)
 
 /// A server object is the core of MongoKitten. From this you can get databases which can provide you with collections from where you can do actions
-public class Server {
+public final class Server {
     /// The authentication details that are used to connect with the MongoDB server
     private let authDetails: (username: String, password: String)?
     

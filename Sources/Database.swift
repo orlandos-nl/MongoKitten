@@ -15,7 +15,7 @@ import BSON
 import HMAC
 
 /// A Mongo Database. Cannot be publically initialized. But you can get a database object by subscripting a Server with a String
-public class Database {
+public final class Database {
     /// The server that this Database is a part of
     public let server: Server
     
@@ -28,7 +28,7 @@ public class Database {
     /// Initialise this database object
     /// - parameter database: The database to use
     /// - parameter server: The server on which this database exists
-    internal init(database: String, at server: Server) {
+    public init(database: String, at server: Server) {
         self.server = server
         self.name = replaceOccurrences(in: database, where: ".", with: "")
     }
