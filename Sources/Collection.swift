@@ -470,7 +470,7 @@ public class Collection {
     /// - parameter skipping: Optional. The amount of Documents to skip before counting
     @warn_unused_result
     public func count(matching filter: Document? = nil, limitedTo limit: Int32? = nil, skipping skip: Int32? = nil) throws -> Int {
-        var command: Document = ["count": self.fullName]
+        var command: Document = ["count": self.name]
         
         if let filter = filter {
             command["query"] = filter
@@ -478,6 +478,10 @@ public class Collection {
         
         if let skip = skip {
             command["skip"] = skip
+        }
+        
+        if let limit = limit {
+            command["limit"] = limit
         }
         
         let reply = try self.database.execute(command: command)
