@@ -1,14 +1,18 @@
 # MongoKitten
 
+[![Build Status](https://travis-ci.org/PlanTeam/MongoKitten.svg?branch=master)](https://travis-ci.org/PlanTeam/BSON)
+[![Swift Version](https://img.shields.io/badge/swift-3.0-orange.svg)](https://swift.org)
+![License](https://img.shields.io/github/license/planteam/mongokitten.svg)
+
 Native MongoDB driver for Swift, written in Swift. This library does not wrap around the mongoc driver. It uses:
 
-- [Hummingbird](https://github.com/ketzusaka/Hummingbird) for TCP connections
+- [Hummingbird](https://github.com/qutheory/Hummingbird) for TCP connections
 - Our own [BSON](https://github.com/PlanTeam/BSON) library, which is also 100% native Swift
 
 ## Requirements
 
 - A mongoDB server
-- Swift Development Snapshot 2016-03-24-a
+- The swift version described in `.swift-version`, see [swiftenv](http://swiftenv.fuller.li/en/latest/).
 
 We don't support any other version of swift with the constantly changing syntax. This required swift version changes constantly with newer versions of `MongoKitten` and it's recommended to pin down the version in SPM.
 
