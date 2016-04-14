@@ -70,6 +70,20 @@ class CollectionTests: XCTestCase {
         XCTAssertEqual(response.first, response2)
     }
     
+    func testAggregate() {
+        let cursor = try! TestManager.db["zips"].aggregate([
+                                             *[ "$group": *[ "_id": "$state", "totalPop": *[ "$sum": "$pop" ] ] ],
+                                             *[ "$match": *[ "totalPop": *[ "$gte": 10*1000*1000 ] ] ]
+        ])
+        
+        var count = 0
+        for _ in cursor {
+            count += 1
+        }
+        
+        XCTAssert(count == 7)
+    }
+    
     func testUpdate() {
         // TODO: Test update
     }

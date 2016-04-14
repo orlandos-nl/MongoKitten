@@ -569,14 +569,14 @@ public class Collection {
         
         indexesDoc.enforceArray()
         
-        _ = try database.execute(command: ["createIndexes": self.name, "indexes": indexesDoc])
+        try database.execute(command: ["createIndexes": self.name, "indexes": indexesDoc])
     }
     
     /// Remove the index specified
     /// Warning: Write-locks the database whilst this process is executed
     /// - parameter indexName: The index name (as specified when creating the index) that will removed. `*` for all indexes
     public func dropIndexes(indexName: String) throws {
-        _ = try database.execute(command: ["dropIndexes": self.name, "index": indexName])
+        try database.execute(command: ["dropIndexes": self.name, "index": indexName])
     }
     
     /// TODO: Make this work?
@@ -595,5 +595,35 @@ public class Collection {
         }
         
         return try Cursor(cursorDocument: cursorDocument, server: database.server, chunkSize: 10, transform: { $0 })
+    }
+    
+    /// Uses the aggregation pipeline to process documents into aggregated results.
+    /// See [the MongoDB docs on the aggregation pipeline](https://docs.mongodb.org/manual/reference/operator/aggregation-pipeline/) for more information.
+    ///
+    /// - parameter pipeline: An array of aggregation pipeline stages that process and transform the document stream as part of the aggregation pipeline.
+    /// - parameter explain: Specifies to return the information on the processing of the pipeline.
+    /// - parameter allowDiskUse: Enables writing to temporary files. When set to true, aggregation stages can write data to the _tmp subdirectory in the dbPath directory.
+    /// - parameter cursorOptions: Specify a document that contains options that control the creation of the cursor object.
+    /// - parameter bypassDocumentValidation: Available only if you specify the $out aggregation operator. Enables aggregate to bypass document validation during the operation. This lets you insert documents that do not meet the validation requirements. *Available for MongoDB 3.2 and later versions*
+    public func aggregate(pipeline: Document, explain: Bool? = nil, allowDiskUse: Bool? = nil, cursorOptions: Document = ["batchSize":10], bypassDocumentValidation: Bool? = nil) throws -> Cursor<Document> {
+        // construct command. we always use cursors in MongoKitten, so that's why the default value for cursorOptions is an empty document.
+        var command: Document = ["aggregate": self.name, "pipeline": pipeline, "cursor": cursorOptions]
+        
+        if let explain = explain { command["explain"] = explain }
+        if let allowDiskUse = allowDiskUse { command["allowDiskUse"] = allowDiskUse }
+        if let bypassDocumentValidation = bypassDocumentValidation { command["bypassDocumentValidation"] = bypassDocumentValidation }
+        
+        // execute and construct cursor
+        let reply = try database.execute(command: command)
+        
+        guard case .Reply(_, _, _, _, _, _, let documents) = reply else {
+            throw InternalMongoError.IncorrectReply(reply: reply)
+        }
+        
+        guard let responseDoc = documents.first, cursorDoc = responseDoc["cursor"]?.documentValue else {
+            throw MongoError.InvalidResponse(documents: documents)
+        }
+        
+        return try Cursor(cursorDocument: cursorDoc, server: database.server, chunkSize: 10, transform: { $0 })
     }
 }
