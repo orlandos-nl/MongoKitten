@@ -138,6 +138,10 @@ public class Server {
         return lastRequestID
     }
     
+    public var isConnected: Bool {
+        return !client.closed
+    }
+    
     /// Connects with the MongoDB Server using the given information in the initializer
     public func connect() throws {
         try client.connect(toTarget: host, onPort: "\(port)")
