@@ -3,7 +3,7 @@
 echo "MongoKitten Unit Test Preparation Script"
 
 unamestr=`uname`
-if [[ "$unametr" == 'Darwin' ]]; then
+if [[ "$unamestr" == 'Darwin' ]]; then
 	brew update
 	brew install mongodb
 fi
