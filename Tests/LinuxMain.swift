@@ -1,5 +1,5 @@
 import XCTest
-@testable import MongoTests
+@testable import MongoKittenTestSuite
 
 XCTMain([
     testCase(CollectionTests.allTests)
