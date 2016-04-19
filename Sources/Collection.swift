@@ -42,7 +42,7 @@ public final class Collection {
     /// - parameter document: The BSON Document to be inserted
     /// - returns: The inserted document. The document will have a value for the "_id"-field.
     @warn_unused_result
-    public func insert(document: Document) throws -> Document {
+    public func insert(_ document: Document) throws -> Document {
         let result = try self.insert([document])
         
         guard let newDocument: Document = result.first else {
@@ -59,7 +59,7 @@ public final class Collection {
     /// - parameter timeout: A custom timeout. The default timeout is 60 seconds + 1 second for every 50 documents, so when inserting 5000 documents at once, the timeout is 560 seconds.
     /// - returns: The documents with their (if applicable) updated ObjectIds
     @warn_unused_result
-    public func insert(documents: [Document], stoppingOnError ordered: Bool? = nil, timeout customTimeout: NSTimeInterval? = nil) throws -> [Document] {
+    public func insert(_ documents: [Document], stoppingOnError ordered: Bool? = nil, timeout customTimeout: NSTimeInterval? = nil) throws -> [Document] {
         let timeout: NSTimeInterval
         if let customTimeout = customTimeout {
             timeout = customTimeout
@@ -71,29 +71,29 @@ public final class Collection {
         var newDocuments = [Document]()
         
         while !documents.isEmpty {
-            var command: Document = ["insert": self.name]
+            var command: Document = ["insert": .string(self.name)]
             
-            let commandDocuments = documents[0..<min(1000, documents.count)].map({ (input: Document) -> BSONElement in
-                if input["_id"] == nil {
+            let commandDocuments = documents[0..<min(1000, documents.count)].map({ (input: Document) -> Value in
+                if input["_id"] == .nothing {
                     var output = input
-                    output["_id"] = ObjectId()
+                    output["_id"].value = ObjectId()
                     newDocuments.append(output)
-                    return output
+                    return .document(output)
                 } else {
                     newDocuments.append(input)
-                    return input
+                    return .document(input)
                 }
             })
             
             documents.removeFirst(min(1000, documents.count))
             
-            command["documents"] = Document(array: commandDocuments)
+            command["documents"] = .document(Document(array: commandDocuments))
             
             if let ordered = ordered {
-                command["ordered"] = ordered
+                command["ordered"] = .boolean(ordered)
             }
             
-            guard case .Reply(_, _, _, _, _, _, let replyDocuments) = try self.database.execute(command: command, until: timeout) where replyDocuments.first?["ok"]?.int32Value == 1 else {
+            guard case .Reply(_, _, _, _, _, _, let replyDocuments) = try self.database.execute(command: command, until: timeout) where replyDocuments.first?["ok"].int32 == 1 else {
                 throw MongoError.InsertFailure(documents: documents)
             }
         }
@@ -176,32 +176,32 @@ public final class Collection {
         
         switch protocolVersion {
         case 4:
-            var command: Document = ["find": self.name]
+            var command: Document = ["find": .string(self.name)]
             
             if let filter = filter {
-                command += ["filter": filter]
+                command += ["filter": .document(filter)]
             }
             
             if let sort = sort {
-                command += ["sort": sort]
+                command += ["sort": .document(sort)]
             }
             
             if let projection = projection {
-                command += ["projection": projection]
+                command += ["projection": .document(projection)]
             }
             
             if let skip = skip {
-                command += ["skip": skip]
+                command += ["skip": .int32(skip)]
             }
             
             if let limit = limit {
-                command += ["limit": limit]
+                command += ["limit": .int32(limit)]
             }
             
-            command += ["batchSize": Int32(10)]
+            command += ["batchSize": .int32(10)]
             
             if let sort = sort {
-                command += ["sort": sort]
+                command += ["sort": .document(sort)]
             }
             
             let reply = try database.execute(command: command)
@@ -210,7 +210,7 @@ public final class Collection {
                 throw InternalMongoError.IncorrectReply(reply: reply)
             }
             
-            guard let responseDoc = documents.first, cursorDoc = responseDoc["cursor"]?.documentValue else {
+            guard let responseDoc = documents.first, cursorDoc = responseDoc["cursor"].documentValue else {
                 throw MongoError.InvalidResponse(documents: documents)
             }
             
@@ -277,30 +277,30 @@ public final class Collection {
     ///     `upsert`: If there isn't anything to update.. insert?
     ///     `multi`: Update all matching Documents instead of just one?
     /// - parameter ordered: If true, stop updating when one operation fails - defaults to true
-    public func update(updates: [(filter: Document, to: Document, upserting: Bool, multiple: Bool)], stoppingOnError ordered: Bool? = nil) throws {
+    public func update(_ updates: [(filter: Document, to: Document, upserting: Bool, multiple: Bool)], stoppingOnError ordered: Bool? = nil) throws {
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
         switch protocolVersion {
         case 2...4:
-        var command: Document = ["update": self.name]
-        var newUpdates = [BSONElement]()
+        var command: Document = ["update": .string(self.name)]
+        var newUpdates = [Value]()
         
         for u in updates {
-            newUpdates.append(*[
-                                   "q": u.filter,
-                                   "u": u.to,
-                                   "upsert": u.upserting,
-                                   "multi": u.multiple
+            newUpdates.append([
+                                   "q": .document(u.filter),
+                                   "u": .document(u.to),
+                                   "upsert": .boolean(u.upserting),
+                                   "multi": .boolean(u.multiple)
                 ])
         }
         
-        command["updates"] = Document(array: newUpdates)
+        command["updates"] = .document(Document(array: newUpdates))
         
         if let ordered = ordered {
-            command["ordered"] = ordered
+            command["ordered"] = .boolean(ordered)
         }
         
-        guard case .Reply(_, _, _, _, _, _, let documents) = try self.database.execute(command: command) where documents.first?["ok"]?.int32Value == 1 else {
+        guard case .Reply(_, _, _, _, _, _, let documents) = try self.database.execute(command: command) where documents.first?["ok"].int32 == 1 else {
             throw MongoError.UpdateFailure(updates: updates)
         }
         default:
@@ -338,7 +338,7 @@ public final class Collection {
     ///     `upsert`: If there isn't anything to update.. insert?
     ///     `multi`: Update all matching Documents instead of just one?
     /// - parameter ordered: If true, stop updating when one operation fails - defaults to true
-    public func update(updates: [(filter: Query, to: Document, upserting: Bool, multiple: Bool)], stoppingOnError ordered: Bool? = nil) throws {
+    public func update(_ updates: [(filter: Query, to: Document, upserting: Bool, multiple: Bool)], stoppingOnError ordered: Bool? = nil) throws {
         let newUpdates = updates.map { (filter: $0.filter.data, to: $0.to, upserting: $0.upserting, multiple: $0.multiple) }
         
         try self.update(newUpdates, stoppingOnError: ordered)
@@ -364,26 +364,26 @@ public final class Collection {
         
         switch protocolVersion {
         case 2...4:
-        var command: Document = ["delete": self.name]
-        var newDeletes = [BSONElement]()
+        var command: Document = ["delete": .string(self.name)]
+        var newDeletes = [Value]()
         
         for d in removals {
-            newDeletes.append(*[
-                                   "q": d.filter,
-                                   "limit": d.limit
+            newDeletes.append([
+                                   "q": .document(d.filter),
+                                   "limit": .int32(d.limit)
                 ])
         }
         
-        command["deletes"] = Document(array: newDeletes)
+        command["deletes"] = .document(Document(array: newDeletes))
         
         if let ordered = ordered {
-            command["ordered"] = ordered
+            command["ordered"] = .boolean(ordered)
         }
         
         let reply = try self.database.execute(command: command)
         let documents = try allDocuments(in: reply)
         
-        guard documents.first?["ok"]?.int32Value == 1 else {
+        guard documents.first?["ok"].int32 == 1 else {
             throw MongoError.RemoveFailure(removals: removals)
         }
             // If we're talking to an older MongoDB server
@@ -436,7 +436,7 @@ public final class Collection {
     
     /// The drop command removes an entire collection from a database. This command also removes any indexes associated with the dropped collection.
     public func drop() throws {
-        _ = try self.database.execute(command: ["drop": self.name])
+        _ = try self.database.execute(command: ["drop": .string(self.name)])
     }
     
     /// Changes the name of an existing collection. This method supports renames within a single database only. To move the collection to a different database, use the `move` method on `Collection`.
@@ -452,11 +452,11 @@ public final class Collection {
     public func move(to database: Database, named newName: String? = nil, overwriting dropOldTarget: Bool? = nil) throws {
         // TODO: Fail if the target database exists.
         var command: Document = [
-                                    "renameCollection": self.fullName,
-                                    "to": "\(database.name).\(newName ?? self.name)"
+                                    "renameCollection": .string(self.fullName),
+                                    "to": .string("\(database.name).\(newName ?? self.name)")
         ]
         
-        if let dropOldTarget = dropOldTarget { command["dropTarget"] = dropOldTarget }
+        if let dropOldTarget = dropOldTarget { command["dropTarget"] = .boolean(dropOldTarget) }
         
         _ = try self.database.server["admin"].execute(command: command)
         
@@ -470,27 +470,27 @@ public final class Collection {
     /// - parameter skipping: Optional. The amount of Documents to skip before counting
     @warn_unused_result
     public func count(matching filter: Document? = nil, limitedTo limit: Int32? = nil, skipping skip: Int32? = nil) throws -> Int {
-        var command: Document = ["count": self.name]
+        var command: Document = ["count": .string(self.name)]
         
         if let filter = filter {
-            command["query"] = filter
+            command["query"] = .document(filter)
         }
         
         if let skip = skip {
-            command["skip"] = skip
+            command["skip"] = .int32(skip)
         }
         
         if let limit = limit {
-            command["limit"] = limit
+            command["limit"] = .int32(limit)
         }
         
         let reply = try self.database.execute(command: command)
         
-        guard case .Reply(_, _, _, _, _, _, let documents) = reply, let document = documents.first, let n = document["n"]?.intValue else {
+        guard case .Reply(_, _, _, _, _, _, let documents) = reply, let document = documents.first else {
             throw InternalMongoError.IncorrectReply(reply: reply)
         }
         
-        return n
+        return document["n"].int
     }
     
     /// Returns the amount of Documents in this collection
@@ -503,27 +503,27 @@ public final class Collection {
     }
     
     /// Returns all distinct values for a key in this collection. Allows filtering using query
-    /// - parameter key: The key that we distinct on
+    /// - parameter on: The key that we distinct on
     /// - parameter query: The Document query used to filter through the returned results
     /// - returns: A list of all distinct values for this key
     @warn_unused_result
-    public func distinct(key: String, usingFilter filter: Document? = nil) throws -> [String]? {
-        var command: Document = ["distinct": self.name, "key": key]
+    public func distinct(on key: String, usingFilter filter: Document? = nil) throws -> [Value]? {
+        var command: Document = ["distinct": .string(self.name), "key": .string(key)]
         
         if let filter = filter {
-            command["query"] = filter
+            command["query"] = .document(filter)
         }
         
-        return try firstDocument(in: try self.database.execute(command: command))["values"]?.documentValue?.arrayValue.flatMap({ $0.stringValue })
+        return try firstDocument(in: try self.database.execute(command: command))["values"].document.arrayValue
     }
     
     /// Returns all distinct values for a key in this collection. Allows filtering using query
-    /// - parameter key: The key that we distinct on
+    /// - parameter on: The key that we distinct on
     /// - parameter query: The query used to filter through the returned results
     /// - returns: A list of all distinct values for this key
     @warn_unused_result
-    public func distinct(key: String, usingFilter query: Query) throws -> [String]? {
-        return try self.distinct(key, usingFilter: query.data)
+    public func distinct(on key: String, usingFilter query: Query) throws -> [Value]? {
+        return try self.distinct(on: key, usingFilter: query.data)
     }
     
     public func createIndex(with keys: [(key: String, ascending: Bool)], named name: String, filter: Document?, buildInBackground: Bool, unique: Bool) throws {
@@ -531,7 +531,7 @@ public final class Collection {
     }
     
     /// Creates an index using the given parameters
-    public func create(indexes indexes: [(name: String, keys: [(key: String, ascending: Bool)], filter: Document?, buildInBackground: Bool, unique: Bool)]) throws {
+    public func create(indexes: [(name: String, keys: [(key: String, ascending: Bool)], filter: Document?, buildInBackground: Bool, unique: Bool)]) throws {
         guard let wireVersion = database.server.serverData?.maxWireVersion where wireVersion > 2 else {
             throw MongoError.UnsupportedOperations
         }
@@ -542,26 +542,26 @@ public final class Collection {
             var keys: Document = []
             
             for key in index.keys {
-                keys[key.key] = key.ascending ? Int32(1) : Int32(-1)
+                keys[key.key] = key.ascending ? .int32(1) : .int32(-1)
             }
             
             keys.enforceArray()
             
-            var indexDocument = *[
-                                               "key": keys,
-                                               "name": index.name
+            var indexDocument: Document = [
+                                    "key": .array(keys),
+                                    "name": .string(index.name)
             ]
             
             if let filter = index.filter {
-                indexDocument["partialFilterExpression"] = filter
+                indexDocument["partialFilterExpression"] = .document(filter)
             }
             
             if index.buildInBackground {
-                indexDocument["background"] = true
+                indexDocument["background"] = .boolean(true)
             }
             
             if index.unique {
-                indexDocument["unique"] = true
+                indexDocument["unique"] = .boolean(true)
             }
             
             indexesDoc += indexDocument
@@ -569,14 +569,14 @@ public final class Collection {
         
         indexesDoc.enforceArray()
         
-        try database.execute(command: ["createIndexes": self.name, "indexes": indexesDoc])
+        try database.execute(command: ["createIndexes": .string(self.name), "indexes": .document(indexesDoc)])
     }
     
     /// Remove the index specified
     /// Warning: Write-locks the database whilst this process is executed
-    /// - parameter indexName: The index name (as specified when creating the index) that will removed. `*` for all indexes
-    public func dropIndexes(indexName: String) throws {
-        try database.execute(command: ["dropIndexes": self.name, "index": indexName])
+    /// - parameter index: The index name (as specified when creating the index) that will removed. `*` for all indexes
+    public func drop(index name: String) throws {
+        try database.execute(command: ["dropIndexes": .string(self.name), "index": .string(name)])
     }
     
     /// TODO: Make this work?
@@ -588,9 +588,9 @@ public final class Collection {
             throw MongoError.UnsupportedOperations
         }
         
-        let result = try firstDocument(in: try database.execute(command: ["listIndexes": self.name]))
+        let result = try firstDocument(in: try database.execute(command: ["listIndexes": .string(self.name)]))
         
-        guard let cursorDocument = result["cursor"]?.documentValue else {
+        guard let cursorDocument = result["cursor"].documentValue else {
             throw MongoError.CursorInitializationError(cursorDocument: result)
         }
         
@@ -607,11 +607,11 @@ public final class Collection {
     /// - parameter bypassDocumentValidation: Available only if you specify the $out aggregation operator. Enables aggregate to bypass document validation during the operation. This lets you insert documents that do not meet the validation requirements. *Available for MongoDB 3.2 and later versions*
     public func aggregate(pipeline: Document, explain: Bool? = nil, allowDiskUse: Bool? = nil, cursorOptions: Document = ["batchSize":10], bypassDocumentValidation: Bool? = nil) throws -> Cursor<Document> {
         // construct command. we always use cursors in MongoKitten, so that's why the default value for cursorOptions is an empty document.
-        var command: Document = ["aggregate": self.name, "pipeline": pipeline, "cursor": cursorOptions]
+        var command: Document = ["aggregate": .string(self.name), "pipeline": .document(pipeline), "cursor": .document(cursorOptions)]
         
-        if let explain = explain { command["explain"] = explain }
-        if let allowDiskUse = allowDiskUse { command["allowDiskUse"] = allowDiskUse }
-        if let bypassDocumentValidation = bypassDocumentValidation { command["bypassDocumentValidation"] = bypassDocumentValidation }
+        if let explain = explain { command["explain"] = .boolean(explain) }
+        if let allowDiskUse = allowDiskUse { command["allowDiskUse"] = .boolean(allowDiskUse) }
+        if let bypassDocumentValidation = bypassDocumentValidation { command["bypassDocumentValidation"] = .boolean(bypassDocumentValidation) }
         
         // execute and construct cursor
         let reply = try database.execute(command: command)
@@ -620,7 +620,7 @@ public final class Collection {
             throw InternalMongoError.IncorrectReply(reply: reply)
         }
         
-        guard let responseDoc = documents.first, cursorDoc = responseDoc["cursor"]?.documentValue else {
+        guard let responseDoc = documents.first, cursorDoc = responseDoc["cursor"].documentValue else {
             throw MongoError.InvalidResponse(documents: documents)
         }
         

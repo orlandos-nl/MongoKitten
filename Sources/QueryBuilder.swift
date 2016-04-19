@@ -11,34 +11,34 @@ import BSON
 
 // MARK: Equations
 /// Equals
-public func ==(key: String, pred: BSONElement) -> Query {
-    return Query(data: [key: *["$eq": pred]])
+public func ==(key: String, pred: Value) -> Query {
+    return Query(data: [key: ["$eq": pred]])
 }
 
 /// MongoDB: `$ne`
-public func !=(key: String, pred: BSONElement) -> Query {
-    return Query(data: [key: *["$ne": pred]])
+public func !=(key: String, pred: Value) -> Query {
+    return Query(data: [key: ["$ne": pred]])
 }
 
 // MARK: Comparisons
 /// MongoDB: `$gt`
-public func >(key: String, pred: BSONElement) -> Query {
-    return Query(data: [key: *["$gt": pred]])
+public func >(key: String, pred: Value) -> Query {
+    return Query(data: [key: ["$gt": pred]])
 }
 
 /// MongoDB: `$gte`
-public func >=(key: String, pred: BSONElement) -> Query {
-    return Query(data: [key: *["$gte": pred]])
+public func >=(key: String, pred: Value) -> Query {
+    return Query(data: [key: ["$gte": pred]])
 }
 
 /// MongoDB: `$lt`
-public func <(key: String, pred: BSONElement) -> Query {
-    return Query(data: [key: *["$lt": pred]])
+public func <(key: String, pred: Value) -> Query {
+    return Query(data: [key: ["$lt": pred]])
 }
 
 /// MongoDB: `$lte`
-public func <=(key: String, pred: BSONElement) -> Query {
-    return Query(data: [key: *["$lte": pred]])
+public func <=(key: String, pred: Value) -> Query {
+    return Query(data: [key: ["$lte": pred]])
 }
 
 /// Appends `rhs` to `lhs`
@@ -46,12 +46,12 @@ public func &&(lhs: Query, rhs: Query) -> Query {
     var queryDoc = lhs.data
     
     for (key, value) in rhs.data {
-        guard let lhsDoc = lhs.data[key]?.documentValue, rhsDoc = value.documentValue else {
+        guard let lhsDoc = lhs.data[key].documentValue, rhsDoc = value.documentValue else {
             return Query(data: lhs.data + rhs.data)
         }
         
         let newDoc = lhsDoc + rhsDoc
-        queryDoc[key] = newDoc
+        queryDoc[key].value = newDoc
     }
     
     return Query(data: queryDoc)
@@ -59,14 +59,14 @@ public func &&(lhs: Query, rhs: Query) -> Query {
 
 /// MongoDB: `$or`
 public func ||(lhs: Query, rhs: Query) -> Query {
-    if let orDoc = lhs.data["$or"]?.documentValue  {
-        let newOr = orDoc + *[rhs.data]
+    if let orDoc = lhs.data["$or"].documentValue  {
+        let newOr = orDoc + [rhs.data.makeBsonValue()]
         
         var lhs = lhs
-        lhs.data["$or"] = newOr
+        lhs.data["$or"].value = newOr
         return lhs
     } else {
-        return Query(data: ["$or": *[lhs.data, rhs.data]])
+        return Query(data: ["$or": [lhs.data.makeBsonValue(), rhs.data.makeBsonValue()]])
     }
 }
 

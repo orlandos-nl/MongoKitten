@@ -6,9 +6,10 @@
 //  Copyright © 2016 PlanTeam. All rights reserved.
 //
 
-import C7
 import Foundation
 import BSON
+
+public typealias Byte = UInt8
 
 /// Message to be send or received to/from the server
 enum Message {
@@ -70,7 +71,7 @@ enum Message {
     /// Builds a `.Reply` object from Binary JSON
     /// - parameter from: The data to create a Reply-message from
     /// - returns: The reply instance
-    static func makeReply(from data: [Byte]) throws -> Message {
+    static func makeReply(from data: [UInt8]) throws -> Message {
         // Get the message length
         guard let length: Int32 = try Int32.instantiate(bsonData: data[0...3]*) else {
             throw DeserializationError.ParseError
@@ -89,7 +90,7 @@ enum Message {
         let cursorID = try Int64.instantiate(bsonData: data[20...27]*)
         let startingFrom = try Int32.instantiate(bsonData: data[28...31]*)
         let numbersReturned = try Int32.instantiate(bsonData: data[32...35]*)
-        let documents = try Document.instantiateAll(data[36..<data.endIndex]*)
+        let documents = try Document.instantiateAll(fromData: data[36..<data.endIndex]*)
         
         // Return the constructed reply
         return Message.Reply(requestID: requestID, responseTo: responseTo, flags: ReplyFlags.init(rawValue: flags), cursorID: cursorID, startingFrom: startingFrom, numbersReturned: numbersReturned, documents: documents)
@@ -97,7 +98,7 @@ enum Message {
     
     /// Generates BSON From a Message
     /// - returns: The data from this message
-    func generateData() throws -> Data {
+    func generateData() throws -> [Byte] {
         var body = [Byte]()
         var requestID: Int32
         

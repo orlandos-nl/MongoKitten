@@ -31,7 +31,7 @@ public final class Cursor<T> {
     }
     
     internal convenience init(cursorDocument cursor: Document, server: Server, chunkSize: Int32, transform: Transformer) throws {
-        guard let cursorID = cursor["id"]?.int64Value, namespace = cursor["ns"]?.stringValue, firstBatch = cursor["firstBatch"]?.documentValue else {
+        guard let cursorID = cursor["id"].int64Value, namespace = cursor["ns"].stringValue, firstBatch = cursor["firstBatch"].documentValue else {
             throw MongoError.CursorInitializationError(cursorDocument: cursor)
         }
         

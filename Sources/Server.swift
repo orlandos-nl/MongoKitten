@@ -12,9 +12,6 @@
     import Darwin.C
 #endif
 
-import Hummingbird
-
-@_exported import C7
 @_exported import BSON
 
 import Foundation
@@ -48,7 +45,7 @@ public final class Server {
     private var waitingForResponses = [Int32:NSCondition]()
     
     /// HummingBird Socket bound to the MongoDB Server
-    private var client: Socket
+    private var client: MongoTCP
     
     /// Did we initialize?
     private var isInitialized = false
@@ -57,7 +54,7 @@ public final class Server {
     private let host: String
     
     /// The server's port to connect to
-    private let port: Int
+    private let port: UInt16
 
     internal private(set) var serverData: (maxWriteBatchSize: Int32, maxWireVersion: Int32, minWireVersion: Int32, maxMessageSizeBytes: Int32)?
     
@@ -80,8 +77,8 @@ public final class Server {
     /// - parameter port: The port we'll connect on
     /// - parameter authentication: The optional authentication details we'll use when connecting to the server
     /// - parameter automatically: Connect automatically
-    public init(at host: String, port: Int = 27017, using authentication: (username: String, password: String)? = nil, automatically connecting: Bool = false) throws {
-        self.client = try Socket.makeStreamSocket()
+    public init(at host: String, port: UInt16 = 27017, using authentication: (username: String, password: String)? = nil, automatically connecting: Bool = false, tcpDriver: MongoTCP.Type = CSocket.self) throws {
+        self.client = try tcpDriver.open(address: host, port: port)
         self.host = host
         self.port = port
 
@@ -104,13 +101,16 @@ public final class Server {
             if !isInitialized {
                 let result = try db.isMaster()
                 
-                if let batchSize = result["maxWriteBatchSize"]?.int32Value, let minWireVersion = result["minWireVersion"]?.int32Value, let maxWireVersion = result["maxWireVersion"]?.int32Value {
-                    let maxMessageSizeBytes = result["maxMessageSizeBytes"]?.int32Value ?? 48000000
-                    
-                    serverData = (maxWriteBatchSize: batchSize, maxWireVersion: maxWireVersion, minWireVersion: minWireVersion, maxMessageSizeBytes: maxMessageSizeBytes)
-                    
-                    isInitialized = true
+                let batchSize = result["maxWriteBatchSize"].int32
+                let minWireVersion = result["minWireVersion"].int32
+                let maxWireVersion = result["maxWireVersion"].int32
+                var maxMessageSizeBytes = result["maxMessageSizeBytes"].int32
+                if maxMessageSizeBytes == 0 {
+                    maxMessageSizeBytes = 48000000
                 }
+                
+                serverData = (maxWriteBatchSize: batchSize, maxWireVersion: maxWireVersion, minWireVersion: minWireVersion, maxMessageSizeBytes: maxMessageSizeBytes)
+                
             }
         } catch {}
         
@@ -177,7 +177,7 @@ public final class Server {
     
     /// Disconnects from the MongoDB server
     public func disconnect() throws {
-        client.close()
+        try client.close()
         
         isInitialized = false
         isConnected = false
@@ -186,7 +186,8 @@ public final class Server {
     /// Called by the server thread to handle MongoDB Wire messages
     /// - parameter bufferSize: The amount of bytes to fetch at a time
     private func receive(bufferSize: Int = 1024) throws {
-        let incomingBuffer: [Byte] = try client.receive(maximumBytes: bufferSize)
+        // TODO: Respect bufferSize
+        let incomingBuffer: [Byte] = try client.receive()
         fullBuffer += incomingBuffer
         
         do {
@@ -245,10 +246,10 @@ public final class Server {
     /// Sends a message's data to the server
     /// - parameter message: The message we're sending
     /// - returns: The RequestID for this message
-    internal func send(message message: Message) throws -> Int32 {
+    internal func send(message: Message) throws -> Int32 {
         let messageData = try message.generateData()
         
-        try client.send(messageData)
+        try client.send(data: messageData)
         
         return message.requestID
     }

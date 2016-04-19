@@ -43,7 +43,7 @@ public final class Database {
     /// Executes a command on this database using a query message
     /// - parameter command: The command Document to execute
     /// - returns: A message containing the response
-    internal func execute(command command: Document, until timeout: NSTimeInterval = 60) throws -> Message {
+    internal func execute(command: Document, until timeout: NSTimeInterval = 60) throws -> Message {
         let cmd = self["$cmd"]
         let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: command, returnFields: nil)
         let id = try server.send(message: commandMessage)
@@ -51,20 +51,20 @@ public final class Database {
     }
     
     /// All information about the collecitons in this Database
-    /// - parameter filter: The filter to apply when searching for this information
+    /// - parameter matching: The filter to apply when searching for this information
     /// - returns: A cursor to the resulting documents with collection info
     @warn_unused_result
-    public func getCollectionInfos(filter filter: Document? = nil) throws -> Cursor<Document> {
+    public func getCollectionInfos(matching filter: Document? = nil) throws -> Cursor<Document> {
         var request: Document = ["listCollections": 1]
         if let filter = filter {
-            request["filter"] = filter
+            request["filter"].value = filter
         }
         
         let reply = try execute(command: request)
         
         let result = try firstDocument(in: reply)
         
-        guard let code = result["ok"]?.intValue, cursor = result["cursor"] as? Document where code == 1 else {
+        guard let code = result["ok"].int32Value, cursor = result["cursor"].documentValue where code == 1 else {
             throw MongoError.CommandFailure
         }
         
@@ -72,13 +72,12 @@ public final class Database {
     }
     
     /// Gets the collections in this database
-    /// - parameter filter: The filter to apply when looking for Collections
+    /// - parameter matching: The filter to apply when looking for Collections
     @warn_unused_result
-    public func getCollections(filter filter: Document? = nil) throws -> Cursor<Collection> {
-        let infoCursor = try self.getCollectionInfos(filter: filter)
+    public func getCollections(matching filter: Document? = nil) throws -> Cursor<Collection> {
+        let infoCursor = try self.getCollectionInfos(matching: filter)
         return Cursor(base: infoCursor) { collectionInfo in
-            guard let name = collectionInfo["name"]?.stringValue else { return nil }
-            return self[name]
+            return self[collectionInfo["name"].string]
         }
     }
     
@@ -86,7 +85,7 @@ public final class Database {
     /// - returns: `ismaster` response Document
     @warn_unused_result
     internal func isMaster() throws -> Document {
-        let response = try self.execute(command: ["ismaster": Int32(1)])
+        let response = try self.execute(command: ["ismaster": .int32(1)])
         
         return try firstDocument(in: response)
     }
@@ -118,7 +117,7 @@ extension Database {
     }
     
     /// Parses a SCRAM response
-    private func parseResponse(response: String) -> [String: String] {
+    private func parse(response: String) -> [String: String] {
         var parsedResponse = [String: String]()
         
         for part in response.characters.split(separator: ",") where String(part).characters.count >= 3 {
@@ -134,22 +133,23 @@ extension Database {
     
     /// Last step(s) in the SASL process
     /// TODO: Set a timeout for connecting
-    private func complete(SASL payload: String, using response: Document, verifying signature: [Byte]) throws {
+    private func complete(SASL payload: String, using response: Document, verifying signature: [UInt8]) throws {
         // If we failed authentication
-        guard response["ok"]?.int32Value == 1 else {
+        guard response["ok"].int32 == 1 else {
             throw MongoAuthenticationError.IncorrectCredentials
         }
         
         // If we're done
-        if response["done"]?.boolValue == true {
+        if response["done"].bool == true {
             return
         }
         
-        guard let stringResponse = response["payload"]?.stringValue else {
+        guard let stringResponse = response["payload"].stringValue else {
             throw MongoAuthenticationError.AuthenticationFailure
         }
         
-        guard let conversationId = response["conversationId"] else {
+        let conversationId = response["conversationId"]
+        guard conversationId != .nothing  else {
             throw MongoAuthenticationError.AuthenticationFailure
         }
         
@@ -157,9 +157,9 @@ extension Database {
             throw MongoAuthenticationError.Base64Failure
         }
         
-        let dictionaryResponse = self.parseResponse(finalResponse)
+        let dictionaryResponse = self.parse(response: finalResponse)
         
-        guard let v = dictionaryResponse["v"]?.stringValue else {
+        guard let v = dictionaryResponse["v"] else {
             throw MongoAuthenticationError.AuthenticationFailure
         }
         
@@ -170,7 +170,7 @@ extension Database {
         }
         
         let response = try self.execute(command: [
-                                                   "saslContinue": Int32(1),
+                                                   "saslContinue": .int32(1),
                                                    "conversationId": conversationId,
                                                    "payload": ""
             ])
@@ -186,22 +186,23 @@ extension Database {
     /// TODO: Set a timeout for connecting
     private func challenge(with details: (username: String, password: String), using previousInformation: (nonce: String, response: Document, scram: SCRAMClient<SHA1>)) throws {
         // If we failed the authentication
-        guard previousInformation.response["ok"]?.int32Value == 1 else {
+        guard previousInformation.response["ok"].int32 == 1 else {
             throw MongoAuthenticationError.IncorrectCredentials
         }
         
         // If we're done
-        if previousInformation.response["done"]?.boolValue == true {
+        if previousInformation.response["done"].bool == true {
             return
         }
         
         // Get our ConversationID
-        guard let conversationId = previousInformation.response["conversationId"] else {
+        let conversationId = previousInformation.response["conversationId"]
+        guard conversationId != .nothing  else {
             throw MongoAuthenticationError.AuthenticationFailure
         }
         
         // Decode the challenge
-        guard let stringResponse = previousInformation.response["payload"]?.stringValue else {
+        guard let stringResponse = previousInformation.response["payload"].stringValue else {
             throw MongoAuthenticationError.AuthenticationFailure
         }
         
@@ -213,21 +214,21 @@ extension Database {
         digestBytes.append(contentsOf: "\(details.username):mongo:\(details.password)".utf8)
         
         var passwordBytes = [Byte]()
-        passwordBytes.append(contentsOf: MD5.calculate(digestBytes).toHexString().utf8)
+        passwordBytes.append(contentsOf: MD5.calculate(digestBytes).hexString.utf8)
         
-        let result = try previousInformation.scram.process(challenge: decodedStringResponse, with: (username: details.username, password: passwordBytes), usingNonce: previousInformation.nonce)
+        let result = try previousInformation.scram.process(decodedStringResponse, with: (username: details.username, password: passwordBytes), usingNonce: previousInformation.nonce)
         
         
         // Base64 the payload
-        guard let payload = result.proof.cStringBsonData.toBase64() else {
+        guard let payload = result.proof.cStringBsonData.base64 else {
             throw MongoAuthenticationError.Base64Failure
         }
         
         // Send the proof
         let response = try self.execute(command: [
-                                                   "saslContinue": Int32(1),
+                                                   "saslContinue": .int32(1),
                                                    "conversationId": conversationId,
-                                                   "payload": payload
+                                                   "payload": .string(payload)
             ])
         
         // If we don't get a correct reply
@@ -249,14 +250,14 @@ extension Database {
         
         let authPayload = try auth.authenticate(details.username, usingNonce: nonce)
         
-        guard let payload = authPayload.cStringBsonData.toBase64() else {
+        guard let payload = authPayload.cStringBsonData.base64 else {
             throw MongoAuthenticationError.Base64Failure
         }
         
         let response = try self.execute(command: [
-                                                   "saslStart": Int32(1),
+                                                   "saslStart": .int32(1),
                                                    "mechanism": "SCRAM-SHA-1",
-                                                   "payload": payload
+                                                   "payload": .string(payload)
             ])
         
         let responseDocument = try firstDocument(in: response)
@@ -269,13 +270,13 @@ extension Database {
     internal func authenticate(mongoCR details: (username: String, password: String)) throws {
         // Get the server's nonce
         let response = try self.execute(command: [
-                                                   "getNonce": Int32(1)
+                                                   "getNonce": .int32(1)
             ])
         
         // Get the server's challenge
         let document = try firstDocument(in: response)
         
-        guard let nonce = document["nonce"]?.stringValue else {
+        guard let nonce = document["nonce"].stringValue else {
             throw MongoAuthenticationError.AuthenticationFailure
         }
         
@@ -283,21 +284,21 @@ extension Database {
         var bytes = [Byte]()
         bytes.append(contentsOf: "\(details.username):mongo:\(details.password)".utf8)
         
-        let digest = MD5.calculate(bytes).toHexString()
-        let key = MD5.calculate("\(nonce)\(details.username)\(digest)".cStringBsonData).toHexString()
+        let digest = MD5.calculate(bytes).hexString
+        let key = MD5.calculate("\(nonce)\(details.username)\(digest)".cStringBsonData).hexString
         
         // Respond to the challengge
         let successResponse = try self.execute(command: [
                                                           "authenticate": 1,
-                                                          "nonce": nonce,
-                                                          "user": details.username,
-                                                          "key": key
+                                                          "nonce": .string(nonce),
+                                                          "user": .string(details.username),
+                                                          "key": .string(key)
             ])
         
         let successDocument = try firstDocument(in: successResponse)
         
         // Check for success
-        guard let ok = successDocument["ok"]?.intValue where ok == 1 else {
+        guard successDocument["ok"].int32 == 1 else {
             throw InternalMongoError.IncorrectReply(reply: successResponse)
         }
     }
