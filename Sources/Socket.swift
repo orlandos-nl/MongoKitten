@@ -38,7 +38,11 @@ final class CSocket : MongoTCP {
     static func open(address: String, port: UInt16) throws -> CSocket {
         let s = CSocket()
         
-        s.sock = socket(AF_INET, Int32(SOCK_STREAM), 0)
+        #if os(Linux)
+            s.sock = socket(AF_INET, Int32(SOCK_STREAM.rawValue), 0)
+        #else
+            s.sock = socket(AF_INET, SOCK_STREAM, 0)
+        #endif
         if s.sock < 0 {
             throw TCPError.ConnectionFailed
         }
