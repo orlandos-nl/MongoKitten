@@ -53,35 +53,45 @@ public final class Server {
     
     /// The server's hostname/IP and port to connect to
     public let server: (host: String, port: UInt16)
-
+    
     internal private(set) var serverData: (maxWriteBatchSize: Int32, maxWireVersion: Int32, minWireVersion: Int32, maxMessageSizeBytes: Int32)?
     
     // Initializes a MongoDB Client instance on a given connection
     // - parameter client: The Stream Client connected to the MongoDB Serer
     // - parameter authentication: The optional Login Credentials for the account on the server
     // - parameter autoConnect: Whether we automatically connect
-//    public init(_ client: StreamClient, using authentication: (username: String, password: String)? = nil, automatically connecting: Bool = false) throws {
-//        self.client = client
-//
-//        self.authDetails = authentication
-//        
-//        if connecting {
-//            try self.connect()
-//        }
-//    }
+    //    public init(_ client: StreamClient, using authentication: (username: String, password: String)? = nil, automatically connecting: Bool = false) throws {
+    //        self.client = client
+    //
+    //        self.authDetails = authentication
+    //
+    //        if connecting {
+    //            try self.connect()
+    //        }
+    //    }
     
     public convenience init(_ url: NSURL, using tcpDriver: MongoTCP.Type = CSocket.self, automatically connecting: Bool = true) throws {
-        guard url.scheme.lowercased() == "mongodb", let host = url.host else {
+        #if os(Linux)
+            let scheme = url.scheme ?? ""
+        #else
+            let scheme = url.scheme
+        #endif
+        
+        guard scheme.lowercased() == "mongodb", let host = url.host else {
             throw MongoError.InvalidNSURL(url: url)
         }
         
         var authentication: (username: String, password: String)? = nil
-
+        
         if let user = url.user, pass = url.password {
             authentication = (username: user, password: pass)
         }
-
-        let port: UInt16 = UInt16(url.port?.int16Value ?? 27017)
+        
+        #if os(Linux)
+            let port: UInt16 = UInt16(url.port?.shortValue ?? 27017)
+        #else
+            let port: UInt16 = UInt16(url.port?.int16Value ?? 27017)
+        #endif
         
         try self.init(at: host, port: port, using: authentication, automatically: connecting, using: tcpDriver)
     }
@@ -90,7 +100,7 @@ public final class Server {
         guard let url = NSURL(string: uri) else {
             throw MongoError.InvalidURI(uri: uri)
         }
-
+        
         try self.init(url, using: tcpDriver, automatically: connecting)
     }
     
@@ -102,14 +112,14 @@ public final class Server {
     public init(at host: String, port: UInt16 = 27017, using authentication: (username: String, password: String)? = nil, using tcpDriver: MongoTCP.Type = CSocket.self, automatically connecting: Bool = false) throws {
         self.tcpType = tcpDriver
         self.server = (host: host, port: port)
-
+        
         self.authDetails = authentication
         
         if connecting {
             try self.connect()
         }
     }
-
+    
     /// This subscript returns a Database struct given a String
     /// - parameter database: The database's name
     /// - returns: A database instance for the requested database
@@ -179,11 +189,11 @@ public final class Server {
             }
         } catch {
             // A receive failure is to be expected if the socket has been closed
-//            if self.isConnected {
-//                print("The MongoDB background loop encountered an error: \(error)")
-//            } else {
-//                return
-//            }
+            //            if self.isConnected {
+            //                print("The MongoDB background loop encountered an error: \(error)")
+            //            } else {
+            //                return
+            //            }
             return
         }
         

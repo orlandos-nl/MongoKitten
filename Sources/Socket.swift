@@ -38,7 +38,7 @@ final class CSocket : MongoTCP {
     static func open(address: String, port: UInt16) throws -> CSocket {
         let s = CSocket()
         
-        s.sock = socket(AF_INET, SOCK_STREAM, 0)
+        s.sock = socket(AF_INET, Int32(SOCK_STREAM), 0)
         if s.sock < 0 {
             throw TCPError.ConnectionFailed
         }
@@ -53,7 +53,11 @@ final class CSocket : MongoTCP {
             server.sin_addr.s_addr = UInt32(inet_addr(address))
         }
         
-        server.sin_family = UInt8(AF_INET)
+        #if os(Linux)
+            server.sin_family = UInt16(AF_INET)
+        #else
+            server.sin_family = UInt8(AF_INET)
+        #endif
         server.sin_port = port.bigEndian
         
         try withUnsafePointer(&server) {
