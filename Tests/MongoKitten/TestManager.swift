@@ -6,7 +6,6 @@
 //  Copyright © 2016 PlanTeam. All rights reserved.
 //
 
-import C7
 import MongoKitten
 import BSON
 import Foundation
@@ -16,7 +15,8 @@ final class TestManager {
         case TestDataNotPresent
     }
     
-    static var server = try! Server(at: "localhost", port: 27017, using: (username: "mongokitten-unittest-user", password: "mongokitten-unittest-password"), automatically: false)
+    // , using: (username: "mongokitten-unittest-user", password: "mongokitten-unittest-password")
+    static var server = try! Server(at: "127.0.0.1", port: 27017, automatically: false)
     static var db: Database { return server["mongokitten-unittest"] }
     static let wcol = db["wcol"]
     

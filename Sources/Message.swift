@@ -166,7 +166,7 @@ enum Message {
         header += responseTo.bsonData
         header += operationCode.bsonData
         
-        return Data(header + body)
+        return header + body
     }
     
     /// The Reply message that we can receive from the server

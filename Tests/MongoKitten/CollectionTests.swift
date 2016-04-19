@@ -31,13 +31,13 @@ class CollectionTests: XCTestCase {
     }
     
     func testDistinct() {
-        let distinct = try! TestManager.db["zips"].distinct("state")!
+        let distinct = try! TestManager.db["zips"].distinct(on: "state")!
         
         XCTAssertEqual(distinct.count, 51)
     }
     
     func testFind() {
-        let base = *["username": "bob", "age": 25, "kittens": 6, "dogs": 0, "beers": 90]
+        let base: Document = ["username": "bob", "age": 25, "kittens": 6, "dogs": 0, "beers": 90]
         
         var inserts: [Document]
         
@@ -71,9 +71,9 @@ class CollectionTests: XCTestCase {
     }
     
     func testAggregate() {
-        let cursor = try! TestManager.db["zips"].aggregate([
-                                             *[ "$group": *[ "_id": "$state", "totalPop": *[ "$sum": "$pop" ] ] ],
-                                             *[ "$match": *[ "totalPop": *[ "$gte": 10*1000*1000 ] ] ]
+        let cursor = try! TestManager.db["zips"].aggregate(pipeline: [
+                                             [ "$group": [ "_id": "$state", "totalPop": [ "$sum": "$pop" ] ] ],
+                                             [ "$match": [ "totalPop": [ "$gte": ~10_000_000 ] ] ]
         ])
         
         var count = 0

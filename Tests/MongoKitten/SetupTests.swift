@@ -30,7 +30,9 @@ class SetupTests: XCTestCase {
     }
     
     func testSetup() {
-        let server = try! Server(at: "127.0.0.1", using: (username: "mongokitten-unittest-user", password: "mongokitten-unittest-password"), automatically: true)
+        // TODO:
+        // using: (username: "mongokitten-unittest-user", password: "mongokitten-unittest-password"),
+        let server = try! Server(at: "127.0.0.1", automatically: true)
         
         let database = server["mongokitten-unittest"]
         

@@ -140,7 +140,7 @@ public class GridFS {
     /// - parameter usingMetadata: The optional metadata to store with this file
     /// - parameter inChunksOf: The amount of bytes to put in one chunk
     public func store(data: NSData, named filename: String? = nil, withType contentType: String? = nil, usingMetadata metadata: Value? = nil, inChunksOf chunkSize: Int = 255000) throws -> ObjectId {
-        return try self.store(data: data.arrayOfBytes(), named: filename, withType: contentType, usingMetadata: metadata, inChunksOf: chunkSize)
+        return try self.store(data: data.bytes, named: filename, withType: contentType, usingMetadata: metadata, inChunksOf: chunkSize)
     }
     
     /// A file in GridFS
@@ -182,9 +182,9 @@ public class GridFS {
         internal init?(document: Document, chunksCollection: Collection, filesCollection: Collection) {
             guard let id = document["_id"].objectIdValue,
                 length = document["length"].int32Value,
-                chunkSize = document["chunkSize"]?.int32Value,
-                uploadDate = document["uploadDate"]?.dateValue,
-                md5 = document["md5"]?.stringValue
+                chunkSize = document["chunkSize"].int32Value,
+                uploadDate = document["uploadDate"].dateValue,
+                md5 = document["md5"].stringValue
                 else {
                     return nil
             }
@@ -198,12 +198,12 @@ public class GridFS {
             self.uploadDate = uploadDate
             self.md5 = md5
             
-            self.filename = document["filename"]?.stringValue
-            self.contentType = document["contentType"]?.stringValue
+            self.filename = document["filename"].stringValue
+            self.contentType = document["contentType"].stringValue
             
             var aliases = [String]()
             
-            for alias in document["aliases"]?.documentValue?.arrayValue ?? [] {
+            for alias in document["aliases"].documentValue?.arrayValue ?? [] {
                 if let alias = alias.stringValue {
                     aliases.append(alias)
                 }
@@ -238,12 +238,12 @@ public class GridFS {
                 endChunk += 1
             }
             
-            let cursor = try chunksCollection.find(matching: ["files_id": id], sortedBy: ["n": 1], skipping: Int32(skipChunks), limitedTo: Int32(endChunk - skipChunks))
+            let cursor = try chunksCollection.find(matching: ["files_id": ~id], sortedBy: ["n": 1], skipping: Int32(skipChunks), limitedTo: Int32(endChunk - skipChunks))
             let chunkCursor = Cursor(base: cursor, transform: { Chunk(document: $0, chunksCollection: self.chunksCollection, filesCollection: self.filesCollection) })
             var allData = [Byte]()
             
             for chunk in chunkCursor {
-                allData.append(contentsOf: chunk.data.data)
+                allData.append(contentsOf: chunk.data)
             }
             
             return allData

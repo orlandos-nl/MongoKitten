@@ -11,34 +11,34 @@ import BSON
 
 // MARK: Equations
 /// Equals
-public func ==(key: String, pred: Value) -> Query {
-    return Query(data: [key: ["$eq": pred]])
+public func ==(key: String, pred: ValueConvertible) -> Query {
+    return Query(data: [key: ["$eq": ~pred]])
 }
 
 /// MongoDB: `$ne`
-public func !=(key: String, pred: Value) -> Query {
-    return Query(data: [key: ["$ne": pred]])
+public func !=(key: String, pred: ValueConvertible) -> Query {
+    return Query(data: [key: ["$ne": ~pred]])
 }
 
 // MARK: Comparisons
 /// MongoDB: `$gt`
-public func >(key: String, pred: Value) -> Query {
-    return Query(data: [key: ["$gt": pred]])
+public func >(key: String, pred: ValueConvertible) -> Query {
+    return Query(data: [key: ["$gt": ~pred]])
 }
 
 /// MongoDB: `$gte`
-public func >=(key: String, pred: Value) -> Query {
-    return Query(data: [key: ["$gte": pred]])
+public func >=(key: String, pred: ValueConvertible) -> Query {
+    return Query(data: [key: ["$gte": ~pred]])
 }
 
 /// MongoDB: `$lt`
-public func <(key: String, pred: Value) -> Query {
-    return Query(data: [key: ["$lt": pred]])
+public func <(key: String, pred: ValueConvertible) -> Query {
+    return Query(data: [key: ["$lt": ~pred]])
 }
 
 /// MongoDB: `$lte`
-public func <=(key: String, pred: Value) -> Query {
-    return Query(data: [key: ["$lte": pred]])
+public func <=(key: String, pred: ValueConvertible) -> Query {
+    return Query(data: [key: ["$lte": ~pred]])
 }
 
 /// Appends `rhs` to `lhs`

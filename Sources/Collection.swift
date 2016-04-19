@@ -87,13 +87,14 @@ public final class Collection {
             
             documents.removeFirst(min(1000, documents.count))
             
-            command["documents"] = .document(Document(array: commandDocuments))
+            command["documents"] = .array(Document(array: commandDocuments))
             
             if let ordered = ordered {
                 command["ordered"] = .boolean(ordered)
             }
             
-            guard case .Reply(_, _, _, _, _, _, let replyDocuments) = try self.database.execute(command: command, until: timeout) where replyDocuments.first?["ok"].int32 == 1 else {
+            let reply = try self.database.execute(command: command, until: timeout)
+            guard case .Reply(_, _, _, _, _, _, let replyDocuments) = reply where replyDocuments.first?["ok"].int32 == 1 else {
                 throw MongoError.InsertFailure(documents: documents)
             }
         }
@@ -607,7 +608,7 @@ public final class Collection {
     /// - parameter bypassDocumentValidation: Available only if you specify the $out aggregation operator. Enables aggregate to bypass document validation during the operation. This lets you insert documents that do not meet the validation requirements. *Available for MongoDB 3.2 and later versions*
     public func aggregate(pipeline: Document, explain: Bool? = nil, allowDiskUse: Bool? = nil, cursorOptions: Document = ["batchSize":10], bypassDocumentValidation: Bool? = nil) throws -> Cursor<Document> {
         // construct command. we always use cursors in MongoKitten, so that's why the default value for cursorOptions is an empty document.
-        var command: Document = ["aggregate": .string(self.name), "pipeline": .document(pipeline), "cursor": .document(cursorOptions)]
+        var command: Document = ["aggregate": .string(self.name), "pipeline": .array(pipeline), "cursor": .document(cursorOptions)]
         
         if let explain = explain { command["explain"] = .boolean(explain) }
         if let allowDiskUse = allowDiskUse { command["allowDiskUse"] = .boolean(allowDiskUse) }

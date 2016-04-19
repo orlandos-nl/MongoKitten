@@ -44,17 +44,15 @@ public final class Server {
     
     private var waitingForResponses = [Int32:NSCondition]()
     
-    /// HummingBird Socket bound to the MongoDB Server
-    private var client: MongoTCP
+    /// TCP Socket bound to the MongoDB Server
+    private var client: MongoTCP?
+    public let tcpType: MongoTCP.Type
     
     /// Did we initialize?
     private var isInitialized = false
     
-    /// The server's hostname/IP to connect to
-    private let host: String
-    
-    /// The server's port to connect to
-    private let port: UInt16
+    /// The server's hostname/IP and port to connect to
+    public let server: (host: String, port: UInt16)
 
     internal private(set) var serverData: (maxWriteBatchSize: Int32, maxWireVersion: Int32, minWireVersion: Int32, maxMessageSizeBytes: Int32)?
     
@@ -78,9 +76,8 @@ public final class Server {
     /// - parameter authentication: The optional authentication details we'll use when connecting to the server
     /// - parameter automatically: Connect automatically
     public init(at host: String, port: UInt16 = 27017, using authentication: (username: String, password: String)? = nil, automatically connecting: Bool = false, tcpDriver: MongoTCP.Type = CSocket.self) throws {
-        self.client = try tcpDriver.open(address: host, port: port)
-        self.host = host
-        self.port = port
+        self.tcpType = tcpDriver
+        self.server = (host: host, port: port)
 
         self.authDetails = authentication
         
@@ -142,8 +139,8 @@ public final class Server {
     
     /// Connects with the MongoDB Server using the given information in the initializer
     public func connect() throws {
-        try client.connect(toTarget: host, onPort: "\(port)")
-        try Background(backgroundLoop)
+        self.client = try tcpType.open(address: server.host, port: server.port)
+        try Background(function: backgroundLoop)
         isConnected = true
     }
     
@@ -167,7 +164,7 @@ public final class Server {
         }
         
         do {
-            try Background(backgroundLoop)
+            try Background(function: backgroundLoop)
         } catch {
             do {
                 try disconnect()
@@ -177,7 +174,7 @@ public final class Server {
     
     /// Disconnects from the MongoDB server
     public func disconnect() throws {
-        try client.close()
+        try client?.close()
         
         isInitialized = false
         isConnected = false
@@ -186,6 +183,10 @@ public final class Server {
     /// Called by the server thread to handle MongoDB Wire messages
     /// - parameter bufferSize: The amount of bytes to fetch at a time
     private func receive(bufferSize: Int = 1024) throws {
+        guard let client = client else {
+            throw MongoError.MongoDatabaseNotYetConnected
+        }
+        
         // TODO: Respect bufferSize
         let incomingBuffer: [Byte] = try client.receive()
         fullBuffer += incomingBuffer
@@ -247,6 +248,10 @@ public final class Server {
     /// - parameter message: The message we're sending
     /// - returns: The RequestID for this message
     internal func send(message: Message) throws -> Int32 {
+        guard let client = client else {
+            throw MongoError.MongoDatabaseNotYetConnected
+        }
+        
         let messageData = try message.generateData()
         
         try client.send(data: messageData)
@@ -266,13 +271,13 @@ public final class Server {
     /// Returns all existing databases on this server. **Requires access to the `admin` database**
     public func getDatabases() throws -> [Database] {
         let infos = try getDatabaseInfos()
-        guard let databaseInfos = infos["databases"]?.documentValue else {
+        guard let databaseInfos = infos["databases"].documentValue else {
             throw MongoError.CommandFailure
         }
         
         var databases = [Database]()
-        for case (_, let dbDef as Document) in databaseInfos {
-            guard let name = dbDef["name"]?.stringValue else {
+        for case (_, let dbDef) in databaseInfos where dbDef.documentValue != nil {
+            guard let name = dbDef["name"].stringValue else {
                 throw MongoError.CommandFailure
             }
             

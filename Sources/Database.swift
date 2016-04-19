@@ -64,7 +64,8 @@ public final class Database {
         
         let result = try firstDocument(in: reply)
         
-        guard let code = result["ok"].int32Value, cursor = result["cursor"].documentValue where code == 1 else {
+        let code = result["ok"].int32
+        guard let cursor = result["cursor"].documentValue where code == 1 else {
             throw MongoError.CommandFailure
         }
         
