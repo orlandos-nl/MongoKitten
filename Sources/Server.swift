@@ -70,12 +70,36 @@ public final class Server {
 //        }
 //    }
     
+    public convenience init(_ url: NSURL, using tcpDriver: MongoTCP.Type = CSocket.self, automatically connecting: Bool = true) throws {
+        guard url.scheme.lowercased() == "mongodb", let host = url.host else {
+            throw MongoError.InvalidNSURL(url: url)
+        }
+        
+        var authentication: (username: String, password: String)? = nil
+
+        if let user = url.user, pass = url.password {
+            authentication = (username: user, password: pass)
+        }
+
+        let port: UInt16 = UInt16(url.port?.int16Value ?? 27017)
+        
+        try self.init(at: host, port: port, using: authentication, automatically: connecting, using: tcpDriver)
+    }
+    
+    public convenience init(_ uri: String, using tcpDriver: MongoTCP.Type = CSocket.self, automatically connecting: Bool = true) throws {
+        guard let url = NSURL(string: uri) else {
+            throw MongoError.InvalidURI(uri: uri)
+        }
+
+        try self.init(url, using: tcpDriver, automatically: connecting)
+    }
+    
     /// Initializes a MongoDB Client Instance on a given port with a given host
     /// - parameter at: The host we'll connect to
     /// - parameter port: The port we'll connect on
     /// - parameter authentication: The optional authentication details we'll use when connecting to the server
     /// - parameter automatically: Connect automatically
-    public init(at host: String, port: UInt16 = 27017, using authentication: (username: String, password: String)? = nil, automatically connecting: Bool = false, tcpDriver: MongoTCP.Type = CSocket.self) throws {
+    public init(at host: String, port: UInt16 = 27017, using authentication: (username: String, password: String)? = nil, using tcpDriver: MongoTCP.Type = CSocket.self, automatically connecting: Bool = false) throws {
         self.tcpType = tcpDriver
         self.server = (host: host, port: port)
 
@@ -184,7 +208,7 @@ public final class Server {
     /// - parameter bufferSize: The amount of bytes to fetch at a time
     private func receive(bufferSize: Int = 1024) throws {
         guard let client = client else {
-            throw MongoError.MongoDatabaseNotYetConnected
+            throw MongoError.NotConnected
         }
         
         // TODO: Respect bufferSize
@@ -249,7 +273,7 @@ public final class Server {
     /// - returns: The RequestID for this message
     internal func send(message: Message) throws -> Int32 {
         guard let client = client else {
-            throw MongoError.MongoDatabaseNotYetConnected
+            throw MongoError.NotConnected
         }
         
         let messageData = try message.generateData()

@@ -6,6 +6,7 @@
 //  Copyright © 2016 PlanTeam. All rights reserved.
 //
 
+import Foundation
 import struct BSON.Document
 
 /// All MongoDB errors
@@ -26,7 +27,7 @@ public enum MongoError : ErrorProtocol {
     case InvalidAction
     
     /// We can't do this action because we're not yet connected
-    case MongoDatabaseNotYetConnected
+    case NotConnected
     
     /// Can't insert given documents
     case InsertFailure(documents: [Document])
@@ -67,6 +68,10 @@ public enum MongoError : ErrorProtocol {
     
     /// GridFS was asked to return a negative amount of bytes
     case NegativeBytesRequested(start: Int, end: Int)
+
+    case InvalidURI(uri: String)
+    
+    case InvalidNSURL(url: NSURL)
 }
 
 public enum MongoAuthenticationError : ErrorProtocol {

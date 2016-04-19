@@ -30,17 +30,9 @@ class SetupTests: XCTestCase {
     }
     
     func testSetup() {
-        // TODO:
-        // using: (username: "mongokitten-unittest-user", password: "mongokitten-unittest-password"),
-        let server = try! Server(at: "127.0.0.1", automatically: true)
+        let server = try! Server("mongodb://mongokitten-unittest-user:mongokitten-unittest-password@localhost:27017", automatically: true)
+        let distinct = try! server["mongokitten-unittest"]["zips"].distinct(on: "state")!
         
-        let database = server["mongokitten-unittest"]
-        
-        let testCollection = database["testcollection"]
-        let testBucket = database["bucket.collection"]
-        
-        XCTAssertEqual(testBucket.database.name, "mongokitten-unittest")
-        XCTAssertEqual(database.name, "mongokitten-unittest")
-        XCTAssertEqual(testCollection.database.name, "mongokitten-unittest")
+        XCTAssertEqual(distinct.count, 51)
     }
 }

@@ -44,7 +44,15 @@ final class CSocket : MongoTCP {
         }
         
         var server = sockaddr_in()
-        server.sin_addr.s_addr = UInt32(inet_addr(address))
+        
+        if let pointer = gethostbyname(address) {
+            let hostInfo = pointer.pointee
+            
+            server.sin_addr = UnsafeMutablePointer<UnsafeMutablePointer<in_addr>>(hostInfo.h_addr_list)[0].pointee
+        } else {
+            server.sin_addr.s_addr = UInt32(inet_addr(address))
+        }
+        
         server.sin_family = UInt8(AF_INET)
         server.sin_port = port.bigEndian
         
