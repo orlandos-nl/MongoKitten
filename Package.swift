@@ -7,7 +7,7 @@ let package = Package(
                       .Package(url: "https://github.com/CryptoKitten/SCRAM.git", majorVersion: 0, minor: 4),
                       .Package(url: "https://github.com/PlanTeam/BSON.git", majorVersion: 0, minor: 0),
                       .Package(url: "https://github.com/CryptoKitten/SHA1.git", majorVersion: 0, minor: 4),
-                      .Package(url: "https://github.com/ketzusaka/Strand.git", majorVersion: 1, minor: 2),
+                      .Package(url: "https://github.com/ketzusaka/Strand", majorVersion: 1, minor: 2),
                       ]
 )
 
