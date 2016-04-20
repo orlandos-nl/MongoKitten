@@ -295,13 +295,14 @@ public final class Collection {
                 ])
         }
         
-        command["updates"] = .document(Document(array: newUpdates))
+        command["updates"] = .array(Document(array: newUpdates))
         
         if let ordered = ordered {
             command["ordered"] = .boolean(ordered)
         }
         
-        guard case .Reply(_, _, _, _, _, _, let documents) = try self.database.execute(command: command) where documents.first?["ok"].int32 == 1 else {
+        let reply = try self.database.execute(command: command)
+        guard case .Reply(_, _, _, _, _, _, let documents) = reply where documents.first?["ok"].int32 == 1 else {
             throw MongoError.UpdateFailure(updates: updates)
         }
         default:
