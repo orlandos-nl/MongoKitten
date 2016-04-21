@@ -303,4 +303,76 @@ extension Database {
             throw InternalMongoError.IncorrectReply(reply: successResponse)
         }
     }
+    
+    public func create(user: String, password: String, roles: Document, customData: Document? = nil, digestPassword: Bool = true) throws {
+        var command: Document = [
+                                "createUser": ~user,
+                                "pwd": ~password,
+                             ]
+        
+        if let data = customData {
+            command["customData"] = ~data
+        }
+
+        command["roles"] = .array(roles)
+        
+        return try firstDocument(in: try execute(command: command))
+    }
+
+    public func update(user: String, password: String, roles: Document, customData: Document? = nil) throws {
+        var command: Document = [
+                                    "updateUser": ~user,
+                                    "pwd": ~password,
+                                    ]
+        
+        if let data = customData {
+            command["customData"] = ~data
+        }
+        
+        command["roles"] = .array(roles)
+        
+        return try firstDocument(in: try execute(command: command))
+    }
+    
+    public func drop(user: String) throws {
+        let command: Document = [
+                                    "dropUser": ~user
+                                    ]
+
+        return try firstDocument(in: try execute(command: command))
+    }
+    
+    @warn_unused_result
+    public func info(for user: String, in database: String? = nil, showCredentials: Bool? = nil, showPrivileges: Bool? = nil) throws -> Document {
+        var command: Document = [
+                                     "userInfo": ["user": ~user, "db": ~(database ?? self.name)]
+                                     ]
+        
+        if let showCredentials = showCredentials {
+            command["showCredentials"] = ~showCredentials
+        }
+        
+        if let showPrivileges = showPrivileges {
+            command["showPrivileges"] = ~showPrivileges
+        }
+
+        return try firstDocument(in: try execute(command: command))
+    }
+    
+    public func dropAllUsers() throws -> Document {
+        let command: Document = [
+                                    "dropAllUsersFromDatabase": .int32(1)
+                                    ]
+
+        return try firstDocument(in: try execute(command: command))
+    }
+    
+    public func grant(roles: Document, to user: String) throws -> Document {
+        let command: Document = [
+                                    "grantRolesToUser": ~user,
+                                    "roles": .array(roles)
+                                    ]
+        
+        return try firstDocument(in: try execute(command: command))
+    }
 }
