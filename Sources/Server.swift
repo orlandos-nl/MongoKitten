@@ -268,10 +268,10 @@ public final class Server {
         
         condition.unlock()
         
-        for (index, response) in incomingResponses.enumerated() {
-            if response.id == requestId {
-                return incomingResponses.remove(at: index).message
-            }
+        let i = incomingResponses.index(where: { $0.id == requestId })
+        
+        if let index = i {
+            return incomingResponses.remove(at: index).message
         }
         
         // If we get here, something is very, very wrong.
