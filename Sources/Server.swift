@@ -15,6 +15,7 @@
 @_exported import BSON
 
 import Foundation
+import MD5
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 // This file contains the low level code. This code is synchronous and is used by the async client API. //
@@ -319,5 +320,89 @@ public final class Server {
         }
         
         return databases
+    }
+    
+    public func copy(database: String, to otherDatabase: String, as user: (user: String, nonce: String, password: String)? = nil, at remoteHost: String? = nil, slaveOk: Bool? = nil) throws {
+        var command: Document = [
+                                    "copydb": .int32(1),
+                                ]
+
+        if let fromHost = remoteHost {
+            command["fromhost"] = ~fromHost
+        }
+
+        command["fromdb"] = ~database
+        command["todb"] = ~otherDatabase
+
+        if let slaveOk = slaveOk {
+            command["slaveOk"] = ~slaveOk
+        }
+
+        if let user = user {
+            command["username"] = ~user.user
+            command["nonce"] = ~user.nonce
+            
+            let passHash = "\(user.user):mongo:\(user.password)".md5().hexString
+            let key = "\(user.nonce)\(user.user)\(passHash))".md5().hexString
+            command["key"] = ~key
+        }
+
+        let response = try firstDocument(in: try self["$cmd"].execute(command: command))
+
+        guard response["ok"].int32 == 1 else {
+            throw MongoError.CommandFailure
+        }
+    }
+
+    public func clone(from url: NSURL) throws {
+        try clone(from: url.absoluteString)
+    }
+
+    public func clone(from url: String) throws {
+        let command: Document = [
+                                    "clone": ~url
+                                    ]
+
+        let response = try firstDocument(in: try self["$cmd"].execute(command: command))
+        
+        guard response["ok"].int32 == 1 else {
+            throw MongoError.CommandFailure
+        }
+    }
+    
+    public func shutdown(forced force: Bool? = nil) throws {
+        var command: Document = [
+                                    "shutdown": .int32(1)
+        ]
+        
+        if let force = force {
+            command["force"] = ~force
+        }
+        
+        let response = try firstDocument(in: try self["$cmd"].execute(command: command))
+        
+        guard response["ok"].int32 == 1 else {
+            throw MongoError.CommandFailure
+        }
+    }
+    
+    public func fsync(async: Bool? = nil, blocking block: Bool? = nil) throws {
+        var command: Document = [
+                                    "fsync": .int32(1)
+        ]
+        
+        if let async = async {
+            command["async"] = ~async
+        }
+
+        if let block = block {
+            command["block"] = ~block
+        }
+        
+        let response = try firstDocument(in: try self["$cmd"].execute(command: command))
+        
+        guard response["ok"].int32 == 1 else {
+            throw MongoError.CommandFailure
+        }
     }
 }

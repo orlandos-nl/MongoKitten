@@ -316,7 +316,11 @@ extension Database {
 
         command["roles"] = .array(roles)
         
-        return try firstDocument(in: try execute(command: command))
+        let document = try firstDocument(in: try execute(command: command))
+        
+        guard document["ok"].int32 == 1 else {
+            throw MongoError.CommandFailure
+        }
     }
 
     public func update(user: String, password: String, roles: Document, customData: Document? = nil) throws {
@@ -331,21 +335,29 @@ extension Database {
         
         command["roles"] = .array(roles)
         
-        return try firstDocument(in: try execute(command: command))
+        let document = try firstDocument(in: try execute(command: command))
+        
+        guard document["ok"].int32 == 1 else {
+            throw MongoError.CommandFailure
+        }
     }
     
     public func drop(user: String) throws {
         let command: Document = [
                                     "dropUser": ~user
                                     ]
-
-        return try firstDocument(in: try execute(command: command))
+        
+        let document = try firstDocument(in: try execute(command: command))
+        
+        guard document["ok"].int32 == 1 else {
+            throw MongoError.CommandFailure
+        }
     }
     
     @warn_unused_result
     public func info(for user: String, in database: String? = nil, showCredentials: Bool? = nil, showPrivileges: Bool? = nil) throws -> Document {
         var command: Document = [
-                                     "userInfo": ["user": ~user, "db": ~(database ?? self.name)]
+                                     "usersInfo": ["user": ~user, "db": ~(database ?? self.name)]
                                      ]
         
         if let showCredentials = showCredentials {
@@ -356,23 +368,109 @@ extension Database {
             command["showPrivileges"] = ~showPrivileges
         }
 
-        return try firstDocument(in: try execute(command: command))
+        let document = try firstDocument(in: try execute(command: command))
+        
+        guard document["ok"].int32 == 1 else {
+            throw MongoError.CommandFailure
+        }
+        
+        guard let users = document["users"].documentValue else {
+            throw MongoError.CommandFailure
+        }
+        
+        return users
     }
     
-    public func dropAllUsers() throws -> Document {
+    public func dropAllUsers() throws {
         let command: Document = [
                                     "dropAllUsersFromDatabase": .int32(1)
                                     ]
 
-        return try firstDocument(in: try execute(command: command))
+        let document = try firstDocument(in: try execute(command: command))
+        
+        guard document["ok"].int32 == 1 else {
+            throw MongoError.CommandFailure
+        }
     }
     
-    public func grant(roles: Document, to user: String) throws -> Document {
+    public func grant(roles: Document, to user: String) throws {
         let command: Document = [
                                     "grantRolesToUser": ~user,
                                     "roles": .array(roles)
                                     ]
         
-        return try firstDocument(in: try execute(command: command))
+        let document = try firstDocument(in: try execute(command: command))
+        
+        guard document["ok"].int32 == 1 else {
+            throw MongoError.CommandFailure
+        }
+    }
+    
+    public func drop() throws {
+        let command: Document = [
+                                    "dropDatabase": .int32(1)
+                                    ]
+        
+        let document = try firstDocument(in: try execute(command: command))
+        
+        guard document["ok"].int32 == 1 else {
+            throw MongoError.CommandFailure
+        }
+    }
+    
+    public func create(collection: String, cappedBytes capped: Int32? = nil, maxDocuments max: Int32? = nil) throws {
+        var command: Document = [
+                                    "create": ~collection
+                                    ]
+
+        if let capped = capped {
+            command["capped"] = true
+            command["size"] = ~capped
+        }
+        
+        if let max = max {
+            command["max"] = ~max
+        }
+        
+        let document = try firstDocument(in: try execute(command: command))
+        
+        guard document["ok"].int32 == 1 else {
+            throw MongoError.CommandFailure
+        }
+    }
+    
+    public func copy(to database: String, as user: (user: String, nonce: String, password: String)? = nil) throws {
+        try server.copy(database: self.name, to: database, as: user)
+    }
+    
+    public func clone(namespace: String, from server: String, filtering filter: Query? = nil) throws {
+        var command: Document = [
+                                    "cloneCollection": ~namespace,
+                                    "from": ~server
+        ]
+        
+        if let filter = filter {
+            command["query"] = ~filter.data
+        }
+        
+        let document = try firstDocument(in: try execute(command: command))
+        
+        guard document["ok"].int32 == 1 else {
+            throw MongoError.CommandFailure
+        }
+    }
+    
+    public func clone(collection: Collection, to otherCollection: String, capped: Int32) throws {
+        let command: Document = [
+                                    "cloneCollectionAsCapped": ~collection.name,
+                                    "toCollection": ~otherCollection,
+                                    "size": ~capped
+        ]
+        
+        let document = try firstDocument(in: try execute(command: command))
+        
+        guard document["ok"].int32 == 1 else {
+            throw MongoError.CommandFailure
+        }
     }
 }

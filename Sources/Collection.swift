@@ -628,4 +628,49 @@ public final class Collection {
         
         return try Cursor(cursorDocument: cursorDoc, server: database.server, chunkSize: 10, transform: { $0 })
     }
+    
+    public func convertTo(capped: Int32) throws {
+        let command: Document = [
+                                    "convertToCapped": ~self.name,
+                                    "size": ~capped
+                                    ]
+        
+        let document = try firstDocument(in: try database.execute(command: command))
+        
+        guard document["ok"].int32 == 1 else {
+            throw MongoError.CommandFailure
+        }
+    }
+    
+    public func reIndex() throws {
+        let command: Document = [
+                                    "reIndex": ~self.name
+        ]
+        
+        let document = try firstDocument(in: try database.execute(command: command))
+        
+        guard document["ok"].int32 == 1 else {
+            throw MongoError.CommandFailure
+        }
+    }
+    
+    public func compact(forced force: Bool? = nil) throws {
+        var command: Document = [
+                                    "compact": ~self.name
+        ]
+        
+        if let force = force {
+            command["force"] = ~force
+        }
+        
+        let document = try firstDocument(in: try database.execute(command: command))
+        
+        guard document["ok"].int32 == 1 else {
+            throw MongoError.CommandFailure
+        }
+    }
+    
+    public func clone(to otherCollection: String, capped: Int32) throws {
+        try database.clone(collection: self, to: otherCollection, capped: capped)
+    }
 }
