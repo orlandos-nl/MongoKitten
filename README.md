@@ -2,6 +2,7 @@
 
 [![Swift Version](https://img.shields.io/badge/swift-3.0-orange.svg)](https://swift.org)
 ![License](https://img.shields.io/github/license/planteam/mongokitten.svg)
+[![Slack Status](http://orlandos.nl:3000/badge.svg)](http://orlandos.nl:3000/)
 
 Native MongoDB driver for Swift, written in Swift. This library does not wrap around the mongoc driver. It uses:
 
