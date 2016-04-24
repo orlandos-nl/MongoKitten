@@ -30,16 +30,16 @@ public enum MongoError : ErrorProtocol {
     case NotConnected
     
     /// Can't insert given documents
-    case InsertFailure(documents: [Document])
+    case InsertFailure(documents: [Document], error: Document?)
     
     /// Can't query for documents matching given query
-    case QueryFailure(query: Document)
+    case QueryFailure(query: Document, error: Document?)
     
     /// Can't update documents with the given selector and update
-    case UpdateFailure(updates: [(filter: Document, to: Document, upserting: Bool, multiple: Bool)])
+    case UpdateFailure(updates: [(filter: Document, to: Document, upserting: Bool, multiple: Bool)], error: Document?)
     
     /// Can't remove documents matching the given query
-    case RemoveFailure(removals: [(filter: Document, limit: Int32)])
+    case RemoveFailure(removals: [(filter: Document, limit: Int32)], error: Document?)
     
     /// Can't find a handler for this reply
     case HandlerNotFound

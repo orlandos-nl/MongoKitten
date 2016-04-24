@@ -46,7 +46,7 @@ public final class Collection {
         let result = try self.insert([document])
         
         guard let newDocument: Document = result.first else {
-            throw MongoError.InsertFailure(documents: [document])
+            throw MongoError.InsertFailure(documents: [document], error: nil)
         }
         
         return newDocument
@@ -94,8 +94,12 @@ public final class Collection {
             }
             
             let reply = try self.database.execute(command: command, until: timeout)
-            guard case .Reply(_, _, _, _, _, _, let replyDocuments) = reply where replyDocuments.first?["ok"].int32 == 1 else {
-                throw MongoError.InsertFailure(documents: documents)
+            guard case .Reply(_, _, _, _, _, _, let replyDocuments) = reply else {
+                throw MongoError.InsertFailure(documents: documents, error: nil)
+            }
+            
+            guard replyDocuments.first?["ok"].int32 == 1 else {
+                throw MongoError.InsertFailure(documents: documents, error: replyDocuments.first)
             }
         }
         
@@ -278,33 +282,39 @@ public final class Collection {
     ///     `upsert`: If there isn't anything to update.. insert?
     ///     `multi`: Update all matching Documents instead of just one?
     /// - parameter ordered: If true, stop updating when one operation fails - defaults to true
+    /// TODO: Work on improving the updatefailure.  We don't handle writerrrors. Try using a normal query with multiple on true
     public func update(_ updates: [(filter: Document, to: Document, upserting: Bool, multiple: Bool)], stoppingOnError ordered: Bool? = nil) throws {
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
         switch protocolVersion {
         case 2...4:
-        var command: Document = ["update": .string(self.name)]
-        var newUpdates = [Value]()
-        
-        for u in updates {
-            newUpdates.append([
-                                   "q": .document(u.filter),
-                                   "u": .document(u.to),
-                                   "upsert": .boolean(u.upserting),
-                                   "multi": .boolean(u.multiple)
-                ])
-        }
-        
-        command["updates"] = .array(Document(array: newUpdates))
-        
-        if let ordered = ordered {
-            command["ordered"] = .boolean(ordered)
-        }
-        
-        let reply = try self.database.execute(command: command)
-        guard case .Reply(_, _, _, _, _, _, let documents) = reply where documents.first?["ok"].int32 == 1 else {
-            throw MongoError.UpdateFailure(updates: updates)
-        }
+            var command: Document = ["update": .string(self.name)]
+            var newUpdates = [Value]()
+            
+            for u in updates {
+                newUpdates.append([
+                                      "q": .document(u.filter),
+                                      "u": .document(u.to),
+                                      "upsert": .boolean(u.upserting),
+                                      "multi": .boolean(u.multiple)
+                    ])
+            }
+            
+            command["updates"] = .array(Document(array: newUpdates))
+            
+            if let ordered = ordered {
+                command["ordered"] = .boolean(ordered)
+            }
+            
+            let reply = try self.database.execute(command: command)
+            guard case .Reply(_, _, _, _, _, _, let documents) = reply else {
+                throw MongoError.UpdateFailure(updates: updates, error: nil)
+            }
+            
+            guard documents.first?["ok"].int32 == 1 else {
+                throw MongoError.UpdateFailure(updates: updates, error: documents.first)
+            }
+            
         default:
             for update in updates {
                 var flags: UpdateFlags = []
@@ -366,29 +376,29 @@ public final class Collection {
         
         switch protocolVersion {
         case 2...4:
-        var command: Document = ["delete": .string(self.name)]
-        var newDeletes = [Value]()
-        
-        for d in removals {
-            newDeletes.append([
-                                   "q": .document(d.filter),
-                                   "limit": .int32(d.limit)
-                ])
-        }
-        
-        command["deletes"] = .document(Document(array: newDeletes))
-        
-        if let ordered = ordered {
-            command["ordered"] = .boolean(ordered)
-        }
-        
-        let reply = try self.database.execute(command: command)
-        let documents = try allDocuments(in: reply)
-        
-        guard documents.first?["ok"].int32 == 1 else {
-            throw MongoError.RemoveFailure(removals: removals)
-        }
-            // If we're talking to an older MongoDB server
+            var command: Document = ["delete": .string(self.name)]
+            var newDeletes = [Value]()
+            
+            for d in removals {
+                newDeletes.append([
+                                      "q": .document(d.filter),
+                                      "limit": .int32(d.limit)
+                    ])
+            }
+            
+            command["deletes"] = .array(Document(array: newDeletes))
+            
+            if let ordered = ordered {
+                command["ordered"] = .boolean(ordered)
+            }
+            
+            let reply = try self.database.execute(command: command)
+            let documents = try allDocuments(in: reply)
+            
+            guard documents.first?["ok"].int32 == 1 else {
+                throw MongoError.RemoveFailure(removals: removals, error: documents.first)
+            }
+        // If we're talking to an older MongoDB server
         default:
             for removal in removals {
                 var flags: DeleteFlags = []
@@ -537,9 +547,9 @@ public final class Collection {
         guard let wireVersion = database.server.serverData?.maxWireVersion where wireVersion > 2 else {
             throw MongoError.UnsupportedOperations
         }
-
+        
         var indexesDoc: Document = []
-
+        
         for index in indexes {
             var keys: Document = []
             
@@ -550,8 +560,8 @@ public final class Collection {
             keys.enforceArray()
             
             var indexDocument: Document = [
-                                    "key": .array(keys),
-                                    "name": .string(index.name)
+                                              "key": .array(keys),
+                                              "name": .string(index.name)
             ]
             
             if let filter = index.filter {
@@ -629,11 +639,14 @@ public final class Collection {
         return try Cursor(cursorDocument: cursorDoc, server: database.server, chunkSize: 10, transform: { $0 })
     }
     
+    /// Makes the collection capped
+    /// Warning: Data loss can and probably will occur
+    /// It will only contain the first data inserted until the cap is reached
     public func convertTo(capped: Int32) throws {
         let command: Document = [
                                     "convertToCapped": ~self.name,
                                     "size": ~capped
-                                    ]
+        ]
         
         let document = try firstDocument(in: try database.execute(command: command))
         
@@ -642,6 +655,8 @@ public final class Collection {
         }
     }
     
+    /// Tells the MongoDB server to re-index this collection
+    /// Warning: Very heavy
     public func reIndex() throws {
         let command: Document = [
                                     "reIndex": ~self.name
@@ -654,6 +669,8 @@ public final class Collection {
         }
     }
     
+    /// Tells the MongoDB server to make this collection more compact
+    /// Warning: Very heavy
     public func compact(forced force: Bool? = nil) throws {
         var command: Document = [
                                     "compact": ~self.name
@@ -670,6 +687,7 @@ public final class Collection {
         }
     }
     
+    /// Clones this collection to another place and caps it
     public func clone(to otherCollection: String, capped: Int32) throws {
         try database.clone(collection: self, to: otherCollection, capped: capped)
     }

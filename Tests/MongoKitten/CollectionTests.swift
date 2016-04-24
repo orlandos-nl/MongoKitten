@@ -15,7 +15,8 @@ class CollectionTests: XCTestCase {
                    ("testDistinct", testDistinct),
                    ("testFind", testFind),
                    ("testUpdate", testUpdate),
-                   ("testDelete", testDelete),
+                   ("testRemovingAll", testRemovingAll),
+                   ("testRemovingOne", testRemovingOne),
         ]
     }
     
@@ -85,10 +86,103 @@ class CollectionTests: XCTestCase {
     }
     
     func testUpdate() {
-        // TODO: Test update
+        let base: Document = ["username": "bob", "age": 25, "kittens": 6, "dogs": 0, "beers": 90]
+        
+        var inserts: [Document]
+        
+        var brokenUsername = base
+        var brokenAge = base
+        var brokenKittens = base
+        var brokenKittens2 = base
+        var brokenDogs = base
+        var brokenBeers = base
+        
+        brokenUsername["username"] = "harrie"
+        brokenAge["age"] = 24
+        brokenKittens["kittens"] = 3
+        brokenKittens2["kittens"] = 1
+        brokenDogs["dogs"] = 2
+        brokenBeers["beers"] = "broken"
+        
+        inserts = [base, brokenUsername, brokenUsername, brokenAge, brokenDogs, brokenKittens, brokenKittens2, brokenBeers, base]
+        
+        _ = try! TestManager.wcol.insert(inserts)
+        
+        let query: Query = ("username" == "henk" || "username" == "bob") && "age" > 24 && "kittens" >= 2 && "kittens" != 3 && "dogs" <= 1 && "beers" < 100
+        
+        try! TestManager.wcol.update(matching: query, to: ["testieBool": true], multiple: true)
+        
+        try! TestManager.server.fsync()
+        
+        let response = Array(try! TestManager.wcol.find(matching: "testieBool" == true))
+        XCTAssertEqual(response.count, 1)
+        
+        let response2 = Array(try! TestManager.wcol.find(matching: query))
+        XCTAssertEqual(response2.count, 1)
     }
     
-    func testDelete() {
-        // TODO: Test delete
+    func testRemovingAll() {
+        let base: Document = ["username": "bob", "age": 25, "kittens": 6, "dogs": 0, "beers": 90]
+        
+        var inserts: [Document]
+        
+        var brokenUsername = base
+        var brokenAge = base
+        var brokenKittens = base
+        var brokenKittens2 = base
+        var brokenDogs = base
+        var brokenBeers = base
+        
+        brokenUsername["username"] = "harrie"
+        brokenAge["age"] = 24
+        brokenKittens["kittens"] = 3
+        brokenKittens2["kittens"] = 1
+        brokenDogs["dogs"] = 2
+        brokenBeers["beers"] = "broken"
+        
+        inserts = [base, brokenUsername, brokenUsername, brokenAge, brokenDogs, brokenKittens, brokenKittens2, brokenBeers, base]
+        
+        _ = try! TestManager.wcol.insert(inserts)
+        
+        let query: Query = ("username" == "henk" || "username" == "bob") && "age" > 24 && "kittens" >= 2 && "kittens" != 3 && "dogs" <= 1 && "beers" < 100
+        
+        try! TestManager.wcol.remove(matching: query)
+        
+        let response = Array(try! TestManager.wcol.find(matching: query))
+        
+        XCTAssertEqual(response.count, 0)
+    }
+    
+    func testRemovingOne() {
+        let base: Document = ["username": "bob", "age": 25, "kittens": 6, "dogs": 0, "beers": 90]
+        
+        var inserts: [Document]
+        
+        var brokenUsername = base
+        var brokenAge = base
+        var brokenKittens = base
+        var brokenKittens2 = base
+        var brokenDogs = base
+        var brokenBeers = base
+        
+        brokenUsername["username"] = "harrie"
+        brokenAge["age"] = 24
+        brokenKittens["kittens"] = 3
+        brokenKittens2["kittens"] = 1
+        brokenDogs["dogs"] = 2
+        brokenBeers["beers"] = "broken"
+        
+        inserts = [base, brokenUsername, brokenUsername, brokenAge, brokenDogs, brokenKittens, brokenKittens2, brokenBeers, base]
+        
+        _ = try! TestManager.wcol.insert(inserts)
+        
+        let query: Query = ("username" == "henk" || "username" == "bob") && "age" > 24 && "kittens" >= 2 && "kittens" != 3 && "dogs" <= 1 && "beers" < 100
+        
+        try! TestManager.wcol.remove(matching: query, limitedTo: 1)
+        try! TestManager.server.fsync()
+        
+        let response = Array(try! TestManager.wcol.find(matching: query))
+        
+        XCTAssertEqual(response.count, 1)
     }
 }

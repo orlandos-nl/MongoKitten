@@ -15,14 +15,14 @@ final class TestManager {
         case TestDataNotPresent
     }
     
-    static var server = try! Server(at: "localhost", using: (username: "mongokitten-unittest-user", password: "mongokitten-unittest-password"), automatically: false)
+    static var server = try! Server(at: "localhost", using: (username: "mongokitten-unittest-user", password: "mongokitten-unittest-password", against: "admin"), automatically: false)
     static var db: Database { return server["mongokitten-unittest"] }
     static let wcol = db["wcol"]
     
     static var testingUsers = [Document]()
     
     static func connect() throws {
-        if server.isConnected == false {
+        if !server.isConnected {
             try server.connect()
         }
     }

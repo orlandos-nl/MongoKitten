@@ -185,7 +185,7 @@ extension Database {
     
     /// Respond to a challenge
     /// TODO: Set a timeout for connecting
-    private func challenge(with details: (username: String, password: String), using previousInformation: (nonce: String, response: Document, scram: SCRAMClient<SHA1>)) throws {
+    private func challenge(with details: (username: String, password: String, against: String), using previousInformation: (nonce: String, response: Document, scram: SCRAMClient<SHA1>)) throws {
         // If we failed the authentication
         guard previousInformation.response["ok"].int32 == 1 else {
             throw MongoAuthenticationError.IncorrectCredentials
@@ -244,7 +244,7 @@ extension Database {
     /// Authenticates to this database using SASL
     /// TODO: Support authentication DBs
     /// TODO: Set a timeout for connecting
-    internal func authenticate(SASL details: (username: String, password: String)) throws {
+    internal func authenticate(SASL details: (username: String, password: String, against: String)) throws {
         let nonce = randomNonce()
         
         let auth = SCRAMClient<SHA1>()
@@ -268,7 +268,7 @@ extension Database {
     
     /// Authenticate with MongoDB Challenge Response
     /// TODO: Set a timeout for connecting
-    internal func authenticate(mongoCR details: (username: String, password: String)) throws {
+    internal func authenticate(mongoCR details: (username: String, password: String, against: String)) throws {
         // Get the server's nonce
         let response = try self.execute(command: [
                                                    "getNonce": .int32(1)
@@ -304,7 +304,13 @@ extension Database {
         }
     }
     
-    public func create(user: String, password: String, roles: Document, customData: Document? = nil, digestPassword: Bool = true) throws {
+    /// Creates a new user
+    /// Warning: Use an SSL socket to create someone for security sake!
+    /// Warning: The standard library doesn't have SSL
+    /// - parameter user: The user's username
+    /// - parameter password: The plaintext password
+    /// - parameter customData: The optional custom information to store
+    public func create(user: String, password: String, roles: Document, customData: Document? = nil) throws {
         var command: Document = [
                                 "createUser": ~user,
                                 "pwd": ~password,
@@ -316,13 +322,19 @@ extension Database {
 
         command["roles"] = .array(roles)
         
-        let document = try firstDocument(in: try execute(command: command))
+        let reply = try execute(command: command)
+        let document = try firstDocument(in: reply)
         
         guard document["ok"].int32 == 1 else {
             throw MongoError.CommandFailure
         }
     }
 
+    /// Updates a user in this database with a new password, roles and optional set of custom data
+    /// - parameter user: The user to udpate
+    /// - parameter password: The new password
+    /// - parameter roles: The roles to grant
+    /// - parameter customData: The optional custom data you'll give him
     public func update(user: String, password: String, roles: Document, customData: Document? = nil) throws {
         var command: Document = [
                                     "updateUser": ~user,
@@ -342,6 +354,8 @@ extension Database {
         }
     }
     
+    /// Drops the specified user from this database
+    /// - parameter user: The username from the user to drop
     public func drop(user: String) throws {
         let command: Document = [
                                     "dropUser": ~user
@@ -354,33 +368,7 @@ extension Database {
         }
     }
     
-    @warn_unused_result
-    public func info(for user: String, in database: String? = nil, showCredentials: Bool? = nil, showPrivileges: Bool? = nil) throws -> Document {
-        var command: Document = [
-                                     "usersInfo": ["user": ~user, "db": ~(database ?? self.name)]
-                                     ]
-        
-        if let showCredentials = showCredentials {
-            command["showCredentials"] = ~showCredentials
-        }
-        
-        if let showPrivileges = showPrivileges {
-            command["showPrivileges"] = ~showPrivileges
-        }
-
-        let document = try firstDocument(in: try execute(command: command))
-        
-        guard document["ok"].int32 == 1 else {
-            throw MongoError.CommandFailure
-        }
-        
-        guard let users = document["users"].documentValue else {
-            throw MongoError.CommandFailure
-        }
-        
-        return users
-    }
-    
+    /// Removes all users from this database
     public func dropAllUsers() throws {
         let command: Document = [
                                     "dropAllUsersFromDatabase": .int32(1)
@@ -393,6 +381,9 @@ extension Database {
         }
     }
     
+    /// Grants roles to a user in this database
+    /// - parameter roles: The roles to grants
+    /// - parameter to: The user's username to grant the roles to
     public func grant(roles: Document, to user: String) throws {
         let command: Document = [
                                     "grantRolesToUser": ~user,
@@ -406,6 +397,7 @@ extension Database {
         }
     }
     
+    /// Drops this database and collections
     public func drop() throws {
         let command: Document = [
                                     "dropDatabase": .int32(1)
@@ -418,6 +410,12 @@ extension Database {
         }
     }
     
+    /// Creates a new collection in this database
+    /// Is used to create a collection with a cap and/or max amount of Documents
+    /// Don't use it for a normal unlimited collection. Then use `db["myCollection"]` instead to create it automatically
+    /// - parameter collection: The collection name
+    /// - parameter cappedBytes: The max amount of bytes in here
+    /// - parameter maxDocuments: The maximum amount of documents in here
     public func create(collection: String, cappedBytes capped: Int32? = nil, maxDocuments max: Int32? = nil) throws {
         var command: Document = [
                                     "create": ~collection
@@ -439,10 +437,18 @@ extension Database {
         }
     }
     
+    /// Copies this database and collections to another name
+    /// - parameter to: The new database name
+    /// - parameter as: The optional user credentials that you'll use to authenticate in the new DB
     public func copy(to database: String, as user: (user: String, nonce: String, password: String)? = nil) throws {
         try server.copy(database: self.name, to: database, as: user)
     }
     
+    /// Clones collection in the namespace from a server to this database
+    /// Optionally filters data you don't want
+    /// - parameter namespace: The remote namespace
+    /// - parameter from: The server URI you're copying from
+    /// - parameter filtering: The query you're using to filter this
     public func clone(namespace: String, from server: String, filtering filter: Query? = nil) throws {
         var command: Document = [
                                     "cloneCollection": ~namespace,
@@ -460,6 +466,32 @@ extension Database {
         }
     }
     
+    /// Clones collection in the namespace from a server to this database
+    /// Optionally filters data you don't want
+    /// - parameter namespace: The remote namespace
+    /// - parameter from: The server URI you're copying from
+    /// - parameter filtering: The document filter you're using to filter this
+    public func clone(namespace: String, from server: String, filtering filter: Document? = nil) throws {
+        var command: Document = [
+                                    "cloneCollection": ~namespace,
+                                    "from": ~server
+        ]
+        
+        if let filter = filter {
+            command["query"] = ~filter
+        }
+        
+        let document = try firstDocument(in: try execute(command: command))
+        
+        guard document["ok"].int32 == 1 else {
+            throw MongoError.CommandFailure
+        }
+    }
+    
+    /// Clones a collection in this database to another name in this database and caps it
+    /// - parameter collection: The collection to clone
+    /// - parameter to: The new name to clone it to
+    /// - parameter capped: The new cap
     public func clone(collection: Collection, to otherCollection: String, capped: Int32) throws {
         let command: Document = [
                                     "cloneCollectionAsCapped": ~collection.name,

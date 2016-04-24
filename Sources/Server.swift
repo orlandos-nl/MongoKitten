@@ -29,7 +29,7 @@ internal typealias ResponseHandler = ((reply: Message) -> Void)
 /// A server object is the core of MongoKitten. From this you can get databases which can provide you with collections from where you can do actions
 public final class Server {
     /// The authentication details that are used to connect with the MongoDB server
-    private let authDetails: (username: String, password: String)?
+    private let authDetails: (username: String, password: String, against: String)?
     
     /// The last Request we sent.. -1 if no request was sent
     internal var lastRequestID: Int32 = -1
@@ -82,10 +82,12 @@ public final class Server {
             throw MongoError.InvalidNSURL(url: url)
         }
         
-        var authentication: (username: String, password: String)? = nil
+        var authentication: (username: String, password: String, against: String)? = nil
+        
+        let path = url.path ?? "admin"
         
         if let user = url.user, pass = url.password {
-            authentication = (username: user, password: pass)
+            authentication = (username: user, password: pass, against: path)
         }
         
         #if os(Linux)
@@ -110,7 +112,7 @@ public final class Server {
     /// - parameter port: The port we'll connect on
     /// - parameter authentication: The optional authentication details we'll use when connecting to the server
     /// - parameter automatically: Connect automatically
-    public init(at host: String, port: UInt16 = 27017, using authentication: (username: String, password: String)? = nil, using tcpDriver: MongoTCP.Type = CSocket.self, automatically connecting: Bool = false) throws {
+    public init(at host: String, port: UInt16 = 27017, using authentication: (username: String, password: String, against: String)? = nil, using tcpDriver: MongoTCP.Type = CSocket.self, automatically connecting: Bool = false) throws {
         self.tcpType = tcpDriver
         self.server = (host: host, port: port)
         
@@ -322,6 +324,11 @@ public final class Server {
         return databases
     }
     
+    /// Copies a database (optionally from a remote host)
+    /// - parameter database: The database to copy
+    /// - parameter to: The other database
+    /// - parameter as: The database's credentials
+    /// - parameter at: The optional remote host to copy from
     public func copy(database: String, to otherDatabase: String, as user: (user: String, nonce: String, password: String)? = nil, at remoteHost: String? = nil, slaveOk: Bool? = nil) throws {
         var command: Document = [
                                     "copydb": .int32(1),
@@ -347,23 +354,29 @@ public final class Server {
             command["key"] = ~key
         }
 
-        let response = try firstDocument(in: try self["$cmd"].execute(command: command))
+        let reply = try self["admin"].execute(command: command)
+        let response = try firstDocument(in: reply)
 
         guard response["ok"].int32 == 1 else {
             throw MongoError.CommandFailure
         }
     }
 
+    /// Clones a database from a URL
+    /// - parameter from: The URL
     public func clone(from url: NSURL) throws {
         try clone(from: url.absoluteString)
     }
 
+    /// Clones a database from a URL
+    /// - parameter from: The URL
     public func clone(from url: String) throws {
         let command: Document = [
                                     "clone": ~url
                                     ]
 
-        let response = try firstDocument(in: try self["$cmd"].execute(command: command))
+        let reply = try self["admin"].execute(command: command)
+        let response = try firstDocument(in: reply)
         
         guard response["ok"].int32 == 1 else {
             throw MongoError.CommandFailure
@@ -386,6 +399,9 @@ public final class Server {
         }
     }
     
+    /// Flushes all pending writes serverside
+    /// - parameter async: Do we run this async?
+    /// - parameter blocking: Do we block writing in the meanwhile?
     public func fsync(async: Bool? = nil, blocking block: Bool? = nil) throws {
         var command: Document = [
                                     "fsync": .int32(1)
@@ -399,10 +415,46 @@ public final class Server {
             command["block"] = ~block
         }
         
-        let response = try firstDocument(in: try self["$cmd"].execute(command: command))
+        let reply = try self["admin"].execute(command: command)
+        let response = try firstDocument(in: reply)
         
         guard response["ok"].int32 == 1 else {
             throw MongoError.CommandFailure
         }
+    }
+
+    /// Gets the info from the user
+    /// - parameter for: The user's username
+    /// - parameter in: The database to get the user from... otherwise uses admin
+    /// - parameter showCredentials: Makes sense.. right?
+    /// - parameter showPrivileges: Makes sense.. right?
+    /// - returns: The user's information (plus optionally the credentials and privileges)
+    @warn_unused_result
+    public func info(for user: String, inDatabase database: Database? = nil, showCredentials: Bool? = nil, showPrivileges: Bool? = nil) throws -> Document {
+        var command: Document = [
+                                     "usersInfo": ["user": ~user, "db": ~(database?.name ?? "admin")]
+                                     ]
+        
+        if let showCredentials = showCredentials {
+            command["showCredentials"] = ~showCredentials
+        }
+        
+        if let showPrivileges = showPrivileges {
+            command["showPrivileges"] = ~showPrivileges
+        }
+        
+        let db = database ?? self["admin"]
+
+        let document = try firstDocument(in: try db.execute(command: command))
+        
+        guard document["ok"].int32 == 1 else {
+            throw MongoError.CommandFailure
+        }
+        
+        guard let users = document["users"].documentValue else {
+            throw MongoError.CommandFailure
+        }
+        
+        return users
     }
 }
