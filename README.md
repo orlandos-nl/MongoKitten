@@ -32,7 +32,7 @@ import PackageDescription
 let package = Package(
 	name: "MyApp",
 	dependencies: [
-		.Package(url: "https://github.com/PlanTeam/MongoKitten.git", majorVersion: 0, minor: 5)
+		.Package(url: "https://github.com/PlanTeam/MongoKitten.git", majorVersion: 0, minor: 6)
 	]
 )
 ```
@@ -43,21 +43,18 @@ Import the MongoKitten library:
 import MongoKitten
 ```
 
-Connect to your local MongoDB server:
+Connect to your local MongoDB server using an URI:
 
 ```swift
+let server: Server!
+
 do {
-	let server = try Server(at: "127.0.0.1")
+	server = try Server("mongodb://username:password@localhost:27017", automatically: true)
 
 } catch {
+    // Unable to connect
 	print("MongoDB is not available on the given host and port")
 }
-```
-
-Or an external server with an account:
-
-```swift
-let server = try Server(at: "example.com", port: 27017, using: (username: "my-user", password: "my-pass"))
 ```
 
 Select a database to use for your application:
@@ -80,7 +77,7 @@ In `MongoKitten` we use our own `BSON` library for working with MongoDB Document
 You can create a simple user document like this:
 
 ```swift
-let userDocument: Document = [
+var userDocument: Document = [
 	"username": "Joannis",
 	"password": "myPassword",
 	"age": 19,
@@ -88,40 +85,102 @@ let userDocument: Document = [
 ]
 ```
 
-If you want to embed documents or arrays you'll need the `*` prefix operator before your embedded document like this:
+If you want to embed a variable you'll need to use the `~` prefix operator.
 
 ```swift
+let niceBoolean = true
+
 let testDocument: Document = [
-	"example": "data",
-	"embeddedDocument": *[
-		"name": "Henk",
-		"male": false,
-		"age": 12,
-		"pets": *["dog", "dog", "cat", "mouse"]
-	]
+    "example": "data",
+    "userDocument": ~userDocument,
+    "niceBoolean": ~niceBoolean,
+    "embeddedDocument": [
+        "name": "Henk",
+        "male": false,
+        "age": 12,
+        "pets": ["dog", "dog", "cat", "cat"]
+    ]
 ]
 ```
+
+## Using Documents
+
+A Document is similar to a Dictionary. A document however has order and thus the position of elements doesn't change unless you tell it to.
+A Document is therefore an array and a dictionary at the same time. With the minor difference that a Document can only hold BSON's `Value`. The problem that arises it when you want to use native types from Swift like a String, Int or another Document (sub-document) and elements in there.
+We fixed this with the use of subscripts and getters.
+
+To get a value from the Document you can subscript it like this:
+
+```swift
+let username: Value = userDocument["username"]
+```
+
+Documents always return a value. When the value doesn't exist we'll return `Value.nothing`.
+If you want to get a specific value from the Document like a String we can return an optional String like this:
+
+```swift
+let username: String? = userDocument["username"].stringValue
+```
+
+However.. for an age you might want a String without receiving `nil` in a case like this:
+
+```swift
+let age: String? = userDocument["age"].stringValue
+```
+
+We made this easier by converting it for you:
+
+```swift
+let age: String = userDocument["age"].string
+```
+
+However.. if the age would normally be `.nothing` we'll now return an empty string `""` instead. So check for that!
+
+Last but not least we'll also want to assign data using a subscript. Because subscript are prone to being ambiguous we had to use enums for assignment.
+
+This would result in this:
+
+```swift
+userDocument["bool"] = .boolean(true)
+userDocument["int32"] = .int32(10)
+userDocument["int64"] = .int64(200)
+userDocument["array"] = .array(["one", 2, "three"])
+userDocument["binary"] = .binary(subtype: .generic, data: [0x00, 0x01, 0x02, 0x03, 0x04])
+userDocument["date"] = .dateTime(NSDate())
+userDocument["null"] = .null
+userDocument["string"] = .string("hello")
+userDocument["objectID"] = .objectId(try! ObjectId("507f1f77bcf86cd799439011"))
+```
+
+Of course variables can still use the `~` operator:
+
+```swift
+let trueBool = true
+userDocument["newBool"] = ~trueBool
+```
+
 
 ## Inserting Documents
 
 Using the above document you can insert the data in the collection.
 
 ```swift
-try userCollection.insert(testDocument)
+try userCollection.insert(userDocument)
 ```
 
 In the collection's insert method you can also insert a group of Documents: `[Document]`
 
 ```swift
-try userCollection.insert([testDocument, testDocument, testDocument])
+try otherCollection.insert([testDocument, testDocument, testDocument])
 ```
 
 ## Finding data
 
-To find the Documents in the collection we'll want to use `find` or `findOne` on the collection.
+To find the Documents in the collection we'll want to use `find` or `findOne` on the collection. This returns a "cursor".
+The `find` and `findOne` functions are used on a collection and don't require any parameters.
+Adding parameters, however, helps finding the data you need. By providing no arguments we're selecing all data in the collection.
 
 ```swift
-// Lists all Documents in the Collection
 let resultUsers = try userCollection.find()
 ```
 
@@ -135,16 +194,29 @@ Looping over the above results is easy:
 for userDocument in resultUsers {
 	 print(userDocument)
 	
-    if userDocument["username"]?.stringValue == "harriebob" {
+    if userDocument["username"].stringValue == "harriebob" {
         print(userDocument)
     }
 }
 ```
 
-If you do want all Documents in one array. For example when exporting all data in a collection to CSV you can use `Array()`:
+If you do want all Documents in one array you can use `Array()`.
 
 ```swift
-let allUserDocuments = Array(resultUsers)
+let otherResultUsers = try userCollection.find()
+let allUserDocuments = Array(otherResultUsers)
+```
+
+But be careful.. a cursor contains the data only once.
+
+```swift
+let depletedExample = try userCollection.find()
+
+// Contains data
+let allUserDocuments = Array(depletedExample)
+
+// Doesn't contain data
+let noUserDocuments = Array(depletedExample)
 ```
 
 ### QueryBuilder
@@ -152,7 +224,7 @@ let allUserDocuments = Array(resultUsers)
 We also have a query builder which can be easily used to create filters when searching for Documents.
 
 ```swift
-let q: Query = "username" == "harriebob" && "age" > 24
+let q: Query = "username" == "Joannis" && "age" > 18
 
 let result = try userCollection.findOne(matching: q)
 ```
@@ -160,15 +232,23 @@ let result = try userCollection.findOne(matching: q)
 Or simpler:
 
 ```swift
-let newResult = try userCollection.findOne(matching: "username" == "harriebob" && "age" > 24)
+let newResult = try userCollection.findOne(matching: "username" == "Joannis" && "age" > 18)
+```
+
+This comes in handy when looping over data:
+
+```swift
+for user in try userCollection.find(matching: "male" == true) {
+    print(user["username"].string)
+}
 ```
 
 ## Updating data
 
-Updating data is simple too:
+Updating data is simple too. There is a `multiple` argument for people who update more than one document at a time. This example only updates the first match:
 
 ```swift
-try userCollection.update(matching: ["username": "bob"], to: ["username": "anotherbob"])
+try userCollection.update(matching: ["username": "Joannis"], to: ["username": "Robbert"])
 ```
 
 ## Deleting data
@@ -177,10 +257,7 @@ Deleting is possible using a document and a query
 
 ```swift
 // Delete using a document
-try userCollection.remove(matching: ["username": "klaas"])
-
-// Delete using a query:
-try userCollection.remove(matching: "age" >= 24)
+try userCollection.remove(matching: ["username": "Robbert"])
 ```
 
 ## GridFS

@@ -35,4 +35,94 @@ class SetupTests: XCTestCase {
         
         XCTAssertEqual(distinct.count, 51)
     }
+    
+    func testExample() {
+        let server: Server!
+        
+        do {
+            server = try! Server("mongodb://username:password@localhost:27017", automatically: true)
+            
+        } catch {
+            XCTFail()
+        }
+        
+        let database = server["mongokitten-unittest-mydatabase"]
+        let userCollection = database["users"]
+        let otherCollection = database["otherdata"]
+        
+        var userDocument: Document = [
+                                         "username": "Joannis",
+                                         "password": "myPassword",
+                                         "age": 19,
+                                         "male": true
+                                         ]
+        
+        let niceBoolean = true
+        
+        let niceBoolean = true
+        
+        let testDocument: Document = [
+                                         "example": "data",
+                                         "userDocument": ~userDocument,
+                                         "niceBoolean": ~niceBoolean,
+                                         "embeddedDocument": [
+                                                                 "name": "Henk",
+                                                                 "male": false,
+                                                                 "age": 12,
+                                                                 "pets": ["dog", "dog", "cat", "cat"]
+            ]
+        ]
+        
+        _ = userDocument["username"]
+        _ = userDocument["username"].stringValue
+        _ = userDocument["age"].stringValue
+        _ = userDocument["age"].string
+        
+        userDocument["bool"] = .boolean(true)
+        userDocument["int32"] = .int32(10)
+        userDocument["int64"] = .int64(200)
+        userDocument["array"] = .array(["one", 2, "three"])
+        userDocument["binary"] = .binary(subtype: .generic, data: [0x00, 0x01, 0x02, 0x03, 0x04])
+        userDocument["date"] = .dateTime(NSDate())
+        userDocument["null"] = .null
+        userDocument["string"] = .string("hello")
+        userDocument["objectID"] = .objectId(try! ObjectId("507f1f77bcf86cd799439011"))
+        
+        let trueBool = true
+        userDocument["newBool"] = ~trueBool
+        
+        _ = try! userCollection.insert(userDocument)
+        _ = try! otherCollection.insert([testDocument, testDocument, testDocument])
+        
+        let resultUsers = try! userCollection.find()
+        
+        for userDocument in resultUsers {
+            print(userDocument)
+            
+            if userDocument["username"].stringValue == "harriebob" {
+                print(userDocument)
+            }
+        }
+        
+        let otherResultUsers = try! userCollection.find()
+        _ = Array(otherResultUsers)
+        
+        let depletedExample = try! userCollection.find()
+        
+        // Contains data
+        _ = Array(depletedExample)
+        
+        // Doesn't contain data
+        _ = Array(depletedExample)
+        
+        let q: Query = "username" == "Joannis" && "age" > 18
+        
+        _ = try! userCollection.findOne(matching: q)
+        
+        for user in try! userCollection.find(matching: "male" == true) {
+            print(user["username"].string)
+        }
+    }
+    
+    //try! database.drop()
 }
