@@ -110,7 +110,7 @@ class CollectionTests: XCTestCase {
         
         let query: Query = ("username" == "henk" || "username" == "bob") && "age" > 24 && "kittens" >= 2 && "kittens" != 3 && "dogs" <= 1 && "beers" < 100
         
-        try! TestManager.wcol.update(matching: query, to: ["testieBool": true], multiple: true)
+        try! TestManager.wcol.update(matching: query, to: ["testieBool": true])
         
         try! TestManager.server.fsync()
         
