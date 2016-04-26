@@ -33,6 +33,19 @@ import PackageDescription
 let package = Package(
 	name: "MyApp",
 	dependencies: [
+		.Package(url: "https://github.com/PlanTeam/MongoKitten.git", majorVersion: 0, minor: 8)
+	]
+)
+```
+
+Or for Swift 04-12 users:
+
+```swift
+import PackageDescription
+
+let package = Package(
+	name: "MyApp",
+	dependencies: [
 		.Package(url: "https://github.com/PlanTeam/MongoKitten.git", majorVersion: 0, minor: 7)
 	]
 )
