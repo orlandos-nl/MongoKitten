@@ -37,14 +37,7 @@ class SetupTests: XCTestCase {
     }
     
     func testExample() {
-        let server: Server!
-        
-        do {
-            server = try! Server("mongodb://username:password@localhost:27017", automatically: true)
-            
-        } catch {
-            XCTFail()
-        }
+        let server = try! Server("mongodb://username:password@localhost:27017", automatically: true)
         
         let database = server["mongokitten-unittest-mydatabase"]
         let userCollection = database["users"]
@@ -56,8 +49,6 @@ class SetupTests: XCTestCase {
                                          "age": 19,
                                          "male": true
                                          ]
-        
-        let niceBoolean = true
         
         let niceBoolean = true
         
