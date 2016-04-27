@@ -90,7 +90,11 @@ public final class Server {
             authentication = (username: user, password: pass, against: path)
         }
         
-        let port: UInt16 = UInt16(url.port?.int16Value ?? 27017)
+        #if os(Linux)
+            let port: UInt16 = UInt16(url.port?.shortValue ?? 27017)
+        #else
+            let port: UInt16 = UInt16(url.port?.int16Value ?? 27017)
+        #endif
         
         try self.init(at: host, port: port, using: authentication, automatically: connecting, using: tcpDriver)
     }
@@ -255,9 +259,15 @@ public final class Server {
         condition.lock()
         waitingForResponses[requestId] = condition
         
-        if condition.wait(until: NSDate(timeIntervalSinceNow: timeout)) == false {
-            throw MongoError.Timeout
-        }
+        #if os(Linux)
+            if condition.waitUntilDate(NSDate(timeIntervalSinceNow: timeout)) == false {
+                throw MongoError.Timeout
+            }
+        #else
+            if condition.wait(until: NSDate(timeIntervalSinceNow: timeout)) == false {
+                throw MongoError.Timeout
+            }
+        #endif
         
         condition.unlock()
         

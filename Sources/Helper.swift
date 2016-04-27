@@ -19,5 +19,9 @@ internal postfix func * (slice: ArraySlice<Byte>) -> [Byte] {
 /// Because "having a single cross-platform API for a programming language is stupid"
 /// TODO: Remove/update with the next Swift version
 internal func replaceOccurrences(in string: String, where matching: String, with replacement: String) -> String {
-    return string.replacingOccurrences(of: matching, with: replacement)
+    #if os(Linux)
+        return string.stringByReplacingOccurrencesOfString(matching, withString: replacement)
+    #else
+        return string.replacingOccurrences(of: matching, with: replacement)
+    #endif
 }
