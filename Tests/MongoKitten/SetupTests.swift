@@ -37,7 +37,7 @@ class SetupTests: XCTestCase {
     }
     
     func testExample() {
-        let server = try! Server("mongodb://username:password@localhost:27017", automatically: true)
+        let server = try! Server("mongodb://localhost:27017", automatically: true)
         
         let database = server["mongokitten-unittest-mydatabase"]
         let userCollection = database["users"]
