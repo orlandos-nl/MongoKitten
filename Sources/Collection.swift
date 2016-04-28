@@ -41,7 +41,6 @@ public final class Collection {
     /// Insert a single document in this collection and adds a BSON ObjectId if none is present
     /// - parameter document: The BSON Document to be inserted
     /// - returns: The inserted document. The document will have a value for the "_id"-field.
-    @warn_unused_result
     public func insert(_ document: Document) throws -> Document {
         let result = try self.insert([document])
         
@@ -58,7 +57,6 @@ public final class Collection {
     /// - parameter ordered: On true we'll stop inserting when one document fails. On false we'll ignore failed inserts
     /// - parameter timeout: A custom timeout. The default timeout is 60 seconds + 1 second for every 50 documents, so when inserting 5000 documents at once, the timeout is 560 seconds.
     /// - returns: The documents with their (if applicable) updated ObjectIds
-    @warn_unused_result
     public func insert(_ documents: [Document], stoppingOnError ordered: Bool? = nil, timeout customTimeout: NSTimeInterval? = nil) throws -> [Document] {
         let timeout: NSTimeInterval
         if let customTimeout = customTimeout {
@@ -547,17 +545,15 @@ public final class Collection {
         guard let wireVersion = database.server.serverData?.maxWireVersion where wireVersion > 2 else {
             throw MongoError.UnsupportedOperations
         }
-        
-        var indexesDoc: Document = []
-        
+
+        var indexDocs = [Value]()
+
         for index in indexes {
             var keys: Document = []
             
             for key in index.keys {
                 keys[key.key] = key.ascending ? .int32(1) : .int32(-1)
             }
-            
-            keys.enforceArray()
             
             var indexDocument: Document = [
                                               "key": .array(keys),
@@ -576,12 +572,12 @@ public final class Collection {
                 indexDocument["unique"] = .boolean(true)
             }
             
-            indexesDoc += indexDocument
+            indexDocs.append(~indexDocument)
         }
         
-        indexesDoc.enforceArray()
         
-        try database.execute(command: ["createIndexes": .string(self.name), "indexes": .document(indexesDoc)])
+        try database.execute(command: ["createIndexes": .string(self.name), "indexes": .array(Document(array: indexDocs))])
+        
     }
     
     /// Remove the index specified
