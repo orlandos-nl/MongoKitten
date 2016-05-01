@@ -38,6 +38,7 @@ public final class Server {
     internal var fullBuffer = [Byte]()
     
     /// A cache for incoming responses
+    private var incomingMutateLock = NSLock()
     private var incomingResponses = [(id: Int32, message: Message, date: NSDate)]()
     
     /// Contains a map from an ID to a handler. The handlers handle the `incomingResponses`
@@ -243,7 +244,9 @@ public final class Server {
                 let responseId = try Int32.instantiate(bsonData: fullBuffer[8...11]*)
                 let reply = try Message.makeReply(from: responseData)
                 
+                incomingMutateLock.lock()
                 incomingResponses.append((responseId, reply, NSDate()))
+                incomingMutateLock.unlock()
                 
                 fullBuffer.removeSubrange(0..<length)
             }
@@ -270,6 +273,11 @@ public final class Server {
         #endif
         
         condition.unlock()
+        
+        incomingMutateLock.lock()
+        defer {
+            incomingMutateLock.unlock()
+        }
         
         let i = incomingResponses.index(where: { $0.id == requestId })
         
