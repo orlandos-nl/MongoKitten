@@ -140,11 +140,6 @@ extension Database {
             throw MongoAuthenticationError.IncorrectCredentials
         }
         
-        // If we're done
-        if response["done"].bool == true {
-            return
-        }
-        
         guard let stringResponse = response["payload"].stringValue else {
             throw MongoAuthenticationError.AuthenticationFailure
         }
@@ -179,6 +174,11 @@ extension Database {
         guard case .Reply(_, _, _, _, _, _, let documents) = response, let responseDocument = documents.first else {
             throw InternalMongoError.IncorrectReply(reply: response)
         }
+
+        // If we're done
+        if responseDocument["done"].bool == true {
+            return
+        }
         
         try self.complete(SASL: payload, using: responseDocument, verifying: serverSignature)
     }
@@ -189,11 +189,6 @@ extension Database {
         // If we failed the authentication
         guard previousInformation.response["ok"].int32 == 1 else {
             throw MongoAuthenticationError.IncorrectCredentials
-        }
-        
-        // If we're done
-        if previousInformation.response["done"].bool == true {
-            return
         }
         
         // Get our ConversationID
