@@ -140,11 +140,6 @@ extension Database {
             throw MongoAuthenticationError.IncorrectCredentials
         }
         
-        // If we're done
-        if response["done"].bool == true {
-            return
-        }
-        
         guard let stringResponse = response["payload"].stringValue else {
             throw MongoAuthenticationError.AuthenticationFailure
         }
@@ -189,11 +184,6 @@ extension Database {
         // If we failed the authentication
         guard previousInformation.response["ok"].int32 == 1 else {
             throw MongoAuthenticationError.IncorrectCredentials
-        }
-        
-        // If we're done
-        if previousInformation.response["done"].bool == true {
-            return
         }
         
         // Get our ConversationID
@@ -483,6 +473,11 @@ extension Database {
         
         let document = try firstDocument(in: try execute(command: command))
         
+        // If we're done
+        if document["done"].bool == true {
+            return
+        }
+
         guard document["ok"].int32 == 1 else {
             throw MongoError.CommandFailure
         }
