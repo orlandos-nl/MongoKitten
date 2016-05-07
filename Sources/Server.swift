@@ -73,11 +73,7 @@ public final class Server {
     //    }
     
     public convenience init(_ url: NSURL, using tcpDriver: MongoTCP.Type = CSocket.self, automatically connecting: Bool = true) throws {
-        #if os(Linux)
-            let scheme = url.scheme ?? ""
-        #else
             let scheme = url.scheme
-        #endif
         
         guard scheme.lowercased() == "mongodb", let host = url.host else {
             throw MongoError.InvalidNSURL(url: url)
@@ -91,11 +87,7 @@ public final class Server {
             authentication = (username: user, password: pass, against: path)
         }
         
-        #if os(Linux)
-            let port: UInt16 = UInt16(url.port?.shortValue ?? 27017)
-        #else
-            let port: UInt16 = UInt16(url.port?.int16Value ?? 27017)
-        #endif
+        let port: UInt16 = UInt16(url.port?.int16Value ?? 27017)
         
         try self.init(at: host, port: port, using: authentication, automatically: connecting, using: tcpDriver)
     }
@@ -262,15 +254,9 @@ public final class Server {
         condition.lock()
         waitingForResponses[requestId] = condition
         
-        #if os(Linux)
-            if condition.waitUntilDate(NSDate(timeIntervalSinceNow: timeout)) == false {
-                throw MongoError.Timeout
-            }
-        #else
-            if condition.wait(until: NSDate(timeIntervalSinceNow: timeout)) == false {
-                throw MongoError.Timeout
-            }
-        #endif
+        if condition.wait(until: NSDate(timeIntervalSinceNow: timeout)) == false {
+            throw MongoError.Timeout
+        }
         
         condition.unlock()
         
@@ -357,8 +343,8 @@ public final class Server {
             command["username"] = ~user.user
             command["nonce"] = ~user.nonce
             
-            let passHash = "\(user.user):mongo:\(user.password)".md5().hexString
-            let key = "\(user.nonce)\(user.user)\(passHash))".md5().hexString
+            let passHash = MD5.calculate("\(user.user):mongo:\(user.password)").hexString
+            let key = MD5.calculate("\(user.nonce)\(user.user)\(passHash))").hexString
             command["key"] = ~key
         }
 

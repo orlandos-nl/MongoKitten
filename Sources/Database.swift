@@ -109,7 +109,7 @@ extension Database {
                 randomNumber = Int(arc4random_uniform(UInt32(allowedCharacters.characters.count)))
             #endif
             
-            let letter = allowedCharacters[allowedCharacters.startIndex.advanced(by: randomNumber)]
+            let letter = allowedCharacters[allowedCharacters.index(allowedCharacters.startIndex, offsetBy: randomNumber)]
             
             randomString.append(letter)
         }
@@ -125,7 +125,7 @@ extension Database {
             let part = String(part)
             
             if let first = part.characters.first {
-                parsedResponse[String(first)] = part[part.startIndex.advanced(by: 2)..<part.endIndex]
+                parsedResponse[String(first)] = part[part.index(part.startIndex, offsetBy: 2)..<part.endIndex]
             }
         }
         
