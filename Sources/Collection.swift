@@ -576,8 +576,11 @@ public final class Collection {
         }
         
         
-        try database.execute(command: ["createIndexes": .string(self.name), "indexes": .array(Document(array: indexDocs))])
+        let document = try firstDocument(in: try database.execute(command: ["createIndexes": .string(self.name), "indexes": .array(Document(array: indexDocs))]))
         
+        guard document["ok"].int32 == 1 else {
+            throw MongoError.CommandFailure
+        }
     }
     
     /// Remove the index specified
