@@ -407,24 +407,24 @@ extension Database {
         }
     }
     
-    /// Creates a new collection in this database
-    /// Is used to create a collection with a cap and/or max amount of Documents
-    /// Don't use it for a normal unlimited collection. Then use `db["myCollection"]` instead to create it automatically
-    /// - parameter collection: The collection name
-    /// - parameter cappedBytes: The max amount of bytes in here
-    /// - parameter maxDocuments: The maximum amount of documents in here
-    public func create(collection: String, cappedBytes capped: Int32? = nil, maxDocuments max: Int32? = nil) throws {
-        var command: Document = [
-                                    "create": ~collection
-                                    ]
-
-        if let capped = capped {
-            command["capped"] = true
-            command["size"] = ~capped
-        }
+    /// Creates a new collection explicitly.
+    ///
+    /// Because MongoDB creates a collection implicitly when the collection is first referenced in a
+    /// command, this method is used primarily for creating new collections that use specific
+    /// options. For example, you use `createCollection()` to create a capped collection, or to
+    /// create a new collection that uses document validation. `createCollection()` is also used to
+    /// pre-allocate space for an ordinary collection.
+    ///
+    /// DbCommand reference: https://docs.mongodb.com/manual/reference/command/create/
+    ///
+    /// - parameter name: The name of the collection to create.
+    /// - parameter options: Optionally, configuration options for creating this collection.
+    ///   See https://docs.mongodb.com/manual/reference/method/db.createCollection/ for a list of valid options.
+    public func createCollection(_ name: String, options: Document? = nil) throws {
+        var command: Document = ["create": ~name]
         
-        if let max = max {
-            command["max"] = ~max
+        if let options = options {
+            command += options
         }
         
         let document = try firstDocument(in: try execute(command: command))
