@@ -9,11 +9,10 @@
 import Foundation
 import BSON
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-// This file contains the low level code. This code is synchronous and is used by the async client API. //
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/// A Mongo Collection. Cannot be publically initialized. But you can get a collection object by subscripting a Database with a String
+/// Represents a single MongoDB collection.
+///
+/// ### Definition ###
+/// A grouping of MongoDB documents. A collection is the equivalent of an RDBMS table. A collection exists within a single database. Collections do not enforce a schema. Documents within a collection can have different fields. Typically, all documents in a collection have a similar or related purpose. See Namespaces.
 public final class Collection {
     public typealias Callback = (query: AQTQuery, failure: CallbackFailure , callback: (Document) throws -> ())
     
@@ -52,7 +51,12 @@ public final class Collection {
         case delete
     }
     
-    /// Callback storage
+    /// Registers a trigger for the given operation.
+    ///
+    /// - parameter op: The operation (insert, find, update or delete) to register for.
+    /// - parameter query: The query to filter operations on.
+    /// - parameter failure: Describes how errors thrown from the trigger callback will be handled.
+    /// - parameter callback: The method that will be called for this trigger. 
     public func on(_ op: Operation, matching query: AQTQuery, onFailure failure: CallbackFailure = .throw, callback: (Document) throws -> ()) {
         if callbacks[op] == nil {
             callbacks[op] = []
@@ -73,7 +77,7 @@ public final class Collection {
                             throw error
                         case .callback(let failure):
                             failure(d, callback.query)
-                        default:
+                        case .nothing:
                             continue
                         }
                     }
@@ -86,9 +90,10 @@ public final class Collection {
     
     // Create
     
-    /// Insert a single document in this collection and adds a BSON ObjectId if none is present
+    /// Insert a single document in this collection.
+    ///
     /// - parameter document: The BSON Document to be inserted
-    /// - returns: The inserted document. The document will have a value for the "_id"-field.
+    /// - returns: The inserted document
     public func insert(_ document: Document) throws -> Document {
         let result = try self.insert([document])
         

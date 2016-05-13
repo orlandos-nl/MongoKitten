@@ -6,3 +6,4 @@ swift_version: 2.2
 xcodebuild_arguments:
   - "-scheme"
   - "MongoKitten"
+dash_url: http://planteam.github.io/MongoKitten/MongoKitten.xml
