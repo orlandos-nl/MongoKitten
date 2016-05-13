@@ -26,7 +26,8 @@ import MD5
 /// It's internal because ReplyMessages are an internal struct that is used for direct communication with MongoDB only
 internal typealias ResponseHandler = ((reply: Message) -> Void)
 
-/// A server object is the core of MongoKitten. From this you can get databases which can provide you with collections from where you can do actions
+/// A server object is the core of MongoKitten as it's used to communicate to the server.
+/// You can select a `Database` by subscripting an instance of this Server with a `String`.
 public final class Server {
     /// The authentication details that are used to connect with the MongoDB server
     private let authDetails: (username: String, password: String, against: String)?
@@ -46,7 +47,7 @@ public final class Server {
     
     private var waitingForResponses = [Int32:NSCondition]()
     
-    /// TCP Socket bound to the MongoDB Server
+    /// `MongoTCP` Socket bound to the MongoDB Server
     private var client: MongoTCP?
     public let tcpType: MongoTCP.Type
     
@@ -58,20 +59,17 @@ public final class Server {
     
     internal private(set) var serverData: (maxWriteBatchSize: Int32, maxWireVersion: Int32, minWireVersion: Int32, maxMessageSizeBytes: Int32)?
     
-    // Initializes a MongoDB Client instance on a given connection
-    // - parameter client: The Stream Client connected to the MongoDB Serer
-    // - parameter authentication: The optional Login Credentials for the account on the server
-    // - parameter autoConnect: Whether we automatically connect
-    //    public init(_ client: StreamClient, using authentication: (username: String, password: String)? = nil, automatically connecting: Bool = false) throws {
-    //        self.client = client
-    //
-    //        self.authDetails = authentication
-    //
-    //        if connecting {
-    //            try self.connect()
-    //        }
-    //    }
-    
+    /// Sets up the `Server` to connect to the specified URL.
+    /// The `mongodb://` scheme is required as well as the host. Optionally youc an provide ausername + password. And if no port is specified `27017` is used.
+    /// You can provide an alternative TCP Driver that complies to `MongoTCP`.
+    /// This Server doesn't connect automatically. You need to either use the `connect` function yourself or specify the `automatically` parameter to be true.
+    ///
+    /// - parameter url: The MongoDB connection String.
+    /// - parameter tcpDriver: The TCP Driver to be used to connect to the server. Recommended to change to an SSL supporting socket when connnecting over the public internet.
+    ///
+    /// - throws: When we can't connect automatically, when the scheme/host is invalid and when we can't connect automatically
+    ///
+    /// - parameter automatically: Whether to connect automatically
     public convenience init(_ url: NSURL, using tcpDriver: MongoTCP.Type = CSocket.self, automatically connecting: Bool = true) throws {
         #if os(Linux)
             let scheme = url.scheme ?? ""
@@ -96,6 +94,16 @@ public final class Server {
         try self.init(at: host, port: port, using: authentication, automatically: connecting, using: tcpDriver)
     }
     
+    /// Sets up the `Server` to connect to the specified URL.
+    /// The `mongodb://` scheme is required as well as the host. Optionally youc an provide ausername + password. And if no port is specified "27017" is used.
+    /// You can provide an alternative TCP Driver that complies to `MongoTCP`.
+    /// This Server doesn't connect automatically. You need to either use the `connect` function yourself or specify the `automatically` parameter to be true.
+    ///
+    /// - parameter url: The MongoDB connection String.
+    /// - parameter using: The TCP Driver to be used to connect to the server. Recommended to change to an SSL supporting socket when connnecting over the public internet.
+    /// - parameter automatically: Whether to connect automatically
+    ///
+    /// - throws: Throws when we can't connect automatically, when the scheme/host is invalid and when we can't connect automatically
     public convenience init(_ uri: String, using tcpDriver: MongoTCP.Type = CSocket.self, automatically connecting: Bool = true) throws {
         guard let url = NSURL(string: uri) else {
             throw MongoError.InvalidURI(uri: uri)
@@ -104,11 +112,14 @@ public final class Server {
         try self.init(url, using: tcpDriver, automatically: connecting)
     }
     
-    /// Initializes a MongoDB Client Instance on a given port with a given host
-    /// - parameter at: The host we'll connect to
-    /// - parameter port: The port we'll connect on
+    /// Sets up the `Server` to connect to the specified location.`Server`
+    /// You need to provide a host as IP address or as a hostname recognized by the client's DNS.
+    /// - parameter at: The hostname/IP address of the MongoDB server
+    /// - parameter port: The port we'll connect on. Defaults to 27017
     /// - parameter authentication: The optional authentication details we'll use when connecting to the server
     /// - parameter automatically: Connect automatically
+    ///
+    /// - throws: When we can’t connect automatically, when the scheme/host is invalid and when we can’t connect automatically
     public init(at host: String, port: UInt16 = 27017, using authentication: (username: String, password: String, against: String)? = nil, using tcpDriver: MongoTCP.Type = CSocket.self, automatically connecting: Bool = false) throws {
         self.tcpType = tcpDriver
         self.server = (host: host, port: port)
@@ -120,8 +131,10 @@ public final class Server {
         }
     }
     
-    /// This subscript returns a Database struct given a String
+    /// Returns a `Database` instance referring to the database with the provided database name
+    ///
     /// - parameter database: The database's name
+    ///
     /// - returns: A database instance for the requested database
     public subscript (database: String) -> Database {
         let database = replaceOccurrences(in: database, where: ".", with: "")
@@ -162,22 +175,28 @@ public final class Server {
         return db
     }
     
-    /// Generates a messageID for the next Message
+    /// Generates a messageID for the next Message to be sent to the server
+    ///
     /// - returns: The newly created ID for your message
     internal func nextMessageID() -> Int32 {
         lastRequestID += 1
         return lastRequestID
     }
     
+    /// Are we currently connected?
     public private(set) var isConnected = false
     
     /// Connects with the MongoDB Server using the given information in the initializer
+    ///
+    /// - throws: Unable to connect
     public func connect() throws {
         self.client = try tcpType.open(address: server.host, port: server.port)
         try Background(function: backgroundLoop)
         isConnected = true
     }
     
+    /// Receives response messages from the server and gives them to the callback closure
+    /// After handling the response with the closure it removes the closure
     private func backgroundLoop() {
         do {
             try self.receive()
@@ -207,6 +226,8 @@ public final class Server {
     }
     
     /// Disconnects from the MongoDB server
+    ///
+    /// - throws: Unable to disconnect
     public func disconnect() throws {
         try client?.close()
         
@@ -215,7 +236,10 @@ public final class Server {
     }
     
     /// Called by the server thread to handle MongoDB Wire messages
+    ///
     /// - parameter bufferSize: The amount of bytes to fetch at a time
+    ///
+    /// - throws: Unable to receive or parse the reply
     private func receive(bufferSize: Int = 1024) throws {
         guard let client = client else {
             throw MongoError.NotConnected
@@ -249,9 +273,14 @@ public final class Server {
         }
     }
     
-    /// Awaits until a set amount of time for response of the server
+    /// Waits until the server responded to the request with the provided ID.
+    /// Waits until the timeout is reached and throws if this is the case.
+    ///
     /// - parameter response: The response's ID that we're awaiting a reply for
     /// - parameter until: Until when we'll wait for a response
+    ///
+    /// - throws: Timeout reached or an internal MongoKitten error occured. In the second case, please file a ticket
+    ///
     /// - returns: The reply
     internal func await(response requestId: Int32, until timeout: NSTimeInterval = 60) throws -> Message {
         let condition = NSCondition()
@@ -285,9 +314,13 @@ public final class Server {
         throw MongoError.InternalInconsistency
     }
     
-    /// Sends a message's data to the server
+    /// Sends a message to the server
+    ///
     /// - parameter message: The message we're sending
-    /// - returns: The RequestID for this message
+    ///
+    /// - throws: Unable to send the message over the socket
+    ///
+    /// - returns: The RequestID for this message that can be used to fetch the response
     internal func send(message: Message) throws -> Int32 {
         guard let client = client else {
             throw MongoError.NotConnected
@@ -300,7 +333,11 @@ public final class Server {
         return message.requestID
     }
     
-    /// Provides a list of all existing databases along with basic statistics about them.
+    /// Provides a list of all existing databases along with basic statistics about them
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/listDatabases/#dbcmd.listDatabases
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func getDatabaseInfos() throws -> Document {
         let request: Document = ["listDatabases": 1]
         
@@ -310,16 +347,20 @@ public final class Server {
     }
     
     /// Returns all existing databases on this server. **Requires access to the `admin` database**
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    ///
+    /// - returns: All databases
     public func getDatabases() throws -> [Database] {
         let infos = try getDatabaseInfos()
         guard let databaseInfos = infos["databases"].documentValue else {
-            throw MongoError.CommandFailure
+            throw MongoError.CommandFailure // TODO: Make this more specific
         }
         
         var databases = [Database]()
         for case (_, let dbDef) in databaseInfos where dbDef.documentValue != nil {
             guard let name = dbDef["name"].stringValue else {
-                throw MongoError.CommandFailure
+                throw MongoError.CommandFailure // TODO: Make this more specific
             }
             
             databases.append(self[name])
@@ -328,11 +369,16 @@ public final class Server {
         return databases
     }
     
-    /// Copies a database (optionally from a remote host)
+    /// Copies a database either from one mongod instance to the current mongod instance or within the current mongod
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/copydb/#dbcmd.copydb
+    ///
     /// - parameter database: The database to copy
-    /// - parameter to: The other database
-    /// - parameter as: The database's credentials
-    /// - parameter at: The optional remote host to copy from
+    /// - parameter otherDatabase: The other database
+    /// - parameter user: The database's credentials
+    /// - parameter remoteHost: The optional remote host to copy from
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func copy(database: String, to otherDatabase: String, as user: (user: String, nonce: String, password: String)? = nil, at remoteHost: String? = nil, slaveOk: Bool? = nil) throws {
         var command: Document = [
                                     "copydb": .int32(1),
@@ -362,18 +408,28 @@ public final class Server {
         let response = try firstDocument(in: reply)
 
         guard response["ok"].int32 == 1 else {
-            throw MongoError.CommandFailure
+            throw MongoError.CommandFailure // TODO: Make this more specific
         }
     }
 
-    /// Clones a database from a URL
-    /// - parameter from: The URL
+    /// Clones a database from the specified MongoDB Connection URI
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/shutdown/#dbcmd.clone
+    ///
+    /// - parameter url: The URL
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func clone(from url: NSURL) throws {
         try clone(from: url.absoluteString)
     }
 
-    /// Clones a database from a URL
-    /// - parameter from: The URL
+    /// Clones a database from the specified MongoDB Connection URI
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/clone/#dbcmd.clone
+    ///
+    /// - parameter url: The URL
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func clone(from url: String) throws {
         let command: Document = [
                                     "clone": ~url
@@ -383,10 +439,17 @@ public final class Server {
         let response = try firstDocument(in: reply)
         
         guard response["ok"].int32 == 1 else {
-            throw MongoError.CommandFailure
+            throw MongoError.CommandFailure // TODO: Make this more specific
         }
     }
     
+    /// Shuts down the MongoDB server
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/shutdown/#dbcmd.shutdown
+    ///
+    /// - parameter force: Force the s
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func shutdown(forced force: Bool? = nil) throws {
         var command: Document = [
                                     "shutdown": .int32(1)
@@ -399,13 +462,16 @@ public final class Server {
         let response = try firstDocument(in: try self["$cmd"].execute(command: command))
         
         guard response["ok"].int32 == 1 else {
-            throw MongoError.CommandFailure
+            throw MongoError.CommandFailure // TODO: Make this more specific
         }
     }
     
     /// Flushes all pending writes serverside
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/fsync/#dbcmd.fsync
+    ///
     /// - parameter async: Do we run this async?
-    /// - parameter blocking: Do we block writing in the meanwhile?
+    /// - parameter block: Do we block writing in the meanwhile?
     public func fsync(async: Bool? = nil, blocking block: Bool? = nil) throws {
         var command: Document = [
                                     "fsync": .int32(1)
@@ -423,15 +489,21 @@ public final class Server {
         let response = try firstDocument(in: reply)
         
         guard response["ok"].int32 == 1 else {
-            throw MongoError.CommandFailure
+            throw MongoError.CommandFailure // TODO: Make this more specific
         }
     }
 
     /// Gets the info from the user
-    /// - parameter for: The user's username
-    /// - parameter in: The database to get the user from... otherwise uses admin
-    /// - parameter showCredentials: Makes sense.. right?
-    /// - parameter showPrivileges: Makes sense.. right?
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/usersInfo/#dbcmd.usersInfo
+    ///
+    /// - parameter user: The user's username
+    /// - parameter database: The database to get the user from... otherwise uses admin
+    /// - parameter showCredentials: Do you want to fetch the user's credentials
+    /// - parameter showPrivileges: Do you want to fetch the user's privileges
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    ///
     /// - returns: The user's information (plus optionally the credentials and privileges)
     @warn_unused_result
     public func info(for user: String, inDatabase database: Database? = nil, showCredentials: Bool? = nil, showPrivileges: Bool? = nil) throws -> Document {
@@ -452,11 +524,11 @@ public final class Server {
         let document = try firstDocument(in: try db.execute(command: command))
         
         guard document["ok"].int32 == 1 else {
-            throw MongoError.CommandFailure
+            throw MongoError.CommandFailure // TODO: Make this more specific
         }
         
         guard let users = document["users"].documentValue else {
-            throw MongoError.CommandFailure
+            throw MongoError.CommandFailure // TODO: Make this more specific
         }
         
         return users
