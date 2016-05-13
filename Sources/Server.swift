@@ -91,11 +91,7 @@ public final class Server {
             authentication = (username: user, password: pass, against: path)
         }
         
-        #if os(Linux)
-            let port: UInt16 = UInt16(url.port?.shortValue ?? 27017)
-        #else
-            let port: UInt16 = UInt16(url.port?.int16Value ?? 27017)
-        #endif
+        let port: UInt16 = UInt16(url.port?.int16Value ?? 27017)
         
         try self.init(at: host, port: port, using: authentication, automatically: connecting, using: tcpDriver)
     }
