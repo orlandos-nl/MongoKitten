@@ -6,12 +6,20 @@
 
 Native MongoDB driver for Swift, written in Swift. This library does not wrap around the mongoc driver. It uses:
 
-- [Hummingbird](https://github.com/qutheory/Hummingbird) for TCP connections
+- [Strand](https://github.com/qutheory/Strand) for fetching server responses without blocking the thread
 - Our own [BSON](https://github.com/PlanTeam/BSON) library, which is also 100% native Swift
+- Our own [MD5](https://github.com/PlanTeam/MD5), [SHA1](https://github.com/PlanTeam/SHA1) and [SCRAM](https://github.com/PlanTeam/SCRAM) libraries in 100% Swift
+
+## Documentation
+
+This can be found [here](http://planteam.github.io/MongoKitten/docs/).
+
+We have our own Dash documentation for MongoKitten which can be found at the above link in the top-right corner.
 
 ## Requirements
 
-- A mongoDB server
+- A MongoDB server
+- Some basic knowledge of MongoDB or time to research about MongoDB
 - The swift version described in `.swift-version`, see [swiftenv](http://swiftenv.fuller.li/en/latest/).
 
 We don't support any other version of swift with the constantly changing syntax. This required swift version changes constantly with newer versions of `MongoKitten` and it's recommended to pin down the version in SPM.
@@ -33,23 +41,18 @@ import PackageDescription
 let package = Package(
 	name: "MyApp",
 	dependencies: [
-		.Package(url: "https://github.com/PlanTeam/MongoKitten.git", majorVersion: 0, minor: 8)
+		.Package(url: "https://github.com/PlanTeam/MongoKitten.git", majorVersion: 0, minor: 10)
 	]
 )
 ```
 
-Or for Swift 04-12 users:
+This is for Swift 3 snapshot 05-09.
 
-```swift
-import PackageDescription
+For Swift 05-03 we have MongoKitten's minor `9`.. for 04-25 we have MongoKitten minor `8`. ANd for 04-12 we have MongoKitten minor `7`.
 
-let package = Package(
-	name: "MyApp",
-	dependencies: [
-		.Package(url: "https://github.com/PlanTeam/MongoKitten.git", majorVersion: 0, minor: 7)
-	]
-)
-```
+Older versions miss features. And most newer minor versions break at least a part of the API. The Documentation belongs to the latest MongoKitten version.
+
+## Basic usage
 
 Import the MongoKitten library:
 
