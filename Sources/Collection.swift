@@ -15,11 +15,16 @@ import BSON
 
 /// A Mongo Collection. Cannot be publically initialized. But you can get a collection object by subscripting a Database with a String
 public final class Collection {
+    public typealias Callback = (query: AQTQuery, failure: CallbackFailure , callback: (Document) throws -> ())
+    
     /// The Database this collection is in
     public private(set) var database: Database
     
     /// The collection name
     public private(set) var name: String
+    
+    /// Callback storage
+    public private(set) var callbacks = [Operation: [Callback]]()
     
     /// The full (computed) collection name. Created by adding the Database's name with the Collection's name with a dot to seperate them
     /// Will be empty
@@ -32,6 +37,49 @@ public final class Collection {
     internal init(named name: String, in database: Database) {
         self.database = database
         self.name = name
+    }
+    
+    public enum CallbackFailure {
+        case nothing
+        case `throw`
+        case callback((Document, Query) -> ())
+    }
+    
+    public enum Operation {
+        case insert
+        case find
+        case update
+        case delete
+    }
+    
+    /// Callback storage
+    public func on(_ op: Operation, matching query: AQTQuery, onFailure failure: CallbackFailure = .throw, callback: (Document) throws -> ()) {
+        if callbacks[op] == nil {
+            callbacks[op] = []
+        }
+        
+        callbacks[op]?.append((query: query, failure: failure, callback: callback))
+    }
+    
+    private func handleCallback(forDocuments documents: [Document], inOperation op: Operation) throws {
+        if callbacks.keys.contains(op) {
+            for callback in callbacks[op]! {
+                for d in documents where d.matches(query: callback.query) {
+                    do {
+                        try callback.callback(d)
+                    } catch {
+                        switch callback.failure {
+                        case .throw:
+                            throw error
+                        case .callback(let failure):
+                            failure(d, callback.query)
+                        default:
+                            continue
+                        }
+                    }
+                }
+            }
+        }
     }
     
     // MARK: - CRUD Operations
@@ -67,37 +115,49 @@ public final class Collection {
         
         var documents = documents
         var newDocuments = [Document]()
+        let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
         while !documents.isEmpty {
-            var command: Document = ["insert": .string(self.name)]
-            
-            let commandDocuments = documents[0..<min(1000, documents.count)].map({ (input: Document) -> Value in
-                if input["_id"] == .nothing {
-                    var output = input
-                    output["_id"].value = ObjectId()
-                    newDocuments.append(output)
-                    return .document(output)
-                } else {
-                    newDocuments.append(input)
-                    return .document(input)
+            if protocolVersion >= 2 {
+                var command: Document = ["insert": .string(self.name)]
+                
+                let commandDocuments = documents[0..<min(1000, documents.count)].map({ (input: Document) -> Value in
+                    if input["_id"] == .nothing {
+                        var output = input
+                        output["_id"].value = ObjectId()
+                        newDocuments.append(output)
+                        return .document(output)
+                    } else {
+                        newDocuments.append(input)
+                        return .document(input)
+                    }
+                })
+                
+                documents.removeFirst(min(1000, documents.count))
+                
+                command["documents"] = .array(Document(array: commandDocuments))
+                
+                if let ordered = ordered {
+                    command["ordered"] = .boolean(ordered)
                 }
-            })
-            
-            documents.removeFirst(min(1000, documents.count))
-            
-            command["documents"] = .array(Document(array: commandDocuments))
-            
-            if let ordered = ordered {
-                command["ordered"] = .boolean(ordered)
-            }
-            
-            let reply = try self.database.execute(command: command, until: timeout)
-            guard case .Reply(_, _, _, _, _, _, let replyDocuments) = reply else {
-                throw MongoError.InsertFailure(documents: documents, error: nil)
-            }
-            
-            guard replyDocuments.first?["ok"].int32 == 1 else {
-                throw MongoError.InsertFailure(documents: documents, error: replyDocuments.first)
+                
+                let reply = try self.database.execute(command: command, until: timeout)
+                guard case .Reply(_, _, _, _, _, _, let replyDocuments) = reply else {
+                    throw MongoError.InsertFailure(documents: documents, error: nil)
+                }
+                
+                guard replyDocuments.first?["ok"].int32 == 1 else {
+                    throw MongoError.InsertFailure(documents: documents, error: replyDocuments.first)
+                }
+                try handleCallback(forDocuments: commandDocuments.flatMap{ $0.documentValue }, inOperation: .insert)
+            } else {
+                let commandDocuments = Array(documents[0..<min(1000, documents.count)])
+                documents.removeFirst(min(1000, documents.count))
+                
+                let insertMsg = Message.Insert(requestID: database.server.nextMessageID(), flags: [], collection: self, documents: commandDocuments)
+                _ = try self.database.server.send(message: insertMsg)
+                
+                try handleCallback(forDocuments: commandDocuments, inOperation: .insert)
             }
         }
         
@@ -177,8 +237,7 @@ public final class Collection {
     public func find(matching filter: Document? = nil, sortedBy sort: Document? = nil, projecting projection: Document? = nil, skipping skip: Int32? = nil, limitedTo limit: Int32? = nil, withBatchSize batchSize: Int32 = 10) throws -> Cursor<Document> {
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
-        switch protocolVersion {
-        case 4:
+        if protocolVersion >= 4 {
             var command: Document = ["find": .string(self.name)]
             
             if let filter = filter {
@@ -217,8 +276,11 @@ public final class Collection {
                 throw MongoError.InvalidResponse(documents: documents)
             }
             
-            return try Cursor(cursorDocument: cursorDoc, server: database.server, chunkSize: 10, transform: { $0 })
-        default:
+            return try Cursor(cursorDocument: cursorDoc, server: database.server, chunkSize: 10, transform: { doc in
+                _ = try? self.handleCallback(forDocuments: [doc], inOperation: .find)
+                return doc
+            })
+        } else {
             let queryMsg = Message.Query(requestID: database.server.nextMessageID(), flags: [], collection: self, numbersToSkip: skip ?? 0, numbersToReturn: batchSize, query: filter ?? [], returnFields: projection)
             
             let id = try self.database.server.send(message: queryMsg)
@@ -228,7 +290,10 @@ public final class Collection {
                 throw InternalMongoError.IncorrectReply(reply: reply)
             }
             
-            return Cursor(namespace: self.fullName, server: database.server, cursorID: cursorID, initialData: documents, chunkSize: batchSize, transform: { $0 })
+            return Cursor(namespace: self.fullName, server: database.server, cursorID: cursorID, initialData: documents, chunkSize: batchSize, transform: { doc in
+                _ = try? self.handleCallback(forDocuments: [doc], inOperation: .find)
+                return doc
+            })
         }
     }
     
@@ -243,7 +308,7 @@ public final class Collection {
     /// - returns: A cursor pointing to the found Documents
     @warn_unused_result
     public func find(matching filter: Query, sortedBy sort: Document? = nil, projecting projection: Document? = nil, skipping skip: Int32? = nil, limitedTo limit: Int32? = nil, withBatchSize batchSize: Int32 = 0) throws -> Cursor<Document> {
-        return try find(matching: filter.data, sortedBy: sort, projecting: projection, skipping: skip, limitedTo: limit, withBatchSize: batchSize)
+        return try find(matching: filter.data as Document?, sortedBy: sort, projecting: projection, skipping: skip, limitedTo: limit, withBatchSize: batchSize)
     }
     
     /// Finds Documents in this collection
@@ -268,7 +333,7 @@ public final class Collection {
     /// - returns: The found Document
     @warn_unused_result
     public func findOne(matching filter: Query, sortedBy sort: Document? = nil, projecting projection: Document? = nil, skipping skip: Int32? = nil) throws -> Document? {
-        return try findOne(matching: filter.data, sortedBy: sort, projecting: projection, skipping: skip)
+        return try findOne(matching: filter.data as Document?, sortedBy: sort, projecting: projection, skipping: skip)
     }
     
     // Update
@@ -284,8 +349,7 @@ public final class Collection {
     public func update(_ updates: [(filter: Document, to: Document, upserting: Bool, multiple: Bool)], stoppingOnError ordered: Bool? = nil) throws {
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
-        switch protocolVersion {
-        case 2...4:
+        if protocolVersion >= 2 {
             var command: Document = ["update": .string(self.name)]
             var newUpdates = [Value]()
             
@@ -313,7 +377,8 @@ public final class Collection {
                 throw MongoError.UpdateFailure(updates: updates, error: documents.first)
             }
             
-        default:
+            try self.handleCallback(forDocuments: updates.map { $0.to }, inOperation: .update)
+        } else {
             for update in updates {
                 var flags: UpdateFlags = []
                 
@@ -327,6 +392,7 @@ public final class Collection {
                 
                 let message = Message.Update(requestID: database.server.nextMessageID(), collection: self, flags: flags, findDocument: update.filter, replaceDocument: update.to)
                 try self.database.server.send(message: message)
+                try self.handleCallback(forDocuments: updates.map { $0.to }, inOperation: .update)
             }
         }
     }
@@ -338,7 +404,7 @@ public final class Collection {
     /// - parameter multi: Updates more than one result if true
     /// - parameter ordered: If true, stop updating when one operation fails - defaults to true
     public func update(matching filter: Document, to updated: Document, upserting upsert: Bool = false, multiple multi: Bool = false, stoppingOnError ordered: Bool? = nil) throws {
-        return try self.update([(filter: filter, to: updated, upserting: upsert, multiple: multi)], stoppingOnError: ordered)
+        return try self.update([(filter: filter as Query, to: updated, upserting: upsert, multiple: multi)], stoppingOnError: ordered)
     }
     
     /// Updates a list of Documents using a counterpart Document.
@@ -361,7 +427,7 @@ public final class Collection {
     /// - parameter multi: Updates more than one result if true
     /// - parameter ordered: If true, stop updating when one operation fails - defaults to true
     public func update(matching filter: Query, to updated: Document, upserting upsert: Bool = false, multiple multi: Bool = false, stoppingOnError ordered: Bool? = nil) throws {
-        return try self.update([(filter: filter.data, to: updated, upserting: upsert, multiple: multi)], stoppingOnError: ordered)
+        return try self.update([(filter: filter, to: updated, upserting: upsert, multiple: multi)], stoppingOnError: ordered)
     }
     
     // Delete
@@ -372,8 +438,7 @@ public final class Collection {
     public func remove(matching removals: [(filter: Document, limit: Int32)], stoppingOnError ordered: Bool? = nil) throws {
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
-        switch protocolVersion {
-        case 2...4:
+        if protocolVersion >= 2 {
             var command: Document = ["delete": .string(self.name)]
             var newDeletes = [Value]()
             
@@ -396,8 +461,9 @@ public final class Collection {
             guard documents.first?["ok"].int32 == 1 else {
                 throw MongoError.RemoveFailure(removals: removals, error: documents.first)
             }
+            try self.handleCallback(forDocuments: removals.map { $0.filter }, inOperation: .delete)
         // If we're talking to an older MongoDB server
-        default:
+        } else {
             for removal in removals {
                 var flags: DeleteFlags = []
                 
@@ -414,6 +480,7 @@ public final class Collection {
                 
                 for _ in 0..<limit {
                     try self.database.server.send(message: message)
+                    try self.handleCallback(forDocuments: [removal.filter], inOperation: .delete)
                 }
             }
         }
@@ -433,7 +500,7 @@ public final class Collection {
     /// - parameter limitedTo: The amount of times this filter can be used to find and remove a Document (0 is every document)
     /// - parameter stoppingOnError: If true, stop removing when one operation fails - defaults to true
     public func remove(matching filter: Document, limitedTo limit: Int32 = 0, stoppingOnError ordered: Bool? = nil) throws {
-        try self.remove(matching: [(filter: filter, limit: limit)], stoppingOnError: ordered)
+        try self.remove(matching: [(filter: filter as Query, limit: limit)], stoppingOnError: ordered)
     }
     
     /// Removes all Documents matching the filter if they're within limit
@@ -441,7 +508,7 @@ public final class Collection {
     /// - parameter limitedTo: The amount of times this filter can be used to find and remove a Document (0 is every document)
     /// - parameter stoppingOnError: If true, stop removing when one operation fails - defaults to true
     public func remove(matching filter: Query, limitedTo limit: Int32 = 0, stoppingOnError ordered: Bool? = nil) throws {
-        try self.remove(matching: [(filter: filter.data, limit: limit)], stoppingOnError: ordered)
+        try self.remove(matching: [(filter: filter, limit: limit)], stoppingOnError: ordered)
     }
     
     /// The drop command removes an entire collection from a database. This command also removes any indexes associated with the dropped collection.
@@ -509,7 +576,7 @@ public final class Collection {
     /// - parameter skipping: Optional. The amount of Documents to skip before counting
     @warn_unused_result
     public func count(matching query: Query, limitedTo limit: Int32? = nil, skipping skip: Int32? = nil) throws -> Int {
-        return try count(matching: query.data, limitedTo: limit, skipping: skip)
+        return try count(matching: query.data as Document?, limitedTo: limit, skipping: skip)
     }
     
     /// Returns all distinct values for a key in this collection. Allows filtering using query
@@ -542,12 +609,12 @@ public final class Collection {
     
     /// Creates an index using the given parameters
     public func create(indexes: [(name: String, keys: [(key: String, ascending: Bool)], filter: Document?, buildInBackground: Bool, unique: Bool)]) throws {
-        guard let wireVersion = database.server.serverData?.maxWireVersion where wireVersion > 2 else {
+        guard let wireVersion = database.server.serverData?.maxWireVersion where wireVersion >= 2 else {
             throw MongoError.UnsupportedOperations
         }
-
+        
         var indexDocs = [Value]()
-
+        
         for index in indexes {
             var keys: Document = []
             

@@ -24,6 +24,7 @@ public final class Database {
     
     /// Are we authenticated?
     public internal(set) var isAuthenticated = true
+    private var collections = [String: Collection]()
     
     /// Initialise this database object
     /// - parameter database: The database to use
@@ -37,7 +38,13 @@ public final class Database {
     /// - parameter collection: The collection/bucket to return
     /// - returns: The requested collection in this database
     public subscript (collection: String) -> Collection {
-        return Collection(named: collection, in: self)
+        if let c = collections[collection] {
+            return c
+        }
+        
+        let c = Collection(named: collection, in: self)
+        collections[collection] = c
+        return c
     }
     
     /// Executes a command on this database using a query message

@@ -11,85 +11,365 @@ import BSON
 
 // MARK: Equations
 /// Equals
-public func ==(key: String, pred: ValueConvertible) -> Query {
-    return Query(data: [key: ["$eq": ~pred]])
+public func ==(key: String, pred: ValueConvertible) -> AQTQuery {
+    return AQTQuery(aqt: .valEquals(key: key, val: ~pred))
 }
 
 /// MongoDB: `$ne`
-public func !=(key: String, pred: ValueConvertible) -> Query {
-    return Query(data: [key: ["$ne": ~pred]])
+public func !=(key: String, pred: ValueConvertible) -> AQTQuery {
+    return AQTQuery(aqt: .valNotEquals(key: key, val: ~pred))
 }
 
 // MARK: Comparisons
 /// MongoDB: `$gt`
-public func >(key: String, pred: ValueConvertible) -> Query {
-    return Query(data: [key: ["$gt": ~pred]])
+public func >(key: String, pred: ValueConvertible) -> AQTQuery {
+    return AQTQuery(aqt: .greaterThan(key: key, val: ~pred))
 }
 
 /// MongoDB: `$gte`
-public func >=(key: String, pred: ValueConvertible) -> Query {
-    return Query(data: [key: ["$gte": ~pred]])
+public func >=(key: String, pred: ValueConvertible) -> AQTQuery {
+    return AQTQuery(aqt: .greaterThanOrEqual(key: key, val: ~pred))
 }
 
 /// MongoDB: `$lt`
-public func <(key: String, pred: ValueConvertible) -> Query {
-    return Query(data: [key: ["$lt": ~pred]])
+public func <(key: String, pred: ValueConvertible) -> AQTQuery {
+    return AQTQuery(aqt: .smallerThan(key: key, val: ~pred))
 }
 
 /// MongoDB: `$lte`
-public func <=(key: String, pred: ValueConvertible) -> Query {
-    return Query(data: [key: ["$lte": ~pred]])
+public func <=(key: String, pred: ValueConvertible) -> AQTQuery {
+    return AQTQuery(aqt: .smallerThanOrEqual(key: key, val: ~pred))
 }
 
 /// Appends `rhs` to `lhs`
-public func &&(lhs: Query, rhs: Query) -> Query {
-    var queryDoc = lhs.data
+public func &&(lhs: AQTQuery, rhs: AQTQuery) -> AQTQuery {
+    let lhs = lhs.aqt
+    let rhs = rhs.aqt
     
-    for (key, value) in rhs.data {
-        guard let lhsDoc = lhs.data[key].documentValue, rhsDoc = value.documentValue else {
-            return Query(data: lhs.data + rhs.data)
-        }
-        
-        let newDoc = lhsDoc + rhsDoc
-        queryDoc[key].value = newDoc
+    if case .and(var  a) = lhs, case .and(let b) = rhs {
+        a.append(contentsOf: b)
+        return AQTQuery(aqt: .and(a))
+    } else if case .and(var a) = lhs {
+        a.append(rhs)
+        return AQTQuery(aqt: .and(a))
+    } else if case .and(var b) = rhs {
+        b.append(lhs)
+        return AQTQuery(aqt: .and(b))
+    } else {
+        return AQTQuery(aqt: .and([lhs, rhs]))
     }
-    
-    return Query(data: queryDoc)
 }
 
 /// MongoDB: `$or`
-public func ||(lhs: Query, rhs: Query) -> Query {
-    if let orDoc = lhs.data["$or"].documentValue  {
-        let newOr = orDoc + [rhs.data.makeBsonValue()]
-        
-        var lhs = lhs
-        lhs.data["$or"].value = newOr
-        return lhs
+public func ||(lhs: AQTQuery, rhs: AQTQuery) -> AQTQuery {
+    let lhs = lhs.aqt
+    let rhs = rhs.aqt
+    
+    if case .or(var  a) = lhs, case .or(let b) = rhs {
+        a.append(contentsOf: b)
+        return AQTQuery(aqt: .or(a))
+    } else if case .or(var a) = lhs {
+        a.append(rhs)
+        return AQTQuery(aqt: .or(a))
+    } else if case .or(var b) = rhs {
+        b.append(lhs)
+        return AQTQuery(aqt: .or(b))
     } else {
-        return Query(data: ["$or": [lhs.data.makeBsonValue(), rhs.data.makeBsonValue()]])
+        return AQTQuery(aqt: .or([lhs, rhs]))
     }
 }
 
-
-public func &=(lhs: inout Query, rhs: Document) {
-    lhs.data += rhs
+public prefix func !(query: AQTQuery) -> AQTQuery {
+    return AQTQuery(aqt: .not(query.aqt))
 }
 
-public func &=(lhs: inout Query, rhs: Query) {
-    lhs = lhs && rhs
+public func &=(lhs: Query, rhs: Query) -> Document {
+    return lhs.data + rhs.data
 }
 
-public func |=(lhs: inout Query, rhs: Query) {
-    lhs = lhs || rhs
+public protocol AQTValue {
+    var val: Value { get }
 }
 
-public func |=(lhs: inout Query, rhs: Document) {
-    lhs = lhs || Query(data: rhs)
+extension Value: AQTValue {
+    public var val: Value {
+        return self
+    }
 }
 
-public struct Query {
-    public var data: Document
-    private init(data: Document) {
-        self.data = data
+public indirect enum AQT {
+    public enum AQTType {
+        case string
+        case number
+        case int32
+        case int64
+        case double
+        case null
+        case document
+        case array
+        case binary
+        case objectId
+        case regex
+        case jsCode
+        case jsCodeWithScope
+        case timestamp
+        case dateTime
+        case minKey
+        case maxKey
+    }
+    
+    public var document: Document {
+        switch self {
+        case .valEquals(let key, let val):
+            return [key: ["$eq": val.val]]
+        case .valNotEquals(let key, let val):
+            return [key: ["$ne": val.val]]
+        case .greaterThan(let key, let val):
+            return [key: ["$gt": val.val]]
+        case .greaterThanOrEqual(let key, let val):
+            return [key: ["$gte": val.val]]
+        case .smallerThan(let key, let val):
+            return [key: ["$lt": val.val]]
+        case .smallerThanOrEqual(let key, let val):
+            return [key: ["$lte": val.val]]
+        case .and(let aqts):
+            let expressions = aqts.map{ Value.document($0.document) }
+            
+            return ["$and": .array(Document(array: expressions)) ]
+        case .or(let aqts):
+            let expressions = aqts.map{ Value.document($0.document) }
+            
+            return ["$or": .array(Document(array: expressions)) ]
+        case .not(let aqt):
+            return ["$not": ~aqt.document]
+        case .nothing:
+            return []
+        }
+    }
+    
+    case valEquals(key: String, val: AQTValue)
+//    case typeEquals(key: String, type: AQTType)
+    case valNotEquals(key: String, val: AQTValue)
+//    case typeNotEquals(key: String, type: AQTType)
+    
+    case greaterThan(key: String, val: AQTValue)
+    case greaterThanOrEqual(key: String, val: AQTValue)
+    case smallerThan(key: String, val: AQTValue)
+    case smallerThanOrEqual(key: String, val: AQTValue)
+    
+    case and([AQT])
+    case or([AQT])
+    case not(AQT)
+    case nothing
+}
+
+public protocol Query {
+    var data: Document { get }
+}
+
+public struct AQTQuery: Query {
+    public var data: Document {
+        return aqt.document
+    }
+    
+    public var aqt: AQT
+    
+    public init(aqt: AQT) {
+        self.aqt = aqt
+    }
+}
+
+extension Document: Query {
+    public var data: Document {
+        return self
+    }
+}
+
+extension Document {
+    private func filterOperators() -> Document {
+        var doc: Document = [:]
+        
+        for (k, v) in self {
+            if k.characters.first == "$", let v: Document = v.documentValue {
+                for (k2, v2) in v {
+                    doc[k2] = v2
+                }
+            } else {
+                doc[k] = v
+            }
+        }
+        
+        return doc
+    }
+    
+    public func matches(query: AQTQuery) -> Bool {
+        let doc = self.filterOperators()
+        
+        switch query.aqt {
+        case .valEquals(let key, let val):
+            return doc[key] == val.val
+        case .valNotEquals(let key, let val):
+            return doc[key] != val.val
+        case .greaterThan(let key, let val):
+            switch doc[key] {
+            case .double(let d):
+                if let d2 = val.val.int32Value {
+                    return d > Double(d2)
+                } else if let d2 = val.val.doubleValue {
+                    return d > d2
+                } else if let d2 = val.val.int64Value {
+                    return d > Double(d2)
+                }
+                
+                return false
+            case .int32(let d):
+                if let d2 = val.val.int32Value {
+                    return d > d2
+                } else if let d2 = val.val.doubleValue {
+                    return Double(d) > d2
+                } else if let d2 = val.val.int64Value {
+                    return Int64(d) > d2
+                }
+                
+                return false
+            case .int64(let d):
+                if let d2 = val.val.int32Value {
+                    return d > Int64(d2)
+                } else if let d2 = val.val.doubleValue {
+                    return Double(d) > d2
+                } else if let d2 = val.val.int64Value {
+                    return d > d2
+                }
+                
+                return false
+            default:
+                return false
+            }
+        case .greaterThanOrEqual(let key, let val):
+            switch doc[key] {
+            case .double(let d):
+                if let d2 = val.val.int32Value {
+                    return d >= Double(d2)
+                } else if let d2 = val.val.doubleValue {
+                    return d >= d2
+                } else if let d2 = val.val.int64Value {
+                    return d >= Double(d2)
+                }
+                
+                return false
+            case .int32(let d):
+                if let d2 = val.val.int32Value {
+                    return d >= d2
+                } else if let d2 = val.val.doubleValue {
+                    return Double(d) >= d2
+                } else if let d2 = val.val.int64Value {
+                    return Int64(d) >= d2
+                }
+                
+                return false
+            case .int64(let d):
+                if let d2 = val.val.int32Value {
+                    return d >= Int64(d2)
+                } else if let d2 = val.val.doubleValue {
+                    return Double(d) >= d2
+                } else if let d2 = val.val.int64Value {
+                    return d >= d2
+                }
+                
+                return false
+            default:
+                return false
+            }
+        case .smallerThan(let key, let val):
+            switch doc[key] {
+            case .double(let d):
+                if let d2 = val.val.int32Value {
+                    return d < Double(d2)
+                } else if let d2 = val.val.doubleValue {
+                    return d < d2
+                } else if let d2 = val.val.int64Value {
+                    return d <  Double(d2)
+                }
+                
+                return false
+            case .int32(let d):
+                if let d2 = val.val.int32Value {
+                    return d < d2
+                } else if let d2 = val.val.doubleValue {
+                    return Double(d) < d2
+                } else if let d2 = val.val.int64Value {
+                    return Int64(d) < d2
+                }
+                
+                return false
+            case .int64(let d):
+                if let d2 = val.val.int32Value {
+                    return d < Int64(d2)
+                } else if let d2 = val.val.doubleValue {
+                    return Double(d) < d2
+                } else if let d2 = val.val.int64Value {
+                    return d < d2
+                }
+                
+                return false
+            default:
+                return false
+            }
+        case .smallerThanOrEqual(let key, let val):
+            switch doc[key] {
+            case .double(let d):
+                if let d2 = val.val.int32Value {
+                    return d <= Double(d2)
+                } else if let d2 = val.val.doubleValue {
+                    return d <= d2
+                } else if let d2 = val.val.int64Value {
+                    return d <= Double(d2)
+                }
+                
+                return false
+            case .int32(let d):
+                if let d2 = val.val.int32Value {
+                    return d <= d2
+                } else if let d2 = val.val.doubleValue {
+                    return Double(d) <= d2
+                } else if let d2 = val.val.int64Value {
+                    return Int64(d) <= d2
+                }
+                
+                return false
+            case .int64(let d):
+                if let d2 = val.val.int32Value {
+                    return d <= Int64(d2)
+                } else if let d2 = val.val.doubleValue {
+                    return Double(d) <= d2
+                } else if let d2 = val.val.int64Value {
+                    return d <= d2
+                }
+                
+                return false
+            default:
+                return false
+            }
+        case .and(let aqts):
+            for aqt in aqts {
+                guard self.matches(query: AQTQuery(aqt: aqt)) else {
+                    return false
+                }
+            }
+            
+            return true
+        case .or(let aqts):
+            for aqt in aqts {
+                if self.matches(query: AQTQuery(aqt: aqt)) {
+                    return true
+                }
+            }
+            
+            return false
+        case .not(let aqt):
+            return !self.matches(query: AQTQuery(aqt: aqt))
+        case .nothing:
+            return true
+        }
     }
 }

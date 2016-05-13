@@ -6,8 +6,8 @@
 //  Copyright © 2016 PlanTeam. All rights reserved.
 //
 
-import MongoKitten
 import XCTest
+import MongoKitten
 import Foundation
 
 class SetupTests: XCTestCase {

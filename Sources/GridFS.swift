@@ -238,7 +238,9 @@ public class GridFS {
                 endChunk += 1
             }
             
-            let cursor = try chunksCollection.find(matching: ["files_id": ~id], sortedBy: ["n": 1], skipping: Int32(skipChunks), limitedTo: Int32(endChunk - skipChunks))
+            let query: Document = ["files_id": ~id]
+            
+            let cursor = try chunksCollection.find(matching: query, sortedBy: ["n": 1], skipping: Int32(skipChunks), limitedTo: Int32(endChunk - skipChunks))
             let chunkCursor = Cursor(base: cursor, transform: { Chunk(document: $0, chunksCollection: self.chunksCollection, filesCollection: self.filesCollection) })
             var allData = [Byte]()
             

@@ -8,6 +8,8 @@
 
 import XCTest
 import MongoKitten
+import PBKDF2
+import SHA1
 
 class CollectionTests: XCTestCase {
     static var allTests: [(String, CollectionTests -> () throws -> Void)] {
@@ -35,6 +37,72 @@ class CollectionTests: XCTestCase {
         let distinct = try! TestManager.db["zips"].distinct(on: "state")!
         
         XCTAssertEqual(distinct.count, 51)
+    }
+    
+    func testTriggers() {
+        var bob = false
+        
+        TestManager.wcol.on(.insert, matching: "username" == "bob") { doc in
+            guard doc["username"].stringValue == "bob" else {
+                XCTFail()
+                return
+            }
+            
+            bob = true
+            XCTAssert(true, "No bad names inserted")
+        }
+        
+        try! TestManager.wcol.insert(["username": "henk"])
+        try! TestManager.wcol.insert(["username": "harrie"])
+        try! TestManager.wcol.insert(["username": "bob"])
+        
+        XCTAssert(bob)
+        
+        var results = 0
+        
+        TestManager.wcol.on(.update, matching: "age" > 12) { doc in
+            guard doc["$set.age"].int32Value > 12 else {
+                XCTFail()
+                return
+            }
+            
+            results += 1
+        }
+        
+        try! TestManager.wcol.update(matching: "username" == "henk", to: ["$set": ["age": .int32(15)]])
+        try! TestManager.wcol.update(matching: "username" == "harrie", to: ["$set": ["age": .int32(17)]])
+        try! TestManager.wcol.update(matching: "username" == "bob", to: ["$set": ["age": .int32(12)]])
+        
+        XCTAssertEqual(results, 2)
+        var age = 0
+        var age2 = 0
+        var notBob = 0
+        var notHenk = 0
+        
+        TestManager.wcol.on(.find, matching: "username" == "harrie") { doc in
+            age = doc["age"].int
+        }
+        
+        TestManager.wcol.on(.find, matching: "username" == "bob" && "age" == 12) { doc in
+            age2 = doc["age"].int
+        }
+        
+        TestManager.wcol.on(.find, matching: !("username" == "bob")) { doc in
+            notBob += 1
+        }
+        
+        TestManager.wcol.on(.find, matching: "username" == "harrie" || "username" == "bob") { doc in
+            notHenk += 1
+        }
+
+        _ = try! TestManager.wcol.find()
+        
+        XCTAssertEqual(age, 17)
+        XCTAssertEqual(age2, 12)
+        XCTAssertEqual(notBob, 2)
+        XCTAssertEqual(notHenk, 2)
+        
+        // TODO: Test delete
     }
     
     func testFind() {
@@ -184,5 +252,14 @@ class CollectionTests: XCTestCase {
         let response = Array(try! TestManager.wcol.find(matching: query))
         
         XCTAssertEqual(response.count, 1)
+    }
+
+func testPBKDF2() {
+//        let pass = NSData(bytes: [UInt8]("hunter2".utf8))
+//        let salt = [UInt8]("sdasdsazxcxzvekfwqiooi".utf8)
+//
+//        measure {
+//            try! PBKDF2<SHA1>.calculate(pass, usingSalt: salt, iterating: 10000)
+//        }
     }
 }
