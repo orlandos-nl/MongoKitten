@@ -10,7 +10,7 @@ import XCTest
 import MongoKitten
 
 class DatabaseTests: XCTestCase {
-    static var allTests: [(String, DatabaseTests -> () throws -> Void)] {
+    static var allTests: [(String, (DatabaseTests) -> () throws -> Void)] {
         return [
                    ("testUsers", testUsers),
         ]

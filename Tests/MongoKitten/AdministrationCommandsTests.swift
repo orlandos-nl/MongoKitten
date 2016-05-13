@@ -11,7 +11,7 @@ import MongoKitten
 import BSON
 
 class AdministrationCommandsTests: XCTestCase {
-    static var allTests: [(String, AdministrationCommandsTests -> () throws -> Void)] {
+    static var allTests: [(String, (AdministrationCommandsTests) -> () throws -> Void)] {
         return [
                    ("testServer", testServer),
                    ("testDatabase", testDatabase),

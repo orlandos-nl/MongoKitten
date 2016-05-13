@@ -12,7 +12,7 @@ import PBKDF2
 import SHA1
 
 class CollectionTests: XCTestCase {
-    static var allTests: [(String, CollectionTests -> () throws -> Void)] {
+    static var allTests: [(String, (CollectionTests) -> () throws -> Void)] {
         return [
                    ("testDistinct", testDistinct),
                    ("testFind", testFind),
