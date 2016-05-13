@@ -11,79 +11,79 @@ import BSON
 
 // MARK: Equations
 /// Equals
-public func ==(key: String, pred: ValueConvertible) -> AQTQuery {
-    return AQTQuery(aqt: .valEquals(key: key, val: ~pred))
+public func ==(key: String, pred: ValueConvertible) -> Query {
+    return Query(aqt: .valEquals(key: key, val: ~pred))
 }
 
 /// MongoDB: `$ne`
-public func !=(key: String, pred: ValueConvertible) -> AQTQuery {
-    return AQTQuery(aqt: .valNotEquals(key: key, val: ~pred))
+public func !=(key: String, pred: ValueConvertible) -> Query {
+    return Query(aqt: .valNotEquals(key: key, val: ~pred))
 }
 
 // MARK: Comparisons
 /// MongoDB: `$gt`
-public func >(key: String, pred: ValueConvertible) -> AQTQuery {
-    return AQTQuery(aqt: .greaterThan(key: key, val: ~pred))
+public func >(key: String, pred: ValueConvertible) -> Query {
+    return Query(aqt: .greaterThan(key: key, val: ~pred))
 }
 
 /// MongoDB: `$gte`
-public func >=(key: String, pred: ValueConvertible) -> AQTQuery {
-    return AQTQuery(aqt: .greaterThanOrEqual(key: key, val: ~pred))
+public func >=(key: String, pred: ValueConvertible) -> Query {
+    return Query(aqt: .greaterThanOrEqual(key: key, val: ~pred))
 }
 
 /// MongoDB: `$lt`
-public func <(key: String, pred: ValueConvertible) -> AQTQuery {
-    return AQTQuery(aqt: .smallerThan(key: key, val: ~pred))
+public func <(key: String, pred: ValueConvertible) -> Query {
+    return Query(aqt: .smallerThan(key: key, val: ~pred))
 }
 
 /// MongoDB: `$lte`
-public func <=(key: String, pred: ValueConvertible) -> AQTQuery {
-    return AQTQuery(aqt: .smallerThanOrEqual(key: key, val: ~pred))
+public func <=(key: String, pred: ValueConvertible) -> Query {
+    return Query(aqt: .smallerThanOrEqual(key: key, val: ~pred))
 }
 
 /// Appends `rhs` to `lhs`
-public func &&(lhs: AQTQuery, rhs: AQTQuery) -> AQTQuery {
+public func &&(lhs: Query, rhs: Query) -> Query {
     let lhs = lhs.aqt
     let rhs = rhs.aqt
     
     if case .and(var  a) = lhs, case .and(let b) = rhs {
         a.append(contentsOf: b)
-        return AQTQuery(aqt: .and(a))
+        return Query(aqt: .and(a))
     } else if case .and(var a) = lhs {
         a.append(rhs)
-        return AQTQuery(aqt: .and(a))
+        return Query(aqt: .and(a))
     } else if case .and(var b) = rhs {
         b.append(lhs)
-        return AQTQuery(aqt: .and(b))
+        return Query(aqt: .and(b))
     } else {
-        return AQTQuery(aqt: .and([lhs, rhs]))
+        return Query(aqt: .and([lhs, rhs]))
     }
 }
 
 /// MongoDB: `$or`
-public func ||(lhs: AQTQuery, rhs: AQTQuery) -> AQTQuery {
+public func ||(lhs: Query, rhs: Query) -> Query {
     let lhs = lhs.aqt
     let rhs = rhs.aqt
     
     if case .or(var  a) = lhs, case .or(let b) = rhs {
         a.append(contentsOf: b)
-        return AQTQuery(aqt: .or(a))
+        return Query(aqt: .or(a))
     } else if case .or(var a) = lhs {
         a.append(rhs)
-        return AQTQuery(aqt: .or(a))
+        return Query(aqt: .or(a))
     } else if case .or(var b) = rhs {
         b.append(lhs)
-        return AQTQuery(aqt: .or(b))
+        return Query(aqt: .or(b))
     } else {
-        return AQTQuery(aqt: .or([lhs, rhs]))
+        return Query(aqt: .or([lhs, rhs]))
     }
 }
 
-public prefix func !(query: AQTQuery) -> AQTQuery {
-    return AQTQuery(aqt: .not(query.aqt))
+public prefix func !(query: Query) -> Query {
+    return Query(aqt: .not(query.aqt))
 }
 
-public func &=(lhs: Query, rhs: Query) -> Document {
+public func &=(lhs: QueryProtocol, rhs: QueryProtocol) -> Document {
     return lhs.data + rhs.data
 }
 
@@ -163,11 +163,11 @@ public indirect enum AQT {
     case nothing
 }
 
-public protocol Query {
+public protocol QueryProtocol {
     var data: Document { get }
 }
 
-public struct AQTQuery: Query {
+public struct Query: QueryProtocol {
     public var data: Document {
         return aqt.document
     }
@@ -179,7 +179,7 @@ public struct AQTQuery: Query {
     }
 }
 
-extension Document: Query {
+extension Document: QueryProtocol {
     public var data: Document {
         return self
     }
@@ -202,7 +202,7 @@ extension Document {
         return doc
     }
     
-    public func matches(query: AQTQuery) -> Bool {
+    public func matches(query: Query) -> Bool {
         let doc = self.filterOperators()
         
         switch query.aqt {
@@ -352,7 +352,7 @@ extension Document {
             }
         case .and(let aqts):
             for aqt in aqts {
-                guard self.matches(query: AQTQuery(aqt: aqt)) else {
+                guard self.matches(query: Query(aqt: aqt)) else {
                     return false
                 }
             }
@@ -360,14 +360,14 @@ extension Document {
             return true
         case .or(let aqts):
             for aqt in aqts {
-                if self.matches(query: AQTQuery(aqt: aqt)) {
+                if self.matches(query: Query(aqt: aqt)) {
                     return true
                 }
             }
             
             return false
         case .not(let aqt):
-            return !self.matches(query: AQTQuery(aqt: aqt))
+            return !self.matches(query: Query(aqt: aqt))
         case .nothing:
             return true
         }
