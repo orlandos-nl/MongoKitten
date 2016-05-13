@@ -56,7 +56,7 @@ public final class Collection {
     /// - parameter op: The operation (insert, find, update or delete) to register for.
     /// - parameter query: The query to filter operations on.
     /// - parameter failure: Describes how errors thrown from the trigger callback will be handled.
-    /// - parameter callback: The method that will be called for this trigger. 
+    /// - parameter callback: The method that will be called for this trigger.
     public func on(_ op: Operation, matching query: AQTQuery, onFailure failure: CallbackFailure = .throw, callback: (Document) throws -> ()) {
         if callbacks[op] == nil {
             callbacks[op] = []

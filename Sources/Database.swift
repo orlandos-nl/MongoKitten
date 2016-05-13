@@ -307,7 +307,7 @@ extension Database {
     /// - parameter user: The user's username
     /// - parameter password: The plaintext password
     /// - parameter customData: The optional custom information to store
-    public func create(user: String, password: String, roles: Document, customData: Document? = nil) throws {
+    public func createUser(_ user: String, password: String, roles: Document, customData: Document? = nil) throws {
         var command: Document = [
                                 "createUser": ~user,
                                 "pwd": ~password,

@@ -11,7 +11,7 @@ import MongoKitten
 import Foundation
 
 class SetupTests: XCTestCase {
-    static var allTests: [(String, SetupTests -> () throws -> Void)] {
+    static var allTests: [(String, (SetupTests) -> () throws -> Void)] {
         return [
             ("testSetup", testSetup),
         ]

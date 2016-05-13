@@ -52,7 +52,7 @@ class AdministrationCommandsTests: XCTestCase {
             try TestManager.db.drop(user: "mongokitten-henk")
         } catch {}
         
-        try! TestManager.db.create(user: "mongokitten-henk", password: "banapple", roles: [], customData: ["num": .int32(3)])
+        try! TestManager.db.createUser("mongokitten-henk", password: "banapple", roles: [], customData: ["num": .int32(3)])
         let info = try! TestManager.server.info(for: "mongokitten-henk", inDatabase: TestManager.db)
         XCTAssertEqual(info[0]["customData"]["num"].int32Value, 3)
         
@@ -62,7 +62,7 @@ class AdministrationCommandsTests: XCTestCase {
         
         try! TestManager.db.drop(user: "mongokitten-henk")
         
-        try! TestManager.db.create(collection: "test")
+        try! TestManager.db.createCollection("test")
         
         var exists = false
         for col in try! TestManager.db.getCollections() where col.name == "test" {
