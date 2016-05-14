@@ -10,6 +10,7 @@ import Foundation
 import BSON
 
 // MARK: Equations
+
 /// Equals
 public func ==(key: String, pred: ValueConvertible) -> Query {
     return Query(aqt: .valEquals(key: key, val: ~pred))
@@ -21,27 +22,48 @@ public func !=(key: String, pred: ValueConvertible) -> Query {
 }
 
 // MARK: Comparisons
-/// MongoDB: `$gt`
+
+/// MongoDB: `$gt`. Used like native swift `>`
+///
+/// Checks whether the `Value` in `key` is larger than the `Value` provided
+///
+/// - returns: A new `Query` requiring the `Value` in the `key` to be larger than the provided `Value`
 public func >(key: String, pred: ValueConvertible) -> Query {
     return Query(aqt: .greaterThan(key: key, val: ~pred))
 }
 
-/// MongoDB: `$gte`
+/// MongoDB: `$gte`. Used like native swift `>=`
+///
+/// Checks whether the `Value` in `key` is larger than or equal to the `Value` provided
+///
+/// - returns: A new `Query` requiring the `Value` in the `key` to be larger than or equal to the provided `Value`
 public func >=(key: String, pred: ValueConvertible) -> Query {
     return Query(aqt: .greaterThanOrEqual(key: key, val: ~pred))
 }
 
-/// MongoDB: `$lt`
+/// MongoDB: `$lt`. Used like native swift `<`
+///
+/// Checks whether the `Value` in `key` is smaller than the `Value` provided
+///
+/// - returns: A new `Query` requiring the `Value` in the `key` to be smaller than the provided `Value`
 public func <(key: String, pred: ValueConvertible) -> Query {
     return Query(aqt: .smallerThan(key: key, val: ~pred))
 }
 
-/// MongoDB: `$lte`
+/// MongoDB: `$lte`. Used like native swift `<=`
+///
+/// Checks whether the `Value` in `key` is smaller than or equal to the `Value` provided
+///
+/// - returns: A new `Query` requiring the `Value` in the `key` to be smaller than or equal to the provided `Value`
 public func <=(key: String, pred: ValueConvertible) -> Query {
     return Query(aqt: .smallerThanOrEqual(key: key, val: ~pred))
 }
 
-/// Appends `rhs` to `lhs`
+/// MongoDB `$and`. Used like native swift `&&`
+///
+/// Checks whether both these `Query` statements are true
+///
+/// - returns: A new `Query` that requires both the provided queries to be true
 public func &&(lhs: Query, rhs: Query) -> Query {
     let lhs = lhs.aqt
     let rhs = rhs.aqt
@@ -60,7 +82,11 @@ public func &&(lhs: Query, rhs: Query) -> Query {
     }
 }
 
-/// MongoDB: `$or`
+/// MongoDB: `$or`. Used like native swift `||`
+///
+/// Checks wither either of these `Query` statements is true
+///
+/// - returns: A new `Query` that is true when at least one of the two queries is true
 public func ||(lhs: Query, rhs: Query) -> Query {
     let lhs = lhs.aqt
     let rhs = rhs.aqt
@@ -79,6 +105,11 @@ public func ||(lhs: Query, rhs: Query) -> Query {
     }
 }
 
+/// Whether the `Query` provided is false
+///
+/// - parameter query: The query to be checked as false
+///
+/// - returns: A new `Query` that will be inverting the provided `Query`
 public prefix func !(query: Query) -> Query {
     return Query(aqt: .not(query.aqt))
 }
@@ -87,39 +118,104 @@ public func &=(lhs: QueryProtocol, rhs: QueryProtocol) -> Document {
     return lhs.data + rhs.data
 }
 
-public protocol AQTValue {
+/// A protocol that allows other types to be used as a `Value` replacement
+public protocol ValueProtocol {
+    /// You have to be able to provide a BSON `Value`
     var val: Value { get }
 }
 
-extension Value: AQTValue {
+/// Makes it so that a normal BSON `Value` can be used in statements
+extension Value: ValueProtocol {
+    /// The `Value` in `Value` is `self`
     public var val: Value {
         return self
     }
 }
 
+/// Abstract Query Tree.
+///
+/// Made to be easily readable/usable so that an `AQT` instance can be easily translated to a `Document` as a Query or even possibly `SQL` in the future.
 public indirect enum AQT {
-    public enum AQTType {
-        case string
-        case number
-        case int32
-        case int64
-        case double
-        case null
-        case document
-        case array
-        case binary
-        case objectId
-        case regex
-        case jsCode
-        case jsCodeWithScope
-        case timestamp
-        case dateTime
-        case minKey
-        case maxKey
+    /// The types we support as raw `Int32` values
+    ///
+    /// The raw values are defined in https://docs.mongodb.com/manual/reference/operator/query/type/#op._S_type
+    public enum AQTType: Int32 {
+        /// Any number. So a `.double`, `.int32` or `.int64`
+        case number = -2
+        
+        /// A double
+        case double = 1
+        
+        /// A string
+        case string = 2
+        
+        /// A `Document` I.E. "ordered" `Dictionary`
+        case document = 3
+        
+        /// A `Document` as Array
+        case array = 4
+        
+        /// Binary data
+        case binary = 5
+        
+        // 6 is the deprecated type `undefined`
+        
+        /// A 12-byte unique `ObjectId`
+        case objectId = 7
+        
+        /// A booelan
+        case boolean = 8
+        
+        /// NSDate represented as UNIX Epoch time
+        case dateTime = 9
+        
+        /// Null
+        case null = 10
+        
+        /// A regex with options
+        case regex = 11
+        
+        // 12 is an unsupported DBPointer
+        
+        /// JavaScript Code
+        case jsCode = 13
+        
+        // 14 is an unsupported `Symbol`
+        
+        /// JavaScript code executed within a scope
+        case jsCodeWithScope = 15
+        
+        /// `Int32`
+        case int32 = 16
+        
+        /// Timestamp as milliseconds since UNIX Epoch Time
+        case timestamp = 17
+        
+        /// `Int64`
+        case int64 = 18
+        
+        /// The min-key
+        case minKey = -1
+        
+        /// The max-key
+        case maxKey = 127
     }
     
+    /// Returns a Document that represents this AQT as a Query/Filter
     public var document: Document {
         switch self {
+        case .typeof(let key, let type):
+            if type == .number {
+                let aqt = AQT.or([
+                                  .typeof(key: key, type: .double),
+                                  .typeof(key: key, type: .int32),
+                                  .typeof(key: key, type: .int64)
+                                  ])
+                return aqt.document
+                
+            } else {
+                return [key: ["$type": ~type.rawValue]]
+            }
         case .valEquals(let key, let val):
             return [key: ["$eq": val.val]]
         case .valNotEquals(let key, let val):
@@ -147,45 +243,74 @@ public indirect enum AQT {
         }
     }
     
-    case valEquals(key: String, val: AQTValue)
-//    case typeEquals(key: String, type: AQTType)
-    case valNotEquals(key: String, val: AQTValue)
-//    case typeNotEquals(key: String, type: AQTType)
+    /// Whether the type in `key` is equal to the AQTType https://docs.mongodb.com/manual/reference/operator/query/type/#op._S_type
+    case typeof(key: String, type: AQTType)
     
-    case greaterThan(key: String, val: AQTValue)
-    case greaterThanOrEqual(key: String, val: AQTValue)
-    case smallerThan(key: String, val: AQTValue)
-    case smallerThanOrEqual(key: String, val: AQTValue)
+    /// Does the `Value` within the `key` match this `Value`
+    case valEquals(key: String, val: ValueProtocol)
     
+    /// The `Value` within the `key` does not match this `Value`
+    case valNotEquals(key: String, val: ValueProtocol)
+    
+    /// Whether the `Value` within the `key` is greater than this `Value`
+    case greaterThan(key: String, val: ValueProtocol)
+    
+    /// Whether the `Value` within the `key` is greater than or equal to this `Value`
+    case greaterThanOrEqual(key: String, val: ValueProtocol)
+    
+    /// Whether the `Value` within the `key` is smaller than this `Value`
+    case smallerThan(key: String, val: ValueProtocol)
+    
+    /// Whether the `Value` within the `key` is smaller than or equal to this `Value`
+    case smallerThanOrEqual(key: String, val: ValueProtocol)
+    
+    /// Whether all `AQT` Conditions are correct
     case and([AQT])
+    
+    /// Whether any of these `AQT` conditions is correct
     case or([AQT])
+    
+    /// Whether none of these `AQT` conditions are correct
     case not(AQT)
+    
+    /// Whether nothing needs to be matched. Is always true and just a placeholder
     case nothing
 }
 
+/// The protocol all queries need to comply to
 public protocol QueryProtocol {
+    /// They need to return a `Document` that will be used for matching
     var data: Document { get }
 }
 
+/// A `Query` that consists of an `AQT` statement
 public struct Query: QueryProtocol {
+    /// The `Document` that can be sent to the MongoDB Server as a query/filter
     public var data: Document {
         return aqt.document
     }
     
+    /// The `AQT` statement that's used as a query/filter
     public var aqt: AQT
     
+    /// Initializes a `Query` with an `AQT` filter
     public init(aqt: AQT) {
         self.aqt = aqt
     }
 }
 
+/// Makes a raw `Document` usable as `Query`
 extension Document: QueryProtocol {
+    /// Makes a raw `Document` usable as `Query`
     public var data: Document {
         return self
     }
 }
 
 extension Document {
+    /// Filters the operators so that it's cleaner to compare Documents
+    /// 
+    /// TODO: Make this not necessary any more by improving the `on` event listener
     private func filterOperators() -> Document {
         var doc: Document = [:]
         
@@ -202,10 +327,17 @@ extension Document {
         return doc
     }
     
+    /// Checks if a `Document` matches the given `Query`
+    /// 
+    /// - parameter query: The `Query` to match this `Document` against
+    ///
+    /// - returns: Whether this `Document` matches the `Query`
     public func matches(query: Query) -> Bool {
         let doc = self.filterOperators()
         
         switch query.aqt {
+        case .typeof(let key, let type):
+            return doc[key].typeNumber == type.rawValue
         case .valEquals(let key, let val):
             return doc[key] == val.val
         case .valNotEquals(let key, let val):
@@ -370,6 +502,51 @@ extension Document {
             return !self.matches(query: Query(aqt: aqt))
         case .nothing:
             return true
+        }
+    }
+}
+
+/// Adds returning the type as Int32
+extension Value {
+    /// Returns the type as Int32 defined in https://docs.mongodb.com/manual/reference/operator/query/type/#op._S_type
+    var typeNumber: Int32 {
+        switch self {
+        case .double(_):
+            return 1
+        case .string(_):
+            return 2
+        case .document(_):
+            return 3
+        case .array(_):
+            return 4
+        case .binary(_, _):
+            return 5
+        case .objectId(_):
+            return 7
+        case .boolean(_):
+            return 8
+        case .dateTime(_):
+            return 9
+        case .null:
+            return 10
+        case .regularExpression(_, _):
+            return 11
+        case .javascriptCode(_):
+            return 11
+        case .javascriptCodeWithScope(_, _):
+            return 13
+        case .int32(_):
+            return 16
+        case .timestamp(_):
+            return 17
+        case .int64(_):
+            return 18
+        case .maxKey:
+            return 127
+        case .minKey:
+            return -1
+        case .nothing:
+            return -2
         }
     }
 }
