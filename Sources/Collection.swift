@@ -11,9 +11,11 @@ import BSON
 
 /// Represents a single MongoDB collection.
 ///
-/// ### Definition ###
+/// **### Definition ###**
+///
 /// A grouping of MongoDB documents. A collection is the equivalent of an RDBMS table. A collection exists within a single database. Collections do not enforce a schema. Documents within a collection can have different fields. Typically, all documents in a collection have a similar or related purpose. See Namespaces.
 public final class Collection {
+    /// A callback that will be executed when a Document is found matching the provided `Query`
     public typealias Callback = (query: Query, failure: CallbackFailure , callback: (Document) throws -> ())
     
     /// The Database this collection is in
@@ -32,22 +34,38 @@ public final class Collection {
     }
     
     /// Initializes this collection with a database and name
-    /// All dots in the name will be removed
+    ///
+    /// - parameter name: The collection name
+    /// - parameter database: The database this `Collection` exists in
     internal init(named name: String, in database: Database) {
         self.database = database
         self.name = name
     }
     
+    /// The action that will be done when a allback fails to execute
     public enum CallbackFailure {
+        /// Do nothing
         case nothing
+        
+        /// Rethrow the error
         case `throw`
+        
+        /// Call a closure
         case callback((Document, Query) -> ())
     }
     
+    /// What kind of operation the `Callback` will be applied to
     public enum Operation {
+        /// Insert operations
         case insert
+        
+        // Find operations
         case find
+        
+        /// Update operations
         case update
+        
+        /// Delete operations
         case delete
     }
     
@@ -65,6 +83,9 @@ public final class Collection {
         callbacks[op]?.append((query: query, failure: failure, callback: callback))
     }
     
+    /// Takes the `Callback`s registered for an `Operation` and matches the provided `Document`s against the `Query`
+    ///
+    /// - throws: When the callback fails and the failure-state is set to throw
     private func handleCallback(forDocuments documents: [Document], inOperation op: Operation) throws {
         if callbacks.keys.contains(op) {
             for callback in callbacks[op]! {
@@ -90,9 +111,14 @@ public final class Collection {
     
     // Create
     
-    /// Insert a single document in this collection.
+    /// Insert a single document in this collection
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/insert/#dbcmd.insert
     ///
     /// - parameter document: The BSON Document to be inserted
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    ///
     /// - returns: The inserted document
     public func insert(_ document: Document) throws -> Document {
         let result = try self.insert([document])
@@ -105,10 +131,17 @@ public final class Collection {
     }
     
     /// TODO: Detect how many bytes are being sent. Max is 48000000 bytes or 48MB
+    ///
     /// Inserts multiple documents in this collection and adds a BSON ObjectId to documents that do not have an "_id" field
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/insert/#dbcmd.insert
+    ///
     /// - parameter documents: The BSON Documents that should be inserted
     /// - parameter ordered: On true we'll stop inserting when one document fails. On false we'll ignore failed inserts
     /// - parameter timeout: A custom timeout. The default timeout is 60 seconds + 1 second for every 50 documents, so when inserting 5000 documents at once, the timeout is 560 seconds.
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    ///
     /// - returns: The documents with their (if applicable) updated ObjectIds
     public func insert(_ documents: [Document], stoppingOnError ordered: Bool? = nil, timeout customTimeout: NSTimeInterval? = nil) throws -> [Document] {
         let timeout: NSTimeInterval
@@ -171,12 +204,18 @@ public final class Collection {
     
     // Read
     
-    /// Queries this collection with a Document
-    /// Can be used for DBCommands as well as find commands.
-    /// For MongoDB server 3.2 and higher we'd recommend using the `find` method in this Collection for security.
+    /// Queries this `Collection` with a `Document`
+    ///
+    /// This is used to execute DBCommands. For finding `Document`s we recommend the `find` command
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/mongodb-wire-protocol/
+    ///
     /// - parameter query: The document that we're matching against in this collection
     /// - parameter flags: The Query Flags that we'll use for this query
     /// - parameter fetchChunkSize: The initial amount of returned Documents. We recommend at least one Document.
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    ///
     /// - returns: A Cursor pointing to the response Documents.
     @warn_unused_result
     public func query(matching filter: Document = [], usingFlags flags: QueryFlags = [], fetching fetchChunkSize: Int32 = 10) throws -> Cursor<Document> {
@@ -192,25 +231,37 @@ public final class Collection {
     }
     
     
-    /// Queries this collection with a Document (which comes from the Query)
-    /// Can be used for DBCommands as well as find commands.
-    /// For MongoDB server 3.2 and higher we'd recommend using the `find` method in this Collection for security.
-    /// - parameter query: The Query that we're matching against in this collection. This query is from the MongoKitten QueryBuilder.
+    /// Queries this collection with a `Document` (which comes from the `QueryProtocol`)
+    ///
+    /// This is used to execute DBCommands. For finding `Document`s we recommend the `find` command
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/mongodb-wire-protocol/
+    ///
+    /// - parameter filter: The `Query` that we're matching against in this `Collection`. This `Query` is from the MongoKitten QueryBuilder or is a `Document`.
     /// - parameter flags: The Query Flags that we'll use for this query
     /// - parameter fetchChunkSize: The initial amount of returned Documents. We recommend at least one Document.
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    ///
     /// - returns: A Cursor pointing to the response Documents.
     @warn_unused_result
     public func query(matching filter: QueryProtocol, usingFlags flags: QueryFlags = [], fetching fetchChunkSize: Int32 = 10) throws -> Cursor<Document> {
         return try self.query(matching: filter.data, usingFlags: flags, fetching: fetchChunkSize)
     }
     
-    /// Queries this collection with a Document and returns the first result
-    /// Can be used for DBCommands as well as find commands.
-    /// For MongoDB server 3.2 and higher we'd recommend using the `find` method in this Collection for security.
-    /// - parameter query: The document that we're matching against in this collection
+    /// Queries this `Collection` with a `Document` and returns the first result
+    ///
+    /// This is used to execute DBCommands. For finding `Document`s we recommend the `find` command
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/mongodb-wire-protocol/
+    ///
+    /// - parameter query: The `Document` that we're matching against in this `Collection`
     /// - parameter flags: The Query Flags that we'll use for this query
     /// - parameter fetchChunkSize: The initial amount of returned Documents. We recommend at least one Document.
-    /// - returns: The first Document in the Response
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    ///
+    /// - returns: The first `Document` in the Response
     @warn_unused_result
     public func queryOne(matching filter: Document = [], usingFlags flags: QueryFlags = []) throws -> Document? {
         return try self.query(matching: filter, usingFlags: flags, fetching: 1).makeIterator().next()
@@ -218,25 +269,38 @@ public final class Collection {
     
     
     /// Queries this collection with a Document (which comes from the Query)
-    /// Can be used for DBCommands as well as find commands.
-    /// For MongoDB server 3.2 and higher we'd recommend using the `find` method in this Collection for security.
+    ///
+    /// This is used to execute DBCommands. For finding `Document`s we recommend the `find` command
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/mongodb-wire-protocol/
+    ///
     /// - parameter query: The Query that we're matching against in this collection. This query is from the MongoKitten QueryBuilder.
     /// - parameter flags: The Query Flags that we'll use for this query
     /// - parameter fetchChunkSize: The initial amount of returned Documents. We recommend at least one Document.
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    ///
     /// - returns: The first Document in the Response
     @warn_unused_result
     public func queryOne(matching filter: QueryProtocol, usingFlags flags: QueryFlags = []) throws -> Document? {
         return try self.queryOne(matching: filter.data, usingFlags: flags)
     }
     
-    /// Finds Documents in this collection
-    /// Cannot be used for DBCommands when using MongoDB 3.2 or higher
+    /// Finds `Document`s in this `Collection`
+    ///
+    /// Can be used to execute DBCommands in MongoDB 2.6 and below. Be careful!
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/find/#dbcmd.find
+    ///
     /// - parameter filter: The filter we're using to match Documents in this collection against
     /// - parameter sort: The Sort Specification used to sort the found Documents
     /// - parameter projection: The Projection Specification used to filter which fields to return
     /// - parameter skip: The amount of Documents to skip before returning the matching Documents
     /// - parameter limit: The maximum amount of matching documents to return
     /// - parameter batchSize: The initial amount of Documents to return.
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    ///
     /// - returns: A cursor pointing to the found Documents
     @warn_unused_result
     public func find(matching filter: Document? = nil, sortedBy sort: Document? = nil, projecting projection: Document? = nil, skipping skip: Int32? = nil, limitedTo limit: Int32? = nil, withBatchSize batchSize: Int32 = 10) throws -> Cursor<Document> {
@@ -303,13 +367,20 @@ public final class Collection {
     }
     
     /// Finds Documents in this collection
-    /// Cannot be used for DBCommands when using MongoDB 3.2 or higher
+    ///
+    /// Can be used to execute DBCommands in MongoDB 2.6 and below
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/find/#dbcmd.find
+    ///
     /// - parameter filter: The QueryBuilder filter we're using to match Documents in this collection against
     /// - parameter sort: The Sort Specification used to sort the found Documents
     /// - parameter projection: The Projection Specification used to filter which fields to return
     /// - parameter skip: The amount of Documents to skip before returning the matching Documents
     /// - parameter limit: The maximum amount of matching documents to return
     /// - parameter batchSize: The initial amount of Documents to return.
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    ///
     /// - returns: A cursor pointing to the found Documents
     @warn_unused_result
     public func find(matching filter: QueryProtocol, sortedBy sort: Document? = nil, projecting projection: Document? = nil, skipping skip: Int32? = nil, limitedTo limit: Int32? = nil, withBatchSize batchSize: Int32 = 0) throws -> Cursor<Document> {
@@ -317,11 +388,18 @@ public final class Collection {
     }
     
     /// Finds Documents in this collection
-    /// Cannot be used for DBCommands when using MongoDB 3.2 or higher
+    ///
+    /// Can be used to execute DBCommands in MongoDB 2.6 and below
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/find/#dbcmd.find
+    ///
     /// - parameter filter: The Document filter we're using to match Documents in this collection against
     /// - parameter sort: The Sort Specification used to sort the found Documents
     /// - parameter projection: The Projection Specification used to filter which fields to return
     /// - parameter skip: The amount of Documents to skip before returning the matching Documents
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    ///
     /// - returns: The found Document
     @warn_unused_result
     public func findOne(matching filter: Document? = nil, sortedBy sort: Document? = nil, projecting projection: Document? = nil, skipping skip: Int32? = nil) throws -> Document? {
@@ -330,11 +408,18 @@ public final class Collection {
     }
     
     /// Finds Documents in this collection
-    /// Cannot be used for DBCommands when using MongoDB 3.2 or higher
+    ///
+    /// Can be used to execute DBCommands in MongoDB 2.6 and below
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/find/#dbcmd.find
+    ///
     /// - parameter filter: The QueryBuilder filter we're using to match Documents in this collection against
     /// - parameter sort: The Sort Specification used to sort the found Documents
     /// - parameter projection: The Projection Specification used to filter which fields to return
     /// - parameter skip: The amount of Documents to skip before returning the matching Documents
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    ///
     /// - returns: The found Document
     @warn_unused_result
     public func findOne(matching filter: QueryProtocol, sortedBy sort: Document? = nil, projecting projection: Document? = nil, skipping skip: Int32? = nil) throws -> Document? {
@@ -343,14 +428,23 @@ public final class Collection {
     
     // Update
     
-    /// Updates a list of Documents using a counterpart Document.
+    /// Updates a list of `Document`s using a counterpart `Document`.
+    ///
+    /// In most cases the `$set` operator is useful for updating only parts of a `Document`
+    /// As described here: https://docs.mongodb.com/manual/reference/operator/update/set/#up._S_set
+    ///
+    /// For more information about this command: https://docs.mongodb.com/manual/reference/command/update/#dbcmd.update
+    ///
+    /// TODO: Work on improving the updatefailure.  We don't handle writerrrors. Try using a normal query with multiple on true
+    ///
     /// - parameter updates: A list of updates to be executed.
     ///     `query`: A filter to narrow down which Documents you want to update
     ///     `update`: The fields and values to update
     ///     `upsert`: If there isn't anything to update.. insert?
     ///     `multi`: Update all matching Documents instead of just one?
     /// - parameter ordered: If true, stop updating when one operation fails - defaults to true
-    /// TODO: Work on improving the updatefailure.  We don't handle writerrrors. Try using a normal query with multiple on true
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func update(_ updates: [(filter: Document, to: Document, upserting: Bool, multiple: Bool)], stoppingOnError ordered: Bool? = nil) throws {
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
@@ -402,44 +496,73 @@ public final class Collection {
         }
     }
     
-    /// Updates a Document with some new Keys and Values
-    /// - parameter query: The filter to use when searching for Documents to update
+    /// Updates a `Document` using a counterpart `Document`.
+    ///
+    /// In most cases the `$set` operator is useful for updating only parts of a `Document`
+    /// As described here: https://docs.mongodb.com/manual/reference/operator/update/set/#up._S_set
+    ///
+    /// For more information about this command: https://docs.mongodb.com/manual/reference/command/update/#dbcmd.update
+    ///
+    /// - parameter filter: The filter to use when searching for Documents to update
     /// - parameter updated: The data to update these Documents with
     /// - parameter upsert: Insert when we can't find anything to update
     /// - parameter multi: Updates more than one result if true
     /// - parameter ordered: If true, stop updating when one operation fails - defaults to true
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func update(matching filter: Document, to updated: Document, upserting upsert: Bool = false, multiple multi: Bool = false, stoppingOnError ordered: Bool? = nil) throws {
         return try self.update([(filter: filter as QueryProtocol, to: updated, upserting: upsert, multiple: multi)], stoppingOnError: ordered)
     }
     
-    /// Updates a list of Documents using a counterpart Document.
+    /// Updates a list of `Document`s using a counterpart `Document`.
+    ///
+    /// In most cases the `$set` operator is useful for updating only parts of a `Document`
+    /// As described here: https://docs.mongodb.com/manual/reference/operator/update/set/#up._S_set
+    ///
+    /// For more information about this command: https://docs.mongodb.com/manual/reference/command/update/#dbcmd.update
+    ///
     /// - parameter updates: A list of updates to be executed.
     ///     `query`: A QueryBuilder filter to narrow down which Documents you want to update
     ///     `update`: The fields and values to update
     ///     `upsert`: If there isn't anything to update.. insert?
     ///     `multi`: Update all matching Documents instead of just one?
     /// - parameter ordered: If true, stop updating when one operation fails - defaults to true
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func update(_ updates: [(filter: QueryProtocol, to: Document, upserting: Bool, multiple: Bool)], stoppingOnError ordered: Bool? = nil) throws {
         let newUpdates = updates.map { (filter: $0.filter.data, to: $0.to, upserting: $0.upserting, multiple: $0.multiple) }
         
         try self.update(newUpdates, stoppingOnError: ordered)
     }
     
-    /// Updates a Document with some new Keys and Values
-    /// - parameter query: The QueryBuilder filter to use when searching for Documents to update
+    /// Updates a `Document` using a counterpart `Document`.
+    ///
+    /// In most cases the `$set` operator is useful for updating only parts of a `Document`
+    /// As described here: https://docs.mongodb.com/manual/reference/operator/update/set/#up._S_set
+    ///
+    /// For more information about this command: https://docs.mongodb.com/manual/reference/command/update/#dbcmd.update
+    ///
+    /// - parameter filter: The QueryBuilder filter to use when searching for Documents to update
     /// - parameter updated: The data to update these Documents with
     /// - parameter upsert: Insert when we can't find anything to update
     /// - parameter multi: Updates more than one result if true
     /// - parameter ordered: If true, stop updating when one operation fails - defaults to true
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func update(matching filter: QueryProtocol, to updated: Document, upserting upsert: Bool = false, multiple multi: Bool = false, stoppingOnError ordered: Bool? = nil) throws {
         return try self.update([(filter: filter, to: updated, upserting: upsert, multiple: multi)], stoppingOnError: ordered)
     }
     
     // Delete
     
-    /// Removes all Documents matching the filter if they're within limit
-    /// - parameter matching: A list of filters to match documents against. Any given filter can be used infinite amount of removals if `0` or otherwise as often as specified in the limit
+    /// Removes all `Document`s matching the `filter` until the `limit` is reached
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/delete/#dbcmd.delete
+    ///
+    /// - parameter removals: A list of filters to match documents against. Any given filter can be used infinite amount of removals if `0` or otherwise as often as specified in the limit
     /// - parameter stoppingOnError: If true, stop removing when one operation fails - defaults to true
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func remove(matching removals: [(filter: Document, limit: Int32)], stoppingOnError ordered: Bool? = nil) throws {
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
@@ -491,46 +614,76 @@ public final class Collection {
         }
     }
     
-    /// Removes all Documents matching the filter if they're within limit
-    /// - parameter matching: A list of QueryBuilder filters to match documents against. Any given filter can be used infinite amount of removals if `0` or otherwise as often as specified in the limit
+    /// Removes all `Document`s matching the `filter` until the `limit` is reached
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/delete/#dbcmd.delete
+    ///
+    /// - parameter removals: A list of QueryBuilder filters to match documents against. Any given filter can be used infinite amount of removals if `0` or otherwise as often as specified in the limit
     /// - parameter stoppingOnError: If true, stop removing when one operation fails - defaults to true
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func remove(matching removals: [(filter: QueryProtocol, limit: Int32)], stoppingOnError ordered: Bool? = nil) throws {
         let newRemovals = removals.map { (filter: $0.filter.data, limit: $0.limit) }
         
         try self.remove(matching: newRemovals, stoppingOnError: ordered)
     }
     
-    /// Removes all Documents matching the filter if they're within limit
-    /// - parameter matching: The Document filter to use when finding Documents that are going to be removed
-    /// - parameter limitedTo: The amount of times this filter can be used to find and remove a Document (0 is every document)
+    /// Removes `Document`s matching the `filter` until the `limit` is reached
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/delete/#dbcmd.delete
+    ///
+    /// - parameter fitler: The Document filter to use when finding Documents that are going to be removed
+    /// - parameter limit: The amount of times this filter can be used to find and remove a Document (0 is every document)
     /// - parameter stoppingOnError: If true, stop removing when one operation fails - defaults to true
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func remove(matching filter: Document, limitedTo limit: Int32 = 0, stoppingOnError ordered: Bool? = nil) throws {
         try self.remove(matching: [(filter: filter as QueryProtocol, limit: limit)], stoppingOnError: ordered)
     }
     
-    /// Removes all Documents matching the filter if they're within limit
+    /// Removes `Document`s matching the `filter` until the `limit` is reached
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/delete/#dbcmd.delete
+    ///
     /// - parameter matching: The QueryBuilder filter to use when finding Documents that are going to be removed
     /// - parameter limitedTo: The amount of times this filter can be used to find and remove a Document (0 is every document)
     /// - parameter stoppingOnError: If true, stop removing when one operation fails - defaults to true
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func remove(matching filter: QueryProtocol, limitedTo limit: Int32 = 0, stoppingOnError ordered: Bool? = nil) throws {
         try self.remove(matching: [(filter: filter, limit: limit)], stoppingOnError: ordered)
     }
     
     /// The drop command removes an entire collection from a database. This command also removes any indexes associated with the dropped collection.
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/drop/#dbcmd.drop
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func drop() throws {
         _ = try self.database.execute(command: ["drop": .string(self.name)])
     }
     
     /// Changes the name of an existing collection. This method supports renames within a single database only. To move the collection to a different database, use the `move` method on `Collection`.
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/renameCollection/#dbcmd.renameCollection
+    ///
     /// - parameter to: The new name for this collection
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func rename(to newName: String) throws {
         try self.move(to: database, named: newName)
     }
     
     /// Move this collection to another database. Can also rename the collection in one go.
+    ///
     /// **Users must have access to the admin database to run this command.**
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/renameCollection/#dbcmd.renameCollection
+    ///
     /// - parameter to: The database to move this collection to
     /// - parameter named: The new name for this collection
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func move(to database: Database, named newName: String? = nil, overwriting dropOldTarget: Bool? = nil) throws {
         // TODO: Fail if the target database exists.
         var command: Document = [
@@ -546,10 +699,17 @@ public final class Collection {
         self.name = newName ?? name
     }
     
-    /// Returns the amount of Documents in this collection
-    /// - parameter filteringBy: Optional. If specified limits the returned amount to anything matching this query
-    /// - parameter limitedTo: Optional. Limits the returned amount as specified
-    /// - parameter skipping: Optional. The amount of Documents to skip before counting
+    /// Counts the amount of `Document`s matching the `filter`. Stops counting when the `limit` it reached
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/count/#dbcmd.count
+    ///
+    /// - parameter filter: Optional. If specified limits the returned amount to anything matching this query
+    /// - parameter limit: Optional. Limits the amount of scanned `Document`s as specified
+    /// - parameter skip: Optional. The amount of Documents to skip before counting
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    ///
+    /// - returns: The amount of matching `Document`s
     @warn_unused_result
     public func count(matching filter: Document? = nil, limitedTo limit: Int32? = nil, skipping skip: Int32? = nil) throws -> Int {
         var command: Document = ["count": .string(self.name)]
@@ -575,18 +735,29 @@ public final class Collection {
         return document["n"].int
     }
     
-    /// Returns the amount of Documents in this collection
-    /// - parameter filteringBy: Optional. If specified limits the returned amount to anything matching this query
-    /// - parameter limitedTo: Optional. Limits the returned amount as specified
-    /// - parameter skipping: Optional. The amount of Documents to skip before counting
+    /// Counts the amount of `Document`s matching the `filter`. Stops counting when the `limit` it reached
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/count/#dbcmd.count
+    ///
+    /// - parameter filter: Optional. If specified limits the returned amount to anything matching this query
+    /// - parameter limit: Optional. Limits the amount of scanned `Document`s as specified
+    /// - parameter skip: Optional. The amount of Documents to skip before counting
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    ///
+    /// - returns: The amount of matching `Document`s
     @warn_unused_result
     public func count(matching query: QueryProtocol, limitedTo limit: Int32? = nil, skipping skip: Int32? = nil) throws -> Int {
         return try count(matching: query.data as Document?, limitedTo: limit, skipping: skip)
     }
     
     /// Returns all distinct values for a key in this collection. Allows filtering using query
+    ///
     /// - parameter on: The key that we distinct on
     /// - parameter query: The Document query used to filter through the returned results
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    ///
     /// - returns: A list of all distinct values for this key
     @warn_unused_result
     public func distinct(on key: String, usingFilter filter: Document? = nil) throws -> [Value]? {
@@ -600,19 +771,28 @@ public final class Collection {
     }
     
     /// Returns all distinct values for a key in this collection. Allows filtering using query
+    ///
     /// - parameter on: The key that we distinct on
     /// - parameter query: The query used to filter through the returned results
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    ///
     /// - returns: A list of all distinct values for this key
     @warn_unused_result
     public func distinct(on key: String, usingFilter query: Query) throws -> [Value]? {
         return try self.distinct(on: key, usingFilter: query.data)
     }
     
+    /// Creates an `Index` in this `Collection` on the specified keys.
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func createIndex(with keys: [(key: String, ascending: Bool)], named name: String, filter: Document?, buildInBackground: Bool, unique: Bool) throws {
         try self.create(indexes: [(name: name, keys: keys, filter: filter, buildInBackground: buildInBackground, unique: unique)])
     }
     
-    /// Creates an index using the given parameters
+    /// Creates multiple indexes as specified
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func create(indexes: [(name: String, keys: [(key: String, ascending: Bool)], filter: Document?, buildInBackground: Bool, unique: Bool)]) throws {
         guard let wireVersion = database.server.serverData?.maxWireVersion where wireVersion >= 2 else {
             throw MongoError.UnsupportedOperations
@@ -657,13 +837,17 @@ public final class Collection {
     
     /// Remove the index specified
     /// Warning: Write-locks the database whilst this process is executed
+    ///
     /// - parameter index: The index name (as specified when creating the index) that will removed. `*` for all indexes
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func drop(index name: String) throws {
         try database.execute(command: ["dropIndexes": .string(self.name), "index": .string(name)])
     }
     
     /// TODO: Make this work?
     /// Lists all indexes for this collection
+    ///
     /// - returns: A Cursor pointing to the Index results
     @warn_unused_result
     public func listIndexes() throws -> Cursor<Document> {
@@ -681,6 +865,7 @@ public final class Collection {
     }
     
     /// Uses the aggregation pipeline to process documents into aggregated results.
+    ///
     /// See [the MongoDB docs on the aggregation pipeline](https://docs.mongodb.org/manual/reference/operator/aggregation-pipeline/) for more information.
     ///
     /// - parameter pipeline: An array of aggregation pipeline stages that process and transform the document stream as part of the aggregation pipeline.
@@ -688,6 +873,10 @@ public final class Collection {
     /// - parameter allowDiskUse: Enables writing to temporary files. When set to true, aggregation stages can write data to the _tmp subdirectory in the dbPath directory.
     /// - parameter cursorOptions: Specify a document that contains options that control the creation of the cursor object.
     /// - parameter bypassDocumentValidation: Available only if you specify the $out aggregation operator. Enables aggregate to bypass document validation during the operation. This lets you insert documents that do not meet the validation requirements. *Available for MongoDB 3.2 and later versions*
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    ///
+    /// - returns: A `Cursor` pointing to the found `Document`s
     public func aggregate(pipeline: Document, explain: Bool? = nil, allowDiskUse: Bool? = nil, cursorOptions: Document = ["batchSize":10], bypassDocumentValidation: Bool? = nil) throws -> Cursor<Document> {
         // construct command. we always use cursors in MongoKitten, so that's why the default value for cursorOptions is an empty document.
         var command: Document = ["aggregate": .string(self.name), "pipeline": .array(pipeline), "cursor": .document(cursorOptions)]
@@ -711,8 +900,14 @@ public final class Collection {
     }
     
     /// Makes the collection capped
-    /// Warning: Data loss can and probably will occur
+    ///
+    /// **Warning: Data loss can and probably will occur**
+    ///
     /// It will only contain the first data inserted until the cap is reached
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/convertToCapped/#dbcmd.convertToCapped
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func convertTo(capped: Int32) throws {
         let command: Document = [
                                     "convertToCapped": ~self.name,
@@ -727,7 +922,12 @@ public final class Collection {
     }
     
     /// Tells the MongoDB server to re-index this collection
-    /// Warning: Very heavy
+    ///
+    /// **Warning: Very heavy**
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/reIndex/#dbcmd.reIndex
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func reIndex() throws {
         let command: Document = [
                                     "reIndex": ~self.name
@@ -741,7 +941,14 @@ public final class Collection {
     }
     
     /// Tells the MongoDB server to make this collection more compact
-    /// Warning: Very heavy
+    ///
+    /// **Warning: Very heavy**
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/compact/#dbcmd.compact
+    ///
+    /// - parameter force: Force the server to do this
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func compact(forced force: Bool? = nil) throws {
         var command: Document = [
                                     "compact": ~self.name
@@ -759,6 +966,13 @@ public final class Collection {
     }
     
     /// Clones this collection to another place and caps it
+    ///
+    /// For additional information: https://docs.mongodb.com/manual/reference/command/cloneCollectionAsCapped/#dbcmd.cloneCollectionAsCapped
+    ///
+    /// - parameter otherCollection: The new `Collection` name
+    /// - parameter capped: The cap to apply
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func clone(to otherCollection: String, capped: Int32) throws {
         try database.clone(collection: self, to: otherCollection, capped: capped)
     }

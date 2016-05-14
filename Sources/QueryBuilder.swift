@@ -307,6 +307,7 @@ extension Document: QueryProtocol {
     }
 }
 
+/// Allows matching this `Document` against a `Query`
 extension Document {
     /// Filters the operators so that it's cleaner to compare Documents
     /// 
