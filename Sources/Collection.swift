@@ -735,6 +735,66 @@ public final class Collection {
         return document["n"].int
     }
     
+    /// `findAndModify` only has two operations that can be used. Update and Delete
+    ///
+    /// To make these types of operations easily accessible in `findAndModify` this enum exists
+    public enum FindAndModifyOperation {
+        /// Remove the found `Document`
+        case remove
+        
+        /// Update the found `Document` with the provided `Document`
+        ///
+        /// - parameter with: Updated the found `Document` with this `Document`
+        /// - parameter returnModified: Return the modified `Document`?
+        /// - parameter upserting: Insert if it doesn't exist yet
+        case update(with: Document, returnModified: Bool, upserting: Bool)
+    }
+    
+    /// Finds and modifies the first `Document` in this `Collection`. If a query/filter is provided that'll be used to find this `Document`.
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/findAndModify/#dbcmd.findAndModify
+    ///
+    /// - parameter query: The `Query` to match the `Document`s in the `Collection` against
+    /// - parameter sort: The sorting specification to use while searching
+    /// - parameter action: A `FindAndModifyOperation` that specified which action to execute and it's required metadata
+    /// - parameter projection: Which fields to project and how according to projection specification
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    ///
+    /// - returns: The `Value` received from the server as specified in the link of the additional information
+    public func findAndModify(matching query: QueryProtocol? = nil, sortedBy sort: Document? = nil, action: FindAndModifyOperation, projection: Document? = nil) throws -> Value {
+        var command: Document = ["findAndModify": .string(self.name)]
+        
+        if let query = query {
+            command["query"] = ~query.data
+        }
+        
+        if let sort = sort {
+            command["sort"] = ~sort
+        }
+        
+        switch action {
+        case .remove:
+            command["remove"] = true
+        case .update(let with, let new, let upsert):
+            command["update"] = ~with
+            command["new"] = ~new
+            command["upsert"] = ~upsert
+        }
+        
+        if let projection = projection {
+            command["fields"] = ~projection
+        }
+        
+        let document = try firstDocument(in: try database.execute(command: command))
+        
+        guard document["ok"].int32 == 1 else {
+            throw MongoError.CommandFailure // TODO: Make this more specific
+        }
+        
+        return document["value"]
+    }
+    
     /// Counts the amount of `Document`s matching the `filter`. Stops counting when the `limit` it reached
     ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/count/#dbcmd.count
@@ -752,6 +812,8 @@ public final class Collection {
     }
     
     /// Returns all distinct values for a key in this collection. Allows filtering using query
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/distinct/#dbcmd.distinct
     ///
     /// - parameter on: The key that we distinct on
     /// - parameter query: The Document query used to filter through the returned results
@@ -772,6 +834,8 @@ public final class Collection {
     
     /// Returns all distinct values for a key in this collection. Allows filtering using query
     ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/distinct/#dbcmd.distinct
+    ///
     /// - parameter on: The key that we distinct on
     /// - parameter query: The query used to filter through the returned results
     ///
@@ -785,15 +849,27 @@ public final class Collection {
     
     /// Creates an `Index` in this `Collection` on the specified keys.
     ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/createIndexes/#dbcmd.createIndexes
+    ///
+    /// - parameter keys: A Document with a `String` as the key to index and `ascending` as a `Bool`
+    /// - parameter name: The name to identify the index
+    /// - parameter filter: Only index `Document`s matching this filter
+    /// - parameter buildInBackground: Builds the index in the background so that this operation doesn't block other database activities.
+    /// - parameter unique: Used to create unique fields like usernames. Default should be `false`
+    ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func createIndex(with keys: [(key: String, ascending: Bool)], named name: String, filter: Document?, buildInBackground: Bool, unique: Bool) throws {
-        try self.create(indexes: [(name: name, keys: keys, filter: filter, buildInBackground: buildInBackground, unique: unique)])
+    public func createIndex(with keys: [(key: String, ascending: Bool)], named name: String, filter: Query?, buildInBackground: Bool, unique: Bool) throws {
+        try self.createIndexes([(name: name, keys: keys, filter: filter, buildInBackground: buildInBackground, unique: unique)])
     }
     
     /// Creates multiple indexes as specified
     ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/createIndexes/#dbcmd.createIndexes
+    ///
+    /// - parameter indexes: The indexes to create using a Tuple as specified in `createIndex`
+    ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func create(indexes: [(name: String, keys: [(key: String, ascending: Bool)], filter: Document?, buildInBackground: Bool, unique: Bool)]) throws {
+    public func createIndexes(_ indexes: [(name: String, keys: [(key: String, ascending: Bool)], filter: Query?, buildInBackground: Bool, unique: Bool)]) throws {
         guard let wireVersion = database.server.serverData?.maxWireVersion where wireVersion >= 2 else {
             throw MongoError.UnsupportedOperations
         }
@@ -813,7 +889,7 @@ public final class Collection {
             ]
             
             if let filter = index.filter {
-                indexDocument["partialFilterExpression"] = .document(filter)
+                indexDocument["partialFilterExpression"] = .document(filter.data)
             }
             
             if index.buildInBackground {
@@ -838,15 +914,20 @@ public final class Collection {
     /// Remove the index specified
     /// Warning: Write-locks the database whilst this process is executed
     ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/dropIndexes/#dbcmd.dropIndexes
+    ///
     /// - parameter index: The index name (as specified when creating the index) that will removed. `*` for all indexes
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func drop(index name: String) throws {
+    public func dropIndex(_ index: String) throws {
         try database.execute(command: ["dropIndexes": .string(self.name), "index": .string(name)])
     }
     
-    /// TODO: Make this work?
     /// Lists all indexes for this collection
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/listIndexes/#dbcmd.listIndexes
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A Cursor pointing to the Index results
     @warn_unused_result
@@ -897,6 +978,29 @@ public final class Collection {
         }
         
         return try Cursor(cursorDocument: cursorDoc, server: database.server, chunkSize: 10, transform: { $0 })
+    }
+    
+    /// The touch command loads data from the data storage layer into memory.
+    ///
+    /// touch can load the data (i.e. documents) indexes or both documents and indexes.
+    ///
+    /// Using touch to control or tweak what a mongod stores in memory may displace other records data in memory and hinder performance. Use with caution in production systems.
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/touch/#dbcmd.touch
+    ///
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions, the storage engine doesn't support `touch` or an error occurred  
+    public func touch(data: Bool, index: Bool) throws {
+        let command: Document = [
+                                    "touch": ~self.name,
+                                    "data": ~data,
+                                    "index": ~index
+        ]
+        
+        let document = try firstDocument(in: try database.execute(command: command))
+        
+        guard document["ok"].int32 == 1 else {
+            throw MongoError.CommandFailure // TODO: Make this more specific
+        }
     }
     
     /// Makes the collection capped

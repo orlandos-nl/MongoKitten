@@ -102,6 +102,15 @@ class CollectionTests: XCTestCase {
         XCTAssertEqual(notBob, 2)
         XCTAssertEqual(notHenk, 2)
         
+        let val = try! TestManager.wcol.findAndModify(matching: "username" == "harrie", action: .update(with: ["$set": ["age": .int32(42)]], returnModified: true, upserting: false))
+        
+        guard case .document(let doc) = val else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(val["age"].int32Value, 42)
+        
         // TODO: Test delete
     }
     

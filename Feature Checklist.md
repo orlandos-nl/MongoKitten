@@ -1,40 +1,13 @@
 # MongoKitten Feature Checklist
 
-- GridFS support
-    - Basic file storage and indexing
-    - Per-chunk file reading
-- Basic CRUD
-	- findOne
-	- find (dbcommand)
-	- findAndModify
-- Correct error handling
-- Authentication
-- Connection pooling
-- DBRef
+- Correct error handling [ 1.0 ]
+- Connection pooling [ 1.0 ]
+- DBRef [ 1.1 ]
 - Database Commands
-	- Collection.Group
-	- Collection.MapReduce
-- Geospatial Commands
-- Parallel Collection Scan ???
-- Plan Cache ????
-- Replication Commands [TBD]
-- Sharding Commands [TBD]
-- Administration
-	- Copydb?
-	- Drop database
-	- Collection create, clone
-	- create, list, drop indexes
-	- connection status
-	- compact?
-	- collMod
-	- reIndex
-	- set, get parameter
-	- repairdatabase
-	- repaircursor
-	- touch
-	- shutdown????
-	- logRotate????
-- Further:
+	- Collection.Group [ 1.1]
+	- Collection.MapReduce [ 1.1 ]
+- Geospatial Commands [ 1.1 ]
+- Further: [ 1.1 ]
 	- Explain [not needed yet]
 	- Collstats
 	- buildInfo
@@ -43,13 +16,7 @@
 	- getLog
 	- hostInfo
 	- features
-- User management
-    - Create
-    - Update
-    - Drop, DropAll
-    - Grant, Revoke
-    - Info
-- Role management
+- Role management [ 1.0 ]
     - Create
     - Update
     - Drop
