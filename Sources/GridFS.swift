@@ -125,7 +125,7 @@ public class GridFS {
     /// - parameter inChunksOf: The amount of bytes to put in one chunk
     public func store(data: [Byte], named filename: String? = nil, withType contentType: String? = nil, usingMetadata metadata: Value? = nil, inChunksOf chunkSize: Int = 255000) throws -> ObjectId {
         guard chunkSize < 15000000 else {
-            throw MongoError.InvalidChunkSize(chunkSize: chunkSize)
+            throw MongoError.invalidChunkSize(chunkSize: chunkSize)
         }
         
         var data = data
@@ -267,7 +267,7 @@ public class GridFS {
             
             if let end = end {
                 guard start > end else {
-                    throw MongoError.NegativeBytesRequested(start: start, end: end)
+                    throw MongoError.negativeBytesRequested(start: start, end: end)
                 }
                 
                 bytesRequested = end - start

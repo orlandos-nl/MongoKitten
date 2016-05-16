@@ -105,7 +105,7 @@ enum Message {
         // Generate the body
         switch self {
         case .Reply:
-            throw MongoError.InvalidAction
+            throw MongoError.invalidAction
         case .Update(let requestIdentifier, let collection, let flags, let findDocument, let replaceDocument):
             body += Int32(0).bsonData
             body += collection.fullName.cStringBsonData

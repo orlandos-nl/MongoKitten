@@ -78,7 +78,7 @@ public final class Server {
         #endif
         
         guard scheme.lowercased() == "mongodb", let host = url.host else {
-            throw MongoError.InvalidNSURL(url: url)
+            throw MongoError.invalidNSURL(url: url)
         }
         
         var authentication: (username: String, password: String, against: String)? = nil
@@ -106,7 +106,7 @@ public final class Server {
     /// - throws: Throws when we can't connect automatically, when the scheme/host is invalid and when we can't connect automatically
     public convenience init(_ uri: String, using tcpDriver: MongoTCP.Type = CSocket.self, automatically connecting: Bool = true) throws {
         guard let url = NSURL(string: uri) else {
-            throw MongoError.InvalidURI(uri: uri)
+            throw MongoError.invalidURI(uri: uri)
         }
         
         try self.init(url, using: tcpDriver, automatically: connecting)
@@ -242,7 +242,7 @@ public final class Server {
     /// - throws: Unable to receive or parse the reply
     private func receive(bufferSize: Int = 1024) throws {
         guard let client = client else {
-            throw MongoError.NotConnected
+            throw MongoError.notConnected
         }
         
         // TODO: Respect bufferSize
@@ -289,11 +289,11 @@ public final class Server {
         
         #if os(Linux)
             if condition.waitUntilDate(NSDate(timeIntervalSinceNow: timeout)) == false {
-                throw MongoError.Timeout
+                throw MongoError.timeout
             }
         #else
             if condition.wait(until: NSDate(timeIntervalSinceNow: timeout)) == false {
-                throw MongoError.Timeout
+                throw MongoError.timeout
             }
         #endif
         
@@ -311,7 +311,7 @@ public final class Server {
         }
         
         // If we get here, something is very, very wrong.
-        throw MongoError.InternalInconsistency
+        throw MongoError.internalInconsistency
     }
     
     /// Sends a message to the server
@@ -323,7 +323,7 @@ public final class Server {
     /// - returns: The RequestID for this message that can be used to fetch the response
     internal func send(message: Message) throws -> Int32 {
         guard let client = client else {
-            throw MongoError.NotConnected
+            throw MongoError.notConnected
         }
         
         let messageData = try message.generateData()
@@ -354,13 +354,13 @@ public final class Server {
     public func getDatabases() throws -> [Database] {
         let infos = try getDatabaseInfos()
         guard let databaseInfos = infos["databases"].documentValue else {
-            throw MongoError.CommandFailure // TODO: Make this more specific
+            throw MongoError.commandError(error: "No database Document found")
         }
         
         var databases = [Database]()
         for case (_, let dbDef) in databaseInfos where dbDef.documentValue != nil {
             guard let name = dbDef["name"].stringValue else {
-                throw MongoError.CommandFailure // TODO: Make this more specific
+                throw MongoError.commandError(error: "No database name found")
             }
             
             databases.append(self[name])
@@ -408,7 +408,7 @@ public final class Server {
         let response = try firstDocument(in: reply)
 
         guard response["ok"].int32 == 1 else {
-            throw MongoError.CommandFailure // TODO: Make this more specific
+            throw MongoError.commandFailure(error: response)
         }
     }
 
@@ -439,7 +439,7 @@ public final class Server {
         let response = try firstDocument(in: reply)
         
         guard response["ok"].int32 == 1 else {
-            throw MongoError.CommandFailure // TODO: Make this more specific
+            throw MongoError.commandFailure(error: response)
         }
     }
     
@@ -462,7 +462,7 @@ public final class Server {
         let response = try firstDocument(in: try self["$cmd"].execute(command: command))
         
         guard response["ok"].int32 == 1 else {
-            throw MongoError.CommandFailure // TODO: Make this more specific
+            throw MongoError.commandFailure(error: response)
         }
     }
     
@@ -489,7 +489,7 @@ public final class Server {
         let response = try firstDocument(in: reply)
         
         guard response["ok"].int32 == 1 else {
-            throw MongoError.CommandFailure // TODO: Make this more specific
+            throw MongoError.commandFailure(error: response)
         }
     }
 
@@ -524,11 +524,11 @@ public final class Server {
         let document = try firstDocument(in: try db.execute(command: command))
         
         guard document["ok"].int32 == 1 else {
-            throw MongoError.CommandFailure // TODO: Make this more specific
+            throw MongoError.commandFailure(error: document)
         }
         
         guard let users = document["users"].documentValue else {
-            throw MongoError.CommandFailure // TODO: Make this more specific
+            throw MongoError.commandError(error: "No users found")
         }
         
         return users

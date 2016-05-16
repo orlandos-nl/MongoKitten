@@ -16,7 +16,7 @@ internal func firstDocument(in message: Message) throws -> Document {
     let documents = try allDocuments(in: message)
     
     guard let document = documents.first else {
-        throw InternalMongoError.IncorrectReply(reply: message)
+        throw InternalMongoError.incorrectReply(reply: message)
     }
     
     return document
@@ -28,7 +28,7 @@ internal func firstDocument(in message: Message) throws -> Document {
 @warn_unused_result
 internal func allDocuments(in message: Message) throws -> [Document] {
     guard case .Reply(_, _, _, _, _, _, let documents) = message else {
-        throw InternalMongoError.IncorrectReply(reply: message)
+        throw InternalMongoError.incorrectReply(reply: message)
     }
     
     return documents

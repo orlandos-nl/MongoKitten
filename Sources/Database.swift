@@ -90,7 +90,7 @@ public final class Database {
         
         let code = result["ok"].int32
         guard let cursor = result["cursor"].documentValue where code == 1 else {
-            throw MongoError.CommandFailure // TODO: Make this more specific
+            throw MongoError.commandFailure(error: result)
         }
         
         return try Cursor(cursorDocument: cursor, server: server, chunkSize: 10, transform: { $0 })
@@ -186,32 +186,32 @@ extension Database {
     private func complete(SASL payload: String, using response: Document, verifying signature: [UInt8]) throws {
         // If we failed authentication
         guard response["ok"].int32 == 1 else {
-            throw MongoAuthenticationError.IncorrectCredentials
+            throw MongoAuthenticationError.incorrectCredentials
         }
         
         guard let stringResponse = response["payload"].stringValue else {
-            throw MongoAuthenticationError.AuthenticationFailure
+            throw MongoAuthenticationError.authenticationFailure
         }
         
         let conversationId = response["conversationId"]
         guard conversationId != .nothing  else {
-            throw MongoAuthenticationError.AuthenticationFailure
+            throw MongoAuthenticationError.authenticationFailure
         }
         
         guard let finalResponse = String(bytes: [Byte](base64: stringResponse), encoding: NSUTF8StringEncoding) else {
-            throw MongoAuthenticationError.Base64Failure
+            throw MongoAuthenticationError.base64Failure
         }
         
         let dictionaryResponse = self.parse(response: finalResponse)
         
         guard let v = dictionaryResponse["v"] else {
-            throw MongoAuthenticationError.AuthenticationFailure
+            throw MongoAuthenticationError.authenticationFailure
         }
         
         let serverSignature = [Byte](base64: v)
         
         guard serverSignature == signature else {
-            throw MongoAuthenticationError.ServerSignatureInvalid
+            throw MongoAuthenticationError.serverSignatureInvalid
         }
         
         let response = try self.execute(command: [
@@ -221,7 +221,7 @@ extension Database {
             ])
         
         guard case .Reply(_, _, _, _, _, _, let documents) = response, let responseDocument = documents.first else {
-            throw InternalMongoError.IncorrectReply(reply: response)
+            throw InternalMongoError.incorrectReply(reply: response)
         }
         
         try self.complete(SASL: payload, using: responseDocument, verifying: serverSignature)
@@ -236,22 +236,22 @@ extension Database {
     private func challenge(with details: (username: String, password: String, against: String), using previousInformation: (nonce: String, response: Document, scram: SCRAMClient<SHA1>)) throws {
         // If we failed the authentication
         guard previousInformation.response["ok"].int32 == 1 else {
-            throw MongoAuthenticationError.IncorrectCredentials
+            throw MongoAuthenticationError.incorrectCredentials
         }
         
         // Get our ConversationID
         let conversationId = previousInformation.response["conversationId"]
         guard conversationId != .nothing  else {
-            throw MongoAuthenticationError.AuthenticationFailure
+            throw MongoAuthenticationError.authenticationFailure
         }
         
         // Decode the challenge
         guard let stringResponse = previousInformation.response["payload"].stringValue else {
-            throw MongoAuthenticationError.AuthenticationFailure
+            throw MongoAuthenticationError.authenticationFailure
         }
         
         guard let decodedStringResponse = String(bytes: [Byte](base64: stringResponse), encoding: NSUTF8StringEncoding) else {
-            throw MongoAuthenticationError.Base64Failure
+            throw MongoAuthenticationError.base64Failure
         }
         
         var digestBytes = [Byte]()
@@ -265,7 +265,7 @@ extension Database {
         
         // Base64 the payload
         guard let payload = result.proof.cStringBsonData.base64 else {
-            throw MongoAuthenticationError.Base64Failure
+            throw MongoAuthenticationError.base64Failure
         }
         
         // Send the proof
@@ -277,7 +277,7 @@ extension Database {
         
         // If we don't get a correct reply
         guard case .Reply(_, _, _, _, _, _, let documents) = response, let responseDocument = documents.first else {
-            throw InternalMongoError.IncorrectReply(reply: response)
+            throw InternalMongoError.incorrectReply(reply: response)
         }
         
         // Complete Authentication
@@ -297,7 +297,7 @@ extension Database {
         let authPayload = try auth.authenticate(details.username, usingNonce: nonce)
         
         guard let payload = authPayload.cStringBsonData.base64 else {
-            throw MongoAuthenticationError.Base64Failure
+            throw MongoAuthenticationError.base64Failure
         }
         
         let response = try self.execute(command: [
@@ -326,7 +326,7 @@ extension Database {
         let document = try firstDocument(in: response)
         
         guard let nonce = document["nonce"].stringValue else {
-            throw MongoAuthenticationError.AuthenticationFailure
+            throw MongoAuthenticationError.authenticationFailure
         }
         
         // Digest our password and prepare it for sending
@@ -348,7 +348,7 @@ extension Database {
         
         // Check for success
         guard successDocument["ok"].int32 == 1 else {
-            throw InternalMongoError.IncorrectReply(reply: successResponse)
+            throw InternalMongoError.incorrectReply(reply: successResponse)
         }
     }
 }
@@ -384,7 +384,7 @@ extension Database {
         let document = try firstDocument(in: reply)
         
         guard document["ok"].int32 == 1 else {
-            throw MongoError.CommandFailure // TODO: Make this more specific
+            throw MongoError.commandFailure(error: document)
         }
     }
 
@@ -413,7 +413,7 @@ extension Database {
         let document = try firstDocument(in: try execute(command: command))
         
         guard document["ok"].int32 == 1 else {
-            throw MongoError.CommandFailure // TODO: Make this more specific
+            throw MongoError.commandFailure(error: document)
         }
     }
     
@@ -432,7 +432,7 @@ extension Database {
         let document = try firstDocument(in: try execute(command: command))
         
         guard document["ok"].int32 == 1 else {
-            throw MongoError.CommandFailure // TODO: Make this more specific
+            throw MongoError.commandFailure(error: document)
         }
     }
     
@@ -449,7 +449,7 @@ extension Database {
         let document = try firstDocument(in: try execute(command: command))
         
         guard document["ok"].int32 == 1 else {
-            throw MongoError.CommandFailure // TODO: Make this more specific
+            throw MongoError.commandFailure(error: document)
         }
     }
     
@@ -470,7 +470,7 @@ extension Database {
         let document = try firstDocument(in: try execute(command: command))
         
         guard document["ok"].int32 == 1 else {
-            throw MongoError.CommandFailure // TODO: Make this more specific
+            throw MongoError.commandFailure(error: document)
         }
     }
     
@@ -487,7 +487,7 @@ extension Database {
         let document = try firstDocument(in: try execute(command: command))
         
         guard document["ok"].int32 == 1 else {
-            throw MongoError.CommandFailure // TODO: Make this more specific
+            throw MongoError.commandFailure(error: document)
         }
     }
     
@@ -515,7 +515,7 @@ extension Database {
         let document = try firstDocument(in: try execute(command: command))
         
         guard document["ok"].int32 == 1 else {
-            throw MongoError.CommandFailure // TODO: Make this more specific
+            throw MongoError.commandFailure(error: document)
         }
     }
     
@@ -552,7 +552,7 @@ extension Database {
         let document = try firstDocument(in: try execute(command: command))
         
         guard document["ok"].int32 == 1 else {
-            throw MongoError.CommandFailure // TODO: Make this more specific
+            throw MongoError.commandFailure(error: document)
         }
     }
     
@@ -584,7 +584,7 @@ extension Database {
         }
 
         guard document["ok"].int32 == 1 else {
-            throw MongoError.CommandFailure // TODO: Make this more specific
+            throw MongoError.commandFailure(error: document)
         }
     }
     
@@ -607,7 +607,7 @@ extension Database {
         let document = try firstDocument(in: try execute(command: command))
         
         guard document["ok"].int32 == 1 else {
-            throw MongoError.CommandFailure // TODO: Make this more specific
+            throw MongoError.commandFailure(error: document)
         }
     }
 }

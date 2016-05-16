@@ -32,7 +32,7 @@ public final class Cursor<T> {
     
     internal convenience init(cursorDocument cursor: Document, server: Server, chunkSize: Int32, transform: Transformer) throws {
         guard let cursorID = cursor["id"].int64Value, namespace = cursor["ns"].stringValue, firstBatch = cursor["firstBatch"].documentValue else {
-            throw MongoError.CursorInitializationError(cursorDocument: cursor)
+            throw MongoError.cursorInitializationError(cursorDocument: cursor)
         }
         
         self.init(namespace: namespace, server: server, cursorID: cursorID, initialData: firstBatch.arrayValue.flatMap{$0.documentValue}.flatMap(transform), chunkSize: chunkSize, transform: transform)
@@ -70,7 +70,7 @@ public final class Cursor<T> {
             let reply = try server.await(response: requestId)
             
             guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
-                throw InternalMongoError.IncorrectReply(reply: reply)
+                throw InternalMongoError.incorrectReply(reply: reply)
             }
             
             self.data += documents.flatMap(transform)

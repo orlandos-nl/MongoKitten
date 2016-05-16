@@ -124,7 +124,7 @@ public final class Collection {
         let result = try self.insert([document])
         
         guard let newDocument: Document = result.first else {
-            throw MongoError.InsertFailure(documents: [document], error: nil)
+            throw MongoError.insertFailure(documents: [document], error: nil)
         }
         
         return newDocument
@@ -181,11 +181,11 @@ public final class Collection {
                 
                 let reply = try self.database.execute(command: command, until: timeout)
                 guard case .Reply(_, _, _, _, _, _, let replyDocuments) = reply else {
-                    throw MongoError.InsertFailure(documents: documents, error: nil)
+                    throw MongoError.insertFailure(documents: documents, error: nil)
                 }
                 
                 guard replyDocuments.first?["ok"].int32 == 1 else {
-                    throw MongoError.InsertFailure(documents: documents, error: replyDocuments.first)
+                    throw MongoError.insertFailure(documents: documents, error: replyDocuments.first)
                 }
                 try handleCallback(forDocuments: commandDocuments.flatMap{ $0.documentValue }, inOperation: .insert)
             } else {
@@ -224,7 +224,7 @@ public final class Collection {
         let id = try self.database.server.send(message: queryMsg)
         let response = try self.database.server.await(response: id)
         guard let cursor = Cursor(namespace: self.fullName, server: database.server, reply: response, chunkSize: fetchChunkSize, transform: { $0 }) else {
-            throw MongoError.InvalidReply
+            throw MongoError.invalidReply
         }
         
         return cursor
@@ -338,11 +338,11 @@ public final class Collection {
             let reply = try database.execute(command: command)
             
             guard case .Reply(_, _, _, _, _, _, let documents) = reply else {
-                throw InternalMongoError.IncorrectReply(reply: reply)
+                throw InternalMongoError.incorrectReply(reply: reply)
             }
             
             guard let responseDoc = documents.first, cursorDoc = responseDoc["cursor"].documentValue else {
-                throw MongoError.InvalidResponse(documents: documents)
+                throw MongoError.invalidResponse(documents: documents)
             }
             
             return try Cursor(cursorDocument: cursorDoc, server: database.server, chunkSize: 10, transform: { doc in
@@ -356,7 +356,7 @@ public final class Collection {
             let reply = try self.database.server.await(response: id)
             
             guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
-                throw InternalMongoError.IncorrectReply(reply: reply)
+                throw InternalMongoError.incorrectReply(reply: reply)
             }
             
             return Cursor(namespace: self.fullName, server: database.server, cursorID: cursorID, initialData: documents, chunkSize: batchSize, transform: { doc in
@@ -469,11 +469,11 @@ public final class Collection {
             
             let reply = try self.database.execute(command: command)
             guard case .Reply(_, _, _, _, _, _, let documents) = reply else {
-                throw MongoError.UpdateFailure(updates: updates, error: nil)
+                throw MongoError.updateFailure(updates: updates, error: nil)
             }
             
             guard documents.first?["ok"].int32 == 1 else {
-                throw MongoError.UpdateFailure(updates: updates, error: documents.first)
+                throw MongoError.updateFailure(updates: updates, error: documents.first)
             }
             
             try self.handleCallback(forDocuments: updates.map { $0.to }, inOperation: .update)
@@ -587,7 +587,7 @@ public final class Collection {
             let documents = try allDocuments(in: reply)
             
             guard documents.first?["ok"].int32 == 1 else {
-                throw MongoError.RemoveFailure(removals: removals, error: documents.first)
+                throw MongoError.removeFailure(removals: removals, error: documents.first)
             }
             try self.handleCallback(forDocuments: removals.map { $0.filter }, inOperation: .delete)
         // If we're talking to an older MongoDB server
@@ -729,7 +729,7 @@ public final class Collection {
         let reply = try self.database.execute(command: command)
         
         guard case .Reply(_, _, _, _, _, _, let documents) = reply, let document = documents.first else {
-            throw InternalMongoError.IncorrectReply(reply: reply)
+            throw InternalMongoError.incorrectReply(reply: reply)
         }
         
         return document["n"].int
@@ -789,7 +789,7 @@ public final class Collection {
         let document = try firstDocument(in: try database.execute(command: command))
         
         guard document["ok"].int32 == 1 else {
-            throw MongoError.CommandFailure // TODO: Make this more specific
+            throw MongoError.commandFailure(error: document) 
         }
         
         return document["value"]
@@ -871,7 +871,7 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func createIndexes(_ indexes: [(name: String, keys: [(key: String, ascending: Bool)], filter: Query?, buildInBackground: Bool, unique: Bool)]) throws {
         guard let wireVersion = database.server.serverData?.maxWireVersion where wireVersion >= 2 else {
-            throw MongoError.UnsupportedOperations
+            throw MongoError.unsupportedOperations
         }
         
         var indexDocs = [Value]()
@@ -907,7 +907,7 @@ public final class Collection {
         let document = try firstDocument(in: try database.execute(command: ["createIndexes": .string(self.name), "indexes": .array(Document(array: indexDocs))]))
         
         guard document["ok"].int32 == 1 else {
-            throw MongoError.CommandFailure // TODO: Make this more specific
+            throw MongoError.commandFailure(error: document) 
         }
     }
     
@@ -933,13 +933,13 @@ public final class Collection {
     @warn_unused_result
     public func listIndexes() throws -> Cursor<Document> {
         guard let wireVersion = database.server.serverData?.maxWireVersion where wireVersion > 3 else {
-            throw MongoError.UnsupportedOperations
+            throw MongoError.unsupportedOperations
         }
         
         let result = try firstDocument(in: try database.execute(command: ["listIndexes": .string(self.name)]))
         
         guard let cursorDocument = result["cursor"].documentValue else {
-            throw MongoError.CursorInitializationError(cursorDocument: result)
+            throw MongoError.cursorInitializationError(cursorDocument: result)
         }
         
         return try Cursor(cursorDocument: cursorDocument, server: database.server, chunkSize: 10, transform: { $0 })
@@ -970,11 +970,11 @@ public final class Collection {
         let reply = try database.execute(command: command)
         
         guard case .Reply(_, _, _, _, _, _, let documents) = reply else {
-            throw InternalMongoError.IncorrectReply(reply: reply)
+            throw InternalMongoError.incorrectReply(reply: reply)
         }
         
         guard let responseDoc = documents.first, cursorDoc = responseDoc["cursor"].documentValue else {
-            throw MongoError.InvalidResponse(documents: documents)
+            throw MongoError.invalidResponse(documents: documents)
         }
         
         return try Cursor(cursorDocument: cursorDoc, server: database.server, chunkSize: 10, transform: { $0 })
@@ -999,7 +999,7 @@ public final class Collection {
         let document = try firstDocument(in: try database.execute(command: command))
         
         guard document["ok"].int32 == 1 else {
-            throw MongoError.CommandFailure // TODO: Make this more specific
+            throw MongoError.commandFailure(error: document) 
         }
     }
     
@@ -1021,7 +1021,7 @@ public final class Collection {
         let document = try firstDocument(in: try database.execute(command: command))
         
         guard document["ok"].int32 == 1 else {
-            throw MongoError.CommandFailure // TODO: Make this more specific
+            throw MongoError.commandFailure(error: document) 
         }
     }
     
@@ -1040,7 +1040,7 @@ public final class Collection {
         let document = try firstDocument(in: try database.execute(command: command))
         
         guard document["ok"].int32 == 1 else {
-            throw MongoError.CommandFailure // TODO: Make this more specific
+            throw MongoError.commandFailure(error: document) 
         }
     }
     
@@ -1065,7 +1065,7 @@ public final class Collection {
         let document = try firstDocument(in: try database.execute(command: command))
         
         guard document["ok"].int32 == 1 else {
-            throw MongoError.CommandFailure // TODO: Make this more specific
+            throw MongoError.commandFailure(error: document) 
         }
     }
     
