@@ -141,11 +141,11 @@ public class GridFS {
         
         
         if let contentType = contentType {
-            insertData["contentType"].value = contentType
+            insertData["contentType"] = ~contentType
         }
         
         if let metadata = metadata {
-            insertData["metadata"].value = metadata
+            insertData["metadata"] = ~metadata
         }
         
         _ = try files.insert(insertData)

@@ -14,7 +14,7 @@
     import Darwin
 #endif
 
-public protocol MongoTCP : AnyObject {
+public protocol MongoTCP : class {
     static func open(address: String, port: UInt16) throws -> Self
     func close() throws
     func send(data: [UInt8]) throws

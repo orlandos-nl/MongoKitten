@@ -208,11 +208,10 @@ public final class Server {
             }
         } catch {
             // A receive failure is to be expected if the socket has been closed
-            //            if self.isConnected {
-            //                print("The MongoDB background loop encountered an error: \(error)")
-            //            } else {
-            //                return
-            //            }
+            if self.isConnected {
+                print("The MongoDB background loop encountered an error: \(error)")
+            }
+            
             return
         }
         
@@ -251,7 +250,7 @@ public final class Server {
         
         do {
             while fullBuffer.count >= 36 {
-                guard let length: Int = Int(try Int32.instantiate(bsonData: fullBuffer[0...3]*)) else {
+                guard let length: Int = Int(try Int32.instantiate(bytes: fullBuffer[0...3]*)) else {
                     throw DeserializationError.ParseError
                 }
                 
@@ -261,7 +260,7 @@ public final class Server {
                 }
                 
                 let responseData = fullBuffer[0..<length]*
-                let responseId = try Int32.instantiate(bsonData: fullBuffer[8...11]*)
+                let responseId = try Int32.instantiate(bytes: fullBuffer[8...11]*)
                 let reply = try Message.makeReply(from: responseData)
                 
                 incomingMutateLock.lock()

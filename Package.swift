@@ -11,7 +11,7 @@ let package = Package(
         .Package(url: "https://github.com/CryptoKitten/SHA1.git", majorVersion: 0, minor: 7),
         
         // For MongoDB Documents
-        .Package(url: "https://github.com/PlanTeam/BSON.git", majorVersion: 2, minor: 3),
+        .Package(url: "https://github.com/PlanTeam/BSON.git", majorVersion: 3),
         
         // For waiting for Documents without blocking the thread
         .Package(url: "https://github.com/ketzusaka/Strand.git", majorVersion: 1, minor: 3),

@@ -162,7 +162,7 @@ public final class Collection {
                 let commandDocuments = documents[0..<min(1000, documents.count)].map({ (input: Document) -> Value in
                     if input["_id"] == .nothing {
                         var output = input
-                        output["_id"].value = ObjectId()
+                        output["_id"] = ~ObjectId()
                         newDocuments.append(output)
                         return .document(output)
                     } else {
@@ -310,29 +310,29 @@ public final class Collection {
             var command: Document = ["find": .string(self.name)]
             
             if let filter = filter {
-                command += ["filter": .document(filter)]
+                command["filter"] = .document(filter)
             }
             
             if let sort = sort {
-                command += ["sort": .document(sort)]
+                command["sort"] = .document(sort)
             }
             
             if let projection = projection {
-                command += ["projection": .document(projection)]
+                command["projection"] = .document(projection)
             }
             
             if let skip = skip {
-                command += ["skip": .int32(skip)]
+                command["skip"] = .int32(skip)
             }
             
             if let limit = limit {
-                command += ["limit": .int32(limit)]
+                command["limit"] = .int32(limit)
             }
             
-            command += ["batchSize": .int32(10)]
+            command["batchSize"] = .int32(10)
             
             if let sort = sort {
-                command += ["sort": .document(sort)]
+                command["sort"] = .document(sort)
             }
             
             let reply = try database.execute(command: command)

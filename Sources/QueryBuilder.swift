@@ -115,7 +115,13 @@ public prefix func !(query: Query) -> Query {
 }
 
 public func &=(lhs: QueryProtocol, rhs: QueryProtocol) -> Document {
-    return lhs.data + rhs.data
+    var lhs = lhs.data
+    
+    for (key, value) in rhs.data {
+        lhs[key] = value
+    }
+    
+    return lhs
 }
 
 /// A protocol that allows other types to be used as a `Value` replacement

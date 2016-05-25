@@ -81,7 +81,7 @@ public final class Database {
     public func getCollectionInfos(matching filter: Document? = nil) throws -> Cursor<Document> {
         var request: Document = ["listCollections": 1]
         if let filter = filter {
-            request["filter"].value = filter
+            request["filter"] = ~filter
         }
         
         let reply = try execute(command: request)
@@ -264,7 +264,7 @@ extension Database {
         
         
         // Base64 the payload
-        guard let payload = result.proof.cStringBsonData.base64 else {
+        guard let payload = result.proof.cStringBytes.base64 else {
             throw MongoAuthenticationError.base64Failure
         }
         
@@ -296,7 +296,7 @@ extension Database {
         
         let authPayload = try auth.authenticate(details.username, usingNonce: nonce)
         
-        guard let payload = authPayload.cStringBsonData.base64 else {
+        guard let payload = authPayload.cStringBytes.base64 else {
             throw MongoAuthenticationError.base64Failure
         }
         
@@ -334,7 +334,7 @@ extension Database {
         bytes.append(contentsOf: "\(details.username):mongo:\(details.password)".utf8)
         
         let digest = MD5.calculate(bytes).hexString
-        let key = MD5.calculate("\(nonce)\(details.username)\(digest)".cStringBsonData).hexString
+        let key = MD5.calculate("\(nonce)\(details.username)\(digest)".cStringBytes).hexString
         
         // Respond to the challengge
         let successResponse = try self.execute(command: [
@@ -509,7 +509,9 @@ extension Database {
         var command: Document = ["create": ~name]
         
         if let options = options {
-            command += options
+            for option in options {
+                command[option.key] = option.value
+            }
         }
         
         let document = try firstDocument(in: try execute(command: command))

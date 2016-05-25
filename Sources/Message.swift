@@ -72,8 +72,12 @@ enum Message {
     /// - parameter from: The data to create a Reply-message from
     /// - returns: The reply instance
     static func makeReply(from data: [UInt8]) throws -> Message {
+        guard data.count > 4 else {
+            throw DeserializationError.InvalidDocumentLength
+        }
+        
         // Get the message length
-        guard let length: Int32 = try Int32.instantiate(bsonData: data[0...3]*) else {
+        guard let length: Int32 = try Int32.instantiate(bytes: data[0...3]*) else {
             throw DeserializationError.ParseError
         }
         
@@ -83,14 +87,14 @@ enum Message {
         }
         
         /// Get our variables from the message
-        let requestID = try Int32.instantiate(bsonData: data[4...7]*)
-        let responseTo = try Int32.instantiate(bsonData: data[8...11]*)
+        let requestID = try Int32.instantiate(bytes: data[4...7]*)
+        let responseTo = try Int32.instantiate(bytes: data[8...11]*)
         
-        let flags = try Int32.instantiate(bsonData: data[16...19]*)
-        let cursorID = try Int64.instantiate(bsonData: data[20...27]*)
-        let startingFrom = try Int32.instantiate(bsonData: data[28...31]*)
-        let numbersReturned = try Int32.instantiate(bsonData: data[32...35]*)
-        let documents = try Document.instantiateAll(fromData: data[36..<data.endIndex]*)
+        let flags = try Int32.instantiate(bytes: data[16...19]*)
+        let cursorID = try Int64.instantiate(bytes: data[20...27]*)
+        let startingFrom = try Int32.instantiate(bytes: data[28...31]*)
+        let numbersReturned = try Int32.instantiate(bytes: data[32...35]*)
+        let documents = [Document](bsonBytes: data[36..<data.endIndex]*)
         
         // Return the constructed reply
         return Message.Reply(requestID: requestID, responseTo: responseTo, flags: ReplyFlags.init(rawValue: flags), cursorID: cursorID, startingFrom: startingFrom, numbersReturned: numbersReturned, documents: documents)
@@ -107,64 +111,64 @@ enum Message {
         case .Reply:
             throw MongoError.invalidAction
         case .Update(let requestIdentifier, let collection, let flags, let findDocument, let replaceDocument):
-            body += Int32(0).bsonData
-            body += collection.fullName.cStringBsonData
-            body += flags.rawValue.bsonData
-            body += findDocument.bsonData
-            body += replaceDocument.bsonData
+            body += Int32(0).bytes
+            body += collection.fullName.cStringBytes
+            body += flags.rawValue.bytes
+            body += findDocument.bytes
+            body += replaceDocument.bytes
             
             requestID = requestIdentifier
         case .Insert(let requestIdentifier, let flags, let collection, let documents):
-            body += flags.rawValue.bsonData
-            body += collection.fullName.cStringBsonData
+            body += flags.rawValue.bytes
+            body += collection.fullName.cStringBytes
             
             for document in documents {
-                body += document.bsonData
+                body += document.bytes
             }
             
             requestID = requestIdentifier
         case .Query(let requestIdentifier, let flags, let collection, let numbersToSkip, let numbersToReturn, let query, let returnFields):
-            body += flags.rawValue.bsonData
-            body += collection.fullName.cStringBsonData
-            body += numbersToSkip.bsonData
-            body += numbersToReturn.bsonData
+            body += flags.rawValue.bytes
+            body += collection.fullName.cStringBytes
+            body += numbersToSkip.bytes
+            body += numbersToReturn.bytes
             
-            body += query.bsonData
+            body += query.bytes
             
             if let returnFields = returnFields {
-                body += returnFields.bsonData
+                body += returnFields.bytes
             }
             
             requestID = requestIdentifier
         case .GetMore(let requestIdentifier, let namespace, let numberToReturn, let cursorID):
-            body += Int32(0).bsonData
+            body += Int32(0).bytes
 
             /// TODO: Fix inconsistency `namespace`
-            body += namespace.cStringBsonData
-            body += numberToReturn.bsonData
-            body += cursorID.bsonData
+            body += namespace.cStringBytes
+            body += numberToReturn.bytes
+            body += cursorID.bytes
             
             requestID = requestIdentifier
         case .Delete(let requestIdentifier, let collection, let flags, let removeDocument):
-            body += Int32(0).bsonData
-            body += collection.fullName.cStringBsonData
-            body += flags.rawValue.bsonData
-            body += removeDocument.bsonData
+            body += Int32(0).bytes
+            body += collection.fullName.cStringBytes
+            body += flags.rawValue.bytes
+            body += removeDocument.bytes
             
             requestID = requestIdentifier
         case .KillCursors(let requestIdentifier, let cursorIDs):
-            body += Int32(0).bsonData
-            body += cursorIDs.map { $0.bsonData }.reduce([]) { $0 + $1 }
+            body += Int32(0).bytes
+            body += cursorIDs.map { $0.bytes }.reduce([]) { $0 + $1 }
             
             requestID = requestIdentifier
         }
         
         // Generate the header using the body
         var header = [Byte]()
-        header += Int32(16 + body.count).bsonData
-        header += requestID.bsonData
-        header += responseTo.bsonData
-        header += operationCode.bsonData
+        header += Int32(16 + body.count).bytes
+        header += requestID.bytes
+        header += responseTo.bytes
+        header += operationCode.bytes
         
         return header + body
     }

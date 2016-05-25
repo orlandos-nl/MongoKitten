@@ -30,6 +30,7 @@ class CollectionTests: XCTestCase {
     }
     
     override func tearDown() {
+        try! TestManager.disconnect()
         // Put teardown code here. This method is called after the invocation of each test method in the class.
     }
     
@@ -104,7 +105,7 @@ class CollectionTests: XCTestCase {
         
         let val = try! TestManager.wcol.findAndModify(matching: "username" == "harrie", action: .update(with: ["$set": ["age": .int32(42)]], returnModified: true, upserting: false))
         
-        guard case .document(let doc) = val else {
+        guard case .document(_) = val else {
             XCTFail()
             return
         }
