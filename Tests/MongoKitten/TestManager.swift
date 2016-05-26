@@ -43,3 +43,11 @@ final class TestManager {
         try server.disconnect()
     }
 }
+
+#if !swift(>=3.0)
+    extension String {
+        func contains(other: String) -> Bool {
+            return self.containsString(other)
+        }
+    }
+#endif

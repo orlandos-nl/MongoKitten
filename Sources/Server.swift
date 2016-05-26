@@ -89,7 +89,11 @@ public final class Server {
             authentication = (username: user, password: pass, against: path)
         }
         
-        let port: UInt16 = UInt16(url.port?.int16Value ?? 27017)
+        #if !swift(>=3.0)
+            let port: UInt16 = UInt16(url.port?.shortValue ?? 27017)
+        #else
+            let port: UInt16 = UInt16(url.port?.int16Value ?? 27017)
+        #endif
         
         try self.init(at: host, port: port, using: authentication, automatically: connecting, using: tcpDriver)
     }
@@ -286,14 +290,20 @@ public final class Server {
         condition.lock()
         waitingForResponses[requestId] = condition
         
-        #if os(Linux)
+        #if !swift(>=3.0)
             if condition.waitUntilDate(NSDate(timeIntervalSinceNow: timeout)) == false {
                 throw MongoError.timeout
             }
         #else
-            if condition.wait(until: NSDate(timeIntervalSinceNow: timeout)) == false {
-                throw MongoError.timeout
-            }
+            #if os(Linux)
+                if condition.waitUntilDate(NSDate(timeIntervalSinceNow: timeout)) == false {
+                    throw MongoError.timeout
+                }
+            #else
+                if condition.wait(until: NSDate(timeIntervalSinceNow: timeout)) == false {
+                    throw MongoError.timeout
+                }
+            #endif
         #endif
         
         condition.unlock()
@@ -320,16 +330,16 @@ public final class Server {
     /// - throws: Unable to send the message over the socket
     ///
     /// - returns: The RequestID for this message that can be used to fetch the response
-    internal func send(message: Message) throws -> Int32 {
+    internal func send(message msg: Message) throws -> Int32 {
         guard let client = client else {
             throw MongoError.notConnected
         }
         
-        let messageData = try message.generateData()
+        let messageData = try msg.generateData()
         
         try client.send(data: messageData)
         
-        return message.requestID
+        return msg.requestID
     }
     
     /// Provides a list of all existing databases along with basic statistics about them
@@ -378,7 +388,7 @@ public final class Server {
     /// - parameter remoteHost: The optional remote host to copy from
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func copy(database: String, to otherDatabase: String, as user: (user: String, nonce: String, password: String)? = nil, at remoteHost: String? = nil, slaveOk: Bool? = nil) throws {
+    public func copy(database db: String, to otherDatabase: String, as user: (user: String, nonce: String, password: String)? = nil, at remoteHost: String? = nil, slaveOk: Bool? = nil) throws {
         var command: Document = [
                                     "copydb": .int32(1),
                                 ]
@@ -387,7 +397,7 @@ public final class Server {
             command["fromhost"] = ~fromHost
         }
 
-        command["fromdb"] = ~database
+        command["fromdb"] = ~db
         command["todb"] = ~otherDatabase
 
         if let slaveOk = slaveOk {
@@ -471,12 +481,12 @@ public final class Server {
     ///
     /// - parameter async: Do we run this async?
     /// - parameter block: Do we block writing in the meanwhile?
-    public func fsync(async: Bool? = nil, blocking block: Bool? = nil) throws {
+    public func fsync(async asynchronously: Bool? = nil, blocking block: Bool? = nil) throws {
         var command: Document = [
                                     "fsync": .int32(1)
         ]
         
-        if let async = async {
+        if let async = asynchronously {
             command["async"] = ~async
         }
 

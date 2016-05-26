@@ -15,9 +15,9 @@
 #endif
 
 public protocol MongoTCP : class {
-    static func open(address: String, port: UInt16) throws -> Self
+    static func open(address hostname: String, port: UInt16) throws -> Self
     func close() throws
-    func send(data: [UInt8]) throws
+    func send(data binary: [UInt8]) throws
     func receive() throws -> [UInt8]
 }
 
@@ -35,7 +35,7 @@ enum TCPError : ErrorProtocol {
 final class CSocket : MongoTCP {
     private var sock: Int32 = -1
     
-    static func open(address: String, port: UInt16) throws -> CSocket {
+    static func open(address hostname: String, port: UInt16) throws -> CSocket {
         let s = CSocket()
         
         #if os(Linux)
@@ -49,12 +49,18 @@ final class CSocket : MongoTCP {
         
         var server = sockaddr_in()
         
-        if let pointer = gethostbyname(address) {
-            let hostInfo = pointer.pointee
+        let pointer = gethostbyname(hostname)
+        
+        if pointer != nil {
+            #if !swift(>=3.0)
+                let hostInfo = pointer.pointee
+            #else
+                let hostInfo = pointer!.pointee
+            #endif
             
             server.sin_addr = UnsafeMutablePointer<UnsafeMutablePointer<in_addr>>(hostInfo.h_addr_list)[0].pointee
         } else {
-            server.sin_addr.s_addr = UInt32(inet_addr(address))
+            server.sin_addr.s_addr = UInt32(inet_addr(hostname))
         }
         
         #if os(Linux)
@@ -81,11 +87,11 @@ final class CSocket : MongoTCP {
         #endif
     }
     
-    func send(data: [UInt8]) throws {
+    func send(data binary: [UInt8]) throws {
         #if os(Linux)
-            let code = Glibc.send(sock, data, data.count, 0)
+            let code = Glibc.send(sock, binary, binary.count, 0)
         #else
-            let code = Darwin.send(sock, data, data.count, 0)
+            let code = Darwin.send(sock, binary, binary.count, 0)
         #endif
         if code < 0 {
             throw TCPError.SendFailure(errorCode: code)

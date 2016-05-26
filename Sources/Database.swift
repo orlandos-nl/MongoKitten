@@ -61,9 +61,9 @@ public final class Database {
     /// - parameter timeout: The timeout in seconds for listening for a response
     ///
     /// - returns: A `Message` containing the response
-    internal func execute(command: Document, until timeout: NSTimeInterval = 60) throws -> Message {
+    internal func execute(command document: Document, until timeout: NSTimeInterval = 60) throws -> Message {
         let cmd = self["$cmd"]
-        let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: command, returnFields: nil)
+        let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
         let id = try server.send(message: commandMessage)
         return try server.await(response: id, until: timeout)
     }
@@ -162,10 +162,10 @@ extension Database {
     /// - parameter response: The SCRAM response to parse
     ///
     /// - returns: The Dictionary that's build from the response
-    private func parse(response: String) -> [String: String] {
+    private func parse(response r: String) -> [String: String] {
         var parsedResponse = [String: String]()
         
-        for part in response.characters.split(separator: ",") where String(part).characters.count >= 3 {
+        for part in r.characters.split(separator: ",") where String(part).characters.count >= 3 {
             let part = String(part)
             
             if let first = part.characters.first {
@@ -264,9 +264,7 @@ extension Database {
         
         
         // Base64 the payload
-        guard let payload = result.proof.cStringBytes.base64 else {
-            throw MongoAuthenticationError.base64Failure
-        }
+        let payload = result.proof.cStringBytes.base64
         
         // Send the proof
         let response = try self.execute(command: [
@@ -296,9 +294,7 @@ extension Database {
         
         let authPayload = try auth.authenticate(details.username, usingNonce: nonce)
         
-        guard let payload = authPayload.cStringBytes.base64 else {
-            throw MongoAuthenticationError.base64Failure
-        }
+        let payload = authPayload.cStringBytes.base64
         
         let response = try self.execute(command: [
                                                    "saslStart": .int32(1),
@@ -398,9 +394,9 @@ extension Database {
     /// - parameter customData: The optional custom data you'll give him
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func update(user: String, password: String, roles: Document, customData: Document? = nil) throws {
+    public func update(user username: String, password: String, roles: Document, customData: Document? = nil) throws {
         var command: Document = [
-                                    "updateUser": ~user,
+                                    "updateUser": ~username,
                                     "pwd": ~password,
                                     ]
         
@@ -424,9 +420,9 @@ extension Database {
     /// - parameter user: The username from the user to drop
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func drop(user: String) throws {
+    public func drop(user username: String) throws {
         let command: Document = [
-                                    "dropUser": ~user
+                                    "dropUser": ~username
                                     ]
         
         let document = try firstDocument(in: try execute(command: command))
@@ -461,10 +457,10 @@ extension Database {
     /// - parameter user: The user's username to grant the roles to
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func grant(roles: Document, to user: String) throws {
+    public func grant(roles roleList: Document, to user: String) throws {
         let command: Document = [
                                     "grantRolesToUser": ~user,
-                                    "roles": .array(roles)
+                                    "roles": .array(roleList)
                                     ]
         
         let document = try firstDocument(in: try execute(command: command))
@@ -541,9 +537,9 @@ extension Database {
     /// - parameter filter: The query you're using to filter this
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func clone(namespace: String, from server: String, filtering filter: Query? = nil) throws {
+    public func clone(namespace ns: String, from server: String, filtering filter: Query? = nil) throws {
         var command: Document = [
-                                    "cloneCollection": ~namespace,
+                                    "cloneCollection": ~ns,
                                     "from": ~server
         ]
         
@@ -568,9 +564,9 @@ extension Database {
     /// - parameter filtering: The document filter you're using to filter this
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func clone(namespace: String, from server: String, filtering filter: Document? = nil) throws {
+    public func clone(namespace ns: String, from server: String, filtering filter: Document? = nil) throws {
         var command: Document = [
-                                    "cloneCollection": ~namespace,
+                                    "cloneCollection": ~ns,
                                     "from": ~server
         ]
         
@@ -599,9 +595,9 @@ extension Database {
     /// - parameter capped: The new cap
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func clone(collection: Collection, to otherCollection: String, capped: Int32) throws {
+    public func clone(collection instance: Collection, to otherCollection: String, capped: Int32) throws {
         let command: Document = [
-                                    "cloneCollectionAsCapped": ~collection.name,
+                                    "cloneCollectionAsCapped": ~instance.name,
                                     "toCollection": ~otherCollection,
                                     "size": ~capped
         ]

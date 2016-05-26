@@ -75,7 +75,7 @@ public final class Collection {
     /// - parameter query: The query to filter operations on.
     /// - parameter failure: Describes how errors thrown from the trigger callback will be handled.
     /// - parameter callback: The method that will be called for this trigger.
-    public func on(_ op: Operation, matching query: Query, onFailure failure: CallbackFailure = .throw, callback: (Document) throws -> ()) {
+    public func on(_ op: Operation, matching query: Query, onFailure failure: CallbackFailure = .`throw`, callback: (Document) throws -> ()) {
         if callbacks[op] == nil {
             callbacks[op] = []
         }
@@ -94,7 +94,7 @@ public final class Collection {
                         try callback.callback(d)
                     } catch {
                         switch callback.failure {
-                        case .throw:
+                        case .`throw`:
                             throw error
                         case .callback(let failure):
                             failure(d, callback.query)
@@ -958,9 +958,9 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A `Cursor` pointing to the found `Document`s
-    public func aggregate(pipeline: Document, explain: Bool? = nil, allowDiskUse: Bool? = nil, cursorOptions: Document = ["batchSize":10], bypassDocumentValidation: Bool? = nil) throws -> Cursor<Document> {
+    public func aggregate(pipeline pipeLine: Document, explain: Bool? = nil, allowDiskUse: Bool? = nil, cursorOptions: Document = ["batchSize":10], bypassDocumentValidation: Bool? = nil) throws -> Cursor<Document> {
         // construct command. we always use cursors in MongoKitten, so that's why the default value for cursorOptions is an empty document.
-        var command: Document = ["aggregate": .string(self.name), "pipeline": .array(pipeline), "cursor": .document(cursorOptions)]
+        var command: Document = ["aggregate": .string(self.name), "pipeline": .array(pipeLine), "cursor": .document(cursorOptions)]
         
         if let explain = explain { command["explain"] = .boolean(explain) }
         if let allowDiskUse = allowDiskUse { command["allowDiskUse"] = .boolean(allowDiskUse) }
@@ -989,11 +989,11 @@ public final class Collection {
     /// For more information: https://docs.mongodb.com/manual/reference/command/touch/#dbcmd.touch
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions, the storage engine doesn't support `touch` or an error occurred  
-    public func touch(data: Bool, index: Bool) throws {
+    public func touch(data touchData: Bool, index touchIndexes: Bool) throws {
         let command: Document = [
                                     "touch": ~self.name,
-                                    "data": ~data,
-                                    "index": ~index
+                                    "data": ~touchData,
+                                    "index": ~touchIndexes
         ]
         
         let document = try firstDocument(in: try database.execute(command: command))
@@ -1012,10 +1012,10 @@ public final class Collection {
     /// For more information: https://docs.mongodb.com/manual/reference/command/convertToCapped/#dbcmd.convertToCapped
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func convertTo(capped: Int32) throws {
+    public func convertToCapped(at cap: Int32) throws {
         let command: Document = [
                                     "convertToCapped": ~self.name,
-                                    "size": ~capped
+                                    "size": ~cap
         ]
         
         let document = try firstDocument(in: try database.execute(command: command))

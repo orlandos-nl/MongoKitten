@@ -339,10 +339,10 @@ extension Document {
     /// - parameter query: The `Query` to match this `Document` against
     ///
     /// - returns: Whether this `Document` matches the `Query`
-    public func matches(query: Query) -> Bool {
+    public func matches(query q: Query) -> Bool {
         let doc = self.filterOperators()
         
-        switch query.aqt {
+        switch q.aqt {
         case .typeof(let key, let type):
             return doc[key].typeNumber == type.rawValue
         case .valEquals(let key, let val):
