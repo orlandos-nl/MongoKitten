@@ -76,8 +76,7 @@ public final class Cursor<T> {
             self.data += documents.flatMap(transform)
             self.cursorID = cursorID
         } catch {
-            print("Error fetching extra data from the server in \(self) with error: \(error)")
-            abort()
+            fatalError("Error fetching extra data from the server in \(self) with error: \(error)")
         }
     }
     
