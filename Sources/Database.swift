@@ -218,9 +218,7 @@ extension Database {
         
         
         // Base64 the payload
-        guard let payload = result.proof.cStringBsonData.base64 else {
-            throw MongoAuthenticationError.Base64Failure
-        }
+        let payload = result.proof.cStringBsonData.base64
         
         // Send the proof
         let response = try self.execute(command: [
@@ -248,9 +246,7 @@ extension Database {
         
         let authPayload = try auth.authenticate(details.username, usingNonce: nonce)
         
-        guard let payload = authPayload.cStringBsonData.base64 else {
-            throw MongoAuthenticationError.Base64Failure
-        }
+        let payload = authPayload.cStringBsonData.base64
         
         let response = try self.execute(command: [
                                                    "saslStart": .int32(1),
