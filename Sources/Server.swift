@@ -92,7 +92,7 @@ public final class Server {
         }
         
         #if os(Linux)
-            let port: UInt16 = UInt16(url.port?.shortValue ?? 27017)
+            let port: UInt16 = UInt16(url.port?.intValue ?? 27017)
         #else
             let port: UInt16 = UInt16(url.port?.int16Value ?? 27017)
         #endif
