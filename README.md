@@ -1,18 +1,21 @@
 # MongoKitten
 
-[![Swift Version](https://img.shields.io/badge/swift-3.0-orange.svg)](https://swift.org)
-![License](https://img.shields.io/github/license/planteam/mongokitten.svg)
+[![Swift 2.2](https://img.shields.io/badge/swift-2.2-green.svg)](https://swift.org)
+[![Swift 3.0](https://img.shields.io/badge/swift-3.0-orange.svg)](https://swift.org)
+![License](https://img.shields.io/github/license/openkitten/mongokitten.svg)
 [![Slack Status](http://orlandos.nl:3000/badge.svg)](http://orlandos.nl:3000/)
+[![Carthage compatible](https://img.shields.io/badge/Carthage-compatible-4BC51D.svg?style=flat)](https://github.com/Carthage/Carthage)
+
 
 Native MongoDB driver for Swift, written in Swift. This library does not wrap around the mongoc driver. It uses:
 
 - [Strand](https://github.com/qutheory/Strand) for fetching server responses without blocking the thread
-- Our own [BSON](https://github.com/PlanTeam/BSON) library, which is also 100% native Swift
-- Our own [MD5](https://github.com/PlanTeam/MD5), [SHA1](https://github.com/PlanTeam/SHA1) and [SCRAM](https://github.com/PlanTeam/SCRAM) libraries in 100% Swift
+- Our own [BSON](https://github.com/OpenKitten/BSON) library, which is also 100% native Swift
+- Our own [MD5](https://github.com/CryptoKitten/MD5), [SHA1](https://github.com/CryptoKitten/SHA1) and [SCRAM](https://github.com/CryptoKitten/SCRAM) libraries in 100% Swift
 
 ## Documentation
 
-This can be found [here](http://planteam.github.io/MongoKitten/docs/).
+This can be found [here](http://openkitten.github.io/MongoKitten/docs/).
 
 We have our own Dash documentation for MongoKitten which can be found in the top-right corner of the Documentation.
 
@@ -33,6 +36,8 @@ The unit tests expect a test database. Run the Tools/testprep.sh script to impor
 
 ## Setup
 
+### Swift 3.0 (SPM)
+
 Add `MongoKitten` to your Package.swift:
 
 ```swift
@@ -41,16 +46,22 @@ import PackageDescription
 let package = Package(
 	name: "MyApp",
 	dependencies: [
-		.Package(url: "https://github.com/PlanTeam/MongoKitten.git", majorVersion: 0, minor: 10)
+		.Package(url: "https://github.com/OpenKitten/MongoKitten.git", majorVersion: 1, minor: 1)
 	]
 )
 ```
 
-This is for Swift 3 snapshot 05-09.
+### Swift 2.2 (Carthage)
 
-For Swift 05-03 we have MongoKitten's minor `9`.. for 04-25 we have MongoKitten minor `8`. ANd for 04-12 we have MongoKitten minor `7`.
+Add `MongoKitten` to your Cartfile:
 
-Older versions miss features. And most newer minor versions break at least a part of the API. The Documentation belongs to the latest MongoKitten version.
+```
+github "OpenKitten/MongoKitten" ~> 1.1
+```
+
+For further instructions, see the [Carthage readme](https://github.com/Carthage/Carthage).
+
+Note that the tutorial below is written for Swift 3.0. Syntax may be a bit different.
 
 ## Basic usage
 
@@ -304,11 +315,6 @@ Imagine running a video streaming site. One of your users uploads a video. This 
 Now one user starts watching the video. You'll load the video chunk-by-chunk without keeping all of the video's buffer in memory.
 
 The user quits the video about 40% through the video. Let's say chunk 58 of 144 of your video. Now you'll want to start continueing the video where it left off without receving all the unneccesary chunks.
-
-## Security notes
-
-In our library MongoDB servers under version 3.2 can receive malicious queries when using `find`.
-They can be used to execute [DBCommands](https://docs.mongodb.org/manual/reference/command/).
 
 ## License
 
