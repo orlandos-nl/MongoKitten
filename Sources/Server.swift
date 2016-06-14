@@ -39,13 +39,13 @@ public final class Server {
     internal var fullBuffer = [Byte]()
     
     /// A cache for incoming responses
-    private var incomingMutateLock = NSLock()
+    private var incomingMutateLock = Lock()
     private var incomingResponses = [(id: Int32, message: Message, date: NSDate)]()
     
     /// Contains a map from an ID to a handler. The handlers handle the `incomingResponses`
     private var responseHandlers = [Int32:ResponseHandler]()
     
-    private var waitingForResponses = [Int32:NSCondition]()
+    private var waitingForResponses = [Int32:Condition]()
     
     /// `MongoTCP` Socket bound to the MongoDB Server
     private var client: MongoTCP?
@@ -71,13 +71,7 @@ public final class Server {
     ///
     /// - parameter automatically: Whether to connect automatically
     public convenience init(_ url: NSURL, using tcpDriver: MongoTCP.Type = CSocket.self, automatically connecting: Bool = true) throws {
-        #if os(Linux)
-            let scheme = url.scheme ?? ""
-        #else
-            let scheme = url.scheme
-        #endif
-        
-        guard scheme.lowercased() == "mongodb", let host = url.host else {
+        guard let scheme = url.scheme, let host = url.host where scheme.lowercased() == "mongodb" else {
             throw MongoError.invalidNSURL(url: url)
         }
         
@@ -285,8 +279,8 @@ public final class Server {
     /// - throws: Timeout reached or an internal MongoKitten error occured. In the second case, please file a ticket
     ///
     /// - returns: The reply
-    internal func await(response requestId: Int32, until timeout: NSTimeInterval = 60) throws -> Message {
-        let condition = NSCondition()
+    internal func await(response requestId: Int32, until timeout: TimeInterval = 60) throws -> Message {
+        let condition = Condition()
         condition.lock()
         waitingForResponses[requestId] = condition
         
@@ -300,7 +294,7 @@ public final class Server {
                     throw MongoError.timeout
                 }
             #else
-                if condition.wait(until: NSDate(timeIntervalSinceNow: timeout)) == false {
+                if condition.wait(until: Date(timeIntervalSinceNow: timeout)) == false {
                     throw MongoError.timeout
                 }
             #endif
@@ -429,7 +423,11 @@ public final class Server {
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func clone(from url: NSURL) throws {
-        try clone(from: url.absoluteString)
+        guard let absoluteString = url.absoluteString else {
+            throw MongoError.invalidNSURL(url: url)
+        }
+        
+        try clone(from: absoluteString)
     }
 
     /// Clones a database from the specified MongoDB Connection URI

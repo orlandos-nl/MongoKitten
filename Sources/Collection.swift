@@ -143,8 +143,8 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: The documents with their (if applicable) updated ObjectIds
-    public func insert(_ documents: [Document], stoppingOnError ordered: Bool? = nil, timeout customTimeout: NSTimeInterval? = nil) throws -> [Document] {
-        let timeout: NSTimeInterval
+    public func insert(_ documents: [Document], stoppingOnError ordered: Bool? = nil, timeout customTimeout: TimeInterval? = nil) throws -> [Document] {
+        let timeout: TimeInterval
         if let customTimeout = customTimeout {
             timeout = customTimeout
         } else {
