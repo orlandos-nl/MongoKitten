@@ -423,9 +423,13 @@ public final class Server {
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func clone(from url: NSURL) throws {
-        guard let absoluteString = url.absoluteString else {
-            throw MongoError.invalidNSURL(url: url)
-        }
+        #if os(Linux)
+            let absoluteString = url.absoluteString
+        #else
+            guard let absoluteString = url.absoluteString else {
+                throw MongoError.invalidNSURL(url: url)
+            }
+        #endif
         
         try clone(from: absoluteString)
     }

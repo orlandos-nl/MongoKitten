@@ -1,6 +1,6 @@
 import PackageDescription
 
-let package = Package(
+var package = Package(
     name: "MongoKitten",
     dependencies: [
         // For MongoCR authentication
@@ -12,10 +12,14 @@ let package = Package(
         
         // For MongoDB Documents
         .Package(url: "https://github.com/PlanTeam/BSON.git", majorVersion: 3, minor: 2),
-        
-        // For waiting for Documents without blocking the thread
-        .Package(url: "https://github.com/obbut/Strand.git", Version(0,0,0)),
         ]
 )
+
+#if os(Linux)
+    package.dependencies.append(.Package(url: "https://github.com/obbut/Strand.git", Version(0,0,1)))
+#else
+    package.dependencies.append(.Package(url: "https://github.com/obbut/Strand.git", Version(0,0,0)))
+#endif
+    
 
 let lib = Product(name: "MongoKitten", type: .Library(.Dynamic), modules: "MongoKitten")

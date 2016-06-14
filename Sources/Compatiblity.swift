@@ -1,7 +1,7 @@
 import Foundation
 
 #if !swift(>=3.0) || os(Linux)
-    typealias TimeInterval = NSTimeInterval
+    public typealias TimeInterval = NSTimeInterval
     typealias Lock = NSLock
     typealias Condition = NSCondition
     
