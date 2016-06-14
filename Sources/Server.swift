@@ -324,6 +324,7 @@ public final class Server {
     /// - throws: Unable to send the message over the socket
     ///
     /// - returns: The RequestID for this message that can be used to fetch the response
+    @discardableResult
     internal func send(message msg: Message) throws -> Int32 {
         guard let client = client else {
             throw MongoError.notConnected

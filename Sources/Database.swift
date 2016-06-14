@@ -61,6 +61,7 @@ public final class Database {
     /// - parameter timeout: The timeout in seconds for listening for a response
     ///
     /// - returns: A `Message` containing the response
+    @discardableResult
     internal func execute(command document: Document, until timeout: TimeInterval = 60) throws -> Message {
         let cmd = self["$cmd"]
         let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)

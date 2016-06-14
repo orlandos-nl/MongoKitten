@@ -482,11 +482,13 @@ public final class Collection {
                 var flags: UpdateFlags = []
                 
                 if update.multiple {
-                    flags.insert(UpdateFlags.MultiUpdate)
+                    // TODO: Remove this assignment when the standard library is updated.
+                    let _ = flags.insert(UpdateFlags.MultiUpdate)
                 }
                 
                 if update.upserting {
-                    flags.insert(UpdateFlags.Upsert)
+                    // TODO: Remove this assignment when the standard library is updated.
+                    let _ = flags.insert(UpdateFlags.Upsert)
                 }
                 
                 let message = Message.Update(requestID: database.server.nextMessageID(), collection: self, flags: flags, findDocument: update.filter, replaceDocument: update.to)
@@ -601,7 +603,8 @@ public final class Collection {
                 
                 // If the limit is not '0' and thus removes a set amount of documents. Set it to RemoveOne so we'll remove one document at a time using the older method
                 if removal.limit != 0 {
-                    flags.insert(DeleteFlags.RemoveOne)
+                    // TODO: Remove this assignment when the standard library is updated.
+                    let _ = flags.insert(DeleteFlags.RemoveOne)
                 }
                 
                 let message = Message.Delete(requestID: database.server.nextMessageID(), collection: self, flags: flags, removeDocument: removal.filter)
