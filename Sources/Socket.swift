@@ -14,8 +14,10 @@
     import Darwin
 #endif
 
+import Socks
+
 public protocol MongoTCP : class {
-    static func open(address hostname: String, port: UInt16) throws -> Self
+    static func open(address hostname: String, port: UInt16) throws -> MongoTCP
     func close() throws
     func send(data binary: [UInt8]) throws
     func receive() throws -> [UInt8]
@@ -32,10 +34,25 @@ enum TCPError : ErrorProtocol {
     case BindFailed
 }
 
+extension Socks.TCPClient : MongoTCP {
+    public static func open(address hostname: String, port: UInt16) throws -> MongoTCP {
+        let address = InternetAddress(hostname: hostname, port: port)
+        return try TCPClient(address: address)
+    }
+    
+    public func send(data binary: [UInt8]) throws {
+        try self.send(bytes: binary)
+    }
+    
+    public func receive() throws -> [UInt8] {
+        return try self.receiveAll()
+    }
+}
+
 final class CSocket : MongoTCP {
     private var sock: Int32 = -1
     
-    static func open(address hostname: String, port: UInt16) throws -> CSocket {
+    static func open(address hostname: String, port: UInt16) throws -> MongoTCP {
         let s = CSocket()
         
         #if os(Linux)

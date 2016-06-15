@@ -12,6 +12,8 @@
     import Darwin.C
 #endif
 
+import Socks
+
 @_exported import BSON
 
 import Foundation
@@ -70,7 +72,7 @@ public final class Server {
     /// - throws: When we can't connect automatically, when the scheme/host is invalid and when we can't connect automatically
     ///
     /// - parameter automatically: Whether to connect automatically
-    public convenience init(_ url: NSURL, using tcpDriver: MongoTCP.Type = CSocket.self, automatically connecting: Bool = true) throws {
+    public convenience init(_ url: NSURL, using tcpDriver: MongoTCP.Type = Socks.TCPClient.self, automatically connecting: Bool = true) throws {
         guard let scheme = url.scheme, let host = url.host where scheme.lowercased() == "mongodb" else {
             throw MongoError.invalidNSURL(url: url)
         }
@@ -102,7 +104,7 @@ public final class Server {
     /// - parameter automatically: Whether to connect automatically
     ///
     /// - throws: Throws when we can't connect automatically, when the scheme/host is invalid and when we can't connect automatically
-    public convenience init(_ uri: String, using tcpDriver: MongoTCP.Type = CSocket.self, automatically connecting: Bool = true) throws {
+    public convenience init(_ uri: String, using tcpDriver: MongoTCP.Type = Socks.TCPClient.self, automatically connecting: Bool = true) throws {
         guard let url = NSURL(string: uri) else {
             throw MongoError.invalidURI(uri: uri)
         }
@@ -118,7 +120,7 @@ public final class Server {
     /// - parameter automatically: Connect automatically
     ///
     /// - throws: When we can’t connect automatically, when the scheme/host is invalid and when we can’t connect automatically
-    public init(at host: String, port: UInt16 = 27017, using authentication: (username: String, password: String, against: String)? = nil, using tcpDriver: MongoTCP.Type = CSocket.self, automatically connecting: Bool = false) throws {
+    public init(at host: String, port: UInt16 = 27017, using authentication: (username: String, password: String, against: String)? = nil, using tcpDriver: MongoTCP.Type = Socks.TCPClient.self, automatically connecting: Bool = false) throws {
         self.tcpType = tcpDriver
         self.server = (host: host, port: port)
         
@@ -284,13 +286,9 @@ public final class Server {
         condition.lock()
         waitingForResponses[requestId] = condition
         
-        #if !swift(>=3.0)
-            if condition.waitUntilDate(NSDate(timeIntervalSinceNow: timeout)) == false {
-                throw MongoError.timeout
-            }
-        #else
+        if incomingResponses.index(where: { $0.id == requestId }) == nil {
             #if os(Linux)
-                if condition.waitUntilDate(NSDate(timeIntervalSinceNow: timeout)) == false {
+                if condition.waitUntilDate(Date(timeIntervalSinceNow: timeout)) == false {
                     throw MongoError.timeout
                 }
             #else
@@ -298,7 +296,7 @@ public final class Server {
                     throw MongoError.timeout
                 }
             #endif
-        #endif
+        }
         
         condition.unlock()
         

@@ -12,6 +12,9 @@ var package = Package(
         
         // For MongoDB Documents
         .Package(url: "https://github.com/PlanTeam/BSON.git", Version(0,0,0)),
+        
+        // Provides sockets
+        .Package(url: "https://github.com/czechboy0/Socks.git", majorVersion: 0, minor: 6),
         ]
 )
 
