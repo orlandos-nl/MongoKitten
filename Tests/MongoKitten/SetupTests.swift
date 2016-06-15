@@ -74,7 +74,7 @@ class SetupTests: XCTestCase {
         userDocument["int64"] = .int64(200)
         userDocument["array"] = .array(["one", 2, "three"])
         userDocument["binary"] = .binary(subtype: .generic, data: [0x00, 0x01, 0x02, 0x03, 0x04])
-        userDocument["date"] = .dateTime(NSDate())
+        userDocument["date"] = .dateTime(Date())
         userDocument["null"] = .null
         userDocument["string"] = .string("hello")
         userDocument["objectID"] = .objectId(try! ObjectId("507f1f77bcf86cd799439011"))

@@ -324,7 +324,7 @@ public final class Server {
     /// - throws: Unable to send the message over the socket
     ///
     /// - returns: The RequestID for this message that can be used to fetch the response
-    @discardableResult
+    @discardableResult @warn_unqualified_access
     internal func send(message msg: Message) throws -> Int32 {
         guard let client = client else {
             throw MongoError.notConnected
@@ -342,6 +342,7 @@ public final class Server {
     /// For more information: https://docs.mongodb.com/manual/reference/command/listDatabases/#dbcmd.listDatabases
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    @warn_unused_result
     public func getDatabaseInfos() throws -> Document {
         let request: Document = ["listDatabases": 1]
         

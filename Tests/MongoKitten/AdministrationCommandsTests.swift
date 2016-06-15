@@ -43,7 +43,7 @@ class AdministrationCommandsTests: XCTestCase {
         XCTAssert(dbExists)
         
         try! TestManager.db.copy(to: "mongokitten-unittest-temp")
-        try! TestManager.server.getDatabaseInfos()
+        let _ = try! TestManager.server.getDatabaseInfos()
         try! TestManager.server["mongokitten-unittest-temp"].drop()
     }
     

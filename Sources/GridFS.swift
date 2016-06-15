@@ -136,7 +136,7 @@ public class GridFS {
                                        "_id": .objectId(id),
                                        "length": .int64(Int64(dataSize)),
                                        "chunkSize": .int32(Int32(chunkSize)),
-                                       "uploadDate": .dateTime(NSDate.init(timeIntervalSinceNow: 0)),
+                                       "uploadDate": .dateTime(Date(timeIntervalSinceNow: 0)),
                                        "md5": .string(MD5.calculate(data).hexString)]
         
         

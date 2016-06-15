@@ -79,11 +79,12 @@ final class CSocket : MongoTCP {
         return s
     }
     
+    @warn_unqualified_access
     func close() throws {
         #if os(Linux)
-            Glibc.close(sock)
+            let _ = Glibc.close(sock)
         #else
-            Darwin.close(sock)
+            let _ = Darwin.close(sock)
         #endif
     }
     
