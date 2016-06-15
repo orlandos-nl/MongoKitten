@@ -1,6 +1,0 @@
-github "CryptoKitten/SHA1" ~> 0.7
-github "CryptoKitten/PBKDF2" ~> 0.7
-github "CryptoKitten/SCRAM" ~> 0.7
-github "CryptoKitten/MD5" ~> 0.7
-github "PlanTeam/BSON" "master"
-github "ketzusaka/Strand" ~> 1.4.1

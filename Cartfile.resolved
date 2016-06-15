@@ -1,8 +1,0 @@
-github "PlanTeam/BSON" "ba2fcb7aad8a9d1112f3768a2de31eb01318c4fd"
-github "CryptoKitten/CryptoEssentials" "0.7.3"
-github "ketzusaka/Strand" "1.4.1"
-github "CryptoKitten/HMAC" "0.7.1"
-github "CryptoKitten/MD5" "0.7.2"
-github "CryptoKitten/SHA1" "0.7.2"
-github "CryptoKitten/PBKDF2" "0.7.2"
-github "CryptoKitten/SCRAM" "0.7.2"
