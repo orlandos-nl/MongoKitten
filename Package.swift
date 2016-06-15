@@ -18,7 +18,7 @@ var package = Package(
 #if os(Linux)
     package.dependencies.append(.Package(url: "https://github.com/obbut/Strand.git", Version(0,0,1)))
 #else
-    package.dependencies.append(.Package(url: "https://github.com/obbut/Strand.git", Version(0,0,0)))
+package.dependencies.append(.Package(url: "https://github.com/loganwright/Strand.git", majorVersion: 2, minor: 0))
 #endif
 
 let lib = Product(name: "MongoKitten", type: .Library(.Dynamic), modules: "MongoKitten")
