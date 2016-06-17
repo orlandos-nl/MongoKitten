@@ -119,3 +119,9 @@ extension Cursor : Sequence {
     }
     #endif
 }
+
+extension Cursor : CustomStringConvertible {
+    public var description: String {
+        return "MongoKitten.Cursor<\(namespace)>"
+    }
+}

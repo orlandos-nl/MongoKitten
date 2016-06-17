@@ -1084,3 +1084,9 @@ public final class Collection {
         try database.clone(collection: self, to: otherCollection, capped: capped)
     }
 }
+
+extension Collection : CustomStringConvertible {
+    public var description: String {
+        return "MongoKitten.Collection<\(database.server.hostname)/\(self.fullName)>"
+    }
+}

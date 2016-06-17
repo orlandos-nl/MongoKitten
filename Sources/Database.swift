@@ -610,3 +610,9 @@ extension Database {
         }
     }
 }
+
+extension Database : CustomStringConvertible {
+    public var description: String {
+        return "MongoKitten.Database<\(server.hostname)/\(self.name)>"
+    }
+}

@@ -545,3 +545,13 @@ public final class Server {
         return users
     }
 }
+
+extension Server : CustomStringConvertible {
+    public var description: String {
+        return "MongoKitten.Server<\(hostname)>"
+    }
+    
+    internal var hostname: String {
+        return "\(server.host):\(server.port)"
+    }
+}
