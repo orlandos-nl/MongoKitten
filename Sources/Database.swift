@@ -3,7 +3,7 @@
 //  MongoSwift
 //
 //  Created by Joannis Orlandos on 27/01/16.
-//  Copyright © 2016 PlanTeam. All rights reserved.
+//  Copyright © 2016 OpenKitten. All rights reserved.
 //
 
 import MD5
@@ -29,7 +29,7 @@ public final class Database {
     /// A cache of all collections in this Database.
     ///
     /// Mainly used for keeping track of event listeners
-    private var collections = [String: Collection]()
+    private var collections = [String: Weak<Collection>]()
     
     /// Initialise this database object
     ///
@@ -46,12 +46,14 @@ public final class Database {
     ///
     /// - returns: The requested collection in this database
     public subscript (collection: String) -> Collection {
-        if let c = collections[collection] {
+        collections.clean()
+        
+        if let c = collections[collection]?.value {
             return c
         }
         
         let c = Collection(named: collection, in: self)
-        collections[collection] = c
+        collections[collection] = Weak(c)
         return c
     }
     

@@ -3,7 +3,7 @@
 //  MongoSwift
 //
 //  Created by Joannis Orlandos on 24/01/16.
-//  Copyright © 2016 PlanTeam. All rights reserved.
+//  Copyright © 2016 OpenKitten. All rights reserved.
 //
 
 #if os(Linux)
@@ -131,15 +131,24 @@ public final class Server {
         }
     }
     
+    /// The database cache
+    private var databaseCache: [String : Weak<Database>] = [:]
+    
     /// Returns a `Database` instance referring to the database with the provided database name
     ///
     /// - parameter database: The database's name
     ///
     /// - returns: A database instance for the requested database
-    public subscript (database: String) -> Database {
-        let database = replaceOccurrences(in: database, where: ".", with: "")
+    public subscript (databaseName: String) -> Database {
+        databaseCache.clean()
         
-        let db = Database(database: database, at: self)
+        let databaseName = replaceOccurrences(in: databaseName, where: ".", with: "")
+        
+        if let db = databaseCache[databaseName]?.value {
+            return db
+        }
+        
+        let db = Database(database: databaseName, at: self)
         
         do {
             if !isInitialized {
@@ -172,6 +181,7 @@ public final class Server {
             }
         }
         
+        databaseCache[databaseName] = Weak(db)
         return db
     }
     

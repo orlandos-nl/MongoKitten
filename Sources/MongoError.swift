@@ -3,7 +3,7 @@
 //  MongoKitten
 //
 //  Created by Robbert Brandsma on 22-02-16.
-//  Copyright © 2016 PlanTeam. All rights reserved.
+//  Copyright © 2016 OpenKitten. All rights reserved.
 //
 
 import Foundation
