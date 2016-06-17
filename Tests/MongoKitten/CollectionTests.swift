@@ -176,7 +176,7 @@ class CollectionTests: XCTestCase {
         
         inserts = [base, brokenUsername, brokenUsername, brokenAge, brokenDogs, brokenKittens, brokenKittens2, brokenBeers, base]
         
-        _ = try! TestManager.wcol.insert(inserts)
+        try! TestManager.wcol.insert(inserts)
         
         let query: Query = ("username" == "henk" || "username" == "bob") && "age" > 24 && "kittens" >= 2 && "kittens" != 3 && "dogs" <= 1 && "beers" < 100
         
