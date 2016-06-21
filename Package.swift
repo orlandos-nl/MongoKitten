@@ -14,7 +14,7 @@ var package = Package(
         .Package(url: "https://github.com/OpenKitten/BSON.git", Version(0,0,0)),
         
         // Provides sockets
-        .Package(url: "https://github.com/czechboy0/Socks.git", majorVersion: 0, minor: 6),
+        .Package(url: "https://github.com/czechboy0/Socks.git", majorVersion: 0, minor: 7),
         ]
 )
 
