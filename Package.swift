@@ -15,13 +15,11 @@ var package = Package(
         
         // Provides sockets
         .Package(url: "https://github.com/czechboy0/Socks.git", majorVersion: 0, minor: 7),
+
+        // Background queue
+        .Package(url: "https://github.com/ketzusaka/Strand.git", majorVersion: 1, minor: 4),
+
         ]
 )
-
-#if os(Linux)
-    package.dependencies.append(.Package(url: "https://github.com/obbut/Strand.git", Version(0,0,1)))
-#else
-package.dependencies.append(.Package(url: "https://github.com/loganwright/Strand.git", majorVersion: 2, minor: 0))
-#endif
 
 let lib = Product(name: "MongoKitten", type: .Library(.Dynamic), modules: "MongoKitten")
