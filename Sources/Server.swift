@@ -350,7 +350,6 @@ public final class Server {
     /// For more information: https://docs.mongodb.com/manual/reference/command/listDatabases/#dbcmd.listDatabases
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    @warn_unused_result
     public func getDatabaseInfos() throws -> Document {
         let request: Document = ["listDatabases": 1]
         
@@ -526,7 +525,6 @@ public final class Server {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: The user's information (plus optionally the credentials and privileges)
-    @warn_unused_result
     public func info(for user: String, inDatabase database: Database? = nil, showCredentials: Bool? = nil, showPrivileges: Bool? = nil) throws -> Document {
         var command: Document = [
                                      "usersInfo": ["user": ~user, "db": ~(database?.name ?? "admin")]

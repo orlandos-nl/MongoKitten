@@ -219,7 +219,6 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A Cursor pointing to the response Documents.
-    @warn_unused_result
     public func query(matching filter: Document = [], usingFlags flags: QueryFlags = [], fetching fetchChunkSize: Int32 = 10) throws -> Cursor<Document> {
         let queryMsg = Message.Query(requestID: database.server.nextMessageID(), flags: flags, collection: self, numbersToSkip: 0, numbersToReturn: fetchChunkSize, query: filter, returnFields: nil)
         
@@ -246,7 +245,6 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A Cursor pointing to the response Documents.
-    @warn_unused_result
     public func query(matching filter: QueryProtocol, usingFlags flags: QueryFlags = [], fetching fetchChunkSize: Int32 = 10) throws -> Cursor<Document> {
         return try self.query(matching: filter.data, usingFlags: flags, fetching: fetchChunkSize)
     }
@@ -264,7 +262,6 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: The first `Document` in the Response
-    @warn_unused_result
     public func queryOne(matching filter: Document = [], usingFlags flags: QueryFlags = []) throws -> Document? {
         return try self.query(matching: filter, usingFlags: flags, fetching: 1).makeIterator().next()
     }
@@ -283,7 +280,6 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: The first Document in the Response
-    @warn_unused_result
     public func queryOne(matching filter: QueryProtocol, usingFlags flags: QueryFlags = []) throws -> Document? {
         return try self.queryOne(matching: filter.data, usingFlags: flags)
     }
@@ -304,7 +300,6 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A cursor pointing to the found Documents
-    @warn_unused_result
     public func find(matching filter: Document? = nil, sortedBy sort: Document? = nil, projecting projection: Document? = nil, skipping skip: Int32? = nil, limitedTo limit: Int32? = nil, withBatchSize batchSize: Int32 = 10) throws -> Cursor<Document> {
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
@@ -384,7 +379,6 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A cursor pointing to the found Documents
-    @warn_unused_result
     public func find(matching filter: QueryProtocol, sortedBy sort: Document? = nil, projecting projection: Document? = nil, skipping skip: Int32? = nil, limitedTo limit: Int32? = nil, withBatchSize batchSize: Int32 = 0) throws -> Cursor<Document> {
         return try find(matching: filter.data as Document?, sortedBy: sort, projecting: projection, skipping: skip, limitedTo: limit, withBatchSize: batchSize)
     }
@@ -403,7 +397,6 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: The found Document
-    @warn_unused_result
     public func findOne(matching filter: Document? = nil, sortedBy sort: Document? = nil, projecting projection: Document? = nil, skipping skip: Int32? = nil) throws -> Document? {
         return try self.find(matching: filter, sortedBy: sort, projecting: projection, skipping: skip, limitedTo:
             1).makeIterator().next()
@@ -423,7 +416,6 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: The found Document
-    @warn_unused_result
     public func findOne(matching filter: QueryProtocol, sortedBy sort: Document? = nil, projecting projection: Document? = nil, skipping skip: Int32? = nil) throws -> Document? {
         return try findOne(matching: filter.data as Document?, sortedBy: sort, projecting: projection, skipping: skip)
     }
@@ -715,7 +707,6 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: The amount of matching `Document`s
-    @warn_unused_result
     public func count(matching filter: Document? = nil, limitedTo limit: Int32? = nil, skipping skip: Int32? = nil) throws -> Int {
         var command: Document = ["count": .string(self.name)]
         
@@ -811,7 +802,6 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: The amount of matching `Document`s
-    @warn_unused_result
     public func count(matching query: QueryProtocol, limitedTo limit: Int32? = nil, skipping skip: Int32? = nil) throws -> Int {
         return try count(matching: query.data as Document?, limitedTo: limit, skipping: skip)
     }
@@ -826,7 +816,6 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A list of all distinct values for this key
-    @warn_unused_result
     public func distinct(on key: String, usingFilter filter: Document? = nil) throws -> [Value]? {
         var command: Document = ["distinct": .string(self.name), "key": .string(key)]
         
@@ -847,7 +836,6 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A list of all distinct values for this key
-    @warn_unused_result
     public func distinct(on key: String, usingFilter query: Query) throws -> [Value]? {
         return try self.distinct(on: key, usingFilter: query.data)
     }
@@ -935,7 +923,6 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A Cursor pointing to the Index results
-    @warn_unused_result
     public func listIndexes() throws -> Cursor<Document> {
         guard let wireVersion = database.server.serverData?.maxWireVersion where wireVersion > 3 else {
             throw MongoError.unsupportedOperations

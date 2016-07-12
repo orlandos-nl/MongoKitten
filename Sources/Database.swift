@@ -80,7 +80,6 @@ public final class Database {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A cursor to the resulting documents with collection info
-    @warn_unused_result
     public func getCollectionInfos(matching filter: Document? = nil) throws -> Cursor<Document> {
         var request: Document = ["listCollections": 1]
         if let filter = filter {
@@ -106,7 +105,6 @@ public final class Database {
     /// - parameter matching: The filter to apply when looking for Collections
     ///
     /// - returns: A `Cursor` to all `Collection`s in this `Database`
-    @warn_unused_result
     public func getCollections(matching filter: Document? = nil) throws -> Cursor<Collection> {
         let infoCursor = try self.getCollectionInfos(matching: filter)
         return Cursor(base: infoCursor) { collectionInfo in
@@ -125,7 +123,6 @@ public final class Database {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: `ismaster` response Document
-    @warn_unused_result
     internal func isMaster() throws -> Document {
         let response = try self.execute(command: ["ismaster": .int32(1)])
         

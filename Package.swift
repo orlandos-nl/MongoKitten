@@ -11,7 +11,7 @@ var package = Package(
         .Package(url: "https://github.com/CryptoKitten/SHA1.git", majorVersion: 0, minor: 8),
         
         // For MongoDB Documents
-        .Package(url: "https://github.com/OpenKitten/BSON.git", Version(0,0,0)),
+        .Package(url: "https://github.com/OpenKitten/BSON.git", majorVersion: 3, minor: 3),
         
         // Provides sockets
         .Package(url: "https://github.com/czechboy0/Socks.git", majorVersion: 0, minor: 8),
