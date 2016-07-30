@@ -191,7 +191,7 @@ public class GridFS {
         public let chunkSize: Int32
         
         /// The date on which this file has been uploaded
-        public let uploadDate: NSDate
+        public let uploadDate: Date
         
         /// The file's MD5 hash
         public let md5: String
@@ -221,10 +221,10 @@ public class GridFS {
         /// - parameter chunksCollection: The `Collection` where the `File` data is stored
         internal init?(document: Document, chunksCollection: Collection, filesCollection: Collection) {
             guard let id = document["_id"].objectIdValue,
-                length = document["length"].int32Value,
-                chunkSize = document["chunkSize"].int32Value,
-                uploadDate = document["uploadDate"].dateValue,
-                md5 = document["md5"].stringValue
+                let length = document["length"].int32Value,
+                let chunkSize = document["chunkSize"].int32Value,
+                let uploadDate = document["uploadDate"].dateValue,
+                let md5 = document["md5"].stringValue
                 else {
                     return nil
             }
@@ -318,7 +318,7 @@ public class GridFS {
             /// Initializes with a `Document` found when looking for chunks
             init?(document: Document, chunksCollection: Collection, filesCollection: Collection) {
                 guard let id = document["_id"].objectIdValue,
-                    filesID = document["files_id"].objectIdValue,
+                    let filesID = document["files_id"].objectIdValue,
                     case .binary(_, let data) = document["data"] else {
                         return nil
                 }

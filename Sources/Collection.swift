@@ -338,7 +338,7 @@ public final class Collection {
                 throw InternalMongoError.incorrectReply(reply: reply)
             }
             
-            guard let responseDoc = documents.first, cursorDoc = responseDoc["cursor"].documentValue else {
+            guard let responseDoc = documents.first, let cursorDoc = responseDoc["cursor"].documentValue else {
                 throw MongoError.invalidResponse(documents: documents)
             }
             
@@ -863,7 +863,7 @@ public final class Collection {
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func createIndexes(_ indexes: [(name: String, keys: [(key: String, ascending: Bool)], filter: Query?, buildInBackground: Bool, unique: Bool)]) throws {
-        guard let wireVersion = database.server.serverData?.maxWireVersion where wireVersion >= 2 else {
+        guard let wireVersion = database.server.serverData?.maxWireVersion , wireVersion >= 2 else {
             throw MongoError.unsupportedOperations
         }
         
@@ -924,7 +924,7 @@ public final class Collection {
     ///
     /// - returns: A Cursor pointing to the Index results
     public func listIndexes() throws -> Cursor<Document> {
-        guard let wireVersion = database.server.serverData?.maxWireVersion where wireVersion > 3 else {
+        guard let wireVersion = database.server.serverData?.maxWireVersion , wireVersion > 3 else {
             throw MongoError.unsupportedOperations
         }
         
@@ -965,7 +965,7 @@ public final class Collection {
             throw InternalMongoError.incorrectReply(reply: reply)
         }
         
-        guard let responseDoc = documents.first, cursorDoc = responseDoc["cursor"].documentValue else {
+        guard let responseDoc = documents.first, let cursorDoc = responseDoc["cursor"].documentValue else {
             throw MongoError.invalidResponse(documents: documents)
         }
         

@@ -10,7 +10,7 @@ import Foundation
 import struct BSON.Document
 
 /// All MongoDB errors
-public enum MongoError : ErrorProtocol {
+public enum MongoError : Error {
     /// Can't connect to the MongoDB Server
     case mongoDatabaseUnableToConnect
     
@@ -79,13 +79,13 @@ public enum MongoError : ErrorProtocol {
     case invalidNSURL(url: NSURL)
 }
 
-public enum MongoAuthenticationError : ErrorProtocol {
+public enum MongoAuthenticationError : Error {
     case base64Failure
     case authenticationFailure
     case serverSignatureInvalid
     case incorrectCredentials
 }
 
-internal enum InternalMongoError : ErrorProtocol {
+internal enum InternalMongoError : Error {
     case incorrectReply(reply: Message)
 }

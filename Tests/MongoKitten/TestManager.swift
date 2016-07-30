@@ -11,7 +11,7 @@ import BSON
 import Foundation
 
 final class TestManager {
-    enum TestError : ErrorProtocol {
+    enum TestError : Error {
         case TestDataNotPresent
     }
     

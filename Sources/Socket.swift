@@ -23,7 +23,7 @@ public protocol MongoTCP : class {
     func receive() throws -> [UInt8]
 }
 
-enum TCPError : ErrorProtocol {
+enum TCPError : Error {
     case ConnectionFailed
     case NotConnected
     case AlreadyConnected

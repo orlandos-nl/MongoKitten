@@ -77,9 +77,7 @@ enum Message {
         }
         
         // Get the message length
-        guard let length: Int32 = try Int32.instantiate(bytes: data[0...3]*) else {
-            throw DeserializationError.ParseError
-        }
+        let length = try Int32.instantiate(bytes: data[0...3]*)
         
         // Check the message length
         if length != Int32(data.count) {

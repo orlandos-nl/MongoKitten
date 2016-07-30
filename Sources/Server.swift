@@ -41,13 +41,22 @@ public final class Server {
     internal var fullBuffer = [Byte]()
     
     /// A cache for incoming responses
+    #if os(Linux)
     private var incomingMutateLock = Lock()
-    private var incomingResponses = [(id: Int32, message: Message, date: NSDate)]()
+    #else
+    private var incomingMutateLock = NSLock()
+    #endif
+    
+    private var incomingResponses = [(id: Int32, message: Message, date: Date)]()
     
     /// Contains a map from an ID to a handler. The handlers handle the `incomingResponses`
     private var responseHandlers = [Int32:ResponseHandler]()
     
+    #if os(Linux)
     private var waitingForResponses = [Int32:Condition]()
+    #else
+    private var waitingForResponses = [Int32:NSCondition]()
+    #endif
     
     /// `MongoTCP` Socket bound to the MongoDB Server
     private var client: MongoTCP?
@@ -73,7 +82,7 @@ public final class Server {
     ///
     /// - parameter automatically: Whether to connect automatically
     public convenience init(_ url: NSURL, using tcpDriver: MongoTCP.Type = Socks.TCPClient.self, automatically connecting: Bool = true) throws {
-        guard let scheme = url.scheme, let host = url.host where scheme.lowercased() == "mongodb" else {
+        guard let scheme = url.scheme, let host = url.host , scheme.lowercased() == "mongodb" else {
             throw MongoError.invalidNSURL(url: url)
         }
         
@@ -81,7 +90,7 @@ public final class Server {
         
         let path = url.path ?? "admin"
         
-        if let user = url.user, pass = url.password {
+        if let user = url.user, let pass = url.password {
             authentication = (username: user, password: pass, against: path)
         }
         
@@ -91,7 +100,7 @@ public final class Server {
             let port: UInt16 = UInt16(url.port?.int16Value ?? 27017)
         #endif
         
-        try self.init(at: host, port: port, using: authentication, automatically: connecting, using: tcpDriver)
+        try self.init(at: host, port: port, using: authentication, using: tcpDriver, automatically: connecting)
     }
     
     /// Sets up the `Server` to connect to the specified URL.
@@ -260,9 +269,7 @@ public final class Server {
         
         do {
             while fullBuffer.count >= 36 {
-                guard let length: Int = Int(try Int32.instantiate(bytes: fullBuffer[0...3]*)) else {
-                    throw DeserializationError.ParseError
-                }
+                let length = Int(try Int32.instantiate(bytes: fullBuffer[0...3]*))
                 
                 guard length <= fullBuffer.count else {
                     // Ignore: Wait for more data
@@ -274,7 +281,7 @@ public final class Server {
                 let reply = try Message.makeReply(from: responseData)
                 
                 incomingMutateLock.lock()
-                incomingResponses.append((responseId, reply, NSDate()))
+                incomingResponses.append((responseId, reply, Date()))
                 incomingMutateLock.unlock()
                 
                 fullBuffer.removeSubrange(0..<length)
@@ -292,7 +299,12 @@ public final class Server {
     ///
     /// - returns: The reply
     internal func await(response requestId: Int32, until timeout: TimeInterval = 60) throws -> Message {
-        let condition = Condition()
+        #if os(Linux)
+            let condition = Condition()
+        #else
+            let condition = NSCondition()
+        #endif
+        
         condition.lock()
         waitingForResponses[requestId] = condition
         
