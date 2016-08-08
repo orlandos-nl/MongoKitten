@@ -206,7 +206,7 @@ try otherCollection.insert([testDocument, testDocument, testDocument])
 
 To find the Documents in the collection we'll want to use `find` or `findOne` on the collection. This returns a "cursor".
 The `find` and `findOne` functions are used on a collection and don't require any parameters.
-Adding parameters, however, helps finding the data you need. By providing no arguments we're selecing all data in the collection.
+Adding parameters, however, helps finding the data you need. By providing no arguments we're selecting all data in the collection.
 
 ```swift
 let resultUsers = try userCollection.find()
@@ -301,7 +301,7 @@ let data = NSData(contentsOfFile: "./myimage.jpg")!
 // Store the ObjectID corresponding to the file in a constant variable
 let objectID = try! gridFS.store(data: data, named "myimage.jpg", withType: "image/jpeg", inChunksOf: 10000)
 
-// Retreive the file from GridFS
+// Retrieve the file from GridFS
 let file = try! gridFS.findOne(byID: objectID)
 
 // Get the bytes we need
@@ -314,7 +314,7 @@ Imagine running a video streaming site. One of your users uploads a video. This 
 
 Now one user starts watching the video. You'll load the video chunk-by-chunk without keeping all of the video's buffer in memory.
 
-The user quits the video about 40% through the video. Let's say chunk 58 of 144 of your video. Now you'll want to start continueing the video where it left off without receving all the unneccesary chunks.
+The user quits the video about 40% through the video. Let's say chunk 58 of 144 of your video. Now you'll want to start continuing the video where it left off without receving all the unnecessary chunks.
 
 ## License
 
