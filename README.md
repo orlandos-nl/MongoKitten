@@ -308,7 +308,7 @@ let file = try! gridFS.findOne(byID: objectID)
 let myImageData: [Byte] = file!.read(from: 1024, to: 1234)
 ```
 
-### GridFS example usage
+### GridFS example scenario
 
 Imagine running a video streaming site. One of your users uploads a video. This will be stored in GridFS within 255000-byte chunks.
 
