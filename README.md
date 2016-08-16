@@ -177,7 +177,7 @@ userDocument["binary"] = .binary(subtype: .generic, data: [0x00, 0x01, 0x02, 0x0
 userDocument["date"] = .dateTime(NSDate())
 userDocument["null"] = .null
 userDocument["string"] = .string("hello")
-userDocument["objectID"] = .objectId(try! ObjectId("507f1f77bcf86cd799439011"))
+userDocument["objectID"] = .objectId(try ObjectId("507f1f77bcf86cd799439011"))
 ```
 
 Of course variables can still use the `~` operator:
@@ -299,10 +299,10 @@ let data = NSData(contentsOfFile: "./myimage.jpg")!
 
 // Store the file in GridFS with maximum 10000 bytes per chunk (255000 is the recommended default) and doesn't need to be set
 // Store the ObjectID corresponding to the file in a constant variable
-let objectID = try! gridFS.store(data: data, named "myimage.jpg", withType: "image/jpeg", inChunksOf: 10000)
+let objectID = try gridFS.store(data: data, named "myimage.jpg", withType: "image/jpeg", inChunksOf: 10000)
 
 // Retrieve the file from GridFS
-let file = try! gridFS.findOne(byID: objectID)
+let file = try gridFS.findOne(byID: objectID)
 
 // Get the bytes we need
 let myImageData: [Byte] = file!.read(from: 1024, to: 1234)
