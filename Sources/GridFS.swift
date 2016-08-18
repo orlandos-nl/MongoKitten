@@ -124,7 +124,7 @@ public class GridFS {
     /// - parameter usingMetadata: The optional metadata to store with this file
     /// - parameter inChunksOf: The amount of bytes to put in one chunk
     public func store(data binary: [Byte], named filename: String? = nil, withType contentType: String? = nil, usingMetadata metadata: Value? = nil, inChunksOf chunkSize: Int = 255000) throws -> ObjectId {
-        guard chunkSize < 15000000 else {
+        guard chunkSize < 15_000_000 else {
             throw MongoError.invalidChunkSize(chunkSize: chunkSize)
         }
         
@@ -133,11 +133,11 @@ public class GridFS {
         let dataSize = data.count
         
         var insertData: Document = [
-                                       "_id": .objectId(id),
-                                       "length": .int64(Int64(dataSize)),
-                                       "chunkSize": .int32(Int32(chunkSize)),
-                                       "uploadDate": .dateTime(Date(timeIntervalSinceNow: 0)),
-                                       "md5": .string(MD5.calculate(data).hexString)]
+            "_id": ~id,
+            "length": ~Int64(dataSize),
+            "chunkSize": ~Int32(chunkSize),
+            "uploadDate": ~Date(timeIntervalSinceNow: 0),
+            "md5": ~MD5.calculate(data).hexString]
         
         
         if let contentType = contentType {
@@ -157,8 +157,8 @@ public class GridFS {
             
             let chunk = Array(data[0..<smallestMax])
             
-            _ = try chunks.insert(["files_id": .objectId(id),
-                                   "n": .int64(Int64(n)),
+            _ = try chunks.insert(["files_id": ~id,
+                                   "n": ~Int64(n),
                                    "data": .binary(subtype: .generic, data: chunk)])
             
             n += 1
@@ -185,7 +185,7 @@ public class GridFS {
         public let id: ObjectId
         
         /// The amount of bytes in this file
-        public let length: Int32
+        public let length: Int64
         
         /// The amount of data per chunk
         public let chunkSize: Int32
@@ -221,7 +221,7 @@ public class GridFS {
         /// - parameter chunksCollection: The `Collection` where the `File` data is stored
         internal init?(document: Document, chunksCollection: Collection, filesCollection: Collection) {
             guard let id = document["_id"].objectIdValue,
-                let length = document["length"].int32Value,
+                let length = document["length"].int64Value,
                 let chunkSize = document["chunkSize"].int32Value,
                 let uploadDate = document["uploadDate"].dateValue,
                 let md5 = document["md5"].stringValue
@@ -295,19 +295,29 @@ public class GridFS {
             return allData
         }
         
+        public func chunked() throws -> AnyIterator<Chunk> {
+            let query: Document = ["files_id": ~id]
+            
+            let cursor = try chunksCollection.find(matching: query, sortedBy: ["n": 1])
+            
+            let chunkCursor = Cursor(base: cursor, transform: { Chunk(document: $0, chunksCollection: self.chunksCollection, filesCollection: self.filesCollection) })
+            
+            return chunkCursor.makeIterator()
+        }
+        
         /// A GridFS Byte Chunk that's part of a file
-        private class Chunk {
+        public class Chunk {
             /// The ID of this chunk
-            let id: ObjectId
+            public let id: ObjectId
             
             /// The ID of the file that this chunk is a part of
-            let filesID: ObjectId
+            public let filesID: ObjectId
             
             /// Which chunk this is
-            let n: Int32
+            public let n: Int32
             
             /// The data for our chunk
-            let data: [Byte]
+            public let data: [Byte]
             
             /// The chunk `Collection` which this chunk is stored in
             let chunksCollection: Collection

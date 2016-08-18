@@ -567,10 +567,12 @@ public final class Server {
 }
 
 extension Server : CustomStringConvertible {
+    /// A textual representation of this `Server`
     public var description: String {
         return "MongoKitten.Server<\(hostname)>"
     }
     
+    /// This server's hostname
     internal var hostname: String {
         return "\(server.host):\(server.port)"
     }
