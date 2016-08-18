@@ -46,7 +46,7 @@ import PackageDescription
 let package = Package(
 	name: "MyApp",
 	dependencies: [
-		.Package(url: "https://github.com/OpenKitten/MongoKitten.git", majorVersion: 1, minor: 1)
+		.Package(url: "https://github.com/OpenKitten/MongoKitten.git", majorVersion: 1, minor: 4)
 	]
 )
 ```
@@ -177,7 +177,7 @@ userDocument["binary"] = .binary(subtype: .generic, data: [0x00, 0x01, 0x02, 0x0
 userDocument["date"] = .dateTime(NSDate())
 userDocument["null"] = .null
 userDocument["string"] = .string("hello")
-userDocument["objectID"] = .objectId(try! ObjectId("507f1f77bcf86cd799439011"))
+userDocument["objectID"] = .objectId(try ObjectId("507f1f77bcf86cd799439011"))
 ```
 
 Of course variables can still use the `~` operator:
@@ -206,7 +206,7 @@ try otherCollection.insert([testDocument, testDocument, testDocument])
 
 To find the Documents in the collection we'll want to use `find` or `findOne` on the collection. This returns a "cursor".
 The `find` and `findOne` functions are used on a collection and don't require any parameters.
-Adding parameters, however, helps finding the data you need. By providing no arguments we're selecing all data in the collection.
+Adding parameters, however, helps finding the data you need. By providing no arguments we're selecting all data in the collection.
 
 ```swift
 let resultUsers = try userCollection.find()
@@ -299,22 +299,22 @@ let data = NSData(contentsOfFile: "./myimage.jpg")!
 
 // Store the file in GridFS with maximum 10000 bytes per chunk (255000 is the recommended default) and doesn't need to be set
 // Store the ObjectID corresponding to the file in a constant variable
-let objectID = try! gridFS.store(data: data, named "myimage.jpg", withType: "image/jpeg", inChunksOf: 10000)
+let objectID = try gridFS.store(data: data, named "myimage.jpg", withType: "image/jpeg", inChunksOf: 10000)
 
-// Retreive the file from GridFS
-let file = try! gridFS.findOne(byID: objectID)
+// Retrieve the file from GridFS
+let file = try gridFS.findOne(byID: objectID)
 
 // Get the bytes we need
 let myImageData: [Byte] = file!.read(from: 1024, to: 1234)
 ```
 
-### GridFS example usage
+### GridFS example scenario
 
 Imagine running a video streaming site. One of your users uploads a video. This will be stored in GridFS within 255000-byte chunks.
 
 Now one user starts watching the video. You'll load the video chunk-by-chunk without keeping all of the video's buffer in memory.
 
-The user quits the video about 40% through the video. Let's say chunk 58 of 144 of your video. Now you'll want to start continueing the video where it left off without receving all the unneccesary chunks.
+The user quits the video about 40% through the video. Let's say chunk 58 of 144 of your video. Now you'll want to start continuing the video where it left off without receving all the unnecessary chunks.
 
 ## License
 
