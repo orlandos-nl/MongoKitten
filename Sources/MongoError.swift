@@ -62,7 +62,7 @@ public enum MongoError : Error {
     /// The response with the given documents is invalid
     case invalidResponse(documents: [Document])
     
-    /// If you get one of these, it's probably a bug on our side. Sorry. Please file a ticket :)
+    /// If you get one of these, it's probably a bug on our side. Sorry. Please file an issue at https://github.com/OpenKitten/MongoKitten/issues/new :)
     case internalInconsistency
     
     /// -

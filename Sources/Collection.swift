@@ -937,6 +937,32 @@ public final class Collection {
         return try Cursor(cursorDocument: cursorDocument, server: database.server, chunkSize: 10, transform: { $0 })
     }
     
+    /// Modifies the collection. Requires access to `collMod`
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/collMod/#dbcmd.collMod
+    ///
+    /// You can use this method, for example, to change the validator on a collection:
+    ///    
+    ///     collection.modify(flags: ["validator": ["name": ["$type": "string"]]])
+    ///
+    /// - parameter flags: The modification you want to perform. See the MongoDB documentation for more information.
+    ///
+    /// - throws: When MongoDB doesn't return a document indicating success, we'll throw a `MongoError.commandFailure()` containing the error document sent by the server
+    /// - throws: When the `flags` document contains the key `collMod`, which is prohibited.
+    public func modify(flags: Document) throws {
+        guard flags["collMod"] == .nothing else {
+            throw MongoError.commandError(error: "Cannot execute modify() on \(self.description): document `flags` contains prohibited key `collMod`.")
+        }
+        
+        let command = ["collMod": ~self.name] as Document
+        
+        let result = try firstDocument(in: database.execute(command: command))
+        
+        guard result["ok"].int == 1 else {
+            throw MongoError.commandFailure(error: result)
+        }
+    }
+    
     /// Uses the aggregation pipeline to process documents into aggregated results.
     ///
     /// See [the MongoDB docs on the aggregation pipeline](https://docs.mongodb.org/manual/reference/operator/aggregation-pipeline/) for more information.
