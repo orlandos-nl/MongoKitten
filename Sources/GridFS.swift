@@ -15,10 +15,10 @@ import MD5
 /// Conforms to the GridFS standard as specified here: https://docs.mongodb.org/manual/core/gridfs/
 public class GridFS {
     /// The bucket for file data
-    private let files: Collection
+    fileprivate let files: Collection
     
     /// The bucket for file data chunks
-    private let chunks: Collection
+    fileprivate let chunks: Collection
     
     /// Initializes a GridFS `Collection` (bucket) in a given database
     ///

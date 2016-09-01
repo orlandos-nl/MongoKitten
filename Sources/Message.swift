@@ -77,7 +77,7 @@ enum Message {
         }
         
         // Get the message length
-        let length = try Int32.instantiate(bytes: data[0...3]*)
+        let length = try fromBytes(data[0...3]) as Int32
         
         // Check the message length
         if length != Int32(data.count) {
@@ -85,13 +85,13 @@ enum Message {
         }
         
         /// Get our variables from the message
-        let requestID = try Int32.instantiate(bytes: data[4...7]*)
-        let responseTo = try Int32.instantiate(bytes: data[8...11]*)
+        let requestID = try fromBytes(data[4...7]) as Int32
+        let responseTo = try fromBytes(data[8...11]) as Int32
         
-        let flags = try Int32.instantiate(bytes: data[16...19]*)
-        let cursorID = try Int64.instantiate(bytes: data[20...27]*)
-        let startingFrom = try Int32.instantiate(bytes: data[28...31]*)
-        let numbersReturned = try Int32.instantiate(bytes: data[32...35]*)
+        let flags = try fromBytes(data[16...19]) as Int32
+        let cursorID = try fromBytes(data[20...27]) as Int64
+        let startingFrom = try fromBytes(data[28...31]) as Int32
+        let numbersReturned = try fromBytes(data[32...35]) as Int32
         let documents = [Document](bsonBytes: data[36..<data.endIndex]*)
         
         // Return the constructed reply

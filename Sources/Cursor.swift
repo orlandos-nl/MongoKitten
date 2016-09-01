@@ -12,17 +12,17 @@ import BSON
 public final class Cursor<T> {
     public let namespace: String
     public let server: Server
-    private var cursorID: Int64
-    private let chunkSize: Int32
+    fileprivate var cursorID: Int64
+    fileprivate let chunkSize: Int32
     
     // documents already received by the server
-    private var data: [T]
+    fileprivate var data: [T]
     
     typealias Transformer = (Document) -> (T?)
     let transform: Transformer
     
     /// If firstDataSet is nil, reply.documents will be passed to transform as initial data
-    internal convenience init?(namespace: String, server: Server, reply: Message, chunkSize: Int32, transform: Transformer) {
+    internal convenience init?(namespace: String, server: Server, reply: Message, chunkSize: Int32, transform: @escaping Transformer) {
         guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
             return nil
         }
@@ -30,7 +30,7 @@ public final class Cursor<T> {
         self.init(namespace: namespace, server: server, cursorID: cursorID, initialData: documents.flatMap(transform), chunkSize: chunkSize, transform: transform)
     }
     
-    internal convenience init(cursorDocument cursor: Document, server: Server, chunkSize: Int32, transform: Transformer) throws {
+    internal convenience init(cursorDocument cursor: Document, server: Server, chunkSize: Int32, transform: @escaping Transformer) throws {
         guard let cursorID = cursor["id"].int64Value, let namespace = cursor["ns"].stringValue, let firstBatch = cursor["firstBatch"].documentValue else {
             throw MongoError.cursorInitializationError(cursorDocument: cursor)
         }
@@ -38,7 +38,7 @@ public final class Cursor<T> {
         self.init(namespace: namespace, server: server, cursorID: cursorID, initialData: firstBatch.arrayValue.flatMap{$0.documentValue}.flatMap(transform), chunkSize: chunkSize, transform: transform)
     }
     
-    internal init(namespace: String, server: Server, cursorID: Int64, initialData: [T], chunkSize: Int32, transform: Transformer) {
+    internal init(namespace: String, server: Server, cursorID: Int64, initialData: [T], chunkSize: Int32, transform: @escaping Transformer) {
         self.namespace = namespace
         self.server = server
         self.cursorID = cursorID
@@ -47,7 +47,7 @@ public final class Cursor<T> {
         self.transform = transform
     }
     
-    public init<B>(base: Cursor<B>, transform: (B) -> (T?)) {
+    public init<B>(base: Cursor<B>, transform: @escaping (B) -> (T?)) {
         self.namespace = base.namespace
         self.server = base.server
         self.cursorID = base.cursorID
@@ -63,7 +63,7 @@ public final class Cursor<T> {
     }
     
     /// Gets more information and puts it in the buffer
-    private func getMore() {
+    fileprivate func getMore() {
         do {
             let request = Message.GetMore(requestID: server.nextMessageID(), namespace: namespace, numberToReturn: chunkSize, cursor: cursorID)
             let requestId = try server.send(message: request)

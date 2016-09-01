@@ -26,7 +26,7 @@ import MD5
 
 /// A ResponseHandler is a closure that receives a MongoReply to process it
 /// It's internal because ReplyMessages are an internal struct that is used for direct communication with MongoDB only
-internal typealias ResponseHandler = ((reply: Message) -> Void)
+internal typealias ResponseHandler = ((Message) -> Void)
 
 /// A server object is the core of MongoKitten as it's used to communicate to the server.
 /// You can select a `Database` by subscripting an instance of this Server with a `String`.
@@ -210,7 +210,7 @@ public final class Server {
     /// - throws: Unable to connect
     public func connect() throws {
         self.client = try tcpType.open(address: server.host, port: server.port)
-        try Background(function: backgroundLoop)
+        try background(backgroundLoop)
         isConnected = true
     }
     
@@ -223,7 +223,7 @@ public final class Server {
             // Handle callbacks, locks etc on the responses
             for response in incomingResponses {
                 waitingForResponses[response.id]?.broadcast()
-                responseHandlers[response.id]?(reply: response.message)
+                responseHandlers[response.id]?(response.message)
             }
         } catch {
             // A receive failure is to be expected if the socket has been closed
@@ -235,7 +235,7 @@ public final class Server {
         }
         
         do {
-            try Background(function: backgroundLoop)
+            try background(backgroundLoop)
         } catch {
             do {
                 try disconnect()
@@ -269,7 +269,7 @@ public final class Server {
         
         do {
             while fullBuffer.count >= 36 {
-                let length = Int(try Int32.instantiate(bytes: fullBuffer[0...3]*))
+                let length = Int(try fromBytes(fullBuffer[0...3]) as Int32)
                 
                 guard length <= fullBuffer.count else {
                     // Ignore: Wait for more data
@@ -277,7 +277,7 @@ public final class Server {
                 }
                 
                 let responseData = fullBuffer[0..<length]*
-                let responseId = try Int32.instantiate(bytes: fullBuffer[8...11]*)
+                let responseId = try fromBytes(fullBuffer[8...11]) as Int32
                 let reply = try Message.makeReply(from: responseData)
                 
                 incomingMutateLock.lock()
