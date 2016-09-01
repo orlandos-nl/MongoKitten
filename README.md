@@ -3,7 +3,6 @@
 [![Swift 2.2](https://img.shields.io/badge/swift-2.2-green.svg)](https://swift.org)
 [![Swift 3.0](https://img.shields.io/badge/swift-3.0-orange.svg)](https://swift.org)
 ![License](https://img.shields.io/github/license/openkitten/mongokitten.svg)
-[![Slack Status](http://openkitten.org:3000/badge.svg)](http://openkitten.org:3000/)
 [![Carthage compatible](https://img.shields.io/badge/Carthage-compatible-4BC51D.svg?style=flat)](https://github.com/Carthage/Carthage)
 
 
@@ -46,7 +45,7 @@ import PackageDescription
 let package = Package(
 	name: "MyApp",
 	dependencies: [
-		.Package(url: "https://github.com/OpenKitten/MongoKitten.git", majorVersion: 1, minor: 4)
+		.Package(url: "https://github.com/OpenKitten/MongoKitten.git", majorVersion: 1, minor: 5)
 	]
 )
 ```
