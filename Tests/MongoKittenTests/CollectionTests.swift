@@ -8,8 +8,8 @@
 
 import XCTest
 import MongoKitten
-import PBKDF2
-import SHA1
+import MongoPBKDF2
+import MongoSHA1
 
 class CollectionTests: XCTestCase {
     static var allTests: [(String, (CollectionTests) -> () throws -> Void)] {

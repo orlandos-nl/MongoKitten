@@ -6,13 +6,13 @@
 //  Copyright © 2016 OpenKitten. All rights reserved.
 //
 
-import MD5
-import SCRAM
-import SHA1
 import Foundation
-import PBKDF2
 import BSON
-import HMAC
+import MongoMD5
+import MongoSCRAM
+import MongoSHA1
+import MongoPBKDF2
+import MongoHMAC
 
 /// A Mongo Database. Cannot be publically initialized.
 /// But you can get a database object by subscripting `Server` with a `String` as the database name

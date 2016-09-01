@@ -8,7 +8,7 @@
 
 import BSON
 import Foundation
-import MD5
+import MongoMD5
 
 /// A GridFS instance similar to a collection
 ///
