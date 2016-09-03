@@ -244,6 +244,12 @@ public indirect enum AQT {
             return ["$or": .array(Document(array: expressions)) ]
         case .not(let aqt):
             return ["$not": ~aqt.document]
+        case .contains(let key, let val):
+            return [key: .string("/\(val.val)/")]
+        case .startsWith(let key, let val):
+            return [key: .string("/^\(val.val)/")]
+        case .endsWith(let key, let val):
+            return [key: .string("/\(val.val)$/")]
         case .nothing:
             return []
         }
@@ -281,6 +287,15 @@ public indirect enum AQT {
     
     /// Whether nothing needs to be matched. Is always true and just a placeholder
     case nothing
+    
+    /// Whether the String value within the `key` contains this `Value` as a String.
+    case contains(key: String, val: ValueProtocol)
+    
+    /// Whether the String value within the `key` starts with this `Value` as a String.
+    case startsWith(key: String, val: ValueProtocol)
+    
+    /// Whether the String value within the `key` ends with this `Value` as a String.
+    case endsWith(key: String, val: ValueProtocol)
 }
 
 /// The protocol all queries need to comply to
@@ -507,6 +522,39 @@ extension Document {
             return false
         case .not(let aqt):
             return !self.matches(query: Query(aqt: aqt))
+        case .contains(let key, let val):
+            switch doc[key] {
+            case .string(let stringVal):
+                if let d = val.val.stringValue {
+                    return stringVal.contains(d)
+                } else {
+                    return false
+                }
+            default:
+                return false
+            }
+        case .startsWith(let key, let val):
+            switch doc[key] {
+            case .string(let stringVal):
+                if let d = val.val.stringValue {
+                    return stringVal.hasPrefix(d)
+                } else {
+                    return false
+                }
+            default:
+                return false
+            }
+        case .endsWith(let key, let val):
+            switch doc[key] {
+            case .string(let stringVal):
+                if let d = val.val.stringValue {
+                    return stringVal.hasSuffix(d)
+                } else {
+                    return false
+                }
+            default:
+                return false
+            }
         case .nothing:
             return true
         }
