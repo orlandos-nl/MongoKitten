@@ -160,6 +160,10 @@ public final class Server {
         let db = Database(database: databaseName, at: self)
         
         do {
+            if !self.isConnected {
+                _ = try? self.connect()
+            }
+            
             if !isInitialized {
                 let result = try db.isMaster()
                 
