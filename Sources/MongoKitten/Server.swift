@@ -41,22 +41,14 @@ public final class Server {
     internal var fullBuffer = [Byte]()
     
     /// A cache for incoming responses
-    #if os(Linux)
-    private var incomingMutateLock = Lock()
-    #else
     private var incomingMutateLock = NSLock()
-    #endif
     
     private var incomingResponses = [(id: Int32, message: Message, date: Date)]()
     
     /// Contains a map from an ID to a handler. The handlers handle the `incomingResponses`
     private var responseHandlers = [Int32:ResponseHandler]()
     
-    #if os(Linux)
-    private var waitingForResponses = [Int32:Condition]()
-    #else
     private var waitingForResponses = [Int32:NSCondition]()
-    #endif
     
     /// `MongoTCP` Socket bound to the MongoDB Server
     private var client: MongoTCP?
@@ -308,25 +300,15 @@ public final class Server {
     ///
     /// - returns: The reply
     internal func await(response requestId: Int32, until timeout: TimeInterval = 60) throws -> Message {
-        #if os(Linux)
-            let condition = Condition()
-        #else
-            let condition = NSCondition()
-        #endif
+        let condition = NSCondition()
         
         condition.lock()
         waitingForResponses[requestId] = condition
         
         if incomingResponses.index(where: { $0.id == requestId }) == nil {
-            #if os(Linux)
-                if condition.waitUntilDate(Date(timeIntervalSinceNow: timeout)) == false {
-                    throw MongoError.timeout
-                }
-            #else
-                if condition.wait(until: Date(timeIntervalSinceNow: timeout)) == false {
-                    throw MongoError.timeout
-                }
-            #endif
+            if condition.wait(until: Date(timeIntervalSinceNow: timeout)) == false {
+                throw MongoError.timeout
+            }
         }
         
         condition.unlock()
