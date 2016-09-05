@@ -213,6 +213,7 @@ public final class Server {
     ///
     /// - throws: Unable to connect
     public func connect() throws {
+        _ = try? self.disconnect()
         self.client = try tcpType.open(address: server.host, port: server.port)
         try background(backgroundLoop)
         isConnected = true
@@ -251,10 +252,14 @@ public final class Server {
     ///
     /// - throws: Unable to disconnect
     public func disconnect() throws {
-        try client?.close()
-        
         isInitialized = false
         isConnected = false
+        
+        for db in self.databaseCache {
+            db.value.value?.isAuthenticated = false
+        }
+        
+        try client?.close()
     }
     
     /// Called by the server thread to handle MongoDB Wire messages

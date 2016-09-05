@@ -117,7 +117,7 @@ public final class Database {
     ///If the instance is a member of a replica set, then isMaster returns a subset of the replica set configuration and status including whether or not the instance is the primary of the replica set.
     ///
     /// When sent to a mongod instance that is not a member of a replica set, isMaster returns a subset of this information.
-    /// 
+    ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/isMaster/#dbcmd.isMaster
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
@@ -189,6 +189,10 @@ extension Database {
             throw MongoAuthenticationError.incorrectCredentials
         }
         
+        if response["done"].boolValue == true {
+            return
+        }
+        
         guard let stringResponse = response["payload"].stringValue else {
             throw MongoAuthenticationError.authenticationFailure
         }
@@ -204,6 +208,8 @@ extension Database {
         
         let dictionaryResponse = self.parse(response: finalResponse)
         
+        print(response.makeExtendedJSON())
+        
         guard let v = dictionaryResponse["v"] else {
             throw MongoAuthenticationError.authenticationFailure
         }
@@ -215,9 +221,9 @@ extension Database {
         }
         
         let response = try self.execute(command: [
-                                                   "saslContinue": .int32(1),
-                                                   "conversationId": conversationId,
-                                                   "payload": ""
+            "saslContinue": .int32(1),
+            "conversationId": conversationId,
+            "payload": ""
             ])
         
         guard case .Reply(_, _, _, _, _, _, let documents) = response, let responseDocument = documents.first else {
@@ -268,9 +274,9 @@ extension Database {
         
         // Send the proof
         let response = try self.execute(command: [
-                                                   "saslContinue": .int32(1),
-                                                   "conversationId": conversationId,
-                                                   "payload": .string(payload)
+            "saslContinue": .int32(1),
+            "conversationId": conversationId,
+            "payload": .string(payload)
             ])
         
         // If we don't get a correct reply
@@ -297,9 +303,9 @@ extension Database {
         let payload = authPayload.cStringBytes.base64
         
         let response = try self.execute(command: [
-                                                   "saslStart": .int32(1),
-                                                   "mechanism": "SCRAM-SHA-1",
-                                                   "payload": .string(payload)
+            "saslStart": .int32(1),
+            "mechanism": "SCRAM-SHA-1",
+            "payload": .string(payload)
             ])
         
         let responseDocument = try firstDocument(in: response)
@@ -315,7 +321,7 @@ extension Database {
     internal func authenticate(mongoCR details: (username: String, password: String, against: String)) throws {
         // Get the server's nonce
         let response = try self.execute(command: [
-                                                   "getNonce": .int32(1)
+            "getNonce": .int32(1)
             ])
         
         // Get the server's challenge
@@ -334,10 +340,10 @@ extension Database {
         
         // Respond to the challengge
         let successResponse = try self.execute(command: [
-                                                          "authenticate": 1,
-                                                          "nonce": .string(nonce),
-                                                          "user": .string(details.username),
-                                                          "key": .string(key)
+            "authenticate": 1,
+            "nonce": .string(nonce),
+            "user": .string(details.username),
+            "key": .string(key)
             ])
         
         let successDocument = try firstDocument(in: successResponse)
@@ -366,14 +372,14 @@ extension Database {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func createUser(_ user: String, password: String, roles: Document, customData: Document? = nil) throws {
         var command: Document = [
-                                "createUser": ~user,
-                                "pwd": ~password,
-                             ]
+            "createUser": ~user,
+            "pwd": ~password,
+            ]
         
         if let data = customData {
             command["customData"] = ~data
         }
-
+        
         command["roles"] = .array(roles)
         
         let reply = try execute(command: command)
@@ -383,7 +389,7 @@ extension Database {
             throw MongoError.commandFailure(error: document)
         }
     }
-
+    
     /// Updates a user in this database with a new password, roles and optional set of custom data
     ///
     /// For additional information: https://docs.mongodb.com/manual/reference/command/updateUser/#dbcmd.updateUser
@@ -396,9 +402,9 @@ extension Database {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func update(user username: String, password: String, roles: Document, customData: Document? = nil) throws {
         var command: Document = [
-                                    "updateUser": ~username,
-                                    "pwd": ~password,
-                                    ]
+            "updateUser": ~username,
+            "pwd": ~password,
+            ]
         
         if let data = customData {
             command["customData"] = ~data
@@ -422,8 +428,8 @@ extension Database {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func drop(user username: String) throws {
         let command: Document = [
-                                    "dropUser": ~username
-                                    ]
+            "dropUser": ~username
+        ]
         
         let document = try firstDocument(in: try execute(command: command))
         
@@ -439,9 +445,9 @@ extension Database {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func dropAllUsers() throws {
         let command: Document = [
-                                    "dropAllUsersFromDatabase": .int32(1)
-                                    ]
-
+            "dropAllUsersFromDatabase": .int32(1)
+        ]
+        
         let document = try firstDocument(in: try execute(command: command))
         
         guard document["ok"].int32 == 1 else {
@@ -459,9 +465,9 @@ extension Database {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func grant(roles roleList: Document, to user: String) throws {
         let command: Document = [
-                                    "grantRolesToUser": ~user,
-                                    "roles": .array(roleList)
-                                    ]
+            "grantRolesToUser": ~user,
+            "roles": .array(roleList)
+        ]
         
         let document = try firstDocument(in: try execute(command: command))
         
@@ -477,8 +483,8 @@ extension Database {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func drop() throws {
         let command: Document = [
-                                    "dropDatabase": .int32(1)
-                                    ]
+            "dropDatabase": .int32(1)
+        ]
         
         let document = try firstDocument(in: try execute(command: command))
         
@@ -539,8 +545,8 @@ extension Database {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func clone(namespace ns: String, from server: String, filtering filter: Query? = nil) throws {
         var command: Document = [
-                                    "cloneCollection": ~ns,
-                                    "from": ~server
+            "cloneCollection": ~ns,
+            "from": ~server
         ]
         
         if let filter = filter {
@@ -566,8 +572,8 @@ extension Database {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func clone(namespace ns: String, from server: String, filtering filter: Document? = nil) throws {
         var command: Document = [
-                                    "cloneCollection": ~ns,
-                                    "from": ~server
+            "cloneCollection": ~ns,
+            "from": ~server
         ]
         
         if let filter = filter {
@@ -580,7 +586,7 @@ extension Database {
         if document["done"].bool == true {
             return
         }
-
+        
         guard document["ok"].int32 == 1 else {
             throw MongoError.commandFailure(error: document)
         }
@@ -597,9 +603,9 @@ extension Database {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func clone(collection instance: Collection, to otherCollection: String, capped: Int32) throws {
         let command: Document = [
-                                    "cloneCollectionAsCapped": ~instance.name,
-                                    "toCollection": ~otherCollection,
-                                    "size": ~capped
+            "cloneCollectionAsCapped": ~instance.name,
+            "toCollection": ~otherCollection,
+            "size": ~capped
         ]
         
         let document = try firstDocument(in: try execute(command: command))
