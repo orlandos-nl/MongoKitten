@@ -72,6 +72,28 @@ class CollectionTests: XCTestCase {
         XCTAssertEqual(response.count, 2)
         
         XCTAssertEqual(response.first, response2)
+        
+        runContainsQuery()
+        runStartsWithQuery()
+        runEndsWithQuery()
+    }
+    
+    private func runContainsQuery() {
+        let query = Query(aqt: .contains(key: "username", val: "ar"))
+        let response = Array(try! TestManager.wcol.find(matching: query))
+        XCTAssert(response.count == 2)
+    }
+    
+    private func runStartsWithQuery() {
+        let query = Query(aqt: .startsWith(key: "username", val: "har"))
+        let response = Array(try! TestManager.wcol.find(matching: query))
+        XCTAssert(response.count == 2)
+    }
+    
+    private func runEndsWithQuery() {
+        let query = Query(aqt: .endsWith(key: "username", val: "rrie"))
+        let response = Array(try! TestManager.wcol.find(matching: query))
+        XCTAssert(response.count == 2)
     }
     
     func testAggregate() {

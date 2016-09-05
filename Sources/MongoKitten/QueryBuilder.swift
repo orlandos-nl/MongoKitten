@@ -245,11 +245,11 @@ public indirect enum AQT {
         case .not(let aqt):
             return ["$not": ~aqt.document]
         case .contains(let key, let val):
-            return [key: .string("/\(val)/")]
+            return [key: .regularExpression(pattern: "\(val)", options: "m")]
         case .startsWith(let key, let val):
-            return [key: .string("/^\(val)/")]
+            return [key: .regularExpression(pattern: "^\(val)", options: "m")]
         case .endsWith(let key, let val):
-            return [key: .string("/\(val)$/")]
+            return [key: .regularExpression(pattern: "\(val)$", options: "m")]
         case .nothing:
             return []
         }
