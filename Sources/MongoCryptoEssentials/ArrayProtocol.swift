@@ -49,11 +49,9 @@ public extension ArrayProtocol where Iterator.Element == UInt8 {
     public var base64: String {
         let bytesArray = self as? [UInt8] ?? []
         
-        #if os(Linux)
-            return NSData(bytes: bytesArray).base64EncodedString([])
-        #else
-            return NSData(bytes: bytesArray).base64EncodedString(options: [])
-        #endif
+        
+        return NSData(bytes: bytesArray).base64EncodedString(options: [])
+        
     }
     
     public init(base64: String) {

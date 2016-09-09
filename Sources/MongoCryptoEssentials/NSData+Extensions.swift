@@ -26,11 +26,7 @@ extension NSData {
     }
     
     public var base64: String {
-        #if os(Linux)
-            return self.base64EncodedString([.encoding64CharacterLineLength])
-        #else
-            return self.base64EncodedString(options: .lineLength64Characters)
-        #endif
+        return self.base64EncodedString(options: .lineLength64Characters)
     }
     
     public var hexString: String {
