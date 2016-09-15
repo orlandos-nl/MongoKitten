@@ -40,20 +40,26 @@ public final class Database {
         self.name = replaceOccurrences(in: database, where: ".", with: "")
     }
     
+    private static let subscriptQueue = DispatchQueue(label: "org.mongokitten.database.subscriptqueue")
+    
     /// Get a `Collection` by providing a collection name as a `String`
     ///
     /// - parameter collection: The collection/bucket to return
     ///
     /// - returns: The requested collection in this database
     public subscript (collection: String) -> Collection {
-        collections.clean()
-        
-        if let c = collections[collection]?.value {
-            return c
+        var c: Collection!
+        Database.subscriptQueue.sync {
+            collections.clean()
+            
+            if let col = collections[collection]?.value {
+                c = col
+                return
+            }
+            
+            c = Collection(named: collection, in: self)
+            collections[collection] = Weak(c)
         }
-        
-        let c = Collection(named: collection, in: self)
-        collections[collection] = Weak(c)
         return c
     }
     
