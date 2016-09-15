@@ -14,6 +14,7 @@ import MongoSHA1
 import MongoPBKDF2
 import MongoHMAC
 
+
 /// A Mongo Database. Cannot be publically initialized.
 /// But you can get a database object by subscripting `Server` with a `String` as the database name
 public final class Database {

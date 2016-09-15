@@ -190,12 +190,17 @@ public final class Server {
         return db
     }
     
+    private let messageMutationQueue = DispatchQueue(label: "org.mongokitten.server.messageIncrementQueue")
     /// Generates a messageID for the next Message to be sent to the server
     ///
     /// - returns: The newly created ID for your message
     internal func nextMessageID() -> Int32 {
-        lastRequestID += 1
-        return lastRequestID
+        var id: Int32 = 0
+        messageMutationQueue.sync {
+            lastRequestID += 1
+            id = lastRequestID
+        }
+        return id
     }
     
     /// Are we currently connected?
@@ -218,10 +223,12 @@ public final class Server {
             try self.receive()
             
             // Handle callbacks, locks etc on the responses
+            incomingMutateLock.lock()
             for response in incomingResponses {
                 waitingForResponses[response.id]?.broadcast()
                 responseHandlers[response.id]?(response.message)
             }
+            incomingMutateLock.unlock()
         } catch {
             // A receive failure is to be expected if the socket has been closed
             if self.isConnected {
@@ -303,17 +310,19 @@ public final class Server {
         let condition = NSCondition()
         
         condition.lock()
+        incomingMutateLock.lock()
         waitingForResponses[requestId] = condition
         
         if incomingResponses.index(where: { $0.id == requestId }) == nil {
+            incomingMutateLock.unlock()
             if condition.wait(until: Date(timeIntervalSinceNow: timeout)) == false {
                 throw MongoError.timeout
             }
+            incomingMutateLock.lock()
         }
         
         condition.unlock()
         
-        incomingMutateLock.lock()
         defer {
             incomingMutateLock.unlock()
         }
