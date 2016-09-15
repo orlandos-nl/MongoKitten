@@ -231,9 +231,11 @@ public final class Server {
             incomingMutateLock.unlock()
         } catch {
             // A receive failure is to be expected if the socket has been closed
+            incomingMutateLock.lock()
             if self.isConnected {
                 print("The MongoDB background loop encountered an error: \(error)")
             }
+            incomingMutateLock.unlock()
             
             return
         }
@@ -251,8 +253,10 @@ public final class Server {
     ///
     /// - throws: Unable to disconnect
     public func disconnect() throws {
+        incomingMutateLock.lock()
         isInitialized = false
         isConnected = false
+        incomingMutateLock.unlock()
         
         for db in self.databaseCache {
             db.value.value?.isAuthenticated = false
