@@ -1,6 +1,5 @@
 # MongoKitten
 
-[![Swift 2.2](https://img.shields.io/badge/swift-2.2-green.svg)](https://swift.org)
 [![Swift 3.0](https://img.shields.io/badge/swift-3.0-orange.svg)](https://swift.org)
 ![License](https://img.shields.io/github/license/openkitten/mongokitten.svg)
 [![Carthage compatible](https://img.shields.io/badge/Carthage-compatible-4BC51D.svg?style=flat)](https://github.com/Carthage/Carthage)
@@ -45,22 +44,10 @@ import PackageDescription
 let package = Package(
 	name: "MyApp",
 	dependencies: [
-		.Package(url: "https://github.com/OpenKitten/MongoKitten.git", majorVersion: 1, minor: 6)
+		.Package(url: "https://github.com/OpenKitten/MongoKitten.git", majorVersion: 1, minor: 7)
 	]
 )
 ```
-
-### Swift 2.2 (Carthage)
-
-Add `MongoKitten` to your Cartfile:
-
-```
-github "OpenKitten/MongoKitten" ~> 1.1
-```
-
-For further instructions, see the [Carthage readme](https://github.com/Carthage/Carthage).
-
-Note that the tutorial below is written for Swift 3.0. Syntax may be a bit different.
 
 ## Basic usage
 
