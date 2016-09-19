@@ -352,8 +352,8 @@ extension Database {
         var bytes = [Byte]()
         bytes.append(contentsOf: "\(details.username):mongo:\(details.password)".utf8)
         
-        let digest = MD5.calculate(bytes).hexString
-        let key = MD5.calculate("\(nonce)\(details.username)\(digest)".cStringBytes).hexString
+        let digest = MD5.calculate(bytes)
+        let key = MD5.calculate([UInt8]("\(nonce)\(details.username)\(digest)".utf8)).hexString
         
         // Respond to the challengge
         let successResponse = try self.execute(command: [
