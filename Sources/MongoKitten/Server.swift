@@ -38,22 +38,27 @@ public final class Server {
     /// The last Request we sent.. -1 if no request was sent
     internal var lastRequestID: Int32 = -1
     
-    /// The full buffer of received bytes from MongoDB
-    internal var fullBuffer = [Byte]()
-    
     /// A cache for incoming responses
     private var incomingMutateLock = NSLock()
     
     private var incomingResponses = [(id: Int32, message: Message, date: Date)]()
     
-    /// Contains a map from an ID to a handler. The handlers handle the `incomingResponses`
-    private var responseHandlers = [Int32:ResponseHandler]()
-    
     private var waitingForResponses = [Int32:NSCondition]()
     
     /// `MongoTCP` Socket bound to the MongoDB Server
-    private var client: MongoTCP?
+    private var connections = [Connection]()
+    
+    /// `MongoTCP` class to use for clients
     public let tcpType: MongoTCP.Type
+    
+    /// Semaphore to use for safely managing connections
+    private let connectionPoolSemaphore: DispatchSemaphore
+    
+    /// Lock to prevent multiple writes to/from the connections.
+    private let connectionPoolLock = NSRecursiveLock()
+    
+    /// Keeps track of the connections
+    private var currentConnections = 0, maximumConnections = 1
     
     /// Did we initialize?
     private var isInitialized = false
@@ -74,7 +79,7 @@ public final class Server {
     /// - throws: When we can't connect automatically, when the scheme/host is invalid and when we can't connect automatically
     ///
     /// - parameter automatically: Whether to connect automatically
-    public convenience init(_ url: NSURL, using tcpDriver: MongoTCP.Type = Socks.TCPClient.self, automatically connecting: Bool = true) throws {
+    public convenience init(_ url: NSURL, using tcpDriver: MongoTCP.Type = Socks.TCPClient.self, automatically connecting: Bool = true, maxConnections: Int = 10) throws {
         guard let scheme = url.scheme, let host = url.host , scheme.lowercased() == "mongodb" else {
             throw MongoError.invalidNSURL(url: url)
         }
@@ -93,7 +98,7 @@ public final class Server {
             let port: UInt16 = UInt16(url.port?.intValue ?? 27017)
         #endif
         
-        try self.init(at: host, port: port, using: authentication, using: tcpDriver, automatically: connecting)
+        try self.init(at: host, port: port, using: authentication, using: tcpDriver, automatically: connecting, maxConnections: maxConnections)
     }
     
     /// Sets up the `Server` to connect to the specified URL.
@@ -106,12 +111,12 @@ public final class Server {
     /// - parameter automatically: Whether to connect automatically
     ///
     /// - throws: Throws when we can't connect automatically, when the scheme/host is invalid and when we can't connect automatically
-    public convenience init(_ uri: String, using tcpDriver: MongoTCP.Type = Socks.TCPClient.self, automatically connecting: Bool = true) throws {
+    public convenience init(_ uri: String, using tcpDriver: MongoTCP.Type = Socks.TCPClient.self, automatically connecting: Bool = true, maxConnections: Int = 10) throws {
         guard let url = NSURL(string: uri) else {
             throw MongoError.invalidURI(uri: uri)
         }
         
-        try self.init(url, using: tcpDriver, automatically: connecting)
+        try self.init(url, using: tcpDriver, automatically: connecting, maxConnections: maxConnections)
     }
     
     /// Sets up the `Server` to connect to the specified location.`Server`
@@ -122,15 +127,63 @@ public final class Server {
     /// - parameter automatically: Connect automatically
     ///
     /// - throws: When we can’t connect automatically, when the scheme/host is invalid and when we can’t connect automatically
-    public init(at host: String, port: UInt16 = 27017, using authentication: (username: String, password: String, against: String)? = nil, using tcpDriver: MongoTCP.Type = Socks.TCPClient.self, automatically connecting: Bool = false) throws {
+    public init(at host: String, port: UInt16 = 27017, using authentication: (username: String, password: String, against: String)? = nil, using tcpDriver: MongoTCP.Type = Socks.TCPClient.self, automatically connecting: Bool = false, maxConnections: Int = 10) throws {
         self.tcpType = tcpDriver
         self.server = (host: host, port: port)
-        
+        self.maximumConnections = maxConnections
         self.authDetails = authentication
+        
+        self.connectionPoolSemaphore = DispatchSemaphore(value: maxConnections)
         
         if connecting {
             try self.connect()
         }
+    }
+    
+    private func makeConnection() throws -> Connection {
+        return Connection(client: try tcpType.open(address: server.host, port: server.port))
+    }
+    
+    internal func reserveConnection() throws -> Connection {
+        guard isConnected else {
+            throw MongoError.notConnected
+        }
+        
+        guard let connection = self.connections.first(where: { !$0.used }) else {
+            self.connectionPoolLock.lock()
+            guard currentConnections < maximumConnections else {
+                let timeout = DispatchTime(uptimeNanoseconds: DispatchTime.now().uptimeNanoseconds + 10_000_000_000)
+                
+                guard case .success = self.connectionPoolSemaphore.wait(timeout: timeout) else {
+                    throw MongoError.timeout
+                }
+                
+                return try reserveConnection()
+            }
+            
+            let connection = try makeConnection()
+            connection.used = true
+            
+            connections.append(connection)
+            self.connectionPoolLock.unlock()
+            
+            return connection
+        }
+        
+        connection.used = true
+        
+        return connection
+    }
+    
+    internal func returnConnection(_ connection: Connection) {
+        self.connectionPoolLock.lock()
+        
+        defer {
+            self.connectionPoolLock.unlock()
+            self.connectionPoolSemaphore.signal()
+        }
+        
+        connection.used = false
     }
     
     /// The database cache
@@ -212,7 +265,6 @@ public final class Server {
     /// - throws: Unable to connect
     public func connect() throws {
         _ = try? self.disconnect()
-        self.client = try tcpType.open(address: server.host, port: server.port)
         try background(backgroundLoop)
         isConnected = true
     }
@@ -220,28 +272,30 @@ public final class Server {
     /// Receives response messages from the server and gives them to the callback closure
     /// After handling the response with the closure it removes the closure
     private func backgroundLoop() {
-        do {
-            try self.receive()
-            
-            // Handle callbacks, locks etc on the responses
-            incomingMutateLock.lock()
-            for response in incomingResponses {
-                waitingForResponses[response.id]?.broadcast()
-                responseHandlers[response.id]?(response.message)
+        for connection in connections where connection.used {
+            do {
+                try self.receive(fromConnection: connection)
+            } catch {
+                // A receive failure is to be expected if the socket has been closed
+                incomingMutateLock.lock()
+                if self.isConnected {
+                    print("The MongoDB background loop encountered an error: \(error)")
+                }
+                incomingMutateLock.unlock()
+                
+                return
             }
-            incomingMutateLock.unlock()
-        } catch {
-            // A receive failure is to be expected if the socket has been closed
-            incomingMutateLock.lock()
-            if self.isConnected {
-                print("The MongoDB background loop encountered an error: \(error)")
-            }
-            incomingMutateLock.unlock()
-            
-            return
         }
         
+        // Handle callbacks, locks etc on the responses
+        incomingMutateLock.lock()
+        for response in incomingResponses {
+            waitingForResponses[response.id]?.broadcast()
+        }
+        incomingMutateLock.unlock()
+        
         do {
+            Thread.sleep(forTimeInterval: 0.025)
             try background(backgroundLoop)
         } catch {
             do {
@@ -254,6 +308,7 @@ public final class Server {
     ///
     /// - throws: Unable to disconnect
     public func disconnect() throws {
+        connectionPoolLock.lock()
         incomingMutateLock.lock()
         isInitialized = false
         isConnected = false
@@ -263,7 +318,14 @@ public final class Server {
             db.value.value?.isAuthenticated = false
         }
         
-        try client?.close()
+        while let connection = connections.popLast() {
+            try connection.client.close()
+        }
+        
+        connections = []
+        currentConnections = 0
+        
+        connectionPoolLock.unlock()
     }
     
     /// Called by the server thread to handle MongoDB Wire messages
@@ -271,33 +333,30 @@ public final class Server {
     /// - parameter bufferSize: The amount of bytes to fetch at a time
     ///
     /// - throws: Unable to receive or parse the reply
-    private func receive(bufferSize: Int = 1024) throws {
-        guard let client = client else {
-            throw MongoError.notConnected
-        }
-        
+    private func receive(bufferSize: Int = 1024, fromConnection connection: Connection) throws {
         // TODO: Respect bufferSize
-        let incomingBuffer: [Byte] = try client.receive()
-        fullBuffer += incomingBuffer
+        let incomingBuffer: [Byte] = try connection.client.receive()
+        let buffer = connection.buffer
+        buffer.data += incomingBuffer
         
         do {
-            while fullBuffer.count >= 36 {
-                let length = Int(try fromBytes(fullBuffer[0...3]) as Int32)
+            while buffer.data.count >= 36 {
+                let length = Int(try fromBytes(buffer.data[0...3]) as Int32)
                 
-                guard length <= fullBuffer.count else {
+                guard length <= buffer.data.count else {
                     // Ignore: Wait for more data
                     return
                 }
                 
-                let responseData = fullBuffer[0..<length]*
-                let responseId = try fromBytes(fullBuffer[8...11]) as Int32
+                let responseData = buffer.data[0..<length]*
+                let responseId = try fromBytes(buffer.data[8...11]) as Int32
                 let reply = try Message.makeReply(from: responseData)
                 
                 incomingMutateLock.lock()
                 incomingResponses.append((responseId, reply, Date()))
                 incomingMutateLock.unlock()
                 
-                fullBuffer.removeSubrange(0..<length)
+                buffer.data.removeSubrange(0..<length)
             }
         }
     }
@@ -318,24 +377,29 @@ public final class Server {
         incomingMutateLock.lock()
         waitingForResponses[requestId] = condition
         
+        defer {
+            waitingForResponses[requestId] = nil
+        }
+        
         if incomingResponses.index(where: { $0.id == requestId }) == nil {
             incomingMutateLock.unlock()
-            if condition.wait(until: Date(timeIntervalSinceNow: timeout)) == false {
+            guard condition.wait(until: Date(timeIntervalSinceNow: timeout)) else {
                 throw MongoError.timeout
             }
             incomingMutateLock.lock()
         }
         
-        condition.unlock()
-        
         defer {
             incomingMutateLock.unlock()
         }
         
+        condition.unlock()
+        
         let i = incomingResponses.index(where: { $0.id == requestId })
         
         if let index = i {
-            return incomingResponses.remove(at: index).message
+            return incomingResponses[index].message
+            //.remove(at: index).message
         }
         
         // If we get here, something is very, very wrong.
@@ -350,14 +414,10 @@ public final class Server {
     ///
     /// - returns: The RequestID for this message that can be used to fetch the response
     @discardableResult @warn_unqualified_access
-    internal func send(message msg: Message) throws -> Int32 {
-        guard let client = client else {
-            throw MongoError.notConnected
-        }
-        
+    internal func send(message msg: Message, overConnection connection: Connection) throws -> Int32 {
         let messageData = try msg.generateData()
         
-        try client.send(data: messageData)
+        try connection.client.send(data: messageData)
         
         return msg.requestID
     }

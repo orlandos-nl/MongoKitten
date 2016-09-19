@@ -12,6 +12,7 @@ import BSON
 public final class Cursor<T> {
     public let namespace: String
     public let server: Server
+    private let connection: Connection
     fileprivate var cursorID: Int64
     fileprivate let chunkSize: Int32
     
@@ -22,25 +23,26 @@ public final class Cursor<T> {
     let transform: Transformer
     
     /// If firstDataSet is nil, reply.documents will be passed to transform as initial data
-    internal convenience init?(namespace: String, server: Server, reply: Message, chunkSize: Int32, transform: @escaping Transformer) {
+    internal convenience init?(namespace: String, server: Server, connection: Connection, reply: Message, chunkSize: Int32, transform: @escaping Transformer) {
         guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
             return nil
         }
         
-        self.init(namespace: namespace, server: server, cursorID: cursorID, initialData: documents.flatMap(transform), chunkSize: chunkSize, transform: transform)
+        self.init(namespace: namespace, server: server, connection: connection, cursorID: cursorID, initialData: documents.flatMap(transform), chunkSize: chunkSize, transform: transform)
     }
     
-    internal convenience init(cursorDocument cursor: Document, server: Server, chunkSize: Int32, transform: @escaping Transformer) throws {
+    internal convenience init(cursorDocument cursor: Document, server: Server, connection: Connection, chunkSize: Int32, transform: @escaping Transformer) throws {
         guard let cursorID = cursor["id"].int64Value, let namespace = cursor["ns"].stringValue, let firstBatch = cursor["firstBatch"].documentValue else {
             throw MongoError.cursorInitializationError(cursorDocument: cursor)
         }
         
-        self.init(namespace: namespace, server: server, cursorID: cursorID, initialData: firstBatch.arrayValue.flatMap{$0.documentValue}.flatMap(transform), chunkSize: chunkSize, transform: transform)
+        self.init(namespace: namespace, server: server, connection: connection, cursorID: cursorID, initialData: firstBatch.arrayValue.flatMap{$0.documentValue}.flatMap(transform), chunkSize: chunkSize, transform: transform)
     }
     
-    internal init(namespace: String, server: Server, cursorID: Int64, initialData: [T], chunkSize: Int32, transform: @escaping Transformer) {
+    internal init(namespace: String, server: Server, connection: Connection, cursorID: Int64, initialData: [T], chunkSize: Int32, transform: @escaping Transformer) {
         self.namespace = namespace
         self.server = server
+        self.connection = connection
         self.cursorID = cursorID
         self.data = initialData
         self.chunkSize = chunkSize
@@ -50,6 +52,7 @@ public final class Cursor<T> {
     public init<B>(base: Cursor<B>, transform: @escaping (B) -> (T?)) {
         self.namespace = base.namespace
         self.server = base.server
+        self.connection = base.connection
         self.cursorID = base.cursorID
         self.chunkSize = base.chunkSize
         self.transform = {
@@ -66,7 +69,8 @@ public final class Cursor<T> {
     fileprivate func getMore() {
         do {
             let request = Message.GetMore(requestID: server.nextMessageID(), namespace: namespace, numberToReturn: chunkSize, cursor: cursorID)
-            let requestId = try server.send(message: request)
+            
+            let requestId = try server.send(message: request, overConnection: connection)
             let reply = try server.await(response: requestId)
             
             guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
@@ -84,7 +88,7 @@ public final class Cursor<T> {
         if cursorID != 0 {
             do {
                 let killCursorsMessage = Message.KillCursors(requestID: server.nextMessageID(), cursorIDs: [self.cursorID])
-                try server.send(message: killCursorsMessage)
+                try server.send(message: killCursorsMessage, overConnection: connection)
             } catch {
                 print("Error while cleaning up MongoDB cursor \(self): \(error)")
             }

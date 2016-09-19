@@ -1,4 +1,4 @@
-//
+ //
 //  Collection.swift
 //  MongoSwift
 //
@@ -146,12 +146,7 @@ public final class Collection {
     /// - returns: The documents with their (if applicable) updated ObjectIds
     @discardableResult
     public func insert(_ documents: [Document], stoppingOnError ordered: Bool? = nil, timeout customTimeout: TimeInterval? = nil) throws -> [Document] {
-        let timeout: TimeInterval
-        if let customTimeout = customTimeout {
-            timeout = customTimeout
-        } else {
-            timeout = 60 + (Double(documents.count) / 50)
-        }
+        let timeout: TimeInterval = customTimeout ?? (60 + (Double(documents.count) / 50))
         
         var documents = documents
         var newDocuments = [Document]()
@@ -191,11 +186,17 @@ public final class Collection {
                 }
                 try handleCallback(forDocuments: commandDocuments.flatMap{ $0.documentValue }, inOperation: .insert)
             } else {
+                let connection = try database.server.reserveConnection()
+                
+                defer {
+                    database.server.returnConnection(connection)
+                }
+                
                 let commandDocuments = Array(documents[0..<min(1000, documents.count)])
                 documents.removeFirst(min(1000, documents.count))
                 
                 let insertMsg = Message.Insert(requestID: database.server.nextMessageID(), flags: [], collection: self, documents: commandDocuments)
-                _ = try self.database.server.send(message: insertMsg)
+                _ = try self.database.server.send(message: insertMsg, overConnection: connection)
                 
                 try handleCallback(forDocuments: commandDocuments, inOperation: .insert)
             }
@@ -220,11 +221,17 @@ public final class Collection {
     ///
     /// - returns: A Cursor pointing to the response Documents.
     public func query(matching filter: Document = [], usingFlags flags: QueryFlags = [], fetching fetchChunkSize: Int32 = 10) throws -> Cursor<Document> {
+        let connection = try database.server.reserveConnection()
+        
+        defer {
+            database.server.returnConnection(connection)
+        }
+        
         let queryMsg = Message.Query(requestID: database.server.nextMessageID(), flags: flags, collection: self, numbersToSkip: 0, numbersToReturn: fetchChunkSize, query: filter, returnFields: nil)
         
-        let id = try self.database.server.send(message: queryMsg)
+        let id = try self.database.server.send(message: queryMsg, overConnection: connection)
         let response = try self.database.server.await(response: id)
-        guard let cursor = Cursor(namespace: self.fullName, server: database.server, reply: response, chunkSize: fetchChunkSize, transform: { $0 }) else {
+        guard let cursor = Cursor(namespace: self.fullName, server: database.server, connection: connection, reply: response, chunkSize: fetchChunkSize, transform: { $0 }) else {
             throw MongoError.invalidReply
         }
         
@@ -342,21 +349,33 @@ public final class Collection {
                 throw MongoError.invalidResponse(documents: documents)
             }
             
-            return try Cursor(cursorDocument: cursorDoc, server: database.server, chunkSize: 10, transform: { doc in
+            let connection = try database.server.reserveConnection()
+            
+            defer {
+                database.server.returnConnection(connection)
+            }
+             
+            return try Cursor(cursorDocument: cursorDoc, server: database.server, connection: connection, chunkSize: 10, transform: { doc in
                 _ = try? self.handleCallback(forDocuments: [doc], inOperation: .find)
                 return doc
             })
         } else {
+            let connection = try database.server.reserveConnection()
+            
+            defer {
+                database.server.returnConnection(connection)
+            }
+            
             let queryMsg = Message.Query(requestID: database.server.nextMessageID(), flags: [], collection: self, numbersToSkip: skip ?? 0, numbersToReturn: batchSize, query: filter ?? [], returnFields: projection)
             
-            let id = try self.database.server.send(message: queryMsg)
+            let id = try self.database.server.send(message: queryMsg, overConnection: connection)
             let reply = try self.database.server.await(response: id)
             
             guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
                 throw InternalMongoError.incorrectReply(reply: reply)
             }
             
-            return Cursor(namespace: self.fullName, server: database.server, cursorID: cursorID, initialData: documents, chunkSize: batchSize, transform: { doc in
+            return Cursor(namespace: self.fullName, server: database.server, connection: connection, cursorID: cursorID, initialData: documents, chunkSize: batchSize, transform: { doc in
                 _ = try? self.handleCallback(forDocuments: [doc], inOperation: .find)
                 return doc
             })
@@ -472,6 +491,12 @@ public final class Collection {
             
             try self.handleCallback(forDocuments: updates.map { $0.to }, inOperation: .update)
         } else {
+            let connection = try database.server.reserveConnection()
+            
+            defer {
+                database.server.returnConnection(connection)
+            }
+            
             for update in updates {
                 var flags: UpdateFlags = []
                 
@@ -486,7 +511,7 @@ public final class Collection {
                 }
                 
                 let message = Message.Update(requestID: database.server.nextMessageID(), collection: self, flags: flags, findDocument: update.filter, replaceDocument: update.to)
-                try self.database.server.send(message: message)
+                try self.database.server.send(message: message, overConnection: connection)
                 try self.handleCallback(forDocuments: updates.map { $0.to }, inOperation: .update)
             }
         }
@@ -588,6 +613,12 @@ public final class Collection {
             try self.handleCallback(forDocuments: removals.map { $0.filter }, inOperation: .delete)
         // If we're talking to an older MongoDB server
         } else {
+            let connection = try database.server.reserveConnection()
+            
+            defer {
+                database.server.returnConnection(connection)
+            }
+            
             for removal in removals {
                 var flags: DeleteFlags = []
                 
@@ -604,7 +635,7 @@ public final class Collection {
                 let message = Message.Delete(requestID: database.server.nextMessageID(), collection: self, flags: flags, removeDocument: removal.filter)
                 
                 for _ in 0..<limit {
-                    try self.database.server.send(message: message)
+                    try self.database.server.send(message: message, overConnection: connection)
                     try self.handleCallback(forDocuments: [removal.filter], inOperation: .delete)
                 }
             }
@@ -934,7 +965,13 @@ public final class Collection {
             throw MongoError.cursorInitializationError(cursorDocument: result)
         }
         
-        return try Cursor(cursorDocument: cursorDocument, server: database.server, chunkSize: 10, transform: { $0 })
+        let connection = try database.server.reserveConnection()
+        
+        defer {
+            database.server.returnConnection(connection)
+        }
+        
+        return try Cursor(cursorDocument: cursorDocument, server: database.server, connection: connection, chunkSize: 10, transform: { $0 })
     }
     
     /// Modifies the collection. Requires access to `collMod`
@@ -995,7 +1032,13 @@ public final class Collection {
             throw MongoError.invalidResponse(documents: documents)
         }
         
-        return try Cursor(cursorDocument: cursorDoc, server: database.server, chunkSize: 10, transform: { $0 })
+        let connection = try database.server.reserveConnection()
+        
+        defer {
+            database.server.returnConnection(connection)
+        }
+        
+        return try Cursor(cursorDocument: cursorDoc, server: database.server, connection: connection, chunkSize: 10, transform: { $0 })
     }
     
     /// The touch command loads data from the data storage layer into memory.

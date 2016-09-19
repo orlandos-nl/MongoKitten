@@ -72,9 +72,15 @@ public final class Database {
     /// - returns: A `Message` containing the response
     @discardableResult
     internal func execute(command document: Document, until timeout: TimeInterval = 60) throws -> Message {
+        let connection = try server.reserveConnection()
+        
+        defer {
+            server.returnConnection(connection)
+        }
+        
         let cmd = self["$cmd"]
         let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
-        let id = try server.send(message: commandMessage)
+        let id = try server.send(message: commandMessage, overConnection: connection)
         return try server.await(response: id, until: timeout)
     }
     
@@ -102,7 +108,13 @@ public final class Database {
             throw MongoError.commandFailure(error: result)
         }
         
-        return try Cursor(cursorDocument: cursor, server: server, chunkSize: 10, transform: { $0 })
+        let connection = try server.reserveConnection()
+        
+        defer {
+            server.returnConnection(connection)
+        }
+        
+        return try Cursor(cursorDocument: cursor, server: server, connection: connection, chunkSize: 10, transform: { $0 })
     }
     
     /// Gets the `Collection`s in this `Database`
@@ -215,8 +227,6 @@ extension Database {
         
         let dictionaryResponse = self.parse(response: finalResponse)
         
-        print(response.makeExtendedJSON())
-        
         guard let v = dictionaryResponse["v"] else {
             throw MongoAuthenticationError.authenticationFailure
         }
@@ -328,7 +338,7 @@ extension Database {
     internal func authenticate(mongoCR details: (username: String, password: String, against: String)) throws {
         // Get the server's nonce
         let response = try self.execute(command: [
-            "getNonce": .int32(1)
+            "getnonce": .int32(1)
             ])
         
         // Get the server's challenge

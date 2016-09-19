@@ -16,6 +16,20 @@
 
 import Socks
 
+class Connection {
+    let client: MongoTCP
+    let buffer = TCPBuffer()
+    var used = false
+    
+    init(client: MongoTCP) {
+        self.client = client
+    }
+}
+
+class TCPBuffer {
+    var data: [UInt8] = []
+}
+
 public protocol MongoTCP : class {
     static func open(address hostname: String, port: UInt16) throws -> MongoTCP
     func close() throws

@@ -7,7 +7,7 @@
 //
 
 import XCTest
-import MongoKitten
+@testable import MongoKitten
 
 class DatabaseTests: XCTestCase {
     static var allTests: [(String, (DatabaseTests) -> () throws -> Void)] {
@@ -25,6 +25,56 @@ class DatabaseTests: XCTestCase {
     
     override func tearDown() {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
+    }
+    
+    func testAsynchronously() throws {
+        let timeout: TimeInterval = 10
+        
+        let condition0 = NSCondition()
+        let condition1 = NSCondition()
+        let condition2 = NSCondition()
+        let condition3 = NSCondition()
+        
+        try background {
+            do {
+                _ = try TestManager.db["henk"].insert(["bob": true])
+                condition0.broadcast()
+            } catch {
+                XCTFail()
+            }
+        }
+        
+        try background {
+            do {
+                _ = try TestManager.db["henk"].insert(["klaas": false])
+                condition1.broadcast()
+            } catch {
+                XCTFail()
+            }
+        }
+        
+        try background {
+            do {
+                _ = try TestManager.db["henk"].insert(["piet": 3])
+                condition2.broadcast()
+            } catch {
+                XCTFail()
+            }
+        }
+        
+        try background {
+            do {
+                try TestManager.db["henk"].insert(["harrie": "hallo"])
+                condition3.broadcast()
+            } catch {
+                XCTFail()
+            }
+        }
+        
+        condition0.wait(until: Date(timeIntervalSinceNow: timeout))
+        condition1.wait(until: Date(timeIntervalSinceNow: timeout))
+        condition2.wait(until: Date(timeIntervalSinceNow: timeout))
+        condition3.wait(until: Date(timeIntervalSinceNow: timeout))
     }
     
     func testUsers() {
