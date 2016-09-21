@@ -80,7 +80,7 @@ public final class Cursor<T> {
             self.data += documents.flatMap(transform)
             self.cursorID = cursorID
         } catch {
-            fatalError("Error fetching extra data from the server in \(self) with error: \(error)")
+            print("Error fetching extra data from the server in \(self) with error: \(error)")
         }
     }
     
@@ -97,18 +97,6 @@ public final class Cursor<T> {
 }
 
 extension Cursor : Sequence {
-    #if !swift(>=3.0)
-    public func generate() -> AnyGenerator<T> {
-        return AnyGenerator {
-            if self.data.isEmpty && self.cursorID != 0 {
-                // Get more data!
-                self.getMore()
-            }
-            
-            return self.data.isEmpty ? nil : self.data.removeFirst()
-        }
-    }
-    #else
     /// Makes an iterator to loop over the data this cursor points to
     /// - returns: The iterator
     public func makeIterator() -> AnyIterator<T> {
@@ -121,7 +109,6 @@ extension Cursor : Sequence {
             return self.data.isEmpty ? nil : self.data.removeFirst()
         }
     }
-    #endif
 }
 
 extension Cursor : CustomStringConvertible {

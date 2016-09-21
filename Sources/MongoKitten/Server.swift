@@ -92,11 +92,7 @@ public final class Server {
             authentication = (username: user, password: pass, against: path)
         }
         
-        #if !swift(>=3.0)
-            let port: UInt16 = UInt16(url.port?.shortValue ?? 27017)
-        #else
-            let port: UInt16 = UInt16(url.port?.intValue ?? 27017)
-        #endif
+        let port: UInt16 = UInt16(url.port?.intValue ?? 27017)
         
         try self.init(at: host, port: port, using: authentication, using: tcpDriver, automatically: connecting, maxConnections: maxConnections)
     }
@@ -148,6 +144,8 @@ public final class Server {
         guard isConnected else {
             throw MongoError.notConnected
         }
+        
+        print(connections.count)
         
         guard let connection = self.connections.first(where: { !$0.used }) else {
             self.connectionPoolLock.lock()
