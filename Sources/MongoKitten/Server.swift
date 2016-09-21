@@ -79,7 +79,7 @@ public final class Server {
     /// - throws: When we can't connect automatically, when the scheme/host is invalid and when we can't connect automatically
     ///
     /// - parameter automatically: Whether to connect automatically
-    public convenience init(_ url: NSURL, using tcpDriver: MongoTCP.Type = Socks.TCPClient.self, automatically connecting: Bool = true, maxConnections: Int = 10) throws {
+    public convenience init(NSURL url: NSURL, using tcpDriver: MongoTCP.Type = Socks.TCPClient.self, automatically connecting: Bool = true, maxConnections: Int = 10) throws {
         guard let scheme = url.scheme, let host = url.host , scheme.lowercased() == "mongodb" else {
             throw MongoError.invalidNSURL(url: url)
         }
@@ -94,7 +94,7 @@ public final class Server {
         
         let port: UInt16 = UInt16(url.port?.intValue ?? 27017)
         
-        try self.init(at: host, port: port, using: authentication, using: tcpDriver, automatically: connecting, maxConnections: maxConnections)
+        try self.init(hostname: host, port: port, using: authentication, using: tcpDriver, automatically: connecting, maxConnections: maxConnections)
     }
     
     /// Sets up the `Server` to connect to the specified URL.
@@ -107,12 +107,12 @@ public final class Server {
     /// - parameter automatically: Whether to connect automatically
     ///
     /// - throws: Throws when we can't connect automatically, when the scheme/host is invalid and when we can't connect automatically
-    public convenience init(_ uri: String, using tcpDriver: MongoTCP.Type = Socks.TCPClient.self, automatically connecting: Bool = true, maxConnections: Int = 10) throws {
+    public convenience init(uri: String, using tcpDriver: MongoTCP.Type = Socks.TCPClient.self, automatically connecting: Bool = true, maxConnections: Int = 10) throws {
         guard let url = NSURL(string: uri) else {
             throw MongoError.invalidURI(uri: uri)
         }
         
-        try self.init(url, using: tcpDriver, automatically: connecting, maxConnections: maxConnections)
+        try self.init(NSURL: url, using: tcpDriver, automatically: connecting, maxConnections: maxConnections)
     }
     
     /// Sets up the `Server` to connect to the specified location.`Server`
@@ -123,7 +123,7 @@ public final class Server {
     /// - parameter automatically: Connect automatically
     ///
     /// - throws: When we can’t connect automatically, when the scheme/host is invalid and when we can’t connect automatically
-    public init(at host: String, port: UInt16 = 27017, using authentication: (username: String, password: String, against: String)? = nil, using tcpDriver: MongoTCP.Type = Socks.TCPClient.self, automatically connecting: Bool = false, maxConnections: Int = 10) throws {
+    public init(hostname host: String, port: UInt16 = 27017, using authentication: (username: String, password: String, against: String)? = nil, using tcpDriver: MongoTCP.Type = Socks.TCPClient.self, automatically connecting: Bool = false, maxConnections: Int = 10) throws {
         self.tcpType = tcpDriver
         self.server = (host: host, port: port)
         self.maximumConnections = maxConnections
@@ -144,8 +144,6 @@ public final class Server {
         guard isConnected else {
             throw MongoError.notConnected
         }
-        
-        print(connections.count)
         
         guard let connection = self.connections.first(where: { !$0.used }) else {
             self.connectionPoolLock.lock()
