@@ -145,8 +145,6 @@ public final class Server {
             throw MongoError.notConnected
         }
         
-        print(connections.count)
-        
         guard let connection = self.connections.first(where: { !$0.used }) else {
             self.connectionPoolLock.lock()
             guard currentConnections < maximumConnections else {
