@@ -33,8 +33,6 @@ The unit tests expect a test database. Run the Tools/testprep.sh script to impor
 
 ## Setup
 
-### Swift 3.0 (SPM)
-
 Add `MongoKitten` to your Package.swift:
 
 ```swift
