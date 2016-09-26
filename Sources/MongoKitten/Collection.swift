@@ -119,16 +119,16 @@ public final class Collection {
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
-    /// - returns: The inserted document
+    /// - returns: The inserted document's id
     @discardableResult
-    public func insert(_ document: Document) throws -> Document {
+    public func insert(_ document: Document) throws -> Value {
         let result = try self.insert([document])
         
-        guard let newDocument: Document = result.first else {
+        guard let newId = result.first?["_id"] else {
             throw MongoError.insertFailure(documents: [document], error: nil)
         }
         
-        return newDocument
+        return newId
     }
     
     /// TODO: Detect how many bytes are being sent. Max is 48000000 bytes or 48MB
@@ -143,13 +143,13 @@ public final class Collection {
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
-    /// - returns: The documents with their (if applicable) updated ObjectIds
+    /// - returns: The documents' ids
     @discardableResult
-    public func insert(_ documents: [Document], stoppingOnError ordered: Bool? = nil, timeout customTimeout: TimeInterval? = nil) throws -> [Document] {
+    public func insert(_ documents: [Document], stoppingOnError ordered: Bool? = nil, timeout customTimeout: TimeInterval? = nil) throws -> [Value] {
         let timeout: TimeInterval = customTimeout ?? (60 + (Double(documents.count) / 50))
         
         var documents = documents
-        var newDocuments = [Document]()
+        var newIds = [Value]()
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
         while !documents.isEmpty {
@@ -160,10 +160,10 @@ public final class Collection {
                     if input["_id"] == .nothing {
                         var output = input
                         output["_id"] = ~ObjectId()
-                        newDocuments.append(output)
+                        newIds.append(output["_id"])
                         return .document(output)
                     } else {
-                        newDocuments.append(input)
+                        newIds.append(input["_id"])
                         return .document(input)
                     }
                 })
@@ -202,7 +202,7 @@ public final class Collection {
             }
         }
         
-        return newDocuments
+        return newIds
     }
     
     // Read
