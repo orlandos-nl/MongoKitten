@@ -291,7 +291,6 @@ public final class Server {
         incomingMutateLock.unlock()
         
         do {
-            Thread.sleep(forTimeInterval: 0.025)
             try background(backgroundLoop)
         } catch {
             do {
