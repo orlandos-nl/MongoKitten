@@ -332,11 +332,7 @@ public final class Collection {
                 command["limit"] = .int32(limit)
             }
             
-            command["batchSize"] = .int32(10)
-            
-            if let sort = sort {
-                command["sort"] = .document(sort)
-            }
+            command["batchSize"] = .int32(batchSize)
             
             let reply = try database.execute(command: command)
             
