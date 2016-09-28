@@ -80,7 +80,7 @@ public final class Server {
             // TODO: Respect bufferSize
             let incomingBuffer: [Byte] = try client.receive()
             buffer.data += incomingBuffer
-                        
+            
             while buffer.data.count >= 36 {
                 let length = Int(try fromBytes(buffer.data[0...3]) as Int32)
                 

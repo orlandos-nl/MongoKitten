@@ -11,7 +11,7 @@ import BSON
 
 public final class Cursor<T> {
     public let namespace: String
-    public let server: Server
+    public let collection: Collection
     private let connection: Server.Connection
     fileprivate var cursorID: Int64
     fileprivate let chunkSize: Int32
@@ -23,25 +23,25 @@ public final class Cursor<T> {
     let transform: Transformer
     
     /// If firstDataSet is nil, reply.documents will be passed to transform as initial data
-    internal convenience init?(namespace: String, server: Server, connection: Server.Connection, reply: Message, chunkSize: Int32, transform: @escaping Transformer) {
+    internal convenience init?(namespace: String, collection: Collection, connection: Server.Connection, reply: Message, chunkSize: Int32, transform: @escaping Transformer) {
         guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
             return nil
         }
         
-        self.init(namespace: namespace, server: server, connection: connection, cursorID: cursorID, initialData: documents.flatMap(transform), chunkSize: chunkSize, transform: transform)
+        self.init(namespace: namespace, collection: collection, connection: connection, cursorID: cursorID, initialData: documents.flatMap(transform), chunkSize: chunkSize, transform: transform)
     }
     
-    internal convenience init(cursorDocument cursor: Document, server: Server, connection: Server.Connection, chunkSize: Int32, transform: @escaping Transformer) throws {
+    internal convenience init(cursorDocument cursor: Document, collection: Collection, connection: Server.Connection, chunkSize: Int32, transform: @escaping Transformer) throws {
         guard let cursorID = cursor["id"].int64Value, let namespace = cursor["ns"].stringValue, let firstBatch = cursor["firstBatch"].documentValue else {
             throw MongoError.cursorInitializationError(cursorDocument: cursor)
         }
         
-        self.init(namespace: namespace, server: server, connection: connection, cursorID: cursorID, initialData: firstBatch.arrayValue.flatMap{$0.documentValue}.flatMap(transform), chunkSize: chunkSize, transform: transform)
+        self.init(namespace: namespace, collection: collection, connection: connection, cursorID: cursorID, initialData: firstBatch.arrayValue.flatMap{$0.documentValue}.flatMap(transform), chunkSize: chunkSize, transform: transform)
     }
     
-    internal init(namespace: String, server: Server, connection: Server.Connection, cursorID: Int64, initialData: [T], chunkSize: Int32, transform: @escaping Transformer) {
+    internal init(namespace: String, collection: Collection, connection: Server.Connection, cursorID: Int64, initialData: [T], chunkSize: Int32, transform: @escaping Transformer) {
         self.namespace = namespace
-        self.server = server
+        self.collection = collection
         self.connection = connection
         self.cursorID = cursorID
         self.data = initialData
@@ -51,7 +51,7 @@ public final class Cursor<T> {
     
     public init<B>(base: Cursor<B>, transform: @escaping (B) -> (T?)) {
         self.namespace = base.namespace
-        self.server = base.server
+        self.collection = base.collection
         self.connection = base.connection
         self.cursorID = base.cursorID
         self.chunkSize = base.chunkSize
@@ -68,16 +68,24 @@ public final class Cursor<T> {
     /// Gets more information and puts it in the buffer
     fileprivate func getMore() {
         do {
-            let request = Message.GetMore(requestID: server.nextMessageID(), namespace: namespace, numberToReturn: chunkSize, cursor: cursorID)
+            let reply = try collection.database.execute(command: [
+                "getMore": ~self.cursorID,
+                "collection": ~collection.name,
+                "batchSize": ~chunkSize
+                ])
             
-            let reply = try server.sendAndAwait(message: request, overConnection: connection)
-            
-            guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
+            guard case .Reply(_, _, _, _, _, _, let resultDocs) = reply else {
                 throw InternalMongoError.incorrectReply(reply: reply)
             }
             
-            self.data += documents.flatMap(transform)
-            self.cursorID = cursorID
+            let documents = resultDocs[0]["cursor"]["nextBatch"].document
+            for (_, value) in documents {
+                if let doc = transform(value.document) {
+                    self.data.append(doc)
+                }
+            }
+            
+            self.cursorID = resultDocs[0]["cursor"]["id"].int64
         } catch {
             print("Error fetching extra data from the server in \(self) with error: \(error)")
         }
@@ -86,8 +94,8 @@ public final class Cursor<T> {
     deinit {
         if cursorID != 0 {
             do {
-                let killCursorsMessage = Message.KillCursors(requestID: server.nextMessageID(), cursorIDs: [self.cursorID])
-                try server.send(message: killCursorsMessage, overConnection: connection)
+                let killCursorsMessage = Message.KillCursors(requestID: collection.database.server.nextMessageID(), cursorIDs: [self.cursorID])
+                try collection.database.server.send(message: killCursorsMessage, overConnection: connection)
             } catch {
                 print("Error while cleaning up MongoDB cursor \(self): \(error)")
             }
