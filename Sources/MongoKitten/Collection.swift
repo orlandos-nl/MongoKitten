@@ -124,7 +124,7 @@ public final class Collection {
     public func insert(_ document: Document) throws -> Value {
         let result = try self.insert([document])
         
-        guard let newId = result.first?["_id"] else {
+        guard let newId = result.first else {
             throw MongoError.insertFailure(documents: [document], error: nil)
         }
         
