@@ -366,16 +366,14 @@ public final class Server {
     internal func sendAndAwait(message msg: Message, overConnection connection: Connection, timeout: TimeInterval = 60) throws -> Message {
         let requestId = msg.requestID
         
-        let condition = NSCondition()
+        let semaphore = DispatchSemaphore(value: 0)
         
-        condition.lock()
-        defer { condition.unlock() }
         connection.incomingMutateLock.lock()
         
         var reply: Message? = nil
         connection.waitingForResponses[requestId] = { message in
             reply = message
-            condition.broadcast()
+            semaphore.signal()
         }
         
         connection.incomingMutateLock.unlock()
@@ -384,7 +382,7 @@ public final class Server {
         
         try connection.client.send(data: messageData)
 
-        guard condition.wait(until: Date(timeIntervalSinceNow: timeout)) else {
+        guard semaphore.wait(timeout: DispatchTime.now() + timeout) == .success else {
             connection.incomingMutateLock.lock()
             connection.waitingForResponses[requestId] = nil
             connection.incomingMutateLock.unlock()
