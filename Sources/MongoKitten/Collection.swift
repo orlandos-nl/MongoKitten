@@ -229,8 +229,7 @@ public final class Collection {
         
         let queryMsg = Message.Query(requestID: database.server.nextMessageID(), flags: flags, collection: self, numbersToSkip: 0, numbersToReturn: fetchChunkSize, query: filter, returnFields: nil)
         
-        let id = try self.database.server.send(message: queryMsg, overConnection: connection)
-        let response = try self.database.server.await(response: id, on: connection)
+        let response = try self.database.server.sendAndAwait(message: queryMsg, overConnection: connection)
         guard let cursor = Cursor(namespace: self.fullName, server: database.server, connection: connection, reply: response, chunkSize: fetchChunkSize, transform: { $0 }) else {
             throw MongoError.invalidReply
         }
@@ -368,8 +367,7 @@ public final class Collection {
             
             let queryMsg = Message.Query(requestID: database.server.nextMessageID(), flags: [], collection: self, numbersToSkip: skip ?? 0, numbersToReturn: batchSize, query: filter ?? [], returnFields: projection)
             
-            let id = try self.database.server.send(message: queryMsg, overConnection: connection)
-            let reply = try self.database.server.await(response: id, on: connection)
+            let reply = try self.database.server.sendAndAwait(message: queryMsg, overConnection: connection)
             
             guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
                 throw InternalMongoError.incorrectReply(reply: reply)

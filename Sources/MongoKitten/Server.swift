@@ -46,8 +46,7 @@ public final class Server {
         
         private static let receiveQueue = DispatchQueue(label: "org.mongokitten.server.receiveQueue", attributes: .concurrent)
         
-        fileprivate var incomingResponses = [(id: Int32, message: Message, date: Date)]()
-        fileprivate var waitingForResponses = [Int32:NSCondition]()
+        fileprivate var waitingForResponses = [Int32:(Message)->()]()
         
         /// A cache for incoming responses
         fileprivate var incomingMutateLock = NSLock()
@@ -69,13 +68,6 @@ public final class Server {
                 return
             }
             
-            // Handle callbacks, locks etc on the responses
-            incomingMutateLock.lock()
-            for response in incomingResponses {
-                waitingForResponses[response.id]?.broadcast()
-            }
-            incomingMutateLock.unlock()
-            
             Connection.receiveQueue.async(execute: backgroundLoop)
         }
         
@@ -88,26 +80,27 @@ public final class Server {
             // TODO: Respect bufferSize
             let incomingBuffer: [Byte] = try client.receive()
             buffer.data += incomingBuffer
-            
-            do {
-                while buffer.data.count >= 36 {
-                    let length = Int(try fromBytes(buffer.data[0...3]) as Int32)
-                    
-                    guard length <= buffer.data.count else {
-                        // Ignore: Wait for more data
-                        return
-                    }
-                    
-                    let responseData = buffer.data[0..<length]*
-                    let responseId = try fromBytes(buffer.data[8...11]) as Int32
-                    let reply = try Message.makeReply(from: responseData)
-                    
-                    incomingMutateLock.lock()
-                    incomingResponses.append((responseId, reply, Date()))
-                    incomingMutateLock.unlock()
-                    
-                    buffer.data.removeSubrange(0..<length)
+                        
+            while buffer.data.count >= 36 {
+                let length = Int(try fromBytes(buffer.data[0...3]) as Int32)
+                
+                guard length <= buffer.data.count else {
+                    // Ignore: Wait for more data
+                    return
                 }
+                
+                let responseData = buffer.data[0..<length]*
+                let responseId = try fromBytes(buffer.data[8...11]) as Int32
+                let reply = try Message.makeReply(from: responseData)
+                
+                if let closure = waitingForResponses[responseId] {
+                    closure(reply)
+                    waitingForResponses[responseId] = nil
+                } else {
+                    print("WARNING: Unhandled response with id \(responseId)")
+                }
+                
+                buffer.data.removeSubrange(0..<length)
             }
         }
     }
@@ -360,48 +353,50 @@ public final class Server {
         connectionPoolLock.unlock()
     }
     
-    /// Waits until the server responded to the request with the provided ID.
-    /// Waits until the timeout is reached and throws if this is the case.
+
+    /// Sends a message to the server and waits until the server responded to the request.
     ///
-    /// - parameter response: The response's ID that we're awaiting a reply for
-    /// - parameter until: Until when we'll wait for a response
+    /// - parameter message: The message we're sending
+    /// - parameter timeout: Timeout, in seconds
     ///
     /// - throws: Timeout reached or an internal MongoKitten error occured. In the second case, please file a ticket
     ///
-    /// - returns: The reply
-    internal func await(response requestId: Int32, on connection: Connection, until timeout: TimeInterval = 60) throws -> Message {
+    /// - returns: The reply from the server
+    @discardableResult @warn_unqualified_access
+    internal func sendAndAwait(message msg: Message, overConnection connection: Connection, timeout: TimeInterval = 60) throws -> Message {
+        let requestId = msg.requestID
+        
         let condition = NSCondition()
         
         condition.lock()
+        defer { condition.unlock() }
         connection.incomingMutateLock.lock()
-        connection.waitingForResponses[requestId] = condition
         
-        defer {
-            connection.waitingForResponses[requestId] = nil
+        var reply: Message? = nil
+        connection.waitingForResponses[requestId] = { message in
+            reply = message
+            condition.broadcast()
         }
         
-        if connection.incomingResponses.index(where: { $0.id == requestId }) == nil {
-            connection.incomingMutateLock.unlock()
-            guard condition.wait(until: Date(timeIntervalSinceNow: timeout)) else {
-                throw MongoError.timeout
-            }
+        connection.incomingMutateLock.unlock()
+        
+        let messageData = try msg.generateData()
+        
+        try connection.client.send(data: messageData)
+
+        guard condition.wait(until: Date(timeIntervalSinceNow: timeout)) else {
             connection.incomingMutateLock.lock()
-        }
-        
-        defer {
+            connection.waitingForResponses[requestId] = nil
             connection.incomingMutateLock.unlock()
+            throw MongoError.timeout
         }
         
-        condition.unlock()
-        
-        let i = connection.incomingResponses.index(where: { $0.id == requestId })
-        
-        if let index = i {
-            return connection.incomingResponses[index].message
+        guard let theReply = reply else {
+            // If we get here, something is very, very wrong.
+            throw MongoError.internalInconsistency
         }
         
-        // If we get here, something is very, very wrong.
-        throw MongoError.internalInconsistency
+        return theReply
     }
     
     /// Sends a message to the server

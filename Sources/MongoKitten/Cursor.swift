@@ -70,8 +70,7 @@ public final class Cursor<T> {
         do {
             let request = Message.GetMore(requestID: server.nextMessageID(), namespace: namespace, numberToReturn: chunkSize, cursor: cursorID)
             
-            let requestId = try server.send(message: request, overConnection: connection)
-            let reply = try server.await(response: requestId, on: connection)
+            let reply = try server.sendAndAwait(message: request, overConnection: connection)
             
             guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
                 throw InternalMongoError.incorrectReply(reply: reply)
