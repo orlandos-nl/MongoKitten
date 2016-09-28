@@ -32,18 +32,91 @@ internal typealias ResponseHandler = ((Message) -> Void)
 /// A server object is the core of MongoKitten as it's used to communicate to the server.
 /// You can select a `Database` by subscripting an instance of this Server with a `String`.
 public final class Server {
+    
+    class Connection {
+        let client: MongoTCP
+        let buffer = TCPBuffer()
+        var used = false
+        public fileprivate(set) var isConnected = true
+        
+        init(client: MongoTCP) {
+            self.client = client
+            Connection.receiveQueue.async(execute: backgroundLoop)
+        }
+        
+        private static let receiveQueue = DispatchQueue(label: "org.mongokitten.server.receiveQueue", attributes: .concurrent)
+        
+        fileprivate var incomingResponses = [(id: Int32, message: Message, date: Date)]()
+        fileprivate var waitingForResponses = [Int32:NSCondition]()
+        
+        /// A cache for incoming responses
+        fileprivate var incomingMutateLock = NSLock()
+        
+        /// Receives response messages from the server and gives them to the callback closure
+        /// After handling the response with the closure it removes the closure
+        fileprivate func backgroundLoop() {
+            do {
+                try self.receive()
+            } catch {
+                // A receive failure is to be expected if the socket has been closed
+                incomingMutateLock.lock()
+                if self.isConnected {
+                    print("The MongoKitten background loop encountered an error and has stopped: \(error)")
+                    print("Please file a report on https://github.com/openkitten/mongokitten")
+                }
+                incomingMutateLock.unlock()
+                
+                return
+            }
+            
+            // Handle callbacks, locks etc on the responses
+            incomingMutateLock.lock()
+            for response in incomingResponses {
+                waitingForResponses[response.id]?.broadcast()
+            }
+            incomingMutateLock.unlock()
+            
+            Connection.receiveQueue.async(execute: backgroundLoop)
+        }
+        
+        /// Called by the server thread to handle MongoDB Wire messages
+        ///
+        /// - parameter bufferSize: The amount of bytes to fetch at a time
+        ///
+        /// - throws: Unable to receive or parse the reply
+        private func receive(bufferSize: Int = 1024) throws {
+            // TODO: Respect bufferSize
+            let incomingBuffer: [Byte] = try client.receive()
+            buffer.data += incomingBuffer
+            
+            do {
+                while buffer.data.count >= 36 {
+                    let length = Int(try fromBytes(buffer.data[0...3]) as Int32)
+                    
+                    guard length <= buffer.data.count else {
+                        // Ignore: Wait for more data
+                        return
+                    }
+                    
+                    let responseData = buffer.data[0..<length]*
+                    let responseId = try fromBytes(buffer.data[8...11]) as Int32
+                    let reply = try Message.makeReply(from: responseData)
+                    
+                    incomingMutateLock.lock()
+                    incomingResponses.append((responseId, reply, Date()))
+                    incomingMutateLock.unlock()
+                    
+                    buffer.data.removeSubrange(0..<length)
+                }
+            }
+        }
+    }
+    
     /// The authentication details that are used to connect with the MongoDB server
     private let authDetails: (username: String, password: String, against: String)?
     
     /// The last Request we sent.. -1 if no request was sent
     internal var lastRequestID: Int32 = -1
-    
-    /// A cache for incoming responses
-    private var incomingMutateLock = NSLock()
-    
-    private var incomingResponses = [(id: Int32, message: Message, date: Date)]()
-    
-    private var waitingForResponses = [Int32:NSCondition]()
     
     /// `MongoTCP` Socket bound to the MongoDB Server
     private var connections = [Connection]()
@@ -193,7 +266,7 @@ public final class Server {
     public subscript (databaseName: String) -> Database {
         databaseCache.clean()
         
-        let databaseName = replaceOccurrences(in: databaseName, where: ".", with: "")
+        let databaseName = databaseName.replacingOccurrences(of: ".", with: "")
         
         if let db = databaseCache[databaseName]?.value {
             return db
@@ -261,42 +334,7 @@ public final class Server {
     /// - throws: Unable to connect
     public func connect() throws {
         _ = try? self.disconnect()
-        try background(backgroundLoop)
         isConnected = true
-    }
-    
-    /// Receives response messages from the server and gives them to the callback closure
-    /// After handling the response with the closure it removes the closure
-    private func backgroundLoop() {
-        for connection in connections where connection.used {
-            do {
-                try self.receive(fromConnection: connection)
-            } catch {
-                // A receive failure is to be expected if the socket has been closed
-                incomingMutateLock.lock()
-                if self.isConnected {
-                    print("The MongoDB background loop encountered an error: \(error)")
-                }
-                incomingMutateLock.unlock()
-                
-                return
-            }
-        }
-        
-        // Handle callbacks, locks etc on the responses
-        incomingMutateLock.lock()
-        for response in incomingResponses {
-            waitingForResponses[response.id]?.broadcast()
-        }
-        incomingMutateLock.unlock()
-        
-        do {
-            try background(backgroundLoop)
-        } catch {
-            do {
-                try disconnect()
-            } catch { print("Careful. Backgroundloop is broken") }
-        }
     }
     
     /// Disconnects from the MongoDB server
@@ -304,16 +342,15 @@ public final class Server {
     /// - throws: Unable to disconnect
     public func disconnect() throws {
         connectionPoolLock.lock()
-        incomingMutateLock.lock()
         isInitialized = false
         isConnected = false
-        incomingMutateLock.unlock()
         
         for db in self.databaseCache {
             db.value.value?.isAuthenticated = false
         }
         
         while let connection = connections.popLast() {
+            connection.isConnected = false
             try connection.client.close()
         }
         
@@ -321,39 +358,6 @@ public final class Server {
         currentConnections = 0
         
         connectionPoolLock.unlock()
-    }
-    
-    /// Called by the server thread to handle MongoDB Wire messages
-    ///
-    /// - parameter bufferSize: The amount of bytes to fetch at a time
-    ///
-    /// - throws: Unable to receive or parse the reply
-    private func receive(bufferSize: Int = 1024, fromConnection connection: Connection) throws {
-        // TODO: Respect bufferSize
-        let incomingBuffer: [Byte] = try connection.client.receive()
-        let buffer = connection.buffer
-        buffer.data += incomingBuffer
-        
-        do {
-            while buffer.data.count >= 36 {
-                let length = Int(try fromBytes(buffer.data[0...3]) as Int32)
-                
-                guard length <= buffer.data.count else {
-                    // Ignore: Wait for more data
-                    return
-                }
-                
-                let responseData = buffer.data[0..<length]*
-                let responseId = try fromBytes(buffer.data[8...11]) as Int32
-                let reply = try Message.makeReply(from: responseData)
-                
-                incomingMutateLock.lock()
-                incomingResponses.append((responseId, reply, Date()))
-                incomingMutateLock.unlock()
-                
-                buffer.data.removeSubrange(0..<length)
-            }
-        }
     }
     
     /// Waits until the server responded to the request with the provided ID.
@@ -365,36 +369,35 @@ public final class Server {
     /// - throws: Timeout reached or an internal MongoKitten error occured. In the second case, please file a ticket
     ///
     /// - returns: The reply
-    internal func await(response requestId: Int32, until timeout: TimeInterval = 60) throws -> Message {
+    internal func await(response requestId: Int32, on connection: Connection, until timeout: TimeInterval = 60) throws -> Message {
         let condition = NSCondition()
         
         condition.lock()
-        incomingMutateLock.lock()
-        waitingForResponses[requestId] = condition
+        connection.incomingMutateLock.lock()
+        connection.waitingForResponses[requestId] = condition
         
         defer {
-            waitingForResponses[requestId] = nil
+            connection.waitingForResponses[requestId] = nil
         }
         
-        if incomingResponses.index(where: { $0.id == requestId }) == nil {
-            incomingMutateLock.unlock()
+        if connection.incomingResponses.index(where: { $0.id == requestId }) == nil {
+            connection.incomingMutateLock.unlock()
             guard condition.wait(until: Date(timeIntervalSinceNow: timeout)) else {
                 throw MongoError.timeout
             }
-            incomingMutateLock.lock()
+            connection.incomingMutateLock.lock()
         }
         
         defer {
-            incomingMutateLock.unlock()
+            connection.incomingMutateLock.unlock()
         }
         
         condition.unlock()
         
-        let i = incomingResponses.index(where: { $0.id == requestId })
+        let i = connection.incomingResponses.index(where: { $0.id == requestId })
         
         if let index = i {
-            return incomingResponses[index].message
-            //.remove(at: index).message
+            return connection.incomingResponses[index].message
         }
         
         // If we get here, something is very, very wrong.

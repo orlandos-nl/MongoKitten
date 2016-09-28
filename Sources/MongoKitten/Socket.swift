@@ -16,16 +16,6 @@
 
 import Socks
 
-class Connection {
-    let client: MongoTCP
-    let buffer = TCPBuffer()
-    var used = false
-    
-    init(client: MongoTCP) {
-        self.client = client
-    }
-}
-
 class TCPBuffer {
     var data: [UInt8] = []
 }

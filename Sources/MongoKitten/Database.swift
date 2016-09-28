@@ -38,7 +38,7 @@ public final class Database {
     /// - parameter server: The `Server` on which this database exists
     public init(database: String, at server: Server) {
         self.server = server
-        self.name = replaceOccurrences(in: database, where: ".", with: "")
+        self.name = database.replacingOccurrences(of: ".", with: "")
     }
     
     private static let subscriptQueue = DispatchQueue(label: "org.mongokitten.database.subscriptqueue")
@@ -81,7 +81,7 @@ public final class Database {
         let cmd = self["$cmd"]
         let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
         let id = try server.send(message: commandMessage, overConnection: connection)
-        return try server.await(response: id, until: timeout)
+        return try server.await(response: id, on: connection, until: timeout)
     }
     
     /// All information about the `Collection`s in this `Database`

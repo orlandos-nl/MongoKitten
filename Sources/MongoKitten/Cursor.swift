@@ -12,7 +12,7 @@ import BSON
 public final class Cursor<T> {
     public let namespace: String
     public let server: Server
-    private let connection: Connection
+    private let connection: Server.Connection
     fileprivate var cursorID: Int64
     fileprivate let chunkSize: Int32
     
@@ -23,7 +23,7 @@ public final class Cursor<T> {
     let transform: Transformer
     
     /// If firstDataSet is nil, reply.documents will be passed to transform as initial data
-    internal convenience init?(namespace: String, server: Server, connection: Connection, reply: Message, chunkSize: Int32, transform: @escaping Transformer) {
+    internal convenience init?(namespace: String, server: Server, connection: Server.Connection, reply: Message, chunkSize: Int32, transform: @escaping Transformer) {
         guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
             return nil
         }
@@ -31,7 +31,7 @@ public final class Cursor<T> {
         self.init(namespace: namespace, server: server, connection: connection, cursorID: cursorID, initialData: documents.flatMap(transform), chunkSize: chunkSize, transform: transform)
     }
     
-    internal convenience init(cursorDocument cursor: Document, server: Server, connection: Connection, chunkSize: Int32, transform: @escaping Transformer) throws {
+    internal convenience init(cursorDocument cursor: Document, server: Server, connection: Server.Connection, chunkSize: Int32, transform: @escaping Transformer) throws {
         guard let cursorID = cursor["id"].int64Value, let namespace = cursor["ns"].stringValue, let firstBatch = cursor["firstBatch"].documentValue else {
             throw MongoError.cursorInitializationError(cursorDocument: cursor)
         }
@@ -39,7 +39,7 @@ public final class Cursor<T> {
         self.init(namespace: namespace, server: server, connection: connection, cursorID: cursorID, initialData: firstBatch.arrayValue.flatMap{$0.documentValue}.flatMap(transform), chunkSize: chunkSize, transform: transform)
     }
     
-    internal init(namespace: String, server: Server, connection: Connection, cursorID: Int64, initialData: [T], chunkSize: Int32, transform: @escaping Transformer) {
+    internal init(namespace: String, server: Server, connection: Server.Connection, cursorID: Int64, initialData: [T], chunkSize: Int32, transform: @escaping Transformer) {
         self.namespace = namespace
         self.server = server
         self.connection = connection
@@ -71,7 +71,7 @@ public final class Cursor<T> {
             let request = Message.GetMore(requestID: server.nextMessageID(), namespace: namespace, numberToReturn: chunkSize, cursor: cursorID)
             
             let requestId = try server.send(message: request, overConnection: connection)
-            let reply = try server.await(response: requestId)
+            let reply = try server.await(response: requestId, on: connection)
             
             guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
                 throw InternalMongoError.incorrectReply(reply: reply)
