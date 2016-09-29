@@ -74,16 +74,24 @@ class CollectionTests: XCTestCase {
         XCTAssertEqual(response.first, response2)
         
         runContainsQuery()
+        runContainsCaseInsensitiveQuery()
         runStartsWithQuery()
         runEndsWithQuery()
     }
     
     private func runContainsQuery() {
-        let query = Query(aqt: .contains(key: "username", val: "ar"))
+        let query = Query(aqt: .contains(key: "username", val: "ar", options:""))
+        let response = Array(try! TestManager.wcol.find(matching: query))
+        XCTAssert(response.count == 2)
+    }
+
+    private func runContainsCaseInsensitiveQuery() {
+        let query = Query(aqt: .contains(key: "username", val: "AR", options:"i"))
         let response = Array(try! TestManager.wcol.find(matching: query))
         XCTAssert(response.count == 2)
     }
     
+
     private func runStartsWithQuery() {
         let query = Query(aqt: .startsWith(key: "username", val: "har"))
         let response = Array(try! TestManager.wcol.find(matching: query))
