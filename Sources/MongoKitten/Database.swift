@@ -103,13 +103,7 @@ public final class Database {
             throw MongoError.commandFailure(error: result)
         }
         
-        let connection = try server.reserveConnection()
-        
-        defer {
-            server.returnConnection(connection)
-        }
-        
-        return try Cursor(cursorDocument: cursor, collection: self["$cmd"], connection: connection, chunkSize: 10, transform: { $0 })
+        return try Cursor(cursorDocument: cursor, collection: self["$cmd"], chunkSize: 10, transform: { $0 })
     }
     
     /// Gets the `Collection`s in this `Database`

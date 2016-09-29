@@ -12,7 +12,6 @@ import BSON
 public final class Cursor<T> {
     public let namespace: String
     public let collection: Collection
-    private let connection: Server.Connection
     fileprivate var cursorID: Int64
     fileprivate let chunkSize: Int32
     
@@ -23,26 +22,25 @@ public final class Cursor<T> {
     let transform: Transformer
     
     /// If firstDataSet is nil, reply.documents will be passed to transform as initial data
-    internal convenience init?(namespace: String, collection: Collection, connection: Server.Connection, reply: Message, chunkSize: Int32, transform: @escaping Transformer) {
+    internal convenience init?(namespace: String, collection: Collection, reply: Message, chunkSize: Int32, transform: @escaping Transformer) {
         guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
             return nil
         }
         
-        self.init(namespace: namespace, collection: collection, connection: connection, cursorID: cursorID, initialData: documents.flatMap(transform), chunkSize: chunkSize, transform: transform)
+        self.init(namespace: namespace, collection: collection, cursorID: cursorID, initialData: documents.flatMap(transform), chunkSize: chunkSize, transform: transform)
     }
     
-    internal convenience init(cursorDocument cursor: Document, collection: Collection, connection: Server.Connection, chunkSize: Int32, transform: @escaping Transformer) throws {
+    internal convenience init(cursorDocument cursor: Document, collection: Collection, chunkSize: Int32, transform: @escaping Transformer) throws {
         guard let cursorID = cursor["id"].int64Value, let namespace = cursor["ns"].stringValue, let firstBatch = cursor["firstBatch"].documentValue else {
             throw MongoError.cursorInitializationError(cursorDocument: cursor)
         }
         
-        self.init(namespace: namespace, collection: collection, connection: connection, cursorID: cursorID, initialData: firstBatch.arrayValue.flatMap{$0.documentValue}.flatMap(transform), chunkSize: chunkSize, transform: transform)
+        self.init(namespace: namespace, collection: collection, cursorID: cursorID, initialData: firstBatch.arrayValue.flatMap{$0.documentValue}.flatMap(transform), chunkSize: chunkSize, transform: transform)
     }
     
-    internal init(namespace: String, collection: Collection, connection: Server.Connection, cursorID: Int64, initialData: [T], chunkSize: Int32, transform: @escaping Transformer) {
+    internal init(namespace: String, collection: Collection, cursorID: Int64, initialData: [T], chunkSize: Int32, transform: @escaping Transformer) {
         self.namespace = namespace
         self.collection = collection
-        self.connection = connection
         self.cursorID = cursorID
         self.data = initialData
         self.chunkSize = chunkSize
@@ -52,7 +50,6 @@ public final class Cursor<T> {
     public init<B>(base: Cursor<B>, transform: @escaping (B) -> (T?)) {
         self.namespace = base.namespace
         self.collection = base.collection
-        self.connection = base.connection
         self.cursorID = base.cursorID
         self.chunkSize = base.chunkSize
         self.transform = {
@@ -112,7 +109,13 @@ public final class Cursor<T> {
     
     deinit {
         if cursorID != 0 {
+            
             do {
+                let connection = try collection.database.server.reserveConnection()
+                
+                defer {
+                    collection.database.server.returnConnection(connection)
+                }
                 let killCursorsMessage = Message.KillCursors(requestID: collection.database.server.nextMessageID(), cursorIDs: [self.cursorID])
                 try collection.database.server.send(message: killCursorsMessage, overConnection: connection)
             } catch {

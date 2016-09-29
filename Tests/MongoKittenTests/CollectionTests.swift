@@ -9,6 +9,7 @@
 import XCTest
 import MongoKitten
 import Cryptography
+import Dispatch
 
 class CollectionTests: XCTestCase {
     static var allTests: [(String, (CollectionTests) -> () throws -> Void)] {
@@ -37,6 +38,35 @@ class CollectionTests: XCTestCase {
         let distinct = try! TestManager.db["zips"].distinct(on: "state")!
         
         XCTAssertEqual(distinct.count, 51)
+    }
+    
+    func testPerformance() throws {
+        let collection = TestManager.db["zips"]
+        var documents = [Document]()
+        documents.reserveCapacity(29353)
+        
+        func testQueue(max: Int = 10) {
+            let perQueue = 25_000 / max
+            
+            for i in 0..<max {
+                let start = i * perQueue
+                
+                let q = DispatchQueue(label: "org.openkitten.tests.performance.\(i)")
+                let e = expectation(description: "kaas \(i)")
+                
+                q.async {
+                    for j in start..<start+perQueue {
+                        _ = try! collection.findOne(skipping: Int32(j))
+                    }
+                    
+                    e.fulfill()
+                }
+            }
+        }
+        
+        testQueue()
+        
+        waitForExpectations(timeout: 300)
     }
     
     func testFind() {
@@ -207,14 +237,5 @@ class CollectionTests: XCTestCase {
         let response = Array(try! TestManager.wcol.find(matching: query))
         
         XCTAssertEqual(response.count, 1)
-    }
-
-func testPBKDF2() {
-//        let pass = NSData(bytes: [UInt8]("hunter2".utf8))
-//        let salt = [UInt8]("sdasdsazxcxzvekfwqiooi".utf8)
-//
-//        measure {
-//            try! PBKDF2<SHA1>.calculate(pass, usingSalt: salt, iterating: 10000)
-//        }
     }
 }

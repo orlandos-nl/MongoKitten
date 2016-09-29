@@ -230,7 +230,7 @@ public final class Collection {
         let queryMsg = Message.Query(requestID: database.server.nextMessageID(), flags: flags, collection: self, numbersToSkip: 0, numbersToReturn: fetchChunkSize, query: filter, returnFields: nil)
         
         let response = try self.database.server.sendAndAwait(message: queryMsg, overConnection: connection)
-        guard let cursor = Cursor(namespace: self.fullName, collection: self, connection: connection, reply: response, chunkSize: fetchChunkSize, transform: { $0 }) else {
+        guard let cursor = Cursor(namespace: self.fullName, collection: self, reply: response, chunkSize: fetchChunkSize, transform: { $0 }) else {
             throw MongoError.invalidReply
         }
         
@@ -344,13 +344,7 @@ public final class Collection {
                 throw MongoError.invalidResponse(documents: documents)
             }
             
-            let connection = try database.server.reserveConnection()
-            
-            defer {
-                database.server.returnConnection(connection)
-            }
-             
-            return try Cursor(cursorDocument: cursorDoc, collection: self, connection: connection, chunkSize: 10, transform: { doc in
+            return try Cursor(cursorDocument: cursorDoc, collection: self, chunkSize: 10, transform: { doc in
                 _ = try? self.handleCallback(forDocuments: [doc], inOperation: .find)
                 return doc
             })
@@ -369,7 +363,7 @@ public final class Collection {
                 throw InternalMongoError.incorrectReply(reply: reply)
             }
             
-            return Cursor(namespace: self.fullName, collection: self, connection: connection, cursorID: cursorID, initialData: documents, chunkSize: batchSize, transform: { doc in
+            return Cursor(namespace: self.fullName, collection: self, cursorID: cursorID, initialData: documents, chunkSize: batchSize, transform: { doc in
                 _ = try? self.handleCallback(forDocuments: [doc], inOperation: .find)
                 return doc
             })
@@ -965,7 +959,7 @@ public final class Collection {
             database.server.returnConnection(connection)
         }
         
-        return try Cursor(cursorDocument: cursorDocument, collection: self, connection: connection, chunkSize: 10, transform: { $0 })
+        return try Cursor(cursorDocument: cursorDocument, collection: self, chunkSize: 10, transform: { $0 })
     }
     
     /// Modifies the collection. Requires access to `collMod`
@@ -1026,13 +1020,7 @@ public final class Collection {
             throw MongoError.invalidResponse(documents: documents)
         }
         
-        let connection = try database.server.reserveConnection()
-        
-        defer {
-            database.server.returnConnection(connection)
-        }
-        
-        return try Cursor(cursorDocument: cursorDoc, collection: self, connection: connection, chunkSize: 10, transform: { $0 })
+        return try Cursor(cursorDocument: cursorDoc, collection: self, chunkSize: 10, transform: { $0 })
     }
     
     /// The touch command loads data from the data storage layer into memory.
