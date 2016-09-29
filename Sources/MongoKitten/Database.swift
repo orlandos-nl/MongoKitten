@@ -8,11 +8,7 @@
 
 import Foundation
 import BSON
-import MongoMD5
-import MongoSCRAM
-import MongoSHA1
-import MongoPBKDF2
-import MongoHMAC
+import Cryptography
 import Dispatch
 
 /// A Mongo Database. Cannot be publically initialized.
@@ -220,7 +216,7 @@ extension Database {
             throw MongoAuthenticationError.authenticationFailure
         }
         
-        guard let finalResponse = String(bytes: [Byte](base64: stringResponse), encoding: String.Encoding.utf8) else {
+        guard let finalResponseData = Data(base64Encoded: stringResponse), let finalResponse = String(bytes: Array(finalResponseData), encoding: String.Encoding.utf8) else {
             throw MongoAuthenticationError.base64Failure
         }
         
@@ -230,7 +226,11 @@ extension Database {
             throw MongoAuthenticationError.authenticationFailure
         }
         
-        let serverSignature = [Byte](base64: v)
+        guard let serverSignatureData = Data(base64Encoded: v) else {
+            throw MongoError.invalidBase64String
+        }
+        
+        let serverSignature = Array(serverSignatureData)
         
         guard serverSignature == signature else {
             throw MongoAuthenticationError.serverSignatureInvalid
@@ -272,7 +272,7 @@ extension Database {
             throw MongoAuthenticationError.authenticationFailure
         }
         
-        guard let decodedStringResponse = String(bytes: [Byte](base64: stringResponse), encoding: String.Encoding.utf8) else {
+        guard let stringResponseData = Data(base64Encoded: stringResponse), let decodedStringResponse = String(bytes: Array(stringResponseData), encoding: String.Encoding.utf8) else {
             throw MongoAuthenticationError.base64Failure
         }
         
@@ -280,13 +280,13 @@ extension Database {
         digestBytes.append(contentsOf: "\(details.username):mongo:\(details.password)".utf8)
         
         var passwordBytes = [Byte]()
-        passwordBytes.append(contentsOf: MD5.calculate(digestBytes).hexString.utf8)
+        passwordBytes.append(contentsOf: MD5.hash(digestBytes).hexString.utf8)
         
         let result = try previousInformation.scram.process(decodedStringResponse, with: (username: details.username, password: passwordBytes), usingNonce: previousInformation.nonce)
         
         
         // Base64 the payload
-        let payload = result.proof.cStringBytes.base64
+        let payload = Data(bytes: result.proof.cStringBytes).base64EncodedString()
         
         // Send the proof
         let response = try self.execute(command: [
@@ -316,7 +316,7 @@ extension Database {
         
         let authPayload = try auth.authenticate(details.username, usingNonce: nonce)
         
-        let payload = authPayload.cStringBytes.base64
+        let payload = Data(bytes: authPayload.cStringBytes).base64EncodedString()
         
         let response = try self.execute(command: [
             "saslStart": .int32(1),
@@ -351,8 +351,8 @@ extension Database {
         var bytes = [Byte]()
         bytes.append(contentsOf: "\(details.username):mongo:\(details.password)".utf8)
         
-        let digest = MD5.calculate(bytes)
-        let key = MD5.calculate([UInt8]("\(nonce)\(details.username)\(digest)".utf8)).hexString
+        let digest = MD5.hash(bytes)
+        let key = MD5.hash([UInt8]("\(nonce)\(details.username)\(digest)".utf8)).hexString
         
         // Respond to the challengge
         let successResponse = try self.execute(command: [

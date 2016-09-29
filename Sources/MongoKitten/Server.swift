@@ -17,7 +17,7 @@ import Socks
 @_exported import BSON
 
 import Foundation
-import MongoMD5
+import Cryptography
 import Dispatch
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -479,8 +479,8 @@ public final class Server {
             command["username"] = ~user.user
             command["nonce"] = ~user.nonce
             
-            let passHash = MD5.calculate("\(user.user):mongo:\(user.password)").hexString
-            let key = MD5.calculate("\(user.nonce)\(user.user)\(passHash))").hexString
+            let passHash = MD5.hash([UInt8]("\(user.user):mongo:\(user.password)".utf8)).hexString
+            let key = MD5.hash([UInt8]("\(user.nonce)\(user.user)\(passHash))".utf8)).hexString
             command["key"] = ~key
         }
 

@@ -8,7 +8,7 @@
 
 import BSON
 import Foundation
-import MongoMD5
+import Cryptography
 
 /// A GridFS instance similar to a collection
 ///
@@ -118,11 +118,14 @@ public class GridFS {
     }
     
     /// Stores the data in GridFS
+    ///
     /// - parameter data: The data to store
     /// - parameter named: The optional filename to use for this data
     /// - parameter withType: The optional MIME type to use for this data
     /// - parameter usingMetadata: The optional metadata to store with this file
     /// - parameter inChunksOf: The amount of bytes to put in one chunk
+    ///
+    /// TODO: Accept data streams
     public func store(data binary: [Byte], named filename: String? = nil, withType contentType: String? = nil, usingMetadata metadata: Value? = nil, inChunksOf chunkSize: Int = 255000) throws -> ObjectId {
         guard chunkSize < 15_000_000 else {
             throw MongoError.invalidChunkSize(chunkSize: chunkSize)
@@ -137,7 +140,7 @@ public class GridFS {
             "length": ~Int64(dataSize),
             "chunkSize": ~Int32(chunkSize),
             "uploadDate": ~Date(timeIntervalSinceNow: 0),
-            "md5": ~MD5.calculate(data).hexString]
+            "md5": ~MD5.hash(data).hexString]
         
         
         if let contentType = contentType {
@@ -176,7 +179,7 @@ public class GridFS {
     /// - parameter usingMetadata: The optional metadata to store with this file
     /// - parameter inChunksOf: The amount of bytes to put in one chunk
     public func store(data nsdata: NSData, named filename: String? = nil, withType contentType: String? = nil, usingMetadata metadata: Value? = nil, inChunksOf chunkSize: Int = 255000) throws -> ObjectId {
-        return try self.store(data: nsdata.byteArray, named: filename, withType: contentType, usingMetadata: metadata, inChunksOf: chunkSize)
+        return try self.store(data: Array(Data(referencing: nsdata)), named: filename, withType: contentType, usingMetadata: metadata, inChunksOf: chunkSize)
     }
     
     /// A file in GridFS

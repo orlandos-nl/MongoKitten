@@ -1,9 +1,7 @@
 import Foundation
-import MongoHMAC
-import MongoCryptoEssentials
-import MongoPBKDF2
+import Cryptography
 
-final public class SCRAMClient<Variant: HashProtocol> {
+final public class SCRAMClient<Variant: Hash> {
     let gs2BindFlag = "n,,"
     
     public init() {
@@ -56,7 +54,10 @@ final public class SCRAMClient<Variant: HashProtocol> {
                 
                 switch first {
                 case "v":
-                    signature = [UInt8](base64: data)
+                    guard let signatureData = Data(base64Encoded: data) else {
+                        throw MongoError.invalidBase64String
+                    }
+                    signature = Array(signatureData)
                 default:
                     break
                 }
@@ -75,7 +76,17 @@ final public class SCRAMClient<Variant: HashProtocol> {
     }
     
     public func process(_ challenge: String, with details: (username: String, password: [UInt8]), usingNonce nonce: String) throws -> (proof: String, serverSignature: [UInt8]) {
-        let encodedHeader = [UInt8](gs2BindFlag.utf8).base64
+        func xor(_ lhs: [UInt8], _ rhs: [UInt8]) -> [UInt8] {
+            var result = [UInt8](repeating: 0, count: min(lhs.count, rhs.count))
+            
+            for i in 0..<result.count {
+                result[i] = lhs[i] ^ rhs[i]
+            }
+            
+            return result
+        }
+        
+        let encodedHeader = Data(bytes: [UInt8](gs2BindFlag.utf8)).base64EncodedString()
         
         let parsedResponse = try parse(challenge: challenge)
 
@@ -87,27 +98,31 @@ final public class SCRAMClient<Variant: HashProtocol> {
         
         let noProof = "c=\(encodedHeader),r=\(parsedResponse.nonce)"
         
-        let salt = [UInt8](base64: parsedResponse.salt)
-        let saltedPassword = try PBKDF2<Variant>.calculate(details.password, usingSalt: salt, iterating: parsedResponse.iterations)
+        guard let data = Data(base64Encoded: parsedResponse.salt) else {
+            throw MongoError.invalidBase64String
+        }
+        
+        let salt = Array(data)
+        let saltedPassword = try PBKDF2<Variant>.derive(fromKey: details.password, usingSalt: salt, iterating: parsedResponse.iterations)
         
         let ck = [UInt8]("Client Key".utf8)
         let sk = [UInt8]("Server Key".utf8)
         
-        let clientKey = HMAC<Variant>.authenticate(message: ck, withKey: saltedPassword)
-        let serverKey = HMAC<Variant>.authenticate(message: sk, withKey: saltedPassword)
+        let clientKey = HMAC<Variant>.authenticate(ck, withKey: saltedPassword)
+        let serverKey = HMAC<Variant>.authenticate(sk, withKey: saltedPassword)
 
-        let storedKey = Variant.calculate(clientKey)
+        let storedKey = Variant.hash(clientKey)
 
         let authenticationMessage = "n=\(fixUsername(username: details.username)),r=\(nonce),\(challenge),\(noProof)"
 
         var authenticationMessageBytes = [UInt8]()
         authenticationMessageBytes.append(contentsOf: authenticationMessage.utf8)
         
-        let clientSignature = HMAC<Variant>.authenticate(message: authenticationMessageBytes, withKey: storedKey)
+        let clientSignature = HMAC<Variant>.authenticate(authenticationMessageBytes, withKey: storedKey)
         let clientProof = xor(clientKey, clientSignature)
-        let serverSignature = HMAC<Variant>.authenticate(message: authenticationMessageBytes, withKey: serverKey)
+        let serverSignature = HMAC<Variant>.authenticate(authenticationMessageBytes, withKey: serverKey)
         
-        let proof = clientProof.base64
+        let proof = Data(bytes: clientProof).base64EncodedString()
 
         return (proof: "\(noProof),p=\(proof)", serverSignature: serverSignature)
     }

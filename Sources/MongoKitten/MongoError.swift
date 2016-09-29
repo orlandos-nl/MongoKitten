@@ -11,6 +11,9 @@ import struct BSON.Document
 
 /// All MongoDB errors
 public enum MongoError : Error {
+    /// Can't deocde base64
+    case invalidBase64String
+    
     /// Can't connect to the MongoDB Server
     case mongoDatabaseUnableToConnect
     

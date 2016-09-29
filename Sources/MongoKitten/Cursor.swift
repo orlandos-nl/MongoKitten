@@ -68,24 +68,43 @@ public final class Cursor<T> {
     /// Gets more information and puts it in the buffer
     fileprivate func getMore() {
         do {
-            let reply = try collection.database.execute(command: [
-                "getMore": ~self.cursorID,
-                "collection": ~collection.name,
-                "batchSize": ~chunkSize
-                ])
-            
-            guard case .Reply(_, _, _, _, _, _, let resultDocs) = reply else {
-                throw InternalMongoError.incorrectReply(reply: reply)
-            }
-            
-            let documents = resultDocs[0]["cursor"]["nextBatch"].document
-            for (_, value) in documents {
-                if let doc = transform(value.document) {
-                    self.data.append(doc)
+            if collection.database.server.serverData?.maxWireVersion ?? 0 >= 4 {
+                let reply = try collection.database.execute(command: [
+                    "getMore": ~self.cursorID,
+                    "collection": ~collection.name,
+                    "batchSize": ~chunkSize
+                    ])
+                
+                guard case .Reply(_, _, _, _, _, _, let resultDocs) = reply else {
+                    throw InternalMongoError.incorrectReply(reply: reply)
                 }
+                
+                let documents = resultDocs[0]["cursor"]["nextBatch"].document
+                for (_, value) in documents {
+                    if let doc = transform(value.document) {
+                        self.data.append(doc)
+                    }
+                }
+                
+                self.cursorID = resultDocs[0]["cursor"]["id"].int64
+            } else {
+                let connection = try collection.database.server.reserveConnection()
+                
+                defer {
+                    collection.database.server.returnConnection(connection)
+                }
+                
+                let request = Message.GetMore(requestID: collection.database.server.nextMessageID(), namespace: namespace, numberToReturn: chunkSize, cursor: cursorID)
+                
+                let reply = try collection.database.server.sendAndAwait(message: request, overConnection: connection)
+                
+                guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
+                    throw InternalMongoError.incorrectReply(reply: reply)
+                }
+                
+                self.data += documents.flatMap(transform)
+                self.cursorID = cursorID
             }
-            
-            self.cursorID = resultDocs[0]["cursor"]["id"].int64
         } catch {
             print("Error fetching extra data from the server in \(self) with error: \(error)")
         }
