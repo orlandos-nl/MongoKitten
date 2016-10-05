@@ -15,17 +15,11 @@ import BSON
 ///
 /// A grouping of MongoDB documents. A collection is the equivalent of an RDBMS table. A collection exists within a single database. Collections do not enforce a schema. Documents within a collection can have different fields. Typically, all documents in a collection have a similar or related purpose. See Namespaces.
 public final class Collection {
-    /// A callback that will be executed when a Document is found matching the provided `Query`
-    public typealias Callback = (query: Query, failure: CallbackFailure , callback: (Document) throws -> ())
-    
     /// The Database this collection is in
     public private(set) var database: Database
     
     /// The collection name
     public private(set) var name: String
-    
-    /// Callback storage
-    public private(set) var callbacks = [Operation: [Callback]]()
     
     /// The full (computed) collection name. Created by adding the Database's name with the Collection's name with a dot to seperate them
     /// Will be empty
@@ -40,33 +34,6 @@ public final class Collection {
     internal init(named name: String, in database: Database) {
         self.database = database
         self.name = name
-    }
-    
-    /// The action that will be done when a allback fails to execute
-    public enum CallbackFailure {
-        /// Do nothing
-        case nothing
-        
-        /// Rethrow the error
-        case `throw`
-        
-        /// Call a closure
-        case callback((Document, Query) -> ())
-    }
-    
-    /// What kind of operation the `Callback` will be applied to
-    public enum Operation {
-        /// Insert operations
-        case insert
-        
-        // Find operations
-        case find
-        
-        /// Update operations
-        case update
-        
-        /// Delete operations
-        case delete
     }
     
     // MARK: - CRUD Operations
@@ -211,7 +178,7 @@ public final class Collection {
     ///
     /// - returns: A Cursor pointing to the response Documents.
     public func query(matching filter: QueryProtocol, usingFlags flags: QueryFlags = [], fetching fetchChunkSize: Int32 = 10) throws -> Cursor<Document> {
-        return try self.query(matching: filter.data, usingFlags: flags, fetching: fetchChunkSize)
+        return try self.query(matching: filter.queryDocument, usingFlags: flags, fetching: fetchChunkSize)
     }
     
     /// Queries this `Collection` with a `Document` and returns the first result
@@ -246,7 +213,7 @@ public final class Collection {
     ///
     /// - returns: The first Document in the Response
     public func queryOne(matching filter: QueryProtocol, usingFlags flags: QueryFlags = []) throws -> Document? {
-        return try self.queryOne(matching: filter.data, usingFlags: flags)
+        return try self.queryOne(matching: filter.queryDocument, usingFlags: flags)
     }
     
     /// Finds `Document`s in this `Collection`
@@ -344,7 +311,7 @@ public final class Collection {
     ///
     /// - returns: A cursor pointing to the found Documents
     public func find(matching filter: QueryProtocol, sortedBy sort: Document? = nil, projecting projection: Document? = nil, skipping skip: Int32? = nil, limitedTo limit: Int32? = nil, withBatchSize batchSize: Int32 = 0) throws -> Cursor<Document> {
-        return try find(matching: filter.data as Document?, sortedBy: sort, projecting: projection, skipping: skip, limitedTo: limit, withBatchSize: batchSize)
+        return try find(matching: filter.queryDocument as Document?, sortedBy: sort, projecting: projection, skipping: skip, limitedTo: limit, withBatchSize: batchSize)
     }
     
     /// Finds Documents in this collection
@@ -381,7 +348,7 @@ public final class Collection {
     ///
     /// - returns: The found Document
     public func findOne(matching filter: QueryProtocol, sortedBy sort: Document? = nil, projecting projection: Document? = nil, skipping skip: Int32? = nil) throws -> Document? {
-        return try findOne(matching: filter.data as Document?, sortedBy: sort, projecting: projection, skipping: skip)
+        return try findOne(matching: filter.queryDocument as Document?, sortedBy: sort, projecting: projection, skipping: skip)
     }
     
     // Update
@@ -493,7 +460,7 @@ public final class Collection {
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func update(_ updates: [(filter: QueryProtocol, to: Document, upserting: Bool, multiple: Bool)], stoppingOnError ordered: Bool? = nil) throws {
-        let newUpdates = updates.map { (filter: $0.filter.data, to: $0.to, upserting: $0.upserting, multiple: $0.multiple) }
+        let newUpdates = updates.map { (filter: $0.filter.queryDocument, to: $0.to, upserting: $0.upserting, multiple: $0.multiple) }
         
         try self.update(newUpdates, stoppingOnError: ordered)
     }
@@ -591,7 +558,7 @@ public final class Collection {
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func remove(matching removals: [(filter: QueryProtocol, limit: Int32)], stoppingOnError ordered: Bool? = nil) throws {
-        let newRemovals = removals.map { (filter: $0.filter.data, limit: $0.limit) }
+        let newRemovals = removals.map { (filter: $0.filter.queryDocument, limit: $0.limit) }
         
         try self.remove(matching: newRemovals, stoppingOnError: ordered)
     }
@@ -733,7 +700,7 @@ public final class Collection {
         var command: Document = ["findAndModify": .string(self.name)]
         
         if let query = query {
-            command["query"] = ~query.data
+            command["query"] = ~query.queryDocument
         }
         
         if let sort = sort {
@@ -774,7 +741,7 @@ public final class Collection {
     ///
     /// - returns: The amount of matching `Document`s
     public func count(matching query: QueryProtocol, limitedTo limit: Int32? = nil, skipping skip: Int32? = nil) throws -> Int {
-        return try count(matching: query.data as Document?, limitedTo: limit, skipping: skip)
+        return try count(matching: query.queryDocument as Document?, limitedTo: limit, skipping: skip)
     }
     
     /// Returns all distinct values for a key in this collection. Allows filtering using query
@@ -808,7 +775,7 @@ public final class Collection {
     ///
     /// - returns: A list of all distinct values for this key
     public func distinct(on key: String, usingFilter query: QueryProtocol) throws -> [Value]? {
-        return try self.distinct(on: key, usingFilter: query.data)
+        return try self.distinct(on: key, usingFilter: query.queryDocument)
     }
     
     /// Creates an `Index` in this `Collection` on the specified keys.

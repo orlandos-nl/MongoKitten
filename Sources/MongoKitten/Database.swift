@@ -560,7 +560,7 @@ extension Database {
         ]
         
         if let filter = filter {
-            command["query"] = ~filter.data
+            command["query"] = ~filter.queryDocument
         }
         
         let document = try firstDocument(in: try execute(command: command))

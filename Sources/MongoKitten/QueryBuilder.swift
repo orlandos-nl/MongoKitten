@@ -115,9 +115,9 @@ public prefix func !(query: Query) -> Query {
 }
 
 public func &=(lhs: QueryProtocol, rhs: QueryProtocol) -> Document {
-    var lhs = lhs.data
+    var lhs = lhs.queryDocument
     
-    for (key, value) in rhs.data {
+    for (key, value) in rhs.queryDocument {
         lhs[key] = value
     }
     
@@ -301,13 +301,13 @@ public indirect enum AQT {
 /// The protocol all queries need to comply to
 public protocol QueryProtocol {
     /// They need to return a `Document` that will be used for matching
-    var data: Document { get }
+    var queryDocument: Document { get }
 }
 
 /// A `Query` that consists of an `AQT` statement
 public struct Query: QueryProtocol {
     /// The `Document` that can be sent to the MongoDB Server as a query/filter
-    public var data: Document {
+    public var queryDocument: Document {
         return aqt.document
     }
     
@@ -323,7 +323,7 @@ public struct Query: QueryProtocol {
 /// Makes a raw `Document` usable as `Query`
 extension Document: QueryProtocol {
     /// Makes a raw `Document` usable as `Query`
-    public var data: Document {
+    public var queryDocument: Document {
         return self
     }
 }
