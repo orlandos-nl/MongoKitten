@@ -41,7 +41,7 @@ public enum IndexParameter {
     internal var document: Document {
         switch self {
         case .sort(let field, let order):
-            return ["keys": [field: order.val]]
+            return ["key": [field: order.val]]
         case .sortedCompound(let fields):
             var index: Document = [:]
             
@@ -49,7 +49,7 @@ public enum IndexParameter {
                 index[field.field] = field.order.val
             }
             
-            return ["keys": ~index]
+            return ["key": ~index]
         case .compound(let fields):
             var index: Document = [:]
             
@@ -57,7 +57,7 @@ public enum IndexParameter {
                 index[field.field] = ~field.value
             }
             
-            return ["keys": ~index]
+            return ["key": ~index]
         case .expire(let seconds):
             return ["expireAfterSeconds": ~seconds]
         case .sparse:
