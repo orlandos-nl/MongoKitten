@@ -113,7 +113,7 @@ public final class Database {
     /// - parameter matching: The filter to apply when looking for Collections
     ///
     /// - returns: A `Cursor` to all `Collection`s in this `Database`
-    public func getCollections(matching filter: Document? = nil) throws -> Cursor<Collection> {
+    public func listCollections(matching filter: Document? = nil) throws -> Cursor<Collection> {
         let infoCursor = try self.getCollectionInfos(matching: filter)
         return Cursor(base: infoCursor) { collectionInfo in
             return self[collectionInfo["name"].string]
@@ -539,7 +539,7 @@ extension Database {
     /// - parameter user: The optional user credentials that you'll use to authenticate in the new DB
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func copy(to database: String, as user: (user: String, nonce: String, password: String)? = nil) throws {
+    public func copy(toDataase database: String, asUser user: (user: String, nonce: String, password: String)? = nil) throws {
         try server.copy(database: self.name, to: database, as: user)
     }
     
@@ -553,7 +553,7 @@ extension Database {
     /// - parameter filter: The query you're using to filter this
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func clone(namespace ns: String, from server: String, filtering filter: Query? = nil) throws {
+    public func clone(toNamespace ns: String, fromServer server: String, filteredBy filter: Query? = nil) throws {
         var command: Document = [
             "cloneCollection": ~ns,
             "from": ~server
@@ -580,7 +580,7 @@ extension Database {
     /// - parameter filtering: The document filter you're using to filter this
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func clone(namespace ns: String, from server: String, filtering filter: Document? = nil) throws {
+    public func clone(toNamespace ns: String, fromServer server: String, filteredBy filter: Document? = nil) throws {
         var command: Document = [
             "cloneCollection": ~ns,
             "from": ~server
@@ -611,7 +611,7 @@ extension Database {
     /// - parameter capped: The new cap
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func clone(collection instance: Collection, to otherCollection: String, capped: Int32) throws {
+    public func clone(collection instance: Collection, named otherCollection: String, cappedTo capped: Int32) throws {
         let command: Document = [
             "cloneCollectionAsCapped": ~instance.name,
             "toCollection": ~otherCollection,

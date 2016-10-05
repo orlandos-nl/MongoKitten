@@ -109,7 +109,6 @@ public final class Cursor<T> {
     
     deinit {
         if cursorID != 0 {
-            
             do {
                 let connection = try collection.database.server.reserveConnection()
                 

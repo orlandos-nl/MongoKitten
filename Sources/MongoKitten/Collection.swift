@@ -69,44 +69,6 @@ public final class Collection {
         case delete
     }
     
-    /// Registers a trigger for the given operation.
-    ///
-    /// - parameter op: The operation (insert, find, update or delete) to register for.
-    /// - parameter query: The query to filter operations on.
-    /// - parameter failure: Describes how errors thrown from the trigger callback will be handled.
-    /// - parameter callback: The method that will be called for this trigger.
-    public func on(_ op: Operation, matching query: Query, onFailure failure: CallbackFailure = .`throw`, callback: @escaping (Document) throws -> ()) {
-        if callbacks[op] == nil {
-            callbacks[op] = []
-        }
-        
-        callbacks[op]?.append((query: query, failure: failure, callback: callback))
-    }
-    
-    /// Takes the `Callback`s registered for an `Operation` and matches the provided `Document`s against the `Query`
-    ///
-    /// - throws: When the callback fails and the failure-state is set to throw
-    private func handleCallback(forDocuments documents: [Document], inOperation op: Operation) throws {
-        if callbacks.keys.contains(op) {
-            for callback in callbacks[op]! {
-                for d in documents where d.matches(query: callback.query) {
-                    do {
-                        try callback.callback(d)
-                    } catch {
-                        switch callback.failure {
-                        case .`throw`:
-                            throw error
-                        case .callback(let failure):
-                            failure(d, callback.query)
-                        case .nothing:
-                            continue
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
     // MARK: - CRUD Operations
     
     // Create
@@ -184,7 +146,6 @@ public final class Collection {
                 guard replyDocuments.first?["ok"].int32 == 1 else {
                     throw MongoError.insertFailure(documents: documents, error: replyDocuments.first)
                 }
-                try handleCallback(forDocuments: commandDocuments.flatMap{ $0.documentValue }, inOperation: .insert)
             } else {
                 let connection = try database.server.reserveConnection()
                 
@@ -197,8 +158,6 @@ public final class Collection {
                 
                 let insertMsg = Message.Insert(requestID: database.server.nextMessageID(), flags: [], collection: self, documents: commandDocuments)
                 _ = try self.database.server.send(message: insertMsg, overConnection: connection)
-                
-                try handleCallback(forDocuments: commandDocuments, inOperation: .insert)
             }
         }
         
@@ -345,7 +304,6 @@ public final class Collection {
             }
             
             return try Cursor(cursorDocument: cursorDoc, collection: self, chunkSize: 10, transform: { doc in
-                _ = try? self.handleCallback(forDocuments: [doc], inOperation: .find)
                 return doc
             })
         } else {
@@ -364,7 +322,6 @@ public final class Collection {
             }
             
             return Cursor(namespace: self.fullName, collection: self, cursorID: cursorID, initialData: documents, chunkSize: batchSize, transform: { doc in
-                _ = try? self.handleCallback(forDocuments: [doc], inOperation: .find)
                 return doc
             })
         }
@@ -476,8 +433,6 @@ public final class Collection {
             guard documents.first?["ok"].int32 == 1 else {
                 throw MongoError.updateFailure(updates: updates, error: documents.first)
             }
-            
-            try self.handleCallback(forDocuments: updates.map { $0.to }, inOperation: .update)
         } else {
             let connection = try database.server.reserveConnection()
             
@@ -500,7 +455,6 @@ public final class Collection {
                 
                 let message = Message.Update(requestID: database.server.nextMessageID(), collection: self, flags: flags, findDocument: update.filter, replaceDocument: update.to)
                 try self.database.server.send(message: message, overConnection: connection)
-                try self.handleCallback(forDocuments: updates.map { $0.to }, inOperation: .update)
             }
         }
     }
@@ -598,7 +552,6 @@ public final class Collection {
             guard documents.first?["ok"].int32 == 1 else {
                 throw MongoError.removeFailure(removals: removals, error: documents.first)
             }
-            try self.handleCallback(forDocuments: removals.map { $0.filter }, inOperation: .delete)
         // If we're talking to an older MongoDB server
         } else {
             let connection = try database.server.reserveConnection()
@@ -624,7 +577,6 @@ public final class Collection {
                 
                 for _ in 0..<limit {
                     try self.database.server.send(message: message, overConnection: connection)
-                    try self.handleCallback(forDocuments: [removal.filter], inOperation: .delete)
                 }
             }
         }
@@ -687,7 +639,7 @@ public final class Collection {
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func rename(to newName: String) throws {
-        try self.move(to: database, named: newName)
+        try self.move(toDatabase: database, renamedTo: newName)
     }
     
     /// Move this collection to another database. Can also rename the collection in one go.
@@ -700,7 +652,7 @@ public final class Collection {
     /// - parameter named: The new name for this collection
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func move(to database: Database, named newName: String? = nil, overwriting dropOldTarget: Bool? = nil) throws {
+    public func move(toDatabase database: Database, renamedTo newName: String? = nil, overwritingExistingCollection dropOldTarget: Bool? = nil) throws {
         // TODO: Fail if the target database exists.
         var command: Document = [
                                     "renameCollection": .string(self.fullName),
@@ -835,7 +787,7 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A list of all distinct values for this key
-    public func distinct(on key: String, usingFilter filter: Document? = nil) throws -> [Value]? {
+    public func distinct(onField key: String, usingFilter filter: Document? = nil) throws -> [Value]? {
         var command: Document = ["distinct": .string(self.name), "key": .string(key)]
         
         if let filter = filter {
@@ -855,7 +807,7 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A list of all distinct values for this key
-    public func distinct(on key: String, usingFilter query: Query) throws -> [Value]? {
+    public func distinct(on key: String, usingFilter query: QueryProtocol) throws -> [Value]? {
         return try self.distinct(on: key, usingFilter: query.data)
     }
     
@@ -916,7 +868,7 @@ public final class Collection {
     /// - parameter index: The index name (as specified when creating the index) that will removed. `*` for all indexes
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func dropIndex(_ index: String) throws {
+    public func dropIndex(named index: String) throws {
         try database.execute(command: ["dropIndexes": .string(self.name), "index": .string(name)])
     }
     
@@ -1040,7 +992,7 @@ public final class Collection {
     /// For more information: https://docs.mongodb.com/manual/reference/command/convertToCapped/#dbcmd.convertToCapped
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func convertToCapped(at cap: Int32) throws {
+    public func convertToCapped(cappingAt cap: Int32) throws {
         let command: Document = [
                                     "convertToCapped": ~self.name,
                                     "size": ~cap
@@ -1105,8 +1057,8 @@ public final class Collection {
     /// - parameter capped: The cap to apply
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func clone(to otherCollection: String, capped: Int32) throws {
-        try database.clone(collection: self, to: otherCollection, capped: capped)
+    public func clone(named otherCollection: String, capped: Int32) throws {
+        try database.clone(collection: self, named: otherCollection, cappedTo: capped)
     }
 }
 
