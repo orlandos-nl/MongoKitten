@@ -870,8 +870,8 @@ public final class Collection {
     /// - parameter unique: Used to create unique fields like usernames. Default should be `false`
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func createIndex(with keys: [(key: String, ascending: Bool)], named name: String, filter: Query?, buildInBackground: Bool, unique: Bool) throws {
-        try self.createIndexes([(name: name, keys: keys, filter: filter, buildInBackground: buildInBackground, unique: unique)])
+    public func createIndex(named name: String, withParameters parameters: IndexParameter...) throws {
+        try self.createIndexes([(name: name, parameters: parameters)])
     }
     
     /// Creates multiple indexes as specified
@@ -881,7 +881,7 @@ public final class Collection {
     /// - parameter indexes: The indexes to create using a Tuple as specified in `createIndex`
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func createIndexes(_ indexes: [(name: String, keys: [(key: String, ascending: Bool)], filter: Query?, buildInBackground: Bool, unique: Bool)]) throws {
+    public func createIndexes(_ indexes: [(name: String, parameters: [IndexParameter])]) throws {
         guard let wireVersion = database.server.serverData?.maxWireVersion , wireVersion >= 2 else {
             throw MongoError.unsupportedOperations
         }
@@ -889,27 +889,12 @@ public final class Collection {
         var indexDocs = [Value]()
         
         for index in indexes {
-            var keys: Document = []
-            
-            for key in index.keys {
-                keys[key.key] = key.ascending ? .int32(1) : .int32(-1)
-            }
-            
             var indexDocument: Document = [
-                                              "key": .array(keys),
-                                              "name": .string(index.name)
+                "name": .string(index.name)
             ]
             
-            if let filter = index.filter {
-                indexDocument["partialFilterExpression"] = .document(filter.data)
-            }
-            
-            if index.buildInBackground {
-                indexDocument["background"] = .boolean(true)
-            }
-            
-            if index.unique {
-                indexDocument["unique"] = .boolean(true)
+            for parameter in index.parameters {
+                indexDocument += parameter.document
             }
             
             indexDocs.append(~indexDocument)

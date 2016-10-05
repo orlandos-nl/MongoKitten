@@ -31,9 +31,9 @@ public class GridFS {
         chunks = database["\(bucketName).chunks"]
         
         // Make indexes
-        try chunks.createIndex(with: [(key: "files_id", ascending: true), (key: "n", ascending: true)], named: "chunksindex", filter: nil, buildInBackground: true, unique: true)
+        try chunks.createIndex(named: "chunksindex", withParameters: .sortedCompound(fields: [("files_id", .ascending), ("n", .ascending)]), .buildInBackground, .unique)
         
-        try files.createIndex(with: [(key: "filename", ascending: true), (key: "uploadDate", ascending: true)], named: "filesindex", filter: nil, buildInBackground: true, unique: false)
+        try files.createIndex(named: "filename", withParameters: .sortedCompound(fields: [("uploadDate", .ascending), ("filesindex", .ascending)]), .buildInBackground)
     }
     
     /// Finds using all files matching this ObjectID
