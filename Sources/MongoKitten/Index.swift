@@ -49,7 +49,7 @@ public enum IndexParameter {
                 index[field.field] = field.order.val
             }
             
-            return ["key": ~index]
+            return ["key": ~(index.flattened())]
         case .compound(let fields):
             var index: Document = [:]
             
@@ -57,7 +57,7 @@ public enum IndexParameter {
                 index[field.field] = ~field.value
             }
             
-            return ["key": ~index]
+            return ["key": ~(index.flattened())]
         case .expire(let seconds):
             return ["expireAfterSeconds": ~seconds]
         case .sparse:
@@ -72,7 +72,7 @@ public enum IndexParameter {
             return ["background": true]
         case .weight(let weight):
             return ["weights": .int32(Int32(weight))]
-//            case .text
+            //            case .text
         }
     }
 }
