@@ -27,17 +27,6 @@ public protocol MongoTCP : class {
     func receive() throws -> [UInt8]
 }
 
-enum TCPError : Error {
-    case ConnectionFailed
-    case NotConnected
-    case AlreadyConnected
-    case SendFailure(errorCode: Int)
-    case ReceiveFailure(errorCode: Int)
-    case ConnectionClosedByServer
-    case ConnectionClosed
-    case BindFailed
-}
-
 extension Socks.TCPClient : MongoTCP {
     public static func open(address hostname: String, port: UInt16) throws -> MongoTCP {
         let address = InternetAddress(hostname: hostname, port: port)
@@ -52,4 +41,3 @@ extension Socks.TCPClient : MongoTCP {
         return try self.receive(maxBytes: Int(UInt16.max))
     }
 }
-

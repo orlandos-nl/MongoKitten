@@ -232,7 +232,7 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A cursor pointing to the found Documents
-    public func find(matching filter: Document? = nil, sortedBy sort: Document? = nil, projecting projection: Document? = nil, skipping skip: Int32? = nil, limitedTo limit: Int32? = nil, withBatchSize batchSize: Int32 = 10) throws -> Cursor<Document> {
+    public func find(matching filter: Document? = nil, sortedBy sort: Document? = nil, projecting projection: Projection? = nil, skipping skip: Int32? = nil, limitedTo limit: Int32? = nil, withBatchSize batchSize: Int32 = 10) throws -> Cursor<Document> {
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
         if protocolVersion >= 4 {
@@ -247,7 +247,7 @@ public final class Collection {
             }
             
             if let projection = projection {
-                command["projection"] = .document(projection)
+                command["projection"] = ~projection
             }
             
             if let skip = skip {
@@ -280,7 +280,7 @@ public final class Collection {
                 database.server.returnConnection(connection)
             }
             
-            let queryMsg = Message.Query(requestID: database.server.nextMessageID(), flags: [], collection: self, numbersToSkip: skip ?? 0, numbersToReturn: batchSize, query: filter ?? [], returnFields: projection)
+            let queryMsg = Message.Query(requestID: database.server.nextMessageID(), flags: [], collection: self, numbersToSkip: skip ?? 0, numbersToReturn: batchSize, query: filter ?? [], returnFields: projection?.document)
             
             let reply = try self.database.server.sendAndAwait(message: queryMsg, overConnection: connection)
             
@@ -310,7 +310,7 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A cursor pointing to the found Documents
-    public func find(matching filter: QueryProtocol, sortedBy sort: Document? = nil, projecting projection: Document? = nil, skipping skip: Int32? = nil, limitedTo limit: Int32? = nil, withBatchSize batchSize: Int32 = 0) throws -> Cursor<Document> {
+    public func find(matching filter: QueryProtocol, sortedBy sort: Document? = nil, projecting projection: Projection? = nil, skipping skip: Int32? = nil, limitedTo limit: Int32? = nil, withBatchSize batchSize: Int32 = 0) throws -> Cursor<Document> {
         return try find(matching: filter.queryDocument as Document?, sortedBy: sort, projecting: projection, skipping: skip, limitedTo: limit, withBatchSize: batchSize)
     }
     
@@ -328,7 +328,7 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: The found Document
-    public func findOne(matching filter: Document? = nil, sortedBy sort: Document? = nil, projecting projection: Document? = nil, skipping skip: Int32? = nil) throws -> Document? {
+    public func findOne(matching filter: Document? = nil, sortedBy sort: Document? = nil, projecting projection: Projection? = nil, skipping skip: Int32? = nil) throws -> Document? {
         return try self.find(matching: filter, sortedBy: sort, projecting: projection, skipping: skip, limitedTo:
             1).makeIterator().next()
     }
@@ -347,7 +347,7 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: The found Document
-    public func findOne(matching filter: QueryProtocol, sortedBy sort: Document? = nil, projecting projection: Document? = nil, skipping skip: Int32? = nil) throws -> Document? {
+    public func findOne(matching filter: QueryProtocol, sortedBy sort: Document? = nil, projecting projection: Projection? = nil, skipping skip: Int32? = nil) throws -> Document? {
         return try findOne(matching: filter.queryDocument as Document?, sortedBy: sort, projecting: projection, skipping: skip)
     }
     
@@ -696,7 +696,7 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: The `Value` received from the server as specified in the link of the additional information
-    public func findAndModify(matching query: QueryProtocol? = nil, sortedBy sort: Document? = nil, action: FindAndModifyOperation, projection: Document? = nil) throws -> Value {
+    public func findAndModify(matching query: QueryProtocol? = nil, sortedBy sort: Document? = nil, action: FindAndModifyOperation, projection: Projection? = nil) throws -> Value {
         var command: Document = ["findAndModify": .string(self.name)]
         
         if let query = query {

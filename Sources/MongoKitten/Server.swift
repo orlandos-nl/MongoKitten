@@ -14,6 +14,13 @@
 
 import Socks
 
+#if TLS
+    import TLS
+    public let DefaultTCPClient: MongoTCP.Type = Socks.TCPClient.self
+#else
+    public let DefaultTCPClient: MongoTCP.Type = Socks.TCPClient.self
+#endif
+
 @_exported import BSON
 
 import Foundation
@@ -145,7 +152,7 @@ public final class Server {
     /// - throws: When we can't connect automatically, when the scheme/host is invalid and when we can't connect automatically
     ///
     /// - parameter automatically: Whether to connect automatically
-    public convenience init(NSURL url: NSURL, using tcpDriver: MongoTCP.Type = Socks.TCPClient.self, automatically connecting: Bool = true, maxConnections: Int = 10) throws {
+    public convenience init(NSURL url: NSURL, using tcpDriver: MongoTCP.Type = DefaultTCPClient, automatically connecting: Bool = true, maxConnections: Int = 10) throws {
         guard let scheme = url.scheme, let host = url.host , scheme.lowercased() == "mongodb" else {
             throw MongoError.invalidNSURL(url: url)
         }
@@ -173,7 +180,7 @@ public final class Server {
     /// - parameter automatically: Whether to connect automatically
     ///
     /// - throws: Throws when we can't connect automatically, when the scheme/host is invalid and when we can't connect automatically
-    public convenience init(uri: String, using tcpDriver: MongoTCP.Type = Socks.TCPClient.self, automatically connecting: Bool = true, maxConnections: Int = 10) throws {
+    public convenience init(uri: String, using tcpDriver: MongoTCP.Type = DefaultTCPClient, automatically connecting: Bool = true, maxConnections: Int = 10) throws {
         guard let url = NSURL(string: uri) else {
             throw MongoError.invalidURI(uri: uri)
         }
@@ -189,7 +196,7 @@ public final class Server {
     /// - parameter automatically: Connect automatically
     ///
     /// - throws: When we can’t connect automatically, when the scheme/host is invalid and when we can’t connect automatically
-    public init(hostname host: String, port: UInt16 = 27017, using authentication: (username: String, password: String, against: String)? = nil, using tcpDriver: MongoTCP.Type = Socks.TCPClient.self, automatically connecting: Bool = false, maxConnections: Int = 10) throws {
+    public init(hostname host: String, port: UInt16 = 27017, using authentication: (username: String, password: String, against: String)? = nil, using tcpDriver: MongoTCP.Type = DefaultTCPClient, automatically connecting: Bool = false, maxConnections: Int = 10) throws {
         self.tcpType = tcpDriver
         self.server = (host: host, port: port)
         self.maximumConnections = maxConnections
