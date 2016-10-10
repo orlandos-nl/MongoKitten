@@ -14,12 +14,12 @@ extension Projection: ExpressibleByArrayLiteral {
     public init(arrayLiteral elements: String...) {
         self.document = Document(dictionaryElements: elements.map {
             return ($0, .int32(1))
-        })
+        }).flattened()
     }
 }
 
 extension Projection: ExpressibleByDictionaryLiteral {
     public init(dictionaryLiteral elements: (String, Value)...) {
-        self.document = Document(dictionaryElements: elements)
+        self.document = Document(dictionaryElements: elements).flattened()
     }
 }
