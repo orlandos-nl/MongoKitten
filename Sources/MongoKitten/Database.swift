@@ -539,7 +539,7 @@ extension Database {
     /// - parameter user: The optional user credentials that you'll use to authenticate in the new DB
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func copy(toDataase database: String, asUser user: (user: String, nonce: String, password: String)? = nil) throws {
+    public func copy(toDatabase database: String, asUser user: (user: String, nonce: String, password: String)? = nil) throws {
         try server.copy(database: self.name, to: database, as: user)
     }
     

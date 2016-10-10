@@ -370,7 +370,10 @@ public final class Collection {
     /// - parameter ordered: If true, stop updating when one operation fails - defaults to true
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func update(_ updates: [(filter: Document, to: Document, upserting: Bool, multiple: Bool)], stoppingOnError ordered: Bool? = nil) throws {
+    ///
+    /// - returns: The amount of updated documents
+    @discardableResult
+    public func update(_ updates: [(filter: Document, to: Document, upserting: Bool, multiple: Bool)], stoppingOnError ordered: Bool? = nil) throws -> Int {
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
         if protocolVersion >= 2 {
@@ -400,6 +403,8 @@ public final class Collection {
             guard documents.first?["ok"].int32 == 1 else {
                 throw MongoError.updateFailure(updates: updates, error: documents.first)
             }
+            
+            return Int(documents.first?["nModified"].int32Value ?? 0)
         } else {
             let connection = try database.server.reserveConnection()
             
@@ -423,6 +428,8 @@ public final class Collection {
                 let message = Message.Update(requestID: database.server.nextMessageID(), collection: self, flags: flags, findDocument: update.filter, replaceDocument: update.to)
                 try self.database.server.send(message: message, overConnection: connection)
             }
+            
+            return updates.count
         }
     }
     
@@ -440,7 +447,8 @@ public final class Collection {
     /// - parameter ordered: If true, stop updating when one operation fails - defaults to true
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func update(matching filter: Document, to updated: Document, upserting upsert: Bool = false, multiple multi: Bool = false, stoppingOnError ordered: Bool? = nil) throws {
+    @discardableResult
+    public func update(matching filter: Document, to updated: Document, upserting upsert: Bool = false, multiple multi: Bool = false, stoppingOnError ordered: Bool? = nil) throws -> Int {
         return try self.update([(filter: filter as QueryProtocol, to: updated, upserting: upsert, multiple: multi)], stoppingOnError: ordered)
     }
     
@@ -459,10 +467,13 @@ public final class Collection {
     /// - parameter ordered: If true, stop updating when one operation fails - defaults to true
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func update(_ updates: [(filter: QueryProtocol, to: Document, upserting: Bool, multiple: Bool)], stoppingOnError ordered: Bool? = nil) throws {
+    ///
+    /// - returns: The amount of updated documents
+    @discardableResult
+    public func update(_ updates: [(filter: QueryProtocol, to: Document, upserting: Bool, multiple: Bool)], stoppingOnError ordered: Bool? = nil) throws -> Int {
         let newUpdates = updates.map { (filter: $0.filter.queryDocument, to: $0.to, upserting: $0.upserting, multiple: $0.multiple) }
         
-        try self.update(newUpdates, stoppingOnError: ordered)
+        return try self.update(newUpdates, stoppingOnError: ordered)
     }
     
     /// Updates a `Document` using a counterpart `Document`.
@@ -479,8 +490,9 @@ public final class Collection {
     /// - parameter ordered: If true, stop updating when one operation fails - defaults to true
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func update(matching filter: QueryProtocol, to updated: Document, upserting upsert: Bool = false, multiple multi: Bool = false, stoppingOnError ordered: Bool? = nil) throws {
-        return try self.update([(filter: filter, to: updated, upserting: upsert, multiple: multi)], stoppingOnError: ordered)
+    @discardableResult
+    public func update(matching filter: QueryProtocol, to updated: Document, upserting upsert: Bool = false, multiple multi: Bool = false, stoppingOnError ordered: Bool? = nil) throws -> Int {
+        return try self.update([(filter: filter.queryDocument, to: updated, upserting: upsert, multiple: multi)], stoppingOnError: ordered)
     }
     
     // Delete

@@ -42,7 +42,7 @@ class AdministrationCommandsTests: XCTestCase {
         
         XCTAssert(dbExists)
         
-        try! TestManager.db.copy(to: "mongokitten-unittest-temp")
+        try! TestManager.db.copy(toDatabase: "mongokitten-unittest-temp")
         let _ = try! TestManager.server.getDatabaseInfos()
         try! TestManager.server["mongokitten-unittest-temp"].drop()
     }
@@ -65,7 +65,7 @@ class AdministrationCommandsTests: XCTestCase {
         try! TestManager.db.createCollection("test")
         
         var exists = false
-        for col in try! TestManager.db.getCollections() where col.name == "test" {
+        for col in try! TestManager.db.listCollections() where col.name == "test" {
             exists = true
         }
         

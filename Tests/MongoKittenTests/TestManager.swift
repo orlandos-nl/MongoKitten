@@ -29,7 +29,7 @@ final class TestManager {
     
     static func clean() throws {
         // Erase the testing database:
-        for aCollection in try db.getCollections() where !aCollection.name.contains("system") && aCollection.name != "zips" {
+        for aCollection in try db.listCollections() where !aCollection.name.contains("system") && aCollection.name != "zips" {
             try aCollection.drop()
         }
         

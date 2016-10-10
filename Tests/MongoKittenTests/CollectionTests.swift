@@ -35,7 +35,7 @@ class CollectionTests: XCTestCase {
     }
     
     func testDistinct() {
-        let distinct = try! TestManager.db["zips"].distinct(on: "state")!
+        let distinct = try! TestManager.db["zips"].distinct(onField: "state")!
         
         XCTAssertEqual(distinct.count, 51)
     }

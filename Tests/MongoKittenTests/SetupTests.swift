@@ -31,7 +31,7 @@ class SetupTests: XCTestCase {
     
     func testSetup() {
         let server = try! Server(uri: "mongodb://mongokitten-unittest-user:mongokitten-unittest-password@127.0.0.1:27017", automatically: true)
-        let distinct = try! server["mongokitten-unittest"]["zips"].distinct(on: "state")!
+        let distinct = try! server["mongokitten-unittest"]["zips"].distinct(onField: "state")!
         
         XCTAssertEqual(distinct.count, 51)
     }
