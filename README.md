@@ -2,32 +2,46 @@
 
 [![Swift 3.0](https://img.shields.io/badge/swift-3.0-orange.svg)](https://swift.org)
 ![License](https://img.shields.io/github/license/openkitten/mongokitten.svg)
-[![Carthage compatible](https://img.shields.io/badge/Carthage-compatible-4BC51D.svg?style=flat)](https://github.com/Carthage/Carthage)
 
 
 Native MongoDB driver for Swift, written in Swift. This library does not wrap around the mongoc driver. It uses:
 
 - Our own [BSON](https://github.com/OpenKitten/BSON) library, which is also 100% native Swift
-- Our own [MD5](https://github.com/CryptoKitten/MD5), [SHA1](https://github.com/CryptoKitten/SHA1) and [SCRAM](https://github.com/CryptoKitten/SCRAM) libraries in 100% Swift (currently included in the package)
+- Our own [MD5, SHA1, SCRAM and PBKDF2 libraries](https://github.com/OpenKitten/CryptoKitten) in 100% Swift (currently included in the package)
+- Optional support for SSL/TLS using LibreSSL
 
 ## Documentation
 
-This can be found [here](http://openkitten.github.io/MongoKitten/docs/).
+This can be found [here](http://openkitten.github.io/MongoKitten/docs/) or you could use our [wiki](https://github.com/openkitten/mongokitten/wiki).
 
 We have our own Dash documentation for MongoKitten which can be found in the top-right corner of the Documentation.
+
+## Enabling SSL
+
+When compiling using SSL you'll need to add another library to your `Package.swift`.
+
+```swift
+.Package(url: "https://github.com/vapor/tls.git", majorVersion: 1)
+```
+
+Then you'll need to add the compiler flag `TLS` to your compiler conditions.
+
+Either add `TLS` to your `.xcodeproj` under "Active Compilation Conditions".
+Or by running `swift build -Xswiftc -DTLS` on the commandline.
+For release this would be `swift build -c release -Xswiftc -DTLS`
+
+If you don't prefer this SSL implementation for any reason
 
 ## Requirements
 
 - A MongoDB server
 - Some basic knowledge of MongoDB or time to research about MongoDB
-- The swift version described in `.swift-version`, see [swiftenv](http://swiftenv.fuller.li/en/latest/).
-
-We don't support any other version of swift with the constantly changing syntax. This required swift version changes constantly with newer versions of `MongoKitten` and it's recommended to pin down the version in SPM.
-
-Note: other versions of `swift` and `MongoDB` may or may not work. We do not support them.
+- Swift 3.0
 
 #### Running Unit Tests
 The unit tests expect a test database. Run the Tools/testprep.sh script to import it.
+
+We don't have complete unit test coverage however MongoKitten has been thoroughly tested in test and production environments.
 
 # Tutorial
 
@@ -41,7 +55,7 @@ import PackageDescription
 let package = Package(
 	name: "MyApp",
 	dependencies: [
-		.Package(url: "https://github.com/OpenKitten/MongoKitten.git", majorVersion: 1, minor: 7)
+		.Package(url: "https://github.com/OpenKitten/MongoKitten.git", majorVersion: 2, minor: 0)
 	]
 )
 ```
@@ -57,14 +71,14 @@ import MongoKitten
 Connect to your local MongoDB server using an URI:
 
 ```swift
-let server: Server!
+let server: Server
 
 do {
-	server = try Server("mongodb://username:password@localhost:27017", automatically: true)
+	server = try Server("mongodb://<username>:<password>@localhost:27017", automatically: true)
 
 } catch {
     // Unable to connect
-	print("MongoDB is not available on the given host and port")
+	fatalError("MongoDB is not available on the given host and port")
 }
 ```
 
@@ -302,18 +316,3 @@ The user quits the video about 40% through the video. Let's say chunk 58 of 144 
 ## License
 
 MongoKitten is licensed under the MIT license.
-
-## CryptoSwift
-
-**MongoKitten uses parts of [CryptoSwift](https://github.com/krzyzanowskim/CryptoSwift) whose license is included below.
-Parts where CryptoSwift code is used have this license included in the file**
-
-Copyright (C) 2014 Marcin Krzyżanowski marcin.krzyzanowski@gmail.com This software is provided 'as-is', without any express or implied warranty.
-
-In no event will the authors be held liable for any damages arising from the use of this software.
-
-Permission is granted to anyone to use this software for any purpose, including commercial applications, and to alter it and redistribute it freely, subject to the following restrictions:
-
-    The origin of this software must not be misrepresented; you must not claim that you wrote the original software. If you use this software in a product, an acknowledgment in the product documentation is required.
-    Altered source versions must be plainly marked as such, and must not be misrepresented as being the original software.
-    This notice may not be removed or altered from any source or binary distribution.
