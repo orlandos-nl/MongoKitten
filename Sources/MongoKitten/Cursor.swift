@@ -103,7 +103,7 @@ public final class Cursor<T> {
                 self.cursorID = cursorID
             }
         } catch {
-            print("Error fetching extra data from the server in \(self) with error: \(error)")
+            collection.database.server.cursorErrorHandler(error)
         }
     }
     
@@ -118,7 +118,7 @@ public final class Cursor<T> {
                 let killCursorsMessage = Message.KillCursors(requestID: collection.database.server.nextMessageID(), cursorIDs: [self.cursorID])
                 try collection.database.server.send(message: killCursorsMessage, overConnection: connection)
             } catch {
-                print("Error while cleaning up MongoDB cursor \(self): \(error)")
+                collection.database.server.cursorErrorHandler(error)
             }
         }
     }

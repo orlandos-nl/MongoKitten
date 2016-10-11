@@ -206,7 +206,7 @@ extension Database {
         }
         
         let conversationId = response["conversationId"]
-        guard conversationId != .nothing  else {
+        guard conversationId != Value.nothing  else {
             throw MongoAuthenticationError.authenticationFailure
         }
         

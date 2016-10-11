@@ -112,6 +112,10 @@ public final class Server {
         }
     }
     
+    public var cursorErrorHandler: ((Error)->()) = { doc in
+        print(doc)
+    }
+    
     /// The authentication details that are used to connect with the MongoDB server
     private let authDetails: (username: String, password: String, against: String)?
     
@@ -565,7 +569,7 @@ public final class Server {
     ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/fsync/#dbcmd.fsync
     ///
-    /// - parameter async: Do we run this async?
+    /// - parameter async: If true, dont block the server until the operation is finished
     /// - parameter block: Do we block writing in the meanwhile?
     public func fsync(async asynchronously: Bool? = nil, blocking block: Bool? = nil) throws {
         var command: Document = [
@@ -600,7 +604,7 @@ public final class Server {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: The user's information (plus optionally the credentials and privileges)
-    public func info(for user: String, inDatabase database: Database? = nil, showCredentials: Bool? = nil, showPrivileges: Bool? = nil) throws -> Document {
+    public func getUserInfo(forUserNamed user: String, inDatabase database: Database? = nil, showCredentials: Bool? = nil, showPrivileges: Bool? = nil) throws -> Document {
         var command: Document = [
                                      "usersInfo": ["user": ~user, "db": ~(database?.name ?? "admin")]
                                      ]

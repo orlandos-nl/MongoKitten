@@ -133,7 +133,7 @@ public final class Collection {
     
     // Read
     
-    /// Queries this `Collection` with a `Document`
+    /// Executes a query on this `Collection` with a `Document`
     ///
     /// This is used to execute DBCommands. For finding `Document`s we recommend the `find` command
     ///
@@ -146,7 +146,7 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A Cursor pointing to the response Documents.
-    public func query(matching filter: Document = [], usingFlags flags: QueryFlags = [], fetching fetchChunkSize: Int32 = 10) throws -> Cursor<Document> {
+    public func execute(matching filter: Document = [], usingFlags flags: QueryFlags = [], fetching fetchChunkSize: Int32 = 10) throws -> Cursor<Document> {
         let connection = try database.server.reserveConnection()
         
         defer {
