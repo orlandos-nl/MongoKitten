@@ -53,11 +53,11 @@ class AdministrationCommandsTests: XCTestCase {
         } catch {}
         
         try! TestManager.db.createUser("mongokitten-henk", password: "banapple", roles: [], customData: ["num": .int32(3)])
-        let info = try! TestManager.server.info(for: "mongokitten-henk", inDatabase: TestManager.db)
+        let info = try! TestManager.server.getUserInfo(forUserNamed: "mongokitten-henk", inDatabase: TestManager.db)
         XCTAssertEqual(info[0]["customData"]["num"].int32Value, 3)
         
         try! TestManager.db.update(user: "mongokitten-henk", password: "banappol", roles: [], customData: ["num": .int32(5)])
-        let newInfo = try! TestManager.server.info(for: "mongokitten-henk", inDatabase: TestManager.db)
+        let newInfo = try! TestManager.server.getUserInfo(forUserNamed: "mongokitten-henk", inDatabase: TestManager.db)
         XCTAssertEqual(newInfo[0]["customData"]["num"].int32Value, 5)
         
         try! TestManager.db.drop(user: "mongokitten-henk")

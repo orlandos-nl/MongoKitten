@@ -32,7 +32,7 @@ class DatabaseTests: XCTestCase {
         
         try! TestManager.db.createUser("mongokitten-unittest-testuser", password: "hunter2", roles: roles, customData: ["testdata": false])
         
-        guard let userInfo = try? TestManager.server.info(for: "mongokitten-unittest-testuser", inDatabase: TestManager.db), let testData = userInfo[0]["customData"]["testdata"].boolValue else {
+        guard let userInfo = try? TestManager.server.getUserInfo(forUserNamed: "mongokitten-unittest-testuser", inDatabase: TestManager.db), let testData = userInfo[0]["customData"]["testdata"].boolValue else {
             XCTFail()
             return
         }
