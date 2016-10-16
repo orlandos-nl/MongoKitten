@@ -124,20 +124,6 @@ public func &=(lhs: QueryProtocol, rhs: QueryProtocol) -> Document {
     return lhs
 }
 
-/// A protocol that allows other types to be used as a `Value` replacement
-public protocol ValueProtocol {
-    /// You have to be able to provide a BSON `Value`
-    var val: Value { get }
-}
-
-/// Makes it so that a normal BSON `Value` can be used in statements
-extension Value: ValueProtocol {
-    /// The `Value` in `Value` is `self`
-    public var val: Value {
-        return self
-    }
-}
-
 /// Abstract Query Tree.
 ///
 /// Made to be easily readable/usable so that an `AQT` instance can be easily translated to a `Document` as a Query or even possibly `SQL` in the future.
@@ -223,17 +209,17 @@ public indirect enum AQT {
                 return [key: ["$type": ~type.rawValue]]
             }
         case .valEquals(let key, let val):
-            return [key: ["$eq": val.val]]
+            return [key: ["$eq": val.makeBsonValue()]]
         case .valNotEquals(let key, let val):
-            return [key: ["$ne": val.val]]
+            return [key: ["$ne": val.makeBsonValue()]]
         case .greaterThan(let key, let val):
-            return [key: ["$gt": val.val]]
+            return [key: ["$gt": val.makeBsonValue()]]
         case .greaterThanOrEqual(let key, let val):
-            return [key: ["$gte": val.val]]
+            return [key: ["$gte": val.makeBsonValue()]]
         case .smallerThan(let key, let val):
-            return [key: ["$lt": val.val]]
+            return [key: ["$lt": val.makeBsonValue()]]
         case .smallerThanOrEqual(let key, let val):
-            return [key: ["$lte": val.val]]
+            return [key: ["$lte": val.makeBsonValue()]]
         case .and(let aqts):
             let expressions = aqts.map{ Value.document($0.document) }
             
@@ -259,22 +245,22 @@ public indirect enum AQT {
     case typeof(key: String, type: AQTType)
     
     /// Does the `Value` within the `key` match this `Value`
-    case valEquals(key: String, val: ValueProtocol)
+    case valEquals(key: String, val: ValueConvertible)
     
     /// The `Value` within the `key` does not match this `Value`
-    case valNotEquals(key: String, val: ValueProtocol)
+    case valNotEquals(key: String, val: ValueConvertible)
     
     /// Whether the `Value` within the `key` is greater than this `Value`
-    case greaterThan(key: String, val: ValueProtocol)
+    case greaterThan(key: String, val: ValueConvertible)
     
     /// Whether the `Value` within the `key` is greater than or equal to this `Value`
-    case greaterThanOrEqual(key: String, val: ValueProtocol)
+    case greaterThanOrEqual(key: String, val: ValueConvertible)
     
     /// Whether the `Value` within the `key` is smaller than this `Value`
-    case smallerThan(key: String, val: ValueProtocol)
+    case smallerThan(key: String, val: ValueConvertible)
     
     /// Whether the `Value` within the `key` is smaller than or equal to this `Value`
-    case smallerThanOrEqual(key: String, val: ValueProtocol)
+    case smallerThanOrEqual(key: String, val: ValueConvertible)
     
     /// Whether all `AQT` Conditions are correct
     case and([AQT])
@@ -361,37 +347,37 @@ extension Document {
         case .typeof(let key, let type):
             return doc[key].typeNumber == type.rawValue
         case .valEquals(let key, let val):
-            return doc[key] == val.val
+            return doc[key] == val.makeBsonValue()
         case .valNotEquals(let key, let val):
-            return doc[key] != val.val
+            return doc[key] != val.makeBsonValue()
         case .greaterThan(let key, let val):
             switch doc[key] {
             case .double(let d):
-                if let d2 = val.val.int32Value {
+                if let d2 = val.makeBsonValue().int32Value {
                     return d > Double(d2)
-                } else if let d2 = val.val.doubleValue {
+                } else if let d2 = val.makeBsonValue().doubleValue {
                     return d > d2
-                } else if let d2 = val.val.int64Value {
+                } else if let d2 = val.makeBsonValue().int64Value {
                     return d > Double(d2)
                 }
                 
                 return false
             case .int32(let d):
-                if let d2 = val.val.int32Value {
+                if let d2 = val.makeBsonValue().int32Value {
                     return d > d2
-                } else if let d2 = val.val.doubleValue {
+                } else if let d2 = val.makeBsonValue().doubleValue {
                     return Double(d) > d2
-                } else if let d2 = val.val.int64Value {
+                } else if let d2 = val.makeBsonValue().int64Value {
                     return Int64(d) > d2
                 }
                 
                 return false
             case .int64(let d):
-                if let d2 = val.val.int32Value {
+                if let d2 = val.makeBsonValue().int32Value {
                     return d > Int64(d2)
-                } else if let d2 = val.val.doubleValue {
+                } else if let d2 = val.makeBsonValue().doubleValue {
                     return Double(d) > d2
-                } else if let d2 = val.val.int64Value {
+                } else if let d2 = val.makeBsonValue().int64Value {
                     return d > d2
                 }
                 
@@ -402,31 +388,31 @@ extension Document {
         case .greaterThanOrEqual(let key, let val):
             switch doc[key] {
             case .double(let d):
-                if let d2 = val.val.int32Value {
+                if let d2 = val.makeBsonValue().int32Value {
                     return d >= Double(d2)
-                } else if let d2 = val.val.doubleValue {
+                } else if let d2 = val.makeBsonValue().doubleValue {
                     return d >= d2
-                } else if let d2 = val.val.int64Value {
+                } else if let d2 = val.makeBsonValue().int64Value {
                     return d >= Double(d2)
                 }
                 
                 return false
             case .int32(let d):
-                if let d2 = val.val.int32Value {
+                if let d2 = val.makeBsonValue().int32Value {
                     return d >= d2
-                } else if let d2 = val.val.doubleValue {
+                } else if let d2 = val.makeBsonValue().doubleValue {
                     return Double(d) >= d2
-                } else if let d2 = val.val.int64Value {
+                } else if let d2 = val.makeBsonValue().int64Value {
                     return Int64(d) >= d2
                 }
                 
                 return false
             case .int64(let d):
-                if let d2 = val.val.int32Value {
+                if let d2 = val.makeBsonValue().int32Value {
                     return d >= Int64(d2)
-                } else if let d2 = val.val.doubleValue {
+                } else if let d2 = val.makeBsonValue().doubleValue {
                     return Double(d) >= d2
-                } else if let d2 = val.val.int64Value {
+                } else if let d2 = val.makeBsonValue().int64Value {
                     return d >= d2
                 }
                 
@@ -437,31 +423,31 @@ extension Document {
         case .smallerThan(let key, let val):
             switch doc[key] {
             case .double(let d):
-                if let d2 = val.val.int32Value {
+                if let d2 = val.makeBsonValue().int32Value {
                     return d < Double(d2)
-                } else if let d2 = val.val.doubleValue {
+                } else if let d2 = val.makeBsonValue().doubleValue {
                     return d < d2
-                } else if let d2 = val.val.int64Value {
+                } else if let d2 = val.makeBsonValue().int64Value {
                     return d <  Double(d2)
                 }
                 
                 return false
             case .int32(let d):
-                if let d2 = val.val.int32Value {
+                if let d2 = val.makeBsonValue().int32Value {
                     return d < d2
-                } else if let d2 = val.val.doubleValue {
+                } else if let d2 = val.makeBsonValue().doubleValue {
                     return Double(d) < d2
-                } else if let d2 = val.val.int64Value {
+                } else if let d2 = val.makeBsonValue().int64Value {
                     return Int64(d) < d2
                 }
                 
                 return false
             case .int64(let d):
-                if let d2 = val.val.int32Value {
+                if let d2 = val.makeBsonValue().int32Value {
                     return d < Int64(d2)
-                } else if let d2 = val.val.doubleValue {
+                } else if let d2 = val.makeBsonValue().doubleValue {
                     return Double(d) < d2
-                } else if let d2 = val.val.int64Value {
+                } else if let d2 = val.makeBsonValue().int64Value {
                     return d < d2
                 }
                 
@@ -472,31 +458,31 @@ extension Document {
         case .smallerThanOrEqual(let key, let val):
             switch doc[key] {
             case .double(let d):
-                if let d2 = val.val.int32Value {
+                if let d2 = val.makeBsonValue().int32Value {
                     return d <= Double(d2)
-                } else if let d2 = val.val.doubleValue {
+                } else if let d2 = val.makeBsonValue().doubleValue {
                     return d <= d2
-                } else if let d2 = val.val.int64Value {
+                } else if let d2 = val.makeBsonValue().int64Value {
                     return d <= Double(d2)
                 }
                 
                 return false
             case .int32(let d):
-                if let d2 = val.val.int32Value {
+                if let d2 = val.makeBsonValue().int32Value {
                     return d <= d2
-                } else if let d2 = val.val.doubleValue {
+                } else if let d2 = val.makeBsonValue().doubleValue {
                     return Double(d) <= d2
-                } else if let d2 = val.val.int64Value {
+                } else if let d2 = val.makeBsonValue().int64Value {
                     return Int64(d) <= d2
                 }
                 
                 return false
             case .int64(let d):
-                if let d2 = val.val.int32Value {
+                if let d2 = val.makeBsonValue().int32Value {
                     return d <= Int64(d2)
-                } else if let d2 = val.val.doubleValue {
+                } else if let d2 = val.makeBsonValue().doubleValue {
                     return Double(d) <= d2
-                } else if let d2 = val.val.int64Value {
+                } else if let d2 = val.makeBsonValue().int64Value {
                     return d <= d2
                 }
                 
