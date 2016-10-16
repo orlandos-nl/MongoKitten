@@ -631,3 +631,14 @@ extension Database : CustomStringConvertible {
         return "MongoKitten.Database<\(server.hostname)/\(self.name)>"
     }
 }
+
+extension Database : Sequence {
+    /// Iterates over all collections in this database
+    public func makeIterator() -> AnyIterator<Collection> {
+        let collections = try? self.listCollections().makeIterator()
+        
+        return AnyIterator {
+            return collections?.next()
+        }
+    }
+}
