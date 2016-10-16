@@ -14,7 +14,7 @@
 
 import Socks
 
-#if TLS
+#if MongoTLS
     import TLS
     public let DefaultTCPClient: MongoTCP.Type = TLS.Socket.self
 #else

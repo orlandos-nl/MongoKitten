@@ -1,4 +1,4 @@
-#if TLS
+#if MongoTLS
     import TLS
     
     extension TLS.Socket: MongoTCP {
