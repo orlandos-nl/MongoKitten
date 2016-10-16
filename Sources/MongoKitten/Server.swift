@@ -171,7 +171,7 @@ public final class Server {
         
         let port: UInt16 = UInt16(url.port?.intValue ?? 27017)
         
-        try self.init(hostname: host, port: port, using: authentication, using: tcpDriver, automatically: connecting, maxConnections: maxConnections)
+        try self.init(hostname: host, port: port, authenticatedAs: authentication, runningTcpDriver: tcpDriver, automatically: connecting, maxConnections: maxConnections)
     }
     
     /// Sets up the `Server` to connect to the specified URL.
@@ -200,7 +200,7 @@ public final class Server {
     /// - parameter automatically: Connect automatically
     ///
     /// - throws: When we can’t connect automatically, when the scheme/host is invalid and when we can’t connect automatically
-    public init(hostname host: String, port: UInt16 = 27017, using authentication: (username: String, password: String, against: String)? = nil, using tcpDriver: MongoTCP.Type = DefaultTCPClient, automatically connecting: Bool = false, maxConnections: Int = 10) throws {
+    public init(hostname host: String, port: UInt16 = 27017, authenticatedAs authentication: (username: String, password: String, against: String)? = nil, runningTcpDriver tcpDriver: MongoTCP.Type = DefaultTCPClient, automatically connecting: Bool = false, maxConnections: Int = 10) throws {
         self.tcpType = tcpDriver
         self.server = (host: host, port: port)
         self.maximumConnections = maxConnections
