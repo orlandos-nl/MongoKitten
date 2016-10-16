@@ -27,10 +27,10 @@ class DatabaseTests: XCTestCase {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
     }
     
-    func testUsers() {
+    func testUsers() throws {
         let roles: Document = [["role": "dbOwner", "db": ~TestManager.db.name]]
         
-        try! TestManager.db.createUser("mongokitten-unittest-testuser", password: "hunter2", roles: roles, customData: ["testdata": false])
+        try TestManager.db.createUser("mongokitten-unittest-testuser", password: "hunter2", roles: roles, customData: ["testdata": false])
         
         guard let userInfo = try? TestManager.server.getUserInfo(forUserNamed: "mongokitten-unittest-testuser", inDatabase: TestManager.db), let testData = userInfo[0]["customData"]["testdata"].boolValue else {
             XCTFail()
@@ -39,8 +39,8 @@ class DatabaseTests: XCTestCase {
         
         XCTAssertEqual(testData, false)
         
-        try! TestManager.db.update(user: "mongokitten-unittest-testuser", password: "hunter2", roles: roles, customData: ["testdata": true])
+        try TestManager.db.update(user: "mongokitten-unittest-testuser", password: "hunter2", roles: roles, customData: ["testdata": true])
         
-        try! TestManager.db.drop(user: "mongokitten-unittest-testuser")
+        try TestManager.db.drop(user: "mongokitten-unittest-testuser")
     }
 }

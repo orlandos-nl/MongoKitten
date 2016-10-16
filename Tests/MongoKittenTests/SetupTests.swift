@@ -29,15 +29,15 @@ class SetupTests: XCTestCase {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
     }
     
-    func testSetup() {
-        let server = try! Server(uri: "mongodb://mongokitten-unittest-user:mongokitten-unittest-password@127.0.0.1:27017", automatically: true)
-        let distinct = try! server["mongokitten-unittest"]["zips"].distinct(onField: "state")!
+    func testSetup() throws {
+        let server = try Server(uri: "mongodb://mongokitten-unittest-user:mongokitten-unittest-password@127.0.0.1:27017", automatically: true)
+        let distinct = try server["mongokitten-unittest"]["zips"].distinct(onField: "state")!
         
         XCTAssertEqual(distinct.count, 51)
     }
     
-    func testExample() {
-        let server = try! Server(uri: "mongodb://127.0.0.1:27017", automatically: true)
+    func testExample() throws {
+        let server = try Server(uri: "mongodb://127.0.0.1:27017", automatically: true)
         
         let database = server["mongokitten-unittest-mydatabase"]
         let userCollection = database["users"]
@@ -77,15 +77,15 @@ class SetupTests: XCTestCase {
         userDocument["date"] = .dateTime(Date())
         userDocument["null"] = .null
         userDocument["string"] = .string("hello")
-        userDocument["objectID"] = .objectId(try! ObjectId("507f1f77bcf86cd799439011"))
+        userDocument["objectID"] = .objectId(try ObjectId("507f1f77bcf86cd799439011"))
         
         let trueBool = true
         userDocument["newBool"] = ~trueBool
         
-        _ = try! userCollection.insert(userDocument)
-        _ = try! otherCollection.insert([testDocument, testDocument, testDocument])
+        _ = try userCollection.insert(userDocument)
+        _ = try otherCollection.insert([testDocument, testDocument, testDocument])
         
-        let resultUsers = try! userCollection.find()
+        let resultUsers = try userCollection.find()
         
         for userDocument in resultUsers {
             print(userDocument)
@@ -95,10 +95,10 @@ class SetupTests: XCTestCase {
             }
         }
         
-        let otherResultUsers = try! userCollection.find()
+        let otherResultUsers = try userCollection.find()
         _ = Array(otherResultUsers)
         
-        let depletedExample = try! userCollection.find()
+        let depletedExample = try userCollection.find()
         
         // Contains data
         _ = Array(depletedExample)
@@ -108,12 +108,12 @@ class SetupTests: XCTestCase {
         
         let q: Query = "username" == "Joannis" && "age" > 18
         
-        _ = try! userCollection.findOne(matching: q)
+        _ = try userCollection.findOne(matching: q)
         
-        for user in try! userCollection.find(matching: "male" == true) {
+        for user in try userCollection.find(matching: "male" == true) {
             print(user["username"].string)
         }
     }
     
-    //try! database.drop()
+    //try database.drop()
 }
