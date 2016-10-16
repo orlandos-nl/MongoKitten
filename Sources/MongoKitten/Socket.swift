@@ -45,7 +45,7 @@ extension Socks.TCPClient : MongoTCP {
     }
     
     public func receive() throws -> [UInt8] {
-        return try self.receiveAll()
+        return try self.receive(maxBytes: Int(UInt16.max))
     }
 }
 

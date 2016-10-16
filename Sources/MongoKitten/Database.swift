@@ -215,8 +215,6 @@ extension Database {
         
         let dictionaryResponse = self.parse(response: finalResponse)
         
-        print(response.makeExtendedJSON())
-        
         guard let v = dictionaryResponse["v"] else {
             throw MongoAuthenticationError.authenticationFailure
         }
