@@ -505,7 +505,8 @@ public final class Collection {
     /// - parameter stoppingOnError: If true, stop removing when one operation fails - defaults to true
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func remove(matching removals: [(filter: Document, limit: Int32)], stoppingOnError ordered: Bool? = nil) throws {
+    @discardableResult
+    public func remove(matching removals: [(filter: Document, limit: Int32)], stoppingOnError ordered: Bool? = nil) throws -> Int {
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
         if protocolVersion >= 2 {
@@ -528,9 +529,12 @@ public final class Collection {
             let reply = try self.database.execute(command: command)
             let documents = try allDocuments(in: reply)
             
-            guard documents.first?["ok"].int32 == 1 else {
+            guard let document = documents.first, document["ok"].int32 == 1 else {
                 throw MongoError.removeFailure(removals: removals, error: documents.first)
             }
+            
+            return document["n"].int
+            
         // If we're talking to an older MongoDB server
         } else {
             let connection = try database.server.reserveConnection()
@@ -558,6 +562,8 @@ public final class Collection {
                     try self.database.server.send(message: message, overConnection: connection)
                 }
             }
+            
+            return removals.count
         }
     }
     
@@ -569,10 +575,11 @@ public final class Collection {
     /// - parameter stoppingOnError: If true, stop removing when one operation fails - defaults to true
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func remove(matching removals: [(filter: QueryProtocol, limit: Int32)], stoppingOnError ordered: Bool? = nil) throws {
+    @discardableResult
+    public func remove(matching removals: [(filter: QueryProtocol, limit: Int32)], stoppingOnError ordered: Bool? = nil) throws -> Int {
         let newRemovals = removals.map { (filter: $0.filter.queryDocument, limit: $0.limit) }
         
-        try self.remove(matching: newRemovals, stoppingOnError: ordered)
+        return try self.remove(matching: newRemovals, stoppingOnError: ordered)
     }
     
     /// Removes `Document`s matching the `filter` until the `limit` is reached
@@ -584,8 +591,9 @@ public final class Collection {
     /// - parameter stoppingOnError: If true, stop removing when one operation fails - defaults to true
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func remove(matching filter: Document, limitedTo limit: Int32 = 0, stoppingOnError ordered: Bool? = nil) throws {
-        try self.remove(matching: [(filter: filter as QueryProtocol, limit: limit)], stoppingOnError: ordered)
+    @discardableResult
+    public func remove(matching filter: Document, limitedTo limit: Int32 = 0, stoppingOnError ordered: Bool? = nil) throws -> Int {
+        return try self.remove(matching: [(filter: filter as QueryProtocol, limit: limit)], stoppingOnError: ordered)
     }
     
     /// Removes `Document`s matching the `filter` until the `limit` is reached
@@ -597,8 +605,9 @@ public final class Collection {
     /// - parameter stoppingOnError: If true, stop removing when one operation fails - defaults to true
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func remove(matching filter: QueryProtocol, limitedTo limit: Int32 = 0, stoppingOnError ordered: Bool? = nil) throws {
-        try self.remove(matching: [(filter: filter, limit: limit)], stoppingOnError: ordered)
+    @discardableResult
+    public func remove(matching filter: QueryProtocol, limitedTo limit: Int32 = 0, stoppingOnError ordered: Bool? = nil) throws -> Int {
+        return try self.remove(matching: [(filter: filter, limit: limit)], stoppingOnError: ordered)
     }
     
     /// The drop command removes an entire collection from a database. This command also removes any indexes associated with the dropped collection.
