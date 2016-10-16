@@ -644,3 +644,15 @@ extension Server : CustomStringConvertible {
         return "\(server.host):\(server.port)"
     }
 }
+
+extension Server: Sequence {
+    public func makeIterator() -> AnyIterator<Database> {
+        guard var databases = try? self.getDatabases() else {
+            return AnyIterator { nil }
+        }
+        
+        return AnyIterator {
+            return databases.count > 0 ? databases.removeFirst() : nil
+        }
+    }
+}
