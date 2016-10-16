@@ -87,14 +87,6 @@ class SetupTests: XCTestCase {
         
         let resultUsers = try userCollection.find()
         
-        for userDocument in resultUsers {
-            print(userDocument)
-            
-            if userDocument["username"].stringValue == "harriebob" {
-                print(userDocument)
-            }
-        }
-        
         let otherResultUsers = try userCollection.find()
         _ = Array(otherResultUsers)
         
@@ -109,10 +101,6 @@ class SetupTests: XCTestCase {
         let q: Query = "username" == "Joannis" && "age" > 18
         
         _ = try userCollection.findOne(matching: q)
-        
-        for user in try userCollection.find(matching: "male" == true) {
-            print(user["username"].string)
-        }
     }
     
     //try database.drop()

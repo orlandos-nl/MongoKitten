@@ -9,6 +9,11 @@
 import Foundation
 import BSON
 
+#if os(macOS)
+    typealias RegularExpression = NSRegularExpression
+#endif
+
+
 // MARK: Equations
 
 /// Equals
@@ -230,8 +235,8 @@ public indirect enum AQT {
             return ["$or": .array(Document(array: expressions)) ]
         case .not(let aqt):
             return ["$not": ~aqt.document]
-        case .contains(let key, let val):
-            return [key: .regularExpression(pattern: val, options: "")]
+        case .contains(let key, let val, let options):
+            return [key: .regularExpression(pattern: val, options: options)]
         case .startsWith(let key, let val):
             return [key: .regularExpression(pattern: "^\(val)", options: "m")]
         case .endsWith(let key, let val):
@@ -275,7 +280,7 @@ public indirect enum AQT {
     case nothing
     
     /// Whether the String value within the `key` contains this `String`.
-    case contains(key: String, val: String)
+    case contains(key: String, val: String, options: String)
     
     /// Whether the String value within the `key` starts with this `String`.
     case startsWith(key: String, val: String)
@@ -508,9 +513,13 @@ extension Document {
             return false
         case .not(let aqt):
             return !self.matches(query: Query(aqt: aqt))
-        case .contains(let key, let val):
+        case .contains(let key, let val, let options):
             switch doc[key] {
             case .string(let stringVal):
+                if options.contains("i") {
+                    return stringVal.lowercased().contains(val.lowercased())
+                }
+                
                 return stringVal.contains(val)
             default:
                 return false
