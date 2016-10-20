@@ -9,7 +9,7 @@
 import Foundation
 
 /// The flags that can be used in an Insert Message
-public struct InsertFlags : OptionSet {
+internal struct InsertFlags : OptionSet {
     /// The raw value in Int32
     public let rawValue: Int32
     
@@ -36,7 +36,7 @@ public struct QueryFlags : OptionSet {
 }
 
 /// The flags that can be used in an Update Message
-public struct UpdateFlags : OptionSet {
+internal struct UpdateFlags : OptionSet {
     /// The raw value in Int32
     public let rawValue: Int32
     
@@ -51,7 +51,7 @@ public struct UpdateFlags : OptionSet {
 }
 
 /// The flags that can be used in a Delete Message
-public struct DeleteFlags : OptionSet {
+internal struct DeleteFlags : OptionSet {
     /// The raw value in Int32
     public let rawValue: Int32
     

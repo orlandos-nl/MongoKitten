@@ -30,14 +30,14 @@ class SetupTests: XCTestCase {
     }
     
     func testSetup() throws {
-        let server = try Server(uri: "mongodb://mongokitten-unittest-user:mongokitten-unittest-password@127.0.0.1:27017", automatically: true)
+        let server = try Server(mongoURL: "mongodb://mongokitten-unittest-user:mongokitten-unittest-password@127.0.0.1:27017", automatically: true)
         let distinct = try server["mongokitten-unittest"]["zips"].distinct(onField: "state")!
         
         XCTAssertEqual(distinct.count, 51)
     }
     
     func testExample() throws {
-        let server = try Server(uri: "mongodb://127.0.0.1:27017", automatically: true)
+        let server = try Server(mongoURL: "mongodb://127.0.0.1:27017", automatically: true)
         
         let database = server["mongokitten-unittest-mydatabase"]
         let userCollection = database["users"]
@@ -87,14 +87,6 @@ class SetupTests: XCTestCase {
         
         let resultUsers = try userCollection.find()
         
-        for userDocument in resultUsers {
-            print(userDocument)
-            
-            if userDocument["username"].stringValue == "harriebob" {
-                print(userDocument)
-            }
-        }
-        
         let otherResultUsers = try userCollection.find()
         _ = Array(otherResultUsers)
         
@@ -108,6 +100,7 @@ class SetupTests: XCTestCase {
         
         let q: Query = "username" == "Joannis" && "age" > 18
         
+        _ = try userCollection.findOne(matching: q)
         _ = try userCollection.findOne(matching: q)
         
         for user in try userCollection.find(matching: "male" == true) {

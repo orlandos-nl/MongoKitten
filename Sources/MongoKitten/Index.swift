@@ -1,11 +1,11 @@
 import BSON
 
 public enum IndexParameter {
-    public enum SortOrder: ValueProtocol {
+    public enum SortOrder: ValueConvertible {
         case ascending
         case descending
         
-        public var val: Value {
+        public func makeBsonValue() -> Value {
             if self == .ascending {
                 return .int32(1)
             }
@@ -14,11 +14,11 @@ public enum IndexParameter {
         }
     }
     
-    public enum TextIndexVersion: ValueProtocol {
+    public enum TextIndexVersion: ValueConvertible {
         case one
         case two
         
-        public var val: Value {
+        public func makeBsonValue() -> Value {
             if self == .one {
                 return .int32(1)
             }
@@ -41,12 +41,12 @@ public enum IndexParameter {
     internal var document: Document {
         switch self {
         case .sort(let field, let order):
-            return ["key": [field: order.val]]
+            return ["key": [field: order.makeBsonValue()]]
         case .sortedCompound(let fields):
             var index: Document = [:]
             
             for field in fields {
-                index[field.field] = field.order.val
+                index[field.field] = field.order.makeBsonValue()
             }
             
             return ["key": ~(index.flattened())]

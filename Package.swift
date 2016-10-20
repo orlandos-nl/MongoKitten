@@ -7,10 +7,10 @@ var package = Package(
         ],
     dependencies: [
         // For MongoDB Documents
-        .Package(url: "https://github.com/OpenKitten/BSON.git", Version(0,0,12345)),
+        .Package(url: "https://github.com/OpenKitten/BSON.git", majorVersion: 3, minor: 8),
 
         // Authentication
-        .Package(url: "https://github.com/OpenKitten/CryptoKitten.git", Version(0,0,0)),
+        .Package(url: "https://github.com/OpenKitten/CryptoKitten.git", Version(0,0,2)),
         
         // Provides sockets
         .Package(url: "https://github.com/vapor/socks.git", majorVersion: 1, minor: 0),

@@ -1,5 +1,5 @@
 import Foundation
-import Cryptography
+import CryptoKitten
 
 final public class SCRAMClient<Variant: Hash> {
     let gs2BindFlag = "n,,"
@@ -103,13 +103,13 @@ final public class SCRAMClient<Variant: Hash> {
         }
         
         let salt = Array(data)
-        let saltedPassword = try PBKDF2<Variant>.derive(fromKey: details.password, usingSalt: salt, iterating: parsedResponse.iterations)
+        let saltedPassword = try PBKDF2<Variant>.derive(fromPassword: details.password, usingSalt: salt, iterating: parsedResponse.iterations)
         
         let ck = [UInt8]("Client Key".utf8)
         let sk = [UInt8]("Server Key".utf8)
         
-        let clientKey = HMAC<Variant>.authenticate(ck, withKey: saltedPassword)
-        let serverKey = HMAC<Variant>.authenticate(sk, withKey: saltedPassword)
+        let clientKey = HMAC<Variant>.authenticate(message: ck, withKey: saltedPassword)
+        let serverKey = HMAC<Variant>.authenticate(message: sk, withKey: saltedPassword)
 
         let storedKey = Variant.hash(clientKey)
 
@@ -118,9 +118,9 @@ final public class SCRAMClient<Variant: Hash> {
         var authenticationMessageBytes = [UInt8]()
         authenticationMessageBytes.append(contentsOf: authenticationMessage.utf8)
         
-        let clientSignature = HMAC<Variant>.authenticate(authenticationMessageBytes, withKey: storedKey)
+        let clientSignature = HMAC<Variant>.authenticate(message: authenticationMessageBytes, withKey: storedKey)
         let clientProof = xor(clientKey, clientSignature)
-        let serverSignature = HMAC<Variant>.authenticate(authenticationMessageBytes, withKey: serverKey)
+        let serverSignature = HMAC<Variant>.authenticate(message: authenticationMessageBytes, withKey: serverKey)
         
         let proof = Data(bytes: clientProof).base64EncodedString()
 

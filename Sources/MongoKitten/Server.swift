@@ -14,7 +14,7 @@
 
 import Socks
 
-#if TLS
+#if MongoTLS
     import TLS
     public let DefaultTCPClient: MongoTCP.Type = TLS.Socket.self
 #else
@@ -24,7 +24,7 @@ import Socks
 @_exported import BSON
 
 import Foundation
-import Cryptography
+import CryptoKitten
 import Dispatch
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -156,7 +156,7 @@ public final class Server {
     /// - throws: When we can't connect automatically, when the scheme/host is invalid and when we can't connect automatically
     ///
     /// - parameter automatically: Whether to connect automatically
-    public convenience init(NSURL url: NSURL, using tcpDriver: MongoTCP.Type = DefaultTCPClient, automatically connecting: Bool = true, maxConnections: Int = 10) throws {
+    public convenience init(mongoURL url: NSURL, using tcpDriver: MongoTCP.Type = DefaultTCPClient, automatically connecting: Bool = true, maxConnections: Int = 10) throws {
         guard let scheme = url.scheme, let host = url.host , scheme.lowercased() == "mongodb" else {
             throw MongoError.invalidNSURL(url: url)
         }
@@ -171,7 +171,7 @@ public final class Server {
         
         let port: UInt16 = UInt16(url.port?.intValue ?? 27017)
         
-        try self.init(hostname: host, port: port, using: authentication, using: tcpDriver, automatically: connecting, maxConnections: maxConnections)
+        try self.init(hostname: host, port: port, authenticatedAs: authentication, runningTcpDriver: tcpDriver, automatically: connecting, maxConnections: maxConnections)
     }
     
     /// Sets up the `Server` to connect to the specified URL.
@@ -184,12 +184,12 @@ public final class Server {
     /// - parameter automatically: Whether to connect automatically
     ///
     /// - throws: Throws when we can't connect automatically, when the scheme/host is invalid and when we can't connect automatically
-    public convenience init(uri: String, using tcpDriver: MongoTCP.Type = DefaultTCPClient, automatically connecting: Bool = true, maxConnections: Int = 10) throws {
+    public convenience init(mongoURL uri: String, using tcpDriver: MongoTCP.Type = DefaultTCPClient, automatically connecting: Bool = true, maxConnections: Int = 10) throws {
         guard let url = NSURL(string: uri) else {
             throw MongoError.invalidURI(uri: uri)
         }
         
-        try self.init(NSURL: url, using: tcpDriver, automatically: connecting, maxConnections: maxConnections)
+        try self.init(mongoURL: url, using: tcpDriver, automatically: connecting, maxConnections: maxConnections)
     }
     
     /// Sets up the `Server` to connect to the specified location.`Server`
@@ -200,7 +200,7 @@ public final class Server {
     /// - parameter automatically: Connect automatically
     ///
     /// - throws: When we can’t connect automatically, when the scheme/host is invalid and when we can’t connect automatically
-    public init(hostname host: String, port: UInt16 = 27017, using authentication: (username: String, password: String, against: String)? = nil, using tcpDriver: MongoTCP.Type = DefaultTCPClient, automatically connecting: Bool = false, maxConnections: Int = 10) throws {
+    public init(hostname host: String, port: UInt16 = 27017, authenticatedAs authentication: (username: String, password: String, against: String)? = nil, runningTcpDriver tcpDriver: MongoTCP.Type = DefaultTCPClient, automatically connecting: Bool = false, maxConnections: Int = 10) throws {
         self.tcpType = tcpDriver
         self.server = (host: host, port: port)
         self.maximumConnections = maxConnections
@@ -642,5 +642,17 @@ extension Server : CustomStringConvertible {
     /// This server's hostname
     internal var hostname: String {
         return "\(server.host):\(server.port)"
+    }
+}
+
+extension Server: Sequence {
+    public func makeIterator() -> AnyIterator<Database> {
+        guard var databases = try? self.getDatabases() else {
+            return AnyIterator { nil }
+        }
+        
+        return AnyIterator {
+            return databases.count > 0 ? databases.removeFirst() : nil
+        }
     }
 }

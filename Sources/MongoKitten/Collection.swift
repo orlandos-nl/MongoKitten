@@ -146,14 +146,14 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A Cursor pointing to the response Documents.
-    public func execute(matching filter: Document = [], usingFlags flags: QueryFlags = [], fetching fetchChunkSize: Int32 = 10) throws -> Cursor<Document> {
+    public func execute(command: Document = [], usingFlags flags: QueryFlags = [], fetching fetchChunkSize: Int32 = 10) throws -> Cursor<Document> {
         let connection = try database.server.reserveConnection()
         
         defer {
             database.server.returnConnection(connection)
         }
         
-        let queryMsg = Message.Query(requestID: database.server.nextMessageID(), flags: flags, collection: self, numbersToSkip: 0, numbersToReturn: fetchChunkSize, query: filter, returnFields: nil)
+        let queryMsg = Message.Query(requestID: database.server.nextMessageID(), flags: flags, collection: self, numbersToSkip: 0, numbersToReturn: fetchChunkSize, query: command, returnFields: nil)
         
         let response = try self.database.server.sendAndAwait(message: queryMsg, overConnection: connection)
         guard let cursor = Cursor(namespace: self.fullName, collection: self, reply: response, chunkSize: fetchChunkSize, transform: { $0 }) else {
@@ -162,60 +162,7 @@ public final class Collection {
         
         return cursor
     }
-    
-    
-    /// Queries this collection with a `Document` (which comes from the `QueryProtocol`)
-    ///
-    /// This is used to execute DBCommands. For finding `Document`s we recommend the `find` command
-    ///
-    /// For more information: https://docs.mongodb.com/manual/reference/mongodb-wire-protocol/
-    ///
-    /// - parameter filter: The `Query` that we're matching against in this `Collection`. This `Query` is from the MongoKitten QueryBuilder or is a `Document`.
-    /// - parameter flags: The Query Flags that we'll use for this query
-    /// - parameter fetchChunkSize: The initial amount of returned Documents. We recommend at least one Document.
-    ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    ///
-    /// - returns: A Cursor pointing to the response Documents.
-    public func query(matching filter: QueryProtocol, usingFlags flags: QueryFlags = [], fetching fetchChunkSize: Int32 = 10) throws -> Cursor<Document> {
-        return try self.query(matching: filter.queryDocument, usingFlags: flags, fetching: fetchChunkSize)
-    }
-    
-    /// Queries this `Collection` with a `Document` and returns the first result
-    ///
-    /// This is used to execute DBCommands. For finding `Document`s we recommend the `find` command
-    ///
-    /// For more information: https://docs.mongodb.com/manual/reference/mongodb-wire-protocol/
-    ///
-    /// - parameter query: The `Document` that we're matching against in this `Collection`
-    /// - parameter flags: The Query Flags that we'll use for this query
-    /// - parameter fetchChunkSize: The initial amount of returned Documents. We recommend at least one Document.
-    ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    ///
-    /// - returns: The first `Document` in the Response
-    public func queryOne(matching filter: Document = [], usingFlags flags: QueryFlags = []) throws -> Document? {
-        return try self.query(matching: filter, usingFlags: flags, fetching: 1).makeIterator().next()
-    }
-    
-    
-    /// Queries this collection with a Document (which comes from the Query)
-    ///
-    /// This is used to execute DBCommands. For finding `Document`s we recommend the `find` command
-    ///
-    /// For more information: https://docs.mongodb.com/manual/reference/mongodb-wire-protocol/
-    ///
-    /// - parameter query: The Query that we're matching against in this collection. This query is from the MongoKitten QueryBuilder.
-    /// - parameter flags: The Query Flags that we'll use for this query
-    /// - parameter fetchChunkSize: The initial amount of returned Documents. We recommend at least one Document.
-    ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    ///
-    /// - returns: The first Document in the Response
-    public func queryOne(matching filter: QueryProtocol, usingFlags flags: QueryFlags = []) throws -> Document? {
-        return try self.queryOne(matching: filter.queryDocument, usingFlags: flags)
-    }
-    
+        
     /// Finds `Document`s in this `Collection`
     ///
     /// Can be used to execute DBCommands in MongoDB 2.6 and below. Be careful!

@@ -8,7 +8,7 @@
 
 import BSON
 import Foundation
-import Cryptography
+import CryptoKitten
 
 /// A GridFS instance similar to a collection
 ///

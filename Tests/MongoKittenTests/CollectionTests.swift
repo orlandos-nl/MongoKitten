@@ -8,7 +8,7 @@
 
 import XCTest
 import MongoKitten
-import Cryptography
+import CryptoKitten
 import Dispatch
 
 class CollectionTests: XCTestCase {
@@ -40,34 +40,34 @@ class CollectionTests: XCTestCase {
         XCTAssertEqual(distinct.count, 51)
     }
     
-    func testPerformance() throws {
-        let collection = TestManager.db["zips"]
-        var documents = [Document]()
-        documents.reserveCapacity(29353)
-        
-        func testQueue(max: Int = 10) {
-            let perQueue = 25_000 / max
-            
-            for i in 0..<max {
-                let start = i * perQueue
-                
-                let q = DispatchQueue(label: "org.openkitten.tests.performance.\(i)")
-                let e = expectation(description: "kaas \(i)")
-                
-                q.async {
-                    for j in start..<start+perQueue {
-                        _ = try! collection.findOne(skipping: Int32(j))
-                    }
-                    
-                    e.fulfill()
-                }
-            }
-        }
-        
-        testQueue()
-        
-        waitForExpectations(timeout: 300)
-    }
+//    func testPerformance() throws {
+//        let collection = TestManager.db["zips"]
+//        var documents = [Document]()
+//        documents.reserveCapacity(29353)
+//        
+//        func testQueue(max: Int = 10) {
+//            let perQueue = 25_000 / max
+//            
+//            for i in 0..<max {
+//                let start = i * perQueue
+//                
+//                let q = DispatchQueue(label: "org.openkitten.tests.performance.\(i)")
+//                let e = expectation(description: "kaas \(i)")
+//                
+//                q.async {
+//                    for j in start..<start+perQueue {
+//                        _ = try! collection.findOne(skipping: Int32(j))
+//                    }
+//                    
+//                    e.fulfill()
+//                }
+//            }
+//        }
+//        
+//        testQueue()
+//        
+//        waitForExpectations(timeout: 300)
+//    }
     
     func testFind() throws {
         let base: Document = ["username": "bob", "age": 25, "kittens": 6, "dogs": 0, "beers": 90]
@@ -103,12 +103,61 @@ class CollectionTests: XCTestCase {
         XCTAssertEqual(response.first, response2)
         
         try runContainsQuery()
+        try runContainsCaseInsensitiveQuery()
         try runStartsWithQuery()
         try runEndsWithQuery()
     }
     
+    func testDBRef() throws {
+        let colA = TestManager.db["collectionA"]
+        let colB = TestManager.db["collectionB"]
+        
+        let id = try colA.insert(["name": "Harrie Bob"])
+        
+        let dbref = DBRef(referencing: id, inCollection: colA)
+        
+        let referenceID = try colB.insert(["reference": dbref.bsonValue])
+        
+        guard let reference = try colB.findOne(matching: "_id" == referenceID) else {
+            XCTFail()
+            return
+        }
+        
+        guard let colAreference = DBRef(reference["reference"].document, inDatabase: TestManager.db) else {
+            XCTFail()
+            return
+        }
+        
+        guard let originalDocument = try colAreference.resolve() else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(originalDocument["name"], "Harrie Bob")
+    }
+    
+    func testProjection() {
+        let projection: Projection = ["name", "age", "awesome"]
+        
+        XCTAssertEqual(projection.makeBsonValue(), ["name": .int32(1), "age": .int32(1), "awesome": .int32(1)])
+        
+        let projection2: Projection = ["henk": true, "bob": 1]
+        
+        XCTAssertEqual(projection2.document, ["henk": true, "bob": 1])
+    }
+    
+    func testIndexes() throws {
+        try TestManager.wcol.createIndex(named: "henkbob", withParameters: .sortedCompound(fields: [("name", .ascending), ("age", .descending)]), .expire(afterSeconds: 1), .buildInBackground)
+        
+        for index in try TestManager.wcol.listIndexes() where index["name"].string == "henkbob" {
+            return
+        }
+        
+        XCTFail()
+    }
+    
     private func runContainsQuery() throws {
-        let query = Query(aqt: .contains(key: "username", val: "ar"))
+        let query = Query(aqt: .contains(key: "username", val: "ar", options: ""))
         let response = Array(try TestManager.wcol.find(matching: query))
         XCTAssert(response.count == 2)
     }
@@ -125,6 +174,12 @@ class CollectionTests: XCTestCase {
         XCTAssert(response.count == 2)
     }
     
+    private func runContainsCaseInsensitiveQuery() throws {
+        let query = Query(aqt: .contains(key: "username", val: "AR", options:"i"))
+        let response = Array(try TestManager.wcol.find(matching: query))
+        XCTAssert(response.count == 2)
+    }
+
     func testAggregate() throws {
         let cursor = try TestManager.db["zips"].aggregate(pipeline: [
                                              [ "$group": [ "_id": "$state", "totalPop": [ "$sum": "$pop" ] ] ],

@@ -24,11 +24,11 @@ When compiling using SSL you'll need to add another library to your `Package.swi
 .Package(url: "https://github.com/vapor/tls.git", majorVersion: 1)
 ```
 
-Then you'll need to add the compiler flag `TLS` to your compiler conditions.
+Then you'll need to add the compiler flag `MongoTLS` to your compiler conditions.
 
-Either add `TLS` to your `.xcodeproj` under "Active Compilation Conditions".
-Or by running `swift build -Xswiftc -DTLS` on the commandline.
-For release this would be `swift build -c release -Xswiftc -DTLS`
+Either add `MongoTLS` to your `.xcodeproj` under "Active Compilation Conditions".
+Or by running `swift build -Xswiftc -DMongoTLS` on the commandline.
+For release this would be `swift build -c release -Xswiftc -DMongoTLS`
 
 If you don't prefer this SSL implementation for any reason
 

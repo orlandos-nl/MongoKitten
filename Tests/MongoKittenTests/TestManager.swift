@@ -15,7 +15,7 @@ final class TestManager {
         case TestDataNotPresent
     }
     
-    static var server = try! Server(hostname: "127.0.0.1", using: (username: "mongokitten-unittest-user", password: "mongokitten-unittest-password", against: "admin"), automatically: false)
+    static var server = try! Server(hostname: "127.0.0.1", authenticatedAs: (username: "mongokitten-unittest-user", password: "mongokitten-unittest-password", against: "admin"), automatically: false)
     static var db: Database { return server["mongokitten-unittest"] }
     static let wcol = db["wcol"]
     
@@ -43,11 +43,3 @@ final class TestManager {
         try server.disconnect()
     }
 }
-
-#if !swift(>=3.0)
-    extension String {
-        func contains(other: String) -> Bool {
-            return self.containsString(other)
-        }
-    }
-#endif
