@@ -8,7 +8,7 @@
 
 import Foundation
 import BSON
-import Cryptography
+import CryptoKitten
 import Dispatch
 
 /// A Mongo Database. Cannot be publically initialized.

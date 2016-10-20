@@ -8,7 +8,7 @@
 
 import XCTest
 import MongoKitten
-import Cryptography
+import CryptoKitten
 import Dispatch
 
 class CollectionTests: XCTestCase {
