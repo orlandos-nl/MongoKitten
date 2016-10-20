@@ -73,7 +73,7 @@ enum Message {
     /// - returns: The reply instance
     static func makeReply(from data: [UInt8]) throws -> Message {
         guard data.count > 4 else {
-            throw DeserializationError.InvalidDocumentLength
+            throw DeserializationError.invalidDocumentLength
         }
         
         // Get the message length
@@ -81,7 +81,7 @@ enum Message {
         
         // Check the message length
         if length != Int32(data.count) {
-            throw DeserializationError.InvalidDocumentLength
+            throw DeserializationError.invalidDocumentLength
         }
         
         /// Get our variables from the message
