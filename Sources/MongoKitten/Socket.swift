@@ -29,7 +29,7 @@ public protocol MongoTCP : class {
 
 extension Socks.TCPClient : MongoTCP {
     public static func open(address hostname: String, port: UInt16) throws -> MongoTCP {
-        let address = InternetAddress(hostname: hostname, port: port)
+        let address = hostname.lowercased() == "localhost" ? InternetAddress.localhost(port: port) : InternetAddress(hostname: hostname, port: port)
         return try TCPClient(address: address)
     }
     
