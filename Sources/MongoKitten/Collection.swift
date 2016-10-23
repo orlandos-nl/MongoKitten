@@ -9,6 +9,8 @@
 import Foundation
 import BSON
 
+public typealias MongoCollection = Collection
+ 
 /// Represents a single MongoDB collection.
 ///
 /// **### Definition ###**
