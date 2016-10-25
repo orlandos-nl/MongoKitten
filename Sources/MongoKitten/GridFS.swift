@@ -161,7 +161,7 @@ public class GridFS {
             let chunk = Array(data[0..<smallestMax])
             
             _ = try chunks.insert(["files_id": ~id,
-                                   "n": ~Int64(n),
+                                   "n": .int64(Int64(n)),
                                    "data": .binary(subtype: .generic, data: chunk)])
             
             n += 1
