@@ -137,7 +137,7 @@ public class GridFS {
         
         var insertData: Document = [
             "_id": ~id,
-            "length": ~Int64(dataSize),
+            "length": Int64(dataSize).makeBsonValue(),
             "chunkSize": ~Int32(chunkSize),
             "uploadDate": ~Date(timeIntervalSinceNow: 0),
             "md5": ~MD5.hash(data).hexString]
@@ -161,7 +161,7 @@ public class GridFS {
             let chunk = Array(data[0..<smallestMax])
             
             _ = try chunks.insert(["files_id": ~id,
-                                   "n": .int64(Int64(n)),
+                                   "n": Int64(n).makeBsonValue(),
                                    "data": .binary(subtype: .generic, data: chunk)])
             
             n += 1

@@ -67,9 +67,9 @@ public final class Cursor<T> {
         do {
             if collection.database.server.serverData?.maxWireVersion ?? 0 >= 4 {
                 let reply = try collection.database.execute(command: [
-                    "getMore": ~self.cursorID,
+                    "getMore": .int64(self.cursorID),
                     "collection": ~collection.name,
-                    "batchSize": ~chunkSize
+                    "batchSize": .int32(chunkSize)
                     ])
                 
                 guard case .Reply(_, _, _, _, _, _, let resultDocs) = reply else {
