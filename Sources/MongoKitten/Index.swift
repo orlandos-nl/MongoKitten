@@ -59,7 +59,7 @@ public enum IndexParameter {
             
             return ["key": ~(index.flattened())]
         case .expire(let seconds):
-            return ["expireAfterSeconds": ~seconds]
+            return ["expireAfterSeconds": seconds.makeBsonValue()]
         case .sparse:
             return ["sparse": true]
         case .custom(let doc):

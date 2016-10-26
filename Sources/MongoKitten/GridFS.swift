@@ -138,7 +138,7 @@ public class GridFS {
         var insertData: Document = [
             "_id": ~id,
             "length": Int64(dataSize).makeBsonValue(),
-            "chunkSize": ~Int32(chunkSize),
+            "chunkSize": Int32(chunkSize).makeBsonValue(),
             "uploadDate": ~Date(timeIntervalSinceNow: 0),
             "md5": ~MD5.hash(data).hexString]
         
