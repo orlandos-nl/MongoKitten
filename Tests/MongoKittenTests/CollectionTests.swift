@@ -183,7 +183,7 @@ class CollectionTests: XCTestCase {
     func testAggregate() throws {
         let cursor = try TestManager.db["zips"].aggregate(pipeline: [
                                              [ "$group": [ "_id": "$state", "totalPop": [ "$sum": "$pop" ] ] ],
-                                             [ "$match": [ "totalPop": [ "$gte": ~10_000_000 ] ] ]
+                                             [ "$match": [ "totalPop": [ "$gte": Int(10_000_000).makeBsonValue() ] ] ]
         ])
         
         var count = 0
