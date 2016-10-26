@@ -220,7 +220,7 @@ public indirect enum AQT {
                 return aqt.document
                 
             } else {
-                return [key: ["$type": ~type.rawValue]]
+                return [key: ["$type": type.rawValue.makeBsonValue()]]
             }
         case .valEquals(let key, let val):
             return [key: ["$eq": val.val]]

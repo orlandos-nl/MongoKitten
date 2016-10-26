@@ -1033,7 +1033,7 @@ public final class Collection {
     public func convertToCapped(at cap: Int32) throws {
         let command: Document = [
                                     "convertToCapped": ~self.name,
-                                    "size": ~cap
+                                    "size": cap.makeBsonValue()
         ]
         
         let document = try firstDocument(in: try database.execute(command: command))

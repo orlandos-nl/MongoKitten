@@ -610,7 +610,7 @@ extension Database {
         let command: Document = [
             "cloneCollectionAsCapped": ~instance.name,
             "toCollection": ~otherCollection,
-            "size": ~capped
+            "size": capped.makeBsonValue()
         ]
         
         let document = try firstDocument(in: try execute(command: command))
