@@ -77,7 +77,7 @@ Connect to your local MongoDB server using an URI:
 let server: Server
 
 do {
-	server = try Server("mongodb://<username>:<password>@localhost:27017", automatically: true)
+	server = try Server(mongoURL: "mongodb://<username>:<password>@localhost:27017", automatically: true)
 
 } catch {
     // Unable to connect
