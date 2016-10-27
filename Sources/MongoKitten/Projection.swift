@@ -2,6 +2,10 @@ import BSON
 
 public struct Projection {
     public fileprivate(set) var document: Document
+    
+    public init(_ document: Document) {
+        self.document = document
+    }
 }
 
 extension Projection: ValueConvertible {

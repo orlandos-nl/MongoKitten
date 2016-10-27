@@ -1,8 +1,12 @@
 import BSON
 
-public struct DBRef {
+public struct DBRef: ValueConvertible {
     var collection: Collection
     var id: Value
+    
+    public func makeBsonValue() -> Value {
+        return self.bsonValue
+    }
     
     public init(referencing reference: Value, inCollection collection: Collection) {
         self.id = reference
