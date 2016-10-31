@@ -165,7 +165,7 @@ public final class Server {
         
         let path = url.path ?? "admin"
         
-        if let user = url.user, let pass = url.password {
+        if let user = url.user?.removingPercentEncoding, let pass = url.password?.removingPercentEncoding {
             authentication = (username: user, password: pass, against: path)
         }
         
