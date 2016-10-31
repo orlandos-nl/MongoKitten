@@ -13,7 +13,7 @@ var package = Package(
         .Package(url: "https://github.com/OpenKitten/CryptoKitten.git", Version(0,0,2)),
         
         // Provides sockets
-        .Package(url: "https://github.com/vapor/socks.git", majorVersion: 1, minor: 0),
+        .Package(url: "https://github.com/vapor/socks.git", majorVersion: 1),
         ]
 )
 
