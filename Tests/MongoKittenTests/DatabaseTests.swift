@@ -28,11 +28,11 @@ class DatabaseTests: XCTestCase {
     }
     
     func testUsers() throws {
-        let roles: Document = [["role": "dbOwner", "db": ~TestManager.db.name]]
+        let roles: Document = [["role": "dbOwner", "db": TestManager.db.name] as Document]
         
         try TestManager.db.createUser("mongokitten-unittest-testuser", password: "hunter2", roles: roles, customData: ["testdata": false])
         
-        guard let userInfo = try? TestManager.server.getUserInfo(forUserNamed: "mongokitten-unittest-testuser", inDatabase: TestManager.db), let testData = userInfo[0]["customData"]["testdata"].boolValue else {
+        guard let userInfo = try? TestManager.server.getUserInfo(forUserNamed: "mongokitten-unittest-testuser", inDatabase: TestManager.db), let testData = userInfo.makeBsonValue()[0]["customData"]["testdata"].boolValue else {
             XCTFail()
             return
         }

@@ -85,7 +85,7 @@ public final class Server {
         /// - throws: Unable to receive or parse the reply
         private func receive(bufferSize: Int = 1024) throws {
             // TODO: Respect bufferSize
-            let incomingBuffer: [Byte] = try client.receive()
+            let incomingBuffer: [UInt8] = try client.receive()
             buffer.data += incomingBuffer
             
             while buffer.data.count >= 36 {
@@ -156,7 +156,7 @@ public final class Server {
     /// - throws: When we can't connect automatically, when the scheme/host is invalid and when we can't connect automatically
     ///
     /// - parameter automatically: Whether to connect automatically
-    public convenience init(mongoURL url: NSURL, using tcpDriver: MongoTCP.Type = DefaultTCPClient, automatically connecting: Bool = true, maxConnections: Int = 10) throws {
+    public convenience init(mongoURL url: NSURL, using tcpDriver: MongoTCP.Type = DefaultTCPClient, maxConnections: Int = 10) throws {
         guard let scheme = url.scheme, let host = url.host , scheme.lowercased() == "mongodb" else {
             throw MongoError.invalidNSURL(url: url)
         }
@@ -171,7 +171,7 @@ public final class Server {
         
         let port: UInt16 = UInt16(url.port?.intValue ?? 27017)
         
-        try self.init(hostname: host, port: port, authenticatedAs: authentication, runningTcpDriver: tcpDriver, automatically: connecting, maxConnections: maxConnections)
+        try self.init(hostname: host, port: port, authenticatedAs: authentication, runningTcpDriver: tcpDriver, maxConnections: maxConnections)
     }
     
     /// Sets up the `Server` to connect to the specified URL.
@@ -184,12 +184,12 @@ public final class Server {
     /// - parameter automatically: Whether to connect automatically
     ///
     /// - throws: Throws when we can't connect automatically, when the scheme/host is invalid and when we can't connect automatically
-    public convenience init(mongoURL uri: String, using tcpDriver: MongoTCP.Type = DefaultTCPClient, automatically connecting: Bool = true, maxConnections: Int = 10) throws {
+    public convenience init(mongoURL uri: String, using tcpDriver: MongoTCP.Type = DefaultTCPClient, maxConnections: Int = 10) throws {
         guard let url = NSURL(string: uri) else {
             throw MongoError.invalidURI(uri: uri)
         }
         
-        try self.init(mongoURL: url, using: tcpDriver, automatically: connecting, maxConnections: maxConnections)
+        try self.init(mongoURL: url, using: tcpDriver, maxConnections: maxConnections)
     }
     
     /// Sets up the `Server` to connect to the specified location.`Server`
@@ -200,17 +200,13 @@ public final class Server {
     /// - parameter automatically: Connect automatically
     ///
     /// - throws: When we can’t connect automatically, when the scheme/host is invalid and when we can’t connect automatically
-    public init(hostname host: String, port: UInt16 = 27017, authenticatedAs authentication: (username: String, password: String, against: String)? = nil, runningTcpDriver tcpDriver: MongoTCP.Type = DefaultTCPClient, automatically connecting: Bool = false, maxConnections: Int = 10) throws {
+    public init(hostname host: String, port: UInt16 = 27017, authenticatedAs authentication: (username: String, password: String, against: String)? = nil, runningTcpDriver tcpDriver: MongoTCP.Type = DefaultTCPClient, maxConnections: Int = 10) throws {
         self.tcpType = tcpDriver
         self.server = (host: host, port: port)
         self.maximumConnections = maxConnections
         self.authDetails = authentication
         
         self.connectionPoolSemaphore = DispatchSemaphore(value: maxConnections)
-        
-        if connecting {
-            try self.connect()
-        }
     }
     
     private func makeConnection() throws -> Connection {
@@ -278,7 +274,7 @@ public final class Server {
         
         let db = Database(database: databaseName, at: self)
         
-        do {
+        connect: do {
             if !self.isConnected {
                 _ = try? self.connect()
             }
@@ -286,10 +282,11 @@ public final class Server {
             if !isInitialized {
                 let result = try db.isMaster()
                 
-                let batchSize = result["maxWriteBatchSize"].int32
-                let minWireVersion = result["minWireVersion"].int32
-                let maxWireVersion = result["maxWireVersion"].int32
-                var maxMessageSizeBytes = result["maxMessageSizeBytes"].int32
+                guard let batchSize = result["maxWriteBatchSize"]?.int32, let minWireVersion = result["minWireVersion"]?.int32, let maxWireVersion = result["maxWireVersion"]?.int32 else {
+                    continue connect
+                }
+                
+                var maxMessageSizeBytes = result["maxMessageSizeBytes"]?.int32 ?? 0
                 if maxMessageSizeBytes == 0 {
                     maxMessageSizeBytes = 48000000
                 }
@@ -337,7 +334,6 @@ public final class Server {
     ///
     /// - throws: Unable to connect
     public func connect() throws {
-        _ = try? self.disconnect()
         isConnected = true
     }
     
@@ -444,13 +440,13 @@ public final class Server {
     /// - returns: All databases
     public func getDatabases() throws -> [Database] {
         let infos = try getDatabaseInfos()
-        guard let databaseInfos = infos["databases"].documentValue else {
+        guard let databaseInfos = infos["databases"] as? Document else {
             throw MongoError.commandError(error: "No database Document found")
         }
         
         var databases = [Database]()
-        for case (_, let dbDef) in databaseInfos where dbDef.documentValue != nil {
-            guard let name = dbDef["name"].stringValue else {
+        for case (_, let dbDef) in databaseInfos {
+            guard let dbDef = dbDef as? Document, let name = dbDef["name"] as? String else {
                 throw MongoError.commandError(error: "No database name found")
             }
             
@@ -472,33 +468,33 @@ public final class Server {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func copy(database db: String, to otherDatabase: String, as user: (user: String, nonce: String, password: String)? = nil, at remoteHost: String? = nil, slaveOk: Bool? = nil) throws {
         var command: Document = [
-                                    "copydb": .int32(1),
+                                    "copydb": Int32(1),
                                 ]
 
         if let fromHost = remoteHost {
-            command["fromhost"] = ~fromHost
+            command["fromhost"] = fromHost
         }
 
-        command["fromdb"] = ~db
-        command["todb"] = ~otherDatabase
+        command["fromdb"] = db
+        command["todb"] = otherDatabase
 
         if let slaveOk = slaveOk {
-            command["slaveOk"] = ~slaveOk
+            command["slaveOk"] = slaveOk
         }
 
         if let user = user {
-            command["username"] = ~user.user
-            command["nonce"] = ~user.nonce
+            command["username"] = user.user
+            command["nonce"] = user.nonce
             
             let passHash = MD5.hash([UInt8]("\(user.user):mongo:\(user.password)".utf8)).hexString
             let key = MD5.hash([UInt8]("\(user.nonce)\(user.user)\(passHash))".utf8)).hexString
-            command["key"] = ~key
+            command["key"] = key
         }
 
         let reply = try self["admin"].execute(command: command)
         let response = try firstDocument(in: reply)
 
-        guard response["ok"].int32 == 1 else {
+        guard response["ok"] == 1 else {
             throw MongoError.commandFailure(error: response)
         }
     }
@@ -531,13 +527,13 @@ public final class Server {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func clone(from url: String) throws {
         let command: Document = [
-                                    "clone": ~url
+                                    "clone": url
                                     ]
 
         let reply = try self["admin"].execute(command: command)
         let response = try firstDocument(in: reply)
         
-        guard response["ok"].int32 == 1 else {
+        guard response["ok"] == 1 else {
             throw MongoError.commandFailure(error: response)
         }
     }
@@ -551,16 +547,16 @@ public final class Server {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func shutdown(forced force: Bool? = nil) throws {
         var command: Document = [
-                                    "shutdown": .int32(1)
+                                    "shutdown": Int32(1)
         ]
         
         if let force = force {
-            command["force"] = ~force
+            command["force"] = force
         }
         
         let response = try firstDocument(in: try self["$cmd"].execute(command: command))
         
-        guard response["ok"].int32 == 1 else {
+        guard response["ok"] == 1 else {
             throw MongoError.commandFailure(error: response)
         }
     }
@@ -573,21 +569,21 @@ public final class Server {
     /// - parameter block: Do we block writing in the meanwhile?
     public func fsync(async asynchronously: Bool? = nil, blocking block: Bool? = nil) throws {
         var command: Document = [
-                                    "fsync": .int32(1)
+                                    "fsync": Int32(1)
         ]
         
         if let async = asynchronously {
-            command["async"] = ~async
+            command["async"] = async
         }
 
         if let block = block {
-            command["block"] = ~block
+            command["block"] = block
         }
         
         let reply = try self["admin"].execute(command: command)
         let response = try firstDocument(in: reply)
         
-        guard response["ok"].int32 == 1 else {
+        guard response["ok"] == 1 else {
             throw MongoError.commandFailure(error: response)
         }
     }
@@ -606,26 +602,26 @@ public final class Server {
     /// - returns: The user's information (plus optionally the credentials and privileges)
     public func getUserInfo(forUserNamed user: String, inDatabase database: Database? = nil, showCredentials: Bool? = nil, showPrivileges: Bool? = nil) throws -> Document {
         var command: Document = [
-                                     "usersInfo": ["user": ~user, "db": ~(database?.name ?? "admin")]
+                                     "usersInfo": ["user": user, "db": (database?.name ?? "admin")] as Document
                                      ]
         
         if let showCredentials = showCredentials {
-            command["showCredentials"] = ~showCredentials
+            command["showCredentials"] = showCredentials
         }
         
         if let showPrivileges = showPrivileges {
-            command["showPrivileges"] = ~showPrivileges
+            command["showPrivileges"] = showPrivileges
         }
         
         let db = database ?? self["admin"]
 
         let document = try firstDocument(in: try db.execute(command: command))
         
-        guard document["ok"].int32 == 1 else {
+        guard document["ok"] == 1 else {
             throw MongoError.commandFailure(error: document)
         }
         
-        guard let users = document["users"].documentValue else {
+        guard let users = document["users"] as? Document else {
             throw MongoError.commandError(error: "No users found")
         }
         
