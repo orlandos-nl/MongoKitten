@@ -119,7 +119,7 @@ public prefix func !(query: Query) -> Query {
     return Query(aqt: .not(query.aqt))
 }
 
-public func &=(lhs: QueryProtocol, rhs: QueryProtocol) -> Document {
+public func &=(lhs: Query, rhs: Query) -> Document {
     var lhs = lhs.queryDocument
     
     for (key, value) in rhs.queryDocument {
@@ -137,6 +137,8 @@ public indirect enum AQT {
     ///
     /// The raw values are defined in https://docs.mongodb.com/manual/reference/operator/query/type/#op._S_type
     public enum AQTType: Int32 {
+        case precisely
+        
         /// Any number. So a `.double`, `.int32` or `.int64`
         case number = -2
         
@@ -213,6 +215,8 @@ public indirect enum AQT {
             } else {
                 return [key: ["$type": type.rawValue] as Document]
             }
+        case .exactly(let doc):
+            return doc
         case .valEquals(let key, let val):
             return [key: ["$eq": val] as Document]
         case .valNotEquals(let key, let val):
@@ -287,16 +291,16 @@ public indirect enum AQT {
     
     /// Whether the String value within the `key` ends with this `String`.
     case endsWith(key: String, val: String)
-}
-
-/// The protocol all queries need to comply to
-public protocol QueryProtocol {
-    /// They need to return a `Document` that will be used for matching
-    var queryDocument: Document { get }
+    
+    case exactly(Document)
 }
 
 /// A `Query` that consists of an `AQT` statement
-public struct Query: QueryProtocol {
+public struct Query: ExpressibleByDictionaryLiteral {
+    public init(dictionaryLiteral elements: (String, ValueConvertible)...) {
+        self.aqt = .exactly(Document(dictionaryElements: elements))
+    }
+    
     /// The `Document` that can be sent to the MongoDB Server as a query/filter
     public var queryDocument: Document {
         return aqt.document
@@ -309,13 +313,9 @@ public struct Query: QueryProtocol {
     public init(aqt: AQT) {
         self.aqt = aqt
     }
-}
-
-/// Makes a raw `Document` usable as `Query`
-extension Document: QueryProtocol {
-    /// Makes a raw `Document` usable as `Query`
-    public var queryDocument: Document {
-        return self
+    
+    public init(_ document: Document) {
+        self.aqt = .exactly(document)
     }
 }
 
@@ -338,209 +338,6 @@ extension Document {
         }
         
         return doc
-    }
-    
-    /// Checks if a `Document` matches the given `Query`
-    /// 
-    /// - parameter query: The `Query` to match this `Document` against
-    ///
-    /// - returns: Whether this `Document` matches the `Query`
-    public func matches(query q: Query) -> Bool {
-        let doc = self.filterOperators()
-        
-        switch q.aqt {
-        case .typeof(let key, let type):
-            return doc[key]?.makeBsonValue().typeNumber == type.rawValue
-        case .valEquals(let key, let val):
-            return doc[key]?.makeBsonValue() == val.makeBsonValue()
-        case .valNotEquals(let key, let val):
-            return doc[key]?.makeBsonValue() != val.makeBsonValue()
-        case .greaterThan(let key, let val):
-            switch doc[key]?.makeBsonValue() ?? .nothing {
-            case .double(let d):
-                if let d2 = val.makeBsonValue().int32Value {
-                    return d > Double(d2)
-                } else if let d2 = val.makeBsonValue().doubleValue {
-                    return d > d2
-                } else if let d2 = val.makeBsonValue().int64Value {
-                    return d > Double(d2)
-                }
-                
-                return false
-            case .int32(let d):
-                if let d2 = val.makeBsonValue().int32Value {
-                    return d > d2
-                } else if let d2 = val.makeBsonValue().doubleValue {
-                    return Double(d) > d2
-                } else if let d2 = val.makeBsonValue().int64Value {
-                    return Int64(d) > d2
-                }
-                
-                return false
-            case .int64(let d):
-                if let d2 = val.makeBsonValue().int32Value {
-                    return d > Int64(d2)
-                } else if let d2 = val.makeBsonValue().doubleValue {
-                    return Double(d) > d2
-                } else if let d2 = val.makeBsonValue().int64Value {
-                    return d > d2
-                }
-                
-                return false
-            default:
-                return false
-            }
-        case .greaterThanOrEqual(let key, let val):
-            switch doc[key]?.makeBsonValue() ?? .nothing {
-            case .double(let d):
-                if let d2 = val.makeBsonValue().int32Value {
-                    return d >= Double(d2)
-                } else if let d2 = val.makeBsonValue().doubleValue {
-                    return d >= d2
-                } else if let d2 = val.makeBsonValue().int64Value {
-                    return d >= Double(d2)
-                }
-                
-                return false
-            case .int32(let d):
-                if let d2 = val.makeBsonValue().int32Value {
-                    return d >= d2
-                } else if let d2 = val.makeBsonValue().doubleValue {
-                    return Double(d) >= d2
-                } else if let d2 = val.makeBsonValue().int64Value {
-                    return Int64(d) >= d2
-                }
-                
-                return false
-            case .int64(let d):
-                if let d2 = val.makeBsonValue().int32Value {
-                    return d >= Int64(d2)
-                } else if let d2 = val.makeBsonValue().doubleValue {
-                    return Double(d) >= d2
-                } else if let d2 = val.makeBsonValue().int64Value {
-                    return d >= d2
-                }
-                
-                return false
-            default:
-                return false
-            }
-        case .smallerThan(let key, let val):
-            switch doc[key]?.makeBsonValue() ?? .nothing {
-            case .double(let d):
-                if let d2 = val.makeBsonValue().int32Value {
-                    return d < Double(d2)
-                } else if let d2 = val.makeBsonValue().doubleValue {
-                    return d < d2
-                } else if let d2 = val.makeBsonValue().int64Value {
-                    return d <  Double(d2)
-                }
-                
-                return false
-            case .int32(let d):
-                if let d2 = val.makeBsonValue().int32Value {
-                    return d < d2
-                } else if let d2 = val.makeBsonValue().doubleValue {
-                    return Double(d) < d2
-                } else if let d2 = val.makeBsonValue().int64Value {
-                    return Int64(d) < d2
-                }
-                
-                return false
-            case .int64(let d):
-                if let d2 = val.makeBsonValue().int32Value {
-                    return d < Int64(d2)
-                } else if let d2 = val.makeBsonValue().doubleValue {
-                    return Double(d) < d2
-                } else if let d2 = val.makeBsonValue().int64Value {
-                    return d < d2
-                }
-                
-                return false
-            default:
-                return false
-            }
-        case .smallerThanOrEqual(let key, let val):
-            switch doc[key]?.makeBsonValue() ?? .nothing {
-            case .double(let d):
-                if let d2 = val.makeBsonValue().int32Value {
-                    return d <= Double(d2)
-                } else if let d2 = val.makeBsonValue().doubleValue {
-                    return d <= d2
-                } else if let d2 = val.makeBsonValue().int64Value {
-                    return d <= Double(d2)
-                }
-                
-                return false
-            case .int32(let d):
-                if let d2 = val.makeBsonValue().int32Value {
-                    return d <= d2
-                } else if let d2 = val.makeBsonValue().doubleValue {
-                    return Double(d) <= d2
-                } else if let d2 = val.makeBsonValue().int64Value {
-                    return Int64(d) <= d2
-                }
-                
-                return false
-            case .int64(let d):
-                if let d2 = val.makeBsonValue().int32Value {
-                    return d <= Int64(d2)
-                } else if let d2 = val.makeBsonValue().doubleValue {
-                    return Double(d) <= d2
-                } else if let d2 = val.makeBsonValue().int64Value {
-                    return d <= d2
-                }
-                
-                return false
-            default:
-                return false
-            }
-        case .and(let aqts):
-            for aqt in aqts {
-                guard self.matches(query: Query(aqt: aqt)) else {
-                    return false
-                }
-            }
-            
-            return true
-        case .or(let aqts):
-            for aqt in aqts {
-                if self.matches(query: Query(aqt: aqt)) {
-                    return true
-                }
-            }
-            
-            return false
-        case .not(let aqt):
-            return !self.matches(query: Query(aqt: aqt))
-        case .contains(let key, let val, let options):
-            switch doc[key]?.makeBsonValue() ?? .nothing {
-            case .string(let stringVal):
-                if options.contains("i") {
-                    return stringVal.lowercased().contains(val.lowercased())
-                }
-                
-                return stringVal.contains(val)
-            default:
-                return false
-            }
-        case .startsWith(let key, let val):
-            switch doc[key]?.makeBsonValue() ?? .nothing {
-            case .string(let stringVal):
-                return stringVal.hasPrefix(val)
-            default:
-                return false
-            }
-        case .endsWith(let key, let val):
-            switch doc[key]?.makeBsonValue() ?? .nothing {
-            case .string(let stringVal):
-                return stringVal.hasSuffix(val)
-            default:
-                return false
-            }
-        case .nothing:
-            return true
-        }
     }
 }
 

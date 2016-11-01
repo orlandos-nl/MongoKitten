@@ -182,14 +182,14 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A cursor pointing to the found Documents
-    public func find(matching filter: Document? = nil, sortedBy sort: Document? = nil, projecting projection: Projection? = nil, skipping skip: Int32? = nil, limitedTo limit: Int32? = nil, withBatchSize batchSize: Int32 = 10) throws -> Cursor<Document> {
+    public func find(matching filter: Query? = nil, sortedBy sort: Document? = nil, projecting projection: Projection? = nil, skipping skip: Int32? = nil, limitedTo limit: Int32? = nil, withBatchSize batchSize: Int32 = 10) throws -> Cursor<Document> {
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
         if protocolVersion >= 4 {
             var command: Document = ["find": self.name]
             
             if let filter = filter {
-                command["filter"] = filter
+                command["filter"] = filter.queryDocument
             }
             
             if let sort = sort {
@@ -230,7 +230,7 @@ public final class Collection {
                 database.server.returnConnection(connection)
             }
             
-            let queryMsg = Message.Query(requestID: database.server.nextMessageID(), flags: [], collection: self, numbersToSkip: skip ?? 0, numbersToReturn: batchSize, query: filter ?? [], returnFields: projection?.document)
+            let queryMsg = Message.Query(requestID: database.server.nextMessageID(), flags: [], collection: self, numbersToSkip: skip ?? 0, numbersToReturn: batchSize, query: filter?.queryDocument ?? [], returnFields: projection?.document)
             
             let reply = try self.database.server.sendAndAwait(message: queryMsg, overConnection: connection)
             
@@ -254,51 +254,13 @@ public final class Collection {
     /// - parameter sort: The Sort Specification used to sort the found Documents
     /// - parameter projection: The Projection Specification used to filter which fields to return
     /// - parameter skip: The amount of Documents to skip before returning the matching Documents
-    /// - parameter limit: The maximum amount of matching documents to return
-    /// - parameter batchSize: The initial amount of Documents to return.
-    ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    ///
-    /// - returns: A cursor pointing to the found Documents
-    public func find(matching filter: QueryProtocol, sortedBy sort: Document? = nil, projecting projection: Projection? = nil, skipping skip: Int32? = nil, limitedTo limit: Int32? = nil, withBatchSize batchSize: Int32 = 0) throws -> Cursor<Document> {
-        return try find(matching: filter.queryDocument as Document?, sortedBy: sort, projecting: projection, skipping: skip, limitedTo: limit, withBatchSize: batchSize)
-    }
-    
-    /// Finds Documents in this collection
-    ///
-    /// Can be used to execute DBCommands in MongoDB 2.6 and below
-    ///
-    /// For more information: https://docs.mongodb.com/manual/reference/command/find/#dbcmd.find
-    ///
-    /// - parameter filter: The Document filter we're using to match Documents in this collection against
-    /// - parameter sort: The Sort Specification used to sort the found Documents
-    /// - parameter projection: The Projection Specification used to filter which fields to return
-    /// - parameter skip: The amount of Documents to skip before returning the matching Documents
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: The found Document
-    public func findOne(matching filter: Document? = nil, sortedBy sort: Document? = nil, projecting projection: Projection? = nil, skipping skip: Int32? = nil) throws -> Document? {
+    public func findOne(matching filter: Query? = nil, sortedBy sort: Document? = nil, projecting projection: Projection? = nil, skipping skip: Int32? = nil) throws -> Document? {
         return try self.find(matching: filter, sortedBy: sort, projecting: projection, skipping: skip, limitedTo:
             1).makeIterator().next()
-    }
-    
-    /// Finds Documents in this collection
-    ///
-    /// Can be used to execute DBCommands in MongoDB 2.6 and below
-    ///
-    /// For more information: https://docs.mongodb.com/manual/reference/command/find/#dbcmd.find
-    ///
-    /// - parameter filter: The QueryBuilder filter we're using to match Documents in this collection against
-    /// - parameter sort: The Sort Specification used to sort the found Documents
-    /// - parameter projection: The Projection Specification used to filter which fields to return
-    /// - parameter skip: The amount of Documents to skip before returning the matching Documents
-    ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    ///
-    /// - returns: The found Document
-    public func findOne(matching filter: QueryProtocol, sortedBy sort: Document? = nil, projecting projection: Projection? = nil, skipping skip: Int32? = nil) throws -> Document? {
-        return try findOne(matching: filter.queryDocument as Document?, sortedBy: sort, projecting: projection, skipping: skip)
     }
     
     // Update
@@ -383,25 +345,6 @@ public final class Collection {
         }
     }
     
-    /// Updates a `Document` using a counterpart `Document`.
-    ///
-    /// In most cases the `$set` operator is useful for updating only parts of a `Document`
-    /// As described here: https://docs.mongodb.com/manual/reference/operator/update/set/#up._S_set
-    ///
-    /// For more information about this command: https://docs.mongodb.com/manual/reference/command/update/#dbcmd.update
-    ///
-    /// - parameter filter: The filter to use when searching for Documents to update
-    /// - parameter updated: The data to update these Documents with
-    /// - parameter upsert: Insert when we can't find anything to update
-    /// - parameter multi: Updates more than one result if true
-    /// - parameter ordered: If true, stop updating when one operation fails - defaults to true
-    ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    @discardableResult
-    public func update(matching filter: Document, to updated: Document, upserting upsert: Bool = false, multiple multi: Bool = false, stoppingOnError ordered: Bool? = nil) throws -> Int {
-        return try self.update([(filter: filter as QueryProtocol, to: updated, upserting: upsert, multiple: multi)], stoppingOnError: ordered)
-    }
-    
     /// Updates a list of `Document`s using a counterpart `Document`.
     ///
     /// In most cases the `$set` operator is useful for updating only parts of a `Document`
@@ -420,7 +363,7 @@ public final class Collection {
     ///
     /// - returns: The amount of updated documents
     @discardableResult
-    public func update(_ updates: [(filter: QueryProtocol, to: Document, upserting: Bool, multiple: Bool)], stoppingOnError ordered: Bool? = nil) throws -> Int {
+    public func update(_ updates: [(filter: Query, to: Document, upserting: Bool, multiple: Bool)], stoppingOnError ordered: Bool? = nil) throws -> Int {
         let newUpdates = updates.map { (filter: $0.filter.queryDocument, to: $0.to, upserting: $0.upserting, multiple: $0.multiple) }
         
         return try self.update(newUpdates, stoppingOnError: ordered)
@@ -441,7 +384,7 @@ public final class Collection {
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     @discardableResult
-    public func update(matching filter: QueryProtocol, to updated: Document, upserting upsert: Bool = false, multiple multi: Bool = false, stoppingOnError ordered: Bool? = nil) throws -> Int {
+    public func update(matching filter: Query, to updated: Document, upserting upsert: Bool = false, multiple multi: Bool = false, stoppingOnError ordered: Bool? = nil) throws -> Int {
         return try self.update([(filter: filter.queryDocument, to: updated, upserting: upsert, multiple: multi)], stoppingOnError: ordered)
     }
     
@@ -456,7 +399,7 @@ public final class Collection {
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     @discardableResult
-    public func remove(matching removals: [(filter: Document, limit: Int32)], stoppingOnError ordered: Bool? = nil) throws -> Int {
+    public func remove(matching removals: [(filter: Query, limit: Int32)], stoppingOnError ordered: Bool? = nil) throws -> Int {
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
         if protocolVersion >= 2 {
@@ -465,7 +408,7 @@ public final class Collection {
             
             for d in removals {
                 newDeletes.append([
-                                      "q": d.filter,
+                                      "q": d.filter.queryDocument,
                                       "limit": d.limit
                     ])
             }
@@ -506,7 +449,7 @@ public final class Collection {
                     let _ = flags.insert(DeleteFlags.RemoveOne)
                 }
                 
-                let message = Message.Delete(requestID: database.server.nextMessageID(), collection: self, flags: flags, removeDocument: removal.filter)
+                let message = Message.Delete(requestID: database.server.nextMessageID(), collection: self, flags: flags, removeDocument: removal.filter.queryDocument)
                 
                 for _ in 0..<limit {
                     try self.database.server.send(message: message, overConnection: connection)
@@ -515,35 +458,6 @@ public final class Collection {
             
             return removals.count
         }
-    }
-    
-    /// Removes all `Document`s matching the `filter` until the `limit` is reached
-    ///
-    /// For more information: https://docs.mongodb.com/manual/reference/command/delete/#dbcmd.delete
-    ///
-    /// - parameter removals: A list of QueryBuilder filters to match documents against. Any given filter can be used infinite amount of removals if `0` or otherwise as often as specified in the limit
-    /// - parameter stoppingOnError: If true, stop removing when one operation fails - defaults to true
-    ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    @discardableResult
-    public func remove(matching removals: [(filter: QueryProtocol, limit: Int32)], stoppingOnError ordered: Bool? = nil) throws -> Int {
-        let newRemovals = removals.map { (filter: $0.filter.queryDocument, limit: $0.limit) }
-        
-        return try self.remove(matching: newRemovals, stoppingOnError: ordered)
-    }
-    
-    /// Removes `Document`s matching the `filter` until the `limit` is reached
-    ///
-    /// For more information: https://docs.mongodb.com/manual/reference/command/delete/#dbcmd.delete
-    ///
-    /// - parameter fitler: The Document filter to use when finding Documents that are going to be removed
-    /// - parameter limit: The amount of times this filter can be used to find and remove a Document (0 is every document)
-    /// - parameter stoppingOnError: If true, stop removing when one operation fails - defaults to true
-    ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    @discardableResult
-    public func remove(matching filter: Document, limitedTo limit: Int32 = 0, stoppingOnError ordered: Bool? = nil) throws -> Int {
-        return try self.remove(matching: [(filter: filter as QueryProtocol, limit: limit)], stoppingOnError: ordered)
     }
     
     /// Removes `Document`s matching the `filter` until the `limit` is reached
@@ -556,7 +470,7 @@ public final class Collection {
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     @discardableResult
-    public func remove(matching filter: QueryProtocol, limitedTo limit: Int32 = 0, stoppingOnError ordered: Bool? = nil) throws -> Int {
+    public func remove(matching filter: Query, limitedTo limit: Int32 = 0, stoppingOnError ordered: Bool? = nil) throws -> Int {
         return try self.remove(matching: [(filter: filter, limit: limit)], stoppingOnError: ordered)
     }
     
@@ -671,7 +585,7 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: The `Value` received from the server as specified in the link of the additional information
-    public func findAndModify(matching query: QueryProtocol? = nil, sortedBy sort: Sort? = nil, action: FindAndModifyOperation, projection: Projection? = nil) throws -> ValueConvertible {
+    public func findAndModify(matching query: Query? = nil, sortedBy sort: Sort? = nil, action: FindAndModifyOperation, projection: Projection? = nil) throws -> ValueConvertible {
         var command: Document = ["findAndModify": self.name]
         
         if let query = query {
@@ -715,7 +629,7 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: The amount of matching `Document`s
-    public func count(matching query: QueryProtocol, limitedTo limit: Int32? = nil, skipping skip: Int32? = nil) throws -> Int {
+    public func count(matching query: Query, limitedTo limit: Int32? = nil, skipping skip: Int32? = nil) throws -> Int {
         return try count(matching: query.queryDocument as Document?, limitedTo: limit, skipping: skip)
     }
     
@@ -749,8 +663,8 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A list of all distinct values for this key
-    public func distinct(on key: String, usingFilter query: QueryProtocol) throws -> [Value]? {
-        return try self.distinct(on: key, usingFilter: query.queryDocument)
+    public func distinct(on key: String, usingFilter query: Query) throws -> [Value]? {
+        return try self.distinct(on: key, usingFilter: query)
     }
     
     /// Creates an `Index` in this `Collection` on the specified keys.

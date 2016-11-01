@@ -44,7 +44,7 @@ public class GridFS {
     ///
     /// - returns: A cursor pointing to all resulting files
     public func find(byID id: ObjectId) throws -> Cursor<File> {
-        return try self.find(matching: ["_id": id] as Document)
+        return try self.find(matching: ["_id": id])
     }
     
     /// Finds using all files file matching this filename
@@ -55,7 +55,7 @@ public class GridFS {
     ///
     /// - returns: A cursor pointing to all resulting files
     public func find(byName filename: String) throws -> Cursor<File> {
-        return try self.find(matching: ["filename": filename] as Document)
+        return try self.find(matching: ["filename": filename])
     }
     
     /// Finds using all files matching this MD5 hash
@@ -66,7 +66,7 @@ public class GridFS {
     ///
     /// - returns: A cursor pointing to all resulting files
     public func find(byHash hash: String) throws -> Cursor<File> {
-        return try self.find(matching: ["md5": hash] as Document)
+        return try self.find(matching: ["md5": hash])
     }
     
     /// Finds the first file matching this ObjectID
@@ -77,7 +77,7 @@ public class GridFS {
     ///
     /// - returns: The resulting file
     public func findOne(byID id: ObjectId) throws -> File? {
-        return try self.find(matching: ["_id": id] as Document).makeIterator().next()
+        return try self.find(matching: ["_id": id]).makeIterator().next()
     }
     
     /// Finds the first file matching this filename
@@ -88,7 +88,7 @@ public class GridFS {
     ///
     /// - returns: The resulting file
     public func findOne(byName filename: String) throws -> File? {
-        return try self.find(matching: ["filename": filename] as Document).makeIterator().next()
+        return try self.find(matching: ["filename": filename]).makeIterator().next()
     }
     
     /// Finds the first file matching this MD5 hash
@@ -99,7 +99,7 @@ public class GridFS {
     ///
     /// - returns: The resulting file
     public func findOne(byHash hash: String) throws -> File? {
-        return try self.find(matching: ["md5": hash] as Document).makeIterator().next()
+        return try self.find(matching: ["md5": hash]).makeIterator().next()
     }
     
     /// Finds using a matching filter
@@ -109,7 +109,7 @@ public class GridFS {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A cursor pointing to all resulting files
-    public func find(matching filter: QueryProtocol) throws -> Cursor<File> {
+    public func find(matching filter: Query) throws -> Cursor<File> {
         let cursor = try files.find(matching: filter)
         
         let gridFSCursor: Cursor<File> = Cursor(base: cursor, transform: { File(document: $0, chunksCollection: self.chunks, filesCollection: self.files) })
@@ -285,9 +285,7 @@ public class GridFS {
                 endChunk += 1
             }
             
-            let query: Document = ["files_id": id]
-            
-            let cursor = try chunksCollection.find(matching: query, sortedBy: ["n": 1], skipping: Int32(skipChunks), limitedTo: Int32(endChunk - skipChunks))
+            let cursor = try chunksCollection.find(matching: ["files_id": id], sortedBy: ["n": 1], skipping: Int32(skipChunks), limitedTo: Int32(endChunk - skipChunks))
             let chunkCursor = Cursor(base: cursor, transform: { Chunk(document: $0, chunksCollection: self.chunksCollection, filesCollection: self.filesCollection) })
             var allData = [UInt8]()
             
@@ -301,7 +299,7 @@ public class GridFS {
         public func chunked() throws -> AnyIterator<Chunk> {
             let query: Document = ["files_id": id]
             
-            let cursor = try chunksCollection.find(matching: query, sortedBy: ["n": 1])
+            let cursor = try chunksCollection.find(matching: Query(query), sortedBy: ["n": 1])
             
             let chunkCursor = Cursor(base: cursor, transform: { Chunk(document: $0, chunksCollection: self.chunksCollection, filesCollection: self.filesCollection) })
             

@@ -42,7 +42,7 @@ public enum MongoError : Error {
     case updateFailure(updates: [(filter: Document, to: Document, upserting: Bool, multiple: Bool)], error: Document?)
     
     /// Can't remove documents matching the given query
-    case removeFailure(removals: [(filter: Document, limit: Int32)], error: Document?)
+    case removeFailure(removals: [(filter: Query, limit: Int32)], error: Document?)
     
     /// Can't find a handler for this reply
     case handlerNotFound
