@@ -39,7 +39,7 @@ public enum MongoError : Error {
     case queryFailure(query: Document, error: Document?)
     
     /// Can't update documents with the given selector and update
-    case updateFailure(updates: [(filter: Document, to: Document, upserting: Bool, multiple: Bool)], error: Document?)
+    case updateFailure(updates: [(filter: Query, to: Document, upserting: Bool, multiple: Bool)], error: Document?)
     
     /// Can't remove documents matching the given query
     case removeFailure(removals: [(filter: Query, limit: Int32)], error: Document?)
@@ -76,7 +76,7 @@ public enum MongoError : Error {
     
     /// GridFS was asked to return a negative amount of bytes
     case negativeBytesRequested(start: Int, end: Int)
-
+    
     case invalidURI(uri: String)
     
     case invalidNSURL(url: NSURL)
