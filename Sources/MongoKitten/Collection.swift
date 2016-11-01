@@ -1,4 +1,4 @@
- //
+//
 //  Collection.swift
 //  MongoSwift
 //
@@ -285,7 +285,7 @@ public final class Collection {
     ///
     /// - returns: The amount of updated documents
     @discardableResult
-    public func update(_ updates: [(filter: Document, to: Document, upserting: Bool, multiple: Bool)], stoppingOnError ordered: Bool? = nil) throws -> Int {
+    public func update(_ updates: [(filter: Query, to: Document, upserting: Bool, multiple: Bool)], stoppingOnError ordered: Bool? = nil) throws -> Int {
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
         if protocolVersion >= 2 {
@@ -294,10 +294,10 @@ public final class Collection {
             
             for u in updates {
                 newUpdates.append([
-                                      "q": u.filter,
-                                      "u": u.to,
-                                      "upsert": u.upserting,
-                                      "multi": u.multiple
+                    "q": u.filter.queryDocument,
+                    "u": u.to,
+                    "upsert": u.upserting,
+                    "multi": u.multiple
                     ])
             }
             
@@ -337,36 +337,12 @@ public final class Collection {
                     let _ = flags.insert(UpdateFlags.Upsert)
                 }
                 
-                let message = Message.Update(requestID: database.server.nextMessageID(), collection: self, flags: flags, findDocument: update.filter, replaceDocument: update.to)
+                let message = Message.Update(requestID: database.server.nextMessageID(), collection: self, flags: flags, findDocument: update.filter.queryDocument, replaceDocument: update.to)
                 try self.database.server.send(message: message, overConnection: connection)
             }
             
             return updates.count
         }
-    }
-    
-    /// Updates a list of `Document`s using a counterpart `Document`.
-    ///
-    /// In most cases the `$set` operator is useful for updating only parts of a `Document`
-    /// As described here: https://docs.mongodb.com/manual/reference/operator/update/set/#up._S_set
-    ///
-    /// For more information about this command: https://docs.mongodb.com/manual/reference/command/update/#dbcmd.update
-    ///
-    /// - parameter updates: A list of updates to be executed.
-    ///     `query`: A QueryBuilder filter to narrow down which Documents you want to update
-    ///     `update`: The fields and values to update
-    ///     `upsert`: If there isn't anything to update.. insert?
-    ///     `multi`: Update all matching Documents instead of just one?
-    /// - parameter ordered: If true, stop updating when one operation fails - defaults to true
-    ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    ///
-    /// - returns: The amount of updated documents
-    @discardableResult
-    public func update(_ updates: [(filter: Query, to: Document, upserting: Bool, multiple: Bool)], stoppingOnError ordered: Bool? = nil) throws -> Int {
-        let newUpdates = updates.map { (filter: $0.filter.queryDocument, to: $0.to, upserting: $0.upserting, multiple: $0.multiple) }
-        
-        return try self.update(newUpdates, stoppingOnError: ordered)
     }
     
     /// Updates a `Document` using a counterpart `Document`.
@@ -385,7 +361,7 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     @discardableResult
     public func update(matching filter: Query, to updated: Document, upserting upsert: Bool = false, multiple multi: Bool = false, stoppingOnError ordered: Bool? = nil) throws -> Int {
-        return try self.update([(filter: filter.queryDocument, to: updated, upserting: upsert, multiple: multi)], stoppingOnError: ordered)
+        return try self.update([(filter: filter, to: updated, upserting: upsert, multiple: multi)], stoppingOnError: ordered)
     }
     
     // Delete
@@ -408,8 +384,8 @@ public final class Collection {
             
             for d in removals {
                 newDeletes.append([
-                                      "q": d.filter.queryDocument,
-                                      "limit": d.limit
+                    "q": d.filter.queryDocument,
+                    "limit": d.limit
                     ])
             }
             
@@ -428,7 +404,7 @@ public final class Collection {
             
             return document["n"]?.int ?? 0
             
-        // If we're talking to an older MongoDB server
+            // If we're talking to an older MongoDB server
         } else {
             let connection = try database.server.reserveConnection()
             
@@ -507,8 +483,8 @@ public final class Collection {
     public func move(toDatabase database: Database, renamedTo newName: String? = nil, overwritingExistingCollection dropOldTarget: Bool? = nil) throws {
         // TODO: Fail if the target database exists.
         var command: Document = [
-                                    "renameCollection": self.fullName,
-                                    "to": "\(database.name).\(newName ?? self.name)"
+            "renameCollection": self.fullName,
+            "to": "\(database.name).\(newName ?? self.name)"
         ]
         
         if let dropOldTarget = dropOldTarget { command["dropTarget"] = dropOldTarget }
@@ -530,10 +506,10 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: The amount of matching `Document`s
-    public func count(matching filter: Document? = nil, limitedTo limit: Int32? = nil, skipping skip: Int32? = nil) throws -> Int {
+    public func count(matching filter: Query? = nil, limitedTo limit: Int32? = nil, skipping skip: Int32? = nil) throws -> Int {
         var command: Document = ["count": self.name]
         
-        if let filter = filter {
+        if let filter = filter?.queryDocument {
             command["query"] = filter
         }
         
@@ -612,25 +588,10 @@ public final class Collection {
         let document = try firstDocument(in: try database.execute(command: command))
         
         guard document["ok"] == 1 else {
-            throw MongoError.commandFailure(error: document) 
+            throw MongoError.commandFailure(error: document)
         }
         
         return document["value"] ?? Null()
-    }
-    
-    /// Counts the amount of `Document`s matching the `filter`. Stops counting when the `limit` it reached
-    ///
-    /// For more information: https://docs.mongodb.com/manual/reference/command/count/#dbcmd.count
-    ///
-    /// - parameter filter: Optional. If specified limits the returned amount to anything matching this query
-    /// - parameter limit: Optional. Limits the amount of scanned `Document`s as specified
-    /// - parameter skip: Optional. The amount of Documents to skip before counting
-    ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    ///
-    /// - returns: The amount of matching `Document`s
-    public func count(matching query: Query, limitedTo limit: Int32? = nil, skipping skip: Int32? = nil) throws -> Int {
-        return try count(matching: query.queryDocument as Document?, limitedTo: limit, skipping: skip)
     }
     
     /// Returns all distinct values for a key in this collection. Allows filtering using query
@@ -712,7 +673,7 @@ public final class Collection {
         let document = try firstDocument(in: try database.execute(command: ["createIndexes": self.name, "indexes": Document(array: indexDocs)]))
         
         guard document["ok"] == 1 else {
-            throw MongoError.commandFailure(error: document) 
+            throw MongoError.commandFailure(error: document)
         }
     }
     
@@ -760,7 +721,7 @@ public final class Collection {
     /// For more information: https://docs.mongodb.com/manual/reference/command/collMod/#dbcmd.collMod
     ///
     /// You can use this method, for example, to change the validator on a collection:
-    ///    
+    ///
     ///     collection.modify(flags: ["validator": ["name": ["$type": "string"]]])
     ///
     /// - parameter flags: The modification you want to perform. See the MongoDB documentation for more information.
@@ -824,18 +785,18 @@ public final class Collection {
     ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/touch/#dbcmd.touch
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions, the storage engine doesn't support `touch` or an error occurred  
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions, the storage engine doesn't support `touch` or an error occurred
     public func touch(data touchData: Bool, index touchIndexes: Bool) throws {
         let command: Document = [
-                                    "touch": self.name,
-                                    "data": touchData,
-                                    "index": touchIndexes
+            "touch": self.name,
+            "data": touchData,
+            "index": touchIndexes
         ]
         
         let document = try firstDocument(in: try database.execute(command: command))
         
         guard document["ok"] == 1 else {
-            throw MongoError.commandFailure(error: document) 
+            throw MongoError.commandFailure(error: document)
         }
     }
     
@@ -850,14 +811,14 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func convertToCapped(cappingAt cap: Int32) throws {
         let command: Document = [
-                                    "convertToCapped": self.name,
-                                    "size": Int32(cap).makeBsonValue()
+            "convertToCapped": self.name,
+            "size": Int32(cap).makeBsonValue()
         ]
         
         let document = try firstDocument(in: try database.execute(command: command))
         
         guard document["ok"] == 1 else {
-            throw MongoError.commandFailure(error: document) 
+            throw MongoError.commandFailure(error: document)
         }
     }
     
@@ -870,13 +831,13 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func reIndex() throws {
         let command: Document = [
-                                    "reIndex": self.name
+            "reIndex": self.name
         ]
         
         let document = try firstDocument(in: try database.execute(command: command))
         
         guard document["ok"] == 1 else {
-            throw MongoError.commandFailure(error: document) 
+            throw MongoError.commandFailure(error: document)
         }
     }
     
@@ -891,7 +852,7 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func compact(forced force: Bool? = nil) throws {
         var command: Document = [
-                                    "compact": self.name
+            "compact": self.name
         ]
         
         if let force = force {
@@ -901,7 +862,7 @@ public final class Collection {
         let document = try firstDocument(in: try database.execute(command: command))
         
         guard document["ok"] == 1 else {
-            throw MongoError.commandFailure(error: document) 
+            throw MongoError.commandFailure(error: document)
         }
     }
     
