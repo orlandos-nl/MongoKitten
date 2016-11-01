@@ -15,10 +15,6 @@ This can be found [here](http://openkitten.github.io/MongoKitten/docs/) or you c
 
 We have our own Dash documentation for MongoKitten which can be found in the top-right corner of the Documentation.
 
-## Project Status
-
-[Our project is in need of help.](https://github.com/OpenKitten/MongoKitten/wiki/Project-status)
-
 ## Enabling SSL
 
 When compiling using SSL you'll need to add another library to your `Package.swift`.
