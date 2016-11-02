@@ -1,0 +1,278 @@
+{
+  "warnings": [
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/Cursor.swift",
+      "line": null,
+      "symbol": "Cursor",
+      "symbol_kind": "source.lang.swift.decl.extension",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/Cursor.swift",
+      "line": null,
+      "symbol": "Cursor",
+      "symbol_kind": "source.lang.swift.decl.extension",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/Cursor.swift",
+      "line": 12,
+      "symbol": "Cursor",
+      "symbol_kind": "source.lang.swift.decl.class",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/Cursor.swift",
+      "line": 13,
+      "symbol": "Cursor.namespace",
+      "symbol_kind": "source.lang.swift.decl.var.instance",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/Cursor.swift",
+      "line": 14,
+      "symbol": "Cursor.collection",
+      "symbol_kind": "source.lang.swift.decl.var.instance",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/Cursor.swift",
+      "line": 50,
+      "symbol": "Cursor.init(base:transform:)",
+      "symbol_kind": "source.lang.swift.decl.function.method.instance",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/DBRef.swift",
+      "line": 3,
+      "symbol": "DBRef",
+      "symbol_kind": "source.lang.swift.decl.struct",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/DBRef.swift",
+      "line": 11,
+      "symbol": "DBRef.init(referencing:inCollection:)",
+      "symbol_kind": "source.lang.swift.decl.function.method.instance",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/DBRef.swift",
+      "line": 16,
+      "symbol": "DBRef.init(referencing:inCollection:)",
+      "symbol_kind": "source.lang.swift.decl.function.method.instance",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/DBRef.swift",
+      "line": 21,
+      "symbol": "DBRef.init(_:inServer:)",
+      "symbol_kind": "source.lang.swift.decl.function.method.instance",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/DBRef.swift",
+      "line": 36,
+      "symbol": "DBRef.init(_:inDatabase:)",
+      "symbol_kind": "source.lang.swift.decl.function.method.instance",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/DBRef.swift",
+      "line": 51,
+      "symbol": "DBRef.documentValue",
+      "symbol_kind": "source.lang.swift.decl.var.instance",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/DBRef.swift",
+      "line": 59,
+      "symbol": "DBRef.bsonValue",
+      "symbol_kind": "source.lang.swift.decl.var.instance",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/DBRef.swift",
+      "line": 63,
+      "symbol": "DBRef.resolve()",
+      "symbol_kind": "source.lang.swift.decl.function.method.instance",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/GridFS.swift",
+      "line": 301,
+      "symbol": "GridFS.File.chunked()",
+      "symbol_kind": "source.lang.swift.decl.function.method.instance",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/Index.swift",
+      "line": 3,
+      "symbol": "IndexParameter",
+      "symbol_kind": "source.lang.swift.decl.enum",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/Index.swift",
+      "line": 4,
+      "symbol": "IndexParameter.SortOrder",
+      "symbol_kind": "source.lang.swift.decl.enum",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/Index.swift",
+      "line": 5,
+      "symbol": "IndexParameter.SortOrder.ascending",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/Index.swift",
+      "line": 6,
+      "symbol": "IndexParameter.SortOrder.descending",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/Index.swift",
+      "line": 17,
+      "symbol": "IndexParameter.TextIndexVersion",
+      "symbol_kind": "source.lang.swift.decl.enum",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/Index.swift",
+      "line": 18,
+      "symbol": "IndexParameter.TextIndexVersion.one",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/Index.swift",
+      "line": 19,
+      "symbol": "IndexParameter.TextIndexVersion.two",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/Index.swift",
+      "line": 30,
+      "symbol": "IndexParameter.sort",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/Index.swift",
+      "line": 31,
+      "symbol": "IndexParameter.sortedCompound",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/Index.swift",
+      "line": 32,
+      "symbol": "IndexParameter.compound",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/Index.swift",
+      "line": 33,
+      "symbol": "IndexParameter.expire",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/Index.swift",
+      "line": 34,
+      "symbol": "IndexParameter.sparse",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/Index.swift",
+      "line": 35,
+      "symbol": "IndexParameter.custom",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/Index.swift",
+      "line": 36,
+      "symbol": "IndexParameter.partialFilter",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/Index.swift",
+      "line": 37,
+      "symbol": "IndexParameter.unique",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/Index.swift",
+      "line": 38,
+      "symbol": "IndexParameter.buildInBackground",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/Index.swift",
+      "line": 39,
+      "symbol": "IndexParameter.weight",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/MongoError.swift",
+      "line": 80,
+      "symbol": "MongoError.invalidURI",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/MongoError.swift",
+      "line": 82,
+      "symbol": "MongoError.invalidNSURL",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/MongoError.swift",
+      "line": 85,
+      "symbol": "MongoAuthenticationError",
+      "symbol_kind": "source.lang.swift.decl.enum",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/MongoError.swift",
+      "line": 86,
+      "symbol": "MongoAuthenticationError.base64Failure",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/MongoError.swift",
+      "line": 87,
+      "symbol": "MongoAuthenticationError.authenticationFailure",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/MongoError.swift",
+      "line": 88,
+      "symbol": "MongoAuthenticationError.serverSignatureInvalid",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/joannis/Documents/OpenKitten/MongoKitten/Sources/MongoKitten/MongoError.swift",
+      "line": 89,
+      "symbol": "MongoAuthenticationError.incorrectCredentials",
+      "symbol_kind": "source.lang.swift.decl.enumelement",
+      "warning": "undocumented"
+    }
+  ],
+  "source_directory": "/Users/joannis/Documents/OpenKitten/MongoKitten"
+}

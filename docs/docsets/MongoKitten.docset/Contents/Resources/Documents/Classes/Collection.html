@@ -1,0 +1,2988 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Collection Class Reference</title>
+    <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
+    <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
+    <meta charset='utf-8'>
+    <script src="../js/jquery.min.js" defer></script>
+    <script src="../js/jazzy.js" defer></script>
+    
+  </head>
+  <body>
+    <a name="//apple_ref/swift/Class/Collection" class="dashAnchor"></a>
+    <a title="Collection Class Reference"></a>
+    <header>
+      <div class="content-wrapper">
+        <p><a href="../index.html">MongoKitten Docs</a> (76% documented)</p>
+        <p class="header-right"><a href="https://github.com/OpenKitten/MongoKitten"><img src="../img/gh.png"/>View on GitHub</a></p>
+        <p class="header-right"><a href="dash-feed://http%3A%2F%2Fopenkitten%2Egithub%2Eio%2FMongoKitten%2FMongoKitten%2Exml"><img src="../img/dash.png"/>Install in Dash</a></p>
+      </div>
+    </header>
+    <div class="content-wrapper">
+      <p id="breadcrumbs">
+        <a href="../index.html">MongoKitten Reference</a>
+        <img id="carat" src="../img/carat.png" />
+        Collection Class Reference
+      </p>
+    </div>
+    <div class="content-wrapper">
+      <nav class="sidebar">
+        <ul class="nav-groups">
+          <li class="nav-group-name">
+            <a href="../Classes.html">Classes</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Classes/Collection.html">Collection</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/Collection/FindAndModifyOperation.html">– FindAndModifyOperation</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/Cursor.html">Cursor</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/Database.html">Database</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/GridFS.html">GridFS</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/GridFS/File.html">– File</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/SCRAMClient.html">SCRAMClient</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/Server.html">Server</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Global Variables.html">Global Variables</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Global Variables.html#/DefaultTCPClient">DefaultTCPClient</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Enums.html">Enums</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Enums/AQT.html">AQT</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/AQT/AQTType.html">– AQTType</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/IndexParameter.html">IndexParameter</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/IndexParameter/SortOrder.html">– SortOrder</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/IndexParameter/TextIndexVersion.html">– TextIndexVersion</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/MongoAuthenticationError.html">MongoAuthenticationError</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/MongoError.html">MongoError</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/SCRAMError.html">SCRAMError</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Extensions.html">Extensions</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Extensions/Document.html">Document</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Extensions/Socks.TCPClient.html">Socks.TCPClient</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Extensions/TLS.Socket.html">TLS.Socket</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Functions.html">Functions</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Functions.html#/!(_:)">!(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/!=(_:_:)">!=(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/&amp;&amp;(_:_:)">&amp;&amp;(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/&amp;=(_:_:)">&amp;=(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/&lt;(_:_:)">&lt;(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/&lt;=(_:_:)">&lt;=(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/==(_:_:)">==(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/&gt;(_:_:)">&gt;(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/&gt;=(_:_:)">&gt;=(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/||(_:_:)">||(_:_:)</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Protocols.html">Protocols</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Protocols/MongoTCP.html">MongoTCP</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Protocols/QueryProtocol.html">QueryProtocol</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Structs.html">Structs</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Structs/DBRef.html">DBRef</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/Projection.html">Projection</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/Query.html">Query</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/QueryFlags.html">QueryFlags</a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+      <article class="main-content">
+        <section>
+          <section class="section">
+            <h1>Collection</h1>
+              <div class="declaration">
+                <div class="language">
+                  <pre class="highlight"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">Collection</span></code></pre>
+
+                </div>
+              </div>
+            <p>Represents a single MongoDB collection.</p>
+
+<p><strong>### Definition ###</strong></p>
+
+<p>A grouping of MongoDB documents. A collection is the equivalent of an RDBMS table. A collection exists within a single database. Collections do not enforce a schema. Documents within a collection can have different fields. Typically, all documents in a collection have a similar or related purpose. See Namespaces.</p>
+
+          </section>
+          <section class="section task-group-section">
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:vC11MongoKitten10Collection8databaseCS_8Database"></a>
+                    <a name="//apple_ref/swift/Property/database" class="dashAnchor"></a>
+                    <a class="token" href="#/s:vC11MongoKitten10Collection8databaseCS_8Database">database</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>The Database this collection is in</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">database</span><span class="p">:</span> <span class="kt"><a href="../Classes/Database.html">Database</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:vC11MongoKitten10Collection4nameSS"></a>
+                    <a name="//apple_ref/swift/Property/name" class="dashAnchor"></a>
+                    <a class="token" href="#/s:vC11MongoKitten10Collection4nameSS">name</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>The collection name</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">name</span><span class="p">:</span> <span class="kt">String</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:vC11MongoKitten10Collection8fullNameSS"></a>
+                    <a name="//apple_ref/swift/Property/fullName" class="dashAnchor"></a>
+                    <a class="token" href="#/s:vC11MongoKitten10Collection8fullNameSS">fullName</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>The full (computed) collection name. Created by adding the Database&rsquo;s name with the Collection&rsquo;s name with a dot to seperate them
+Will be empty</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="k">var</span> <span class="nv">fullName</span><span class="p">:</span> <span class="kt">String</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/CRUD%20Operations"></a>
+                <a name="//apple_ref/swift/Section/CRUD Operations" class="dashAnchor"></a>
+                <a href="#/CRUD%20Operations">
+                  <h3 class="section-name">CRUD Operations</h3>
+                </a>
+              </div>
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection6insertFzV4BSON8DocumentOS1_5Value"></a>
+                    <a name="//apple_ref/swift/Method/insert(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection6insertFzV4BSON8DocumentOS1_5Value">insert(_:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Insert a single document in this collection</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/insert/#dbcmd.insert">https://docs.mongodb.com/manual/reference/command/insert/#dbcmd.insert</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">insert</span><span class="p">(</span><span class="n">_</span> <span class="nv">document</span><span class="p">:</span> <span class="kt">Document</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Value</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>document</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The BSON Document to be inserted</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>The inserted document’s id</p>
+
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection6insertFzTGSaV4BSON8Document_15stoppingOnErrorGSqSb_7timeoutGSqSd__GSaOS1_5Value_"></a>
+                    <a name="//apple_ref/swift/Method/insert(_:stoppingOnError:timeout:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection6insertFzTGSaV4BSON8Document_15stoppingOnErrorGSqSb_7timeoutGSqSd__GSaOS1_5Value_">insert(_:stoppingOnError:timeout:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>TODO: Detect how many bytes are being sent. Max is 48000000 bytes or 48MB</p>
+
+<p>Inserts multiple documents in this collection and adds a BSON ObjectId to documents that do not have an <q>_id</q> field</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/insert/#dbcmd.insert">https://docs.mongodb.com/manual/reference/command/insert/#dbcmd.insert</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">insert</span><span class="p">(</span><span class="n">_</span> <span class="nv">documents</span><span class="p">:</span> <span class="p">[</span><span class="kt">Document</span><span class="p">],</span> <span class="n">stoppingOnError</span> <span class="nv">ordered</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="n">timeout</span> <span class="nv">customTimeout</span><span class="p">:</span> <span class="kt">TimeInterval</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Value</span><span class="p">]</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>documents</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The BSON Documents that should be inserted</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>ordered</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>On true we’ll stop inserting when one document fails. On false we’ll ignore failed inserts</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>timeout</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A custom timeout. The default timeout is 60 seconds + 1 second for every 50 documents, so when inserting 5000 documents at once, the timeout is 560 seconds.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>The documents’ ids</p>
+
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection7executeFzT7commandV4BSON8Document10usingFlagsVS_10QueryFlags8fetchingVs5Int32_GCS_6CursorS2__"></a>
+                    <a name="//apple_ref/swift/Method/execute(command:usingFlags:fetching:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection7executeFzT7commandV4BSON8Document10usingFlagsVS_10QueryFlags8fetchingVs5Int32_GCS_6CursorS2__">execute(command:usingFlags:fetching:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Executes a query on this <code>Collection</code> with a <code>Document</code></p>
+
+<p>This is used to execute DBCommands. For finding <code>Document</code>s we recommend the <code>find</code> command</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/mongodb-wire-protocol/">https://docs.mongodb.com/manual/reference/mongodb-wire-protocol/</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">execute</span><span class="p">(</span><span class="nv">command</span><span class="p">:</span> <span class="kt">Document</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">usingFlags</span> <span class="nv">flags</span><span class="p">:</span> <span class="kt"><a href="../Structs/QueryFlags.html">QueryFlags</a></span> <span class="o">=</span> <span class="p">[],</span> <span class="n">fetching</span> <span class="nv">fetchChunkSize</span><span class="p">:</span> <span class="kt">Int32</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Classes/Cursor.html">Cursor</a></span><span class="o">&lt;</span><span class="kt">Document</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>query</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The document that we’re matching against in this collection</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>flags</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The Query Flags that we’ll use for this query</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>fetchChunkSize</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The initial amount of returned Documents. We recommend at least one Document.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>A Cursor pointing to the response Documents.</p>
+
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection4findFzT8matchingGSqV4BSON8Document_8sortedByGSqS2__10projectingGSqVS_10Projection_8skippingGSqVs5Int32_9limitedToGSqS4__13withBatchSizeS4__GCS_6CursorS2__"></a>
+                    <a name="//apple_ref/swift/Method/find(matching:sortedBy:projecting:skipping:limitedTo:withBatchSize:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection4findFzT8matchingGSqV4BSON8Document_8sortedByGSqS2__10projectingGSqVS_10Projection_8skippingGSqVs5Int32_9limitedToGSqS4__13withBatchSizeS4__GCS_6CursorS2__">find(matching:sortedBy:projecting:skipping:limitedTo:withBatchSize:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Finds <code>Document</code>s in this <code>Collection</code></p>
+
+<p>Can be used to execute DBCommands in MongoDB 2.6 and below. Be careful!</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/find/#dbcmd.find">https://docs.mongodb.com/manual/reference/command/find/#dbcmd.find</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">find</span><span class="p">(</span><span class="n">matching</span> <span class="nv">filter</span><span class="p">:</span> <span class="kt">Document</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="n">sortedBy</span> <span class="nv">sort</span><span class="p">:</span> <span class="kt">Document</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="n">projecting</span> <span class="nv">projection</span><span class="p">:</span> <span class="kt"><a href="../Structs/Projection.html">Projection</a></span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="n">skipping</span> <span class="nv">skip</span><span class="p">:</span> <span class="kt">Int32</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="n">limitedTo</span> <span class="nv">limit</span><span class="p">:</span> <span class="kt">Int32</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="n">withBatchSize</span> <span class="nv">batchSize</span><span class="p">:</span> <span class="kt">Int32</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Classes/Cursor.html">Cursor</a></span><span class="o">&lt;</span><span class="kt">Document</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>filter</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The filter we’re using to match Documents in this collection against</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>sort</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The Sort Specification used to sort the found Documents</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>projection</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The Projection Specification used to filter which fields to return</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>skip</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The amount of Documents to skip before returning the matching Documents</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>limit</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The maximum amount of matching documents to return</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>batchSize</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The initial amount of Documents to return.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>A cursor pointing to the found Documents</p>
+
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection4findFzT8matchingPS_13QueryProtocol_8sortedByGSqV4BSON8Document_10projectingGSqVS_10Projection_8skippingGSqVs5Int32_9limitedToGSqS5__13withBatchSizeS5__GCS_6CursorS3__"></a>
+                    <a name="//apple_ref/swift/Method/find(matching:sortedBy:projecting:skipping:limitedTo:withBatchSize:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection4findFzT8matchingPS_13QueryProtocol_8sortedByGSqV4BSON8Document_10projectingGSqVS_10Projection_8skippingGSqVs5Int32_9limitedToGSqS5__13withBatchSizeS5__GCS_6CursorS3__">find(matching:sortedBy:projecting:skipping:limitedTo:withBatchSize:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Finds Documents in this collection</p>
+
+<p>Can be used to execute DBCommands in MongoDB 2.6 and below</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/find/#dbcmd.find">https://docs.mongodb.com/manual/reference/command/find/#dbcmd.find</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">find</span><span class="p">(</span><span class="n">matching</span> <span class="nv">filter</span><span class="p">:</span> <span class="kt"><a href="../Protocols/QueryProtocol.html">QueryProtocol</a></span><span class="p">,</span> <span class="n">sortedBy</span> <span class="nv">sort</span><span class="p">:</span> <span class="kt">Document</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="n">projecting</span> <span class="nv">projection</span><span class="p">:</span> <span class="kt"><a href="../Structs/Projection.html">Projection</a></span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="n">skipping</span> <span class="nv">skip</span><span class="p">:</span> <span class="kt">Int32</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="n">limitedTo</span> <span class="nv">limit</span><span class="p">:</span> <span class="kt">Int32</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="n">withBatchSize</span> <span class="nv">batchSize</span><span class="p">:</span> <span class="kt">Int32</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Classes/Cursor.html">Cursor</a></span><span class="o">&lt;</span><span class="kt">Document</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>filter</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The QueryBuilder filter we’re using to match Documents in this collection against</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>sort</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The Sort Specification used to sort the found Documents</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>projection</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The Projection Specification used to filter which fields to return</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>skip</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The amount of Documents to skip before returning the matching Documents</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>limit</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The maximum amount of matching documents to return</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>batchSize</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The initial amount of Documents to return.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>A cursor pointing to the found Documents</p>
+
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection7findOneFzT8matchingGSqV4BSON8Document_8sortedByGSqS2__10projectingGSqVS_10Projection_8skippingGSqVs5Int32__GSqS2__"></a>
+                    <a name="//apple_ref/swift/Method/findOne(matching:sortedBy:projecting:skipping:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection7findOneFzT8matchingGSqV4BSON8Document_8sortedByGSqS2__10projectingGSqVS_10Projection_8skippingGSqVs5Int32__GSqS2__">findOne(matching:sortedBy:projecting:skipping:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Finds Documents in this collection</p>
+
+<p>Can be used to execute DBCommands in MongoDB 2.6 and below</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/find/#dbcmd.find">https://docs.mongodb.com/manual/reference/command/find/#dbcmd.find</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">findOne</span><span class="p">(</span><span class="n">matching</span> <span class="nv">filter</span><span class="p">:</span> <span class="kt">Document</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="n">sortedBy</span> <span class="nv">sort</span><span class="p">:</span> <span class="kt">Document</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="n">projecting</span> <span class="nv">projection</span><span class="p">:</span> <span class="kt"><a href="../Structs/Projection.html">Projection</a></span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="n">skipping</span> <span class="nv">skip</span><span class="p">:</span> <span class="kt">Int32</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Document</span><span class="p">?</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>filter</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The Document filter we’re using to match Documents in this collection against</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>sort</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The Sort Specification used to sort the found Documents</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>projection</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The Projection Specification used to filter which fields to return</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>skip</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The amount of Documents to skip before returning the matching Documents</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>The found Document</p>
+
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection7findOneFzT8matchingPS_13QueryProtocol_8sortedByGSqV4BSON8Document_10projectingGSqVS_10Projection_8skippingGSqVs5Int32__GSqS3__"></a>
+                    <a name="//apple_ref/swift/Method/findOne(matching:sortedBy:projecting:skipping:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection7findOneFzT8matchingPS_13QueryProtocol_8sortedByGSqV4BSON8Document_10projectingGSqVS_10Projection_8skippingGSqVs5Int32__GSqS3__">findOne(matching:sortedBy:projecting:skipping:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Finds Documents in this collection</p>
+
+<p>Can be used to execute DBCommands in MongoDB 2.6 and below</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/find/#dbcmd.find">https://docs.mongodb.com/manual/reference/command/find/#dbcmd.find</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">findOne</span><span class="p">(</span><span class="n">matching</span> <span class="nv">filter</span><span class="p">:</span> <span class="kt"><a href="../Protocols/QueryProtocol.html">QueryProtocol</a></span><span class="p">,</span> <span class="n">sortedBy</span> <span class="nv">sort</span><span class="p">:</span> <span class="kt">Document</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="n">projecting</span> <span class="nv">projection</span><span class="p">:</span> <span class="kt"><a href="../Structs/Projection.html">Projection</a></span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="n">skipping</span> <span class="nv">skip</span><span class="p">:</span> <span class="kt">Int32</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Document</span><span class="p">?</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>filter</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The QueryBuilder filter we’re using to match Documents in this collection against</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>sort</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The Sort Specification used to sort the found Documents</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>projection</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The Projection Specification used to filter which fields to return</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>skip</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The amount of Documents to skip before returning the matching Documents</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>The found Document</p>
+
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection6updateFzTGSaT6filterV4BSON8Document2toS2_9upsertingSb8multipleSb__15stoppingOnErrorGSqSb__Si"></a>
+                    <a name="//apple_ref/swift/Method/update(_:stoppingOnError:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection6updateFzTGSaT6filterV4BSON8Document2toS2_9upsertingSb8multipleSb__15stoppingOnErrorGSqSb__Si">update(_:stoppingOnError:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Updates a list of <code>Document</code>s using a counterpart <code>Document</code>.</p>
+
+<p>In most cases the <code>$set</code> operator is useful for updating only parts of a <code>Document</code>
+As described here: <a href="https://docs.mongodb.com/manual/reference/operator/update/set/#up._S_set">https://docs.mongodb.com/manual/reference/operator/update/set/#up._S_set</a></p>
+
+<p>For more information about this command: <a href="https://docs.mongodb.com/manual/reference/command/update/#dbcmd.update">https://docs.mongodb.com/manual/reference/command/update/#dbcmd.update</a></p>
+
+<p>TODO: Work on improving the updatefailure.  We don&rsquo;t handle writerrrors. Try using a normal query with multiple on true</p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">update</span><span class="p">(</span><span class="n">_</span> <span class="nv">updates</span><span class="p">:</span> <span class="p">[(</span><span class="nv">filter</span><span class="p">:</span> <span class="kt">Document</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="kt">Document</span><span class="p">,</span> <span class="nv">upserting</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">,</span> <span class="nv">multiple</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">)],</span> <span class="n">stoppingOnError</span> <span class="nv">ordered</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Int</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>updates</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A list of updates to be executed. <code>query</code>: A filter to narrow down which Documents you want to update <code>update</code>: The fields and values to update <code>upsert</code>: If there isn’t anything to update.. insert? <code>multi</code>: Update all matching Documents instead of just one?</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>ordered</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>If true, stop updating when one operation fails - defaults to true</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>The amount of updated documents</p>
+
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection6updateFzT8matchingV4BSON8Document2toS2_9upsertingSb8multipleSb15stoppingOnErrorGSqSb__Si"></a>
+                    <a name="//apple_ref/swift/Method/update(matching:to:upserting:multiple:stoppingOnError:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection6updateFzT8matchingV4BSON8Document2toS2_9upsertingSb8multipleSb15stoppingOnErrorGSqSb__Si">update(matching:to:upserting:multiple:stoppingOnError:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Updates a <code>Document</code> using a counterpart <code>Document</code>.</p>
+
+<p>In most cases the <code>$set</code> operator is useful for updating only parts of a <code>Document</code>
+As described here: <a href="https://docs.mongodb.com/manual/reference/operator/update/set/#up._S_set">https://docs.mongodb.com/manual/reference/operator/update/set/#up._S_set</a></p>
+
+<p>For more information about this command: <a href="https://docs.mongodb.com/manual/reference/command/update/#dbcmd.update">https://docs.mongodb.com/manual/reference/command/update/#dbcmd.update</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">update</span><span class="p">(</span><span class="n">matching</span> <span class="nv">filter</span><span class="p">:</span> <span class="kt">Document</span><span class="p">,</span> <span class="n">to</span> <span class="nv">updated</span><span class="p">:</span> <span class="kt">Document</span><span class="p">,</span> <span class="n">upserting</span> <span class="nv">upsert</span><span class="p">:</span> <span class="kt">Bool</span> <span class="o">=</span> <span class="kc">false</span><span class="p">,</span> <span class="n">multiple</span> <span class="nv">multi</span><span class="p">:</span> <span class="kt">Bool</span> <span class="o">=</span> <span class="kc">false</span><span class="p">,</span> <span class="n">stoppingOnError</span> <span class="nv">ordered</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Int</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>filter</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The filter to use when searching for Documents to update</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>updated</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The data to update these Documents with</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>upsert</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Insert when we can’t find anything to update</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>multi</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Updates more than one result if true</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>ordered</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>If true, stop updating when one operation fails - defaults to true</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection6updateFzTGSaT6filterPS_13QueryProtocol_2toV4BSON8Document9upsertingSb8multipleSb__15stoppingOnErrorGSqSb__Si"></a>
+                    <a name="//apple_ref/swift/Method/update(_:stoppingOnError:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection6updateFzTGSaT6filterPS_13QueryProtocol_2toV4BSON8Document9upsertingSb8multipleSb__15stoppingOnErrorGSqSb__Si">update(_:stoppingOnError:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Updates a list of <code>Document</code>s using a counterpart <code>Document</code>.</p>
+
+<p>In most cases the <code>$set</code> operator is useful for updating only parts of a <code>Document</code>
+As described here: <a href="https://docs.mongodb.com/manual/reference/operator/update/set/#up._S_set">https://docs.mongodb.com/manual/reference/operator/update/set/#up._S_set</a></p>
+
+<p>For more information about this command: <a href="https://docs.mongodb.com/manual/reference/command/update/#dbcmd.update">https://docs.mongodb.com/manual/reference/command/update/#dbcmd.update</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">update</span><span class="p">(</span><span class="n">_</span> <span class="nv">updates</span><span class="p">:</span> <span class="p">[(</span><span class="nv">filter</span><span class="p">:</span> <span class="kt"><a href="../Protocols/QueryProtocol.html">QueryProtocol</a></span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="kt">Document</span><span class="p">,</span> <span class="nv">upserting</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">,</span> <span class="nv">multiple</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">)],</span> <span class="n">stoppingOnError</span> <span class="nv">ordered</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Int</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>updates</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A list of updates to be executed. <code>query</code>: A QueryBuilder filter to narrow down which Documents you want to update <code>update</code>: The fields and values to update <code>upsert</code>: If there isn’t anything to update.. insert? <code>multi</code>: Update all matching Documents instead of just one?</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>ordered</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>If true, stop updating when one operation fails - defaults to true</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>The amount of updated documents</p>
+
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection6updateFzT8matchingPS_13QueryProtocol_2toV4BSON8Document9upsertingSb8multipleSb15stoppingOnErrorGSqSb__Si"></a>
+                    <a name="//apple_ref/swift/Method/update(matching:to:upserting:multiple:stoppingOnError:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection6updateFzT8matchingPS_13QueryProtocol_2toV4BSON8Document9upsertingSb8multipleSb15stoppingOnErrorGSqSb__Si">update(matching:to:upserting:multiple:stoppingOnError:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Updates a <code>Document</code> using a counterpart <code>Document</code>.</p>
+
+<p>In most cases the <code>$set</code> operator is useful for updating only parts of a <code>Document</code>
+As described here: <a href="https://docs.mongodb.com/manual/reference/operator/update/set/#up._S_set">https://docs.mongodb.com/manual/reference/operator/update/set/#up._S_set</a></p>
+
+<p>For more information about this command: <a href="https://docs.mongodb.com/manual/reference/command/update/#dbcmd.update">https://docs.mongodb.com/manual/reference/command/update/#dbcmd.update</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">update</span><span class="p">(</span><span class="n">matching</span> <span class="nv">filter</span><span class="p">:</span> <span class="kt"><a href="../Protocols/QueryProtocol.html">QueryProtocol</a></span><span class="p">,</span> <span class="n">to</span> <span class="nv">updated</span><span class="p">:</span> <span class="kt">Document</span><span class="p">,</span> <span class="n">upserting</span> <span class="nv">upsert</span><span class="p">:</span> <span class="kt">Bool</span> <span class="o">=</span> <span class="kc">false</span><span class="p">,</span> <span class="n">multiple</span> <span class="nv">multi</span><span class="p">:</span> <span class="kt">Bool</span> <span class="o">=</span> <span class="kc">false</span><span class="p">,</span> <span class="n">stoppingOnError</span> <span class="nv">ordered</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Int</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>filter</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The QueryBuilder filter to use when searching for Documents to update</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>updated</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The data to update these Documents with</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>upsert</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Insert when we can’t find anything to update</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>multi</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Updates more than one result if true</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>ordered</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>If true, stop updating when one operation fails - defaults to true</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection6removeFzT8matchingGSaT6filterV4BSON8Document5limitVs5Int32__15stoppingOnErrorGSqSb__Si"></a>
+                    <a name="//apple_ref/swift/Method/remove(matching:stoppingOnError:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection6removeFzT8matchingGSaT6filterV4BSON8Document5limitVs5Int32__15stoppingOnErrorGSqSb__Si">remove(matching:stoppingOnError:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Removes all <code>Document</code>s matching the <code>filter</code> until the <code>limit</code> is reached</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/delete/#dbcmd.delete">https://docs.mongodb.com/manual/reference/command/delete/#dbcmd.delete</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">remove</span><span class="p">(</span><span class="n">matching</span> <span class="nv">removals</span><span class="p">:</span> <span class="p">[(</span><span class="nv">filter</span><span class="p">:</span> <span class="kt">Document</span><span class="p">,</span> <span class="nv">limit</span><span class="p">:</span> <span class="kt">Int32</span><span class="p">)],</span> <span class="n">stoppingOnError</span> <span class="nv">ordered</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Int</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>removals</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A list of filters to match documents against. Any given filter can be used infinite amount of removals if <code>0</code> or otherwise as often as specified in the limit</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>stoppingOnError</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>If true, stop removing when one operation fails - defaults to true</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection6removeFzT8matchingGSaT6filterPS_13QueryProtocol_5limitVs5Int32__15stoppingOnErrorGSqSb__Si"></a>
+                    <a name="//apple_ref/swift/Method/remove(matching:stoppingOnError:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection6removeFzT8matchingGSaT6filterPS_13QueryProtocol_5limitVs5Int32__15stoppingOnErrorGSqSb__Si">remove(matching:stoppingOnError:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Removes all <code>Document</code>s matching the <code>filter</code> until the <code>limit</code> is reached</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/delete/#dbcmd.delete">https://docs.mongodb.com/manual/reference/command/delete/#dbcmd.delete</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">remove</span><span class="p">(</span><span class="n">matching</span> <span class="nv">removals</span><span class="p">:</span> <span class="p">[(</span><span class="nv">filter</span><span class="p">:</span> <span class="kt"><a href="../Protocols/QueryProtocol.html">QueryProtocol</a></span><span class="p">,</span> <span class="nv">limit</span><span class="p">:</span> <span class="kt">Int32</span><span class="p">)],</span> <span class="n">stoppingOnError</span> <span class="nv">ordered</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Int</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>removals</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A list of QueryBuilder filters to match documents against. Any given filter can be used infinite amount of removals if <code>0</code> or otherwise as often as specified in the limit</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>stoppingOnError</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>If true, stop removing when one operation fails - defaults to true</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection6removeFzT8matchingV4BSON8Document9limitedToVs5Int3215stoppingOnErrorGSqSb__Si"></a>
+                    <a name="//apple_ref/swift/Method/remove(matching:limitedTo:stoppingOnError:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection6removeFzT8matchingV4BSON8Document9limitedToVs5Int3215stoppingOnErrorGSqSb__Si">remove(matching:limitedTo:stoppingOnError:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Removes <code>Document</code>s matching the <code>filter</code> until the <code>limit</code> is reached</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/delete/#dbcmd.delete">https://docs.mongodb.com/manual/reference/command/delete/#dbcmd.delete</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">remove</span><span class="p">(</span><span class="n">matching</span> <span class="nv">filter</span><span class="p">:</span> <span class="kt">Document</span><span class="p">,</span> <span class="n">limitedTo</span> <span class="nv">limit</span><span class="p">:</span> <span class="kt">Int32</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">stoppingOnError</span> <span class="nv">ordered</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Int</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>fitler</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The Document filter to use when finding Documents that are going to be removed</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>limit</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The amount of times this filter can be used to find and remove a Document (0 is every document)</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>stoppingOnError</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>If true, stop removing when one operation fails - defaults to true</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection6removeFzT8matchingPS_13QueryProtocol_9limitedToVs5Int3215stoppingOnErrorGSqSb__Si"></a>
+                    <a name="//apple_ref/swift/Method/remove(matching:limitedTo:stoppingOnError:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection6removeFzT8matchingPS_13QueryProtocol_9limitedToVs5Int3215stoppingOnErrorGSqSb__Si">remove(matching:limitedTo:stoppingOnError:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Removes <code>Document</code>s matching the <code>filter</code> until the <code>limit</code> is reached</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/delete/#dbcmd.delete">https://docs.mongodb.com/manual/reference/command/delete/#dbcmd.delete</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">remove</span><span class="p">(</span><span class="n">matching</span> <span class="nv">filter</span><span class="p">:</span> <span class="kt"><a href="../Protocols/QueryProtocol.html">QueryProtocol</a></span><span class="p">,</span> <span class="n">limitedTo</span> <span class="nv">limit</span><span class="p">:</span> <span class="kt">Int32</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">stoppingOnError</span> <span class="nv">ordered</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Int</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>matching</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The QueryBuilder filter to use when finding Documents that are going to be removed</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>limitedTo</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The amount of times this filter can be used to find and remove a Document (0 is every document)</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>stoppingOnError</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>If true, stop removing when one operation fails - defaults to true</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection4dropFzT_T_"></a>
+                    <a name="//apple_ref/swift/Method/drop()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection4dropFzT_T_">drop()</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>The drop command removes an entire collection from a database. This command also removes any indexes associated with the dropped collection.</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/drop/#dbcmd.drop">https://docs.mongodb.com/manual/reference/command/drop/#dbcmd.drop</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">drop</span><span class="p">()</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection6renameFzT2toSS_T_"></a>
+                    <a name="//apple_ref/swift/Method/rename(to:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection6renameFzT2toSS_T_">rename(to:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Changes the name of an existing collection. This method supports renames within a single database only. To move the collection to a different database, use the <code>move</code> method on <code>Collection</code>.</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/renameCollection/#dbcmd.renameCollection">https://docs.mongodb.com/manual/reference/command/renameCollection/#dbcmd.renameCollection</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">rename</span><span class="p">(</span><span class="n">to</span> <span class="nv">newName</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>to</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The new name for this collection</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection4moveFzT10toDatabaseCS_8Database9renamedToGSqSS_29overwritingExistingCollectionGSqSb__T_"></a>
+                    <a name="//apple_ref/swift/Method/move(toDatabase:renamedTo:overwritingExistingCollection:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection4moveFzT10toDatabaseCS_8Database9renamedToGSqSS_29overwritingExistingCollectionGSqSb__T_">move(toDatabase:renamedTo:overwritingExistingCollection:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Move this collection to another database. Can also rename the collection in one go.</p>
+
+<p><strong>Users must have access to the admin database to run this command.</strong></p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/renameCollection/#dbcmd.renameCollection">https://docs.mongodb.com/manual/reference/command/renameCollection/#dbcmd.renameCollection</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">move</span><span class="p">(</span><span class="n">toDatabase</span> <span class="nv">database</span><span class="p">:</span> <span class="kt"><a href="../Classes/Database.html">Database</a></span><span class="p">,</span> <span class="n">renamedTo</span> <span class="nv">newName</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="n">overwritingExistingCollection</span> <span class="nv">dropOldTarget</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>to</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The database to move this collection to</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>named</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The new name for this collection</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection5countFzT8matchingGSqV4BSON8Document_9limitedToGSqVs5Int32_8skippingGSqS3___Si"></a>
+                    <a name="//apple_ref/swift/Method/count(matching:limitedTo:skipping:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection5countFzT8matchingGSqV4BSON8Document_9limitedToGSqVs5Int32_8skippingGSqS3___Si">count(matching:limitedTo:skipping:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Counts the amount of <code>Document</code>s matching the <code>filter</code>. Stops counting when the <code>limit</code> it reached</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/count/#dbcmd.count">https://docs.mongodb.com/manual/reference/command/count/#dbcmd.count</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">count</span><span class="p">(</span><span class="n">matching</span> <span class="nv">filter</span><span class="p">:</span> <span class="kt">Document</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="n">limitedTo</span> <span class="nv">limit</span><span class="p">:</span> <span class="kt">Int32</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="n">skipping</span> <span class="nv">skip</span><span class="p">:</span> <span class="kt">Int32</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Int</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>filter</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Optional. If specified limits the returned amount to anything matching this query</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>limit</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Optional. Limits the amount of scanned <code>Document</code>s as specified</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>skip</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Optional. The amount of Documents to skip before counting</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>The amount of matching <code>Document</code>s</p>
+
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:OC11MongoKitten10Collection22FindAndModifyOperation"></a>
+                    <a name="//apple_ref/swift/Enum/FindAndModifyOperation" class="dashAnchor"></a>
+                    <a class="token" href="#/s:OC11MongoKitten10Collection22FindAndModifyOperation">FindAndModifyOperation</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>findAndModify</code> only has two operations that can be used. Update and Delete</p>
+
+<p>To make these types of operations easily accessible in <code>findAndModify</code> this enum exists</p>
+
+                        <a href="../Classes/Collection/FindAndModifyOperation.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">enum</span> <span class="kt">FindAndModifyOperation</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection13findAndModifyFzT8matchingGSqPS_13QueryProtocol__8sortedByGSqV4BSON8Document_6actionOS0_22FindAndModifyOperation10projectionGSqVS_10Projection__OS2_5Value"></a>
+                    <a name="//apple_ref/swift/Method/findAndModify(matching:sortedBy:action:projection:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection13findAndModifyFzT8matchingGSqPS_13QueryProtocol__8sortedByGSqV4BSON8Document_6actionOS0_22FindAndModifyOperation10projectionGSqVS_10Projection__OS2_5Value">findAndModify(matching:sortedBy:action:projection:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Finds and modifies the first <code>Document</code> in this <code>Collection</code>. If a query/filter is provided that&rsquo;ll be used to find this <code>Document</code>.</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/findAndModify/#dbcmd.findAndModify">https://docs.mongodb.com/manual/reference/command/findAndModify/#dbcmd.findAndModify</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">findAndModify</span><span class="p">(</span><span class="n">matching</span> <span class="nv">query</span><span class="p">:</span> <span class="kt"><a href="../Protocols/QueryProtocol.html">QueryProtocol</a></span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="n">sortedBy</span> <span class="nv">sort</span><span class="p">:</span> <span class="kt">Document</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">action</span><span class="p">:</span> <span class="kt"><a href="../Classes/Collection/FindAndModifyOperation.html">FindAndModifyOperation</a></span><span class="p">,</span> <span class="nv">projection</span><span class="p">:</span> <span class="kt"><a href="../Structs/Projection.html">Projection</a></span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Value</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>query</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The <code>Query</code> to match the <code>Document</code>s in the <code>Collection</code> against</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>sort</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The sorting specification to use while searching</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>action</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A <code>FindAndModifyOperation</code> that specified which action to execute and it’s required metadata</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>projection</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Which fields to project and how according to projection specification</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>The <code>Value</code> received from the server as specified in the link of the additional information</p>
+
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection5countFzT8matchingPS_13QueryProtocol_9limitedToGSqVs5Int32_8skippingGSqS2___Si"></a>
+                    <a name="//apple_ref/swift/Method/count(matching:limitedTo:skipping:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection5countFzT8matchingPS_13QueryProtocol_9limitedToGSqVs5Int32_8skippingGSqS2___Si">count(matching:limitedTo:skipping:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Counts the amount of <code>Document</code>s matching the <code>filter</code>. Stops counting when the <code>limit</code> it reached</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/count/#dbcmd.count">https://docs.mongodb.com/manual/reference/command/count/#dbcmd.count</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">count</span><span class="p">(</span><span class="n">matching</span> <span class="nv">query</span><span class="p">:</span> <span class="kt"><a href="../Protocols/QueryProtocol.html">QueryProtocol</a></span><span class="p">,</span> <span class="n">limitedTo</span> <span class="nv">limit</span><span class="p">:</span> <span class="kt">Int32</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="n">skipping</span> <span class="nv">skip</span><span class="p">:</span> <span class="kt">Int32</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Int</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>filter</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Optional. If specified limits the returned amount to anything matching this query</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>limit</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Optional. Limits the amount of scanned <code>Document</code>s as specified</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>skip</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Optional. The amount of Documents to skip before counting</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>The amount of matching <code>Document</code>s</p>
+
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection8distinctFzT7onFieldSS11usingFilterGSqV4BSON8Document__GSqGSaOS1_5Value__"></a>
+                    <a name="//apple_ref/swift/Method/distinct(onField:usingFilter:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection8distinctFzT7onFieldSS11usingFilterGSqV4BSON8Document__GSqGSaOS1_5Value__">distinct(onField:usingFilter:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Returns all distinct values for a key in this collection. Allows filtering using query</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/distinct/#dbcmd.distinct">https://docs.mongodb.com/manual/reference/command/distinct/#dbcmd.distinct</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">distinct</span><span class="p">(</span><span class="n">onField</span> <span class="nv">key</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="n">usingFilter</span> <span class="nv">filter</span><span class="p">:</span> <span class="kt">Document</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Value</span><span class="p">]?</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>on</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The key that we distinct on</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>query</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The Document query used to filter through the returned results</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>A list of all distinct values for this key</p>
+
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection8distinctFzT2onSS11usingFilterPS_13QueryProtocol__GSqGSaO4BSON5Value__"></a>
+                    <a name="//apple_ref/swift/Method/distinct(on:usingFilter:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection8distinctFzT2onSS11usingFilterPS_13QueryProtocol__GSqGSaO4BSON5Value__">distinct(on:usingFilter:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Returns all distinct values for a key in this collection. Allows filtering using query</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/distinct/#dbcmd.distinct">https://docs.mongodb.com/manual/reference/command/distinct/#dbcmd.distinct</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">distinct</span><span class="p">(</span><span class="n">on</span> <span class="nv">key</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="n">usingFilter</span> <span class="nv">query</span><span class="p">:</span> <span class="kt"><a href="../Protocols/QueryProtocol.html">QueryProtocol</a></span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Value</span><span class="p">]?</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>on</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The key that we distinct on</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>query</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The query used to filter through the returned results</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>A list of all distinct values for this key</p>
+
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection11createIndexFzt5namedSS14withParametersGSaOS_14IndexParameter__T_"></a>
+                    <a name="//apple_ref/swift/Method/createIndex(named:withParameters:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection11createIndexFzt5namedSS14withParametersGSaOS_14IndexParameter__T_">createIndex(named:withParameters:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Creates an <code>Index</code> in this <code>Collection</code> on the specified keys.</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/createIndexes/#dbcmd.createIndexes">https://docs.mongodb.com/manual/reference/command/createIndexes/#dbcmd.createIndexes</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">createIndex</span><span class="p">(</span><span class="n">named</span> <span class="nv">name</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="n">withParameters</span> <span class="nv">parameters</span><span class="p">:</span> <span class="kt"><a href="../Enums/IndexParameter.html">IndexParameter</a></span><span class="o">...</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>keys</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A Document with a <code>String</code> as the key to index and <code>ascending</code> as a <code>Bool</code></p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>name</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The name to identify the index</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>filter</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Only index <code>Document</code>s matching this filter</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>buildInBackground</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Builds the index in the background so that this operation doesn’t block other database activities.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>unique</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Used to create unique fields like usernames. Default should be <code>false</code></p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection13createIndexesFzGSaT4nameSS10parametersGSaOS_14IndexParameter___T_"></a>
+                    <a name="//apple_ref/swift/Method/createIndexes(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection13createIndexesFzGSaT4nameSS10parametersGSaOS_14IndexParameter___T_">createIndexes(_:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Creates multiple indexes as specified</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/createIndexes/#dbcmd.createIndexes">https://docs.mongodb.com/manual/reference/command/createIndexes/#dbcmd.createIndexes</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">createIndexes</span><span class="p">(</span><span class="n">_</span> <span class="nv">indexes</span><span class="p">:</span> <span class="p">[(</span><span class="nv">name</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">parameters</span><span class="p">:</span> <span class="p">[</span><span class="kt"><a href="../Enums/IndexParameter.html">IndexParameter</a></span><span class="p">])])</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>indexes</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The indexes to create using a Tuple as specified in <code>createIndex</code></p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection9dropIndexFzT5namedSS_T_"></a>
+                    <a name="//apple_ref/swift/Method/dropIndex(named:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection9dropIndexFzT5namedSS_T_">dropIndex(named:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Remove the index specified
+Warning: Write-locks the database whilst this process is executed</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/dropIndexes/#dbcmd.dropIndexes">https://docs.mongodb.com/manual/reference/command/dropIndexes/#dbcmd.dropIndexes</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">dropIndex</span><span class="p">(</span><span class="n">named</span> <span class="nv">index</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>index</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The index name (as specified when creating the index) that will removed. <code>*</code> for all indexes</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection11listIndexesFzT_GCS_6CursorV4BSON8Document_"></a>
+                    <a name="//apple_ref/swift/Method/listIndexes()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection11listIndexesFzT_GCS_6CursorV4BSON8Document_">listIndexes()</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Lists all indexes for this collection</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/listIndexes/#dbcmd.listIndexes">https://docs.mongodb.com/manual/reference/command/listIndexes/#dbcmd.listIndexes</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">listIndexes</span><span class="p">()</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Classes/Cursor.html">Cursor</a></span><span class="o">&lt;</span><span class="kt">Document</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>A Cursor pointing to the Index results</p>
+
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection6modifyFzT5flagsV4BSON8Document_T_"></a>
+                    <a name="//apple_ref/swift/Method/modify(flags:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection6modifyFzT5flagsV4BSON8Document_T_">modify(flags:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Modifies the collection. Requires access to <code>collMod</code></p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/collMod/#dbcmd.collMod">https://docs.mongodb.com/manual/reference/command/collMod/#dbcmd.collMod</a></p>
+
+<p>You can use this method, for example, to change the validator on a collection:</p>
+
+<pre class="highlight plaintext"><code>collection.modify(flags: ["validator": ["name": ["$type": "string"]]])
+</code></pre>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When MongoDB doesn&rsquo;t return a document indicating success, we&rsquo;ll throw a <code>MongoError.commandFailure()</code> containing the error document sent by the server</p>
+
+</div>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When the <code>flags</code> document contains the key <code>collMod</code>, which is prohibited.</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">modify</span><span class="p">(</span><span class="nv">flags</span><span class="p">:</span> <span class="kt">Document</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>flags</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The modification you want to perform. See the MongoDB documentation for more information.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection9aggregateFzT8pipelineV4BSON8Document7explainGSqSb_12allowDiskUseGSqSb_13cursorOptionsS2_24bypassDocumentValidationGSqSb__GCS_6CursorS2__"></a>
+                    <a name="//apple_ref/swift/Method/aggregate(pipeline:explain:allowDiskUse:cursorOptions:bypassDocumentValidation:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection9aggregateFzT8pipelineV4BSON8Document7explainGSqSb_12allowDiskUseGSqSb_13cursorOptionsS2_24bypassDocumentValidationGSqSb__GCS_6CursorS2__">aggregate(pipeline:explain:allowDiskUse:cursorOptions:bypassDocumentValidation:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Uses the aggregation pipeline to process documents into aggregated results.</p>
+
+<p>See <a href="https://docs.mongodb.org/manual/reference/operator/aggregation-pipeline/">the MongoDB docs on the aggregation pipeline</a> for more information.</p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">aggregate</span><span class="p">(</span><span class="n">pipeline</span> <span class="nv">pipeLine</span><span class="p">:</span> <span class="kt">Document</span><span class="p">,</span> <span class="nv">explain</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">allowDiskUse</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">cursorOptions</span><span class="p">:</span> <span class="kt">Document</span> <span class="o">=</span> <span class="p">[</span><span class="s">"batchSize"</span><span class="p">:</span><span class="mi">10</span><span class="p">],</span> <span class="nv">bypassDocumentValidation</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Classes/Cursor.html">Cursor</a></span><span class="o">&lt;</span><span class="kt">Document</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>pipeline</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>An array of aggregation pipeline stages that process and transform the document stream as part of the aggregation pipeline.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>explain</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Specifies to return the information on the processing of the pipeline.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>allowDiskUse</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Enables writing to temporary files. When set to true, aggregation stages can write data to the _tmp subdirectory in the dbPath directory.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>cursorOptions</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Specify a document that contains options that control the creation of the cursor object.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>bypassDocumentValidation</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Available only if you specify the $out aggregation operator. Enables aggregate to bypass document validation during the operation. This lets you insert documents that do not meet the validation requirements. </p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>A <code><a href="../Classes/Cursor.html">Cursor</a></code> pointing to the found <code>Document</code>s</p>
+
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection5touchFzT4dataSb5indexSb_T_"></a>
+                    <a name="//apple_ref/swift/Method/touch(data:index:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection5touchFzT4dataSb5indexSb_T_">touch(data:index:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>The touch command loads data from the data storage layer into memory.</p>
+
+<p>touch can load the data (i.e. documents) indexes or both documents and indexes.</p>
+
+<p>Using touch to control or tweak what a mongod stores in memory may displace other records data in memory and hinder performance. Use with caution in production systems.</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/touch/#dbcmd.touch">https://docs.mongodb.com/manual/reference/command/touch/#dbcmd.touch</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions, the storage engine doesn&rsquo;t support <code>touch</code> or an error occurred
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">touch</span><span class="p">(</span><span class="n">data</span> <span class="nv">touchData</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">,</span> <span class="n">index</span> <span class="nv">touchIndexes</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection15convertToCappedFzT9cappingAtVs5Int32_T_"></a>
+                    <a name="//apple_ref/swift/Method/convertToCapped(cappingAt:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection15convertToCappedFzT9cappingAtVs5Int32_T_">convertToCapped(cappingAt:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Makes the collection capped</p>
+
+<p><strong>Warning: Data loss can and probably will occur</strong></p>
+
+<p>It will only contain the first data inserted until the cap is reached</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/convertToCapped/#dbcmd.convertToCapped">https://docs.mongodb.com/manual/reference/command/convertToCapped/#dbcmd.convertToCapped</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">convertToCapped</span><span class="p">(</span><span class="n">cappingAt</span> <span class="nv">cap</span><span class="p">:</span> <span class="kt">Int32</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection7reIndexFzT_T_"></a>
+                    <a name="//apple_ref/swift/Method/reIndex()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection7reIndexFzT_T_">reIndex()</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Tells the MongoDB server to re-index this collection</p>
+
+<p><strong>Warning: Very heavy</strong></p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/reIndex/#dbcmd.reIndex">https://docs.mongodb.com/manual/reference/command/reIndex/#dbcmd.reIndex</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">reIndex</span><span class="p">()</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection7compactFzT6forcedGSqSb__T_"></a>
+                    <a name="//apple_ref/swift/Method/compact(forced:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection7compactFzT6forcedGSqSb__T_">compact(forced:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Tells the MongoDB server to make this collection more compact</p>
+
+<p><strong>Warning: Very heavy</strong></p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/compact/#dbcmd.compact">https://docs.mongodb.com/manual/reference/command/compact/#dbcmd.compact</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">compact</span><span class="p">(</span><span class="n">forced</span> <span class="nv">force</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>force</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Force the server to do this</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten10Collection5cloneFzT5namedSS6cappedVs5Int32_T_"></a>
+                    <a name="//apple_ref/swift/Method/clone(named:capped:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten10Collection5cloneFzT5namedSS6cappedVs5Int32_T_">clone(named:capped:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Clones this collection to another place and caps it</p>
+
+<p>For additional information: <a href="https://docs.mongodb.com/manual/reference/command/cloneCollectionAsCapped/#dbcmd.cloneCollectionAsCapped">https://docs.mongodb.com/manual/reference/command/cloneCollectionAsCapped/#dbcmd.cloneCollectionAsCapped</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">clone</span><span class="p">(</span><span class="n">named</span> <span class="nv">otherCollection</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">capped</span><span class="p">:</span> <span class="kt">Int32</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>otherCollection</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The new <code>Collection</code> name</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>capped</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The cap to apply</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:vPs23CustomStringConvertible11descriptionSS"></a>
+                    <a name="//apple_ref/swift/Property/description" class="dashAnchor"></a>
+                    <a class="token" href="#/s:vPs23CustomStringConvertible11descriptionSS">description</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Clones this collection to another place and caps it</p>
+
+<p>For additional information: <a href="https://docs.mongodb.com/manual/reference/command/cloneCollectionAsCapped/#dbcmd.cloneCollectionAsCapped">https://docs.mongodb.com/manual/reference/command/cloneCollectionAsCapped/#dbcmd.cloneCollectionAsCapped</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="k">var</span> <span class="nv">description</span><span class="p">:</span> <span class="kt">String</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </section>
+        </section>
+        <section id="footer">
+          <p>&copy; 2016 <a class="link" href="" target="_blank" rel="external">Robbert Brandsma &amp; Joannis Orlandos</a>. All rights reserved. (Last updated: 2016-11-02)</p>
+          <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.7.2</a>, a <a class="link" href="http://realm.io" target="_blank" rel="external">Realm</a> project.</p>
+        </section>
+      </article>
+    </div>
+  </body>
+</div>
+</html>
