@@ -2,30 +2,28 @@ import BSON
 
 public struct DBRef: ValueConvertible {
     var collection: Collection
-    var id: Value
+    var id: ValueConvertible
     
     public func makeBsonValue() -> Value {
-        return self.bsonValue
+        return self.documentValue.makeBsonValue()
     }
     
-    public init(referencing reference: Value, inCollection collection: Collection) {
+    public init(referencing reference: ValueConvertible, inCollection collection: Collection) {
         self.id = reference
         self.collection = collection
     }
     
     public init(referencing reference: ObjectId, inCollection collection: Collection) {
-        self.id = ~reference
+        self.id = reference
         self.collection = collection
     }
     
     public init?(_ document: Document, inServer server: Server) {
-        guard let database = document["$db"].stringValue, let collection = document["$ref"].stringValue else {
+        guard let database = document["$db"] as? String, let collection = document["$ref"] as? String else {
             return nil
         }
         
-        let id = document["$id"]
-        
-        guard id != .nothing else {
+        guard let id = document["$id"] else {
             return nil
         }
         
@@ -34,13 +32,11 @@ public struct DBRef: ValueConvertible {
     }
     
     public init?(_ document: Document, inDatabase database: Database) {
-        guard let collection = document["$ref"].stringValue else {
+        guard let collection = document["$ref"] as? String else {
             return nil
         }
         
-        let id = document["$id"]
-        
-        guard id != .nothing else {
+        guard let id = document["$id"]?.makeBsonValue() else {
             return nil
         }
         
@@ -50,14 +46,10 @@ public struct DBRef: ValueConvertible {
     
     public var documentValue: Document {
         return [
-            "$ref": ~self.collection.name,
+            "$ref": self.collection.name,
             "$id": self.id,
-            "$db": ~self.collection.database.name
+            "$db": self.collection.database.name
         ]
-    }
-    
-    public var bsonValue: Value {
-        return ~self.documentValue
     }
     
     public func resolve() throws -> Document? {

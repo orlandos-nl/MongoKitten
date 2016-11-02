@@ -31,7 +31,7 @@ public final class Cursor<T> {
     }
     
     internal convenience init(cursorDocument cursor: Document, collection: Collection, chunkSize: Int32, transform: @escaping Transformer) throws {
-        guard let cursorID = cursor["id"].int64Value, let namespace = cursor["ns"].stringValue, let firstBatch = cursor["firstBatch"].documentValue else {
+        guard let cursorID = cursor["id"] as? Int64, let namespace = cursor["ns"] as? String, let firstBatch = cursor["firstBatch"] as? Document else {
             throw MongoError.cursorInitializationError(cursorDocument: cursor)
         }
         
@@ -68,7 +68,7 @@ public final class Cursor<T> {
             if collection.database.server.serverData?.maxWireVersion ?? 0 >= 4 {
                 let reply = try collection.database.execute(command: [
                     "getMore": Int64(self.cursorID).makeBsonValue(),
-                    "collection": ~collection.name,
+                    "collection": collection.name,
                     "batchSize": Int32(chunkSize).makeBsonValue()
                     ])
                 
@@ -76,14 +76,14 @@ public final class Cursor<T> {
                     throw InternalMongoError.incorrectReply(reply: reply)
                 }
                 
-                let documents = resultDocs[0]["cursor"]["nextBatch"].document
+                let documents = resultDocs.first?.makeBsonValue()["cursor"]["nextBatch"].document ?? []
                 for (_, value) in documents {
                     if let doc = transform(value.document) {
                         self.data.append(doc)
                     }
                 }
                 
-                self.cursorID = resultDocs[0]["cursor"]["id"].int64
+                self.cursorID = resultDocs.first?.makeBsonValue()["cursor"]["id"].int64 ?? -1
             } else {
                 let connection = try collection.database.server.reserveConnection()
                 
