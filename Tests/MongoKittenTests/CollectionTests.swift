@@ -25,13 +25,11 @@ class CollectionTests: XCTestCase {
     override func setUp() {
         super.setUp()
         
-        try! TestManager.connect()
         try! TestManager.clean()
     }
     
     override func tearDown() {
         try! TestManager.disconnect()
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
     }
     
     func testDistinct() throws {

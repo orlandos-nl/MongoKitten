@@ -21,12 +21,6 @@ final class TestManager {
     
     static var testingUsers = [Document]()
     
-    static func connect() throws {
-        if !server.isConnected {
-            try server.connect()
-        }
-    }
-    
     static func clean() throws {
         // Erase the testing database:
         for aCollection in try db.listCollections() where !aCollection.name.contains("system") && aCollection.name != "zips" {

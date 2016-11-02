@@ -22,12 +22,11 @@ class AdministrationCommandsTests: XCTestCase {
     override func setUp() {
         super.setUp()
         
-        try! TestManager.connect()
         try! TestManager.clean()
     }  
     
     override func tearDown() {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
+        try! TestManager.disconnect()
     }
     
     func testServer() throws {

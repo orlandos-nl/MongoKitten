@@ -117,7 +117,7 @@ public final class Server {
     }
     
     /// The authentication details that are used to connect with the MongoDB server
-    private let authDetails: (username: String, password: String, against: String)?
+    internal let authDetails: (username: String, password: String, against: String)?
     
     /// The last Request we sent.. -1 if no request was sent
     internal var lastRequestID: Int32 = -1
@@ -156,7 +156,7 @@ public final class Server {
     /// - throws: When we can't connect automatically, when the scheme/host is invalid and when we can't connect automatically
     ///
     /// - parameter automatically: Whether to connect automatically
-    public convenience init(mongoURL url: NSURL, using tcpDriver: MongoTCP.Type = DefaultTCPClient, maxConnections: Int = 10) throws {
+    public convenience init(mongoURL url: NSURL, usingTcpDriver tcpDriver: MongoTCP.Type = DefaultTCPClient, maxConnections: Int = 10) throws {
         guard let scheme = url.scheme, let host = url.host , scheme.lowercased() == "mongodb" else {
             throw MongoError.invalidNSURL(url: url)
         }
@@ -171,7 +171,7 @@ public final class Server {
         
         let port: UInt16 = UInt16(url.port?.intValue ?? 27017)
         
-        try self.init(hostname: host, port: port, authenticatedAs: authentication, runningTcpDriver: tcpDriver, maxConnections: maxConnections)
+        try self.init(hostname: host, port: port, authenticatedAs: authentication, usingTcpDriver: tcpDriver, maxConnections: maxConnections)
     }
     
     /// Sets up the `Server` to connect to the specified URL.
@@ -184,12 +184,12 @@ public final class Server {
     /// - parameter automatically: Whether to connect automatically
     ///
     /// - throws: Throws when we can't connect automatically, when the scheme/host is invalid and when we can't connect automatically
-    public convenience init(mongoURL uri: String, using tcpDriver: MongoTCP.Type = DefaultTCPClient, maxConnections: Int = 10) throws {
+    public convenience init(mongoURL uri: String, usingTcpDriver tcpDriver: MongoTCP.Type = DefaultTCPClient, maxConnections: Int = 10) throws {
         guard let url = NSURL(string: uri) else {
             throw MongoError.invalidURI(uri: uri)
         }
         
-        try self.init(mongoURL: url, using: tcpDriver, maxConnections: maxConnections)
+        try self.init(mongoURL: url, usingTcpDriver: tcpDriver, maxConnections: maxConnections)
     }
     
     /// Sets up the `Server` to connect to the specified location.`Server`
@@ -200,7 +200,7 @@ public final class Server {
     /// - parameter automatically: Connect automatically
     ///
     /// - throws: When we can’t connect automatically, when the scheme/host is invalid and when we can’t connect automatically
-    public init(hostname host: String, port: UInt16 = 27017, authenticatedAs authentication: (username: String, password: String, against: String)? = nil, runningTcpDriver tcpDriver: MongoTCP.Type = DefaultTCPClient, maxConnections: Int = 10) throws {
+    public init(hostname host: String, port: UInt16 = 27017, authenticatedAs authentication: (username: String, password: String, against: String)? = nil, usingTcpDriver tcpDriver: MongoTCP.Type = DefaultTCPClient, maxConnections: Int = 10) throws {
         self.tcpType = tcpDriver
         self.server = (host: host, port: port)
         self.maximumConnections = maxConnections
@@ -214,10 +214,6 @@ public final class Server {
     }
     
     internal func reserveConnection() throws -> Connection {
-        guard isConnected else {
-            throw MongoError.notConnected
-        }
-        
         guard let connection = self.connections.first(where: { !$0.used }) else {
             self.connectionPoolLock.lock()
             guard currentConnections < maximumConnections else {
@@ -275,10 +271,6 @@ public final class Server {
         let db = Database(database: databaseName, at: self)
         
         connect: do {
-            if !self.isConnected {
-                _ = try? self.connect()
-            }
-            
             if !isInitialized {
                 let result = try db.isMaster()
                 
@@ -328,13 +320,24 @@ public final class Server {
     }
     
     /// Are we currently connected?
-    public private(set) var isConnected = false
-    
-    /// Connects with the MongoDB Server using the given information in the initializer
-    ///
-    /// - throws: Unable to connect
-    public func connect() throws {
-        isConnected = true
+    public var isConnected: Bool {
+        for connection in connections where !connection.isConnected {
+            return false
+        }
+        
+        if connections.count == 0 {
+            guard let connection = try? reserveConnection() else {
+                return false
+            }
+            
+            defer {
+                returnConnection(connection)
+            }
+            
+            return connection.isConnected
+        }
+        
+        return true
     }
     
     /// Disconnects from the MongoDB server
@@ -343,7 +346,6 @@ public final class Server {
     public func disconnect() throws {
         connectionPoolLock.lock()
         isInitialized = false
-        isConnected = false
         
         for db in self.databaseCache {
             db.value.value?.isAuthenticated = false

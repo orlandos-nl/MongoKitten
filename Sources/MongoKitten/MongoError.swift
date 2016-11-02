@@ -11,6 +11,9 @@ import struct BSON.Document
 
 /// All MongoDB errors
 public enum MongoError : Error {
+    /// Can't create database with name
+    case invalidDatabase(String?)
+    
     /// Can't deocde base64
     case invalidBase64String
     

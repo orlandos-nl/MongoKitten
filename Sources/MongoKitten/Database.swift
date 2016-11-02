@@ -37,6 +37,36 @@ public final class Database {
         self.name = database.replacingOccurrences(of: ".", with: "")
     }
     
+    public init(mongoURL url: NSURL, usingTcpDriver driver: MongoTCP.Type = DefaultTCPClient, maxConnections: Int = 10) throws {
+        self.server = try Server(mongoURL: url, usingTcpDriver: driver, maxConnections: maxConnections)
+        
+        guard let path = url.path?.replacingOccurrences(of: "/", with: "") else {
+            throw MongoError.invalidDatabase(url.path)
+        }
+        
+        self.name = path
+        
+        let result = try self.isMaster()
+        
+        let maxWireVersion = result["maxWireVersion"]?.int32 ?? 0
+        
+        if let details = server.authDetails {
+            if maxWireVersion >= 3 {
+                try self.authenticate(SASL: details)
+            } else {
+                try self.authenticate(mongoCR: details)
+            }
+        }
+    }
+    
+    public convenience init(mongoURL uri: String, usingTcpDriver tcpDriver: MongoTCP.Type = DefaultTCPClient, maxConnections: Int = 10) throws {
+        guard let url = NSURL(string: uri) else {
+            throw MongoError.invalidURI(uri: uri)
+        }
+        
+        try self.init(mongoURL: url, usingTcpDriver: tcpDriver, maxConnections: maxConnections)
+    }
+    
     private static let subscriptQueue = DispatchQueue(label: "org.mongokitten.database.subscriptqueue")
     
     /// Get a `Collection` by providing a collection name as a `String`

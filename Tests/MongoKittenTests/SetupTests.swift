@@ -20,13 +20,11 @@ class SetupTests: XCTestCase {
     override func setUp() {
         super.setUp()
 
-        try! TestManager.connect()
-        
         try! TestManager.clean()
     }
     
     override func tearDown() {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
+        try! TestManager.disconnect()
     }
     
     func testSetup() throws {
@@ -37,9 +35,7 @@ class SetupTests: XCTestCase {
     }
     
     func testExample() throws {
-        let server = try Server(mongoURL: "mongodb://127.0.0.1:27017")
-        
-        let database = server["mongokitten-unittest-mydatabase"]
+        let database = try Database(mongoURL: "mongodb://127.0.0.1:27017/mongokitten-unittest-mydatabase")
         let userCollection = database["users"]
         let otherCollection = database["otherdata"]
         
