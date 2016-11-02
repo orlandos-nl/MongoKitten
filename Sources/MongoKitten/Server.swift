@@ -14,12 +14,12 @@
 
 import Socks
 
-#if MongoTLS
-    import TLS
-    public let DefaultTCPClient: MongoTCP.Type = TLS.Socket.self
-#else
+//#if MongoTLS
+//    import TLS
+//    public let DefaultTCPClient: MongoTCP.Type = TLS.Socket.self
+//#else
     public let DefaultTCPClient: MongoTCP.Type = Socks.TCPClient.self
-#endif
+//#endif
 
 @_exported import BSON
 

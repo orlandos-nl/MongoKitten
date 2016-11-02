@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Server Class Reference</title>
+    <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
+    <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
+    <meta charset='utf-8'>
+    <script src="../js/jquery.min.js" defer></script>
+    <script src="../js/jazzy.js" defer></script>
+    
+  </head>
+  <body>
+    <a name="//apple_ref/swift/Class/Server" class="dashAnchor"></a>
+    <a title="Server Class Reference"></a>
+    <header>
+      <div class="content-wrapper">
+        <p><a href="../index.html">MongoKitten Docs</a> (72% documented)</p>
+        <p class="header-right"><a href="https://github.com/OpenKitten/MongoKitten"><img src="../img/gh.png"/>View on GitHub</a></p>
+        <p class="header-right"><a href="dash-feed://http%3A%2F%2Fopenkitten%2Egithub%2Eio%2FMongoKitten%2FMongoKitten%2Exml"><img src="../img/dash.png"/>Install in Dash</a></p>
+      </div>
+    </header>
+    <div class="content-wrapper">
+      <p id="breadcrumbs">
+        <a href="../index.html">MongoKitten Reference</a>
+        <img id="carat" src="../img/carat.png" />
+        Server Class Reference
+      </p>
+    </div>
+    <div class="content-wrapper">
+      <nav class="sidebar">
+        <ul class="nav-groups">
+          <li class="nav-group-name">
+            <a href="../Classes.html">Classes</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Classes/Collection.html">Collection</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/Collection/FindAndModifyOperation.html">– FindAndModifyOperation</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/Cursor.html">Cursor</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/Database.html">Database</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/GridFS.html">GridFS</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/GridFS/File.html">– File</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/SCRAMClient.html">SCRAMClient</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/Server.html">Server</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Global Variables.html">Global Variables</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Global Variables.html#/s:v11MongoKitten16DefaultTCPClientPMPS_8MongoTCP_">DefaultTCPClient</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Enums.html">Enums</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Enums/AQT.html">AQT</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/AQT/AQTType.html">– AQTType</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/IndexParameter.html">IndexParameter</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/IndexParameter/TextIndexVersion.html">– TextIndexVersion</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/MongoAuthenticationError.html">MongoAuthenticationError</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/MongoError.html">MongoError</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/SCRAMError.html">SCRAMError</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/SortOrder.html">SortOrder</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Extensions.html">Extensions</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Extensions/Socks.html">Socks</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Functions.html">Functions</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Functions.html#/s:F11MongoKittenop1nFVS_5QueryS0_">!(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/s:F11MongoKittenoi2neFTSSP4BSON16ValueConvertible__VS_5Query">!=(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/s:F11MongoKittenoi2aaFTVS_5QueryS0__S0_">&amp;&amp;(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/s:F11MongoKittenoi2aeFTVS_5QueryS0__V4BSON8Document">&amp;=(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/s:F11MongoKittenoi1lFTSSP4BSON16ValueConvertible__VS_5Query">&lt;(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/s:F11MongoKittenoi2leFTSSP4BSON16ValueConvertible__VS_5Query">&lt;=(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/s:F11MongoKittenoi2eeFTGSqP4BSON16ValueConvertible__OS0_5Value_Sb">==(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/s:F11MongoKittenoi2eeFTSSP4BSON16ValueConvertible__VS_5Query">==(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/s:F11MongoKittenoi1gFTSSP4BSON16ValueConvertible__VS_5Query">&gt;(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/s:F11MongoKittenoi2geFTSSP4BSON16ValueConvertible__VS_5Query">&gt;=(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/s:F11MongoKittenoi2ooFTVS_5QueryS0__S0_">||(_:_:)</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Protocols.html">Protocols</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Protocols/MongoTCP.html">MongoTCP</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Structs.html">Structs</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Structs/DBRef.html">DBRef</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/Pipeline.html">Pipeline</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/Projection.html">Projection</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/Query.html">Query</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/QueryFlags.html">QueryFlags</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/Sort.html">Sort</a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+      <article class="main-content">
+        <section>
+          <section class="section">
+            <h1>Server</h1>
+              <div class="declaration">
+                <div class="language">
+                  <pre class="highlight"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">Server</span></code></pre>
+
+                </div>
+              </div>
+            <p>A server object is the core of MongoKitten as it&rsquo;s used to communicate to the server.
+You can select a <code><a href="../Classes/Database.html">Database</a></code> by subscripting an instance of this Server with a <code>String</code>.</p>
+
+          </section>
+          <section class="section task-group-section">
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:iC11MongoKitten6Server9subscriptFSSCS_8Database"></a>
+                    <a name="//apple_ref/swift/Method/subscript(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:iC11MongoKitten6Server9subscriptFSSCS_8Database">subscript(_:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Returns a <code><a href="../Classes/Database.html">Database</a></code> instance referring to the database with the provided database name</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="nf">subscript</span> <span class="p">(</span><span class="nv">databaseName</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Classes/Database.html">Database</a></span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>database</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The database’s name</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>A database instance for the requested database</p>
+
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:vC11MongoKitten6Server18cursorErrorHandlerFPs5Error_T_"></a>
+                    <a name="//apple_ref/swift/Property/cursorErrorHandler" class="dashAnchor"></a>
+                    <a class="token" href="#/s:vC11MongoKitten6Server18cursorErrorHandlerFPs5Error_T_">cursorErrorHandler</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">Server</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:vC11MongoKitten6Server7tcpTypePMPS_8MongoTCP_"></a>
+                    <a name="//apple_ref/swift/Property/tcpType" class="dashAnchor"></a>
+                    <a class="token" href="#/s:vC11MongoKitten6Server7tcpTypePMPS_8MongoTCP_">tcpType</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code><a href="../Protocols/MongoTCP.html">MongoTCP</a></code> class to use for clients</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="k">let</span> <span class="nv">tcpType</span><span class="p">:</span> <span class="kt"><a href="../Protocols/MongoTCP.html">MongoTCP</a></span><span class="o">.</span><span class="k">Type</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:vC11MongoKitten6Server6serverT4hostSS4portVs6UInt16_"></a>
+                    <a name="//apple_ref/swift/Property/server" class="dashAnchor"></a>
+                    <a class="token" href="#/s:vC11MongoKitten6Server6serverT4hostSS4portVs6UInt16_">server</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>The server&rsquo;s hostname/IP and port to connect to</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="k">let</span> <span class="nv">server</span><span class="p">:</span> <span class="p">(</span><span class="nv">host</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">port</span><span class="p">:</span> <span class="kt">UInt16</span><span class="p">)</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten6ServercFzT8mongoURLCSo5NSURL14usingTcpDriverPMPS_8MongoTCP_14maxConnectionsSi_S0_"></a>
+                    <a name="//apple_ref/swift/Method/init(mongoURL:usingTcpDriver:maxConnections:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten6ServercFzT8mongoURLCSo5NSURL14usingTcpDriverPMPS_8MongoTCP_14maxConnectionsSi_S0_">init(mongoURL:usingTcpDriver:maxConnections:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Sets up the <code>Server</code> to connect to the specified URL.
+The <code>mongodb://</code> scheme is required as well as the host. Optionally youc an provide ausername + password. And if no port is specified <code>27017</code> is used.
+You can provide an alternative TCP Driver that complies to <code><a href="../Protocols/MongoTCP.html">MongoTCP</a></code>.
+This Server doesn&rsquo;t connect automatically. You need to either use the <code>connect</code> function yourself or specify the <code>automatically</code> parameter to be true.</p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t connect automatically, when the scheme/host is invalid and when we can&rsquo;t connect automatically</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="n">convenience</span> <span class="nf">init</span><span class="p">(</span><span class="n">mongoURL</span> <span class="nv">url</span><span class="p">:</span> <span class="kt">NSURL</span><span class="p">,</span> <span class="n">usingTcpDriver</span> <span class="nv">tcpDriver</span><span class="p">:</span> <span class="kt"><a href="../Protocols/MongoTCP.html">MongoTCP</a></span><span class="o">.</span><span class="k">Type</span> <span class="o">=</span> <span class="kt"><a href="../Global Variables.html#/s:v11MongoKitten16DefaultTCPClientPMPS_8MongoTCP_">DefaultTCPClient</a></span><span class="p">,</span> <span class="nv">maxConnections</span><span class="p">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>url</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The MongoDB connection String.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>tcpDriver</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The TCP Driver to be used to connect to the server. Recommended to change to an SSL supporting socket when connnecting over the public internet.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>automatically</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Whether to connect automatically</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten6ServercFzT8mongoURLSS14usingTcpDriverPMPS_8MongoTCP_14maxConnectionsSi_S0_"></a>
+                    <a name="//apple_ref/swift/Method/init(mongoURL:usingTcpDriver:maxConnections:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten6ServercFzT8mongoURLSS14usingTcpDriverPMPS_8MongoTCP_14maxConnectionsSi_S0_">init(mongoURL:usingTcpDriver:maxConnections:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Sets up the <code>Server</code> to connect to the specified URL.
+The <code>mongodb://</code> scheme is required as well as the host. Optionally youc an provide ausername + password. And if no port is specified <q>27017</q> is used.
+You can provide an alternative TCP Driver that complies to <code><a href="../Protocols/MongoTCP.html">MongoTCP</a></code>.
+This Server doesn&rsquo;t connect automatically. You need to either use the <code>connect</code> function yourself or specify the <code>automatically</code> parameter to be true.</p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>Throws when we can&rsquo;t connect automatically, when the scheme/host is invalid and when we can&rsquo;t connect automatically</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="n">convenience</span> <span class="nf">init</span><span class="p">(</span><span class="n">mongoURL</span> <span class="nv">uri</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="n">usingTcpDriver</span> <span class="nv">tcpDriver</span><span class="p">:</span> <span class="kt"><a href="../Protocols/MongoTCP.html">MongoTCP</a></span><span class="o">.</span><span class="k">Type</span> <span class="o">=</span> <span class="kt"><a href="../Global Variables.html#/s:v11MongoKitten16DefaultTCPClientPMPS_8MongoTCP_">DefaultTCPClient</a></span><span class="p">,</span> <span class="nv">maxConnections</span><span class="p">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>url</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The MongoDB connection String.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>using</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The TCP Driver to be used to connect to the server. Recommended to change to an SSL supporting socket when connnecting over the public internet.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>automatically</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Whether to connect automatically</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten6ServercFzT8hostnameSS4portVs6UInt1615authenticatedAsGSqT8usernameSS8passwordSS7againstSS__14usingTcpDriverPMPS_8MongoTCP_14maxConnectionsSi_S0_"></a>
+                    <a name="//apple_ref/swift/Method/init(hostname:port:authenticatedAs:usingTcpDriver:maxConnections:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten6ServercFzT8hostnameSS4portVs6UInt1615authenticatedAsGSqT8usernameSS8passwordSS7againstSS__14usingTcpDriverPMPS_8MongoTCP_14maxConnectionsSi_S0_">init(hostname:port:authenticatedAs:usingTcpDriver:maxConnections:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Sets up the <code>Server</code> to connect to the specified location.<code>Server</code>
+You need to provide a host as IP address or as a hostname recognized by the client&rsquo;s DNS.
+- parameter at: The hostname/IP address of the MongoDB server
+- parameter port: The port we&rsquo;ll connect on. Defaults to 27017
+- parameter authentication: The optional authentication details we&rsquo;ll use when connecting to the server
+- parameter automatically: Connect automatically</p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    When we can’t connect automatically, when the scheme/host is invalid and when we can’t connect automatically
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="nf">init</span><span class="p">(</span><span class="n">hostname</span> <span class="nv">host</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">port</span><span class="p">:</span> <span class="kt">UInt16</span> <span class="o">=</span> <span class="mi">27017</span><span class="p">,</span> <span class="n">authenticatedAs</span> <span class="nv">authentication</span><span class="p">:</span> <span class="p">(</span><span class="nv">username</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">password</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">against</span><span class="p">:</span> <span class="kt">String</span><span class="p">)?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="n">usingTcpDriver</span> <span class="nv">tcpDriver</span><span class="p">:</span> <span class="kt"><a href="../Protocols/MongoTCP.html">MongoTCP</a></span><span class="o">.</span><span class="k">Type</span> <span class="o">=</span> <span class="kt"><a href="../Global Variables.html#/s:v11MongoKitten16DefaultTCPClientPMPS_8MongoTCP_">DefaultTCPClient</a></span><span class="p">,</span> <span class="nv">maxConnections</span><span class="p">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>at</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The hostname/IP address of the MongoDB server</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>port</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The port we’ll connect on. Defaults to 27017</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>authentication</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The optional authentication details we’ll use when connecting to the server</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>automatically</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Connect automatically</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:vC11MongoKitten6Server11isConnectedSb"></a>
+                    <a name="//apple_ref/swift/Property/isConnected" class="dashAnchor"></a>
+                    <a class="token" href="#/s:vC11MongoKitten6Server11isConnectedSb">isConnected</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Are we currently connected?</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="k">var</span> <span class="nv">isConnected</span><span class="p">:</span> <span class="kt">Bool</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten6Server10disconnectFzT_T_"></a>
+                    <a name="//apple_ref/swift/Method/disconnect()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten6Server10disconnectFzT_T_">disconnect()</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Disconnects from the MongoDB server</p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    Unable to disconnect
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">disconnect</span><span class="p">()</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten6Server16getDatabaseInfosFzT_V4BSON8Document"></a>
+                    <a name="//apple_ref/swift/Method/getDatabaseInfos()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten6Server16getDatabaseInfosFzT_V4BSON8Document">getDatabaseInfos()</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Provides a list of all existing databases along with basic statistics about them</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/listDatabases/#dbcmd.listDatabases">https://docs.mongodb.com/manual/reference/command/listDatabases/#dbcmd.listDatabases</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">getDatabaseInfos</span><span class="p">()</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Document</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten6Server12getDatabasesFzT_GSaCS_8Database_"></a>
+                    <a name="//apple_ref/swift/Method/getDatabases()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten6Server12getDatabasesFzT_GSaCS_8Database_">getDatabases()</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Returns all existing databases on this server. <strong>Requires access to the <code>admin</code> database</strong></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">getDatabases</span><span class="p">()</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt"><a href="../Classes/Database.html">Database</a></span><span class="p">]</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>All databases</p>
+
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten6Server4copyFzT8databaseSS2toSS2asGSqT4userSS5nonceSS8passwordSS__2atGSqSS_7slaveOkGSqSb__T_"></a>
+                    <a name="//apple_ref/swift/Method/copy(database:to:as:at:slaveOk:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten6Server4copyFzT8databaseSS2toSS2asGSqT4userSS5nonceSS8passwordSS__2atGSqSS_7slaveOkGSqSb__T_">copy(database:to:as:at:slaveOk:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Copies a database either from one mongod instance to the current mongod instance or within the current mongod</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/copydb/#dbcmd.copydb">https://docs.mongodb.com/manual/reference/command/copydb/#dbcmd.copydb</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">copy</span><span class="p">(</span><span class="n">database</span> <span class="nv">db</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="n">to</span> <span class="nv">otherDatabase</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="k">as</span> <span class="nv">user</span><span class="p">:</span> <span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">nonce</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">password</span><span class="p">:</span> <span class="kt">String</span><span class="p">)?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="n">at</span> <span class="nv">remoteHost</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">slaveOk</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>database</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The database to copy</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>otherDatabase</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The other database</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>user</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The database’s credentials</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>remoteHost</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The optional remote host to copy from</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten6Server5cloneFzT4fromCSo5NSURL_T_"></a>
+                    <a name="//apple_ref/swift/Method/clone(from:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten6Server5cloneFzT4fromCSo5NSURL_T_">clone(from:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Clones a database from the specified MongoDB Connection URI</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/shutdown/#dbcmd.clone">https://docs.mongodb.com/manual/reference/command/shutdown/#dbcmd.clone</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">clone</span><span class="p">(</span><span class="n">from</span> <span class="nv">url</span><span class="p">:</span> <span class="kt">NSURL</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>url</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The URL</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten6Server5cloneFzT4fromSS_T_"></a>
+                    <a name="//apple_ref/swift/Method/clone(from:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten6Server5cloneFzT4fromSS_T_">clone(from:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Clones a database from the specified MongoDB Connection URI</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/clone/#dbcmd.clone">https://docs.mongodb.com/manual/reference/command/clone/#dbcmd.clone</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">clone</span><span class="p">(</span><span class="n">from</span> <span class="nv">url</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>url</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The URL</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten6Server8shutdownFzT6forcedGSqSb__T_"></a>
+                    <a name="//apple_ref/swift/Method/shutdown(forced:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten6Server8shutdownFzT6forcedGSqSb__T_">shutdown(forced:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Shuts down the MongoDB server</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/shutdown/#dbcmd.shutdown">https://docs.mongodb.com/manual/reference/command/shutdown/#dbcmd.shutdown</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">shutdown</span><span class="p">(</span><span class="n">forced</span> <span class="nv">force</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>force</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Force the s</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten6Server5fsyncFzT5asyncGSqSb_8blockingGSqSb__T_"></a>
+                    <a name="//apple_ref/swift/Method/fsync(async:blocking:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten6Server5fsyncFzT5asyncGSqSb_8blockingGSqSb__T_">fsync(async:blocking:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Flushes all pending writes serverside</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/fsync/#dbcmd.fsync">https://docs.mongodb.com/manual/reference/command/fsync/#dbcmd.fsync</a></p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">fsync</span><span class="p">(</span><span class="n">async</span> <span class="nv">asynchronously</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="n">blocking</span> <span class="nv">block</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>async</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>If true, dont block the server until the operation is finished</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>block</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Do we block writing in the meanwhile?</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten6Server11getUserInfoFzT12forUserNamedSS10inDatabaseGSqCS_8Database_15showCredentialsGSqSb_14showPrivilegesGSqSb__V4BSON8Document"></a>
+                    <a name="//apple_ref/swift/Method/getUserInfo(forUserNamed:inDatabase:showCredentials:showPrivileges:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten6Server11getUserInfoFzT12forUserNamedSS10inDatabaseGSqCS_8Database_15showCredentialsGSqSb_14showPrivilegesGSqSb__V4BSON8Document">getUserInfo(forUserNamed:inDatabase:showCredentials:showPrivileges:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Gets the info from the user</p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/usersInfo/#dbcmd.usersInfo">https://docs.mongodb.com/manual/reference/command/usersInfo/#dbcmd.usersInfo</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">getUserInfo</span><span class="p">(</span><span class="n">forUserNamed</span> <span class="nv">user</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="n">inDatabase</span> <span class="nv">database</span><span class="p">:</span> <span class="kt"><a href="../Classes/Database.html">Database</a></span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">showCredentials</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">showPrivileges</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Document</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>user</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The user’s username</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>database</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The database to get the user from… otherwise uses admin</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>showCredentials</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Do you want to fetch the user’s credentials</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>showPrivileges</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Do you want to fetch the user’s privileges</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>The user’s information (plus optionally the credentials and privileges)</p>
+
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:vC11MongoKitten6Server11descriptionSS"></a>
+                    <a name="//apple_ref/swift/Property/description" class="dashAnchor"></a>
+                    <a class="token" href="#/s:vC11MongoKitten6Server11descriptionSS">description</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>A textual representation of this <code>Server</code></p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="k">var</span> <span class="nv">description</span><span class="p">:</span> <span class="kt">String</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FPs8Sequence12makeIteratorFT_wx8Iterator"></a>
+                    <a name="//apple_ref/swift/Method/makeIterator()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FPs8Sequence12makeIteratorFT_wx8Iterator">makeIterator()</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>This server&rsquo;s hostname</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">makeIterator</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">AnyIterator</span><span class="o">&lt;</span><span class="kt"><a href="../Classes/Database.html">Database</a></span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </section>
+        </section>
+        <section id="footer">
+          <p>&copy; 2016 <a class="link" href="" target="_blank" rel="external">Robbert Brandsma &amp; Joannis Orlandos</a>. All rights reserved. (Last updated: 2016-11-03)</p>
+          <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.7.2</a>, a <a class="link" href="http://realm.io" target="_blank" rel="external">Realm</a> project.</p>
+        </section>
+      </article>
+    </div>
+  </body>
+</div>
+</html>

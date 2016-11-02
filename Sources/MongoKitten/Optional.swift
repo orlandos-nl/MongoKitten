@@ -1,4 +1,4 @@
-#if MongoTLS
+/*#if MongoTLS
     import TLS
     
     extension TLS.Socket: MongoTCP {
@@ -14,4 +14,4 @@
             return try self.receive(max: Int(UInt16.max))
         }
     }
-#endif
+#endif*/
