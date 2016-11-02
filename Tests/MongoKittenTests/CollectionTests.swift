@@ -116,14 +116,14 @@ class CollectionTests: XCTestCase {
         
         let dbref = DBRef(referencing: id, inCollection: colA)
         
-        let referenceID = try colB.insert(["reference": dbref.bsonValue])
+        let referenceID = try colB.insert(["reference": dbref])
         
         guard let reference = try colB.findOne(matching: "_id" == referenceID) else {
             XCTFail()
             return
         }
         
-        guard let colAreference = DBRef(reference["reference"].document, inDatabase: TestManager.db) else {
+        guard let colAreference = DBRef(reference["reference"]?.document ?? [:], inDatabase: TestManager.db) else {
             XCTFail()
             return
         }
@@ -133,13 +133,13 @@ class CollectionTests: XCTestCase {
             return
         }
         
-        XCTAssertEqual(originalDocument["name"], "Harrie Bob")
+        XCTAssertEqual(originalDocument["name"] as? String, "Harrie Bob")
     }
     
     func testProjection() {
         let projection: Projection = ["name", "age", "awesome"]
         
-        XCTAssertEqual(projection.makeBsonValue(), ["name": .int32(1), "age": .int32(1), "awesome": .int32(1)])
+        XCTAssertEqual(projection.makeBsonValue(), ["name": Int32(1), "age": Int32(1), "awesome": Int32(1)])
         
         let projection2: Projection = ["henk": true, "bob": 1]
         
@@ -149,7 +149,7 @@ class CollectionTests: XCTestCase {
     func testIndexes() throws {
         try TestManager.wcol.createIndex(named: "henkbob", withParameters: .sortedCompound(fields: [("name", .ascending), ("age", .descending)]), .expire(afterSeconds: 1), .buildInBackground)
         
-        for index in try TestManager.wcol.listIndexes() where index["name"].string == "henkbob" {
+        for index in try TestManager.wcol.listIndexes() where index["name"] as? String == "henkbob" {
             return
         }
         
@@ -181,10 +181,14 @@ class CollectionTests: XCTestCase {
     }
 
     func testAggregate() throws {
-        let cursor = try TestManager.db["zips"].aggregate(pipeline: [
-                                             [ "$group": [ "_id": "$state", "totalPop": [ "$sum": "$pop" ] ] ],
-                                             [ "$match": [ "totalPop": [ "$gte": Int(10_000_000).makeBsonValue() ] ] ]
-        ])
+        let pipeline = Pipeline([
+            [ "$group":
+                [ "_id": "$state", "totalPop": [ "$sum": "$pop" ] as Document ] as Document ]as Document,
+                [ "$match": [ "totalPop": [ "$gte": Int(10_000_000).makeBsonValue() ] as Document ] as Document ] as Document
+            ]
+        )
+        
+        let cursor = try TestManager.db["zips"].aggregate(pipeline: pipeline)
         
         var count = 0
         for _ in cursor {

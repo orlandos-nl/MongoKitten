@@ -1,4 +1,4 @@
-//
+ //
 //  DatabaseTests.swift
 //  MongoKitten
 //
@@ -52,13 +52,13 @@ class AdministrationCommandsTests: XCTestCase {
             try TestManager.db.drop(user: "mongokitten-henk")
         } catch {}
         
-        try TestManager.db.createUser("mongokitten-henk", password: "banapple", roles: [], customData: ["num": .int32(3)])
+        try TestManager.db.createUser("mongokitten-henk", password: "banapple", roles: [], customData: ["num": Int32(3)])
         let info = try TestManager.server.getUserInfo(forUserNamed: "mongokitten-henk", inDatabase: TestManager.db)
-        XCTAssertEqual(info[0]["customData"]["num"].int32Value, 3)
+        XCTAssertEqual(info.makeBsonValue()[0]["customData"]["num"].int32Value, Int32(3))
         
-        try TestManager.db.update(user: "mongokitten-henk", password: "banappol", roles: [], customData: ["num": .int32(5)])
+        try TestManager.db.update(user: "mongokitten-henk", password: "banappol", roles: [], customData: ["num": Int32(5)])
         let newInfo = try TestManager.server.getUserInfo(forUserNamed: "mongokitten-henk", inDatabase: TestManager.db)
-        XCTAssertEqual(newInfo[0]["customData"]["num"].int32Value, 5)
+        XCTAssertEqual(newInfo.makeBsonValue()[0]["customData"]["num"].int32Value, 5)
         
         try TestManager.db.drop(user: "mongokitten-henk")
         
@@ -76,7 +76,7 @@ class AdministrationCommandsTests: XCTestCase {
     
     func testCollection() throws {
         let test = TestManager.db["test"]
-        _ = try test.insert(["your": ["int": 3]])
+        _ = try test.insert(["your": ["int": 3] as Document])
         try TestManager.db["test"].compact()
         XCTAssertEqual(try test.count(), 1)
         

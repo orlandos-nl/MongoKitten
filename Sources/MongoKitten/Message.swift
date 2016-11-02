@@ -9,8 +9,6 @@
 import Foundation
 import BSON
 
-public typealias Byte = UInt8
-
 /// Message to be send or received to/from the server
 enum Message {
     /// The MessageID this message is responding to
@@ -100,8 +98,8 @@ enum Message {
     
     /// Generates BSON From a Message
     /// - returns: The data from this message
-    func generateData() throws -> [Byte] {
-        var body = [Byte]()
+    func generateData() throws -> [UInt8] {
+        var body = [UInt8]()
         var requestID: Int32
         
         // Generate the body
@@ -162,7 +160,7 @@ enum Message {
         }
         
         // Generate the header using the body
-        var header = [Byte]()
+        var header = [UInt8]()
         header += Int32(16 + body.count).bytes
         header += requestID.bytes
         header += responseTo.bytes
