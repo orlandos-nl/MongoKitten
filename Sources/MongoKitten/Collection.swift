@@ -83,22 +83,22 @@ public final class Collection {
         var newIds = [ValueConvertible]()
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
+        let commandDocuments = documents[0..<min(1000, documents.count)].map({ (input: Document) -> ValueConvertible in
+            if let id = input["_id"] {
+                newIds.append(id)
+                return input
+            } else {
+                var output = input
+                let oid = ObjectId()
+                output["_id"] = oid
+                newIds.append(oid)
+                return output
+            }
+        })
+        
         while !documents.isEmpty {
             if protocolVersion >= 2 {
                 var command: Document = ["insert": self.name]
-                
-                let commandDocuments = documents[0..<min(1000, documents.count)].map({ (input: Document) -> ValueConvertible in
-                    if let id = input["_id"] {
-                        newIds.append(id)
-                        return input
-                    } else {
-                        var output = input
-                        let oid = ObjectId()
-                        output["_id"] = oid
-                        newIds.append(oid)
-                        return output
-                    }
-                })
                 
                 documents.removeFirst(min(1000, documents.count))
                 
