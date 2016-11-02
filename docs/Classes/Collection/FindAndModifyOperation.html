@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>FindAndModifyOperation Enum Reference</title>
+    <link rel="stylesheet" type="text/css" href="../../css/jazzy.css" />
+    <link rel="stylesheet" type="text/css" href="../../css/highlight.css" />
+    <meta charset='utf-8'>
+    <script src="../../js/jquery.min.js" defer></script>
+    <script src="../../js/jazzy.js" defer></script>
+    
+  </head>
+  <body>
+    <a name="//apple_ref/swift/Enum/FindAndModifyOperation" class="dashAnchor"></a>
+    <a title="FindAndModifyOperation Enum Reference"></a>
+    <header>
+      <div class="content-wrapper">
+        <p><a href="../../index.html">MongoKitten Docs</a> (76% documented)</p>
+        <p class="header-right"><a href="https://github.com/OpenKitten/MongoKitten"><img src="../../img/gh.png"/>View on GitHub</a></p>
+        <p class="header-right"><a href="dash-feed://http%3A%2F%2Fopenkitten%2Egithub%2Eio%2FMongoKitten%2Fdocsets%2FMongoKitten%2Etgz"><img src="../../img/dash.png"/>Install in Dash</a></p>
+      </div>
+    </header>
+    <div class="content-wrapper">
+      <p id="breadcrumbs">
+        <a href="../../index.html">MongoKitten Reference</a>
+        <img id="carat" src="../../img/carat.png" />
+        FindAndModifyOperation Enum Reference
+      </p>
+    </div>
+    <div class="content-wrapper">
+      <nav class="sidebar">
+        <ul class="nav-groups">
+          <li class="nav-group-name">
+            <a href="../../Classes.html">Classes</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../../Classes/Collection.html">Collection</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Classes/Collection/FindAndModifyOperation.html">– FindAndModifyOperation</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Classes/Cursor.html">Cursor</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Classes/Database.html">Database</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Classes/GridFS.html">GridFS</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Classes/GridFS/File.html">– File</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Classes/SCRAMClient.html">SCRAMClient</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Classes/Server.html">Server</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../../Global Variables.html">Global Variables</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../../Global Variables.html#/DefaultTCPClient">DefaultTCPClient</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../../Enums.html">Enums</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../../Enums/AQT.html">AQT</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Enums/AQT/AQTType.html">– AQTType</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Enums/IndexParameter.html">IndexParameter</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Enums/IndexParameter/SortOrder.html">– SortOrder</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Enums/IndexParameter/TextIndexVersion.html">– TextIndexVersion</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Enums/MongoAuthenticationError.html">MongoAuthenticationError</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Enums/MongoError.html">MongoError</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Enums/SCRAMError.html">SCRAMError</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../../Extensions.html">Extensions</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../../Extensions/Document.html">Document</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Extensions/Socks.TCPClient.html">Socks.TCPClient</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Extensions/TLS.Socket.html">TLS.Socket</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../../Functions.html">Functions</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../../Functions.html#/!(_:)">!(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Functions.html#/!=(_:_:)">!=(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Functions.html#/&amp;&amp;(_:_:)">&amp;&amp;(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Functions.html#/&amp;=(_:_:)">&amp;=(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Functions.html#/&lt;(_:_:)">&lt;(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Functions.html#/&lt;=(_:_:)">&lt;=(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Functions.html#/==(_:_:)">==(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Functions.html#/&gt;(_:_:)">&gt;(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Functions.html#/&gt;=(_:_:)">&gt;=(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Functions.html#/||(_:_:)">||(_:_:)</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../../Protocols.html">Protocols</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../../Protocols/MongoTCP.html">MongoTCP</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Protocols/QueryProtocol.html">QueryProtocol</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../../Structs.html">Structs</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../../Structs/DBRef.html">DBRef</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Structs/Projection.html">Projection</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Structs/Query.html">Query</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Structs/QueryFlags.html">QueryFlags</a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+      <article class="main-content">
+        <section>
+          <section class="section">
+            <h1>FindAndModifyOperation</h1>
+              <div class="declaration">
+                <div class="language">
+                  <pre class="highlight"><code><span class="kd">public</span> <span class="kd">enum</span> <span class="kt">FindAndModifyOperation</span></code></pre>
+
+                </div>
+              </div>
+            <p><code>findAndModify</code> only has two operations that can be used. Update and Delete</p>
+
+<p>To make these types of operations easily accessible in <code>findAndModify</code> this enum exists</p>
+
+          </section>
+          <section class="section task-group-section">
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FOC11MongoKitten10Collection22FindAndModifyOperation6removeFMS1_S1_"></a>
+                    <a name="//apple_ref/swift/Element/remove" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FOC11MongoKitten10Collection22FindAndModifyOperation6removeFMS1_S1_">remove</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Remove the found <code>Document</code></p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="k">case</span> <span class="n">remove</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FOC11MongoKitten10Collection22FindAndModifyOperation6updateFMS1_FT4withV4BSON8Document14returnModifiedSb9upsertingSb_S1_"></a>
+                    <a name="//apple_ref/swift/Element/update" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FOC11MongoKitten10Collection22FindAndModifyOperation6updateFMS1_FT4withV4BSON8Document14returnModifiedSb9upsertingSb_S1_">update</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Update the found <code>Document</code> with the provided <code>Document</code></p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="k">case</span> <span class="nf">update</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="kt">Document</span><span class="p">,</span> <span class="nv">returnModified</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">,</span> <span class="nv">upserting</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">)</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>with</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Updated the found <code>Document</code> with this <code>Document</code></p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>returnModified</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Return the modified <code>Document</code>?</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>upserting</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Insert if it doesn’t exist yet</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </section>
+        </section>
+        <section id="footer">
+          <p>&copy; 2016 <a class="link" href="" target="_blank" rel="external">Robbert Brandsma &amp; Joannis Orlandos</a>. All rights reserved. (Last updated: 2016-11-02)</p>
+          <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.7.2</a>, a <a class="link" href="http://realm.io" target="_blank" rel="external">Realm</a> project.</p>
+        </section>
+      </article>
+    </div>
+  </body>
+</div>
+</html>

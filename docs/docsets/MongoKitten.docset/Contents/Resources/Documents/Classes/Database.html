@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Database Class Reference</title>
+    <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
+    <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
+    <meta charset='utf-8'>
+    <script src="../js/jquery.min.js" defer></script>
+    <script src="../js/jazzy.js" defer></script>
+    
+  </head>
+  <body>
+    <a name="//apple_ref/swift/Class/Database" class="dashAnchor"></a>
+    <a title="Database Class Reference"></a>
+    <header>
+      <div class="content-wrapper">
+        <p><a href="../index.html">MongoKitten Docs</a> (76% documented)</p>
+        <p class="header-right"><a href="https://github.com/OpenKitten/MongoKitten"><img src="../img/gh.png"/>View on GitHub</a></p>
+        <p class="header-right"><a href="dash-feed://http%3A%2F%2Fopenkitten%2Egithub%2Eio%2FMongoKitten%2Fdocsets%2FMongoKitten%2Etgz"><img src="../img/dash.png"/>Install in Dash</a></p>
+      </div>
+    </header>
+    <div class="content-wrapper">
+      <p id="breadcrumbs">
+        <a href="../index.html">MongoKitten Reference</a>
+        <img id="carat" src="../img/carat.png" />
+        Database Class Reference
+      </p>
+    </div>
+    <div class="content-wrapper">
+      <nav class="sidebar">
+        <ul class="nav-groups">
+          <li class="nav-group-name">
+            <a href="../Classes.html">Classes</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Classes/Collection.html">Collection</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/Collection/FindAndModifyOperation.html">– FindAndModifyOperation</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/Cursor.html">Cursor</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/Database.html">Database</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/GridFS.html">GridFS</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/GridFS/File.html">– File</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/SCRAMClient.html">SCRAMClient</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/Server.html">Server</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Global Variables.html">Global Variables</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Global Variables.html#/DefaultTCPClient">DefaultTCPClient</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Enums.html">Enums</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Enums/AQT.html">AQT</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/AQT/AQTType.html">– AQTType</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/IndexParameter.html">IndexParameter</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/IndexParameter/SortOrder.html">– SortOrder</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/IndexParameter/TextIndexVersion.html">– TextIndexVersion</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/MongoAuthenticationError.html">MongoAuthenticationError</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/MongoError.html">MongoError</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/SCRAMError.html">SCRAMError</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Extensions.html">Extensions</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Extensions/Document.html">Document</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Extensions/Socks.TCPClient.html">Socks.TCPClient</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Extensions/TLS.Socket.html">TLS.Socket</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Functions.html">Functions</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Functions.html#/!(_:)">!(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/!=(_:_:)">!=(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/&amp;&amp;(_:_:)">&amp;&amp;(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/&amp;=(_:_:)">&amp;=(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/&lt;(_:_:)">&lt;(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/&lt;=(_:_:)">&lt;=(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/==(_:_:)">==(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/&gt;(_:_:)">&gt;(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/&gt;=(_:_:)">&gt;=(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/||(_:_:)">||(_:_:)</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Protocols.html">Protocols</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Protocols/MongoTCP.html">MongoTCP</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Protocols/QueryProtocol.html">QueryProtocol</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Structs.html">Structs</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Structs/DBRef.html">DBRef</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/Projection.html">Projection</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/Query.html">Query</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/QueryFlags.html">QueryFlags</a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+      <article class="main-content">
+        <section>
+          <section class="section">
+            <h1>Database</h1>
+              <div class="declaration">
+                <div class="language">
+                  <pre class="highlight"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">Database</span></code></pre>
+
+                </div>
+              </div>
+            <p>A Mongo Database. Cannot be publically initialized.
+But you can get a database object by subscripting <code><a href="../Classes/Server.html">Server</a></code> with a <code>String</code> as the database name</p>
+
+          </section>
+          <section class="section task-group-section">
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:vC11MongoKitten8Database6serverCS_6Server"></a>
+                    <a name="//apple_ref/swift/Property/server" class="dashAnchor"></a>
+                    <a class="token" href="#/s:vC11MongoKitten8Database6serverCS_6Server">server</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>The <code><a href="../Classes/Server.html">Server</a></code> that this Database is a part of</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="k">let</span> <span class="nv">server</span><span class="p">:</span> <span class="kt"><a href="../Classes/Server.html">Server</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:iC11MongoKitten8Database9subscriptFSSCS_10Collection"></a>
+                    <a name="//apple_ref/swift/Method/subscript(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:iC11MongoKitten8Database9subscriptFSSCS_10Collection">subscript(_:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Get a <code><a href="../Classes/Collection.html">Collection</a></code> by providing a collection name as a <code>String</code></p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="nf">subscript</span> <span class="p">(</span><span class="nv">collection</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Classes/Collection.html">Collection</a></span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>collection</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The collection/bucket to return</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>The requested collection in this database</p>
+
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:vC11MongoKitten8Database4nameSS"></a>
+                    <a name="//apple_ref/swift/Property/name" class="dashAnchor"></a>
+                    <a class="token" href="#/s:vC11MongoKitten8Database4nameSS">name</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>The database&rsquo;s name</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="k">let</span> <span class="nv">name</span><span class="p">:</span> <span class="kt">String</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:vC11MongoKitten8Database15isAuthenticatedSb"></a>
+                    <a name="//apple_ref/swift/Property/isAuthenticated" class="dashAnchor"></a>
+                    <a class="token" href="#/s:vC11MongoKitten8Database15isAuthenticatedSb">isAuthenticated</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Are we authenticated?</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">internal(set)</span> <span class="k">var</span> <span class="nv">isAuthenticated</span> <span class="o">=</span> <span class="kc">true</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten8DatabasecFT8databaseSS2atCS_6Server_S0_"></a>
+                    <a name="//apple_ref/swift/Method/init(database:at:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten8DatabasecFT8databaseSS2atCS_6Server_S0_">init(database:at:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Initialise this database object</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="nf">init</span><span class="p">(</span><span class="nv">database</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="n">at</span> <span class="nv">server</span><span class="p">:</span> <span class="kt"><a href="../Classes/Server.html">Server</a></span><span class="p">)</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>database</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The database to use</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>server</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The <code>Server</code> on which this database exists</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten8Database18getCollectionInfosFzT8matchingGSqV4BSON8Document__GCS_6CursorS2__"></a>
+                    <a name="//apple_ref/swift/Method/getCollectionInfos(matching:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten8Database18getCollectionInfosFzT8matchingGSqV4BSON8Document__GCS_6CursorS2__">getCollectionInfos(matching:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>All information about the <code><a href="../Classes/Collection.html">Collection</a></code>s in this <code>Database</code></p>
+
+<p>For more information: <a href="https://docs.mongodb.com/manual/reference/command/listCollections/#dbcmd.listCollections">https://docs.mongodb.com/manual/reference/command/listCollections/#dbcmd.listCollections</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">getCollectionInfos</span><span class="p">(</span><span class="n">matching</span> <span class="nv">filter</span><span class="p">:</span> <span class="kt">Document</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Classes/Cursor.html">Cursor</a></span><span class="o">&lt;</span><span class="kt">Document</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>matching</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The filter to apply when searching for this information</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>A cursor to the resulting documents with collection info</p>
+
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten8Database15listCollectionsFzT8matchingGSqV4BSON8Document__GCS_6CursorCS_10Collection_"></a>
+                    <a name="//apple_ref/swift/Method/listCollections(matching:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten8Database15listCollectionsFzT8matchingGSqV4BSON8Document__GCS_6CursorCS_10Collection_">listCollections(matching:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Gets the <code><a href="../Classes/Collection.html">Collection</a></code>s in this <code>Database</code></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">listCollections</span><span class="p">(</span><span class="n">matching</span> <span class="nv">filter</span><span class="p">:</span> <span class="kt">Document</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Classes/Cursor.html">Cursor</a></span><span class="o">&lt;</span><span class="kt"><a href="../Classes/Collection.html">Collection</a></span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>matching</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The filter to apply when looking for Collections</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>A <code><a href="../Classes/Cursor.html">Cursor</a></code> to all <code><a href="../Classes/Collection.html">Collection</a></code>s in this <code>Database</code></p>
+
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten8Database10createUserFzTSS8passwordSS5rolesV4BSON8Document10customDataGSqS2___T_"></a>
+                    <a name="//apple_ref/swift/Method/createUser(_:password:roles:customData:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten8Database10createUserFzTSS8passwordSS5rolesV4BSON8Document10customDataGSqS2___T_">createUser(_:password:roles:customData:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Creates a new user</p>
+
+<p>Warning: Use an SSL socket to create someone for security sake!
+Warning: The standard library doesn&rsquo;t have SSL</p>
+
+<p>For additional information: <a href="https://docs.mongodb.com/manual/reference/command/createUser/#dbcmd.createUser">https://docs.mongodb.com/manual/reference/command/createUser/#dbcmd.createUser</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">createUser</span><span class="p">(</span><span class="n">_</span> <span class="nv">user</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">password</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">roles</span><span class="p">:</span> <span class="kt">Document</span><span class="p">,</span> <span class="nv">customData</span><span class="p">:</span> <span class="kt">Document</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>user</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The user’s username</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>password</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The plaintext password</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>roles</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The roles document as specified in the additional information</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>customData</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The optional custom information to store</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten8Database6updateFzT4userSS8passwordSS5rolesV4BSON8Document10customDataGSqS2___T_"></a>
+                    <a name="//apple_ref/swift/Method/update(user:password:roles:customData:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten8Database6updateFzT4userSS8passwordSS5rolesV4BSON8Document10customDataGSqS2___T_">update(user:password:roles:customData:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Updates a user in this database with a new password, roles and optional set of custom data</p>
+
+<p>For additional information: <a href="https://docs.mongodb.com/manual/reference/command/updateUser/#dbcmd.updateUser">https://docs.mongodb.com/manual/reference/command/updateUser/#dbcmd.updateUser</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">update</span><span class="p">(</span><span class="n">user</span> <span class="nv">username</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">password</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">roles</span><span class="p">:</span> <span class="kt">Document</span><span class="p">,</span> <span class="nv">customData</span><span class="p">:</span> <span class="kt">Document</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>user</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The user to udpate</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>password</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The new password</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>roles</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The roles to grant</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>customData</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The optional custom data you’ll give him</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten8Database4dropFzT4userSS_T_"></a>
+                    <a name="//apple_ref/swift/Method/drop(user:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten8Database4dropFzT4userSS_T_">drop(user:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Removes the specified user from this database</p>
+
+<p>For additional information: <a href="https://docs.mongodb.com/manual/reference/command/dropUser/#dbcmd.dropUser">https://docs.mongodb.com/manual/reference/command/dropUser/#dbcmd.dropUser</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">drop</span><span class="p">(</span><span class="n">user</span> <span class="nv">username</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>user</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The username from the user to drop</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten8Database12dropAllUsersFzT_T_"></a>
+                    <a name="//apple_ref/swift/Method/dropAllUsers()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten8Database12dropAllUsersFzT_T_">dropAllUsers()</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Removes all users from this database</p>
+
+<p>For additional information: <a href="https://docs.mongodb.com/manual/reference/command/dropAllUsersFromDatabase/#dbcmd.dropAllUsersFromDatabase">https://docs.mongodb.com/manual/reference/command/dropAllUsersFromDatabase/#dbcmd.dropAllUsersFromDatabase</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">dropAllUsers</span><span class="p">()</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten8Database5grantFzT5rolesV4BSON8Document2toSS_T_"></a>
+                    <a name="//apple_ref/swift/Method/grant(roles:to:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten8Database5grantFzT5rolesV4BSON8Document2toSS_T_">grant(roles:to:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Grants roles to a user in this database</p>
+
+<p>For additional information: <a href="https://docs.mongodb.com/manual/reference/command/grantRolesToUser/#dbcmd.grantRolesToUser">https://docs.mongodb.com/manual/reference/command/grantRolesToUser/#dbcmd.grantRolesToUser</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">grant</span><span class="p">(</span><span class="n">roles</span> <span class="nv">roleList</span><span class="p">:</span> <span class="kt">Document</span><span class="p">,</span> <span class="n">to</span> <span class="nv">user</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>roles</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The roles to grants</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>user</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The user’s username to grant the roles to</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten8Database4dropFzT_T_"></a>
+                    <a name="//apple_ref/swift/Method/drop()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten8Database4dropFzT_T_">drop()</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Drops this database and it&rsquo;s collections</p>
+
+<p>For additional information: <a href="https://docs.mongodb.com/manual/reference/command/dropDatabase/#dbcmd.dropDatabase">https://docs.mongodb.com/manual/reference/command/dropDatabase/#dbcmd.dropDatabase</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">drop</span><span class="p">()</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten8Database16createCollectionFzTSS7optionsGSqV4BSON8Document__T_"></a>
+                    <a name="//apple_ref/swift/Method/createCollection(_:options:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten8Database16createCollectionFzTSS7optionsGSqV4BSON8Document__T_">createCollection(_:options:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Creates a new collection explicitly.</p>
+
+<p>Because MongoDB creates a collection implicitly when the collection is first referenced in a
+command, this method is used primarily for creating new collections that use specific
+options. For example, you use <code>createCollection()</code> to create a capped collection, or to
+create a new collection that uses document validation. <code>createCollection()</code> is also used to
+pre-allocate space for an ordinary collection</p>
+
+<p>For more information and a full list of options: <a href="https://docs.mongodb.com/manual/reference/command/create/">https://docs.mongodb.com/manual/reference/command/create/</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">createCollection</span><span class="p">(</span><span class="n">_</span> <span class="nv">name</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">options</span><span class="p">:</span> <span class="kt">Document</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>name</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The name of the collection to create.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>options</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Optionally, configuration options for creating this collection.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten8Database4copyFzT10toDatabaseSS6asUserGSqT4userSS5nonceSS8passwordSS___T_"></a>
+                    <a name="//apple_ref/swift/Method/copy(toDatabase:asUser:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten8Database4copyFzT10toDatabaseSS6asUserGSqT4userSS5nonceSS8passwordSS___T_">copy(toDatabase:asUser:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Copies this <code>Database</code> and <code><a href="../Classes/Collection.html">Collection</a></code>s to another <code>Database</code></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">copy</span><span class="p">(</span><span class="n">toDatabase</span> <span class="nv">database</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="n">asUser</span> <span class="nv">user</span><span class="p">:</span> <span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">nonce</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">password</span><span class="p">:</span> <span class="kt">String</span><span class="p">)?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>database</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The new database name</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>user</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The optional user credentials that you’ll use to authenticate in the new DB</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten8Database5cloneFzT11toNamespaceSS10fromServerSS10filteredByGSqVS_5Query__T_"></a>
+                    <a name="//apple_ref/swift/Method/clone(toNamespace:fromServer:filteredBy:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten8Database5cloneFzT11toNamespaceSS10fromServerSS10filteredByGSqVS_5Query__T_">clone(toNamespace:fromServer:filteredBy:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Clones collection in the namespace from a server to this database
+Optionally filters data you don&rsquo;t want</p>
+
+<p>For additional information: <a href="https://docs.mongodb.com/manual/reference/command/cloneCollection/#dbcmd.cloneCollection">https://docs.mongodb.com/manual/reference/command/cloneCollection/#dbcmd.cloneCollection</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">clone</span><span class="p">(</span><span class="n">toNamespace</span> <span class="nv">ns</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="n">fromServer</span> <span class="nv">server</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="n">filteredBy</span> <span class="nv">filter</span><span class="p">:</span> <span class="kt"><a href="../Structs/Query.html">Query</a></span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>namespace</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The remote namespace</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>server</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The server URI you’re copying from</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>filter</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The query you’re using to filter this</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten8Database5cloneFzT11toNamespaceSS10fromServerSS10filteredByGSqV4BSON8Document__T_"></a>
+                    <a name="//apple_ref/swift/Method/clone(toNamespace:fromServer:filteredBy:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten8Database5cloneFzT11toNamespaceSS10fromServerSS10filteredByGSqV4BSON8Document__T_">clone(toNamespace:fromServer:filteredBy:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Clones collection in the namespace from a server to this database
+Optionally filters data you don&rsquo;t want</p>
+
+<p>For additional information: <a href="https://docs.mongodb.com/manual/reference/command/cloneCollection/#dbcmd.cloneCollection">https://docs.mongodb.com/manual/reference/command/cloneCollection/#dbcmd.cloneCollection</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">clone</span><span class="p">(</span><span class="n">toNamespace</span> <span class="nv">ns</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="n">fromServer</span> <span class="nv">server</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="n">filteredBy</span> <span class="nv">filter</span><span class="p">:</span> <span class="kt">Document</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>namespace</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The remote namespace</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>from</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The server URI you’re copying from</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>filtering</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The document filter you’re using to filter this</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten8Database5cloneFzT10collectionCS_10Collection5namedSS8cappedToVs5Int32_T_"></a>
+                    <a name="//apple_ref/swift/Method/clone(collection:named:cappedTo:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten8Database5cloneFzT10collectionCS_10Collection5namedSS8cappedToVs5Int32_T_">clone(collection:named:cappedTo:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Clones a collection in this database to another name in this database and caps it</p>
+
+<p>For additional information: <a href="https://docs.mongodb.com/manual/reference/command/cloneCollectionAsCapped/#dbcmd.cloneCollectionAsCapped">https://docs.mongodb.com/manual/reference/command/cloneCollectionAsCapped/#dbcmd.cloneCollectionAsCapped</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">clone</span><span class="p">(</span><span class="n">collection</span> <span class="nv">instance</span><span class="p">:</span> <span class="kt"><a href="../Classes/Collection.html">Collection</a></span><span class="p">,</span> <span class="n">named</span> <span class="nv">otherCollection</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="n">cappedTo</span> <span class="nv">capped</span><span class="p">:</span> <span class="kt">Int32</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>collection</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The collection to clone</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>otherCollection</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The new name to clone it to</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>capped</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The new cap</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:vPs23CustomStringConvertible11descriptionSS"></a>
+                    <a name="//apple_ref/swift/Property/description" class="dashAnchor"></a>
+                    <a class="token" href="#/s:vPs23CustomStringConvertible11descriptionSS">description</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Clones a collection in this database to another name in this database and caps it</p>
+
+<p>For additional information: <a href="https://docs.mongodb.com/manual/reference/command/cloneCollectionAsCapped/#dbcmd.cloneCollectionAsCapped">https://docs.mongodb.com/manual/reference/command/cloneCollectionAsCapped/#dbcmd.cloneCollectionAsCapped</a></p>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>When we can&rsquo;t send the request/receive the response, you don&rsquo;t have sufficient permissions or an error occurred</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="k">var</span> <span class="nv">description</span><span class="p">:</span> <span class="kt">String</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC11MongoKitten8Database12makeIteratorFT_GVs11AnyIteratorCS_10Collection_"></a>
+                    <a name="//apple_ref/swift/Method/makeIterator()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC11MongoKitten8Database12makeIteratorFT_GVs11AnyIteratorCS_10Collection_">makeIterator()</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Iterates over all collections in this database</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">makeIterator</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">AnyIterator</span><span class="o">&lt;</span><span class="kt"><a href="../Classes/Collection.html">Collection</a></span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </section>
+        </section>
+        <section id="footer">
+          <p>&copy; 2016 <a class="link" href="" target="_blank" rel="external">Robbert Brandsma &amp; Joannis Orlandos</a>. All rights reserved. (Last updated: 2016-11-02)</p>
+          <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.7.2</a>, a <a class="link" href="http://realm.io" target="_blank" rel="external">Realm</a> project.</p>
+        </section>
+      </article>
+    </div>
+  </body>
+</div>
+</html>

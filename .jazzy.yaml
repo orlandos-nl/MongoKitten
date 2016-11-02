@@ -1,8 +1,8 @@
 author: "Robbert Brandsma & Joannis Orlandos"
 module: MongoKitten
 readme: README.md
-github_url: https://github.com/PlanTeam/MongoKitten
+github_url: https://github.com/OpenKitten/MongoKitten
 xcodebuild_arguments:
   - "-scheme"
   - "MongoKitten"
-dash_url: http://planteam.github.io/MongoKitten/MongoKitten.xml
+dash_url: http://openkitten.github.io/MongoKitten/docsets/MongoKitten.tgz
