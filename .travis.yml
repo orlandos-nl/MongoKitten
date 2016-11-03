@@ -7,10 +7,10 @@ sudo: required
 dist: trusty
 osx_image: xcode8
 
-services:
-  - mongodb
+services: mongodb
 
 before_script:
+  - sleep 15
   - mongo mongokitten-unittest --eval 'db.addUser("mongokitten-unittest-user", "mongokitten-unittest-password");'
 
 before_install:
