@@ -10,6 +10,7 @@ osx_image: xcode8
 services: mongodb
 
 before_script:
+  - mongod --dbpath ~/.mongodb --fork --syslog
   - sleep 15
   - cd Tools; bash ./testprep.sh; cd ..;
   - mongo mongokitten-unittest --eval 'db.addUser("mongokitten-unittest-user", "mongokitten-unittest-password");'
