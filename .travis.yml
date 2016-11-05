@@ -32,7 +32,7 @@ script:
   - swift build
   - swift test
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then
-      xcodebuild clean build -project BSON.xcodeproj -scheme BSON -enableCodeCoverage YES test | xcpretty -c -f `xcpretty-travis-formatter`;
+      xcodebuild clean build -project MongoKitten.xcodeproj -scheme MongoKitten -enableCodeCoverage YES test | xcpretty -c -f `xcpretty-travis-formatter`;
     fi
 
 env:

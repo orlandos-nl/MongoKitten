@@ -735,7 +735,7 @@ public final class Collection {
         
         let command = ["collMod": self.name] as Document
         
-        let result = try firstDocument(in: database.execute(command: command))
+        let result = try firstDocument(in: database.execute(command: command + flags))
         
         guard result["ok"] == 1 else {
             throw MongoError.commandFailure(error: result)
