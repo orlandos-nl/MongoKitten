@@ -26,7 +26,7 @@ public class GridFS {
     /// - parameter named: The optional name of this GridFS bucket (by default "fs")
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred or when it can't create it's indexes
-    public init(in database: Database, named bucketName: String = "fs") throws {
+    public init(inDatabase database: Database, named bucketName: String = "fs") throws {
         files = database["\(bucketName).files"]
         chunks = database["\(bucketName).chunks"]
         
