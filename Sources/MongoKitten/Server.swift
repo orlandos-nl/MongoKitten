@@ -328,13 +328,31 @@ public final class Server {
     }
     
     /// Are we currently connected?
-    public private(set) var isConnected = false
+    public var isConnected: Bool {
+        for connection in connections where !connection.isConnected {
+            return false
+        }
+        
+        if connections.count == 0 {
+            guard let connection = try? reserveConnection() else {
+                return false
+            }
+            
+            defer {
+                returnConnection(connection)
+            }
+            
+            return connection.isConnected
+        }
+        
+        return true
+    }
     
     /// Connects with the MongoDB Server using the given information in the initializer
     ///
-    /// - throws: Unable to connect
+    /// *really* old unused API code.
     public func connect() throws {
-        isConnected = true
+        // this doesn't work anymore
     }
     
     /// Disconnects from the MongoDB server
@@ -343,7 +361,6 @@ public final class Server {
     public func disconnect() throws {
         connectionPoolLock.lock()
         isInitialized = false
-        isConnected = false
         
         for db in self.databaseCache {
             db.value.value?.isAuthenticated = false
