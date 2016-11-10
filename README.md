@@ -11,7 +11,7 @@ Native MongoDB driver for Swift, written in Swift. This library does not wrap ar
 
 ## Documentation
 
-This can be found [here](http://openkitten.github.io/MongoKitten/docs/) or you could use our [wiki](https://github.com/openkitten/mongokitten/wiki).
+This can be found [here](http://openkitten.github.io/MongoKitten/) or you could use our [wiki](https://github.com/openkitten/mongokitten/wiki).
 
 We have our own Dash documentation for MongoKitten which can be found in the top-right corner of the Documentation.
 
