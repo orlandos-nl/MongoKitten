@@ -214,10 +214,6 @@ public final class Server {
     }
     
     internal func reserveConnection() throws -> Connection {
-        guard isConnected else {
-            throw MongoError.notConnected
-        }
-        
         guard let connection = self.connections.first(where: { !$0.used }) else {
             self.connectionPoolLock.lock()
             guard currentConnections < maximumConnections else {
