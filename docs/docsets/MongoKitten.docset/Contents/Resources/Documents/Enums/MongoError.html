@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>MongoError Enum Reference</title>
+    <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
+    <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
+    <meta charset='utf-8'>
+    <script src="../js/jquery.min.js" defer></script>
+    <script src="../js/jazzy.js" defer></script>
+    
+  </head>
+  <body>
+    <a name="//apple_ref/swift/Enum/MongoError" class="dashAnchor"></a>
+    <a title="MongoError Enum Reference"></a>
+    <header>
+      <div class="content-wrapper">
+        <p><a href="../index.html">MongoKitten Docs</a> (75% documented)</p>
+        <p class="header-right"><a href="https://github.com/OpenKitten/MongoKitten"><img src="../img/gh.png"/>View on GitHub</a></p>
+        <p class="header-right"><a href="dash-feed://http%3A%2F%2Fopenkitten%2Egithub%2Eio%2FMongoKitten%2FMongoKitten%2Exml"><img src="../img/dash.png"/>Install in Dash</a></p>
+      </div>
+    </header>
+    <div class="content-wrapper">
+      <p id="breadcrumbs">
+        <a href="../index.html">MongoKitten Reference</a>
+        <img id="carat" src="../img/carat.png" />
+        MongoError Enum Reference
+      </p>
+    </div>
+    <div class="content-wrapper">
+      <nav class="sidebar">
+        <ul class="nav-groups">
+          <li class="nav-group-name">
+            <a href="../Classes.html">Classes</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Classes/Collection.html">Collection</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/Collection/FindAndModifyOperation.html">– FindAndModifyOperation</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/Cursor.html">Cursor</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/Database.html">Database</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/GridFS.html">GridFS</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/GridFS/File.html">– File</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/SCRAMClient.html">SCRAMClient</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Classes/Server.html">Server</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Enums.html">Enums</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Enums/AQT.html">AQT</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/AQT/AQTType.html">– AQTType</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/IndexParameter.html">IndexParameter</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/IndexParameter/SortOrder.html">– SortOrder</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/IndexParameter/TextIndexVersion.html">– TextIndexVersion</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/MongoAuthenticationError.html">MongoAuthenticationError</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/MongoError.html">MongoError</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Enums/SCRAMError.html">SCRAMError</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Extensions.html">Extensions</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Extensions/Document.html">Document</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Extensions/Socks.html">Socks</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Functions.html">Functions</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Functions.html#/s:F11MongoKittenop1nFVS_5QueryS0_">!(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/s:F11MongoKittenoi2neFTSSP4BSON16ValueConvertible__VS_5Query">!=(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/s:F11MongoKittenoi2aaFTVS_5QueryS0__S0_">&amp;&amp;(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/s:F11MongoKittenoi2aeFTPS_13QueryProtocol_PS0___V4BSON8Document">&amp;=(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/s:F11MongoKittenoi1lFTSSP4BSON16ValueConvertible__VS_5Query">&lt;(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/s:F11MongoKittenoi2leFTSSP4BSON16ValueConvertible__VS_5Query">&lt;=(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/s:F11MongoKittenoi2eeFTSSP4BSON16ValueConvertible__VS_5Query">==(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/s:F11MongoKittenoi1gFTSSP4BSON16ValueConvertible__VS_5Query">&gt;(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/s:F11MongoKittenoi2geFTSSP4BSON16ValueConvertible__VS_5Query">&gt;=(_:_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Functions.html#/s:F11MongoKittenoi2ooFTVS_5QueryS0__S0_">||(_:_:)</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Protocols.html">Protocols</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Protocols/MongoTCP.html">MongoTCP</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Protocols/QueryProtocol.html">QueryProtocol</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a href="../Structs.html">Structs</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a href="../Structs/DBRef.html">DBRef</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/Projection.html">Projection</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/Query.html">Query</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../Structs/QueryFlags.html">QueryFlags</a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+      <article class="main-content">
+        <section>
+          <section class="section">
+            <h1>MongoError</h1>
+              <div class="declaration">
+                <div class="language">
+                  <pre class="highlight"><code><span class="kd">public</span> <span class="kd">enum</span> <span class="kt">MongoError</span> <span class="p">:</span> <span class="kt">Error</span></code></pre>
+
+                </div>
+              </div>
+            <p>All MongoDB errors</p>
+
+          </section>
+          <section class="section task-group-section">
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FO11MongoKitten10MongoError19invalidBase64StringFMS0_S0_"></a>
+                    <a name="//apple_ref/swift/Element/invalidBase64String" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FO11MongoKitten10MongoError19invalidBase64StringFMS0_S0_">invalidBase64String</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Can&rsquo;t deocde base64</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="k">case</span> <span class="n">invalidBase64String</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FO11MongoKitten10MongoError28mongoDatabaseUnableToConnectFMS0_S0_"></a>
+                    <a name="//apple_ref/swift/Element/mongoDatabaseUnableToConnect" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FO11MongoKitten10MongoError28mongoDatabaseUnableToConnectFMS0_S0_">mongoDatabaseUnableToConnect</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Can&rsquo;t connect to the MongoDB Server</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="k">case</span> <span class="n">mongoDatabaseUnableToConnect</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FO11MongoKitten10MongoError29mongoDatabaseAlreadyConnectedFMS0_S0_"></a>
+                    <a name="//apple_ref/swift/Element/mongoDatabaseAlreadyConnected" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FO11MongoKitten10MongoError29mongoDatabaseAlreadyConnectedFMS0_S0_">mongoDatabaseAlreadyConnected</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Can&rsquo;t connect since we&rsquo;re already connected</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="k">case</span> <span class="n">mongoDatabaseAlreadyConnected</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FO11MongoKitten10MongoError16cannotDisconnectFMS0_S0_"></a>
+                    <a name="//apple_ref/swift/Element/cannotDisconnect" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FO11MongoKitten10MongoError16cannotDisconnectFMS0_S0_">cannotDisconnect</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Can&rsquo;t disconnect the socket</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="k">case</span> <span class="n">cannotDisconnect</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FO11MongoKitten10MongoError17invalidBodyLengthFMS0_S0_"></a>
+                    <a name="//apple_ref/swift/Element/invalidBodyLength" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FO11MongoKitten10MongoError17invalidBodyLengthFMS0_S0_">invalidBodyLength</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>The body of this message is an invalid length</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="k">case</span> <span class="n">invalidBodyLength</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FO11MongoKitten10MongoError13invalidActionFMS0_S0_"></a>
+                    <a name="//apple_ref/swift/Element/invalidAction" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FO11MongoKitten10MongoError13invalidActionFMS0_S0_">invalidAction</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>-</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="k">case</span> <span class="n">invalidAction</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FO11MongoKitten10MongoError12notConnectedFMS0_S0_"></a>
+                    <a name="//apple_ref/swift/Element/notConnected" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FO11MongoKitten10MongoError12notConnectedFMS0_S0_">notConnected</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>We can&rsquo;t do this action because we&rsquo;re not yet connected</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="k">case</span> <span class="n">notConnected</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FO11MongoKitten10MongoError13insertFailureFMS0_FT9documentsGSaV4BSON8Document_5errorGSqS2___S0_"></a>
+                    <a name="//apple_ref/swift/Element/insertFailure" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FO11MongoKitten10MongoError13insertFailureFMS0_FT9documentsGSaV4BSON8Document_5errorGSqS2___S0_">insertFailure</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Can&rsquo;t insert given documents</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="k">case</span> <span class="nf">insertFailure</span><span class="p">(</span><span class="nv">documents</span><span class="p">:</span> <span class="p">[</span><span class="kt">Document</span><span class="p">],</span> <span class="nv">error</span><span class="p">:</span> <span class="kt">Document</span><span class="p">?)</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FO11MongoKitten10MongoError12queryFailureFMS0_FT5queryV4BSON8Document5errorGSqS2___S0_"></a>
+                    <a name="//apple_ref/swift/Element/queryFailure" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FO11MongoKitten10MongoError12queryFailureFMS0_FT5queryV4BSON8Document5errorGSqS2___S0_">queryFailure</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Can&rsquo;t query for documents matching given query</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="k">case</span> <span class="nf">queryFailure</span><span class="p">(</span><span class="nv">query</span><span class="p">:</span> <span class="kt">Document</span><span class="p">,</span> <span class="nv">error</span><span class="p">:</span> <span class="kt">Document</span><span class="p">?)</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FO11MongoKitten10MongoError13updateFailureFMS0_FT7updatesGSaT6filterV4BSON8Document2toS2_9upsertingSb8multipleSb__5errorGSqS2___S0_"></a>
+                    <a name="//apple_ref/swift/Element/updateFailure" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FO11MongoKitten10MongoError13updateFailureFMS0_FT7updatesGSaT6filterV4BSON8Document2toS2_9upsertingSb8multipleSb__5errorGSqS2___S0_">updateFailure</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Can&rsquo;t update documents with the given selector and update</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="k">case</span> <span class="nf">updateFailure</span><span class="p">(</span><span class="nv">updates</span><span class="p">:</span> <span class="p">[(</span><span class="nv">filter</span><span class="p">:</span> <span class="kt">Document</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="kt">Document</span><span class="p">,</span> <span class="nv">upserting</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">,</span> <span class="nv">multiple</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">)],</span> <span class="nv">error</span><span class="p">:</span> <span class="kt">Document</span><span class="p">?)</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FO11MongoKitten10MongoError13removeFailureFMS0_FT8removalsGSaT6filterV4BSON8Document5limitVs5Int32__5errorGSqS2___S0_"></a>
+                    <a name="//apple_ref/swift/Element/removeFailure" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FO11MongoKitten10MongoError13removeFailureFMS0_FT8removalsGSaT6filterV4BSON8Document5limitVs5Int32__5errorGSqS2___S0_">removeFailure</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Can&rsquo;t remove documents matching the given query</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="k">case</span> <span class="nf">removeFailure</span><span class="p">(</span><span class="nv">removals</span><span class="p">:</span> <span class="p">[(</span><span class="nv">filter</span><span class="p">:</span> <span class="kt">Document</span><span class="p">,</span> <span class="nv">limit</span><span class="p">:</span> <span class="kt">Int32</span><span class="p">)],</span> <span class="nv">error</span><span class="p">:</span> <span class="kt">Document</span><span class="p">?)</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FO11MongoKitten10MongoError15handlerNotFoundFMS0_S0_"></a>
+                    <a name="//apple_ref/swift/Element/handlerNotFound" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FO11MongoKitten10MongoError15handlerNotFoundFMS0_S0_">handlerNotFound</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Can&rsquo;t find a handler for this reply</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="k">case</span> <span class="n">handlerNotFound</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FO11MongoKitten10MongoError7timeoutFMS0_S0_"></a>
+                    <a name="//apple_ref/swift/Element/timeout" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FO11MongoKitten10MongoError7timeoutFMS0_S0_">timeout</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>-</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="k">case</span> <span class="n">timeout</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FO11MongoKitten10MongoError14commandFailureFMS0_FT5errorV4BSON8Document_S0_"></a>
+                    <a name="//apple_ref/swift/Element/commandFailure" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FO11MongoKitten10MongoError14commandFailureFMS0_FT5errorV4BSON8Document_S0_">commandFailure</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>-</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="k">case</span> <span class="nf">commandFailure</span><span class="p">(</span><span class="nv">error</span><span class="p">:</span> <span class="kt">Document</span><span class="p">)</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FO11MongoKitten10MongoError12commandErrorFMS0_FT5errorSS_S0_"></a>
+                    <a name="//apple_ref/swift/Element/commandError" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FO11MongoKitten10MongoError12commandErrorFMS0_FT5errorSS_S0_">commandError</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>-</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="k">case</span> <span class="nf">commandError</span><span class="p">(</span><span class="nv">error</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FO11MongoKitten10MongoError25cursorInitializationErrorFMS0_FT14cursorDocumentV4BSON8Document_S0_"></a>
+                    <a name="//apple_ref/swift/Element/cursorInitializationError" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FO11MongoKitten10MongoError25cursorInitializationErrorFMS0_FT14cursorDocumentV4BSON8Document_S0_">cursorInitializationError</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Thrown when the initialization of a cursor, on request of the server, failed because of missing data.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="k">case</span> <span class="nf">cursorInitializationError</span><span class="p">(</span><span class="nv">cursorDocument</span><span class="p">:</span> <span class="kt">Document</span><span class="p">)</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FO11MongoKitten10MongoError12invalidReplyFMS0_S0_"></a>
+                    <a name="//apple_ref/swift/Element/invalidReply" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FO11MongoKitten10MongoError12invalidReplyFMS0_S0_">invalidReply</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>-</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="k">case</span> <span class="n">invalidReply</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FO11MongoKitten10MongoError15invalidResponseFMS0_FT9documentsGSaV4BSON8Document__S0_"></a>
+                    <a name="//apple_ref/swift/Element/invalidResponse" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FO11MongoKitten10MongoError15invalidResponseFMS0_FT9documentsGSaV4BSON8Document__S0_">invalidResponse</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>The response with the given documents is invalid</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="k">case</span> <span class="nf">invalidResponse</span><span class="p">(</span><span class="nv">documents</span><span class="p">:</span> <span class="p">[</span><span class="kt">Document</span><span class="p">])</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FO11MongoKitten10MongoError21internalInconsistencyFMS0_S0_"></a>
+                    <a name="//apple_ref/swift/Element/internalInconsistency" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FO11MongoKitten10MongoError21internalInconsistencyFMS0_S0_">internalInconsistency</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>If you get one of these, it&rsquo;s probably a bug on our side. Sorry. Please file an issue at <a href="https://github.com/OpenKitten/MongoKitten/issues/new">https://github.com/OpenKitten/MongoKitten/issues/new</a> :)</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="k">case</span> <span class="n">internalInconsistency</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FO11MongoKitten10MongoError21unsupportedOperationsFMS0_S0_"></a>
+                    <a name="//apple_ref/swift/Element/unsupportedOperations" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FO11MongoKitten10MongoError21unsupportedOperationsFMS0_S0_">unsupportedOperations</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>-</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="k">case</span> <span class="n">unsupportedOperations</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FO11MongoKitten10MongoError16invalidChunkSizeFMS0_FT9chunkSizeSi_S0_"></a>
+                    <a name="//apple_ref/swift/Element/invalidChunkSize" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FO11MongoKitten10MongoError16invalidChunkSizeFMS0_FT9chunkSizeSi_S0_">invalidChunkSize</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>-</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="k">case</span> <span class="nf">invalidChunkSize</span><span class="p">(</span><span class="nv">chunkSize</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FO11MongoKitten10MongoError22negativeBytesRequestedFMS0_FT5startSi3endSi_S0_"></a>
+                    <a name="//apple_ref/swift/Element/negativeBytesRequested" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FO11MongoKitten10MongoError22negativeBytesRequestedFMS0_FT5startSi3endSi_S0_">negativeBytesRequested</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>GridFS was asked to return a negative amount of bytes</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="k">case</span> <span class="nf">negativeBytesRequested</span><span class="p">(</span><span class="nv">start</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">end</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FO11MongoKitten10MongoError10invalidURIFMS0_FT3uriSS_S0_"></a>
+                    <a name="//apple_ref/swift/Element/invalidURI" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FO11MongoKitten10MongoError10invalidURIFMS0_FT3uriSS_S0_">invalidURI</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">enum</span> <span class="kt">MongoError</span> <span class="p">:</span> <span class="kt">Error</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FO11MongoKitten10MongoError12invalidNSURLFMS0_FT3urlCSo5NSURL_S0_"></a>
+                    <a name="//apple_ref/swift/Element/invalidNSURL" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FO11MongoKitten10MongoError12invalidNSURLFMS0_FT3urlCSo5NSURL_S0_">invalidNSURL</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">enum</span> <span class="kt">MongoError</span> <span class="p">:</span> <span class="kt">Error</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </section>
+        </section>
+        <section id="footer">
+          <p>&copy; 2016 <a class="link" href="" target="_blank" rel="external">Robbert Brandsma &amp; Joannis Orlandos</a>. All rights reserved. (Last updated: 2016-11-11)</p>
+          <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.7.2</a>, a <a class="link" href="http://realm.io" target="_blank" rel="external">Realm</a> project.</p>
+        </section>
+      </article>
+    </div>
+  </body>
+</div>
+</html>
