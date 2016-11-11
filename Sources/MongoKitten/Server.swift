@@ -218,10 +218,6 @@ public final class Server {
     }
     
     internal func reserveConnection() throws -> Connection {
-        guard isConnected else {
-            throw MongoError.notConnected
-        }
-        
         guard let connection = self.connections.first(where: { !$0.used }) else {
             self.connectionPoolLock.lock()
             guard currentConnections < maximumConnections else {
@@ -331,14 +327,32 @@ public final class Server {
     }
     
     /// Are we currently connected?
-    public private(set) var isConnected = false
+    public var isConnected: Bool {
+        for connection in connections where !connection.isConnected {
+            return false
+        }
+        
+        if connections.count == 0{
+            guard let connection = try? reserveConnection() else {
+                return false
+            }
+            
+            defer {
+                returnConnection(connection)
+            }
+            
+            return connection.isConnected
+        }
+        
+        return true
+    }
     
     /// Connects with the MongoDB Server using the given information in the initializer
     ///
+    /// *really* old unused API code
     /// - throws: Unable to connect
     public func connect() throws {
-        _ = try? self.disconnect()
-        isConnected = true
+        // this doesn't work anymore
     }
     
     /// Disconnects from the MongoDB server
@@ -347,7 +361,6 @@ public final class Server {
     public func disconnect() throws {
         connectionPoolLock.lock()
         isInitialized = false
-        isConnected = false
         
         for db in self.databaseCache {
             db.value.value?.isAuthenticated = false
