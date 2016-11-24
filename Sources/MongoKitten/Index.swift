@@ -5,18 +5,18 @@ public enum IndexParameter {
         case one
         case two
         
-        public func makeBsonValue() -> Value {
+        public func makeBSONPrimitive() -> BSONPrimitive {
             if self == .one {
-                return .int32(1)
+                return Int32(1)
             }
             
-            return .int32(2)
+            return Int32(2)
         }
     }
     
     case sort(field: String, order: SortOrder)
     case sortedCompound(fields: [(field: String, order: SortOrder)])
-    case compound(fields: [(field: String, value: Value)])
+    case compound(fields: [(field: String, value: ValueConvertible)])
     case expire(afterSeconds: Int)
     case sparse
     case custom(Document)
@@ -33,7 +33,7 @@ public enum IndexParameter {
             var index: Document = [:]
             
             for field in fields {
-                index[field.field] = field.order.makeBsonValue()
+                index[field.field] = field.order
             }
             
             return ["key": (index.flattened())]
@@ -46,7 +46,7 @@ public enum IndexParameter {
             
             return ["key": (index.flattened())]
         case .expire(let seconds):
-            return ["expireAfterSeconds": seconds.makeBsonValue()]
+            return ["expireAfterSeconds": seconds]
         case .sparse:
             return ["sparse": true]
         case .custom(let doc):

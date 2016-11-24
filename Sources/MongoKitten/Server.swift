@@ -496,7 +496,7 @@ public final class Server {
         let reply = try self["admin"].execute(command: command)
         let response = try firstDocument(in: reply)
 
-        guard response["ok"] == 1 else {
+        guard response["ok"]?.int == 1 else {
             throw MongoError.commandFailure(error: response)
         }
     }
@@ -535,7 +535,7 @@ public final class Server {
         let reply = try self["admin"].execute(command: command)
         let response = try firstDocument(in: reply)
         
-        guard response["ok"] == 1 else {
+        guard response["ok"]?.int == 1 else {
             throw MongoError.commandFailure(error: response)
         }
     }
@@ -558,7 +558,7 @@ public final class Server {
         
         let response = try firstDocument(in: try self["$cmd"].execute(command: command))
         
-        guard response["ok"] == 1 else {
+        guard response["ok"]?.int == 1 else {
             throw MongoError.commandFailure(error: response)
         }
     }
@@ -585,7 +585,7 @@ public final class Server {
         let reply = try self["admin"].execute(command: command)
         let response = try firstDocument(in: reply)
         
-        guard response["ok"] == 1 else {
+        guard response["ok"]?.int == 1 else {
             throw MongoError.commandFailure(error: response)
         }
     }
@@ -619,7 +619,7 @@ public final class Server {
 
         let document = try firstDocument(in: try db.execute(command: command))
         
-        guard document["ok"] == 1 else {
+        guard document["ok"]?.int == 1 else {
             throw MongoError.commandFailure(error: document)
         }
         

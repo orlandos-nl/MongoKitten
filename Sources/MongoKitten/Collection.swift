@@ -16,12 +16,32 @@ public typealias MongoCollection = Collection
 /// **### Definition ###**
 ///
 /// A grouping of MongoDB documents. A collection is the equivalent of an RDBMS table. A collection exists within a single database. Collections do not enforce a schema. Documents within a collection can have different fields. Typically, all documents in a collection have a similar or related purpose. See Namespaces.
-public final class Collection {
+public final class Collection: NSObject {
     /// The Database this collection is in
     public private(set) var database: Database
     
     /// The collection name
     public private(set) var name: String
+    
+    #if Xcode
+    func debugQuickLookObject() -> AnyObject {
+        var userInfo = ""
+        
+        if let username = database.server.authDetails?.username {
+            userInfo = "\(username):*********@"
+        }
+        
+        var collectionData = ""
+        
+        if let documentCount = try? self.count() {
+            collectionData = "Document count: \(documentCount)\n"
+        } else {
+            collectionData = "Unable to fetch collection data"
+        }
+        
+        return NSString(string: "mongodb://\(userInfo)\(database.server.hostname)/\(self.fullName)\n\n\(collectionData)")
+    }
+    #endif
     
     /// The full (computed) collection name. Created by adding the Database's name with the Collection's name with a dot to seperate them
     /// Will be empty
@@ -113,7 +133,7 @@ public final class Collection {
                     throw MongoError.insertFailure(documents: documents, error: nil)
                 }
                 
-                guard replyDocuments.first?["ok"] == 1 else {
+                guard replyDocuments.first?["ok"]?.int == 1 else {
                     throw MongoError.insertFailure(documents: documents, error: replyDocuments.first)
                 }
             } else {
@@ -290,7 +310,7 @@ public final class Collection {
         
         if protocolVersion >= 2 {
             var command: Document = ["update": self.name]
-            var newUpdates = [Value]()
+            var newUpdates = [ValueConvertible]()
             
             for u in updates {
                 newUpdates.append([
@@ -298,7 +318,7 @@ public final class Collection {
                     "u": u.to,
                     "upsert": u.upserting,
                     "multi": u.multiple
-                    ])
+                    ] as Document)
             }
             
             command["updates"] = Document(array: newUpdates)
@@ -312,7 +332,7 @@ public final class Collection {
                 throw MongoError.updateFailure(updates: updates, error: nil)
             }
             
-            guard documents.first?["ok"] == 1 else {
+            guard documents.first?["ok"]?.int == 1 else {
                 throw MongoError.updateFailure(updates: updates, error: documents.first)
             }
             
@@ -380,13 +400,13 @@ public final class Collection {
         
         if protocolVersion >= 2 {
             var command: Document = ["delete": self.name]
-            var newDeletes = [Value]()
+            var newDeletes = [ValueConvertible]()
             
             for d in removals {
                 newDeletes.append([
                     "q": d.filter.queryDocument,
                     "limit": d.limit
-                    ])
+                    ] as Document)
             }
             
             command["deletes"] = Document(array: newDeletes)
@@ -398,7 +418,7 @@ public final class Collection {
             let reply = try self.database.execute(command: command)
             let documents = try allDocuments(in: reply)
             
-            guard let document = documents.first, document["ok"] == 1 else {
+            guard let document = documents.first, document["ok"]?.int == 1 else {
                 throw MongoError.removeFailure(removals: removals, error: documents.first)
             }
             
@@ -587,7 +607,7 @@ public final class Collection {
         
         let document = try firstDocument(in: try database.execute(command: command))
         
-        guard document["ok"] == 1 else {
+        guard document["ok"]?.int == 1 else {
             throw MongoError.commandFailure(error: document)
         }
         
@@ -624,7 +644,7 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A list of all distinct values for this key
-    public func distinct(on key: String, usingFilter query: Query) throws -> [Value]? {
+    public func distinct(on key: String, usingFilter query: Query) throws -> [ValueConvertible]? {
         return try self.distinct(on: key, usingFilter: query)
     }
     
@@ -672,7 +692,7 @@ public final class Collection {
         
         let document = try firstDocument(in: try database.execute(command: ["createIndexes": self.name, "indexes": Document(array: indexDocs)]))
         
-        guard document["ok"] == 1 else {
+        guard document["ok"]?.int == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -729,7 +749,7 @@ public final class Collection {
     /// - throws: When MongoDB doesn't return a document indicating success, we'll throw a `MongoError.commandFailure()` containing the error document sent by the server
     /// - throws: When the `flags` document contains the key `collMod`, which is prohibited.
     public func modify(flags: Document) throws {
-        guard flags["collMod"] == .nothing else {
+        guard flags["collMod"] == nil else {
             throw MongoError.commandError(error: "Cannot execute modify() on \(self.description): document `flags` contains prohibited key `collMod`.")
         }
         
@@ -737,7 +757,7 @@ public final class Collection {
         
         let result = try firstDocument(in: database.execute(command: command + flags))
         
-        guard result["ok"] == 1 else {
+        guard result["ok"]?.int == 1 else {
             throw MongoError.commandFailure(error: result)
         }
     }
@@ -795,7 +815,7 @@ public final class Collection {
         
         let document = try firstDocument(in: try database.execute(command: command))
         
-        guard document["ok"] == 1 else {
+        guard document["ok"]?.int == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -812,12 +832,12 @@ public final class Collection {
     public func convertToCapped(cappingAt cap: Int32) throws {
         let command: Document = [
             "convertToCapped": self.name,
-            "size": Int32(cap).makeBsonValue()
+            "size": Int32(cap)
         ]
         
         let document = try firstDocument(in: try database.execute(command: command))
         
-        guard document["ok"] == 1 else {
+        guard document["ok"]?.int == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -836,7 +856,7 @@ public final class Collection {
         
         let document = try firstDocument(in: try database.execute(command: command))
         
-        guard document["ok"] == 1 else {
+        guard document["ok"]?.int == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -861,7 +881,7 @@ public final class Collection {
         
         let document = try firstDocument(in: try database.execute(command: command))
         
-        guard document["ok"] == 1 else {
+        guard document["ok"]?.int == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -879,8 +899,8 @@ public final class Collection {
     }
 }
 
-extension Collection : CustomStringConvertible {
-    public var description: String {
+extension Collection {
+    public override var description: String {
         return "MongoKitten.Collection<\(database.server.hostname)/\(self.fullName)>"
     }
 }

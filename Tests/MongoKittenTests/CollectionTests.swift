@@ -137,11 +137,11 @@ class CollectionTests: XCTestCase {
     func testProjection() {
         let projection: Projection = ["name", "age", "awesome"]
         
-        XCTAssertEqual(projection.makeBsonValue(), ["name": Int32(1), "age": Int32(1), "awesome": Int32(1)])
+        XCTAssertEqual(projection.makeBsonValue(), ["name": true, "age": true, "awesome": true])
         
-        let projection2: Projection = ["henk": true, "bob": 1]
+        let projection2: Projection = ["henk": .included, "bob": .excluded]
         
-        XCTAssertEqual(projection2.document, ["henk": true, "bob": 1])
+         XCTAssertEqual(projection2.document, ["henk": true, "bob": false])
     }
     
     func testIndexes() throws {

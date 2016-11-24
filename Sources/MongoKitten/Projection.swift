@@ -1,19 +1,23 @@
 import BSON
 
-public struct Projection {
+public struct Projection: ValueConvertible {
     var document: Document
     
-    public enum Expression: ValueConvertible {
+    public enum Expression: ValueConvertible, ExpressibleByBooleanLiteral {
+        public func makeBSONPrimitive() -> BSONPrimitive {
+            switch self {
+            case .custom(let convertible): return convertible.makeBSONPrimitive()
+            case .included: return true
+            case .excluded: return false
+            }
+        }
+
         case custom(ValueConvertible)
         case included
         case excluded
         
-        public func makeBsonValue() -> BSON.Value {
-            switch self {
-            case .custom(let convertible): return convertible.makeBsonValue()
-            case .included: return true
-            case .excluded: return false
-            }
+        public init(booleanLiteral value: Bool) {
+            self = value ? .included : .excluded
         }
     }
     
@@ -24,11 +28,9 @@ public struct Projection {
     public mutating func suppressIdentifier() {
         document["_id"] = false
     }
-}
-
-extension Projection: ValueConvertible {
-    public func makeBsonValue() -> Value {
-        return self.document.makeBsonValue()
+    
+    public func makeBSONPrimitive() -> BSONPrimitive {
+        return self.document
     }
 }
 

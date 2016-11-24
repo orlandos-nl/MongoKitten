@@ -35,7 +35,7 @@ class SetupTests: XCTestCase {
     }
     
     func testExample() throws {
-        let database = try Database(mongoURL: "mongodb://mongokitten-unittest-user:mongokitten-unittest-password@127.0.0.1:27017/mongokitten-unittest-mydatabase")
+        let database = try Database(mongoURL: "mongodb://127.0.0.1:27017/mongokitten-unittest-mydatabase")
         let userCollection = database["users"]
         let otherCollection = database["otherdata"]
         

@@ -126,7 +126,7 @@ public class GridFS {
     /// - parameter inChunksOf: The amount of bytes to put in one chunk
     ///
     /// TODO: Accept data streams
-    public func store(data binary: [UInt8], named filename: String? = nil, withType contentType: String? = nil, usingMetadata metadata: Value? = nil, inChunksOf chunkSize: Int = 255000) throws -> ObjectId {
+    public func store(data binary: [UInt8], named filename: String? = nil, withType contentType: String? = nil, usingMetadata metadata: ValueConvertible? = nil, inChunksOf chunkSize: Int = 255000) throws -> ObjectId {
         guard chunkSize < 15_000_000 else {
             throw MongoError.invalidChunkSize(chunkSize: chunkSize)
         }
@@ -137,8 +137,8 @@ public class GridFS {
         
         var insertData: Document = [
             "_id": id,
-            "length": Int64(dataSize).makeBsonValue(),
-            "chunkSize": Int32(chunkSize).makeBsonValue(),
+            "length": Int64(dataSize),
+            "chunkSize": Int32(chunkSize),
             "uploadDate": Date(timeIntervalSinceNow: 0),
             "md5": MD5.hash(data).hexString]
         
@@ -161,7 +161,7 @@ public class GridFS {
             let chunk = Array(data[0..<smallestMax])
             
             _ = try chunks.insert(["files_id": id,
-                                   "n": Int64(n).makeBsonValue(),
+                                   "n": Int64(n),
                                    "data": Binary(data: chunk, withSubtype: .generic)])
             
             n += 1
@@ -178,7 +178,7 @@ public class GridFS {
     /// - parameter withType: The optional MIME type to use for this data
     /// - parameter usingMetadata: The optional metadata to store with this file
     /// - parameter inChunksOf: The amount of bytes to put in one chunk
-    public func store(data nsdata: NSData, named filename: String? = nil, withType contentType: String? = nil, usingMetadata metadata: Value? = nil, inChunksOf chunkSize: Int = 255000) throws -> ObjectId {
+    public func store(data nsdata: NSData, named filename: String? = nil, withType contentType: String? = nil, usingMetadata metadata: ValueConvertible? = nil, inChunksOf chunkSize: Int = 255000) throws -> ObjectId {
         return try self.store(data: Array(Data(referencing: nsdata)), named: filename, withType: contentType, usingMetadata: metadata, inChunksOf: chunkSize)
     }
     

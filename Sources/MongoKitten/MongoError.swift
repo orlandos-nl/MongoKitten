@@ -94,4 +94,5 @@ public enum MongoAuthenticationError : Error {
 
 internal enum InternalMongoError : Error {
     case incorrectReply(reply: Message)
+    case invalidCString
 }

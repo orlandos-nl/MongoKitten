@@ -4,8 +4,8 @@ public struct DBRef: ValueConvertible {
     var collection: Collection
     var id: ValueConvertible
     
-    public func makeBsonValue() -> Value {
-        return self.documentValue.makeBsonValue()
+    public func makeBSONPrimitive() -> BSONPrimitive {
+        return self.documentValue
     }
     
     public init(referencing reference: ValueConvertible, inCollection collection: Collection) {
@@ -36,7 +36,7 @@ public struct DBRef: ValueConvertible {
             return nil
         }
         
-        guard let id = document["$id"]?.makeBsonValue() else {
+        guard let id = document["$id"]?.makeBSONPrimitive() else {
             return nil
         }
         

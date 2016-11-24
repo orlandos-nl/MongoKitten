@@ -5,11 +5,11 @@ public enum SortOrder: ValueConvertible {
     case descending
     case custom(ValueConvertible)
     
-    public func makeBsonValue() -> Value {
+    public func makeBSONPrimitive() -> BSONPrimitive {
         switch self {
-            case .ascending: return .int32(1)
-            case .descending: return .int32(-1)
-            case .custom(let value): return value.makeBsonValue()
+        case .ascending: return Int32(1)
+        case .descending: return Int32(-1)
+        case .custom(let value): return value.makeBSONPrimitive()
         }
     }
 }
@@ -17,13 +17,13 @@ public enum SortOrder: ValueConvertible {
 public struct Sort: ValueConvertible, ExpressibleByDictionaryLiteral {
     var document: Document
 
-    public func makeBsonValue() -> Value {
-        return document.makeBsonValue()
+    public func makeBSONPrimitive() -> BSONPrimitive {
+        return self.document
     }
     
     public init(dictionaryLiteral elements: (String, SortOrder)...) {
         self.document = Document(dictionaryElements: elements.map {
-            ($0.0, $0.1.makeBsonValue())
+            ($0.0, $0.1)
         })
     }
     

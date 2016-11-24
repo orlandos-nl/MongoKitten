@@ -67,23 +67,23 @@ public final class Cursor<T> {
         do {
             if collection.database.server.serverData?.maxWireVersion ?? 0 >= 4 {
                 let reply = try collection.database.execute(command: [
-                    "getMore": Int64(self.cursorID).makeBsonValue(),
+                    "getMore": Int64(self.cursorID),
                     "collection": collection.name,
-                    "batchSize": Int32(chunkSize).makeBsonValue()
+                    "batchSize": Int32(chunkSize)
                     ])
                 
                 guard case .Reply(_, _, _, _, _, _, let resultDocs) = reply else {
                     throw InternalMongoError.incorrectReply(reply: reply)
                 }
                 
-                let documents = resultDocs.first?.makeBsonValue()["cursor"]["nextBatch"].document ?? []
+                let documents = resultDocs.first?["cursor", "nextBatch"] as? Document ?? []
                 for (_, value) in documents {
                     if let doc = transform(value.document) {
                         self.data.append(doc)
                     }
                 }
                 
-                self.cursorID = resultDocs.first?.makeBsonValue()["cursor"]["id"].int64 ?? -1
+                self.cursorID = resultDocs.first?["cursor", "id"]?.int64 ?? -1
             } else {
                 let connection = try collection.database.server.reserveConnection()
                 

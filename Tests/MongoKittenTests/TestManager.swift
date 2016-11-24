@@ -15,7 +15,9 @@ final class TestManager {
         case TestDataNotPresent
     }
     
-    static var server = try! Server(hostname: "localhost", port: 27017, authenticatedAs: ("mongokitten-unittest-user", "mongokitten-unittest-password", "mongokitten-unittest"))
+    //static var server = try! Server(hostname: "localhost", port: 27017, authenticatedAs: ("mongokitten-unittest-user", "mongokitten-unittest-password", "mongokitten-unittest"))
+    
+    static var server = try! Server(hostname: "localhost", port: 27017)
     static var db: Database { return server["mongokitten-unittest"] }
     static let wcol = db["wcol"]
     

@@ -230,21 +230,21 @@ public indirect enum AQT {
         case .smallerThanOrEqual(let key, let val):
             return [key: ["$lte": val] as Document]
         case .and(let aqts):
-            let expressions = aqts.map{ Value.document($0.document) }
+            let expressions = aqts.map{ $0.document }
             
             return ["$and": Document(array: expressions) ]
         case .or(let aqts):
-            let expressions = aqts.map{ Value.document($0.document) }
+            let expressions = aqts.map{ $0.document }
             
             return ["$or": Document(array: expressions) ]
         case .not(let aqt):
             return ["$not": aqt.document]
         case .contains(let key, let val, let options):
-            return [key: Value.regularExpression(pattern: val, options: options)]
+            return [key: ((try? RegularExpression(pattern: val, options: options)) ?? Null()) as ValueConvertible] as Document
         case .startsWith(let key, let val):
-            return [key: Value.regularExpression(pattern: "^\(val)", options: "m")]
+            return [key: ((try? RegularExpression(pattern: "^" + val, options: .anchorsMatchLines)) ?? Null()) as ValueConvertible]
         case .endsWith(let key, let val):
-            return [key: Value.regularExpression(pattern: "\(val)$", options: "m")]
+            return [key: ((try? RegularExpression(pattern: val + "$", options: .anchorsMatchLines)) ?? Null()) as ValueConvertible]
         case .nothing:
             return []
         }
@@ -284,7 +284,7 @@ public indirect enum AQT {
     case nothing
     
     /// Whether the String value within the `key` contains this `String`.
-    case contains(key: String, val: String, options: String)
+    case contains(key: String, val: String, options: RegularExpression.Options)
     
     /// Whether the String value within the `key` starts with this `String`.
     case startsWith(key: String, val: String)
@@ -297,13 +297,13 @@ public indirect enum AQT {
 
 /// A `Query` that consists of an `AQT` statement
 public struct Query: ExpressibleByDictionaryLiteral, ValueConvertible {
+    /// The `Document` that can be sent to the MongoDB Server as a query/filter
+    public func makeBSONPrimitive() -> BSONPrimitive {
+        return self.queryDocument
+    }
+
     public init(dictionaryLiteral elements: (String, ValueConvertible)...) {
         self.aqt = .exactly(Document(dictionaryElements: elements))
-    }
-    
-    /// The `Document` that can be sent to the MongoDB Server as a query/filter
-    public func makeBsonValue() -> Value {
-        return self.queryDocument.makeBsonValue()
     }
     
     /// The `Document` that can be sent to the MongoDB Server as a query/filter
@@ -408,24 +408,24 @@ public struct Pipeline: ExpressibleByArrayLiteral {
         /// Used for aggregations that MongoKitten does not support
         case custom(Document)
         
-        public func makeBsonValue() -> Value {
+        public func makeBSONPrimitive() -> BSONPrimitive {
             switch self {
             case .custom(let doc):
-                return doc.makeBsonValue()
+                return doc
             case .project(let projection):
                 return [
-                    "$project": projection.makeBsonValue()
-                ]
+                    "$project": projection.makeBSONPrimitive()
+                ] as Document
             case .match(let query):
                 return [
                     "$match": query
-                ]
+                ] as Document
             case .limit(let limit):
                 return [
                     "$limit": limit
-                ]
+                ] as Document
             case .out(let collection):
-                return ["$out": collection]
+                return ["$out": collection] as Document
             case .lookup(let from, let localField, let foreignField, let namedAs):
                 return ["$lookup": [
                     "from": from,
@@ -433,46 +433,47 @@ public struct Pipeline: ExpressibleByArrayLiteral {
                     "foreignField": foreignField,
                     "as": namedAs
                     ] as Document
-                ]
+                ] as Document
             case .sort(let sort):
-                return ["$sort": sort]
+                return ["$sort": sort] as Document
             case .sample(let size):
                 return ["$sample": [
                         ["$size": size] as Document
                     ] as Document
-                ]
+                ] as Document
             case .unwind(let path, let includeArrayIndex, let preserveNullAndEmptyArrays):
-                var unwind: Value
+                let unwind: ValueConvertible
                 
                 if let includeArrayIndex = includeArrayIndex {
-                    unwind = [
+                    var unwind1 = [
                         "path": path
-                    ]
+                    ] as Document
                     
-                    unwind["includeArrayIndex"] = includeArrayIndex.makeBsonValue()
+                    unwind1["includeArrayIndex"] = includeArrayIndex
                     
                     if let preserveNullAndEmptyArrays = preserveNullAndEmptyArrays {
-                        unwind["preserveNullAndEmptyArrays"] = preserveNullAndEmptyArrays.makeBsonValue()
+                        unwind1["preserveNullAndEmptyArrays"] = preserveNullAndEmptyArrays
                     }
+                    
+                    unwind = unwind1
                 } else if let preserveNullAndEmptyArrays = preserveNullAndEmptyArrays {
                     unwind = [
-                        "path": path
-                    ]
-                    
-                    unwind["preserveNullAndEmptyArrays"] = preserveNullAndEmptyArrays.makeBsonValue()
+                        "path": path,
+                        "preserveNullAndEmptyArrays": preserveNullAndEmptyArrays
+                    ] as Document
                 } else {
-                    unwind = path.makeBsonValue()
+                    unwind = path
                 }
                 
                 return [
                     "$unwind": unwind
-                ]
+                ] as Document
             case .skip(let amount):
-                return ["$skip": amount]
+                return ["$skip": amount] as Document
             case .geoNear(let options):
-                return ["$geoNear": options]
+                return ["$geoNear": options] as Document
             case .group(let document):
-                return ["$group": document]
+                return ["$group": document] as Document
             }
         }
     }
@@ -485,50 +486,5 @@ public struct Pipeline: ExpressibleByArrayLiteral {
         self.document = Document(array: elements.map {
             $0
         })
-    }
-}
-
-/// Adds returning the type as Int32
-extension Value {
-    /// Returns the type as Int32 defined in https://docs.mongodb.com/manual/reference/operator/query/type/#op._S_type
-    var typeNumber: Int32 {
-        switch self {
-        case .double(_):
-            return 1
-        case .string(_):
-            return 2
-        case .document(_):
-            return 3
-        case .array(_):
-            return 4
-        case .binary(_, _):
-            return 5
-        case .objectId(_):
-            return 7
-        case .boolean(_):
-            return 8
-        case .dateTime(_):
-            return 9
-        case .null:
-            return 10
-        case .regularExpression(_, _):
-            return 11
-        case .javascriptCode(_):
-            return 11
-        case .javascriptCodeWithScope(_, _):
-            return 13
-        case .int32(_):
-            return 16
-        case .timestamp(_):
-            return 17
-        case .int64(_):
-            return 18
-        case .maxKey:
-            return 127
-        case .minKey:
-            return -1
-        case .nothing:
-            return -2
-        }
     }
 }

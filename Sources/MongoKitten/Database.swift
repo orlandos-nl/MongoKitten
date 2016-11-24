@@ -13,7 +13,7 @@ import Dispatch
 
 /// A Mongo Database. Cannot be publically initialized.
 /// But you can get a database object by subscripting `Server` with a `String` as the database name
-public final class Database {
+public final class Database: NSObject {
     /// The `Server` that this Database is a part of
     public let server: Server
     
@@ -27,6 +27,29 @@ public final class Database {
     ///
     /// Mainly used for keeping track of event listeners
     private var collections = [String: Weak<Collection>]()
+    
+    #if Xcode
+    func debugQuickLookObject() -> AnyObject {
+        var userInfo = ""
+        
+        if let username = server.authDetails?.username {
+            userInfo = "\(username):*********@"
+        }
+        
+        var databaseData = ""
+        
+        if let collections = try? Array(self.listCollections()) {
+            databaseData = "Collection count: \(collections.count)\n"
+            for collection in collections {
+                databaseData.append("- \(collection.name)\n")
+            }
+        } else {
+            databaseData = "Unable to fetch database data"
+        }
+        
+        return NSString(string: "mongodb://\(userInfo)\(server.hostname)/\(self.name)\n\n\(databaseData)")
+    }
+    #endif
     
     /// Initialise this database object
     ///
@@ -45,6 +68,8 @@ public final class Database {
         }
         
         self.name = path
+        
+        super.init()
         
         let result = try self.isMaster()
         
@@ -128,7 +153,7 @@ public final class Database {
         
         let result = try firstDocument(in: reply)
         
-        guard let cursor = result["cursor"] as? Document, result["ok"] == 1 else {
+        guard let cursor = result["cursor"] as? Document, result["ok"]?.int == 1 else {
             throw MongoError.commandFailure(error: result)
         }
         
@@ -222,11 +247,11 @@ extension Database {
     /// - throws: On authentication failure or an incorrect Server Signature
     private func complete(SASL payload: String, using response: Document, verifying signature: [UInt8]) throws {
         // If we failed authentication
-        guard response["ok"] == 1 else {
+        guard response["ok"]?.int == 1 else {
             throw MongoAuthenticationError.incorrectCredentials
         }
         
-        if response["done"] == true {
+        if response["done"]?.boolValue == true {
             return
         }
         
@@ -279,7 +304,7 @@ extension Database {
     /// - throws: When the authentication fails, when Base64 fails
     private func challenge(with details: (username: String, password: String, against: String), using previousInformation: (nonce: String, response: Document, scram: SCRAMClient<SHA1>)) throws {
         // If we failed the authentication
-        guard previousInformation.response["ok"] == 1 else {
+        guard previousInformation.response["ok"]?.int == 1 else {
             throw MongoAuthenticationError.incorrectCredentials
         }
         
@@ -386,7 +411,7 @@ extension Database {
         let successDocument = try firstDocument(in: successResponse)
         
         // Check for success
-        guard successDocument["ok"] == 1 else {
+        guard successDocument["ok"]?.int == 1 else {
             throw InternalMongoError.incorrectReply(reply: successResponse)
         }
     }
@@ -422,7 +447,7 @@ extension Database {
         let reply = try execute(command: command)
         let document = try firstDocument(in: reply)
         
-        guard document["ok"] == 1 else {
+        guard document["ok"]?.int == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -451,7 +476,7 @@ extension Database {
         
         let document = try firstDocument(in: try execute(command: command))
         
-        guard document["ok"] == 1 else {
+        guard document["ok"]?.int == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -470,7 +495,7 @@ extension Database {
         
         let document = try firstDocument(in: try execute(command: command))
         
-        guard document["ok"] == 1 else {
+        guard document["ok"]?.int == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -487,7 +512,7 @@ extension Database {
         
         let document = try firstDocument(in: try execute(command: command))
         
-        guard document["ok"] == 1 else {
+        guard document["ok"]?.int == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -508,7 +533,7 @@ extension Database {
         
         let document = try firstDocument(in: try execute(command: command))
         
-        guard document["ok"] == 1 else {
+        guard document["ok"]?.int == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -525,7 +550,7 @@ extension Database {
         
         let document = try firstDocument(in: try execute(command: command))
         
-        guard document["ok"] == 1 else {
+        guard document["ok"]?.int == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -555,7 +580,7 @@ extension Database {
         
         let document = try firstDocument(in: try execute(command: command))
         
-        guard document["ok"] == 1 else {
+        guard document["ok"]?.int == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -592,7 +617,7 @@ extension Database {
         
         let document = try firstDocument(in: try execute(command: command))
         
-        guard document["ok"] == 1 else {
+        guard document["ok"]?.int == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -620,11 +645,11 @@ extension Database {
         let document = try firstDocument(in: try execute(command: command))
         
         // If we're done
-        if document["done"] == true {
+        if document["done"]?.boolValue == true {
             return
         }
         
-        guard document["ok"] == 1 else {
+        guard document["ok"]?.int == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -642,19 +667,29 @@ extension Database {
         let command: Document = [
             "cloneCollectionAsCapped": instance.name,
             "toCollection": otherCollection,
-            "size": Int32(capped).makeBsonValue()
+            "size": Int32(capped)
         ]
         
         let document = try firstDocument(in: try execute(command: command))
         
-        guard document["ok"] == 1 else {
+        guard document["ok"]?.int == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
 }
 
-extension Database : CustomStringConvertible {
-    public var description: String {
+extension String {
+    /// This `String` as c-string
+    internal var cStringBytes : [UInt8] {
+        var byteArray = self.utf8.filter{$0 != 0x00}
+        byteArray.append(0x00)
+        
+        return byteArray
+    }
+}
+
+extension Database {
+    public override var description: String {
         return "MongoKitten.Database<\(server.hostname)/\(self.name)>"
     }
 }
