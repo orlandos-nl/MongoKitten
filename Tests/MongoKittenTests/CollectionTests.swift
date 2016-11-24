@@ -137,11 +137,11 @@ class CollectionTests: XCTestCase {
     func testProjection() {
         let projection: Projection = ["name", "age", "awesome"]
         
-        XCTAssertEqual(projection.makeBsonValue(), ["name": true, "age": true, "awesome": true])
+        XCTAssertEqual(projection.makeBSONPrimitive() as? Document, ["name": true, "age": true, "awesome": true] as Document)
         
         let projection2: Projection = ["henk": .included, "bob": .excluded]
         
-         XCTAssertEqual(projection2.document, ["henk": true, "bob": false])
+         XCTAssertEqual(projection2.makeBSONPrimitive() as? Document, ["henk": true, "bob": false])
     }
     
     func testIndexes() throws {
@@ -155,7 +155,7 @@ class CollectionTests: XCTestCase {
     }
     
     private func runContainsQuery() throws {
-        let query = Query(aqt: .contains(key: "username", val: "ar", options: ""))
+        let query = Query(aqt: .contains(key: "username", val: "ar", options: []))
         let response = Array(try TestManager.wcol.find(matching: query))
         XCTAssert(response.count == 2)
     }
@@ -173,7 +173,7 @@ class CollectionTests: XCTestCase {
     }
     
     private func runContainsCaseInsensitiveQuery() throws {
-        let query = Query(aqt: .contains(key: "username", val: "AR", options:"i"))
+        let query = Query(aqt: .contains(key: "username", val: "AR", options: .caseInsensitive))
         let response = Array(try TestManager.wcol.find(matching: query))
         XCTAssert(response.count == 2)
     }
@@ -182,7 +182,7 @@ class CollectionTests: XCTestCase {
         let pipeline = Pipeline([
             [ "$group":
                 [ "_id": "$state", "totalPop": [ "$sum": "$pop" ] as Document ] as Document ]as Document,
-                [ "$match": [ "totalPop": [ "$gte": Int(10_000_000).makeBsonValue() ] as Document ] as Document ] as Document
+                [ "$match": [ "totalPop": [ "$gte": Int(10_000_000) ] as Document ] as Document ] as Document
             ]
         )
         

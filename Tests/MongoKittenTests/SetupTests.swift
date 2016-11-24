@@ -102,5 +102,22 @@ class SetupTests: XCTestCase {
         }
     }
     
+    func testFindOnePerformance() throws {
+        
+    }
+    
+    func testFindPerformance() throws {
+        try TestManager.db["performance"].insert([Document](repeating: ["val": ObjectId()], count: 2048))
+        
+        measure {
+            do {
+                let performanceDocs = Array(try TestManager.db["performance"].find())
+                _ = performanceDocs.count
+            } catch {
+                XCTFail()
+            }
+        }
+    }
+    
     //try database.drop()
 }
