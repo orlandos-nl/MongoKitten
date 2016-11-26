@@ -98,7 +98,7 @@ class CollectionTests: XCTestCase {
         
         XCTAssertEqual(response.count, 2)
         
-        XCTAssertEqual(restponse.first, response2)
+        XCTAssertEqual(response.first, response2)
         
         try runContainsQuery()
         try runContainsCaseInsensitiveQuery()
