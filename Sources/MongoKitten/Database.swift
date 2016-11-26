@@ -73,7 +73,7 @@ public final class Database: NSObject {
         
         let result = try self.isMaster()
         
-        let maxWireVersion = result["maxWireVersion"]?.int32 ?? 0
+        let maxWireVersion = result["maxWireVersion"] as Int32? ?? 0
         
         if let details = server.authDetails {
             if maxWireVersion >= 3 {
@@ -153,7 +153,7 @@ public final class Database: NSObject {
         
         let result = try firstDocument(in: reply)
         
-        guard let cursor = result["cursor"] as? Document, result["ok"]?.int == 1 else {
+        guard let cursor = result["cursor"] as Document?, result["ok"] as Int? == 1 else {
             throw MongoError.commandFailure(error: result)
         }
         
@@ -170,7 +170,7 @@ public final class Database: NSObject {
     public func listCollections(matching filter: Document? = nil) throws -> Cursor<Collection> {
         let infoCursor = try self.getCollectionInfos(matching: filter)
         return Cursor(base: infoCursor) { collectionInfo in
-            return self[collectionInfo["name"] as? String ?? ""]
+            return self[collectionInfo["name"] as String? ?? ""]
         }
     }
     
@@ -247,19 +247,19 @@ extension Database {
     /// - throws: On authentication failure or an incorrect Server Signature
     private func complete(SASL payload: String, using response: Document, verifying signature: [UInt8]) throws {
         // If we failed authentication
-        guard response["ok"]?.int == 1 else {
+        guard response["ok"] as Int? == 1 else {
             throw MongoAuthenticationError.incorrectCredentials
         }
         
-        if response["done"]?.boolValue == true {
+        if response["done"] as Bool? == true {
             return
         }
         
-        guard let stringResponse = response["payload"] as? String else {
+        guard let stringResponse = response["payload"] as String? else {
             throw MongoAuthenticationError.authenticationFailure
         }
         
-        guard let conversationId = response["conversationId"] else {
+        guard let conversationId = response[raw: "conversationId"] else {
             throw MongoAuthenticationError.authenticationFailure
         }
         
@@ -304,17 +304,17 @@ extension Database {
     /// - throws: When the authentication fails, when Base64 fails
     private func challenge(with details: (username: String, password: String, against: String), using previousInformation: (nonce: String, response: Document, scram: SCRAMClient<SHA1>)) throws {
         // If we failed the authentication
-        guard previousInformation.response["ok"]?.int == 1 else {
+        guard previousInformation.response["ok"] as Int?  == 1 else {
             throw MongoAuthenticationError.incorrectCredentials
         }
         
         // Get our ConversationID
-        guard let conversationId = previousInformation.response["conversationId"] else {
+        guard let conversationId = previousInformation.response[raw: "conversationId"] else {
             throw MongoAuthenticationError.authenticationFailure
         }
         
         // Decode the challenge
-        guard let stringResponse = previousInformation.response["payload"] as? String else {
+        guard let stringResponse = previousInformation.response["payload"] as String? else {
             throw MongoAuthenticationError.authenticationFailure
         }
         
@@ -389,7 +389,7 @@ extension Database {
         // Get the server's challenge
         let document = try firstDocument(in: response)
         
-        guard let nonce = document["nonce"] as? String else {
+        guard let nonce = document["nonce"] as String? else {
             throw MongoAuthenticationError.authenticationFailure
         }
         
@@ -411,7 +411,7 @@ extension Database {
         let successDocument = try firstDocument(in: successResponse)
         
         // Check for success
-        guard successDocument["ok"]?.int == 1 else {
+        guard successDocument["ok"] as Int? == 1 else {
             throw InternalMongoError.incorrectReply(reply: successResponse)
         }
     }
@@ -447,7 +447,7 @@ extension Database {
         let reply = try execute(command: command)
         let document = try firstDocument(in: reply)
         
-        guard document["ok"]?.int == 1 else {
+        guard document["ok"] as Int? == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -476,7 +476,7 @@ extension Database {
         
         let document = try firstDocument(in: try execute(command: command))
         
-        guard document["ok"]?.int == 1 else {
+        guard document["ok"] as Int? == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -495,7 +495,7 @@ extension Database {
         
         let document = try firstDocument(in: try execute(command: command))
         
-        guard document["ok"]?.int == 1 else {
+        guard document["ok"] as Int? == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -512,7 +512,7 @@ extension Database {
         
         let document = try firstDocument(in: try execute(command: command))
         
-        guard document["ok"]?.int == 1 else {
+        guard document["ok"] as Int? == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -533,7 +533,7 @@ extension Database {
         
         let document = try firstDocument(in: try execute(command: command))
         
-        guard document["ok"]?.int == 1 else {
+        guard document["ok"] as Int? == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -550,7 +550,7 @@ extension Database {
         
         let document = try firstDocument(in: try execute(command: command))
         
-        guard document["ok"]?.int == 1 else {
+        guard document["ok"] as Int? == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -574,13 +574,13 @@ extension Database {
         
         if let options = options {
             for option in options {
-                command[option.key] = option.value
+                command[raw: option.key] = option.value
             }
         }
         
         let document = try firstDocument(in: try execute(command: command))
         
-        guard document["ok"]?.int == 1 else {
+        guard document["ok"] as Int? == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -617,7 +617,7 @@ extension Database {
         
         let document = try firstDocument(in: try execute(command: command))
         
-        guard document["ok"]?.int == 1 else {
+        guard document["ok"] as Int? == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -645,11 +645,11 @@ extension Database {
         let document = try firstDocument(in: try execute(command: command))
         
         // If we're done
-        if document["done"]?.boolValue == true {
+        if document["done"] as Bool? == true {
             return
         }
         
-        guard document["ok"]?.int == 1 else {
+        guard document["ok"] as Int? == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -672,7 +672,7 @@ extension Database {
         
         let document = try firstDocument(in: try execute(command: command))
         
-        guard document["ok"]?.int == 1 else {
+        guard document["ok"] as Int? == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }

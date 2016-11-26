@@ -1,7 +1,19 @@
 import BSON
 
-public struct Projection: ValueConvertible {
+public struct Projection: CustomValueConvertible, DocumentRepresentable {
+    public init?(_ value: BSONPrimitive) {
+        guard let document = value as? Document else {
+            return nil
+        }
+        
+        self.document = document
+    }
+
     var document: Document
+    
+    public func makeDocument() -> Document {
+        return self.document
+    }
     
     public enum Expression: ValueConvertible, ExpressibleByBooleanLiteral {
         public func makeBSONPrimitive() -> BSONPrimitive {

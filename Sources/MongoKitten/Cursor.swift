@@ -31,7 +31,7 @@ public final class Cursor<T> {
     }
     
     internal convenience init(cursorDocument cursor: Document, collection: Collection, chunkSize: Int32, transform: @escaping Transformer) throws {
-        guard let cursorID = cursor["id"] as? Int64, let namespace = cursor["ns"] as? String, let firstBatch = cursor["firstBatch"] as? Document else {
+        guard let cursorID = cursor["id"] as Int64?, let namespace = cursor["ns"] as String?, let firstBatch = cursor["firstBatch"] as Document? else {
             throw MongoError.cursorInitializationError(cursorDocument: cursor)
         }
         
@@ -76,14 +76,14 @@ public final class Cursor<T> {
                     throw InternalMongoError.incorrectReply(reply: reply)
                 }
                 
-                let documents = resultDocs.first?["cursor", "nextBatch"] as? Document ?? []
+                let documents = resultDocs.first?["cursor", "nextBatch"] as Document? ?? []
                 for (_, value) in documents {
-                    if let doc = transform(value.document) {
+                    if let doc = transform(value.documentValue ?? [:]) {
                         self.data.append(doc)
                     }
                 }
                 
-                self.cursorID = resultDocs.first?["cursor", "id"]?.int64 ?? -1
+                self.cursorID = resultDocs.first?["cursor", "id"] as Int64? ?? -1
             } else {
                 let connection = try collection.database.server.reserveConnection()
                 

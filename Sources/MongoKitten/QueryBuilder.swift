@@ -123,7 +123,7 @@ public func &=(lhs: Query, rhs: Query) -> Document {
     var lhs = lhs.queryDocument
     
     for (key, value) in rhs.queryDocument {
-        lhs[key] = value
+        lhs[raw: key] = value
     }
     
     return lhs
@@ -296,7 +296,11 @@ public indirect enum AQT {
 }
 
 /// A `Query` that consists of an `AQT` statement
-public struct Query: ExpressibleByDictionaryLiteral, ValueConvertible {
+public struct Query: ExpressibleByDictionaryLiteral, ValueConvertible, DocumentRepresentable {
+    public func makeDocument() -> Document {
+        return self.queryDocument
+    }
+    
     /// The `Document` that can be sent to the MongoDB Server as a query/filter
     public func makeBSONPrimitive() -> BSONPrimitive {
         return self.queryDocument
@@ -321,28 +325,6 @@ public struct Query: ExpressibleByDictionaryLiteral, ValueConvertible {
     
     public init(_ document: Document) {
         self.aqt = .exactly(document)
-    }
-}
-
-/// Allows matching this `Document` against a `Query`
-extension Document {
-    /// Filters the operators so that it's cleaner to compare Documents
-    /// 
-    /// TODO: Make this not necessary any more by improving the `on` event listener
-    private func filterOperators() -> Document {
-        var doc: Document = [:]
-        
-        for (k, v) in self {
-            if k.characters.first == "$", let v: Document = v.documentValue {
-                for (k2, v2) in v {
-                    doc[k2] = v2
-                }
-            } else {
-                doc[k] = v
-            }
-        }
-        
-        return doc
     }
 }
 

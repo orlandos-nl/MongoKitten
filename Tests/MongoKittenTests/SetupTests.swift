@@ -60,10 +60,10 @@ class SetupTests: XCTestCase {
             ] as Document
         ]
         
-        _ = userDocument["username"]
-        _ = userDocument["username"] as? String
-        _ = userDocument["age"] as? String
-        _ = userDocument["age"]?.string ?? ""
+        _ = userDocument[raw: "username"]
+        _ = userDocument["username"] as String?
+        _ = userDocument["age"] as String?
+        _ = userDocument[raw: "age"]?.string ?? ""
         
         userDocument["bool"] = true
         userDocument["int32"] = Int32(10)
@@ -98,7 +98,7 @@ class SetupTests: XCTestCase {
         _ = try userCollection.findOne(matching: q)
         
         for user in try userCollection.find(matching: "male" == true) {
-            _ = user["username"]
+            _ = user[raw: "username"]
         }
     }
     

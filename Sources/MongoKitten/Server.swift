@@ -274,11 +274,11 @@ public final class Server {
             if !isInitialized {
                 let result = try db.isMaster()
                 
-                guard let batchSize = result["maxWriteBatchSize"]?.int32, let minWireVersion = result["minWireVersion"]?.int32, let maxWireVersion = result["maxWireVersion"]?.int32 else {
+                guard let batchSize = result["maxWriteBatchSize"] as Int32?, let minWireVersion = result["minWireVersion"] as Int32?, let maxWireVersion = result["maxWireVersion"] as Int32? else {
                     continue connect
                 }
                 
-                var maxMessageSizeBytes = result["maxMessageSizeBytes"]?.int32 ?? 0
+                var maxMessageSizeBytes = result["maxMessageSizeBytes"] as Int32? ?? 0
                 if maxMessageSizeBytes == 0 {
                     maxMessageSizeBytes = 48000000
                 }
@@ -442,13 +442,13 @@ public final class Server {
     /// - returns: All databases
     public func getDatabases() throws -> [Database] {
         let infos = try getDatabaseInfos()
-        guard let databaseInfos = infos["databases"] as? Document else {
+        guard let databaseInfos = infos["databases"] as Document? else {
             throw MongoError.commandError(error: "No database Document found")
         }
         
         var databases = [Database]()
         for case (_, let dbDef) in databaseInfos {
-            guard let dbDef = dbDef as? Document, let name = dbDef["name"] as? String else {
+            guard let dbDef = dbDef as? Document, let name = dbDef["name"] as String? else {
                 throw MongoError.commandError(error: "No database name found")
             }
             
@@ -496,7 +496,7 @@ public final class Server {
         let reply = try self["admin"].execute(command: command)
         let response = try firstDocument(in: reply)
 
-        guard response["ok"]?.int == 1 else {
+        guard response["ok"] as Int? == 1 else {
             throw MongoError.commandFailure(error: response)
         }
     }
@@ -535,7 +535,7 @@ public final class Server {
         let reply = try self["admin"].execute(command: command)
         let response = try firstDocument(in: reply)
         
-        guard response["ok"]?.int == 1 else {
+        guard response["ok"] as Int? == 1 else {
             throw MongoError.commandFailure(error: response)
         }
     }
@@ -558,7 +558,7 @@ public final class Server {
         
         let response = try firstDocument(in: try self["$cmd"].execute(command: command))
         
-        guard response["ok"]?.int == 1 else {
+        guard response["ok"] as Int? == 1 else {
             throw MongoError.commandFailure(error: response)
         }
     }
@@ -585,7 +585,7 @@ public final class Server {
         let reply = try self["admin"].execute(command: command)
         let response = try firstDocument(in: reply)
         
-        guard response["ok"]?.int == 1 else {
+        guard response["ok"] as Int? == 1 else {
             throw MongoError.commandFailure(error: response)
         }
     }
@@ -619,11 +619,11 @@ public final class Server {
 
         let document = try firstDocument(in: try db.execute(command: command))
         
-        guard document["ok"]?.int == 1 else {
+        guard document["ok"] as Int? == 1 else {
             throw MongoError.commandFailure(error: document)
         }
         
-        guard let users = document["users"] as? Document else {
+        guard let users = document["users"] as Document? else {
             throw MongoError.commandError(error: "No users found")
         }
         

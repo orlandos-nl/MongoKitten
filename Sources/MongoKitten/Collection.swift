@@ -72,7 +72,7 @@ public final class Collection: NSObject {
     ///
     /// - returns: The inserted document's id
     @discardableResult
-    public func insert(_ document: Document) throws -> ValueConvertible {
+    public func insert(_ document: DocumentRepresentable) throws -> ValueConvertible {
         let result = try self.insert([document])
         
         guard let newId = result.first else {
@@ -83,6 +83,8 @@ public final class Collection: NSObject {
     }
     
     /// TODO: Detect how many bytes are being sent. Max is 48000000 bytes or 48MB
+    ///
+    /// TODO: Insert more than 1000 documents
     ///
     /// Inserts multiple documents in this collection and adds a BSON ObjectId to documents that do not have an "_id" field
     ///
@@ -96,21 +98,23 @@ public final class Collection: NSObject {
     ///
     /// - returns: The documents' ids
     @discardableResult
-    public func insert(_ documents: [Document], stoppingOnError ordered: Bool? = nil, timeout customTimeout: TimeInterval? = nil) throws -> [ValueConvertible] {
+    public func insert(_ documents: [DocumentRepresentable], stoppingOnError ordered: Bool? = nil, timeout customTimeout: TimeInterval? = nil) throws -> [ValueConvertible] {
         let timeout: TimeInterval = customTimeout ?? (60 + (Double(documents.count) / 50))
         
-        var documents = documents
+        var documents = documents.map {
+            $0.makeDocument()
+        }
         var newIds = [ValueConvertible]()
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
         let commandDocuments = documents[0..<min(1000, documents.count)].map({ (input: Document) -> ValueConvertible in
-            if let id = input["_id"] {
+            if let id = input[raw: "_id"] {
                 newIds.append(id)
                 return input
             } else {
                 var output = input
                 let oid = ObjectId()
-                output["_id"] = oid
+                output[raw: "_id"] = oid
                 newIds.append(oid)
                 return output
             }
@@ -133,7 +137,7 @@ public final class Collection: NSObject {
                     throw MongoError.insertFailure(documents: documents, error: nil)
                 }
                 
-                guard replyDocuments.first?["ok"]?.int == 1 else {
+                guard replyDocuments.first?["ok"] as Int? == 1 else {
                     throw MongoError.insertFailure(documents: documents, error: replyDocuments.first)
                 }
             } else {
@@ -217,7 +221,7 @@ public final class Collection: NSObject {
             }
             
             if let projection = projection {
-                command["projection"] = projection
+                command[raw: "projection"] = projection
             }
             
             if let skip = skip {
@@ -236,7 +240,7 @@ public final class Collection: NSObject {
                 throw InternalMongoError.incorrectReply(reply: reply)
             }
             
-            guard let responseDoc = documents.first, let cursorDoc = responseDoc["cursor"] as? Document else {
+            guard let responseDoc = documents.first, let cursorDoc = responseDoc["cursor"] as Document? else {
                 throw MongoError.invalidResponse(documents: documents)
             }
             
@@ -305,7 +309,7 @@ public final class Collection: NSObject {
     ///
     /// - returns: The amount of updated documents
     @discardableResult
-    public func update(_ updates: [(filter: Query, to: Document, upserting: Bool, multiple: Bool)], stoppingOnError ordered: Bool? = nil) throws -> Int {
+    public func update(_ updates: [(filter: Query, to: DocumentRepresentable, upserting: Bool, multiple: Bool)], stoppingOnError ordered: Bool? = nil) throws -> Int {
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
         if protocolVersion >= 2 {
@@ -332,11 +336,11 @@ public final class Collection: NSObject {
                 throw MongoError.updateFailure(updates: updates, error: nil)
             }
             
-            guard documents.first?["ok"]?.int == 1 else {
+            guard documents.first?["ok"] as Int? == 1 else {
                 throw MongoError.updateFailure(updates: updates, error: documents.first)
             }
             
-            return Int(documents.first?["nModified"]?.int32 ?? 0)
+            return documents.first?["nModified"] as Int? ?? 0
         } else {
             let connection = try database.server.reserveConnection()
             
@@ -357,7 +361,7 @@ public final class Collection: NSObject {
                     let _ = flags.insert(UpdateFlags.Upsert)
                 }
                 
-                let message = Message.Update(requestID: database.server.nextMessageID(), collection: self, flags: flags, findDocument: update.filter.queryDocument, replaceDocument: update.to)
+                let message = Message.Update(requestID: database.server.nextMessageID(), collection: self, flags: flags, findDocument: update.filter.queryDocument, replaceDocument: update.to.makeDocument())
                 try self.database.server.send(message: message, overConnection: connection)
             }
             
@@ -418,11 +422,11 @@ public final class Collection: NSObject {
             let reply = try self.database.execute(command: command)
             let documents = try allDocuments(in: reply)
             
-            guard let document = documents.first, document["ok"]?.int == 1 else {
+            guard let document = documents.first, document["ok"] as Int? == 1 else {
                 throw MongoError.removeFailure(removals: removals, error: documents.first)
             }
             
-            return document["n"]?.int ?? 0
+            return document["n"] as Int? ?? 0
             
             // If we're talking to an older MongoDB server
         } else {
@@ -547,7 +551,7 @@ public final class Collection: NSObject {
             throw InternalMongoError.incorrectReply(reply: reply)
         }
         
-        guard let n = document["n"]?.int else {
+        guard let n = document["n"] as Int? else {
             throw InternalMongoError.incorrectReply(reply: reply)
         }
         
@@ -589,7 +593,7 @@ public final class Collection: NSObject {
         }
         
         if let sort = sort {
-            command["sort"] = sort
+            command.updateValue(sort, forKey: "sort")
         }
         
         switch action {
@@ -602,12 +606,12 @@ public final class Collection: NSObject {
         }
         
         if let projection = projection {
-            command["fields"] = projection
+            command.updateValue(projection, forKey: "fields")
         }
         
         let document = try firstDocument(in: try database.execute(command: command))
         
-        guard document["ok"]?.int == 1 else {
+        guard document["ok"] as Int? == 1 else {
             throw MongoError.commandFailure(error: document)
         }
         
@@ -631,7 +635,7 @@ public final class Collection: NSObject {
             command["query"] = filter
         }
         
-        return try firstDocument(in: try self.database.execute(command: command))["values"]?.document.arrayValue ?? []
+        return try firstDocument(in: try self.database.execute(command: command))[raw: "values"]?.documentValue?.arrayValue ?? []
     }
     
     /// Returns all distinct values for a key in this collection. Allows filtering using query
@@ -692,7 +696,7 @@ public final class Collection: NSObject {
         
         let document = try firstDocument(in: try database.execute(command: ["createIndexes": self.name, "indexes": Document(array: indexDocs)]))
         
-        guard document["ok"]?.int == 1 else {
+        guard document["ok"] as Int? == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -723,7 +727,7 @@ public final class Collection: NSObject {
         
         let result = try firstDocument(in: try database.execute(command: ["listIndexes": self.name]))
         
-        guard let cursorDocument = result["cursor"] as? Document else {
+        guard let cursorDocument = result["cursor"] as Document? else {
             throw MongoError.cursorInitializationError(cursorDocument: result)
         }
         
@@ -749,7 +753,7 @@ public final class Collection: NSObject {
     /// - throws: When MongoDB doesn't return a document indicating success, we'll throw a `MongoError.commandFailure()` containing the error document sent by the server
     /// - throws: When the `flags` document contains the key `collMod`, which is prohibited.
     public func modify(flags: Document) throws {
-        guard flags["collMod"] == nil else {
+        guard flags[raw: "collMod"] == nil else {
             throw MongoError.commandError(error: "Cannot execute modify() on \(self.description): document `flags` contains prohibited key `collMod`.")
         }
         
@@ -757,7 +761,7 @@ public final class Collection: NSObject {
         
         let result = try firstDocument(in: database.execute(command: command + flags))
         
-        guard result["ok"]?.int == 1 else {
+        guard result["ok"] as Int? == 1 else {
             throw MongoError.commandFailure(error: result)
         }
     }
@@ -790,7 +794,7 @@ public final class Collection: NSObject {
             throw InternalMongoError.incorrectReply(reply: reply)
         }
         
-        guard let responseDoc = documents.first, let cursorDoc = responseDoc["cursor"] as? Document else {
+        guard let responseDoc = documents.first, let cursorDoc = responseDoc["cursor"] as Document? else {
             throw MongoError.invalidResponse(documents: documents)
         }
         
@@ -815,7 +819,7 @@ public final class Collection: NSObject {
         
         let document = try firstDocument(in: try database.execute(command: command))
         
-        guard document["ok"]?.int == 1 else {
+        guard document["ok"] as Int? == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -837,7 +841,7 @@ public final class Collection: NSObject {
         
         let document = try firstDocument(in: try database.execute(command: command))
         
-        guard document["ok"]?.int == 1 else {
+        guard document["ok"] as Int? == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -856,7 +860,7 @@ public final class Collection: NSObject {
         
         let document = try firstDocument(in: try database.execute(command: command))
         
-        guard document["ok"]?.int == 1 else {
+        guard document["ok"] as Int? == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -881,7 +885,7 @@ public final class Collection: NSObject {
         
         let document = try firstDocument(in: try database.execute(command: command))
         
-        guard document["ok"]?.int == 1 else {
+        guard document["ok"] as Int? == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }

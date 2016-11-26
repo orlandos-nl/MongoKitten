@@ -19,11 +19,11 @@ public struct DBRef: ValueConvertible {
     }
     
     public init?(_ document: Document, inServer server: Server) {
-        guard let database = document["$db"] as? String, let collection = document["$ref"] as? String else {
+        guard let database = document["$db"] as String?, let collection = document["$ref"] as String? else {
             return nil
         }
         
-        guard let id = document["$id"] else {
+        guard let id = document[raw: "$id"] else {
             return nil
         }
         
@@ -32,11 +32,11 @@ public struct DBRef: ValueConvertible {
     }
     
     public init?(_ document: Document, inDatabase database: Database) {
-        guard let collection = document["$ref"] as? String else {
+        guard let collection = document["$ref"] as String? else {
             return nil
         }
         
-        guard let id = document["$id"]?.makeBSONPrimitive() else {
+        guard let id = document[raw: "$id"] else {
             return nil
         }
         

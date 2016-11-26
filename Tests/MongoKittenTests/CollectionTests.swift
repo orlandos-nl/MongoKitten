@@ -98,7 +98,7 @@ class CollectionTests: XCTestCase {
         
         XCTAssertEqual(response.count, 2)
         
-        XCTAssertEqual(response.first, response2)
+        XCTAssertEqual(restponse.first, response2)
         
         try runContainsQuery()
         try runContainsCaseInsensitiveQuery()
@@ -110,18 +110,18 @@ class CollectionTests: XCTestCase {
         let colA = TestManager.db["collectionA"]
         let colB = TestManager.db["collectionB"]
         
-        let id = try colA.insert(["name": "Harrie Bob"])
+        let id = try colA.insert(["name": "Harrie Bob"] as Document)
         
         let dbref = DBRef(referencing: id, inCollection: colA)
         
-        let referenceID = try colB.insert(["reference": dbref])
+        let referenceID = try colB.insert(["reference": dbref] as Document)
         
         guard let reference = try colB.findOne(matching: "_id" == referenceID) else {
             XCTFail()
             return
         }
         
-        guard let colAreference = DBRef(reference["reference"]?.document ?? [:], inDatabase: TestManager.db) else {
+        guard let colAreference = DBRef(reference["reference"] as Document? ?? [:], inDatabase: TestManager.db) else {
             XCTFail()
             return
         }
@@ -131,7 +131,7 @@ class CollectionTests: XCTestCase {
             return
         }
         
-        XCTAssertEqual(originalDocument["name"] as? String, "Harrie Bob")
+        XCTAssertEqual(originalDocument["name"] as String?, "Harrie Bob")
     }
     
     func testProjection() {
@@ -147,7 +147,7 @@ class CollectionTests: XCTestCase {
     func testIndexes() throws {
         try TestManager.wcol.createIndex(named: "henkbob", withParameters: .sortedCompound(fields: [("name", .ascending), ("age", .descending)]), .expire(afterSeconds: 1), .buildInBackground)
         
-        for index in try TestManager.wcol.listIndexes() where index["name"] as? String == "henkbob" {
+        for index in try TestManager.wcol.listIndexes() where index["name"] as String? == "henkbob" {
             return
         }
         

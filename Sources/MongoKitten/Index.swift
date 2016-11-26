@@ -33,7 +33,7 @@ public enum IndexParameter {
             var index: Document = [:]
             
             for field in fields {
-                index[field.field] = field.order
+                index[raw: field.field] = field.order
             }
             
             return ["key": (index.flattened())]
@@ -41,7 +41,7 @@ public enum IndexParameter {
             var index: Document = [:]
             
             for field in fields {
-                index[field.field] = field.value
+                index[raw: field.field] = field.value
             }
             
             return ["key": (index.flattened())]

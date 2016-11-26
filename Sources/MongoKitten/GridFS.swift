@@ -148,7 +148,7 @@ public class GridFS {
         }
         
         if let metadata = metadata {
-            insertData["metadata"] = metadata
+            insertData[raw: "metadata"] = metadata
         }
         
         _ = try files.insert(insertData)
@@ -162,7 +162,7 @@ public class GridFS {
             
             _ = try chunks.insert(["files_id": id,
                                    "n": Int64(n),
-                                   "data": Binary(data: chunk, withSubtype: .generic)])
+                                   "data": Binary(data: chunk, withSubtype: .generic)] as Document)
             
             n += 1
             
@@ -223,11 +223,11 @@ public class GridFS {
         /// - parameter chunksCollection: The `Collection` where the `File` `Chunk`s are stored
         /// - parameter chunksCollection: The `Collection` where the `File` data is stored
         internal init?(document: Document, chunksCollection: Collection, filesCollection: Collection) {
-            guard let id = document["_id"] as? ObjectId,
-                let length = document["length"] as? Int64,
-                let chunkSize = document["chunkSize"] as? Int32,
-                let uploadDate = document["uploadDate"] as? Date,
-                let md5 = document["md5"] as? String
+            guard let id = document["_id"] as ObjectId?,
+                let length = document["length"] as Int64?,
+                let chunkSize = document["chunkSize"] as Int32?,
+                let uploadDate = document["uploadDate"] as Date?,
+                let md5 = document["md5"] as String?
                 else {
                     return nil
             }
@@ -241,19 +241,19 @@ public class GridFS {
             self.uploadDate = uploadDate
             self.md5 = md5
             
-            self.filename = document["filename"] as? String
-            self.contentType = document["contentType"] as? String
+            self.filename = document["filename"] as String?
+            self.contentType = document["contentType"] as String?
             
             var aliases = [String]()
             
-            for alias in (document["aliases"] as? Document)?.arrayValue ?? [] {
+            for alias in (document["aliases"] as Document?)?.arrayValue ?? [] {
                 if let alias = alias.stringValue {
                     aliases.append(alias)
                 }
             }
             
             self.aliases = aliases
-            self.metadata = document["metadata"]
+            self.metadata = document[raw: "metadata"]
         }
         
         /// Finds all or specific chunks
@@ -328,9 +328,9 @@ public class GridFS {
             
             /// Initializes with a `Document` found when looking for chunks
             init?(document: Document, chunksCollection: Collection, filesCollection: Collection) {
-                guard let id = document["_id"] as? ObjectId,
-                    let filesID = document["files_id"] as? ObjectId,
-                    let binary = document["data"] as? Binary else {
+                guard let id = document["_id"] as ObjectId?,
+                    let filesID = document["files_id"] as ObjectId?,
+                    let binary = document["data"] as Binary? else {
                         return nil
                 }
                 
@@ -339,7 +339,7 @@ public class GridFS {
                 
                 self.id = id
                 self.filesID = filesID
-                self.n = document["n"]?.int32 ?? -1
+                self.n = document["n"] as Int32? ?? -1
                 self.data = binary.makeBytes()
             }
         }
