@@ -15,10 +15,18 @@ import CryptoKitten
 /// Conforms to the GridFS standard as specified here: https://docs.mongodb.org/manual/core/gridfs/
 public class GridFS {
     /// The bucket for file data
-    fileprivate let files: Collection
+    public let files: Collection
     
     /// The bucket for file data chunks
-    fileprivate let chunks: Collection
+    public let chunks: Collection
+    
+    public let name: String
+    
+    /// Drops the GridFS bucket's collections
+    public func drop() throws {
+        try self.files.drop()
+        try self.chunks.drop()
+    }
     
     /// Initializes a GridFS `Collection` (bucket) in a given database
     ///
@@ -29,6 +37,7 @@ public class GridFS {
     public init(inDatabase database: Database, named bucketName: String = "fs") throws {
         files = database["\(bucketName).files"]
         chunks = database["\(bucketName).chunks"]
+        name = bucketName
         
         // Make indexes
         try chunks.createIndex(named: "chunksindex", withParameters: .sortedCompound(fields: [("files_id", .ascending), ("n", .ascending)]), .buildInBackground, .unique)
