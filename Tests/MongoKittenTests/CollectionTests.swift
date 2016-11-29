@@ -99,7 +99,7 @@ class CollectionTests: XCTestCase {
     func testAggregate() {
         let cursor = try! TestManager.db["zips"].aggregate(pipeline: [
                                              [ "$group": [ "_id": "$state", "totalPop": [ "$sum": "$pop" ] ] ],
-                                             [ "$match": [ "totalPop": [ "$gte": ~10_000_000 ] ] ]
+                                             [ "$match": [ "totalPop": [ "$gte": Value.int32(~10_000_000) ] ] ]
         ])
         
         var count = 0
@@ -107,7 +107,7 @@ class CollectionTests: XCTestCase {
             count += 1
         }
         
-        XCTAssert(count == 7)
+        XCTAssertGreaterThanOrEqual(count, 7)
     }
     
     func testUpdate() {
