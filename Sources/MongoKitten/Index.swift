@@ -24,9 +24,18 @@ public enum IndexParameter {
     case unique
     case buildInBackground
     case weight(Int)
+    case text([String])
     
     internal var document: Document {
         switch self {
+        case .text(let keys):
+            var doc: Document = [:]
+            
+            for key in keys {
+                doc[key] = "text"
+            }
+            
+            return ["key": doc]
         case .sort(let field, let order):
             return ["key": [field: order] as Document]
         case .sortedCompound(let fields):

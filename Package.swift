@@ -7,7 +7,7 @@ var package = Package(
         ],
     dependencies: [
         // For MongoDB Documents
-        .Package(url: "https://github.com/OpenKitten/BSON.git", "4.0.0-alpha3"),
+        .Package(url: "https://github.com/OpenKitten/BSON.git", "4.0.0-beta1"),
 
         // Authentication
         .Package(url: "https://github.com/OpenKitten/CryptoKitten.git", Version(0,0,2)),

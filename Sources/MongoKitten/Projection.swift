@@ -15,13 +15,25 @@ public struct Projection: CustomValueConvertible, DocumentRepresentable {
         return self.document
     }
     
-    public enum Expression: ValueConvertible, ExpressibleByBooleanLiteral {
+    public enum ProjectionExpression: ValueConvertible, ExpressibleByBooleanLiteral, ExpressibleByStringLiteral, ExpressibleByDictionaryLiteral {
         public func makeBSONPrimitive() -> BSONPrimitive {
             switch self {
             case .custom(let convertible): return convertible.makeBSONPrimitive()
             case .included: return true
             case .excluded: return false
             }
+        }
+        
+        public init(stringLiteral value: String) {
+            self = .custom(value)
+        }
+        
+        public init(unicodeScalarLiteral value: String) {
+            self = .custom(value)
+        }
+        
+        public init(extendedGraphemeClusterLiteral value: String) {
+            self = .custom(value)
         }
 
         case custom(ValueConvertible)
@@ -30,6 +42,10 @@ public struct Projection: CustomValueConvertible, DocumentRepresentable {
         
         public init(booleanLiteral value: Bool) {
             self = value ? .included : .excluded
+        }
+        
+        public init(dictionaryLiteral elements: (String, ValueConvertible)...) {
+            self = .custom(Document(dictionaryElements: elements))
         }
     }
     
@@ -55,10 +71,10 @@ extension Projection: ExpressibleByArrayLiteral {
 }
 
 extension Projection: ExpressibleByDictionaryLiteral {
-    public init(dictionaryLiteral elements: (String, Expression)...) {
+    public init(dictionaryLiteral elements: (String, ProjectionExpression)...) {
         self.document = Document(dictionaryElements: elements.map {
             // FIXME: Mapping as a workarond for the compiler being unable to infer the compliance to a protocol
             ($0.0, $0.1)
-        }).flattened()
+        })
     }
 }

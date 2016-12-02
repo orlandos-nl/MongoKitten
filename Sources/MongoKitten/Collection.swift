@@ -779,9 +779,9 @@ public final class Collection: NSObject {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A `Cursor` pointing to the found `Document`s
-    public func aggregate(pipeline pipeLine: Pipeline, explain: Bool? = nil, allowDiskUse: Bool? = nil, cursorOptions: Document = ["batchSize":10], bypassDocumentValidation: Bool? = nil) throws -> Cursor<Document> {
+    public func aggregate(pipeline: Pipeline, explain: Bool? = nil, allowDiskUse: Bool? = nil, cursorOptions: Document = ["batchSize":10], bypassDocumentValidation: Bool? = nil) throws -> Cursor<Document> {
         // construct command. we always use cursors in MongoKitten, so that's why the default value for cursorOptions is an empty document.
-        var command: Document = ["aggregate": self.name, "pipeline": pipeLine.document, "cursor": cursorOptions]
+        var command: Document = ["aggregate": self.name, "pipeline": pipeline.pipelineDocument, "cursor": cursorOptions]
         
         if let explain = explain { command["explain"] = explain }
         if let allowDiskUse = allowDiskUse { command["allowDiskUse"] = allowDiskUse }

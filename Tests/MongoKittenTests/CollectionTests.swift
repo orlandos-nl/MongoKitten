@@ -179,21 +179,93 @@ class CollectionTests: XCTestCase {
     }
 
     func testAggregate() throws {
-        let pipeline = Pipeline([
-            [ "$group":
-                [ "_id": "$state", "totalPop": [ "$sum": "$pop" ] as Document ] as Document ]as Document,
-                [ "$match": [ "totalPop": [ "$gte": Int(10_000_000) ] as Document ] as Document ] as Document
-            ]
-        )
+        let pipeline = PipelineDocument.make().group(computedFields: [
+            "totalPop": .sumOf("$pop")
+            ], id: "$state").match([
+                    "totalPop": ["$gte": Int(10_000_000)] as Document
+                ] as Document).sort([
+                        "totalPop": .ascending
+                    ]).project(["_id": false, "totalPop": true]).skip(2)
         
         let cursor = try TestManager.db["zips"].aggregate(pipeline: pipeline)
         
         var count = 0
-        for _ in cursor {
+        var previousPopulation = 0
+        for populationDoc in cursor {
+            let population = populationDoc["totalPop"] as Int? ?? -1
+            
+            guard population > previousPopulation else {
+                XCTFail()
+                continue
+            }
+            
+            guard populationDoc[raw: "_id"] == nil else {
+                XCTFail()
+                continue
+            }
+            
+            previousPopulation = population
+            
             count += 1
         }
         
-        XCTAssert(count == 7)
+        XCTAssertEqual(count, 5)
+        
+        pipeline.limit(3).count(insertedAtKey: "results").addFields([
+            "topThree": true
+            ])
+        
+        let result = Array(try TestManager.db["zips"].aggregate(pipeline: pipeline)).first
+        
+        guard let resultCount = result?["results"] as Int?, resultCount == 3, result?["topThree"] as Bool? == true else {
+            XCTFail()
+            return
+        }
+        
+        // TODO: Test $out, $lookup, $unwind
+    }
+    
+    func testFacetAggregate() throws {
+        let pipeline = PipelineDocument.make().group(computedFields: [
+            "totalPop": .sumOf("$pop")
+            ], id: "$state").sort([
+                "totalPop": .ascending
+                ]).facet([
+                    ("count", PipelineDocument.make().count(insertedAtKey: "resultCount").project(["resultCount": true])),
+                    ("totalPop", PipelineDocument.make().group(computedFields: [
+                        "population": .sumOf("$totalPop")
+                        ], id: Null()))
+                    ])
+        
+        guard let result = Array(try TestManager.db["zips"].aggregate(pipeline: pipeline)).first else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(result["count", 0, "resultCount"] as Int?, 51)
+        XCTAssertEqual(result["totalPop", 0, "population"] as Int?, 248408400)
+    }
+    
+    func testTextOperator() throws {
+        let textSearch = TestManager.db["textsearch"]
+        try textSearch.createIndex(named: "subject", withParameters: .text(["subject"]))
+        
+        try textSearch.remove(matching: Query([:]))
+        
+        try textSearch.insert([
+            ["_id": 1, "subject": "coffee", "author": "xyz", "views": 50] as Document,
+            ["_id": 2, "subject": "Coffee Shopping", "author": "efg", "views": 5] as Document,
+            ["_id": 3, "subject": "Baking a cake", "author": "abc", "views": 90] as Document,
+            ["_id": 4, "subject": "baking", "author": "xyz", "views": 100] as Document,
+            ["_id": 5, "subject": "Café Con Leche", "author": "abc", "views": 200] as Document,
+            ["_id": 6, "subject": "Сырники", "author": "jkl", "views": 80] as Document,
+            ["_id": 7, "subject": "coffee and cream", "author": "efg", "views": 10] as Document,
+            ["_id": 8, "subject": "Cafe con Leche", "author": "xyz", "views": 10] as Document
+            ])
+        
+        let resultCount = try textSearch.count(matching: .textSearch(forString: "coffee"))
+        
+        XCTAssertEqual(resultCount, 3)
     }
     
     func testUpdate() throws {
