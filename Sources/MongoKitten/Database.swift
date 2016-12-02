@@ -94,6 +94,10 @@ public final class Database: NSObject {
     
     private static let subscriptQueue = DispatchQueue(label: "org.mongokitten.database.subscriptqueue")
     
+    public func makeGridFS(named name: String = "fs") throws -> GridFS {
+        return try GridFS(inDatabase: self, named: name)
+    }
+    
     /// Get a `Collection` by providing a collection name as a `String`
     ///
     /// - parameter collection: The collection/bucket to return
@@ -663,7 +667,7 @@ extension Database {
     /// - parameter capped: The new cap
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func clone(collection instance: Collection, named otherCollection: String, cappedTo capped: Int32) throws {
+    public func clone(collection instance: Collection, toCappedCollectionNamed otherCollection: String, cappedTo capped: Int32) throws {
         let command: Document = [
             "cloneCollectionAsCapped": instance.name,
             "toCollection": otherCollection,

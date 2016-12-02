@@ -898,8 +898,8 @@ public final class Collection: NSObject {
     /// - parameter capped: The cap to apply
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func clone(named otherCollection: String, capped: Int32) throws {
-        try database.clone(collection: self, named: otherCollection, cappedTo: capped)
+    public func clone(toCappedCollectionNamed otherCollection: String, capped: Int32) throws {
+        try database.clone(collection: self, toCappedCollectionNamed: otherCollection, cappedTo: capped)
     }
 }
 

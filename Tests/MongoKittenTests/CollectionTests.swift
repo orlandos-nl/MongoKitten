@@ -32,6 +32,49 @@ class CollectionTests: XCTestCase {
         try! TestManager.disconnect()
     }
     
+    func testQuery() throws {
+        let query: Query = "name_first" == "Henk"
+        
+        XCTAssertEqual(query.makeDocument(), [
+            "name_first": ["$eq": "Henk"] as Document
+            ])
+        
+        let query2: Query = "textSearchTerm"
+        
+        XCTAssertEqual(query2.makeDocument(), ["$text": [
+            "$search": "textSearchTerm",
+            "$caseSensitive": false,
+            "$diacriticSensitive": false
+            ] as Document
+            ])
+    }
+    
+    func testRename() throws {
+        try TestManager.db["zips"].rename(to: "zipschange")
+        
+        let pipeline = PipelineDocument.make().group(computedFields: [
+            "totalPop": .sumOf("$pop")
+            ], id: "$state").match([
+                "totalPop": ["$gte": Int(10_000_000)] as Document
+                ] as Document).sort([
+                    "totalPop": .ascending
+                    ]).project(["_id": false, "totalPop": true]).skip(2)
+        
+        var zipsDocs = Array(try TestManager.db["zips"].aggregate(pipeline: pipeline))
+        XCTAssertEqual(zipsDocs.count, 0)
+        
+        zipsDocs = Array(try TestManager.db["zipschange"].aggregate(pipeline: pipeline))
+        XCTAssertEqual(zipsDocs.count, 5)
+        
+        try TestManager.db["zipschange"].rename(to: "zips")
+        
+        zipsDocs = Array(try TestManager.db["zips"].aggregate(pipeline: pipeline))
+        XCTAssertEqual(zipsDocs.count, 5)
+        
+        zipsDocs = Array(try TestManager.db["zipschange"].aggregate(pipeline: pipeline))
+        XCTAssertEqual(zipsDocs.count, 0)
+    }
+    
     func testDistinct() throws {
         let distinct = try TestManager.db["zips"].distinct(onField: "state")!
         
@@ -366,5 +409,28 @@ class CollectionTests: XCTestCase {
         let response = Array(try TestManager.wcol.find(matching: query))
         
         XCTAssertEqual(response.count, 1)
+    }
+    
+    func testHelperObjects() {
+        let document = [
+            "henk": 1 as Int32,
+            "klaas": -1 as Int32,
+            "roekoe": 1 as Int32
+        ] as Document
+        let sort = Sort(document)
+        
+        XCTAssertEqual(document, sort.makeDocument())
+        
+        let sort2: Sort = [
+            "date": .ascending,
+            "name": .descending,
+            "kaas": .custom(true)
+        ]
+        
+        XCTAssertEqual(sort2.makeDocument(), [
+            "date": Int32(1),
+            "name": Int32(-1),
+            "kaas": true
+            ])
     }
 }

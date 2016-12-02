@@ -13,11 +13,6 @@ public struct DBRef: ValueConvertible {
         self.collection = collection
     }
     
-    public init(referencing reference: ObjectId, inCollection collection: Collection) {
-        self.id = reference
-        self.collection = collection
-    }
-    
     public init?(_ document: Document, inServer server: Server) {
         guard let database = document["$db"] as String?, let collection = document["$ref"] as String? else {
             return nil

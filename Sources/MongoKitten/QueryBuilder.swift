@@ -193,6 +193,8 @@ public indirect enum AQT {
         /// `Int64`
         case int64 = 18
         
+        case decimal128 = 19
+        
         /// The min-key
         case minKey = -1
         
@@ -296,7 +298,19 @@ public indirect enum AQT {
 }
 
 /// A `Query` that consists of an `AQT` statement
-public struct Query: ExpressibleByDictionaryLiteral, ValueConvertible, DocumentRepresentable {
+public struct Query: ExpressibleByDictionaryLiteral, ValueConvertible, DocumentRepresentable, ExpressibleByStringLiteral {
+    public init(stringLiteral value: String) {
+        self = .textSearch(forString: value)
+    }
+    
+    public init(unicodeScalarLiteral value: String) {
+        self = .textSearch(forString: value)
+    }
+    
+    public init(extendedGraphemeClusterLiteral value: String) {
+        self = .textSearch(forString: value)
+    }
+    
     public func makeDocument() -> Document {
         return self.queryDocument
     }

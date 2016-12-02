@@ -42,4 +42,19 @@ class DatabaseTests: XCTestCase {
         
         try TestManager.db.drop(user: "mongokitten-unittest-testuser")
     }
+    
+    func testMakeGridFS() throws {
+        let gridFS = try TestManager.db.makeGridFS()
+        
+        let id = try gridFS.store(data: [0x05, 0x04, 0x01, 0x02, 0x03, 0x00])
+        guard let file = try gridFS.findOne(byID: id) else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(try file.read(), [0x05, 0x04, 0x01, 0x02, 0x03, 0x00])
+        
+        XCTAssertEqual(gridFS.chunks.name, "fs.chunks")
+        XCTAssertEqual(gridFS.files.name, "fs.files")
+    }
 }

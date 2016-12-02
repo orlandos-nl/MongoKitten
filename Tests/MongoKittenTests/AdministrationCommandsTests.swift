@@ -7,7 +7,7 @@
 //
 
 import XCTest
-import MongoKitten
+@testable import MongoKitten
 import BSON
 
 class AdministrationCommandsTests: XCTestCase {
@@ -30,6 +30,8 @@ class AdministrationCommandsTests: XCTestCase {
     }
     
     func testServer() throws {
+        XCTAssert(TestManager.server.isConnected)
+        
         try TestManager.server.fsync()
         let dbs = try TestManager.server.getDatabases()
         
@@ -38,6 +40,8 @@ class AdministrationCommandsTests: XCTestCase {
         for db in dbs where db.name == "mongokitten-unittest" {
            dbExists = true
         }
+        
+        XCTAssertEqual(TestManager.server.hostname, "localhost:27017")
         
         XCTAssert(dbExists)
         
