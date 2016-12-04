@@ -60,36 +60,22 @@ public final class Database: NSObject {
         self.name = database.replacingOccurrences(of: ".", with: "")
     }
     
-    public init(mongoURL url: NSURL, usingTcpDriver driver: MongoTCP.Type = DefaultTCPClient, maxConnections: Int = 10) throws {
-        self.server = try Server(mongoURL: url, usingTcpDriver: driver, maxConnections: maxConnections)
+    public init(mongoURL url: String, usingTcpDriver driver: MongoTCP.Type = DefaultTCPClient, maxConnections: Int = 10) throws {
+        let path = url.characters.split(separator: "/")
         
-        guard let path = url.path?.replacingOccurrences(of: "/", with: "") else {
-            throw MongoError.invalidDatabase(url.path)
+        guard path.count >= 2, let dbname = path.last?.split(separator: "?")[0] else {
+            throw MongoError.invalidDatabase("")
         }
         
-        self.name = path
+        self.server = try Server(mongoURL: url, usingTcpDriver: driver, maxConnections: maxConnections)
+        
+        self.name = String(dbname)
         
         super.init()
         
-        let result = try self.isMaster()
+        let connection = try server.reserveConnection(writing: false, authenticatedFor: nil)
         
-        let maxWireVersion = result["maxWireVersion"] as Int32? ?? 0
-        
-        if let details = server.authDetails {
-            if maxWireVersion >= 3 {
-                try self.authenticate(SASL: details)
-            } else {
-                try self.authenticate(mongoCR: details)
-            }
-        }
-    }
-    
-    public convenience init(mongoURL uri: String, usingTcpDriver tcpDriver: MongoTCP.Type = DefaultTCPClient, maxConnections: Int = 10) throws {
-        guard let url = NSURL(string: uri) else {
-            throw MongoError.invalidURI(uri: uri)
-        }
-        
-        try self.init(mongoURL: url, usingTcpDriver: tcpDriver, maxConnections: maxConnections)
+        try connection.authenticate(toDatabase: self)
     }
     
     private static let subscriptQueue = DispatchQueue(label: "org.mongokitten.database.subscriptqueue")
@@ -126,8 +112,8 @@ public final class Database: NSObject {
     ///
     /// - returns: A `Message` containing the response
     @discardableResult
-    internal func execute(command document: Document, until timeout: TimeInterval = 60) throws -> Message {
-        let connection = try server.reserveConnection()
+    internal func execute(command document: Document, until timeout: TimeInterval = 60, writing: Bool = true) throws -> Message {
+        let connection = try server.reserveConnection(writing: true, authenticatedFor: self)
         
         defer {
             server.returnConnection(connection)
@@ -190,7 +176,7 @@ public final class Database: NSObject {
     ///
     /// - returns: `ismaster` response Document
     internal func isMaster() throws -> Document {
-        let response = try self.execute(command: ["ismaster": Int32(1)])
+        let response = try self.execute(command: ["isMaster": Int32(1)])
         
         return try firstDocument(in: response)
     }
@@ -249,7 +235,7 @@ extension Database {
     /// - parameter signature: The server signatue to verify
     ///
     /// - throws: On authentication failure or an incorrect Server Signature
-    private func complete(SASL payload: String, using response: Document, verifying signature: [UInt8]) throws {
+    private func complete(SASL payload: String, using response: Document, verifying signature: [UInt8], usingConnection connection: Server.Connection) throws {
         // If we failed authentication
         guard response["ok"] as Int? == 1 else {
             throw MongoAuthenticationError.incorrectCredentials
@@ -287,17 +273,20 @@ extension Database {
             throw MongoAuthenticationError.serverSignatureInvalid
         }
         
-        let response = try self.execute(command: [
+        let cmd = self["$cmd"]
+        let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: [
             "saslContinue": Int32(1),
             "conversationId": conversationId,
             "payload": ""
-            ])
+            ], returnFields: nil)
+        
+        let response = try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: 60)
         
         guard case .Reply(_, _, _, _, _, _, let documents) = response, let responseDocument = documents.first else {
             throw InternalMongoError.incorrectReply(reply: response)
         }
         
-        try self.complete(SASL: payload, using: responseDocument, verifying: serverSignature)
+        try self.complete(SASL: payload, using: responseDocument, verifying: serverSignature, usingConnection: connection)
     }
     
     /// Respond to a challenge
@@ -306,7 +295,7 @@ extension Database {
     /// - parameter previousInformation: The nonce, response and `SCRAMClient` instance
     ///
     /// - throws: When the authentication fails, when Base64 fails
-    private func challenge(with details: (username: String, password: String, against: String), using previousInformation: (nonce: String, response: Document, scram: SCRAMClient<SHA1>)) throws {
+    private func challenge(with details: (username: String, password: String, against: String), using previousInformation: (nonce: String, response: Document, scram: SCRAMClient<SHA1>), usingConnection connection: Server.Connection) throws {
         // If we failed the authentication
         guard previousInformation.response["ok"] as Int?  == 1 else {
             throw MongoAuthenticationError.incorrectCredentials
@@ -339,11 +328,14 @@ extension Database {
         let payload = Data(bytes: result.proof.cStringBytes).base64EncodedString()
         
         // Send the proof
-        let response = try self.execute(command: [
+        let cmd = self["$cmd"]
+        let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: [
             "saslContinue": Int32(1),
             "conversationId": conversationId,
             "payload": payload
-            ])
+            ], returnFields: nil)
+        
+        let response = try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: 60)
         
         // If we don't get a correct reply
         guard case .Reply(_, _, _, _, _, _, let documents) = response, let responseDocument = documents.first else {
@@ -351,7 +343,7 @@ extension Database {
         }
         
         // Complete Authentication
-        try self.complete(SASL: payload, using: responseDocument, verifying: result.serverSignature)
+        try self.complete(SASL: payload, using: responseDocument, verifying: result.serverSignature, usingConnection: connection)
     }
     
     /// Authenticates to this database using SASL
@@ -359,7 +351,7 @@ extension Database {
     /// - parameter details: The authentication details
     ///
     /// - throws: When failing authentication, being unable to base64 encode or failing to send/receive messages
-    internal func authenticate(SASL details: (username: String, password: String, against: String)) throws {
+    internal func authenticate(SASL details: (username: String, password: String, against: String), usingConnection connection: Server.Connection) throws {
         let nonce = randomNonce()
         
         let auth = SCRAMClient<SHA1>()
@@ -368,15 +360,18 @@ extension Database {
         
         let payload = Data(bytes: authPayload.cStringBytes).base64EncodedString()
         
-        let response = try self.execute(command: [
+        let cmd = self["$cmd"]
+        let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: [
             "saslStart": Int32(1),
             "mechanism": "SCRAM-SHA-1",
             "payload": payload
-            ])
+            ], returnFields: nil)
+        
+        let response = try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: 60)
         
         let responseDocument = try firstDocument(in: response)
         
-        try self.challenge(with: details, using: (nonce: nonce, response: responseDocument, scram: auth))
+        try self.challenge(with: details, using: (nonce: nonce, response: responseDocument, scram: auth), usingConnection: connection)
     }
     
     /// Authenticates to this database using MongoDB Challenge Response
@@ -384,11 +379,11 @@ extension Database {
     /// - parameter details: The authentication details
     ///
     /// - throws: When failing authentication, being unable to base64 encode or failing to send/receive messages
-    internal func authenticate(mongoCR details: (username: String, password: String, against: String)) throws {
+    internal func authenticate(mongoCR details: (username: String, password: String, against: String), usingConnection connection: Server.Connection) throws {
         // Get the server's nonce
         let response = try self.execute(command: [
             "getnonce": Int32(1)
-            ])
+            ], writing: false)
         
         // Get the server's challenge
         let document = try firstDocument(in: response)
@@ -404,13 +399,14 @@ extension Database {
         let digest = MD5.hash(bytes)
         let key = MD5.hash([UInt8]("\(nonce)\(details.username)\(digest)".utf8)).hexString
         
-        // Respond to the challengge
-        let successResponse = try self.execute(command: [
+        let cmd = self["$cmd"]
+        let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: [
             "authenticate": 1,
             "nonce": nonce,
             "user": details.username,
             "key": key
-            ])
+            ], returnFields: nil)
+        let successResponse = try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: 60)
         
         let successDocument = try firstDocument(in: successResponse)
         

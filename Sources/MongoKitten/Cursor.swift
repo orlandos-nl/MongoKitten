@@ -70,7 +70,7 @@ public final class Cursor<T> {
                     "getMore": Int64(self.cursorID),
                     "collection": collection.name,
                     "batchSize": Int32(chunkSize)
-                    ])
+                    ], writing: false)
                 
                 guard case .Reply(_, _, _, _, _, _, let resultDocs) = reply else {
                     throw InternalMongoError.incorrectReply(reply: reply)
@@ -85,7 +85,7 @@ public final class Cursor<T> {
                 
                 self.cursorID = resultDocs.first?["cursor", "id"] as Int64? ?? -1
             } else {
-                let connection = try collection.database.server.reserveConnection()
+                let connection = try collection.database.server.reserveConnection(authenticatedFor: self.collection.database)
                 
                 defer {
                     collection.database.server.returnConnection(connection)
@@ -110,7 +110,7 @@ public final class Cursor<T> {
     deinit {
         if cursorID != 0 {
             do {
-                let connection = try collection.database.server.reserveConnection()
+                let connection = try collection.database.server.reserveConnection(authenticatedFor: self.collection.database)
                 
                 defer {
                     collection.database.server.returnConnection(connection)

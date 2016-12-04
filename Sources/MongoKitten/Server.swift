@@ -44,11 +44,34 @@ public final class Server {
         let client: MongoTCP
         let buffer = TCPBuffer()
         var used = false
+        var writable = false
+        var authenticatedDBs: [String] = []
         public fileprivate(set) var isConnected = true
+        var onClose: (()->())
         
-        init(client: MongoTCP) {
+        init(client: MongoTCP, writable: Bool, onClose: @escaping (()->())) {
             self.client = client
+            self.writable = writable
+            self.onClose = onClose
             Connection.receiveQueue.async(execute: backgroundLoop)
+        }
+        
+        func authenticate(toDatabase db: Database) throws {
+            if let details = db.server.authDetails {
+                do {
+                    let protocolVersion = db.server.serverData?.maxWireVersion ?? 0
+                    
+                    if protocolVersion >= 3 {
+                        try db.authenticate(SASL: details, usingConnection: self)
+                    } else {
+                        try db.authenticate(mongoCR: details, usingConnection: self)
+                    }
+                    
+                    self.authenticatedDBs.append(db.name)
+                } catch {
+                    db.isAuthenticated = false
+                }
+            }
         }
         
         private static let receiveQueue = DispatchQueue(label: "org.mongokitten.server.receiveQueue", attributes: .concurrent)
@@ -134,6 +157,9 @@ public final class Server {
     /// Lock to prevent multiple writes to/from the connections.
     private let connectionPoolLock = NSRecursiveLock()
     
+    /// Lock to prevent multiple writes to/from the servers.
+    private let hostPoolLock = NSRecursiveLock()
+    
     /// Keeps track of the connections
     private var currentConnections = 0, maximumConnections = 1
     
@@ -141,7 +167,7 @@ public final class Server {
     private var isInitialized = false
     
     /// The server's hostname/IP and port to connect to
-    public let server: (host: String, port: UInt16)
+    public var servers: [(host: String, port: UInt16, openConnections: Int, isPrimary: Bool)]
     
     internal private(set) var serverData: (maxWriteBatchSize: Int32, maxWireVersion: Int32, minWireVersion: Int32, maxMessageSizeBytes: Int32)?
     
@@ -156,40 +182,155 @@ public final class Server {
     /// - throws: When we can't connect automatically, when the scheme/host is invalid and when we can't connect automatically
     ///
     /// - parameter automatically: Whether to connect automatically
-    public convenience init(mongoURL url: NSURL, usingTcpDriver tcpDriver: MongoTCP.Type = DefaultTCPClient, maxConnections: Int = 10) throws {
-        guard let scheme = url.scheme, let host = url.host , scheme.lowercased() == "mongodb" else {
-            throw MongoError.invalidNSURL(url: url)
+    public init(mongoURL url: String, usingTcpDriver tcpDriver: MongoTCP.Type = DefaultTCPClient, maxConnections: Int = 10) throws {
+        var url = url
+        guard url.characters.starts(with: "mongodb://".characters) else {
+            throw MongoError.noMongoDBSchema
         }
+        
+        url.characters.removeFirst("mongodb://".characters.count)
+        
+        let parts = url.characters.split(separator: "@")
+        
+        guard parts.count <= 2 else {
+            throw MongoError.invalidURI(uri: url)
+        }
+        
+        url = parts.count == 2 ? String(parts[1]) : String(parts[0])
+        
+        let queryParts = url.characters.split(separator: "?")
+        
+        url = String(queryParts[0])
+        
+        var queries = [String: String]()
+        
+        if queryParts.count == 2 {
+            loop: for keyValue in String(describing: queryParts).characters.split(separator: "&") {
+                let keyValue = Array(keyValue).split(separator: "=")
+                
+                guard keyValue.count == 2 else {
+                    continue loop
+                }
+                
+                queries[String(keyValue[0])] = String(keyValue[1])
+            }
+        }
+        
+        var username: String? = nil
+        var password: String? = nil
+        var path: String? = nil
+        
+        if parts.count == 2 {
+            let userString = parts[0]
+            let userParts = userString.split(separator: ":")
+            
+            guard userParts.count == 2 else {
+                throw MongoError.invalidURI(uri: url)
+            }
+            
+            username = String(userParts[0]).removingPercentEncoding
+            password = String(userParts[0]).removingPercentEncoding
+        }
+        
+        let urlSplitWithPath = url.characters.split(separator: "/")
+        
+        url = String(urlSplitWithPath[0])
+        path = urlSplitWithPath.count == 2 ? String(urlSplitWithPath[1]) : nil
         
         var authentication: (username: String, password: String, against: String)? = nil
         
-        let path = url.path ?? "admin"
-        
-        if let user = url.user?.removingPercentEncoding, let pass = url.password?.removingPercentEncoding {
-            authentication = (username: user, password: pass, against: path)
+        if let user = username?.removingPercentEncoding, let pass = password?.removingPercentEncoding {
+            authentication = (username: user, password: pass, against: path ?? "admin")
         }
         
-        let port: UInt16 = UInt16(url.port?.intValue ?? 27017)
-        
-        try self.init(hostname: host, port: port, authenticatedAs: authentication, usingTcpDriver: tcpDriver, maxConnections: maxConnections)
-    }
-    
-    /// Sets up the `Server` to connect to the specified URL.
-    /// The `mongodb://` scheme is required as well as the host. Optionally youc an provide ausername + password. And if no port is specified "27017" is used.
-    /// You can provide an alternative TCP Driver that complies to `MongoTCP`.
-    /// This Server doesn't connect automatically. You need to either use the `connect` function yourself or specify the `automatically` parameter to be true.
-    ///
-    /// - parameter url: The MongoDB connection String.
-    /// - parameter using: The TCP Driver to be used to connect to the server. Recommended to change to an SSL supporting socket when connnecting over the public internet.
-    /// - parameter automatically: Whether to connect automatically
-    ///
-    /// - throws: Throws when we can't connect automatically, when the scheme/host is invalid and when we can't connect automatically
-    public convenience init(mongoURL uri: String, usingTcpDriver tcpDriver: MongoTCP.Type = DefaultTCPClient, maxConnections: Int = 10) throws {
-        guard let url = NSURL(string: uri) else {
-            throw MongoError.invalidURI(uri: uri)
+        let hosts = url.characters.split(separator: ",").map { host -> (String, UInt16, Int, Bool) in
+            let hostSplit = host.split(separator: ":")
+            var port: UInt16 = 27017
+            
+            if hostSplit.count == 2 {
+                port = UInt16(String(hostSplit[1])) ?? 27017
+            }
+            
+            let hostname = String(hostSplit[0])
+            
+            return (hostname, port, 0, false)
         }
         
-        try self.init(mongoURL: url, usingTcpDriver: tcpDriver, maxConnections: maxConnections)
+        self.tcpType = tcpDriver
+        self.maximumConnections = maxConnections
+        self.authDetails = authentication
+        self.connectionPoolSemaphore = DispatchSemaphore(value: maxConnections)
+        self.servers = hosts
+        
+        if servers.count > 1 {
+            self.servers = hosts.map { host -> (host: String, port: UInt16, openConnections: Int, isPrimary: Bool) in
+                var host = host
+                self.connectionPoolLock.lock()
+                
+                defer {
+                    self.connectionPoolLock.unlock()
+                }
+                
+                do {
+                    let authDB = self[authentication?.against ?? "admin"]
+                    let connection = try makeConnection(toHost: host, authenticatedFor: authDB)
+                    connection.used = true
+                    
+                    connections.append(connection)
+                    
+                    let cmd = authDB["$cmd"]
+                    let document: Document = [
+                        "isMaster": Int32(1)
+                    ]
+                    
+                    let commandMessage = Message.Query(requestID: self.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
+                    let response = try self.sendAndAwait(message: commandMessage, overConnection: connection, timeout: 30)
+                    
+                    guard case .Reply(_, _, _, _, _, _, let documents) = response else {
+                        throw InternalMongoError.incorrectReply(reply: response)
+                    }
+                    
+                    isMasterTest: if let doc = documents.first {
+                        if doc["ismaster"] as Bool? == true && doc["secondary"] as Bool? == false {
+                            host.3 = true
+                            guard let batchSize = doc["maxWriteBatchSize"] as Int32?, let minWireVersion = doc["minWireVersion"] as Int32?, let maxWireVersion = doc["maxWireVersion"] as Int32? else {
+                                serverData = (maxWriteBatchSize: 1000, maxWireVersion: 4, minWireVersion: 0, maxMessageSizeBytes: 48000000)
+                                break isMasterTest
+                            }
+                            
+                            var maxMessageSizeBytes = doc["maxMessageSizeBytes"] as Int32? ?? 0
+                            if maxMessageSizeBytes == 0 {
+                                maxMessageSizeBytes = 48000000
+                            }
+                            
+                            serverData = (maxWriteBatchSize: batchSize, maxWireVersion: maxWireVersion, minWireVersion: minWireVersion, maxMessageSizeBytes: maxMessageSizeBytes)
+                        }
+                    }
+                    
+                    returnConnection(connection)
+                } catch { }
+                
+                return host
+            }
+        } else {
+            let authDB = self[authentication?.against ?? "admin"]
+            
+            let doc = try authDB.isMaster()
+            
+            guard let batchSize = doc["maxWriteBatchSize"] as Int32?, let minWireVersion = doc["minWireVersion"] as Int32?, let maxWireVersion = doc["maxWireVersion"] as Int32? else {
+                serverData = (maxWriteBatchSize: 1000, maxWireVersion: 4, minWireVersion: 0, maxMessageSizeBytes: 48000000)
+                return
+            }
+            
+            var maxMessageSizeBytes = doc["maxMessageSizeBytes"] as Int32? ?? 0
+            if maxMessageSizeBytes == 0 {
+                maxMessageSizeBytes = 48000000
+            }
+            
+            serverData = (maxWriteBatchSize: batchSize, maxWireVersion: maxWireVersion, minWireVersion: minWireVersion, maxMessageSizeBytes: maxMessageSizeBytes)
+            
+            self.serverData = (maxWriteBatchSize: 1000, maxWireVersion: 4, minWireVersion: 0, maxMessageSizeBytes: 48000000)
+        }
     }
     
     /// Sets up the `Server` to connect to the specified location.`Server`
@@ -202,19 +343,122 @@ public final class Server {
     /// - throws: When we can’t connect automatically, when the scheme/host is invalid and when we can’t connect automatically
     public init(hostname host: String, port: UInt16 = 27017, authenticatedAs authentication: (username: String, password: String, against: String)? = nil, usingTcpDriver tcpDriver: MongoTCP.Type = DefaultTCPClient, maxConnections: Int = 10) throws {
         self.tcpType = tcpDriver
-        self.server = (host: host, port: port)
+        self.servers = [(host: host, port: port, openConnections: 0, isPrimary: true)]
         self.maximumConnections = maxConnections
         self.authDetails = authentication
         
         self.connectionPoolSemaphore = DispatchSemaphore(value: maxConnections)
+        
+        let authDB = self[authentication?.against ?? "admin"]
+        
+        let doc = try authDB.isMaster()
+        
+        guard let batchSize = doc["maxWriteBatchSize"] as Int32?, let minWireVersion = doc["minWireVersion"] as Int32?, let maxWireVersion = doc["maxWireVersion"] as Int32? else {
+            serverData = (maxWriteBatchSize: 1000, maxWireVersion: 4, minWireVersion: 0, maxMessageSizeBytes: 48000000)
+            return
+        }
+        
+        var maxMessageSizeBytes = doc["maxMessageSizeBytes"] as Int32? ?? 0
+        if maxMessageSizeBytes == 0 {
+            maxMessageSizeBytes = 48000000
+        }
+        
+        serverData = (maxWriteBatchSize: batchSize, maxWireVersion: maxWireVersion, minWireVersion: minWireVersion, maxMessageSizeBytes: maxMessageSizeBytes)
+        
+        self.serverData = (maxWriteBatchSize: 1000, maxWireVersion: 4, minWireVersion: 0, maxMessageSizeBytes: 48000000)
     }
     
-    private func makeConnection() throws -> Connection {
-        return Connection(client: try tcpType.open(address: server.host, port: server.port))
+    private func makeConnection(writing: Bool = true, authenticatedFor: Database?) throws -> Connection {
+        self.hostPoolLock.lock()
+        guard var lowestOpenConnections = servers.first else {
+            throw MongoError.noServersAvailable
+        }
+        
+        for server in servers {
+            guard !writing || server.isPrimary else {
+                continue
+            }
+            
+            if server.openConnections < lowestOpenConnections.openConnections {
+                lowestOpenConnections = server
+            }
+        }
+        
+        defer {
+            self.hostPoolLock.unlock()
+        }
+        
+        let connection = Connection(client: try tcpType.open(address: lowestOpenConnections.host, port: lowestOpenConnections.port), writable: lowestOpenConnections.isPrimary) {
+            self.hostPoolLock.lock()
+            for (id, server) in self.servers.enumerated() where server == lowestOpenConnections {
+                var host = server
+                host.openConnections -= 1
+                self.servers[id] = host
+            }
+            self.hostPoolLock.unlock()
+        }
+        
+        connection.writable = lowestOpenConnections.isPrimary
+        
+        currentConnections += 1
+        
+        for (id, server) in servers.enumerated() where server == lowestOpenConnections {
+            lowestOpenConnections.openConnections += 1
+            servers[id] = lowestOpenConnections
+            return connection
+        }
+        
+        currentConnections -= 1
+        throw MongoError.internalInconsistency
     }
     
-    internal func reserveConnection() throws -> Connection {
-        guard let connection = self.connections.first(where: { !$0.used }) else {
+    private func makeConnection(toHost host: (host: String, port: UInt16, openConnections: Int, isPrimary: Bool), authenticatedFor: Database?) throws -> Connection {
+        let connection = Connection(client: try tcpType.open(address: host.host, port: host.port), writable: host.isPrimary) {
+            self.hostPoolLock.lock()
+            for (id, server) in self.servers.enumerated() where server == host {
+                var host = server
+                host.openConnections -= 1
+                self.servers[id] = host
+            }
+            self.hostPoolLock.unlock()
+        }
+        
+        connection.writable = host.isPrimary
+        
+        self.hostPoolLock.lock()
+        defer { self.hostPoolLock.unlock() }
+        
+        currentConnections += 1
+        
+        for (id, server) in servers.enumerated() where server == host {
+            var host = host
+            host.openConnections += 1
+            servers[id] = host
+            return connection
+        }
+        
+        currentConnections -= 1
+        throw MongoError.internalInconsistency
+    }
+    
+    internal func reserveConnection(writing: Bool = false, authenticatedFor db: Database?) throws -> Connection {
+        var bestMatch: Server.Connection? = nil
+        
+        let matches = self.connections.filter {
+            $0.isConnected && !$0.used && (!writing || $0.writable)
+        }
+        
+        if let db = db {
+            if let match = matches.first(where: { $0.authenticatedDBs.contains(db.name) }) {
+                bestMatch = match
+            } else {
+                bestMatch = matches.first
+            }
+        } else {
+            bestMatch = matches.first
+        }
+        
+        guard let connection = bestMatch else {
             self.connectionPoolLock.lock()
             guard currentConnections < maximumConnections else {
                 let timeout = DispatchTime(uptimeNanoseconds: DispatchTime.now().uptimeNanoseconds + 10_000_000_000)
@@ -223,11 +467,16 @@ public final class Server {
                     throw MongoError.timeout
                 }
                 
-                return try reserveConnection()
+                return try reserveConnection(writing: writing, authenticatedFor: db)
             }
             
-            let connection = try makeConnection()
+            let connection = try makeConnection(writing: writing, authenticatedFor: db)
             connection.used = true
+            
+            if let db = db {
+                // On connection
+                try connection.authenticate(toDatabase: db)
+            }
             
             connections.append(connection)
             self.connectionPoolLock.unlock()
@@ -259,7 +508,7 @@ public final class Server {
     /// - parameter database: The database's name
     ///
     /// - returns: A database instance for the requested database
-    public subscript (databaseName: String) -> Database {
+    public subscript(databaseName: String) -> Database {
         databaseCache.clean()
         
         let databaseName = databaseName.replacingOccurrences(of: ".", with: "")
@@ -269,38 +518,6 @@ public final class Server {
         }
         
         let db = Database(database: databaseName, at: self)
-        
-        connect: do {
-            if !isInitialized {
-                let result = try db.isMaster()
-                
-                guard let batchSize = result["maxWriteBatchSize"] as Int32?, let minWireVersion = result["minWireVersion"] as Int32?, let maxWireVersion = result["maxWireVersion"] as Int32? else {
-                    continue connect
-                }
-                
-                var maxMessageSizeBytes = result["maxMessageSizeBytes"] as Int32? ?? 0
-                if maxMessageSizeBytes == 0 {
-                    maxMessageSizeBytes = 48000000
-                }
-                
-                serverData = (maxWriteBatchSize: batchSize, maxWireVersion: maxWireVersion, minWireVersion: minWireVersion, maxMessageSizeBytes: maxMessageSizeBytes)
-                
-            }
-        } catch {}
-        
-        if let details = authDetails {
-            do {
-                let protocolVersion = serverData?.maxWireVersion ?? 0
-                
-                if protocolVersion >= 3 {
-                    try db.authenticate(SASL: details)
-                } else {
-                    try db.authenticate(mongoCR: details)
-                }
-            } catch {
-                db.isAuthenticated = false
-            }
-        }
         
         databaseCache[databaseName] = Weak(db)
         return db
@@ -326,7 +543,7 @@ public final class Server {
         }
         
         if connections.count == 0 {
-            guard let connection = try? reserveConnection() else {
+            guard let connection = try? reserveConnection(authenticatedFor: nil) else {
                 return false
             }
             
@@ -430,7 +647,7 @@ public final class Server {
     public func getDatabaseInfos() throws -> Document {
         let request: Document = ["listDatabases": 1]
         
-        let reply = try self["admin"].execute(command: request)
+        let reply = try self["admin"].execute(command: request, writing: false)
         
         return try firstDocument(in: reply)
     }
@@ -503,25 +720,6 @@ public final class Server {
 
     /// Clones a database from the specified MongoDB Connection URI
     ///
-    /// For more information: https://docs.mongodb.com/manual/reference/command/shutdown/#dbcmd.clone
-    ///
-    /// - parameter url: The URL
-    ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func clone(from url: NSURL) throws {
-        #if os(Linux)
-            let absoluteString = url.absoluteString
-        #else
-            guard let absoluteString = url.absoluteString else {
-                throw MongoError.invalidNSURL(url: url)
-            }
-        #endif
-        
-        try clone(from: absoluteString)
-    }
-
-    /// Clones a database from the specified MongoDB Connection URI
-    ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/clone/#dbcmd.clone
     ///
     /// - parameter url: The URL
@@ -582,7 +780,7 @@ public final class Server {
             command["block"] = block
         }
         
-        let reply = try self["admin"].execute(command: command)
+        let reply = try self[self.authDetails?.against ?? "admin"].execute(command: command, writing: true)
         let response = try firstDocument(in: reply)
         
         guard response["ok"] as Int? == 1 else {
@@ -617,7 +815,7 @@ public final class Server {
         
         let db = database ?? self["admin"]
 
-        let document = try firstDocument(in: try db.execute(command: command))
+        let document = try firstDocument(in: try db.execute(command: command, writing: false))
         
         guard document["ok"] as Int? == 1 else {
             throw MongoError.commandFailure(error: document)
@@ -639,7 +837,9 @@ extension Server : CustomStringConvertible {
     
     /// This server's hostname
     internal var hostname: String {
-        return "\(server.host):\(server.port)"
+        return "mongodb://" + servers.map { server in
+            return "\(server.host):\(server.port)"
+            }.joined(separator: ",")
     }
 }
 

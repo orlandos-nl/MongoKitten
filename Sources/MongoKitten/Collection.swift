@@ -141,7 +141,7 @@ public final class Collection: NSObject {
                     throw MongoError.insertFailure(documents: documents, error: replyDocuments.first)
                 }
             } else {
-                let connection = try database.server.reserveConnection()
+                let connection = try database.server.reserveConnection(writing: true, authenticatedFor: self.database)
                 
                 defer {
                     database.server.returnConnection(connection)
@@ -173,8 +173,8 @@ public final class Collection: NSObject {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A Cursor pointing to the response Documents.
-    public func execute(command: Document = [], usingFlags flags: QueryFlags = [], fetching fetchChunkSize: Int32 = 10) throws -> Cursor<Document> {
-        let connection = try database.server.reserveConnection()
+    public func execute(command: Document = [], usingFlags flags: QueryFlags = [], fetching fetchChunkSize: Int32 = 10, timeout: TimeInterval = 60) throws -> Cursor<Document> {
+        let connection = try database.server.reserveConnection(writing: true, authenticatedFor: self.database)
         
         defer {
             database.server.returnConnection(connection)
@@ -182,7 +182,7 @@ public final class Collection: NSObject {
         
         let queryMsg = Message.Query(requestID: database.server.nextMessageID(), flags: flags, collection: self, numbersToSkip: 0, numbersToReturn: fetchChunkSize, query: command, returnFields: nil)
         
-        let response = try self.database.server.sendAndAwait(message: queryMsg, overConnection: connection)
+        let response = try self.database.server.sendAndAwait(message: queryMsg, overConnection: connection, timeout: timeout)
         guard let cursor = Cursor(namespace: self.fullName, collection: self, reply: response, chunkSize: fetchChunkSize, transform: { $0 }) else {
             throw MongoError.invalidReply
         }
@@ -234,7 +234,7 @@ public final class Collection: NSObject {
             
             command["batchSize"] = Int32(batchSize)
             
-            let reply = try database.execute(command: command)
+            let reply = try database.execute(command: command, writing: false)
             
             guard case .Reply(_, _, _, _, _, _, let documents) = reply else {
                 throw InternalMongoError.incorrectReply(reply: reply)
@@ -248,7 +248,7 @@ public final class Collection: NSObject {
                 return doc
             })
         } else {
-            let connection = try database.server.reserveConnection()
+            let connection = try database.server.reserveConnection(authenticatedFor: self.database)
             
             defer {
                 database.server.returnConnection(connection)
@@ -342,7 +342,7 @@ public final class Collection: NSObject {
             
             return documents.first?["nModified"] as Int? ?? 0
         } else {
-            let connection = try database.server.reserveConnection()
+            let connection = try database.server.reserveConnection(writing: true, authenticatedFor: self.database)
             
             defer {
                 database.server.returnConnection(connection)
@@ -430,7 +430,7 @@ public final class Collection: NSObject {
             
             // If we're talking to an older MongoDB server
         } else {
-            let connection = try database.server.reserveConnection()
+            let connection = try database.server.reserveConnection(authenticatedFor: self.database)
             
             defer {
                 database.server.returnConnection(connection)
@@ -545,7 +545,7 @@ public final class Collection: NSObject {
             command["limit"] = Int32(limit)
         }
         
-        let reply = try self.database.execute(command: command)
+        let reply = try self.database.execute(command: command, writing: false)
         
         guard case .Reply(_, _, _, _, _, _, let documents) = reply, let document = documents.first else {
             throw InternalMongoError.incorrectReply(reply: reply)
@@ -635,7 +635,7 @@ public final class Collection: NSObject {
             command["query"] = filter
         }
         
-        return try firstDocument(in: try self.database.execute(command: command))[raw: "values"]?.documentValue?.arrayValue ?? []
+        return try firstDocument(in: try self.database.execute(command: command, writing: false))[raw: "values"]?.documentValue?.arrayValue ?? []
     }
     
     /// Returns all distinct values for a key in this collection. Allows filtering using query
@@ -725,13 +725,13 @@ public final class Collection: NSObject {
             throw MongoError.unsupportedOperations
         }
         
-        let result = try firstDocument(in: try database.execute(command: ["listIndexes": self.name]))
+        let result = try firstDocument(in: try database.execute(command: ["listIndexes": self.name], writing: false))
         
         guard let cursorDocument = result["cursor"] as Document? else {
             throw MongoError.cursorInitializationError(cursorDocument: result)
         }
         
-        let connection = try database.server.reserveConnection()
+        let connection = try database.server.reserveConnection(authenticatedFor: self.database)
         
         defer {
             database.server.returnConnection(connection)

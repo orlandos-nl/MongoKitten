@@ -82,7 +82,9 @@ public enum MongoError : Error {
     
     case invalidURI(uri: String)
     
-    case invalidNSURL(url: NSURL)
+    case noMongoDBSchema
+    
+    case noServersAvailable
 }
 
 public enum MongoAuthenticationError : Error {

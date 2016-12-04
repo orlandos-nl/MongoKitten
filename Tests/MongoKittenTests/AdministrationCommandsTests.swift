@@ -41,7 +41,7 @@ class AdministrationCommandsTests: XCTestCase {
            dbExists = true
         }
         
-        XCTAssertEqual(TestManager.server.hostname, "localhost:27017")
+        XCTAssertEqual(TestManager.server.hostname, "mongodb://localhost:27017")
         
         XCTAssert(dbExists)
         
