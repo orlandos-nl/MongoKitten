@@ -115,6 +115,7 @@ public final class Cursor<T> {
                 defer {
                     collection.database.server.returnConnection(connection)
                 }
+                
                 let killCursorsMessage = Message.KillCursors(requestID: collection.database.server.nextMessageID(), cursorIDs: [self.cursorID])
                 try collection.database.server.send(message: killCursorsMessage, overConnection: connection)
             } catch {

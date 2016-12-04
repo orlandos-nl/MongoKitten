@@ -85,6 +85,8 @@ public enum MongoError : Error {
     case noMongoDBSchema
     
     case noServersAvailable
+    
+    case unsupportedFeature(String)
 }
 
 public enum MongoAuthenticationError : Error {

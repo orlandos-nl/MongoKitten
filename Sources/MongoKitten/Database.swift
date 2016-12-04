@@ -75,6 +75,10 @@ public final class Database: NSObject {
         
         let connection = try server.reserveConnection(writing: false, authenticatedFor: nil)
         
+        defer {
+            server.returnConnection(connection)
+        }
+        
         try connection.authenticate(toDatabase: self)
     }
     

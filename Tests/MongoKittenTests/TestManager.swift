@@ -17,7 +17,7 @@ final class TestManager {
     
     //static var server = try! Server(hostname: "localhost", port: 27017, authenticatedAs: ("mongokitten-unittest-user", "mongokitten-unittest-password", "mongokitten-unittest"))
     
-    static var server = try! Server(hostname: "localhost", port: 27017)
+    static var server = try! Server(hostname: "localhost", port: 27017, ssl: false)
     static var db: Database { return server["mongokitten-unittest"] }
     static let wcol = db["wcol"]
     

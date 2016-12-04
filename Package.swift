@@ -16,7 +16,7 @@ var package = Package(
         .Package(url: "https://github.com/vapor/socks.git", majorVersion: 1),
 
         // SSL
-        .Package(url: "https://github.com/vapor/tls.git", majorVersion: 1),
+//        .Package(url: "https://github.com/vapor/tls.git", majorVersion: 1),
         ]
 )
 

@@ -25,7 +25,11 @@ class CollectionTests: XCTestCase {
     override func setUp() {
         super.setUp()
         
-        try! TestManager.clean()
+        do {
+            try TestManager.clean()
+        } catch {
+            fatalError("\(error)")
+        }
     }
     
     override func tearDown() {
@@ -52,13 +56,13 @@ class CollectionTests: XCTestCase {
     func testRename() throws {
         try TestManager.db["zips"].rename(to: "zipschange")
         
-        let pipeline = PipelineDocument.make().group(computedFields: [
-            "totalPop": .sumOf("$pop")
-            ], id: "$state").match([
-                "totalPop": ["$gte": Int(10_000_000)] as Document
-                ] as Document).sort([
-                    "totalPop": .ascending
-                    ]).project(["_id": false, "totalPop": true]).skip(2)
+        let pipeline: Pipeline = [
+            .grouping("$state", computed: ["totalPop": .sumOf("$pop")]),
+            .matching("totalPop" > 10_000_000),
+            .sortedBy(["totalPop": .ascending]),
+            .projecting(["_id": false, "totalPop": true]),
+            .skipping(2)
+        ]
         
         var zipsDocs = Array(try TestManager.db["zips"].aggregate(pipeline: pipeline))
         XCTAssertEqual(zipsDocs.count, 0)
@@ -222,13 +226,13 @@ class CollectionTests: XCTestCase {
     }
 
     func testAggregate() throws {
-        let pipeline = PipelineDocument.make().group(computedFields: [
-            "totalPop": .sumOf("$pop")
-            ], id: "$state").match([
-                    "totalPop": ["$gte": Int(10_000_000)] as Document
-                ] as Document).sort([
-                        "totalPop": .ascending
-                    ]).project(["_id": false, "totalPop": true]).skip(2)
+        let pipeline: Pipeline = [
+            .grouping("$state", computed: ["totalPop": .sumOf("$pop")]),
+            .matching("totalPop" > 10_000_000),
+            .sortedBy(["totalPop": .ascending]),
+            .projecting(["_id": false, "totalPop": true]),
+            .skipping(2)
+        ]
         
         let cursor = try TestManager.db["zips"].aggregate(pipeline: pipeline)
         
@@ -254,11 +258,18 @@ class CollectionTests: XCTestCase {
         
         XCTAssertEqual(count, 5)
         
-        pipeline.limit(3).count(insertedAtKey: "results").addFields([
-            "topThree": true
-            ])
+        let pipeline2: Pipeline = [
+            .grouping("$state", computed: ["totalPop": .sumOf("$pop")]),
+            .matching("totalPop" > 10_000_000),
+            .sortedBy(["totalPop": .ascending]),
+            .projecting(["_id": false, "totalPop": true]),
+            .skipping(2),
+            .limitedTo(3),
+            .counting(insertedAtKey: "results"),
+            .addingFields(["topThree": true])
+        ]
         
-        let result = Array(try TestManager.db["zips"].aggregate(pipeline: pipeline)).first
+        let result = Array(try TestManager.db["zips"].aggregate(pipeline: pipeline2)).first
         
         guard let resultCount = result?["results"] as Int?, resultCount == 3, result?["topThree"] as Bool? == true else {
             XCTFail()
@@ -269,16 +280,19 @@ class CollectionTests: XCTestCase {
     }
     
     func testFacetAggregate() throws {
-        let pipeline = PipelineDocument.make().group(computedFields: [
-            "totalPop": .sumOf("$pop")
-            ], id: "$state").sort([
-                "totalPop": .ascending
-                ]).facet([
-                    ("count", PipelineDocument.make().count(insertedAtKey: "resultCount").project(["resultCount": true])),
-                    ("totalPop", PipelineDocument.make().group(computedFields: [
-                        "population": .sumOf("$totalPop")
-                        ], id: Null()))
-                    ])
+        let pipeline: Pipeline = [
+            .grouping("$state", computed: ["totalPop": .sumOf("$pop")]),
+            .sortedBy(["totalPop": .ascending]),
+            .facet([
+                    "count": [
+                        .counting(insertedAtKey: "resultCount"),
+                        .projecting(["resultCount": true])
+                    ],
+                    "totalPop": [
+                        .grouping(Null(), computed: ["population": .sumOf("$totalPop")])
+                    ]
+                ])
+        ]
         
         guard let result = Array(try TestManager.db["zips"].aggregate(pipeline: pipeline)).first else {
             XCTFail()

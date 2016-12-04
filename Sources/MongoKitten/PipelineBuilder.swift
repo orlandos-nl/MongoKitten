@@ -1,266 +1,220 @@
 import Foundation
 import BSON
 
-public class PipelineDocument: PipelineWithInput, FinalizedPipeline {
+public struct Pipeline: ExpressibleByArrayLiteral, DocumentRepresentable {
     public var pipelineDocument: Document = []
     
     public var pipeline: Document {
         return pipelineDocument
     }
     
-    public func makePipelineWithInput() -> PipelineWithInput {
-        return self
-    }
-    
-    public func finalize() -> FinalizedPipeline {
-        return self
+    public func makeDocument() -> Document {
+        return self.pipelineDocument
     }
     
     public func makeBSONPrimitive() -> BSONPrimitive {
-        return pipelineDocument
+        return self.pipelineDocument
     }
     
-    public static func make() -> Pipeline {
-        return PipelineDocument()
+    public init(arrayLiteral elements: Stage...) {
+        self.pipelineDocument = Document(array: elements.map {
+            $0.makeDocument()
+        })
     }
     
     public init() { }
-}
-
-public protocol FinalizedPipeline: ValueConvertible {
-    var pipeline: Document { get }
-}
-
-public protocol Pipeline: class, ValueConvertible {
-    var pipelineDocument: Document { get set }
-    func makePipelineWithInput() -> PipelineWithInput
-    func finalize() -> FinalizedPipeline
-}
-
-public protocol PipelineWithInput: Pipeline {
     
-}
-
-extension Pipeline {
-    @discardableResult
-    public func project(_ projection: Projection) -> PipelineWithInput {
-        self.pipelineDocument.append([
-            "$project": projection
-            ] as Document)
+    public struct Stage: DocumentRepresentable {
+        public func makeBSONPrimitive() -> BSONPrimitive {
+            return self.document
+        }
         
-        return self.makePipelineWithInput()
-    }
-    
-    @discardableResult
-    public func match(_ query: Query) -> PipelineWithInput {
-        self.pipelineDocument.append([
-            "$match": query
-            ] as Document)
+        public func makeDocument() -> Document {
+            return self.document
+        }
         
-        return self.makePipelineWithInput()
-    }
-    
-    @discardableResult
-    public func match(_ query: Document) -> PipelineWithInput {
-        self.pipelineDocument.append([
-            "$match": query
-            ] as Document)
+        var document: Document
         
-        return self.makePipelineWithInput()
-    }
-    
-    @discardableResult
-    public func sample(sizeOf size: Int) -> PipelineWithInput {
-        self.pipelineDocument.append([
-            "$sample": ["size": size] as Document
-            ] as Document)
+        init(_ document: Document) {
+            self.document = document
+        }
         
-        return self.makePipelineWithInput()
-    }
-    
-    @discardableResult
-    public func skip(_ skip: Int) -> PipelineWithInput {
-        self.pipelineDocument.append([
-            "$skip": skip
-            ] as Document)
+        @discardableResult
+        public static func projecting(_ projection: Projection) -> Stage {
+            return Stage([
+                "$project": projection
+                ] as Document)
+        }
         
-        return self.makePipelineWithInput()
-    }
-    
-    @discardableResult
-    public func limit(_ limit: Int) -> PipelineWithInput {
-        self.pipelineDocument.append([
-            "$limit": limit
-            ] as Document)
+        @discardableResult
+        public static func matching(_ query: Query) -> Stage {
+            return Stage([
+                "$match": query
+                ] as Document)
+        }
         
-        return self.makePipelineWithInput()
-    }
-    
-    @discardableResult
-    public func sort(_ sort: Sort) -> PipelineWithInput {
-        self.pipelineDocument.append([
-            "$sort": sort
-            ] as Document)
+        @discardableResult
+        public static func matching(_ query: Document) -> Stage {
+            return Stage([
+                "$match": query
+                ] as Document)
+        }
         
-        return self.makePipelineWithInput()
-    }
-    
-    @discardableResult
-    public func group(groupDocument: Document) -> PipelineWithInput {
-        self.pipelineDocument.append([
-            "$group": groupDocument
-            ] as Document)
+        @discardableResult
+        public static func sample(sizeOf size: Int) -> Stage {
+            return Stage([
+                "$sample": ["size": size] as Document
+                ] as Document)
+        }
         
-        return self.makePipelineWithInput()
-    }
-    
-    @discardableResult
-    public func group(computedFields: [String: AccumulatedGroupExpression] = [:], id: ExpressionRepresentable) -> PipelineWithInput {
-        let groupDocument = computedFields.reduce([:] as Document) { (doc, expressionPair) -> Document in
-            guard expressionPair.key != "_id" else {
+        @discardableResult
+        public static func skipping(_ skip: Int) -> Stage {
+            return Stage([
+                "$skip": skip
+                ] as Document)
+        }
+        
+        @discardableResult
+        public static func limitedTo(_ limit: Int) -> Stage {
+            return Stage([
+                "$limit": limit
+                ] as Document)
+        }
+        
+        @discardableResult
+        public static func sortedBy(_ sort: Sort) -> Stage {
+            return Stage([
+                "$sort": sort
+                ] as Document)
+        }
+        
+        @discardableResult
+        public static func grouping(groupDocument: Document) -> Stage {
+            return Stage([
+                "$group": groupDocument
+                ] as Document)
+        }
+        
+        @discardableResult
+        public static func grouping(_ id: ExpressionRepresentable, computed computedFields: [String: AccumulatedGroupExpression] = [:]) -> Stage {
+            let groupDocument = computedFields.reduce([:] as Document) { (doc, expressionPair) -> Document in
+                guard expressionPair.key != "_id" else {
+                    return doc
+                }
+                
+                var doc = doc
+                
+                doc[expressionPair.key] = expressionPair.value.makeDocument()
+                
+                doc[raw: "_id"] = id.makeExpression()
+                
                 return doc
             }
             
-            var doc = doc
-            
-            doc[expressionPair.key] = expressionPair.value.makeDocument()
-            
-            doc[raw: "_id"] = id.makeExpression()
-            
-            return doc
+            return Stage([
+                "$group": groupDocument
+                ] as Document)
         }
         
-        self.pipelineDocument.append([
-            "$group": groupDocument
-            ] as Document)
-        
-        return self.makePipelineWithInput()
-    }
-    
-    @discardableResult
-    public func unwind(atPath path: String, includeArrayIndex: String? = nil, preserveNullAndEmptyArrays: Bool? = nil) -> PipelineWithInput {
-        let unwind: ValueConvertible
-        
-        if let includeArrayIndex = includeArrayIndex {
-            var unwind1 = [
-                "path": path
-                ] as Document
+        @discardableResult
+        public static func unwind(atPath path: String, includeArrayIndex: String? = nil, preserveNullAndEmptyArrays: Bool? = nil) -> Stage {
+            let unwind: ValueConvertible
             
-            unwind1["includeArrayIndex"] = includeArrayIndex
-            
-            if let preserveNullAndEmptyArrays = preserveNullAndEmptyArrays {
-                unwind1["preserveNullAndEmptyArrays"] = preserveNullAndEmptyArrays
+            if let includeArrayIndex = includeArrayIndex {
+                var unwind1 = [
+                    "path": path
+                    ] as Document
+                
+                unwind1["includeArrayIndex"] = includeArrayIndex
+                
+                if let preserveNullAndEmptyArrays = preserveNullAndEmptyArrays {
+                    unwind1["preserveNullAndEmptyArrays"] = preserveNullAndEmptyArrays
+                }
+                
+                unwind = unwind1
+            } else if let preserveNullAndEmptyArrays = preserveNullAndEmptyArrays {
+                unwind = [
+                    "path": path,
+                    "preserveNullAndEmptyArrays": preserveNullAndEmptyArrays
+                    ] as Document
+            } else {
+                unwind = path
             }
             
-            unwind = unwind1
-        } else if let preserveNullAndEmptyArrays = preserveNullAndEmptyArrays {
-            unwind = [
-                "path": path,
-                "preserveNullAndEmptyArrays": preserveNullAndEmptyArrays
-                ] as Document
-        } else {
-            unwind = path
+            return Stage([
+                "$unwind": unwind
+                ] as Document)
         }
         
-        self.pipelineDocument.append([
-            "$unwind": unwind
-            ] as Document)
+        @discardableResult
+        public static func lookup(fromCollection from: String, localField: String, foreignField: String, as: String) -> Stage {
+            return Stage([
+                "$lookup": [
+                    "from": from,
+                    "localField": localField,
+                    "foreignField": foreignField,
+                    "as": `as`
+                    ] as Document
+                ] as Document)
+        }
         
-        return self.makePipelineWithInput()
-    }
-    
-    @discardableResult
-    public func lookup(fromCollection from: String, localField: String, foreignField: String, as: String) -> PipelineWithInput {
-        self.pipelineDocument.append([
-            "$lookup": [
-                "from": from,
-                "localField": localField,
-                "foreignField": foreignField,
-                "as": `as`
-                ] as Document
-            ] as Document)
-        
-        return self.makePipelineWithInput()
-    }
-    
-    @discardableResult
-    public func lookup(fromCollection from: Collection, localField: String, foreignField: String, as: String) -> PipelineWithInput {
-        self.pipelineDocument.append([
-            "$lookup": [
+        @discardableResult
+        public static func lookup(fromCollection from: Collection, localField: String, foreignField: String, as: String) -> Stage {
+            return Stage([
+                "$lookup": [
                     "from": from.name,
                     "localField": localField,
                     "foreignField": foreignField,
                     "as": `as`
-                ] as Document
-            ] as Document)
+                    ] as Document
+                ] as Document)
+        }
         
-        return self.makePipelineWithInput()
-    }
-    
-    @discardableResult
-    public func out(toCollection collection: Collection) -> FinalizedPipeline {
-        return out(toCollectionNamed: collection.name)
-    }
-    
-    @discardableResult
-    public func writeOutput(toCollection collection: Collection) -> FinalizedPipeline {
-        return self.writeOutput(toCollectionNamed: collection.name)
-    }
-    
-    @discardableResult
-    public func out(toCollectionNamed collectionName: String) -> FinalizedPipeline {
-        return self.writeOutput(toCollectionNamed: collectionName)
-    }
-    
-    @discardableResult
-    public func writeOutput(toCollectionNamed collectionName: String) -> FinalizedPipeline {
-        self.pipelineDocument.append([
+        @discardableResult
+        public static func writeOutput(toCollection collection: Collection) -> Stage {
+            return self.writeOutput(toCollectionNamed: collection.name)
+        }
+        
+        @discardableResult
+        public static func writeOutput(toCollectionNamed collectionName: String) -> Stage {
+            return Stage([
                 "$out": collectionName
-            ] as Document)
+                ] as Document)
+        }
         
-        return self.finalize()
-    }
-    
-    @discardableResult
-    public func facet(_ facet: [(String, PipelineWithInput)]) -> PipelineWithInput {
-        self.pipelineDocument.append([
-            "$facet": Document(dictionaryElements: facet.map {
-                ($0.0, $0.1)
-            })
-            ] as Document)
+        @discardableResult
+        public static func facet(_ facet: [String: Pipeline]) -> Stage {
+            return Stage([
+                "$facet": Document(dictionaryElements: facet.map {
+                    ($0.0, $0.1)
+                })
+                ] as Document)
+        }
         
-        return self.makePipelineWithInput()
-    }
-    
-    @discardableResult
-    public func count(insertedAtKey key: String) -> PipelineWithInput {
-        self.pipelineDocument.append([
-            "$count": key
-            ] as Document)
+        @discardableResult
+        public static func counting(insertedAtKey key: String) -> Stage {
+            return Stage([
+                "$count": key
+                ] as Document)
+        }
         
-        return self.makePipelineWithInput()
-    }
-    
-    @discardableResult
-    public func replaceRoot(with expression: ExpressionRepresentable) -> PipelineWithInput {
-        self.pipelineDocument.append([
+        @discardableResult
+        public static func replaceRoot(withExpression expression: ExpressionRepresentable) -> Stage {
+            return Stage([
                 "$replaceRoot": [
                     "newRoot": expression.makeExpression()
-                ] as Document
-            ] as Document)
+                    ] as Document
+                ] as Document)
+        }
         
-        return self.makePipelineWithInput()
-    }
-    
-    @discardableResult
-    public func addFields(_ fields: [String: ExpressionRepresentable]) -> PipelineWithInput {
-        self.pipelineDocument.append([
+        @discardableResult
+        public static func addingFields(_ fields: [String: ExpressionRepresentable]) -> Stage {
+            return Stage([
                 "$addFields": Document(dictionaryElements: fields.map {
                     ($0.0, $0.1.makeExpression())
                 })
-            ] as Document)
-        
-        return self.makePipelineWithInput()
+                ] as Document)
+        }
     }
 }
 

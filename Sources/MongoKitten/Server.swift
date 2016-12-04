@@ -13,10 +13,10 @@
 #endif
 
 import Socks
-import TLS
+//import TLS
 
 public let DefaultTCPClient: MongoTCP.Type = Socks.TCPClient.self
-public let DefaultSSLTCPClient: MongoTCP.Type = TLS.Socket.self
+//public let DefaultSSLTCPClient: MongoTCP.Type = TLS.Socket.self
 
 @_exported import BSON
 
@@ -253,9 +253,13 @@ public final class Server {
         }
         
         let ssl = queries.keys.contains("ssl")
-        let defaultDriver = ssl ? DefaultSSLTCPClient : DefaultTCPClient
         
-        self.tcpType = tcpDriver ?? defaultDriver
+        if ssl {
+            throw MongoError.unsupportedFeature("SSL")
+        }
+        
+//        self.tcpType = tcpDriver ?? (ssl ? DefaultSSLTCPClient : DefaultTCPClient)
+        self.tcpType = tcpDriver ?? DefaultTCPClient
         self.maximumConnections = maxConnections * hosts.count
         self.authDetails = authentication
         self.maximumConnectionsPerHost = maxConnections
@@ -276,6 +280,10 @@ public final class Server {
                     let authDB = self[authentication?.against ?? "admin"]
                     let connection = try makeConnection(toHost: host, authenticatedFor: authDB)
                     connection.used = true
+                    
+                    defer {
+                        returnConnection(connection)
+                    }
                     
                     connections.append(connection)
                     
@@ -307,8 +315,6 @@ public final class Server {
                             serverData = (maxWriteBatchSize: batchSize, maxWireVersion: maxWireVersion, minWireVersion: minWireVersion, maxMessageSizeBytes: maxMessageSizeBytes)
                         }
                     }
-                    
-                    returnConnection(connection)
                 } catch { }
                 
                 return host
@@ -349,7 +355,13 @@ public final class Server {
     ///
     /// - throws: When we can’t connect automatically, when the scheme/host is invalid and when we can’t connect automatically
     public init(hostname host: String, port: UInt16 = 27017, authenticatedAs authentication: (username: String, password: String, against: String)? = nil, usingTcpDriver tcpDriver: MongoTCP.Type? = nil, maxConnectionsPerServer maxConnections: Int = 10, ssl: Bool = false, defaultTimeout: TimeInterval = 30) throws {
-        self.tcpType = tcpDriver ?? (ssl ? DefaultSSLTCPClient : DefaultTCPClient)
+        
+        if ssl {
+            throw MongoError.unsupportedFeature("SSL")
+        }
+        
+//        self.tcpType = tcpDriver ?? (ssl ? DefaultSSLTCPClient : DefaultTCPClient)
+        self.tcpType = tcpDriver ?? DefaultTCPClient
         self.servers = [(host: host, port: port, openConnections: 0, isPrimary: true)]
         self.maximumConnections = maxConnections
         self.authDetails = authentication
@@ -480,7 +492,7 @@ public final class Server {
         
         guard let connection = bestMatch else {
             self.connectionPoolLock.lock()
-            guard currentConnections < maximumConnections else {
+            guard currentConnections < maximumConnections && (!writing || servers.first(where: { $0.isPrimary })?.openConnections ?? maximumConnectionsPerHost < maximumConnectionsPerHost) else {
                 let timeout = DispatchTime(uptimeNanoseconds: DispatchTime.now().uptimeNanoseconds + 10_000_000_000)
                 
                 guard case .success = self.connectionPoolSemaphore.wait(timeout: timeout) else {
@@ -491,7 +503,10 @@ public final class Server {
             }
             
             let connection = try makeConnection(writing: writing, authenticatedFor: db)
-            connection.used = true
+            
+            defer {
+                connection.used = false
+            }
             
             if let db = db {
                 // On connection
@@ -567,6 +582,8 @@ public final class Server {
                 return false
             }
             
+            connections.append(connection)
+            
             defer {
                 returnConnection(connection)
             }
@@ -595,6 +612,12 @@ public final class Server {
         
         connections = []
         currentConnections = 0
+        
+        for (index, server) in servers.enumerated() {
+            var server = server
+            server.openConnections = 0
+            servers[index] = server
+        }
         
         connectionPoolLock.unlock()
     }
