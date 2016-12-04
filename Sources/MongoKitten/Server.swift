@@ -13,13 +13,10 @@
 #endif
 
 import Socks
+import TLS
 
-//#if MongoTLS
-//    import TLS
-//    public let DefaultTCPClient: MongoTCP.Type = TLS.Socket.self
-//#else
-    public let DefaultTCPClient: MongoTCP.Type = Socks.TCPClient.self
-//#endif
+public let DefaultTCPClient: MongoTCP.Type = Socks.TCPClient.self
+public let DefaultSSLTCPClient: MongoTCP.Type = TLS.Socket.self
 
 @_exported import BSON
 
@@ -158,13 +155,15 @@ public final class Server {
     private let connectionPoolLock = NSRecursiveLock()
     
     /// Lock to prevent multiple writes to/from the servers.
-    private let hostPoolLock = NSRecursiveLock()
+    private let hostPoolLock = NSLock()
     
     /// Keeps track of the connections
-    private var currentConnections = 0, maximumConnections = 1
+    private var currentConnections = 0, maximumConnections = 1, maximumConnectionsPerHost = 1
     
     /// Did we initialize?
     private var isInitialized = false
+    
+    internal var defaultTimeout: TimeInterval
     
     /// The server's hostname/IP and port to connect to
     public var servers: [(host: String, port: UInt16, openConnections: Int, isPrimary: Bool)]
@@ -182,7 +181,8 @@ public final class Server {
     /// - throws: When we can't connect automatically, when the scheme/host is invalid and when we can't connect automatically
     ///
     /// - parameter automatically: Whether to connect automatically
-    public init(mongoURL url: String, usingTcpDriver tcpDriver: MongoTCP.Type = DefaultTCPClient, maxConnections: Int = 10) throws {
+    public init(mongoURL url: String, usingTcpDriver tcpDriver: MongoTCP.Type? = nil, maxConnectionsPerServer maxConnections: Int = 10, defaultTimeout: TimeInterval
+         = 30) throws {
         var url = url
         guard url.characters.starts(with: "mongodb://".characters) else {
             throw MongoError.noMongoDBSchema
@@ -205,14 +205,10 @@ public final class Server {
         var queries = [String: String]()
         
         if queryParts.count == 2 {
-            loop: for keyValue in String(describing: queryParts).characters.split(separator: "&") {
+            loop: for keyValue in String(queryParts[1]).characters.split(separator: "&") {
                 let keyValue = Array(keyValue).split(separator: "=")
                 
-                guard keyValue.count == 2 else {
-                    continue loop
-                }
-                
-                queries[String(keyValue[0])] = String(keyValue[1])
+                queries[String(keyValue[0])] = keyValue.count == 2 ? String(keyValue[1]) : ""
             }
         }
         
@@ -256,11 +252,16 @@ public final class Server {
             return (hostname, port, 0, false)
         }
         
-        self.tcpType = tcpDriver
-        self.maximumConnections = maxConnections
+        let ssl = queries.keys.contains("ssl")
+        let defaultDriver = ssl ? DefaultSSLTCPClient : DefaultTCPClient
+        
+        self.tcpType = tcpDriver ?? defaultDriver
+        self.maximumConnections = maxConnections * hosts.count
         self.authDetails = authentication
-        self.connectionPoolSemaphore = DispatchSemaphore(value: maxConnections)
+        self.maximumConnectionsPerHost = maxConnections
+        self.connectionPoolSemaphore = DispatchSemaphore(value: maxConnections * hosts.count)
         self.servers = hosts
+        self.defaultTimeout = defaultTimeout
         
         if servers.count > 1 {
             self.servers = hosts.map { host -> (host: String, port: UInt16, openConnections: Int, isPrimary: Bool) in
@@ -284,7 +285,7 @@ public final class Server {
                     ]
                     
                     let commandMessage = Message.Query(requestID: self.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
-                    let response = try self.sendAndAwait(message: commandMessage, overConnection: connection, timeout: 30)
+                    let response = try self.sendAndAwait(message: commandMessage, overConnection: connection, timeout: defaultTimeout)
                     
                     guard case .Reply(_, _, _, _, _, _, let documents) = response else {
                         throw InternalMongoError.incorrectReply(reply: response)
@@ -313,6 +314,12 @@ public final class Server {
                 return host
             }
         } else {
+            guard servers.count == 1 else {
+                throw MongoError.noServersAvailable
+            }
+            
+            servers[0].isPrimary = true
+            
             let authDB = self[authentication?.against ?? "admin"]
             
             let doc = try authDB.isMaster()
@@ -341,12 +348,13 @@ public final class Server {
     /// - parameter automatically: Connect automatically
     ///
     /// - throws: When we can’t connect automatically, when the scheme/host is invalid and when we can’t connect automatically
-    public init(hostname host: String, port: UInt16 = 27017, authenticatedAs authentication: (username: String, password: String, against: String)? = nil, usingTcpDriver tcpDriver: MongoTCP.Type = DefaultTCPClient, maxConnections: Int = 10) throws {
-        self.tcpType = tcpDriver
+    public init(hostname host: String, port: UInt16 = 27017, authenticatedAs authentication: (username: String, password: String, against: String)? = nil, usingTcpDriver tcpDriver: MongoTCP.Type? = nil, maxConnectionsPerServer maxConnections: Int = 10, ssl: Bool = false, defaultTimeout: TimeInterval = 30) throws {
+        self.tcpType = tcpDriver ?? (ssl ? DefaultSSLTCPClient : DefaultTCPClient)
         self.servers = [(host: host, port: port, openConnections: 0, isPrimary: true)]
         self.maximumConnections = maxConnections
         self.authDetails = authentication
-        
+        self.defaultTimeout = defaultTimeout
+        self.maximumConnectionsPerHost = maxConnections
         self.connectionPoolSemaphore = DispatchSemaphore(value: maxConnections)
         
         let authDB = self[authentication?.against ?? "admin"]
@@ -370,22 +378,25 @@ public final class Server {
     
     private func makeConnection(writing: Bool = true, authenticatedFor: Database?) throws -> Connection {
         self.hostPoolLock.lock()
-        guard var lowestOpenConnections = servers.first else {
-            throw MongoError.noServersAvailable
-        }
-        
-        for server in servers {
-            guard !writing || server.isPrimary else {
-                continue
-            }
-            
-            if server.openConnections < lowestOpenConnections.openConnections {
-                lowestOpenConnections = server
-            }
-        }
         
         defer {
             self.hostPoolLock.unlock()
+        }
+        
+        guard var lowestOpenConnections = servers.first(where: { $0.isPrimary }) else {
+            throw MongoError.noServersAvailable
+        }
+        
+        if !writing {
+            for server in servers.filter({ !$0.isPrimary && $0.openConnections < maximumConnectionsPerHost }) {
+                if server.openConnections < lowestOpenConnections.openConnections || (lowestOpenConnections.isPrimary && lowestOpenConnections.openConnections < server.openConnections - 2) {
+                    lowestOpenConnections = server
+                }
+            }
+        }
+        
+        if lowestOpenConnections.openConnections >= maximumConnectionsPerHost {
+            throw MongoError.noServersAvailable
         }
         
         let connection = Connection(client: try tcpType.open(address: lowestOpenConnections.host, port: lowestOpenConnections.port), writable: lowestOpenConnections.isPrimary) {
@@ -448,15 +459,24 @@ public final class Server {
             $0.isConnected && !$0.used && (!writing || $0.writable)
         }
         
-        if let db = db {
-            if let match = matches.first(where: { $0.authenticatedDBs.contains(db.name) }) {
-                bestMatch = match
+        matching: if let db = db {
+            if !writing {
+                for match in matches {
+                    if !match.writable && match.authenticatedDBs.contains(db.name) {
+                        bestMatch = match
+                        break matching
+                    }
+                }
             } else {
-                bestMatch = matches.first
+                if let match = matches.first(where: { $0.authenticatedDBs.contains(db.name) }) {
+                    bestMatch = match
+                }
             }
         } else {
-            bestMatch = matches.first
+            bestMatch = matches.first(where: { !$0.writable && !writing })
         }
+        
+        bestMatch = bestMatch ?? matches.first
         
         guard let connection = bestMatch else {
             self.connectionPoolLock.lock()
@@ -589,7 +609,9 @@ public final class Server {
     ///
     /// - returns: The reply from the server
     @discardableResult @warn_unqualified_access
-    internal func sendAndAwait(message msg: Message, overConnection connection: Connection, timeout: TimeInterval = 60) throws -> Message {
+    internal func sendAndAwait(message msg: Message, overConnection connection: Connection, timeout: TimeInterval = 0) throws -> Message {
+        let timeout = timeout > 0 ? timeout : defaultTimeout
+        
         let requestId = msg.requestID
         
         let semaphore = DispatchSemaphore(value: 0)

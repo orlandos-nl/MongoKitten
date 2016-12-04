@@ -60,14 +60,14 @@ public final class Database: NSObject {
         self.name = database.replacingOccurrences(of: ".", with: "")
     }
     
-    public init(mongoURL url: String, usingTcpDriver driver: MongoTCP.Type = DefaultTCPClient, maxConnections: Int = 10) throws {
+    public init(mongoURL url: String, usingTcpDriver driver: MongoTCP.Type? = nil, maxConnectionsPerServer maxConnections: Int = 10) throws {
         let path = url.characters.split(separator: "/")
         
         guard path.count >= 2, let dbname = path.last?.split(separator: "?")[0] else {
             throw MongoError.invalidDatabase("")
         }
         
-        self.server = try Server(mongoURL: url, usingTcpDriver: driver, maxConnections: maxConnections)
+        self.server = try Server(mongoURL: url, usingTcpDriver: driver, maxConnectionsPerServer: maxConnections)
         
         self.name = String(dbname)
         
@@ -112,7 +112,9 @@ public final class Database: NSObject {
     ///
     /// - returns: A `Message` containing the response
     @discardableResult
-    internal func execute(command document: Document, until timeout: TimeInterval = 60, writing: Bool = true) throws -> Message {
+    internal func execute(command document: Document, until timeout: TimeInterval = 0, writing: Bool = true) throws -> Message {
+        let timeout = timeout > 0 ? timeout : server.defaultTimeout
+        
         let connection = try server.reserveConnection(writing: true, authenticatedFor: self)
         
         defer {
@@ -280,7 +282,7 @@ extension Database {
             "payload": ""
             ], returnFields: nil)
         
-        let response = try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: 60)
+        let response = try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: 0)
         
         guard case .Reply(_, _, _, _, _, _, let documents) = response, let responseDocument = documents.first else {
             throw InternalMongoError.incorrectReply(reply: response)
@@ -335,7 +337,7 @@ extension Database {
             "payload": payload
             ], returnFields: nil)
         
-        let response = try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: 60)
+        let response = try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: 0)
         
         // If we don't get a correct reply
         guard case .Reply(_, _, _, _, _, _, let documents) = response, let responseDocument = documents.first else {
@@ -367,7 +369,7 @@ extension Database {
             "payload": payload
             ], returnFields: nil)
         
-        let response = try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: 60)
+        let response = try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: 0)
         
         let responseDocument = try firstDocument(in: response)
         
@@ -406,7 +408,7 @@ extension Database {
             "user": details.username,
             "key": key
             ], returnFields: nil)
-        let successResponse = try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: 60)
+        let successResponse = try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: 0)
         
         let successDocument = try firstDocument(in: successResponse)
         

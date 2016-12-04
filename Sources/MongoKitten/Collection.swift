@@ -99,7 +99,7 @@ public final class Collection: NSObject {
     /// - returns: The documents' ids
     @discardableResult
     public func insert(_ documents: [DocumentRepresentable], stoppingOnError ordered: Bool? = nil, timeout customTimeout: TimeInterval? = nil) throws -> [ValueConvertible] {
-        let timeout: TimeInterval = customTimeout ?? (60 + (Double(documents.count) / 50))
+        let timeout: TimeInterval = customTimeout ?? (database.server.defaultTimeout + (Double(documents.count) / 50))
         
         var documents = documents.map {
             $0.makeDocument()
@@ -173,7 +173,9 @@ public final class Collection: NSObject {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A Cursor pointing to the response Documents.
-    public func execute(command: Document = [], usingFlags flags: QueryFlags = [], fetching fetchChunkSize: Int32 = 10, timeout: TimeInterval = 60) throws -> Cursor<Document> {
+    public func execute(command: Document = [], usingFlags flags: QueryFlags = [], fetching fetchChunkSize: Int32 = 10, timeout: TimeInterval = 0) throws -> Cursor<Document> {
+        let timeout = timeout > 0 ? timeout : database.server.defaultTimeout
+        
         let connection = try database.server.reserveConnection(writing: true, authenticatedFor: self.database)
         
         defer {
