@@ -20,9 +20,6 @@ public final class Database: NSObject {
     /// The database's name
     public let name: String
     
-    /// Are we authenticated?
-    public internal(set) var isAuthenticated = true
-    
     /// A cache of all collections in this Database.
     ///
     /// Mainly used for keeping track of event listeners
@@ -57,7 +54,7 @@ public final class Database: NSObject {
     /// - parameter server: The `Server` on which this database exists
     public init(database: String, at server: Server) {
         self.server = server
-        self.name = database.replacingOccurrences(of: ".", with: "")
+        self.name = database
     }
     
     public init(mongoURL url: String, usingTcpDriver driver: MongoTCP.Type? = nil, maxConnectionsPerServer maxConnections: Int = 10) throws {
@@ -119,7 +116,7 @@ public final class Database: NSObject {
     internal func execute(command document: Document, until timeout: TimeInterval = 0, writing: Bool = true) throws -> Message {
         let timeout = timeout > 0 ? timeout : server.defaultTimeout
         
-        let connection = try server.reserveConnection(writing: true, authenticatedFor: self)
+        let connection = try server.reserveConnection(writing: writing, authenticatedFor: self)
         
         defer {
             server.returnConnection(connection)
@@ -244,6 +241,7 @@ extension Database {
     private func complete(SASL payload: String, using response: Document, verifying signature: [UInt8], usingConnection connection: Server.Connection) throws {
         // If we failed authentication
         guard response["ok"] as Int? == 1 else {
+            print(response.makeExtendedJSON())
             throw MongoAuthenticationError.incorrectCredentials
         }
         
@@ -303,7 +301,8 @@ extension Database {
     /// - throws: When the authentication fails, when Base64 fails
     private func challenge(with details: (username: String, password: String, against: String), using previousInformation: (nonce: String, response: Document, scram: SCRAMClient<SHA1>), usingConnection connection: Server.Connection) throws {
         // If we failed the authentication
-        guard previousInformation.response["ok"] as Int?  == 1 else {
+        guard previousInformation.response["ok"] as Int? == 1 else {
+            print(previousInformation.response.makeExtendedJSON())
             throw MongoAuthenticationError.incorrectCredentials
         }
         

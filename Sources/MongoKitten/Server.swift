@@ -43,13 +43,17 @@ public final class Server {
         var used = false
         var writable = false
         var authenticatedDBs: [String] = []
-        public fileprivate(set) var isConnected = true
+        public var isConnected: Bool {
+            return client.isConnected
+        }
         var onClose: (()->())
+        let host: (address: String, port: UInt16)
         
-        init(client: MongoTCP, writable: Bool, onClose: @escaping (()->())) {
+        init(client: MongoTCP, writable: Bool, host: (address: String, port: UInt16), onClose: @escaping (()->())) {
             self.client = client
             self.writable = writable
             self.onClose = onClose
+            self.host = host
             Connection.receiveQueue.async(execute: backgroundLoop)
         }
         
@@ -65,9 +69,7 @@ public final class Server {
                     }
                     
                     self.authenticatedDBs.append(db.name)
-                } catch {
-                    db.isAuthenticated = false
-                }
+                } catch { }
             }
         }
         
@@ -96,6 +98,11 @@ public final class Server {
             }
             
             Connection.receiveQueue.async(execute: backgroundLoop)
+        }
+        
+        func close() {
+            _ = try? client.close()
+            onClose()
         }
         
         /// Called by the server thread to handle MongoDB Wire messages
@@ -157,16 +164,20 @@ public final class Server {
     /// Lock to prevent multiple writes to/from the servers.
     private let hostPoolLock = NSLock()
     
+    private let maintainanceLoopLock = NSLock()
+    
     /// Keeps track of the connections
     private var currentConnections = 0, maximumConnections = 1, maximumConnectionsPerHost = 1
     
     /// Did we initialize?
     private var isInitialized = false
     
+    private var slaveOK = false
+    
     internal var defaultTimeout: TimeInterval
     
     /// The server's hostname/IP and port to connect to
-    public var servers: [(host: String, port: UInt16, openConnections: Int, isPrimary: Bool)]
+    public var servers: [(host: String, port: UInt16, openConnections: Int, isPrimary: Bool, online: Bool)]
     
     internal private(set) var serverData: (maxWriteBatchSize: Int32, maxWireVersion: Int32, minWireVersion: Int32, maxMessageSizeBytes: Int32)?
     
@@ -239,7 +250,7 @@ public final class Server {
             authentication = (username: user, password: pass, against: path ?? "admin")
         }
         
-        let hosts = url.characters.split(separator: ",").map { host -> (String, UInt16, Int, Bool) in
+        let hosts = url.characters.split(separator: ",").map { host -> (String, UInt16, Int, Bool, Bool) in
             let hostSplit = host.split(separator: ":")
             var port: UInt16 = 27017
             
@@ -249,7 +260,7 @@ public final class Server {
             
             let hostname = String(hostSplit[0])
             
-            return (hostname, port, 0, false)
+            return (hostname, port, 0, false, false)
         }
         
         let ssl = queries.keys.contains("ssl")
@@ -258,7 +269,7 @@ public final class Server {
             throw MongoError.unsupportedFeature("SSL")
         }
         
-//        self.tcpType = tcpDriver ?? (ssl ? DefaultSSLTCPClient : DefaultTCPClient)
+//       TODO: self.tcpType = tcpDriver ?? (ssl ? DefaultSSLTCPClient : DefaultTCPClient)
         self.tcpType = tcpDriver ?? DefaultTCPClient
         self.maximumConnections = maxConnections * hosts.count
         self.authDetails = authentication
@@ -268,57 +279,8 @@ public final class Server {
         self.defaultTimeout = defaultTimeout
         
         if servers.count > 1 {
-            self.servers = hosts.map { host -> (host: String, port: UInt16, openConnections: Int, isPrimary: Bool) in
-                var host = host
-                self.connectionPoolLock.lock()
-                
-                defer {
-                    self.connectionPoolLock.unlock()
-                }
-                
-                do {
-                    let authDB = self[authentication?.against ?? "admin"]
-                    let connection = try makeConnection(toHost: host, authenticatedFor: authDB)
-                    connection.used = true
-                    
-                    defer {
-                        returnConnection(connection)
-                    }
-                    
-                    connections.append(connection)
-                    
-                    let cmd = authDB["$cmd"]
-                    let document: Document = [
-                        "isMaster": Int32(1)
-                    ]
-                    
-                    let commandMessage = Message.Query(requestID: self.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
-                    let response = try self.sendAndAwait(message: commandMessage, overConnection: connection, timeout: defaultTimeout)
-                    
-                    guard case .Reply(_, _, _, _, _, _, let documents) = response else {
-                        throw InternalMongoError.incorrectReply(reply: response)
-                    }
-                    
-                    isMasterTest: if let doc = documents.first {
-                        if doc["ismaster"] as Bool? == true && doc["secondary"] as Bool? == false {
-                            host.3 = true
-                            guard let batchSize = doc["maxWriteBatchSize"] as Int32?, let minWireVersion = doc["minWireVersion"] as Int32?, let maxWireVersion = doc["maxWireVersion"] as Int32? else {
-                                serverData = (maxWriteBatchSize: 1000, maxWireVersion: 4, minWireVersion: 0, maxMessageSizeBytes: 48000000)
-                                break isMasterTest
-                            }
-                            
-                            var maxMessageSizeBytes = doc["maxMessageSizeBytes"] as Int32? ?? 0
-                            if maxMessageSizeBytes == 0 {
-                                maxMessageSizeBytes = 48000000
-                            }
-                            
-                            serverData = (maxWriteBatchSize: batchSize, maxWireVersion: maxWireVersion, minWireVersion: minWireVersion, maxMessageSizeBytes: maxMessageSizeBytes)
-                        }
-                    }
-                } catch { }
-                
-                return host
-            }
+            self.isReplica = true
+            initializeReplica()
         } else {
             guard servers.count == 1 else {
                 throw MongoError.noServersAvailable
@@ -344,6 +306,92 @@ public final class Server {
             
             self.serverData = (maxWriteBatchSize: 1000, maxWireVersion: 4, minWireVersion: 0, maxMessageSizeBytes: 48000000)
         }
+        
+        self.connectionPoolMaintainanceQueue.async(execute: backgroundLoop)
+    }
+    
+    var maintainanceLoopCalls = [(()->())]()
+    var isReplica = false
+    
+    fileprivate func backgroundLoop() {
+        maintainanceLoopLock.lock()
+        for action in maintainanceLoopCalls {
+            action()
+        }
+        
+        maintainanceLoopCalls = []
+        maintainanceLoopLock.unlock()
+        
+        Thread.sleep(forTimeInterval: 5)
+        
+        self.connectionPoolMaintainanceQueue.async(execute: backgroundLoop)
+    }
+    
+    var reinitializeReplica = false
+    
+    func initializeReplica() {
+        _ = try? disconnect()
+        
+        self.servers = self.servers.map { host -> (host: String, port: UInt16, openConnections: Int, isPrimary: Bool, online: Bool) in
+            var host = host
+            host.isPrimary = false
+            self.connectionPoolLock.lock()
+            
+            defer {
+                self.connectionPoolLock.unlock()
+            }
+            
+            do {
+                let authDB = self[authDetails?.against ?? "admin"]
+                let connection = try makeConnection(toHost: host, authenticatedFor: authDB)
+                connection.used = true
+                
+                defer {
+                    returnConnection(connection)
+                }
+                
+                connections.append(connection)
+                
+                let cmd = authDB["$cmd"]
+                let document: Document = [
+                    "isMaster": Int32(1)
+                ]
+                
+                let commandMessage = Message.Query(requestID: self.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
+                let response = try self.sendAndAwait(message: commandMessage, overConnection: connection, timeout: defaultTimeout)
+                
+                guard case .Reply(_, _, _, _, _, _, let documents) = response else {
+                    throw InternalMongoError.incorrectReply(reply: response)
+                }
+                
+                isMasterTest: if let doc = documents.first {
+                    if doc["ismaster"] as Bool? == true && doc["secondary"] as Bool? == false {
+                        host.isPrimary = true
+                        guard let batchSize = doc["maxWriteBatchSize"] as Int32?, let minWireVersion = doc["minWireVersion"] as Int32?, let maxWireVersion = doc["maxWireVersion"] as Int32? else {
+                            serverData = (maxWriteBatchSize: 1000, maxWireVersion: 4, minWireVersion: 0, maxMessageSizeBytes: 48000000)
+                            break isMasterTest
+                        }
+                        
+                        var maxMessageSizeBytes = doc["maxMessageSizeBytes"] as Int32? ?? 0
+                        if maxMessageSizeBytes == 0 {
+                            maxMessageSizeBytes = 48000000
+                        }
+                        
+                        serverData = (maxWriteBatchSize: batchSize, maxWireVersion: maxWireVersion, minWireVersion: minWireVersion, maxMessageSizeBytes: maxMessageSizeBytes)
+                    }
+                }
+                
+                connection.writable = host.isPrimary
+                
+                host.online = true
+            } catch {
+                host.online = false
+            }
+            
+            return host
+        }
+        
+        reinitializeReplica = false
     }
     
     /// Sets up the `Server` to connect to the specified location.`Server`
@@ -360,9 +408,9 @@ public final class Server {
             throw MongoError.unsupportedFeature("SSL")
         }
         
-//        self.tcpType = tcpDriver ?? (ssl ? DefaultSSLTCPClient : DefaultTCPClient)
+//      TODO:  self.tcpType = tcpDriver ?? (ssl ? DefaultSSLTCPClient : DefaultTCPClient)
         self.tcpType = tcpDriver ?? DefaultTCPClient
-        self.servers = [(host: host, port: port, openConnections: 0, isPrimary: true)]
+        self.servers = [(host: host, port: port, openConnections: 0, isPrimary: true, online: true)]
         self.maximumConnections = maxConnections
         self.authDetails = authentication
         self.defaultTimeout = defaultTimeout
@@ -386,6 +434,8 @@ public final class Server {
         serverData = (maxWriteBatchSize: batchSize, maxWireVersion: maxWireVersion, minWireVersion: minWireVersion, maxMessageSizeBytes: maxMessageSizeBytes)
         
         self.serverData = (maxWriteBatchSize: 1000, maxWireVersion: 4, minWireVersion: 0, maxMessageSizeBytes: 48000000)
+        
+        self.connectionPoolMaintainanceQueue.async(execute: backgroundLoop)
     }
     
     private func makeConnection(writing: Bool = true, authenticatedFor: Database?) throws -> Connection {
@@ -395,12 +445,12 @@ public final class Server {
             self.hostPoolLock.unlock()
         }
         
-        guard var lowestOpenConnections = servers.first(where: { $0.isPrimary }) else {
+        guard var lowestOpenConnections = servers.first(where: { $0.isPrimary && $0.online }) else {
             throw MongoError.noServersAvailable
         }
         
-        if !writing {
-            for server in servers.filter({ !$0.isPrimary && $0.openConnections < maximumConnectionsPerHost }) {
+        if !writing && slaveOK {
+            for server in servers.filter({ !$0.isPrimary && $0.online && $0.openConnections < maximumConnectionsPerHost }) {
                 if server.openConnections < lowestOpenConnections.openConnections || (lowestOpenConnections.isPrimary && lowestOpenConnections.openConnections < server.openConnections - 2) {
                     lowestOpenConnections = server
                 }
@@ -411,7 +461,7 @@ public final class Server {
             throw MongoError.noServersAvailable
         }
         
-        let connection = Connection(client: try tcpType.open(address: lowestOpenConnections.host, port: lowestOpenConnections.port), writable: lowestOpenConnections.isPrimary) {
+        let connection = Connection(client: try tcpType.open(address: lowestOpenConnections.host, port: lowestOpenConnections.port), writable: lowestOpenConnections.isPrimary, host: (lowestOpenConnections.host, lowestOpenConnections.port)) {
             self.hostPoolLock.lock()
             for (id, server) in self.servers.enumerated() where server == lowestOpenConnections {
                 var host = server
@@ -421,7 +471,9 @@ public final class Server {
             self.hostPoolLock.unlock()
         }
         
-        connection.writable = lowestOpenConnections.isPrimary
+        guard connection.isConnected else {
+            throw MongoError.notConnected
+        }
         
         currentConnections += 1
         
@@ -435,8 +487,8 @@ public final class Server {
         throw MongoError.internalInconsistency
     }
     
-    private func makeConnection(toHost host: (host: String, port: UInt16, openConnections: Int, isPrimary: Bool), authenticatedFor: Database?) throws -> Connection {
-        let connection = Connection(client: try tcpType.open(address: host.host, port: host.port), writable: host.isPrimary) {
+    private func makeConnection(toHost host: (host: String, port: UInt16, openConnections: Int, isPrimary: Bool, online: Bool), authenticatedFor: Database?) throws -> Connection {
+        let connection = Connection(client: try tcpType.open(address: host.host, port: host.port), writable: host.isPrimary, host: (host.host, host.port)) {
             self.hostPoolLock.lock()
             for (id, server) in self.servers.enumerated() where server == host {
                 var host = server
@@ -464,12 +516,50 @@ public final class Server {
         throw MongoError.internalInconsistency
     }
     
-    internal func reserveConnection(writing: Bool = false, authenticatedFor db: Database?) throws -> Connection {
+    internal func reserveConnection(writing: Bool = false, authenticatedFor db: Database?, toHost host: (String, UInt16)? = nil) throws -> Connection {
         var bestMatch: Server.Connection? = nil
         
-        let matches = self.connections.filter {
-            $0.isConnected && !$0.used && (!writing || $0.writable)
+        connectionPoolLock.lock()
+        
+        // I needed to be creative here :P
+        var disconnectionPool = [Connection]()
+        
+        self.connections = self.connections.filter { connection in
+            if !connection.isConnected {
+                disconnectionPool.append(connection)
+            }
+            
+            return connection.isConnected
         }
+        
+        if disconnectionPool.count > 0 {
+            connectionPoolMaintainanceQueue.async {
+                disconnectionPool.forEach({
+                    $0.close()
+                })
+                
+                if self.isReplica {
+                    self.maintainanceLoopLock.lock()
+                    defer { self.maintainanceLoopLock.unlock() }
+                    
+                    print("DISCONNECTION")
+                    
+                    if !self.reinitializeReplica {
+                        self.reinitializeReplica = true
+                        
+                        self.maintainanceLoopCalls.append {
+                            self.initializeReplica()
+                        }
+                    }
+                }
+            }
+        }
+        
+        let matches = self.connections.filter {
+            !$0.used && ((!writing && slaveOK) || $0.writable) && $0.isConnected
+        }
+        
+        connectionPoolLock.unlock()
         
         matching: if let db = db {
             if !writing {
@@ -485,7 +575,7 @@ public final class Server {
                 }
             }
         } else {
-            bestMatch = matches.first(where: { !$0.writable && !writing })
+            bestMatch = matches.first(where: { ((!writing && slaveOK) || $0.writable) })
         }
         
         bestMatch = bestMatch ?? matches.first
@@ -499,14 +589,10 @@ public final class Server {
                     throw MongoError.timeout
                 }
                 
-                return try reserveConnection(writing: writing, authenticatedFor: db)
+                return try reserveConnection(writing: writing, authenticatedFor: db, toHost: host)
             }
             
             let connection = try makeConnection(writing: writing, authenticatedFor: db)
-            
-            defer {
-                connection.used = false
-            }
             
             if let db = db {
                 // On connection
@@ -515,8 +601,13 @@ public final class Server {
             
             connections.append(connection)
             self.connectionPoolLock.unlock()
+            connection.used = true
             
             return connection
+        }
+        
+        if let db = db, !connection.authenticatedDBs.contains(db.name) {
+            try connection.authenticate(toDatabase: db)
         }
         
         connection.used = true
@@ -558,7 +649,10 @@ public final class Server {
         return db
     }
     
+    private let connectionPoolMaintainanceQueue = DispatchQueue(label: "org.mongokitten.server.maintainanceQueue")
+    
     private let messageMutationQueue = DispatchQueue(label: "org.mongokitten.server.messageIncrementQueue")
+    
     /// Generates a messageID for the next Message to be sent to the server
     ///
     /// - returns: The newly created ID for your message
@@ -573,11 +667,7 @@ public final class Server {
     
     /// Are we currently connected?
     public var isConnected: Bool {
-        for connection in connections where !connection.isConnected {
-            return false
-        }
-        
-        if connections.count == 0 {
+        guard connections.count > 0 else {
             guard let connection = try? reserveConnection(authenticatedFor: nil) else {
                 return false
             }
@@ -591,7 +681,7 @@ public final class Server {
             return connection.isConnected
         }
         
-        return true
+        return servers.contains(where: { $0.online && $0.isPrimary })
     }
     
     /// Disconnects from the MongoDB server
@@ -600,15 +690,6 @@ public final class Server {
     public func disconnect() throws {
         connectionPoolLock.lock()
         isInitialized = false
-        
-        for db in self.databaseCache {
-            db.value.value?.isAuthenticated = false
-        }
-        
-        while let connection = connections.popLast() {
-            connection.isConnected = false
-            try connection.client.close()
-        }
         
         connections = []
         currentConnections = 0
@@ -651,7 +732,11 @@ public final class Server {
         
         let messageData = try msg.generateData()
         
-        try connection.client.send(data: messageData)
+        do {
+            try connection.client.send(data: messageData)
+        } catch {
+            connection.close()
+        }
 
         guard semaphore.wait(timeout: DispatchTime.now() + timeout) == .success else {
             connection.incomingMutateLock.lock()

@@ -25,6 +25,7 @@ public protocol MongoTCP : class {
     func close() throws
     func send(data binary: [UInt8]) throws
     func receive() throws -> [UInt8]
+    var isConnected: Bool { get }
 }
 
 extension Socks.TCPClient : MongoTCP {
@@ -39,5 +40,9 @@ extension Socks.TCPClient : MongoTCP {
     
     public func receive() throws -> [UInt8] {
         return try self.receive(maxBytes: Int(UInt16.max))
+    }
+    
+    public var isConnected: Bool {
+        return !socket.closed
     }
 }

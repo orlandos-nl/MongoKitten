@@ -130,13 +130,17 @@ extension Cursor : Sequence {
     /// - returns: The iterator
     public func makeIterator() -> AnyIterator<T> {
         return AnyIterator {
-            if self.data.isEmpty && self.cursorID != 0 {
-                // Get more data!
-                self.getMore()
-            }
-            
-            return self.data.isEmpty ? nil : self.data.removeFirst()
+            return self.next()
         }
+    }
+    
+    public func next() -> T? {
+        if self.data.isEmpty && self.cursorID != 0 {
+            // Get more data!
+            self.getMore()
+        }
+        
+        return self.data.isEmpty ? nil : self.data.removeFirst()
     }
 }
 

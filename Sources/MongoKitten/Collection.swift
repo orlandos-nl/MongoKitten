@@ -553,7 +553,7 @@ public final class Collection: NSObject {
             throw InternalMongoError.incorrectReply(reply: reply)
         }
         
-        guard let n = document["n"] as Int? else {
+        guard let n = document["n"] as Int?, document["ok"] as Int? == 1 else {
             throw InternalMongoError.incorrectReply(reply: reply)
         }
         
