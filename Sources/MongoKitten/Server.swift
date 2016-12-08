@@ -294,6 +294,7 @@ public final class Server: Framework {
             }
             
             servers[0].isPrimary = true
+            servers[0].online = true
             
             let authDB = self[authentication?.against ?? "admin"]
             let doc = try authDB.isMaster()
