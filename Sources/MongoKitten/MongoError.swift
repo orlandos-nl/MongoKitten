@@ -36,13 +36,13 @@ public enum MongoError : Error {
     case notConnected
     
     /// Can't insert given documents
-    case insertFailure(documents: [DocumentRepresentable], error: Document?)
+    case insertFailure(documents: [Document], error: Document?)
     
     /// Can't query for documents matching given query
     case queryFailure(query: Document, error: Document?)
     
     /// Can't update documents with the given selector and update
-    case updateFailure(updates: [(filter: Query, to: DocumentRepresentable, upserting: Bool, multiple: Bool)], error: Document?)
+    case updateFailure(updates: [(filter: Query, to: Document, upserting: Bool, multiple: Bool)], error: Document?)
     
     /// Can't remove documents matching the given query
     case removeFailure(removals: [(filter: Query, limit: Int32)], error: Document?)

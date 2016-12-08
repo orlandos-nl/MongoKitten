@@ -298,7 +298,7 @@ public indirect enum AQT {
 }
 
 /// A `Query` that consists of an `AQT` statement
-public struct Query: ExpressibleByDictionaryLiteral, ValueConvertible, DocumentRepresentable, ExpressibleByStringLiteral {
+public struct Query: ExpressibleByDictionaryLiteral, ValueConvertible, ExpressibleByStringLiteral {
     public init(stringLiteral value: String) {
         self = .textSearch(forString: value)
     }

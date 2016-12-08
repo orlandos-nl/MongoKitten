@@ -135,7 +135,7 @@ public class GridFS {
     /// - parameter inChunksOf: The amount of bytes to put in one chunk
     ///
     /// TODO: Accept data streams
-    public func store(data binary: [UInt8], named filename: String? = nil, withType contentType: String? = nil, usingMetadata metadata: ValueConvertible? = nil, inChunksOf chunkSize: Int = 255000) throws -> ObjectId {
+    public func store(data binary: [UInt8], named filename: String? = nil, withType contentType: String? = nil, usingMetadata metadata: ValueConvertible? = nil, inChunksOf chunkSize: Int = 255_000) throws -> ObjectId {
         guard chunkSize < 15_000_000 else {
             throw MongoError.invalidChunkSize(chunkSize: chunkSize)
         }
@@ -294,7 +294,7 @@ public class GridFS {
                 endChunk += 1
             }
             
-            let cursor = try chunksCollection.find(matching: ["files_id": id], sortedBy: ["n": 1], skipping: Int32(skipChunks), limitedTo: Int32(endChunk - skipChunks))
+            let cursor = try chunksCollection.find(matching: ["files_id": id], sortedBy: ["n": .ascending], skipping: Int32(skipChunks), limitedTo: Int32(endChunk - skipChunks))
             let chunkCursor = Cursor(base: cursor, transform: { Chunk(document: $0, chunksCollection: self.chunksCollection, filesCollection: self.filesCollection) })
             var allData = [UInt8]()
             
@@ -308,7 +308,7 @@ public class GridFS {
         public func chunked() throws -> AnyIterator<Chunk> {
             let query: Document = ["files_id": id]
             
-            let cursor = try chunksCollection.find(matching: Query(query), sortedBy: ["n": 1])
+            let cursor = try chunksCollection.find(matching: Query(query), sortedBy: ["n": .ascending])
             
             let chunkCursor = Cursor(base: cursor, transform: { Chunk(document: $0, chunksCollection: self.chunksCollection, filesCollection: self.filesCollection) })
             

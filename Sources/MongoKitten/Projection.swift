@@ -1,6 +1,6 @@
 import BSON
 
-public struct Projection: CustomValueConvertible, DocumentRepresentable {
+public struct Projection: CustomValueConvertible {
     public init?(_ value: BSONPrimitive) {
         guard let document = value as? Document else {
             return nil

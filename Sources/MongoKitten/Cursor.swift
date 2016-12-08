@@ -73,6 +73,7 @@ public final class Cursor<T> {
                     ], writing: false)
                 
                 guard case .Reply(_, _, _, _, _, _, let resultDocs) = reply else {
+                    self.collection.database.server.error("Incorrect Cursor reply received")
                     throw InternalMongoError.incorrectReply(reply: reply)
                 }
                 
@@ -96,6 +97,7 @@ public final class Cursor<T> {
                 let reply = try collection.database.server.sendAndAwait(message: request, overConnection: connection)
                 
                 guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
+                    self.collection.database.server.error("Incorrect Cursor reply received")
                     throw InternalMongoError.incorrectReply(reply: reply)
                 }
                 
@@ -103,6 +105,7 @@ public final class Cursor<T> {
                 self.cursorID = cursorID
             }
         } catch {
+            self.collection.database.server.error("Could not fetch extra data from the cursor due to error: \(error)")
             collection.database.server.cursorErrorHandler(error)
         }
     }

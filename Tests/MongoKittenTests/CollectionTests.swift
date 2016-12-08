@@ -224,7 +224,7 @@ class CollectionTests: XCTestCase {
         let response = Array(try TestManager.wcol.find(matching: query))
         XCTAssert(response.count == 2)
     }
-
+    
     func testAggregate() throws {
         let pipeline: Pipeline = [
             .grouping("$state", computed: ["totalPop": .sumOf("$pop")]),

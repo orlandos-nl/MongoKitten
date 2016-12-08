@@ -14,7 +14,7 @@ public enum SortOrder: ValueConvertible {
     }
 }
 
-public struct Sort: CustomValueConvertible, ExpressibleByDictionaryLiteral, DocumentRepresentable {
+public struct Sort: CustomValueConvertible, ExpressibleByDictionaryLiteral {
     public init?(_ value: BSONPrimitive) {
         guard let document = value as? Document else {
             return nil

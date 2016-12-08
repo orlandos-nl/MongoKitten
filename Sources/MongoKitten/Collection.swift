@@ -72,7 +72,7 @@ public final class Collection: NSObject {
     ///
     /// - returns: The inserted document's id
     @discardableResult
-    public func insert(_ document: DocumentRepresentable) throws -> ValueConvertible {
+    public func insert(_ document: Document) throws -> ValueConvertible {
         let result = try self.insert([document])
         
         guard let newId = result.first else {
@@ -98,12 +98,10 @@ public final class Collection: NSObject {
     ///
     /// - returns: The documents' ids
     @discardableResult
-    public func insert(_ documents: [DocumentRepresentable], stoppingOnError ordered: Bool? = nil, timeout customTimeout: TimeInterval? = nil) throws -> [ValueConvertible] {
+    public func insert(_ documents: [Document], stoppingOnError ordered: Bool? = nil, timeout customTimeout: TimeInterval? = nil) throws -> [ValueConvertible] {
         let timeout: TimeInterval = customTimeout ?? (database.server.defaultTimeout + (Double(documents.count) / 50))
         
-        var documents = documents.map {
-            $0.makeDocument()
-        }
+        var documents = documents
         var newIds = [ValueConvertible]()
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
@@ -208,18 +206,18 @@ public final class Collection: NSObject {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A cursor pointing to the found Documents
-    public func find(matching filter: Query? = nil, sortedBy sort: Document? = nil, projecting projection: Projection? = nil, skipping skip: Int32? = nil, limitedTo limit: Int32? = nil, withBatchSize batchSize: Int32 = 10) throws -> Cursor<Document> {
+    public func find(matching filter: Query? = nil, sortedBy sort: Sort? = nil, projecting projection: Projection? = nil, skipping skip: Int32? = nil, limitedTo limit: Int32? = nil, withBatchSize batchSize: Int32 = 10) throws -> Cursor<Document> {
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
         if protocolVersion >= 4 {
             var command: Document = ["find": self.name]
             
             if let filter = filter {
-                command["filter"] = filter.queryDocument
+                command[raw: "filter"] = filter
             }
             
             if let sort = sort {
-                command["sort"] = sort
+                command[raw: "sort"] = sort
             }
             
             if let projection = projection {
@@ -284,7 +282,7 @@ public final class Collection: NSObject {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: The found Document
-    public func findOne(matching filter: Query? = nil, sortedBy sort: Document? = nil, projecting projection: Projection? = nil, skipping skip: Int32? = nil) throws -> Document? {
+    public func findOne(matching filter: Query? = nil, sortedBy sort: Sort? = nil, projecting projection: Projection? = nil, skipping skip: Int32? = nil) throws -> Document? {
         return try self.find(matching: filter, sortedBy: sort, projecting: projection, skipping: skip, limitedTo:
             1).makeIterator().next()
     }
@@ -311,7 +309,7 @@ public final class Collection: NSObject {
     ///
     /// - returns: The amount of updated documents
     @discardableResult
-    public func update(_ updates: [(filter: Query, to: DocumentRepresentable, upserting: Bool, multiple: Bool)], stoppingOnError ordered: Bool? = nil) throws -> Int {
+    public func update(_ updates: [(filter: Query, to: Document, upserting: Bool, multiple: Bool)], stoppingOnError ordered: Bool? = nil) throws -> Int {
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
         if protocolVersion >= 2 {
@@ -363,7 +361,7 @@ public final class Collection: NSObject {
                     let _ = flags.insert(UpdateFlags.Upsert)
                 }
                 
-                let message = Message.Update(requestID: database.server.nextMessageID(), collection: self, flags: flags, findDocument: update.filter.queryDocument, replaceDocument: update.to.makeDocument())
+                let message = Message.Update(requestID: database.server.nextMessageID(), collection: self, flags: flags, findDocument: update.filter.queryDocument, replaceDocument: update.to)
                 try self.database.server.send(message: message, overConnection: connection)
             }
             

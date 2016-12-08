@@ -1,7 +1,7 @@
 import Foundation
 import BSON
 
-public struct Pipeline: ExpressibleByArrayLiteral, DocumentRepresentable {
+public struct Pipeline: ExpressibleByArrayLiteral, ValueConvertible {
     public var pipelineDocument: Document = []
     
     public var pipeline: Document {
@@ -24,7 +24,7 @@ public struct Pipeline: ExpressibleByArrayLiteral, DocumentRepresentable {
     
     public init() { }
     
-    public struct Stage: DocumentRepresentable {
+    public struct Stage: ValueConvertible {
         public func makeBSONPrimitive() -> BSONPrimitive {
             return self.document
         }
@@ -311,7 +311,7 @@ extension Document: ExpressionRepresentable {
     }
 }
 
-public enum AccumulatedGroupExpression: DocumentRepresentable {
+public enum AccumulatedGroupExpression {
     case sum([ExpressionRepresentable])
     case average([ExpressionRepresentable])
     case max([ExpressionRepresentable])
