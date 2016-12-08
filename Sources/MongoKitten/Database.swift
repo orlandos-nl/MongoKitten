@@ -318,10 +318,10 @@ extension Database {
     /// - parameter previousInformation: The nonce, response and `SCRAMClient` instance
     ///
     /// - throws: When the authentication fails, when Base64 fails
-    private func challenge(with details: (username: String, password: String, against: String), using previousInformation: (nonce: String, response: Document, scram: SCRAMClient<SHA1>), usingConnection connection: Server.Connection) throws {
+    private func challenge(with details: MongoCredential, using previousInformation: (nonce: String, response: Document, scram: SCRAMClient<SHA1>), usingConnection connection: Server.Connection) throws {
         // If we failed the authentication
         guard previousInformation.response["ok"] as Int? == 1 else {
-            server.error("Authentication for MongoDB user \(details.username) with SASL failed against \(details.against) because of the following error")
+            server.error("Authentication for MongoDB user \(details.username) with SASL failed against \(details.database) because of the following error")
             server.error(previousInformation.response)
             throw MongoAuthenticationError.incorrectCredentials
         }
@@ -367,7 +367,7 @@ extension Database {
         
         // If we don't get a correct reply
         guard case .Reply(_, _, _, _, _, _, let documents) = response, let responseDocument = documents.first else {
-            server.error("Authentication for MongoDB user \(details.username) with SASL failed against \(details.against) because no valid reply has been received")
+            server.error("Authentication for MongoDB user \(details.username) with SASL failed against \(details.database) because no valid reply has been received")
             throw InternalMongoError.incorrectReply(reply: response)
         }
         
@@ -380,7 +380,7 @@ extension Database {
     /// - parameter details: The authentication details
     ///
     /// - throws: When failing authentication, being unable to base64 encode or failing to send/receive messages
-    internal func authenticate(SASL details: (username: String, password: String, against: String), usingConnection connection: Server.Connection) throws {
+    internal func authenticate(SASL details: MongoCredential, usingConnection connection: Server.Connection) throws {
         let nonce = randomNonce()
         
         let auth = SCRAMClient<SHA1>()
@@ -408,7 +408,7 @@ extension Database {
     /// - parameter details: The authentication details
     ///
     /// - throws: When failing authentication, being unable to base64 encode or failing to send/receive messages
-    internal func authenticate(mongoCR details: (username: String, password: String, against: String), usingConnection connection: Server.Connection) throws {
+    internal func authenticate(mongoCR details: MongoCredential, usingConnection connection: Server.Connection) throws {
         // Get the server's nonce
         let response = try self.execute(command: [
             "getnonce": Int32(1)
@@ -418,7 +418,7 @@ extension Database {
         let document = try firstDocument(in: response)
         
         guard let nonce = document["nonce"] as String? else {
-            server.error("Authentication for MongoDB user \(details.username) with MongoCR failed against \(details.against) because no nonce was provided by MongoDB")
+            server.error("Authentication for MongoDB user \(details.username) with MongoCR failed against \(details.database) because no nonce was provided by MongoDB")
             server.error(document)
             throw MongoAuthenticationError.authenticationFailure
         }
@@ -443,7 +443,7 @@ extension Database {
         
         // Check for success
         guard successDocument["ok"] as Int? == 1 else {
-            server.error("Authentication for MongoDB user \(details.username) with MongoCR failed against \(details.against) for the following reason")
+            server.error("Authentication for MongoDB user \(details.username) with MongoCR failed against \(details.database) for the following reason")
             server.error(document)
             throw InternalMongoError.incorrectReply(reply: successResponse)
         }

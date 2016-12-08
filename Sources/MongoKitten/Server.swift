@@ -72,13 +72,15 @@ public final class Server: Framework {
             if let details = db.server.authDetails {
                 do {
                     let protocolVersion = db.server.serverData?.maxWireVersion ?? 0
-                    
-                    if protocolVersion >= 3 {
+                    switch details.authenticationMechanism {
+                    case .SCRAM_SHA_1:
                         try db.authenticate(SASL: details, usingConnection: self)
-                    } else {
+                    case .MONGODB_CR:
                         try db.authenticate(mongoCR: details, usingConnection: self)
+                    default:
+                        MongoError.unsupportedFeature("authentication Method")
                     }
-                    
+
                     self.authenticatedDBs.append(db.name)
                 } catch { }
             }
@@ -155,7 +157,7 @@ public final class Server: Framework {
     }
     
     /// The authentication details that are used to connect with the MongoDB server
-    internal let authDetails: (username: String, password: String, against: String)?
+    internal let authDetails: MongoCredential?
     
     /// The last Request we sent.. -1 if no request was sent
     internal var lastRequestID: Int32 = -1
@@ -249,7 +251,7 @@ public final class Server: Framework {
             }
             
             username = String(userParts[0]).removingPercentEncoding
-            password = String(userParts[0]).removingPercentEncoding
+            password = String(userParts[1]).removingPercentEncoding
         }
         
         let urlSplitWithPath = url.characters.split(separator: "/")
@@ -257,10 +259,10 @@ public final class Server: Framework {
         url = String(urlSplitWithPath[0])
         path = urlSplitWithPath.count == 2 ? String(urlSplitWithPath[1]) : nil
         
-        var authentication: (username: String, password: String, against: String)? = nil
+        var authentication: MongoCredential? = nil
         
         if let user = username?.removingPercentEncoding, let pass = password?.removingPercentEncoding {
-            authentication = (username: user, password: pass, against: path ?? "admin")
+            authentication = MongoCredential(username: user, password: pass, database: path ?? "admin", authenticationMechanism: .SCRAM_SHA_1)
         }
         
         let hosts = url.characters.split(separator: ",").map { host -> (String, UInt16, Int, Bool, Bool) in
@@ -306,7 +308,7 @@ public final class Server: Framework {
             servers[0].isPrimary = true
             servers[0].online = true
             
-            let authDB = self[authentication?.against ?? "admin"]
+            let authDB = self[authentication?.database ?? "admin"]
             let doc = try authDB.isMaster()
             
             guard let batchSize = doc["maxWriteBatchSize"] as Int32?, let minWireVersion = doc["minWireVersion"] as Int32?, let maxWireVersion = doc["maxWireVersion"] as Int32? else {
@@ -358,7 +360,7 @@ public final class Server: Framework {
             }
             
             do {
-                let authDB = self[authDetails?.against ?? "admin"]
+                let authDB = self[authDetails?.database ?? "admin"]
                 let connection = try makeConnection(toHost: host, authenticatedFor: authDB)
                 connection.used = true
                 
@@ -412,7 +414,48 @@ public final class Server: Framework {
         
         reinitializeReplica = false
     }
-    
+
+
+    public init(clientSettings: ClientSettings) throws {
+
+        if let sslSettings = clientSettings.sslSettings {
+            self.tcpType = sslSettings.enabled ? DefaultSSLTCPClient : DefaultTCPClient
+            self.sslVerify = !sslSettings.invalidCertificateAllowed
+        } else {
+            self.tcpType = DefaultTCPClient
+            
+        }
+
+        self.servers = clientSettings.hosts.map({ (mongoHost) -> (String, UInt16,Int,Bool,Bool) in
+            (host: mongoHost.hostName, port: mongoHost.port, openConnections: 0, isPrimary: true, online: true)
+        })
+        self.maximumConnections = clientSettings.maxConnectionsPerServer
+        self.authDetails = clientSettings.credentials
+        self.defaultTimeout = clientSettings.defaultTimeout
+        self.maximumConnectionsPerHost = clientSettings.maxConnectionsPerServer
+        self.connectionPoolSemaphore = DispatchSemaphore(value: clientSettings.maxConnectionsPerServer)
+
+
+        let authDB = self[authDetails?.database ?? "admin"]
+
+        let doc = try authDB.isMaster()
+
+        guard let batchSize = doc["maxWriteBatchSize"] as Int32?, let minWireVersion = doc["minWireVersion"] as Int32?, let maxWireVersion = doc["maxWireVersion"] as Int32? else {
+            debug("No usable ismaster response found. Assuming defaults.")
+            serverData = (maxWriteBatchSize: 1000, maxWireVersion: 4, minWireVersion: 0, maxMessageSizeBytes: 48000000)
+            return
+        }
+
+        var maxMessageSizeBytes = doc["maxMessageSizeBytes"] as Int32? ?? 0
+        if maxMessageSizeBytes == 0 {
+            maxMessageSizeBytes = 48000000
+        }
+
+        serverData = (maxWriteBatchSize: batchSize, maxWireVersion: maxWireVersion, minWireVersion: minWireVersion, maxMessageSizeBytes: maxMessageSizeBytes)
+
+        self.connectionPoolMaintainanceQueue.async(execute: backgroundLoop)
+    }
+
     /// Sets up the `Server` to connect to the specified location.`Server`
     /// You need to provide a host as IP address or as a hostname recognized by the client's DNS.
     /// - parameter at: The hostname/IP address of the MongoDB server
@@ -426,12 +469,16 @@ public final class Server: Framework {
         self.sslVerify = sslVerify
         self.servers = [(host: host, port: port, openConnections: 0, isPrimary: true, online: true)]
         self.maximumConnections = maxConnections
-        self.authDetails = authentication
+        if let auth = authentication {
+            self.authDetails = MongoCredential(username: auth.username, password: auth.password, database: auth.against, authenticationMechanism: .SCRAM_SHA_1)
+        } else {
+            self.authDetails = nil
+        }
         self.defaultTimeout = defaultTimeout
         self.maximumConnectionsPerHost = maxConnections
         self.connectionPoolSemaphore = DispatchSemaphore(value: maxConnections)
         
-        let authDB = self[authentication?.against ?? "admin"]
+        let authDB = self[authDetails?.database ?? "admin"]
         
         let doc = try authDB.isMaster()
         
@@ -975,7 +1022,7 @@ public final class Server: Framework {
             command["block"] = block
         }
         
-        let reply = try self[self.authDetails?.against ?? "admin"].execute(command: command, writing: true)
+        let reply = try self[self.authDetails?.database ?? "admin"].execute(command: command, writing: true)
         let response = try firstDocument(in: reply)
         
         guard response["ok"] as Int? == 1 else {
