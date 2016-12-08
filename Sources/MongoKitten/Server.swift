@@ -186,7 +186,10 @@ public final class Server: Framework {
     private var slaveOK = false
     
     internal var defaultTimeout: TimeInterval
-    
+
+
+    internal var sslVerify = true
+
     /// The server's hostname/IP and port to connect to
     public var servers: [(host: String, port: UInt16, openConnections: Int, isPrimary: Bool, online: Bool)]
     
@@ -203,8 +206,7 @@ public final class Server: Framework {
     /// - throws: When we can't connect automatically, when the scheme/host is invalid and when we can't connect automatically
     ///
     /// - parameter automatically: Whether to connect automatically
-    public init(mongoURL url: String, usingTcpDriver tcpDriver: MongoTCP.Type? = nil, maxConnectionsPerServer maxConnections: Int = 10, defaultTimeout: TimeInterval
-         = 30) throws {
+    public init(mongoURL url: String, maxConnectionsPerServer maxConnections: Int = 10, defaultTimeout: TimeInterval = 30) throws {
         var url = url
         guard url.characters.starts(with: "mongodb://".characters) else {
             throw MongoError.noMongoDBSchema
@@ -273,10 +275,19 @@ public final class Server: Framework {
             
             return (hostname, port, 0, false, false)
         }
-        
-        let ssl = queries.keys.contains("ssl")
-        
-        self.tcpType = tcpDriver ?? (ssl ? DefaultSSLTCPClient : DefaultTCPClient)
+
+        if let sslValue = queries["ssl"]?.string, let sslOption = Bool(string: sslValue), sslOption {
+            self.tcpType = DefaultSSLTCPClient
+            
+            if let sslVerifyString = queries["sslVerify"]?.string , let sslVerifyValue = Bool(string: sslVerifyString) {
+                self.sslVerify = sslVerifyValue
+            } else {
+                self.sslVerify = true
+            }
+        } else {
+            self.tcpType = DefaultTCPClient
+        }
+
         self.maximumConnections = maxConnections * hosts.count
         self.authDetails = authentication
         self.maximumConnectionsPerHost = maxConnections
@@ -293,6 +304,7 @@ public final class Server: Framework {
             }
             
             servers[0].isPrimary = true
+            servers[0].online = true
             
             let authDB = self[authentication?.against ?? "admin"]
             let doc = try authDB.isMaster()
@@ -409,9 +421,9 @@ public final class Server: Framework {
     /// - parameter automatically: Connect automatically
     ///
     /// - throws: When we can’t connect automatically, when the scheme/host is invalid and when we can’t connect automatically
-    public init(hostname host: String, port: UInt16 = 27017, authenticatedAs authentication: (username: String, password: String, against: String)? = nil, usingTcpDriver tcpDriver: MongoTCP.Type? = nil, maxConnectionsPerServer maxConnections: Int = 10, ssl: Bool = false, defaultTimeout: TimeInterval = 30) throws {
-        
-        self.tcpType = tcpDriver ?? (ssl ? DefaultSSLTCPClient : DefaultTCPClient)
+    public init(hostname host: String, port: UInt16 = 27017, authenticatedAs authentication: (username: String, password: String, against: String)? = nil, maxConnectionsPerServer maxConnections: Int = 10, ssl: Bool = false, defaultTimeout: TimeInterval = 30, sslVerify: Bool = true) throws {
+        self.tcpType = ssl ? DefaultSSLTCPClient : DefaultTCPClient
+        self.sslVerify = sslVerify
         self.servers = [(host: host, port: port, openConnections: 0, isPrimary: true, online: true)]
         self.maximumConnections = maxConnections
         self.authDetails = authentication
@@ -473,8 +485,7 @@ public final class Server: Framework {
             throw MongoError.noServersAvailable
         }
         
-        // Open a connection
-        let connection = Connection(client: try tcpType.open(address: lowestOpenConnections.host, port: lowestOpenConnections.port), writable: lowestOpenConnections.isPrimary, host: (lowestOpenConnections.host, lowestOpenConnections.port), logger: self) {
+        let connection = Connection(client: try tcpType.open(address: lowestOpenConnections.host, port: lowestOpenConnections.port, options: connectionOptions()), writable: lowestOpenConnections.isPrimary, host: (lowestOpenConnections.host, lowestOpenConnections.port),logger: self) {
             self.hostPoolLock.lock()
             for (id, server) in self.servers.enumerated() where server == lowestOpenConnections {
                 var host = server
@@ -507,10 +518,7 @@ public final class Server: Framework {
     }
     
     private func makeConnection(toHost host: (host: String, port: UInt16, openConnections: Int, isPrimary: Bool, online: Bool), authenticatedFor: Database?) throws -> Connection {
-        verbose("Attempting to create a new connection to \(host.host):\(host.port)ss")
-        
-        // Make a connection to the specified host and add
-        let connection = Connection(client: try tcpType.open(address: host.host, port: host.port), writable: host.isPrimary, host: (host.host, host.port), logger: self) {
+        let connection = Connection(client: try tcpType.open(address: host.host, port: host.port, options: connectionOptions()), writable: host.isPrimary, host: (host.host, host.port), logger: self) {
             self.hostPoolLock.lock()
             for (id, server) in self.servers.enumerated() where server == host {
                 var host = server
@@ -548,6 +556,10 @@ public final class Server: Framework {
         
         currentConnections -= 1
         throw MongoError.internalInconsistency
+    }
+
+    private func connectionOptions() -> [String:Any] {
+        return ["sslVerify":self.sslVerify]
     }
     
     internal func reserveConnection(writing: Bool = false, authenticatedFor db: Database?, toHost host: (String, UInt16)? = nil) throws -> Connection {
@@ -1040,6 +1052,19 @@ extension Server: Sequence {
         
         return AnyIterator {
             return databases.count > 0 ? databases.removeFirst() : nil
+        }
+    }
+}
+
+extension Bool {
+    init?(string: String) {
+        switch  string.lowercased() {
+        case "true":
+            self = true
+        case "false":
+            self = false
+        default:
+            return nil
         }
     }
 }

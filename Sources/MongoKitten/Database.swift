@@ -64,7 +64,7 @@ public final class Database: NSObject {
             throw MongoError.invalidDatabase("")
         }
         
-        self.server = try Server(mongoURL: url, usingTcpDriver: driver, maxConnectionsPerServer: maxConnections)
+        self.server = try Server(mongoURL: url, maxConnectionsPerServer: maxConnections)
         
         self.name = String(dbname)
         
