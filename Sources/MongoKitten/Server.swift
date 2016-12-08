@@ -40,7 +40,7 @@ internal typealias ResponseHandler = ((Message) -> Void)
 public final class Server: Framework {
     public var logKittenID: UInt8?
     public let name = "MongoKitten"
-    public var logger: Logger = Logger.default {
+    public var logger: Logger {
         didSet {
             logger.registerFramework(self)
             _ = try? logger.registerSubject(Document.self, forFramework: self)
@@ -66,6 +66,7 @@ public final class Server: Framework {
             self.onClose = onClose
             self.host = host
             self.logger = logger
+            
             Connection.receiveQueue.async(execute: backgroundLoop)
         }
         
@@ -284,6 +285,9 @@ public final class Server: Framework {
         self.connectionPoolSemaphore = DispatchSemaphore(value: maxConnections * hosts.count)
         self.servers = hosts
         self.defaultTimeout = defaultTimeout
+        self.logger = Logger.default
+        logger.registerFramework(self)
+        _ = try? logger.registerSubject(Document.self, forFramework: self)
         
         if servers.count > 1 {
             self.isReplica = true
@@ -296,8 +300,27 @@ public final class Server: Framework {
             servers[0].isPrimary = true
             servers[0].online = true
             
+            let connection = try makeConnection(toHost: servers[0], authenticatedFor: nil)
+            connection.used = true
+            
+            defer {
+                returnConnection(connection)
+            }
+            
+            connections.append(connection)
+            
             let authDB = self[authentication?.against ?? "admin"]
-            let doc = try authDB.isMaster()
+            let cmd = authDB["$cmd"]
+            let document: Document = [
+                "isMaster": Int32(1)
+            ]
+            
+            let commandMessage = Message.Query(requestID: self.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
+            let response = try self.sendAndAwait(message: commandMessage, overConnection: connection, timeout: defaultTimeout)
+            
+            guard case .Reply(_, _, _, _, _, _, let documents) = response, let doc = documents.first else {
+                throw InternalMongoError.incorrectReply(reply: response)
+            }
             
             guard let batchSize = doc["maxWriteBatchSize"] as Int32?, let minWireVersion = doc["minWireVersion"] as Int32?, let maxWireVersion = doc["maxWireVersion"] as Int32? else {
                 serverData = (maxWriteBatchSize: 1000, maxWireVersion: 4, minWireVersion: 0, maxMessageSizeBytes: 48000000)
@@ -349,7 +372,7 @@ public final class Server: Framework {
             
             do {
                 let authDB = self[authDetails?.against ?? "admin"]
-                let connection = try makeConnection(toHost: host, authenticatedFor: authDB)
+                let connection = try makeConnection(toHost: host, authenticatedFor: nil)
                 connection.used = true
                 
                 defer {
@@ -412,7 +435,8 @@ public final class Server: Framework {
     ///
     /// - throws: When we can’t connect automatically, when the scheme/host is invalid and when we can’t connect automatically
     public init(hostname host: String, port: UInt16 = 27017, authenticatedAs authentication: (username: String, password: String, against: String)? = nil, usingTcpDriver tcpDriver: MongoTCP.Type? = nil, maxConnectionsPerServer maxConnections: Int = 10, ssl: Bool = false, defaultTimeout: TimeInterval = 30) throws {
-        
+        let logger = Logger.default
+        self.logger = logger
         self.tcpType = tcpDriver ?? (ssl ? DefaultSSLTCPClient : DefaultTCPClient)
         self.servers = [(host: host, port: port, openConnections: 0, isPrimary: true, online: true)]
         self.maximumConnections = maxConnections
@@ -420,6 +444,9 @@ public final class Server: Framework {
         self.defaultTimeout = defaultTimeout
         self.maximumConnectionsPerHost = maxConnections
         self.connectionPoolSemaphore = DispatchSemaphore(value: maxConnections)
+        
+        logger.registerFramework(self)
+        _ = try? logger.registerSubject(Document.self, forFramework: self)
         
         let authDB = self[authentication?.against ?? "admin"]
         

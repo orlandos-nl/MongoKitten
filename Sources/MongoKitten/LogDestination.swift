@@ -39,13 +39,16 @@ extension LogKitten.Message: ValueConvertible {
 }
 
 extension Document: SubjectRepresentable {
+    public static var logKittenId = [UInt8:UInt8]()
+    
     public static var name: String {
         return "Document"
     }
 
-    public func makeSubject() -> Subject {
-        let type: UInt8 = self.validatesAsArray() ? 0x03 : 0x04
-        return .attributedData(type: type, data: self.bytes)
+    public func makeSubject(fromFramework framework: Framework) -> Subject {
+        let frameworkID = framework.logKittenID ?? 0
+        
+        return .attributedData(type: Document.logKittenId[frameworkID] ?? 0, data: self.bytes)
     }
     
     static public func convertToString(fromData data: [UInt8]) -> String {
