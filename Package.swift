@@ -19,7 +19,7 @@ var package = Package(
         .Package(url: "https://github.com/vapor/tls.git", majorVersion: 1),
 
         // Logging
-        .Package(url: "https://github.com/OpenKitten/LogKitten.git", "1.0.0-alpha1"),
+        .Package(url: "https://github.com/OpenKitten/LogKitten.git", "1.0.0-alpha2"),
         ]
 )
 

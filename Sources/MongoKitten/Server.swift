@@ -43,6 +43,7 @@ public final class Server: Framework {
     public var logger: Logger = Logger.default {
         didSet {
             logger.registerFramework(self)
+            _ = try? logger.registerSubject(Document.self, forFramework: self)
         }
     }
     
@@ -65,6 +66,7 @@ public final class Server: Framework {
             self.onClose = onClose
             self.host = host
             self.logger = logger
+            
             Connection.receiveQueue.async(execute: backgroundLoop)
         }
         
@@ -296,6 +298,9 @@ public final class Server: Framework {
         self.connectionPoolSemaphore = DispatchSemaphore(value: maxConnections * hosts.count)
         self.servers = hosts
         self.defaultTimeout = defaultTimeout
+        self.logger = Logger.default
+        logger.registerFramework(self)
+        _ = try? logger.registerSubject(Document.self, forFramework: self)
         
         if servers.count > 1 {
             self.isReplica = true
@@ -308,8 +313,27 @@ public final class Server: Framework {
             servers[0].isPrimary = true
             servers[0].online = true
             
+            let connection = try makeConnection(toHost: servers[0], authenticatedFor: nil)
+            connection.used = true
+            
+            defer {
+                returnConnection(connection)
+            }
+            
+            connections.append(connection)
+            
             let authDB = self[authentication?.database ?? "admin"]
-            let doc = try authDB.isMaster()
+            let cmd = authDB["$cmd"]
+            let document: Document = [
+                "isMaster": Int32(1)
+            ]
+            
+            let commandMessage = Message.Query(requestID: self.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
+            let response = try self.sendAndAwait(message: commandMessage, overConnection: connection, timeout: defaultTimeout)
+            
+            guard case .Reply(_, _, _, _, _, _, let documents) = response, let doc = documents.first else {
+                throw InternalMongoError.incorrectReply(reply: response)
+            }
             
             guard let batchSize = doc["maxWriteBatchSize"] as Int32?, let minWireVersion = doc["minWireVersion"] as Int32?, let maxWireVersion = doc["maxWireVersion"] as Int32? else {
                 serverData = (maxWriteBatchSize: 1000, maxWireVersion: 4, minWireVersion: 0, maxMessageSizeBytes: 48000000)
@@ -361,7 +385,7 @@ public final class Server: Framework {
             
             do {
                 let authDB = self[authDetails?.database ?? "admin"]
-                let connection = try makeConnection(toHost: host, authenticatedFor: authDB)
+                let connection = try makeConnection(toHost: host, authenticatedFor: nil)
                 connection.used = true
                 
                 defer {
@@ -383,8 +407,8 @@ public final class Server: Framework {
                 }
                 
                 isMasterTest: if let doc = documents.first {
-                    if doc["ismaster"] as Bool? == true && doc["secondary"] as Bool? == false {
-                        debug("Found the master connection at \(host.host):\(host.port)")
+                    if doc["ismaster"] as Bool? == true {
+                        debug("Found a master connection at \(host.host):\(host.port)")
                         host.isPrimary = true
                         guard let batchSize = doc["maxWriteBatchSize"] as Int32?, let minWireVersion = doc["minWireVersion"] as Int32?, let maxWireVersion = doc["maxWireVersion"] as Int32? else {
                             debug("No usable ismaster response found. Assuming defaults.")
@@ -478,7 +502,10 @@ public final class Server: Framework {
         self.maximumConnectionsPerHost = maxConnections
         self.connectionPoolSemaphore = DispatchSemaphore(value: maxConnections)
         
-        let authDB = self[authDetails?.database ?? "admin"]
+        logger.registerFramework(self)
+        _ = try? logger.registerSubject(Document.self, forFramework: self)
+        
+        let authDB = self[authentication?.against ?? "admin"]
         
         let doc = try authDB.isMaster()
         
