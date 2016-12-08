@@ -43,6 +43,7 @@ public final class Server: Framework {
     public var logger: Logger = Logger.default {
         didSet {
             logger.registerFramework(self)
+            _ = try? logger.registerSubject(Document.self, forFramework: self)
         }
     }
     
@@ -247,7 +248,7 @@ public final class Server: Framework {
             }
             
             username = String(userParts[0]).removingPercentEncoding
-            password = String(userParts[0]).removingPercentEncoding
+            password = String(userParts[1]).removingPercentEncoding
         }
         
         let urlSplitWithPath = url.characters.split(separator: "/")
@@ -369,8 +370,8 @@ public final class Server: Framework {
                 }
                 
                 isMasterTest: if let doc = documents.first {
-                    if doc["ismaster"] as Bool? == true && doc["secondary"] as Bool? == false {
-                        debug("Found the master connection at \(host.host):\(host.port)")
+                    if doc["ismaster"] as Bool? == true {
+                        debug("Found a master connection at \(host.host):\(host.port)")
                         host.isPrimary = true
                         guard let batchSize = doc["maxWriteBatchSize"] as Int32?, let minWireVersion = doc["minWireVersion"] as Int32?, let maxWireVersion = doc["maxWireVersion"] as Int32? else {
                             debug("No usable ismaster response found. Assuming defaults.")

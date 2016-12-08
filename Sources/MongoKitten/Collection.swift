@@ -76,6 +76,7 @@ public final class Collection: NSObject {
         let result = try self.insert([document])
         
         guard let newId = result.first else {
+            database.server.error("No identifier could be generated")
             throw MongoError.insertFailure(documents: [document], error: nil)
         }
         

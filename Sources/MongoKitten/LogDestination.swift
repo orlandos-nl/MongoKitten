@@ -47,6 +47,10 @@ extension Document: SubjectRepresentable {
         let type: UInt8 = self.validatesAsArray() ? 0x03 : 0x04
         return .attributedData(type: type, data: self.bytes)
     }
+    
+    static public func convertToString(fromData data: [UInt8]) -> String {
+        return Document(data: data).makeExtendedJSON()
+    }
 }
 
 extension Subject: ValueConvertible {
