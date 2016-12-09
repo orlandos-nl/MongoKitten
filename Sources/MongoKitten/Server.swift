@@ -678,6 +678,8 @@ public final class Server: Framework {
             return connection.isConnected
         }
         
+        connectionPoolLock.unlock()
+        
         // If there are disconnected connections
         if disconnectionPool.count > 0 {
             connectionPoolMaintainanceQueue.async {
@@ -710,8 +712,6 @@ public final class Server: Framework {
             !$0.used && ((!writing && slaveOK) || $0.writable) && $0.isConnected
         }
         
-        connectionPoolLock.unlock()
-        
         // If we need a specific database, find a connection optimal for that database I.E. already authenticated
         matching: if let db = db {
             if !writing {
@@ -737,7 +737,6 @@ public final class Server: Framework {
         // This only fails if no available connection could be found
         guard let connection = bestMatch else {
             // Wait for a new one  if we can't create more connections
-            self.connectionPoolLock.lock()
             guard currentConnections < clientSettings.maxConnectionsPerServer && (!writing || self.servers.first(where: { $0.isPrimary })?.openConnections ?? maximumConnectionsPerHost < maximumConnectionsPerHost) else {
                 let timeout = DispatchTime(uptimeNanoseconds: DispatchTime.now().uptimeNanoseconds + 10_000_000_000)
                 
@@ -748,6 +747,9 @@ public final class Server: Framework {
                 return try reserveConnection(writing: writing, authenticatedFor: db, toHost: host)
             }
             
+            self.connectionPoolLock.lock()
+            defer { self.connectionPoolLock.lock() }
+            
             // If we can create a new connection, create one
             let connection = try makeConnection(writing: writing, authenticatedFor: db)
             
@@ -757,7 +759,6 @@ public final class Server: Framework {
             }
             
             connections.append(connection)
-            self.connectionPoolLock.unlock()
             connection.used = true
             
             return connection

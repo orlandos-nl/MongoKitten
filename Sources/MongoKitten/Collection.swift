@@ -285,7 +285,7 @@ public final class Collection {
     /// - returns: The found Document
     public func findOne(matching filter: Query? = nil, sortedBy sort: Sort? = nil, projecting projection: Projection? = nil, skipping skip: Int32? = nil) throws -> Document? {
         return try self.find(matching: filter, sortedBy: sort, projecting: projection, skipping: skip, limitedTo:
-            1).makeIterator().next()
+            1).next()
     }
     
     // Update
