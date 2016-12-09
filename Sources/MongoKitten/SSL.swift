@@ -1,8 +1,8 @@
 import TLS
 
 extension TLS.Socket: MongoTCP {
-    public static func open(address hostname: String, port: UInt16) throws -> MongoTCP {
-        let socket = try TLS.Socket(mode: .client, hostname: hostname, port: port, certificates: .openbsd, verifyHost: false, verifyCertificates: false, cipher: .secure)
+    public static func open(address hostname: String, port: UInt16, options:[String:Any]? = nil) throws -> MongoTCP {
+        let socket = try TLS.Socket(mode: .client, hostname: hostname, port: port, certificates: .openbsd, verifyHost: options?["sslVerify"] as? Bool ?? true, verifyCertificates: options?["sslVerify"] as? Bool ?? true, cipher: .compat, proto: [.secure])
         
         try socket.connect(servername: hostname)
         
@@ -18,6 +18,6 @@ extension TLS.Socket: MongoTCP {
     }
 
     public var isConnected: Bool {
-        return self.socket.closed
+        return !socket.closed
     }
 }
