@@ -40,7 +40,7 @@ internal typealias ResponseHandler = ((Message) -> Void)
 public final class Server: Framework {
     public var logKittenID: UInt8?
     public let name = "MongoKitten"
-    public var logger: Logger {
+    public var logger: Logger = Logger.default {
         didSet {
             logger.registerFramework(self)
             _ = try? logger.registerSubject(Document.self, forFramework: self)
@@ -74,13 +74,15 @@ public final class Server: Framework {
             if let details = db.server.authDetails {
                 do {
                     let protocolVersion = db.server.serverData?.maxWireVersion ?? 0
-                    
-                    if protocolVersion >= 3 {
+                    switch details.authenticationMechanism {
+                    case .SCRAM_SHA_1:
                         try db.authenticate(SASL: details, usingConnection: self)
-                    } else {
+                    case .MONGODB_CR:
                         try db.authenticate(mongoCR: details, usingConnection: self)
+                    default:
+                        MongoError.unsupportedFeature("authentication Method")
                     }
-                    
+
                     self.authenticatedDBs.append(db.name)
                 } catch { }
             }
@@ -157,7 +159,7 @@ public final class Server: Framework {
     }
     
     /// The authentication details that are used to connect with the MongoDB server
-    internal let authDetails: (username: String, password: String, against: String)?
+    internal let authDetails: MongoCredential?
     
     /// The last Request we sent.. -1 if no request was sent
     internal var lastRequestID: Int32 = -1
@@ -188,7 +190,10 @@ public final class Server: Framework {
     private var slaveOK = false
     
     internal var defaultTimeout: TimeInterval
-    
+
+
+    internal var sslVerify = true
+
     /// The server's hostname/IP and port to connect to
     public var servers: [(host: String, port: UInt16, openConnections: Int, isPrimary: Bool, online: Bool)]
     
@@ -205,8 +210,7 @@ public final class Server: Framework {
     /// - throws: When we can't connect automatically, when the scheme/host is invalid and when we can't connect automatically
     ///
     /// - parameter automatically: Whether to connect automatically
-    public init(mongoURL url: String, usingTcpDriver tcpDriver: MongoTCP.Type? = nil, maxConnectionsPerServer maxConnections: Int = 10, defaultTimeout: TimeInterval
-         = 30) throws {
+    public init(mongoURL url: String, maxConnectionsPerServer maxConnections: Int = 10, defaultTimeout: TimeInterval = 30) throws {
         var url = url
         guard url.characters.starts(with: "mongodb://".characters) else {
             throw MongoError.noMongoDBSchema
@@ -257,10 +261,10 @@ public final class Server: Framework {
         url = String(urlSplitWithPath[0])
         path = urlSplitWithPath.count == 2 ? String(urlSplitWithPath[1]) : nil
         
-        var authentication: (username: String, password: String, against: String)? = nil
+        var authentication: MongoCredential? = nil
         
         if let user = username?.removingPercentEncoding, let pass = password?.removingPercentEncoding {
-            authentication = (username: user, password: pass, against: path ?? "admin")
+            authentication = MongoCredential(username: user, password: pass, database: path ?? "admin", authenticationMechanism: .SCRAM_SHA_1)
         }
         
         let hosts = url.characters.split(separator: ",").map { host -> (String, UInt16, Int, Bool, Bool) in
@@ -275,10 +279,19 @@ public final class Server: Framework {
             
             return (hostname, port, 0, false, false)
         }
-        
-        let ssl = queries.keys.contains("ssl")
-        
-        self.tcpType = tcpDriver ?? (ssl ? DefaultSSLTCPClient : DefaultTCPClient)
+
+        if let sslValue = queries["ssl"]?.string, let sslOption = Bool(string: sslValue), sslOption {
+            self.tcpType = DefaultSSLTCPClient
+            
+            if let sslVerifyString = queries["sslVerify"]?.string , let sslVerifyValue = Bool(string: sslVerifyString) {
+                self.sslVerify = sslVerifyValue
+            } else {
+                self.sslVerify = true
+            }
+        } else {
+            self.tcpType = DefaultTCPClient
+        }
+
         self.maximumConnections = maxConnections * hosts.count
         self.authDetails = authentication
         self.maximumConnectionsPerHost = maxConnections
@@ -309,7 +322,7 @@ public final class Server: Framework {
             
             connections.append(connection)
             
-            let authDB = self[authentication?.against ?? "admin"]
+            let authDB = self[authentication?.database ?? "admin"]
             let cmd = authDB["$cmd"]
             let document: Document = [
                 "isMaster": Int32(1)
@@ -371,7 +384,7 @@ public final class Server: Framework {
             }
             
             do {
-                let authDB = self[authDetails?.against ?? "admin"]
+                let authDB = self[authDetails?.database ?? "admin"]
                 let connection = try makeConnection(toHost: host, authenticatedFor: nil)
                 connection.used = true
                 
@@ -425,7 +438,48 @@ public final class Server: Framework {
         
         reinitializeReplica = false
     }
-    
+
+
+    public init(clientSettings: ClientSettings) throws {
+
+        if let sslSettings = clientSettings.sslSettings {
+            self.tcpType = sslSettings.enabled ? DefaultSSLTCPClient : DefaultTCPClient
+            self.sslVerify = !sslSettings.invalidCertificateAllowed
+        } else {
+            self.tcpType = DefaultTCPClient
+            
+        }
+
+        self.servers = clientSettings.hosts.map({ (mongoHost) -> (String, UInt16,Int,Bool,Bool) in
+            (host: mongoHost.hostName, port: mongoHost.port, openConnections: 0, isPrimary: true, online: true)
+        })
+        self.maximumConnections = clientSettings.maxConnectionsPerServer
+        self.authDetails = clientSettings.credentials
+        self.defaultTimeout = clientSettings.defaultTimeout
+        self.maximumConnectionsPerHost = clientSettings.maxConnectionsPerServer
+        self.connectionPoolSemaphore = DispatchSemaphore(value: clientSettings.maxConnectionsPerServer)
+
+
+        let authDB = self[authDetails?.database ?? "admin"]
+
+        let doc = try authDB.isMaster()
+
+        guard let batchSize = doc["maxWriteBatchSize"] as Int32?, let minWireVersion = doc["minWireVersion"] as Int32?, let maxWireVersion = doc["maxWireVersion"] as Int32? else {
+            debug("No usable ismaster response found. Assuming defaults.")
+            serverData = (maxWriteBatchSize: 1000, maxWireVersion: 4, minWireVersion: 0, maxMessageSizeBytes: 48000000)
+            return
+        }
+
+        var maxMessageSizeBytes = doc["maxMessageSizeBytes"] as Int32? ?? 0
+        if maxMessageSizeBytes == 0 {
+            maxMessageSizeBytes = 48000000
+        }
+
+        serverData = (maxWriteBatchSize: batchSize, maxWireVersion: maxWireVersion, minWireVersion: minWireVersion, maxMessageSizeBytes: maxMessageSizeBytes)
+
+        self.connectionPoolMaintainanceQueue.async(execute: backgroundLoop)
+    }
+
     /// Sets up the `Server` to connect to the specified location.`Server`
     /// You need to provide a host as IP address or as a hostname recognized by the client's DNS.
     /// - parameter at: The hostname/IP address of the MongoDB server
@@ -434,13 +488,16 @@ public final class Server: Framework {
     /// - parameter automatically: Connect automatically
     ///
     /// - throws: When we can’t connect automatically, when the scheme/host is invalid and when we can’t connect automatically
-    public init(hostname host: String, port: UInt16 = 27017, authenticatedAs authentication: (username: String, password: String, against: String)? = nil, usingTcpDriver tcpDriver: MongoTCP.Type? = nil, maxConnectionsPerServer maxConnections: Int = 10, ssl: Bool = false, defaultTimeout: TimeInterval = 30) throws {
-        let logger = Logger.default
-        self.logger = logger
-        self.tcpType = tcpDriver ?? (ssl ? DefaultSSLTCPClient : DefaultTCPClient)
+    public init(hostname host: String, port: UInt16 = 27017, authenticatedAs authentication: (username: String, password: String, against: String)? = nil, maxConnectionsPerServer maxConnections: Int = 10, ssl: Bool = false, defaultTimeout: TimeInterval = 30, sslVerify: Bool = true) throws {
+        self.tcpType = ssl ? DefaultSSLTCPClient : DefaultTCPClient
+        self.sslVerify = sslVerify
         self.servers = [(host: host, port: port, openConnections: 0, isPrimary: true, online: true)]
         self.maximumConnections = maxConnections
-        self.authDetails = authentication
+        if let auth = authentication {
+            self.authDetails = MongoCredential(username: auth.username, password: auth.password, database: auth.against, authenticationMechanism: .SCRAM_SHA_1)
+        } else {
+            self.authDetails = nil
+        }
         self.defaultTimeout = defaultTimeout
         self.maximumConnectionsPerHost = maxConnections
         self.connectionPoolSemaphore = DispatchSemaphore(value: maxConnections)
@@ -502,8 +559,7 @@ public final class Server: Framework {
             throw MongoError.noServersAvailable
         }
         
-        // Open a connection
-        let connection = Connection(client: try tcpType.open(address: lowestOpenConnections.host, port: lowestOpenConnections.port), writable: lowestOpenConnections.isPrimary, host: (lowestOpenConnections.host, lowestOpenConnections.port), logger: self) {
+        let connection = Connection(client: try tcpType.open(address: lowestOpenConnections.host, port: lowestOpenConnections.port, options: connectionOptions()), writable: lowestOpenConnections.isPrimary, host: (lowestOpenConnections.host, lowestOpenConnections.port),logger: self) {
             self.hostPoolLock.lock()
             for (id, server) in self.servers.enumerated() where server == lowestOpenConnections {
                 var host = server
@@ -536,10 +592,7 @@ public final class Server: Framework {
     }
     
     private func makeConnection(toHost host: (host: String, port: UInt16, openConnections: Int, isPrimary: Bool, online: Bool), authenticatedFor: Database?) throws -> Connection {
-        verbose("Attempting to create a new connection to \(host.host):\(host.port)ss")
-        
-        // Make a connection to the specified host and add
-        let connection = Connection(client: try tcpType.open(address: host.host, port: host.port), writable: host.isPrimary, host: (host.host, host.port), logger: self) {
+        let connection = Connection(client: try tcpType.open(address: host.host, port: host.port, options: connectionOptions()), writable: host.isPrimary, host: (host.host, host.port), logger: self) {
             self.hostPoolLock.lock()
             for (id, server) in self.servers.enumerated() where server == host {
                 var host = server
@@ -577,6 +630,10 @@ public final class Server: Framework {
         
         currentConnections -= 1
         throw MongoError.internalInconsistency
+    }
+
+    private func connectionOptions() -> [String:Any] {
+        return ["sslVerify":self.sslVerify]
     }
     
     internal func reserveConnection(writing: Bool = false, authenticatedFor db: Database?, toHost host: (String, UInt16)? = nil) throws -> Connection {
@@ -992,7 +1049,7 @@ public final class Server: Framework {
             command["block"] = block
         }
         
-        let reply = try self[self.authDetails?.against ?? "admin"].execute(command: command, writing: true)
+        let reply = try self[self.authDetails?.database ?? "admin"].execute(command: command, writing: true)
         let response = try firstDocument(in: reply)
         
         guard response["ok"] as Int? == 1 else {
@@ -1069,6 +1126,19 @@ extension Server: Sequence {
         
         return AnyIterator {
             return databases.count > 0 ? databases.removeFirst() : nil
+        }
+    }
+}
+
+extension Bool {
+    init?(string: String) {
+        switch  string.lowercased() {
+        case "true":
+            self = true
+        case "false":
+            self = false
+        default:
+            return nil
         }
     }
 }
