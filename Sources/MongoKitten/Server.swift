@@ -768,6 +768,7 @@ public final class Server: Framework {
             // Authenticate
             info("Authenticating the connection to \(db)")
             try connection.authenticate(toDatabase: db)
+            connection.authenticatedDBs.append(db.name)
         }
         
         connection.used = true
