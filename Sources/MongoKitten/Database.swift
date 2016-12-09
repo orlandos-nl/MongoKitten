@@ -13,7 +13,7 @@ import Dispatch
 
 /// A Mongo Database. Cannot be publically initialized.
 /// But you can get a database object by subscripting `Server` with a `String` as the database name
-public final class Database: NSObject {
+public final class Database {
     /// The `Server` that this Database is a part of
     public let server: Server
     
@@ -67,9 +67,7 @@ public final class Database: NSObject {
         self.server = try Server(mongoURL: url, usingTcpDriver: driver, maxConnectionsPerServer: maxConnections)
         
         self.name = String(dbname)
-        
-        super.init()
-        
+
         let connection = try server.reserveConnection(writing: false, authenticatedFor: nil)
         
         defer {
@@ -751,8 +749,8 @@ extension String {
     }
 }
 
-extension Database {
-    public override var description: String {
+extension Database: CustomStringConvertible {
+    public var description: String {
         return "MongoKitten.Database<\(server.hostname)/\(self.name)>"
     }
 }
