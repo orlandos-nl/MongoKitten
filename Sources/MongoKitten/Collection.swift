@@ -27,7 +27,7 @@ public final class Collection {
     func debugQuickLookObject() -> AnyObject {
         var userInfo = ""
         
-        if let username = database.server.authDetails?.username {
+        if let username = database.server.clientSettings.credentials?.username {
             userInfo = "\(username):*********@"
         }
         

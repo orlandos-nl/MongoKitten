@@ -29,7 +29,7 @@ public final class Database {
     func debugQuickLookObject() -> AnyObject {
         var userInfo = ""
         
-        if let username = server.authDetails?.username {
+        if let username = server.clientSettings.credentials?.username {
             userInfo = "\(username):*********@"
         }
         
@@ -316,7 +316,7 @@ extension Database {
     /// - parameter previousInformation: The nonce, response and `SCRAMClient` instance
     ///
     /// - throws: When the authentication fails, when Base64 fails
-    private func challenge(with details: MongoCredential, using previousInformation: (nonce: String, response: Document, scram: SCRAMClient<SHA1>), usingConnection connection: Server.Connection) throws {
+    private func challenge(with details: MongoCredentials, using previousInformation: (nonce: String, response: Document, scram: SCRAMClient<SHA1>), usingConnection connection: Server.Connection) throws {
         // If we failed the authentication
         guard previousInformation.response["ok"] as Int? == 1 else {
             server.error("Authentication for MongoDB user \(details.username) with SASL failed against \(details.database) because of the following error")
@@ -378,7 +378,7 @@ extension Database {
     /// - parameter details: The authentication details
     ///
     /// - throws: When failing authentication, being unable to base64 encode or failing to send/receive messages
-    internal func authenticate(SASL details: MongoCredential, usingConnection connection: Server.Connection) throws {
+    internal func authenticate(SASL details: MongoCredentials, usingConnection connection: Server.Connection) throws {
         let nonce = randomNonce()
         
         let auth = SCRAMClient<SHA1>()
@@ -406,7 +406,7 @@ extension Database {
     /// - parameter details: The authentication details
     ///
     /// - throws: When failing authentication, being unable to base64 encode or failing to send/receive messages
-    internal func authenticate(mongoCR details: MongoCredential, usingConnection connection: Server.Connection) throws {
+    internal func authenticate(mongoCR details: MongoCredentials, usingConnection connection: Server.Connection) throws {
         // Get the server's nonce
         let response = try self.execute(command: [
             "getnonce": Int32(1)

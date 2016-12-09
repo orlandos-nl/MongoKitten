@@ -24,7 +24,7 @@ class ServerTests: XCTestCase {
 
     func testSSLConnection() throws {
 
-        let server = try Server(hostname: "localhost", port: 27017, authenticatedAs: ("mydbuser","password","mydb"), ssl: true, sslVerify: false)
+        let server = try Server(ClientSettings(host: "localhost", sslSettings: true, credentials: MongoCredentials(username: "mydbuser", password: "password", database: "mydb", authenticationMechanism: .SCRAM_SHA_1)))
         XCTAssertTrue(server.isConnected)
 
     }
@@ -36,12 +36,12 @@ class ServerTests: XCTestCase {
     }
 
     func testClientSettingsConnection() throws {
-        let host = MongoHost(hostName: "localhost", port: 27017)
+        let host = MongoHost(hostname: "localhost", port: 27017)
         let sslSettings = SSLSettings(enabled: true, invalidHostNameAllowed: true, invalidCertificateAllowed: true)
-        let credential = MongoCredential(username: "mydbuser", password: "password", database: "mydb", authenticationMechanism: .SCRAM_SHA_1)
+        let credential = MongoCredentials(username: "mydbuser", password: "password", database: "mydb", authenticationMechanism: .SCRAM_SHA_1)
         let clientSettings = ClientSettings(hosts: [host], sslSettings: sslSettings, credentials: credential)
 
-        let server = try Server(clientSettings: clientSettings)
+        let server = try Server(clientSettings)
         XCTAssertTrue(server.isConnected)
     }
 }

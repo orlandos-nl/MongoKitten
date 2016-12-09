@@ -21,7 +21,7 @@ class TCPBuffer {
 }
 
 public protocol MongoTCP : class {
-    static func open(address hostname: String, port: UInt16, options:[String:Any]?) throws -> MongoTCP
+    static func open(address hostname: String, port: UInt16, options:ClientSettings) throws -> MongoTCP
     func close() throws
     func send(data binary: [UInt8]) throws
     func receive() throws -> [UInt8]
@@ -29,7 +29,7 @@ public protocol MongoTCP : class {
 }
 
 extension Socks.TCPClient : MongoTCP {
-    public static func open(address hostname: String, port: UInt16, options:[String:Any]? = nil) throws -> MongoTCP {
+    public static func open(address hostname: String, port: UInt16, options: ClientSettings) throws -> MongoTCP {
         let address = hostname.lowercased() == "localhost" ? InternetAddress.localhost(port: port) : InternetAddress(hostname: hostname, port: port)
         return try TCPClient(address: address)
     }

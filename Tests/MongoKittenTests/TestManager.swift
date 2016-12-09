@@ -17,8 +17,10 @@ final class TestManager {
     
     //static var server = try! Server(hostname: "localhost", port: 27017, authenticatedAs: ("mongokitten-unittest-user", "mongokitten-unittest-password", "mongokitten-unittest"))
     
-    static var server = try! Server(hostname: "localhost", port: 27017, ssl: true)
-    static var db: Database { return server["mongokitten-unittest"] }
+    static var server: Server {
+        return db.server
+    }
+    static var db: Database = try! Database(mongoURL: "mongodb://localhost/mongokitten-unittest")
     static let wcol = db["wcol"]
     
     static var testingUsers = [Document]()
@@ -36,6 +38,6 @@ final class TestManager {
     }
     
     static func disconnect() throws {
-        try server.disconnect()
+        try db.server.disconnect()
     }
 }

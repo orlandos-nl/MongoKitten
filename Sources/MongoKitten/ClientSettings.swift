@@ -9,17 +9,51 @@
 import Foundation
 
 
-public struct MongoHost {
-    public let hostName: String
+public struct MongoHost: Equatable, ExpressibleByStringLiteral {
+    public let hostname: String
     public let port: UInt16
+    internal var openConnections = 0
+    public internal(set) var online = false
+    public internal(set) var isPrimary = false
 
-    public init(hostName: String, port: UInt16) {
-        self.hostName = hostName
+    public init(hostname: String, port: UInt16 = 27017) {
+        self.hostname = hostname
         self.port = port
+    }
+    
+    public init(stringLiteral value: String) {
+        let parts = value.characters.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
+        
+        hostname = String(parts[0])
+        port = parts.count == 2 ? UInt16(String(parts[1])) ?? 27017 : 27017
+    }
+    
+    public init(unicodeScalarLiteral value: String) {
+        let parts = value.characters.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
+        
+        hostname = String(parts[0])
+        port = parts.count == 2 ? UInt16(String(parts[1])) ?? 27017 : 27017
+    }
+    
+    public init(extendedGraphemeClusterLiteral value: String) {
+        let parts = value.characters.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
+        
+        hostname = String(parts[0])
+        port = parts.count == 2 ? UInt16(String(parts[1])) ?? 27017 : 27017
+    }
+    
+    public static func ==(lhs: MongoHost, rhs: MongoHost) -> Bool {
+        return lhs.hostname == rhs.hostname && lhs.port == rhs.port
     }
 }
 
-public struct SSLSettings {
+public struct SSLSettings: ExpressibleByBooleanLiteral {
+    public init(booleanLiteral value: Bool) {
+        self.enabled = value
+        self.invalidHostNameAllowed = false
+        self.invalidCertificateAllowed = false
+    }
+    
     public let enabled: Bool
     public let invalidHostNameAllowed: Bool
     public let invalidCertificateAllowed: Bool
@@ -38,13 +72,13 @@ public enum AuthenticationMechanism {
     case PLAIN
 }
 
-public struct MongoCredential {
+public struct MongoCredentials {
     public let username: String
     public let password: String
     public let database: String?
     public let authenticationMechanism: AuthenticationMechanism
 
-    public init(username: String, password: String, database: String?, authenticationMechanism: AuthenticationMechanism) {
+    public init(username: String, password: String, database: String? = nil, authenticationMechanism: AuthenticationMechanism = .SCRAM_SHA_1) {
         self.username = username
         self.password = password
         self.database = database
@@ -54,15 +88,15 @@ public struct MongoCredential {
 }
 
 public struct ClientSettings {
-    public let hosts:[MongoHost]
+    public internal(set) var hosts: [MongoHost]
     public let sslSettings: SSLSettings?
-    public let credentials: MongoCredential?
+    public let credentials: MongoCredentials?
 
-    public let maxConnectionsPerServer: Int
+    public internal(set) var maxConnectionsPerServer: Int
     public let defaultTimeout: TimeInterval
 
     public init(hosts:[MongoHost], sslSettings: SSLSettings?,
-                credentials: MongoCredential?, maxConnectionsPerServer: Int = 10, defaultTimeout: TimeInterval = 30) {
+                credentials: MongoCredentials?, maxConnectionsPerServer: Int = 10, defaultTimeout: TimeInterval = 30) {
         self.hosts = hosts
         self.sslSettings = sslSettings
         self.credentials = credentials
@@ -70,14 +104,13 @@ public struct ClientSettings {
         self.defaultTimeout = defaultTimeout
     }
 
-    public init(host:MongoHost) {
-
+    public init(host: MongoHost, sslSettings: SSLSettings?,
+                credentials: MongoCredentials?, maxConnectionsPerServer: Int = 10, defaultTimeout: TimeInterval = 30) {
         self.hosts = [host]
-        self.credentials = nil
-        self.sslSettings = nil
-        self.maxConnectionsPerServer = 10
-        self.defaultTimeout = 30
+        self.credentials = credentials
+        self.sslSettings = sslSettings
+        self.maxConnectionsPerServer = maxConnectionsPerServer
+        self.defaultTimeout = defaultTimeout
     }
-
 }
 
