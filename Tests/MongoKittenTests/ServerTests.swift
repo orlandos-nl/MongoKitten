@@ -15,18 +15,9 @@ import MongoKitten
 class ServerTests: XCTestCase {
     static var allTests: [(String, (ServerTests) -> () throws -> Void)] {
         return [
-            ("testSSLConnection", testSSLConnection),
             ("testSSLURLConnection", testSSLURLConnection),
             ("testClientSettingsConnection", testClientSettingsConnection)
         ]
-    }
-
-
-    func testSSLConnection() throws {
-
-        let server = try Server(ClientSettings(host: "localhost", sslSettings: true, credentials: MongoCredentials(username: "mydbuser", password: "password", database: "mydb", authenticationMechanism: .SCRAM_SHA_1)))
-        XCTAssertTrue(server.isConnected)
-
     }
 
     func testSSLURLConnection() throws {
