@@ -73,14 +73,13 @@ public final class Server: Framework {
         func authenticate(toDatabase db: Database) throws {
             if let details = db.server.authDetails {
                 do {
-                    let protocolVersion = db.server.serverData?.maxWireVersion ?? 0
                     switch details.authenticationMechanism {
                     case .SCRAM_SHA_1:
                         try db.authenticate(SASL: details, usingConnection: self)
                     case .MONGODB_CR:
                         try db.authenticate(mongoCR: details, usingConnection: self)
                     default:
-                        MongoError.unsupportedFeature("authentication Method")
+                        throw MongoError.unsupportedFeature("authentication Method")
                     }
 
                     self.authenticatedDBs.append(db.name)
