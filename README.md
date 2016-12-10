@@ -44,6 +44,12 @@ We host all our documentation [here](https://github.com/OpenKitten/Documentation
 
 [Click here for the migration guide](https://github.com/OpenKitten/Documentation/blob/master/MongoKitten/Migration/MK3.md)
 
+## Support
+
+MongoKitten is developed and supported by [Joannis Orlandos](@Joannis). Please leave a star or watch us to support this project. I work on MongoKitten full-time and hope to keep this project running by offering support to projects relying on my software.
+
+If your company needs help with development related to MongoDB, Swift and/or MongoKitten [you can contact me here](joannis@orlandos.nl).
+
 ## License
 
 MongoKitten is licensed under the MIT license.
