@@ -44,11 +44,9 @@ We host all our documentation [here](https://github.com/OpenKitten/Documentation
 
 [Click here for the migration guide](https://github.com/OpenKitten/Documentation/blob/master/MongoKitten/Migration/MK3.md)
 
-## Support
+## Backers
 
-MongoKitten is developed and supported by [Joannis Orlandos](@Joannis). Please leave a star or watch us to support this project. I work on MongoKitten full-time and hope to keep this project running by offering support to projects relying on my software.
-
-If your company needs help with development related to MongoDB, Swift and/or MongoKitten [you can contact me here](joannis@orlandos.nl).
+To keep this project up and running we have [a donation page set up here.](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=265MBC3CZFN7Y) If you add your email address we'll contact you and we'll put your photo underneath here.
 
 ## License
 
