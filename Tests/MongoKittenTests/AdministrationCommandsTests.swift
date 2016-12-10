@@ -51,10 +51,7 @@ class AdministrationCommandsTests: XCTestCase {
     }
     
     func testDatabase() throws {
-        do {
-            try TestManager.db.drop(user: "mongokitten-henk")
-        } catch {}
-        
+
         try TestManager.db.createUser("mongokitten-henk", password: "banapple", roles: [], customData: ["num": Int32(3)])
         let info = try TestManager.server.getUserInfo(forUserNamed: "mongokitten-henk", inDatabase: TestManager.db)
         XCTAssertEqual(info[0, "customData", "num"] as Int32?, Int32(3))
