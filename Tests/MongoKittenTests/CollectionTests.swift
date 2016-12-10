@@ -14,11 +14,20 @@ import Dispatch
 class CollectionTests: XCTestCase {
     static var allTests: [(String, (CollectionTests) -> () throws -> Void)] {
         return [
-                   ("testDistinct", testDistinct),
-                   ("testFind", testFind),
-                   ("testUpdate", testUpdate),
-                   ("testRemovingAll", testRemovingAll),
-                   ("testRemovingOne", testRemovingOne),
+                ("testQuery", testQuery),
+                ("testRename", testRename),
+                ("testDistinct", testDistinct),
+                ("testFind", testFind),
+                ("testDBRef", testDBRef),
+                ("testProjection", testProjection),
+                ("testIndexes", testIndexes),
+                ("testAggregate", testAggregate),
+                ("testFacetAggregate", testFacetAggregate),
+                ("testTextOperator", testTextOperator),
+                ("testUpdate", testUpdate),
+                ("testRemovingAll", testRemovingAll),
+                ("testRemovingOne", testRemovingOne),
+                ("testHelperObjects", testHelperObjects)
         ]
     }
     
