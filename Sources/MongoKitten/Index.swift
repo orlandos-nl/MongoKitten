@@ -1,5 +1,20 @@
 import BSON
 
+/// The options to apply to the creation of an index.
+///
+/// - one:
+/// - two:
+/// - sort:
+/// - sortedCompound:
+/// - compound:
+/// - expire:
+/// - sparse: the index only references documents with the specified field
+/// - custom:
+/// - partialFilter:
+/// - unique: the index should be unique
+/// - buildInBackground: Create the index in the background
+/// - weight: the weighting object for use with a text index
+/// - text: 
 public enum IndexParameter {
     public enum TextIndexVersion: ValueConvertible {
         case one
