@@ -126,6 +126,12 @@ public class GridFS {
         return gridFSCursor
     }
     
+    /// Removes a file by it's identifier
+    public func remove(byId identifier: ObjectId) throws {
+        try files.remove(matching: "_id" == identifier)
+        try chunks.remove(matching: "files_id" == identifier)
+    }
+    
     /// Stores the data in GridFS
     ///
     /// - parameter data: The data to store
