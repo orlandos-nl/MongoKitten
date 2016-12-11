@@ -269,19 +269,18 @@ public final class Server: Framework {
         
         if let user = username?.removingPercentEncoding, let pass = password?.removingPercentEncoding {
             let mechanism: AuthenticationMechanism
-            
-            switch queries["authMechanism"] ?? "" {
-            case "SCRAM_SHA_1":
-                mechanism = .SCRAM_SHA_1
-            case "MONGODB-CR":
-                mechanism = .MONGODB_CR
-            case "MONGODB-X509":
-                throw MongoError.unsupportedFeature("MONGODB-X509")
-            case "GSSAP":
-                throw MongoError.unsupportedFeature("GSSAP")
-            case "PLAIN":
-                throw MongoError.unsupportedFeature("PLAIN")
-            default:
+            if let authMechanismLiteral = queries["authMechanism"], let authMechanism = AuthenticationMechanism(rawValue: authMechanismLiteral) {
+
+                mechanism = authMechanism
+
+                // Throw a MongoError for unsupported authentication mechanism
+                switch mechanism {
+                case .GSSAPI, .PLAIN, .MONGODB_X509:
+                    throw MongoError.unsupportedFeature(mechanism.rawValue)
+                default:
+                    break
+                }
+            } else {
                 mechanism = .SCRAM_SHA_1
             }
             

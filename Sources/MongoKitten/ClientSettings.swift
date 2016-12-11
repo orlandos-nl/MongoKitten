@@ -9,8 +9,13 @@
 import Foundation
 
 
+/// The location of a Mongo server - i.e. server name and port number
 public struct MongoHost: Equatable, ExpressibleByStringLiteral {
+
+    /// host address
     public let hostname: String
+
+    /// mongod port
     public let port: UInt16
     internal var openConnections = 0
     public internal(set) var online = false
@@ -47,6 +52,7 @@ public struct MongoHost: Equatable, ExpressibleByStringLiteral {
     }
 }
 
+/// Settings for connecting to MongoDB via SSL.
 public struct SSLSettings: ExpressibleByBooleanLiteral {
     public init(booleanLiteral value: Bool) {
         self.enabled = value
@@ -54,8 +60,13 @@ public struct SSLSettings: ExpressibleByBooleanLiteral {
         self.invalidCertificateAllowed = false
     }
     
+    /// Enable SSL
     public let enabled: Bool
+
+    /// Invalid host names should be allowed. Defaults to false. Take care before setting this to true, as it makes the application susceptible to man-in-the-middle attacks.
     public let invalidHostNameAllowed: Bool
+
+    /// Invalis certificate should be allowed. Defaults to false. Take care before setting this to true, as it makes the application susceptible to man-in-the-middle attacks.
     public let invalidCertificateAllowed: Bool
 
     public init(enabled: Bool, invalidHostNameAllowed: Bool, invalidCertificateAllowed: Bool) {
@@ -65,19 +76,43 @@ public struct SSLSettings: ExpressibleByBooleanLiteral {
     }
 }
 
-public enum AuthenticationMechanism {
+/// An enumeration of the MongodDB-supported authentication mechanisms.
+///
+/// - SCRAM_SHA_1: The SCRAM-SHA-1 mechanism.
+/// - MONGODB_CR: The MongoDB Challenge Response mechanism.
+/// - MONGODB_X509: The MongoDB X.509 mechanism.
+/// - PLAIN: The PLAIN mechanism.
+/// - GSSAPI: The GSSAPI mechanism. 
+public enum AuthenticationMechanism: String {
     case SCRAM_SHA_1
     case MONGODB_CR
     case MONGODB_X509
     case PLAIN
+    case GSSAPI
 }
 
+/// Represents credentials to authenticate to a mongo server,as well as the source of the credentials and the authentication mechanism to use.
 public struct MongoCredentials {
+
+    /// The Username
     public let username: String
+
+    /// The Password
     public let password: String
+
+    /// The database where the user is defined
     public let database: String?
+
+    /// The Authentication Mechanism
     public let authenticationMechanism: AuthenticationMechanism
 
+    /// Create a MongoCredential instance
+    ///
+    /// - Parameters:
+    ///   - username: The user name
+    ///   - password: The password
+    ///   - database: The database where the user is defined
+    ///   - authenticationMechanism: The authentication mechanism use to authenticated the user
     public init(username: String, password: String, database: String? = nil, authenticationMechanism: AuthenticationMechanism = .SCRAM_SHA_1) {
         self.username = username
         self.password = password
@@ -87,9 +122,16 @@ public struct MongoCredentials {
 
 }
 
+/// Various settings to control the behavior of a MongoClient.
 public struct ClientSettings {
+
+    /// The Hosts to connect
     public internal(set) var hosts: [MongoHost]
+
+    /// The SSL Settings
     public let sslSettings: SSLSettings?
+
+    /// The credentials to authenticate to a mongo server
     public let credentials: MongoCredentials?
 
     public internal(set) var maxConnectionsPerServer: Int
