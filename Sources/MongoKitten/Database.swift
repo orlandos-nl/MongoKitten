@@ -620,7 +620,7 @@ extension Database {
     /// - parameter options: Optionally, configuration options for creating this collection.
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func createCollection(_ name: String, options: Document? = nil) throws {
+    public func createCollection(named name: String, options: Document? = nil) throws {
         var command: Document = ["create": name]
         
         if let options = options {
