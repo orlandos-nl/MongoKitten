@@ -47,6 +47,10 @@ public final class Server: Framework {
         }
     }
     
+    deinit {
+        self.logger.unregister(self)
+    }
+    
     class Connection {
         let logger: Framework
         let client: MongoTCP
@@ -220,8 +224,6 @@ public final class Server: Framework {
         self.connectionPoolSemaphore = DispatchSemaphore(value: self.clientSettings.maxConnectionsPerServer * self.clientSettings.hosts.count)
         self.defaultTimeout = self.clientSettings.defaultTimeout
         self.logger = Logger.default
-        logger.registerFramework(self)
-        _ = try? logger.registerSubject(Document.self, forFramework: self)
 
         if clientSettings.hosts.count > 1 {
             self.isReplica = true
@@ -268,7 +270,9 @@ public final class Server: Framework {
 
             self.serverData = (maxWriteBatchSize: batchSize, maxWireVersion: maxWireVersion, minWireVersion: minWireVersion, maxMessageSizeBytes: maxMessageSizeBytes)
         }
-
+        
+        logger.registerFramework(self)
+        _ = try? logger.registerSubject(Document.self, forFramework: self)
         self.connectionPoolMaintainanceQueue.async(execute: backgroundLoop)
 
     }

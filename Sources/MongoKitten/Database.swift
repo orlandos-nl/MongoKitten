@@ -58,9 +58,9 @@ public final class Database {
     }
     
     public init(mongoURL url: String, usingTcpDriver driver: MongoTCP.Type? = nil, maxConnectionsPerServer maxConnections: Int = 10) throws {
-        let path = url.characters.split(separator: "/")
+        let path = url.characters.split(separator: "/", maxSplits: 2, omittingEmptySubsequences: true)
         
-        guard path.count >= 2, let dbname = path.last?.split(separator: "?")[0] else {
+        guard path.count == 3, let dbname = path.last?.split(separator: "?")[0] else {
             throw MongoError.invalidDatabase("")
         }
         
