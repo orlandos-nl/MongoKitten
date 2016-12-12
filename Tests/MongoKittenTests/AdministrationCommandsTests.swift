@@ -62,7 +62,7 @@ class AdministrationCommandsTests: XCTestCase {
         
         try TestManager.db.drop(user: "mongokitten-henk")
         
-        try TestManager.db.createCollection("test")
+        try TestManager.db.createCollection(named: "test")
         
         var exists = false
         for col in try TestManager.db.listCollections() where col.name == "test" {
