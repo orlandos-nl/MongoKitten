@@ -203,6 +203,76 @@ public final class Server: Framework {
 
     internal private(set) var serverData: (maxWriteBatchSize: Int32, maxWireVersion: Int32, minWireVersion: Int32, maxMessageSizeBytes: Int32)?
     
+    /// Sets up the `Server` to connect to MongoDB.
+    ///
+    /// - Parameter clientSettings: The Client Settings
+    /// - Throws: When we can't connect automatically, when the scheme/host is invalid and when we can't connect automatically
+    public init(_ clientSettings: ClientSettings) throws {
+        self.clientSettings = clientSettings
+
+        if let sslSettings = clientSettings.sslSettings {
+            self.tcpType = sslSettings.enabled ? DefaultSSLTCPClient : DefaultTCPClient
+            self.sslVerify = !sslSettings.invalidCertificateAllowed
+        } else {
+            self.tcpType = DefaultTCPClient
+        }
+
+        self.connectionPoolSemaphore = DispatchSemaphore(value: self.clientSettings.maxConnectionsPerServer * self.clientSettings.hosts.count)
+        self.defaultTimeout = self.clientSettings.defaultTimeout
+        self.logger = Logger.default
+        logger.registerFramework(self)
+        _ = try? logger.registerSubject(Document.self, forFramework: self)
+
+        if clientSettings.hosts.count > 1 {
+            self.isReplica = true
+            initializeReplica()
+        } else {
+            guard clientSettings.hosts.count == 1 else {
+                throw MongoError.noServersAvailable
+            }
+
+            self.clientSettings.hosts[0].isPrimary = true
+            self.clientSettings.hosts[0].online = true
+
+            let connection = try makeConnection(toHost: self.clientSettings.hosts[0], authenticatedFor: nil)
+            connection.used = true
+
+            defer {
+                returnConnection(connection)
+            }
+
+            connections.append(connection)
+
+            let authDB = self[self.clientSettings.credentials?.database ?? "admin"]
+            let cmd = authDB["$cmd"]
+            let document: Document = [
+                "isMaster": Int32(1)
+            ]
+
+            let commandMessage = Message.Query(requestID: self.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
+            let response = try self.sendAndAwait(message: commandMessage, overConnection: connection, timeout: defaultTimeout)
+
+            guard case .Reply(_, _, _, _, _, _, let documents) = response, let doc = documents.first else {
+                throw InternalMongoError.incorrectReply(reply: response)
+            }
+
+            guard let batchSize = doc["maxWriteBatchSize"] as Int32?, let minWireVersion = doc["minWireVersion"] as Int32?, let maxWireVersion = doc["maxWireVersion"] as Int32? else {
+                serverData = (maxWriteBatchSize: 1000, maxWireVersion: 4, minWireVersion: 0, maxMessageSizeBytes: 48000000)
+                return
+            }
+
+            var maxMessageSizeBytes = doc["maxMessageSizeBytes"] as Int32? ?? 0
+            if maxMessageSizeBytes == 0 {
+                maxMessageSizeBytes = 48000000
+            }
+
+            self.serverData = (maxWriteBatchSize: batchSize, maxWireVersion: maxWireVersion, minWireVersion: minWireVersion, maxMessageSizeBytes: maxMessageSizeBytes)
+        }
+
+        self.connectionPoolMaintainanceQueue.async(execute: backgroundLoop)
+
+    }
+
     /// Sets up the `Server` to connect to the specified URL.
     /// The `mongodb://` scheme is required as well as the host. Optionally youc an provide ausername + password. And if no port is specified `27017` is used.
     /// You can provide an alternative TCP Driver that complies to `MongoTCP`.
@@ -214,165 +284,22 @@ public final class Server: Framework {
     /// - throws: When we can't connect automatically, when the scheme/host is invalid and when we can't connect automatically
     ///
     /// - parameter automatically: Whether to connect automatically
-    public init(mongoURL url: String, maxConnectionsPerServer maxConnections: Int = 10, defaultTimeout: TimeInterval = 30) throws {
-        var url = url
-        guard url.characters.starts(with: "mongodb://".characters) else {
-            throw MongoError.noMongoDBSchema
-        }
-        
-        url.characters.removeFirst("mongodb://".characters.count)
-        
-        let parts = url.characters.split(separator: "@")
-        
-        guard parts.count <= 2 else {
-            throw MongoError.invalidURI(uri: url)
-        }
-        
-        url = parts.count == 2 ? String(parts[1]) : String(parts[0])
-        
-        let queryParts = url.characters.split(separator: "?")
-        
-        url = String(queryParts[0])
-        
-        var queries = [String: String]()
-        
-        if queryParts.count == 2 {
-            loop: for keyValue in String(queryParts[1]).characters.split(separator: "&") {
-                let keyValue = Array(keyValue).split(separator: "=")
-                
-                queries[String(keyValue[0])] = keyValue.count == 2 ? String(keyValue[1]) : ""
-            }
-        }
-        
-        var username: String? = nil
-        var password: String? = nil
-        var path: String? = nil
-        
-        if parts.count == 2 {
-            let userString = parts[0]
-            let userParts = userString.split(separator: ":")
-            
-            guard userParts.count == 2 else {
-                throw MongoError.invalidURI(uri: url)
-            }
-            
-            username = String(userParts[0]).removingPercentEncoding
-            password = String(userParts[1]).removingPercentEncoding
-        }
-        
-        let urlSplitWithPath = url.characters.split(separator: "/")
-        
-        url = String(urlSplitWithPath[0])
-        path = urlSplitWithPath.count == 2 ? String(urlSplitWithPath[1]) : nil
-        
-        var authentication: MongoCredentials? = nil
-        
-        if let user = username?.removingPercentEncoding, let pass = password?.removingPercentEncoding {
-            let mechanism: AuthenticationMechanism
-            if let authMechanismLiteral = queries["authMechanism"], let authMechanism = AuthenticationMechanism(rawValue: authMechanismLiteral) {
+    convenience public init(mongoURL url: String, maxConnectionsPerServer maxConnections: Int = 10, defaultTimeout: TimeInterval = 30) throws {
+        let clientSettings = try ClientSettings(mongoURL: url)
+        try self.init(clientSettings)
+    }
 
-                mechanism = authMechanism
-
-                // Throw a MongoError for unsupported authentication mechanism
-                switch mechanism {
-                case .GSSAPI, .PLAIN, .MONGODB_X509:
-                    throw MongoError.unsupportedFeature(mechanism.rawValue)
-                default:
-                    break
-                }
-            } else {
-                mechanism = .SCRAM_SHA_1
-            }
-            
-            let authSource = queries["authSource"]
-            
-            authentication = MongoCredentials(username: user, password: pass, database: authSource ?? path ?? "admin", authenticationMechanism: mechanism)
-        }
-        
-        let hosts = url.characters.split(separator: ",").map { host -> MongoHost in
-            let hostSplit = host.split(separator: ":")
-            var port: UInt16 = 27017
-            
-            if hostSplit.count == 2 {
-                port = UInt16(String(hostSplit[1])) ?? 27017
-            }
-            
-            let hostname = String(hostSplit[0])
-            
-            return MongoHost(hostname: hostname, port: port)
-        }
-
-        let ssl: Bool
-        let sslVerify: Bool
-        
-        if let sslValue = queries["ssl"] {
-            self.tcpType = DefaultSSLTCPClient
-            ssl = true
-            
-            if let _ = queries["sslVerify"] {
-                sslVerify = true
-            } else {
-                sslVerify = false
-            }
-        } else {
-            ssl = false
-            self.tcpType = DefaultTCPClient
-        }
-
-        self.clientSettings = ClientSettings(hosts: hosts, sslSettings: ssl ? SSLSettings(enabled: true, invalidHostNameAllowed: true, invalidCertificateAllowed: true) : nil, credentials: authentication, maxConnectionsPerServer: 10)
-        self.connectionPoolSemaphore = DispatchSemaphore(value: maxConnections * hosts.count)
-        self.defaultTimeout = defaultTimeout
-        self.logger = Logger.default
-        logger.registerFramework(self)
-        _ = try? logger.registerSubject(Document.self, forFramework: self)
-        
-        if clientSettings.hosts.count > 1 {
-            self.isReplica = true
-            initializeReplica()
-        } else {
-            guard clientSettings.hosts.count == 1 else {
-                throw MongoError.noServersAvailable
-            }
-            
-            clientSettings.hosts[0].isPrimary = true
-            clientSettings.hosts[0].online = true
-            
-            let connection = try makeConnection(toHost: clientSettings.hosts[0], authenticatedFor: nil)
-            connection.used = true
-            
-            defer {
-                returnConnection(connection)
-            }
-            
-            connections.append(connection)
-            
-            let authDB = self[authentication?.database ?? "admin"]
-            let cmd = authDB["$cmd"]
-            let document: Document = [
-                "isMaster": Int32(1)
-            ]
-            
-            let commandMessage = Message.Query(requestID: self.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
-            let response = try self.sendAndAwait(message: commandMessage, overConnection: connection, timeout: defaultTimeout)
-            
-            guard case .Reply(_, _, _, _, _, _, let documents) = response, let doc = documents.first else {
-                throw InternalMongoError.incorrectReply(reply: response)
-            }
-            
-            guard let batchSize = doc["maxWriteBatchSize"] as Int32?, let minWireVersion = doc["minWireVersion"] as Int32?, let maxWireVersion = doc["maxWireVersion"] as Int32? else {
-                serverData = (maxWriteBatchSize: 1000, maxWireVersion: 4, minWireVersion: 0, maxMessageSizeBytes: 48000000)
-                return
-            }
-            
-            var maxMessageSizeBytes = doc["maxMessageSizeBytes"] as Int32? ?? 0
-            if maxMessageSizeBytes == 0 {
-                maxMessageSizeBytes = 48000000
-            }
-            
-            self.serverData = (maxWriteBatchSize: batchSize, maxWireVersion: maxWireVersion, minWireVersion: minWireVersion, maxMessageSizeBytes: maxMessageSizeBytes)
-        }
-        
-        self.connectionPoolMaintainanceQueue.async(execute: backgroundLoop)
+    /// Sets up the `Server` to connect to the specified location.`Server`
+    /// You need to provide a host as IP address or as a hostname recognized by the client's DNS.
+    /// - parameter at: The hostname/IP address of the MongoDB server
+    /// - parameter port: The port we'll connect on. Defaults to 27017
+    /// - parameter authentication: The optional authentication details we'll use when connecting to the server
+    /// - parameter automatically: Connect automatically
+    ///
+    /// - throws: When we can’t connect automatically, when the scheme/host is invalid and when we can’t connect automatically
+    convenience public init(hostname host: String, port: UInt16 = 27017, authenticatedAs authentication: MongoCredentials? = nil, maxConnectionsPerServer maxConnections: Int = 10, ssl sslSettings: SSLSettings? = nil) throws {
+        let clientSettings = ClientSettings(host: MongoHost(hostname:host, port:port), sslSettings: sslSettings, credentials: authentication, maxConnectionsPerServer: maxConnections)
+        try self.init(clientSettings)
     }
     
     var maintainanceLoopCalls = [(()->())]()
@@ -461,93 +388,6 @@ public final class Server: Framework {
         }
         
         reinitializeReplica = false
-    }
-
-
-    public init(_ clientSettings: ClientSettings) throws {
-        self.clientSettings = clientSettings
-        
-        if let sslSettings = clientSettings.sslSettings {
-            self.tcpType = sslSettings.enabled ? DefaultSSLTCPClient : DefaultTCPClient
-            self.sslVerify = !sslSettings.invalidCertificateAllowed
-        } else {
-            self.tcpType = DefaultTCPClient
-        }
-
-        self.maximumConnections = clientSettings.maxConnectionsPerServer
-        self.defaultTimeout = clientSettings.defaultTimeout
-        self.maximumConnectionsPerHost = clientSettings.maxConnectionsPerServer
-        self.connectionPoolSemaphore = DispatchSemaphore(value: clientSettings.maxConnectionsPerServer)
-
-        self.servers = servers.map({ (host) -> MongoHost in
-            var host = host
-            host.isPrimary = true
-            host.online = true
-            host.openConnections = 0
-            return host
-        })
-
-        let authDB = self[clientSettings.credentials?.database ?? "admin"]
-
-        let doc = try authDB.isMaster()
-
-        guard let batchSize = doc["maxWriteBatchSize"] as Int32?, let minWireVersion = doc["minWireVersion"] as Int32?, let maxWireVersion = doc["maxWireVersion"] as Int32? else {
-            debug("No usable ismaster response found. Assuming defaults.")
-            serverData = (maxWriteBatchSize: 1000, maxWireVersion: 4, minWireVersion: 0, maxMessageSizeBytes: 48000000)
-            return
-        }
-
-        var maxMessageSizeBytes = doc["maxMessageSizeBytes"] as Int32? ?? 0
-        if maxMessageSizeBytes == 0 {
-            maxMessageSizeBytes = 48000000
-        }
-
-        serverData = (maxWriteBatchSize: batchSize, maxWireVersion: maxWireVersion, minWireVersion: minWireVersion, maxMessageSizeBytes: maxMessageSizeBytes)
-
-        self.connectionPoolMaintainanceQueue.async(execute: backgroundLoop)
-    }
-
-    /// Sets up the `Server` to connect to the specified location.`Server`
-    /// You need to provide a host as IP address or as a hostname recognized by the client's DNS.
-    /// - parameter at: The hostname/IP address of the MongoDB server
-    /// - parameter port: The port we'll connect on. Defaults to 27017
-    /// - parameter authentication: The optional authentication details we'll use when connecting to the server
-    /// - parameter automatically: Connect automatically
-    ///
-    /// - throws: When we can’t connect automatically, when the scheme/host is invalid and when we can’t connect automatically
-    public init(hostname host: String, port: UInt16 = 27017, authenticatedAs authentication: MongoCredentials? = nil, maxConnectionsPerServer maxConnections: Int = 10, ssl sslSettings: SSLSettings? = nil) throws {
-        var host = MongoHost(hostname: host, port: port)
-        host.isPrimary = true
-        host.online = true
-        host.openConnections = 0
-        
-        self.clientSettings = ClientSettings(hosts: [host], sslSettings: sslSettings, credentials: authentication)
-        self.clientSettings.maxConnectionsPerServer = maxConnections
-        
-        self.tcpType = sslSettings?.enabled == true ? DefaultSSLTCPClient : DefaultTCPClient
-        self.connectionPoolSemaphore = DispatchSemaphore(value: maxConnections)
-        
-        logger.registerFramework(self)
-        _ = try? logger.registerSubject(Document.self, forFramework: self)
-        
-        let authDB = self[authentication?.database ?? "admin"]
-        
-        let doc = try authDB.isMaster()
-        
-        guard let batchSize = doc["maxWriteBatchSize"] as Int32?, let minWireVersion = doc["minWireVersion"] as Int32?, let maxWireVersion = doc["maxWireVersion"] as Int32? else {
-            debug("No usable ismaster response found. Assuming defaults.")
-            serverData = (maxWriteBatchSize: 1000, maxWireVersion: 4, minWireVersion: 0, maxMessageSizeBytes: 48000000)
-            return
-        }
-        
-        var maxMessageSizeBytes = doc["maxMessageSizeBytes"] as Int32? ?? 0
-        if maxMessageSizeBytes == 0 {
-            maxMessageSizeBytes = 48000000
-        }
-        
-        serverData = (maxWriteBatchSize: batchSize, maxWireVersion: maxWireVersion, minWireVersion: minWireVersion, maxMessageSizeBytes: maxMessageSizeBytes)
-        
-        self.connectionPoolMaintainanceQueue.async(execute: backgroundLoop)
     }
     
     private func makeConnection(writing: Bool = true, authenticatedFor: Database?) throws -> Connection {
