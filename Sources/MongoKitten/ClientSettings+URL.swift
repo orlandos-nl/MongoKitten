@@ -101,7 +101,7 @@ extension ClientSettings {
         let ssl: Bool
         var sslVerify: Bool = false
 
-        if let sslValue = queries["ssl"] {
+        if queries["ssl"] != nil {
             ssl = true
 
             if let _ = queries["sslVerify"] {
