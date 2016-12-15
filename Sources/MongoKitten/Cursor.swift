@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import LogKitten
 import BSON
 
 public final class Cursor<T> {
@@ -14,6 +15,10 @@ public final class Cursor<T> {
     public let collection: Collection
     fileprivate var cursorID: Int64
     fileprivate let chunkSize: Int32
+    
+    var logger: FrameworkLogger {
+        return self.collection.database.server.logger
+    }
     
     // documents already received by the server
     fileprivate var data: [T]
@@ -73,7 +78,7 @@ public final class Cursor<T> {
                     ], writing: false)
                 
                 guard case .Reply(_, _, _, _, _, _, let resultDocs) = reply else {
-                    self.collection.database.server.error("Incorrect Cursor reply received")
+                    logger.error("Incorrect Cursor reply received")
                     throw InternalMongoError.incorrectReply(reply: reply)
                 }
                 
@@ -97,7 +102,7 @@ public final class Cursor<T> {
                 let reply = try collection.database.server.sendAndAwait(message: request, overConnection: connection)
                 
                 guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
-                    self.collection.database.server.error("Incorrect Cursor reply received")
+                    logger.error("Incorrect Cursor reply received")
                     throw InternalMongoError.incorrectReply(reply: reply)
                 }
                 
@@ -105,7 +110,7 @@ public final class Cursor<T> {
                 self.cursorID = cursorID
             }
         } catch {
-            self.collection.database.server.error("Could not fetch extra data from the cursor due to error: \(error)")
+            logger.error("Could not fetch extra data from the cursor due to error: \(error)")
             collection.database.server.cursorErrorHandler(error)
         }
     }

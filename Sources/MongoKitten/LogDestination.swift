@@ -8,12 +8,12 @@ public class MongoLogDestination: Destination {
         self.collection = collection
     }
     
-    public func log<L: Level>(_ message: LogKitten.Message<L>, fromFramework framework: Framework) {
+    public func log<L: Level>(_ message: LogKitten.Message<L>, fromFramework framework: String) {
         do {
             try collection.insert([
                     "_id": ObjectId(),
                     "message": message,
-                    "framework": framework.name
+                    "framework": framework
                 ])
         } catch {
             print("Cannot insert log into database because of an error: \(error)")
@@ -45,10 +45,8 @@ extension Document: SubjectRepresentable {
         return "Document"
     }
 
-    public func makeSubject(fromFramework framework: Framework) -> Subject {
-        let frameworkID = framework.logKittenID ?? 0
-        
-        return .attributedData(type: Document.logKittenId[frameworkID] ?? 0, data: self.bytes)
+    public func makeSubject(fromFramework framework: String) -> Subject {
+        return .attributedData(type: Document.self, data: self.bytes)
     }
     
     static public func convertToString(fromData data: [UInt8]) -> String {
@@ -61,15 +59,8 @@ extension Subject: ValueConvertible {
         switch self {
         case .string(let s):
             return s
-        case .attributedData(let type, let data):
-            switch type {
-            case 0x03:
-                return Document(data: data)
-            case 0x04:
-                return Document(data: data)
-            default:
-                return [:] as Document
-            }
+        case .attributedData(_, let data):
+            return Document(data: data)
         }
     }
 }

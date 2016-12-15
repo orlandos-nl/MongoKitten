@@ -107,15 +107,15 @@ enum Message {
         case .Reply:
             throw MongoError.invalidAction
         case .Update(let requestIdentifier, let collection, let flags, let findDocument, let replaceDocument):
-            body += Int32(0).bytes
+            body += Int32(0).makeBytes()
             body += collection.fullName.cStringBytes
-            body += flags.rawValue.bytes
+            body += flags.rawValue.makeBytes()
             body += findDocument.bytes
             body += replaceDocument.bytes
             
             requestID = requestIdentifier
         case .Insert(let requestIdentifier, let flags, let collection, let documents):
-            body += flags.rawValue.bytes
+            body += flags.rawValue.makeBytes()
             body += collection.fullName.cStringBytes
             
             for document in documents {
@@ -124,10 +124,10 @@ enum Message {
             
             requestID = requestIdentifier
         case .Query(let requestIdentifier, let flags, let collection, let numbersToSkip, let numbersToReturn, let query, let returnFields):
-            body += flags.rawValue.bytes
+            body += flags.rawValue.makeBytes()
             body += collection.fullName.cStringBytes
-            body += numbersToSkip.bytes
-            body += numbersToReturn.bytes
+            body += numbersToSkip.makeBytes()
+            body += numbersToReturn.makeBytes()
             
             body += query.bytes
             
@@ -137,34 +137,34 @@ enum Message {
             
             requestID = requestIdentifier
         case .GetMore(let requestIdentifier, let namespace, let numberToReturn, let cursorID):
-            body += Int32(0).bytes
+            body += Int32(0).makeBytes()
 
             /// TODO: Fix inconsistency `namespace`
             body += namespace.cStringBytes
-            body += numberToReturn.bytes
-            body += cursorID.bytes
+            body += numberToReturn.makeBytes()
+            body += cursorID.makeBytes()
             
             requestID = requestIdentifier
         case .Delete(let requestIdentifier, let collection, let flags, let removeDocument):
-            body += Int32(0).bytes
+            body += Int32(0).makeBytes()
             body += collection.fullName.cStringBytes
-            body += flags.rawValue.bytes
+            body += flags.rawValue.makeBytes()
             body += removeDocument.bytes
             
             requestID = requestIdentifier
         case .KillCursors(let requestIdentifier, let cursorIDs):
-            body += Int32(0).bytes
-            body += cursorIDs.map { $0.bytes }.reduce([]) { $0 + $1 }
+            body += Int32(0).makeBytes()
+            body += cursorIDs.map { $0.makeBytes() }.reduce([]) { $0 + $1 }
             
             requestID = requestIdentifier
         }
         
         // Generate the header using the body
         var header = [UInt8]()
-        header += Int32(16 + body.count).bytes
-        header += requestID.bytes
-        header += responseTo.bytes
-        header += operationCode.bytes
+        header += Int32(16 + body.count).makeBytes()
+        header += requestID.makeBytes()
+        header += responseTo.makeBytes()
+        header += operationCode.makeBytes()
         
         return header + body
     }

@@ -65,7 +65,7 @@ class CollectionTests: XCTestCase {
     func testRename() throws {
         try TestManager.db["zips"].rename(to: "zipschange")
         
-        let pipeline: Pipeline = [
+        let pipeline: AggregationPipeline = [
             .grouping("$state", computed: ["totalPop": .sumOf("$pop")]),
             .matching("totalPop" > 10_000_000),
             .sortedBy(["totalPop": .ascending]),
@@ -235,7 +235,7 @@ class CollectionTests: XCTestCase {
     }
     
     func testAggregate() throws {
-        let pipeline: Pipeline = [
+        let pipeline: AggregationPipeline = [
             .grouping("$state", computed: ["totalPop": .sumOf("$pop")]),
             .matching("totalPop" > 10_000_000),
             .sortedBy(["totalPop": .ascending]),
@@ -267,7 +267,7 @@ class CollectionTests: XCTestCase {
         
         XCTAssertEqual(count, 5)
         
-        let pipeline2: Pipeline = [
+        let pipeline2: AggregationPipeline = [
             .grouping("$state", computed: ["totalPop": .sumOf("$pop")]),
             .matching("totalPop" > 10_000_000),
             .sortedBy(["totalPop": .ascending]),
@@ -289,7 +289,7 @@ class CollectionTests: XCTestCase {
     }
     
     func testFacetAggregate() throws {
-        let pipeline: Pipeline = [
+        let pipeline: AggregationPipeline = [
             .grouping("$state", computed: ["totalPop": .sumOf("$pop")]),
             .sortedBy(["totalPop": .ascending]),
             .facet([

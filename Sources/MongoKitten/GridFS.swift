@@ -118,7 +118,7 @@ public class GridFS {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A cursor pointing to all resulting files
-    public func find(matching filter: Query) throws -> Cursor<File> {
+    public func find(matching filter: Query? = nil) throws -> Cursor<File> {
         let cursor = try files.find(matching: filter)
         
         let gridFSCursor: Cursor<File> = Cursor(base: cursor, transform: { File(document: $0, chunksCollection: self.chunks, filesCollection: self.files) })
@@ -198,7 +198,7 @@ public class GridFS {
     }
     
     /// A file in GridFS
-    public class File {
+    public class File: Sequence {
         /// The ObjectID for this file
         public let id: ObjectId
         
@@ -309,6 +309,14 @@ public class GridFS {
             }
             
             return allData
+        }
+        
+        public func makeIterator() -> AnyIterator<Chunk> {
+            do {
+                return try self.chunked()
+            } catch {
+                return AnyIterator { nil }
+            }
         }
         
         public func chunked() throws -> AnyIterator<Chunk> {

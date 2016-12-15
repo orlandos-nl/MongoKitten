@@ -44,7 +44,7 @@ public struct Projection: CustomValueConvertible {
             self = value ? .included : .excluded
         }
         
-        public init(dictionaryLiteral elements: (String, ValueConvertible)...) {
+        public init(dictionaryLiteral elements: (String, ValueConvertible?)...) {
             self = .custom(Document(dictionaryElements: elements))
         }
     }

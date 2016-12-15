@@ -1,7 +1,8 @@
 import Foundation
 import BSON
 
-public struct Pipeline: ExpressibleByArrayLiteral, ValueConvertible {
+
+public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
     public var pipelineDocument: Document = []
     
     public var pipeline: Document {
@@ -20,6 +21,10 @@ public struct Pipeline: ExpressibleByArrayLiteral, ValueConvertible {
         self.pipelineDocument = Document(array: elements.map {
             $0.makeDocument()
         })
+    }
+    
+    public mutating func append(_ stage: Stage) {
+        self.pipelineDocument.append(stage)
     }
     
     public init() { }
@@ -183,7 +188,7 @@ public struct Pipeline: ExpressibleByArrayLiteral, ValueConvertible {
         }
         
         @discardableResult
-        public static func facet(_ facet: [String: Pipeline]) -> Stage {
+        public static func facet(_ facet: [String: AggregationPipeline]) -> Stage {
             return Stage([
                 "$facet": Document(dictionaryElements: facet.map {
                     ($0.0, $0.1)

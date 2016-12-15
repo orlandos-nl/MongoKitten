@@ -10,6 +10,7 @@ import Foundation
 import BSON
 import CryptoKitten
 import Dispatch
+import LogKitten
 
 /// A Mongo Database. Cannot be publically initialized.
 /// But you can get a database object by subscripting `Server` with a `String` as the database name
@@ -19,6 +20,10 @@ public final class Database {
     
     /// The database's name
     public let name: String
+    
+    var logger: FrameworkLogger {
+        return server.logger
+    }
     
     /// A cache of all collections in this Database.
     ///
@@ -145,10 +150,10 @@ public final class Database {
         let result = try firstDocument(in: reply)
         
         guard let cursor = result["cursor"] as Document?, result["ok"] as Int? == 1 else {
-            server.error("The collection infos could not be fetched because of the following error")
-            server.error(result)
-            server.error("The collection infos were being found using the following filter")
-            server.error(filter ?? [:])
+            logger.error("The collection infos could not be fetched because of the following error")
+            logger.error(result)
+            logger.error("The collection infos were being found using the following filter")
+            logger.error(filter ?? [:])
             throw MongoError.commandFailure(error: result)
         }
         
@@ -243,53 +248,53 @@ extension Database {
     private func complete(SASL payload: String, using response: Document, verifying signature: [UInt8], usingConnection connection: Server.Connection) throws {
         // If we failed authentication
         guard response["ok"] as Int? == 1 else {
-            server.error("Authentication failed because of the following reason")
-            server.error(response)
+            logger.error("Authentication failed because of the following reason")
+            logger.error(response)
             throw MongoAuthenticationError.incorrectCredentials
         }
         
         if response["done"] as Bool? == true {
-            server.verbose("Authentication was successful")
+            logger.verbose("Authentication was successful")
             return
         }
         
         guard let stringResponse = response["payload"] as String? else {
-            server.error("Authentication to MongoDB with SASL failed because no payload has been received")
-            server.debug(response)
+            logger.error("Authentication to MongoDB with SASL failed because no payload has been received")
+            logger.debug(response)
             throw MongoAuthenticationError.authenticationFailure
         }
         
         guard let conversationId = response[raw: "conversationId"] else {
-            server.error("Authentication to MongoDB with SASL failed because no conversationId was kept")
-            server.debug(response)
+            logger.error("Authentication to MongoDB with SASL failed because no conversationId was kept")
+            logger.debug(response)
             throw MongoAuthenticationError.authenticationFailure
         }
         
         guard let finalResponseData = Data(base64Encoded: stringResponse), let finalResponse = String(bytes: Array(finalResponseData), encoding: String.Encoding.utf8) else {
-            server.error("Authentication to MongoDB with SASL failed because no valid response was received")
-            server.debug(response)
+            logger.error("Authentication to MongoDB with SASL failed because no valid response was received")
+            logger.debug(response)
             throw MongoAuthenticationError.base64Failure
         }
         
         let dictionaryResponse = self.parse(response: finalResponse)
         
         guard let v = dictionaryResponse["v"] else {
-            server.error("Authentication to MongoDB with SASL failed because no valid response was received")
-            server.debug(response)
+            logger.error("Authentication to MongoDB with SASL failed because no valid response was received")
+            logger.debug(response)
             throw MongoAuthenticationError.authenticationFailure
         }
         
         guard let serverSignatureData = Data(base64Encoded: v) else {
-            server.error("Authentication to MongoDB with SASL failed because no valid Base64 was received")
-            server.debug(response)
+            logger.error("Authentication to MongoDB with SASL failed because no valid Base64 was received")
+            logger.debug(response)
             throw MongoError.invalidBase64String
         }
         
         let serverSignature = Array(serverSignatureData)
         
         guard serverSignature == signature else {
-            server.error("Authentication to MongoDB with SASL failed because the server signature is invalid")
-            server.debug(response)
+            logger.error("Authentication to MongoDB with SASL failed because the server signature is invalid")
+            logger.debug(response)
             throw MongoAuthenticationError.serverSignatureInvalid
         }
         
@@ -303,7 +308,7 @@ extension Database {
         let response = try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: 0)
         
         guard case .Reply(_, _, _, _, _, _, let documents) = response, let responseDocument = documents.first else {
-            server.error("Authentication to MongoDB with SASL failed because no valid reply was received from MongoDB")
+            logger.error("Authentication to MongoDB with SASL failed because no valid reply was received from MongoDB")
             throw InternalMongoError.incorrectReply(reply: response)
         }
         
@@ -319,25 +324,25 @@ extension Database {
     private func challenge(with details: MongoCredentials, using previousInformation: (nonce: String, response: Document, scram: SCRAMClient<SHA1>), usingConnection connection: Server.Connection) throws {
         // If we failed the authentication
         guard previousInformation.response["ok"] as Int? == 1 else {
-            server.error("Authentication for MongoDB user \(details.username) with SASL failed against \(details.database) because of the following error")
-            server.error(previousInformation.response)
+            logger.error("Authentication for MongoDB user \(details.username) with SASL failed against \(details.database) because of the following error")
+            logger.error(previousInformation.response)
             throw MongoAuthenticationError.incorrectCredentials
         }
         
         // Get our ConversationID
         guard let conversationId = previousInformation.response[raw: "conversationId"] else {
-            server.error("Authentication for MongoDB user \(details.username) with SASL failed because no conversation has been kept")
+            logger.error("Authentication for MongoDB user \(details.username) with SASL failed because no conversation has been kept")
             throw MongoAuthenticationError.authenticationFailure
         }
         
         // Decode the challenge
         guard let stringResponse = previousInformation.response["payload"] as String? else {
-            server.error("Authentication for MongoDB user \(details.username) with SASL failed because no SASL payload has been received")
+            logger.error("Authentication for MongoDB user \(details.username) with SASL failed because no SASL payload has been received")
             throw MongoAuthenticationError.authenticationFailure
         }
         
         guard let stringResponseData = Data(base64Encoded: stringResponse), let decodedStringResponse = String(bytes: Array(stringResponseData), encoding: String.Encoding.utf8) else {
-            server.error("Authentication for MongoDB user \(details.username) with SASL failed because no valid Base64 has been received")
+            logger.error("Authentication for MongoDB user \(details.username) with SASL failed because no valid Base64 has been received")
             throw MongoAuthenticationError.base64Failure
         }
         
@@ -365,7 +370,7 @@ extension Database {
         
         // If we don't get a correct reply
         guard case .Reply(_, _, _, _, _, _, let documents) = response, let responseDocument = documents.first else {
-            server.error("Authentication for MongoDB user \(details.username) with SASL failed against \(details.database) because no valid reply has been received")
+            logger.error("Authentication for MongoDB user \(details.username) with SASL failed against \(details.database) because no valid reply has been received")
             throw InternalMongoError.incorrectReply(reply: response)
         }
         
@@ -416,8 +421,8 @@ extension Database {
         let document = try firstDocument(in: response)
         
         guard let nonce = document["nonce"] as String? else {
-            server.error("Authentication for MongoDB user \(details.username) with MongoCR failed against \(details.database) because no nonce was provided by MongoDB")
-            server.error(document)
+            logger.error("Authentication for MongoDB user \(details.username) with MongoCR failed against \(details.database) because no nonce was provided by MongoDB")
+            logger.error(document)
             throw MongoAuthenticationError.authenticationFailure
         }
         
@@ -441,8 +446,8 @@ extension Database {
         
         // Check for success
         guard successDocument["ok"] as Int? == 1 else {
-            server.error("Authentication for MongoDB user \(details.username) with MongoCR failed against \(details.database) for the following reason")
-            server.error(document)
+            logger.error("Authentication for MongoDB user \(details.username) with MongoCR failed against \(details.database) for the following reason")
+            logger.error(document)
             throw InternalMongoError.incorrectReply(reply: successResponse)
         }
     }
@@ -479,11 +484,11 @@ extension Database {
         let document = try firstDocument(in: reply)
         
         guard document["ok"] as Int? == 1 else {
-            server.error("createUser was not successful for user \(user) because of the following error")
-            server.error(document)
-            server.error("createUser had the following roiles and customData provided")
-            server.error(roles)
-            server.error(customData ?? [:])
+            logger.error("createUser was not successful for user \(user) because of the following error")
+            logger.error(document)
+            logger.error("createUser had the following roiles and customData provided")
+            logger.error(roles)
+            logger.error(customData ?? [:])
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -513,11 +518,11 @@ extension Database {
         let document = try firstDocument(in: try execute(command: command))
         
         guard document["ok"] as Int? == 1 else {
-            server.error("updateUser was not successful for user \(username) because of the following error")
-            server.error(document)
-            server.error("updateUser had the following roles and customData")
-            server.error(roles)
-            server.error(customData ?? [:])
+            logger.error("updateUser was not successful for user \(username) because of the following error")
+            logger.error(document)
+            logger.error("updateUser had the following roles and customData")
+            logger.error(roles)
+            logger.error(customData ?? [:])
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -537,8 +542,8 @@ extension Database {
         let document = try firstDocument(in: try execute(command: command))
         
         guard document["ok"] as Int? == 1 else {
-            server.error("dropUser was not successful for user \(username) because of the following error")
-            server.error(document)
+            logger.error("dropUser was not successful for user \(username) because of the following error")
+            logger.error(document)
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -556,8 +561,8 @@ extension Database {
         let document = try firstDocument(in: try execute(command: command))
         
         guard document["ok"] as Int? == 1 else {
-            server.error("dropAllUsersFromDatabase was not successful because of the following error")
-            server.error(document)
+            logger.error("dropAllUsersFromDatabase was not successful because of the following error")
+            logger.error(document)
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -579,10 +584,10 @@ extension Database {
         let document = try firstDocument(in: try execute(command: command))
         
         guard document["ok"] as Int? == 1 else {
-            server.error("grantRolesToUser for user \"\(user)\" was not successful because of the following error")
-            server.error(document)
-            server.error("grantRolesToUser failed with the following roles")
-            server.error(roleList)
+            logger.error("grantRolesToUser for user \"\(user)\" was not successful because of the following error")
+            logger.error(document)
+            logger.error("grantRolesToUser failed with the following roles")
+            logger.error(roleList)
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -600,8 +605,8 @@ extension Database {
         let document = try firstDocument(in: try execute(command: command))
         
         guard document["ok"] as Int? == 1 else {
-            server.error("dropDatabase was not successful for \"\(self.name)\" because of the following error")
-            server.error(document)
+            logger.error("dropDatabase was not successful for \"\(self.name)\" because of the following error")
+            logger.error(document)
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -632,10 +637,10 @@ extension Database {
         let document = try firstDocument(in: try execute(command: command))
         
         guard document["ok"] as Int? == 1 else {
-            server.error("createCollection for collection \"\(name)\" was not successful because of the following error")
-            server.error(document)
-            server.error("createCollection failed with the following options:")
-            server.error(options ?? [:])
+            logger.error("createCollection for collection \"\(name)\" was not successful because of the following error")
+            logger.error(document)
+            logger.error("createCollection failed with the following options:")
+            logger.error(options ?? [:])
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -673,8 +678,8 @@ extension Database {
         let document = try firstDocument(in: try execute(command: command))
         
         guard document["ok"] as Int? == 1 else {
-            self.server.error("cloneCollection was not successful because of the following error")
-            self.server.error(document)
+            logger.error("cloneCollection was not successful because of the following error")
+            logger.error(document)
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -707,8 +712,8 @@ extension Database {
         }
         
         guard document["ok"] as Int? == 1 else {
-            self.server.error("cloneCollection was not successful because of the following error")
-            self.server.error(document)
+            logger.error("cloneCollection was not successful because of the following error")
+            logger.error(document)
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -732,8 +737,8 @@ extension Database {
         let document = try firstDocument(in: try execute(command: command))
         
         guard document["ok"] as Int? == 1 else {
-            server.error("cloneCollectionAsCapped was not successful because of the following error")
-            server.error(document)
+            logger.error("cloneCollectionAsCapped was not successful because of the following error")
+            logger.error(document)
             throw MongoError.commandFailure(error: document)
         }
     }
