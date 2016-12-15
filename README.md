@@ -38,13 +38,7 @@ A MongoDB server (local or online) running MongoDB 2.6 or above.
 
 ## Learn
 
-We host all our documentation [here](https://github.com/OpenKitten/Documentation/blob/master/README.md).
-
-[Click here for MongoKitten tutorials](https://github.com/OpenKitten/Documentation/blob/master/MongoKitten/Tutorials/README.md)
-
-[Click here for the MongoKitten documentation](http://mongokitten.openkitten.org)
-
-[Click here for the migration guide](https://github.com/OpenKitten/Documentation/blob/master/MongoKitten/Migration/MK3.md)
+We host all our documentation [here](http://docs.openkitten.org).
 
 ## Supporters
 
