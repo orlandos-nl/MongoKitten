@@ -7,7 +7,7 @@ var package = Package(
         ],
     dependencies: [
         // For MongoDB Documents
-        .Package(url: "https://github.com/OpenKitten/BSON.git", "4.0.0-beta2"),
+        .Package(url: "https://github.com/OpenKitten/BSON.git", majorVersion: 4),
 
         // Authentication
         .Package(url: "https://github.com/OpenKitten/CryptoKitten.git", Version(0,0,2)),
@@ -19,8 +19,8 @@ var package = Package(
         .Package(url: "https://github.com/vapor/tls.git", majorVersion: 1),
 
         // Logging
-        .Package(url: "https://github.com/OpenKitten/LogKitten.git", "1.0.0-beta"),
-        ]
+        .Package(url: "https://github.com/OpenKitten/LogKitten.git", majorVersion: 0, minor: 3),
+    ]
 )
 
 let lib = Product(name: "MongoKitten", type: .Library(.Dynamic), modules: "MongoKitten")

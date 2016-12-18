@@ -1,7 +1,7 @@
 import BSON
 import LogKitten
 
-public class MongoLogDestination: Destination {
+/*public class MongoLogDestination: Destination {
     let collection: Collection
     
     public init(_ collection: Collection) {
@@ -36,7 +36,7 @@ extension LogKitten.Message: ValueConvertible {
             ] as Document
         ] as Document
     }
-}
+}*/
 
 extension Document: SubjectRepresentable {
     public static var logKittenId = [UInt8:UInt8]()
