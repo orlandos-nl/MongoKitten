@@ -14,11 +14,7 @@ Native MongoDB driver for Swift, written in Swift. This library does not wrap ar
 
 Add this to your `Package.swift` for the stable
 
-`.Package(url: "https://github.com/OpenKitten/MongoKitten.git", majorVersion: 2)`
-
-Or add this to your `Package.swift` for the beta of MongoKitten 3
-
-`.Package(url: "https://github.com/OpenKitten/MongoKitten.git", "3.0.0-beta")`
+`.Package(url: "https://github.com/OpenKitten/MongoKitten.git", majorVersion: 3)`
 
 And `import MongoKitten` in your project.
 
