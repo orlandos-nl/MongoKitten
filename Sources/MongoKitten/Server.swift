@@ -667,6 +667,21 @@ public final class Server {
         return self.servers.contains(where: { $0.online && $0.isPrimary })
     }
     
+    /// Reconnect With the MongoDB Server
+     public func reconnect() throws {
+        print("------ Connecting ------")
+        if self.isConnected
+        {
+                print("Already Connected")
+        }
+        else
+        {
+                _ = try? self.disconnect()
+                try reserveConnection()
+                print("connected Successfully")
+        }
+    }
+    
     /// Disconnects from the MongoDB server
     ///
     /// - throws: Unable to disconnect
