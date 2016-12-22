@@ -245,7 +245,7 @@ extension Database {
     /// - parameter signature: The server signatue to verify
     ///
     /// - throws: On authentication failure or an incorrect Server Signature
-    private func complete(SASL payload: String, using response: Document, verifying signature: [UInt8], usingConnection connection: Server.Connection) throws {
+    private func complete(SASL payload: String, using response: Document, verifying signature: [UInt8], usingConnection connection: Connection) throws {
         // If we failed authentication
         guard response["ok"] as Int? == 1 else {
             logger.error("Authentication failed because of the following reason")
@@ -321,7 +321,7 @@ extension Database {
     /// - parameter previousInformation: The nonce, response and `SCRAMClient` instance
     ///
     /// - throws: When the authentication fails, when Base64 fails
-    private func challenge(with details: MongoCredentials, using previousInformation: (nonce: String, response: Document, scram: SCRAMClient<SHA1>), usingConnection connection: Server.Connection) throws {
+    private func challenge(with details: MongoCredentials, using previousInformation: (nonce: String, response: Document, scram: SCRAMClient<SHA1>), usingConnection connection: Connection) throws {
         // If we failed the authentication
         guard previousInformation.response["ok"] as Int? == 1 else {
             logger.error("Authentication for MongoDB user \(details.username) with SASL failed against \(details.database) because of the following error")
@@ -383,7 +383,7 @@ extension Database {
     /// - parameter details: The authentication details
     ///
     /// - throws: When failing authentication, being unable to base64 encode or failing to send/receive messages
-    internal func authenticate(SASL details: MongoCredentials, usingConnection connection: Server.Connection) throws {
+    internal func authenticate(SASL details: MongoCredentials, usingConnection connection: Connection) throws {
         let nonce = randomNonce()
         
         let auth = SCRAMClient<SHA1>()
@@ -411,7 +411,7 @@ extension Database {
     /// - parameter details: The authentication details
     ///
     /// - throws: When failing authentication, being unable to base64 encode or failing to send/receive messages
-    internal func authenticate(mongoCR details: MongoCredentials, usingConnection connection: Server.Connection) throws {
+    internal func authenticate(mongoCR details: MongoCredentials, usingConnection connection: Connection) throws {
         // Get the server's nonce
         let response = try self.execute(command: [
             "getnonce": Int32(1)
