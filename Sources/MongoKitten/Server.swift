@@ -579,7 +579,7 @@ public final class Server {
             }
             
             self.connectionPoolLock.lock()
-            defer { self.connectionPoolLock.lock() }
+            defer { self.connectionPoolLock.unlock() }
             
             // If we can create a new connection, create one
             let connection = try makeConnection(writing: writing, authenticatedFor: db)
