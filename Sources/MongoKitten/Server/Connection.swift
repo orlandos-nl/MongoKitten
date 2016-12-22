@@ -8,6 +8,7 @@
 
 import Foundation
 import LogKitten
+import Dispatch
 
 class Connection {
 
