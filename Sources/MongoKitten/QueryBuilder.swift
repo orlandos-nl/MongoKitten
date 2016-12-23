@@ -231,7 +231,7 @@ public indirect enum AQT {
             return [key: ["$lt": val] as Document]
         case .smallerThanOrEqual(let key, let val):
             return [key: ["$lte": val] as Document]
-        case .element(let key, let aqt):
+        case .containsElement(let key, let aqt):
             return [key: ["$elemMatch": aqt.document] as Document]
         case .and(let aqts):
             let expressions = aqts.map{ $0.document }
@@ -276,7 +276,7 @@ public indirect enum AQT {
     case smallerThanOrEqual(key: String, val: ValueConvertible)
     
     /// Whether a subdocument in the array within the `key` matches one of the queries/filters
-    case element(key: String, match: AQT)
+    case containsElement(key: String, match: AQT)
     
     /// Whether all `AQT` Conditions are correct
     case and([AQT])
