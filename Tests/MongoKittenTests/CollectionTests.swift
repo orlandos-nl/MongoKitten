@@ -27,7 +27,8 @@ class CollectionTests: XCTestCase {
                 ("testUpdate", testUpdate),
                 ("testRemovingAll", testRemovingAll),
                 ("testRemovingOne", testRemovingOne),
-                ("testHelperObjects", testHelperObjects)
+                ("testHelperObjects", testHelperObjects),
+                ("testAggregateLookup", testAggregateLookup)
         ]
     }
     
@@ -122,7 +123,53 @@ class CollectionTests: XCTestCase {
 //        
 //        waitForExpectations(timeout: 300)
 //    }
-    
+
+    func testAggregateLookup() throws {
+        let orders = TestManager.db["orders"]
+        let inventory = TestManager.db["inventory"]
+
+        try orders.drop()
+        try inventory.drop()
+
+        let orderDocument: Document = ["_id": 1, "item": "MON1003", "price": 350, "quantity": 2, "specs": [ "27 inch", "Retina display", "1920x1080" ] as Document, "type": "Monitor"]
+        let orderId = try orders.insert(orderDocument)
+        XCTAssertEqual(orderId.int, 1)
+
+        let inventoryDocument1: Document = ["_id": 1, "sku": "MON1003", "type": "Monitor", "instock": 120, "size": "27 inch", "resolution": "1920x1080"]
+        let inventoryDocument2: Document = ["_id": 2, "sku": "MON1012", "type": "Monitor", "instock": 85, "size": "23 inch", "resolution": "1280x800"]
+        let inventoryDocument3: Document = ["_id": 3, "sku": "MON1031", "type": "Monitor", "instock": 60, "size": "23 inch", "display_type": "LED"]
+
+        let inventory1 = try inventory.insert(inventoryDocument1)
+        let inventory2 = try inventory.insert(inventoryDocument2)
+        let inventory3 = try inventory.insert(inventoryDocument3)
+
+        XCTAssertEqual(inventory1.int, 1)
+        XCTAssertEqual(inventory2.int, 2)
+        XCTAssertEqual(inventory3.int, 3)
+
+        let unwind = AggregationPipeline.Stage.unwind(atPath: "$specs")
+        let lookup = AggregationPipeline.Stage.lookup(fromCollection: inventory, localField: "specs", foreignField: "size", as: "inventory_docs")
+        let match = AggregationPipeline.Stage.matching(["inventory_docs": ["$ne":[] as Document] as Document] as Document)
+        let pipe = AggregationPipeline(arrayLiteral: unwind, lookup, match)
+
+        do {
+            let cursor = try orders.aggregate(pipeline: pipe)
+            let results = cursor.array
+            XCTAssertEqual(results.count, 1)
+            if results.count == 1 {
+                let document = results[0]
+                XCTAssertEqual(document[raw: "item"]?.string, "MON1003")
+                XCTAssertEqual(document[raw: "price"]?.int, 350)
+                XCTAssertEqual(document[raw: "inventory_docs"]?.documentValue?.arrayValue.count, 1)
+            }
+        } catch let error as MongoError {
+            XCTFail(error.localizedDescription)
+        }
+
+
+
+    }
+
     func testFind() throws {
         let base: Document = ["username": "bob", "age": 25, "kittens": 6, "dogs": 0, "beers": 90]
         
