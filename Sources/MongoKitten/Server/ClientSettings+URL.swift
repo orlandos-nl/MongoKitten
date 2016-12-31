@@ -8,6 +8,9 @@
 
 import Foundation
 
+// TODO: Needs to be conform to this https://docs.mongodb.com/manual/reference/connection-string/
+// mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]
+// MARK: - init ClientSettings with MONGO URI
 extension ClientSettings {
     init(mongoURL url:String) throws {
         var url = url
@@ -101,8 +104,8 @@ extension ClientSettings {
         let ssl: Bool
         var sslVerify: Bool = false
 
-        if queries["ssl"] != nil {
-            ssl = true
+        if let sslOption = queries["ssl"] {
+            ssl = Bool(stringLiteral: sslOption)
 
             if let _ = queries["sslVerify"] {
                 sslVerify = true
