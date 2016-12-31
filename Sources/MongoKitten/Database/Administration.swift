@@ -10,6 +10,8 @@ import Foundation
 
 public protocol Administration {
     func createCollection(named name: String, options: Document?) throws
+    func listCollections(matching filter: Document?) throws -> Cursor<Collection>
+    func getCollectionInfos(matching filter: Document?) throws -> Cursor<Document>
     func drop() throws
     func copy(toDatabase database: String, asUser user: (user: String, nonce: String, password: String)?) throws
     func clone(toNamespace ns: String, fromServer server: String, filteredBy filter: Query?) throws
