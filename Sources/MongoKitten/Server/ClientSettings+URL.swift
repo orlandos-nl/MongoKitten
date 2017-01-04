@@ -66,22 +66,8 @@ extension ClientSettings {
         var authentication: MongoCredentials? = nil
 
         if let user = username?.removingPercentEncoding, let pass = password?.removingPercentEncoding {
-            let mechanism: AuthenticationMechanism
 
-            switch queries["authMechanism"] ?? "" {
-            case "SCRAM_SHA_1":
-                mechanism = .SCRAM_SHA_1
-            case "MONGODB-CR":
-                mechanism = .MONGODB_CR
-            case "MONGODB-X509":
-                throw MongoError.unsupportedFeature("MONGODB-X509")
-            case "GSSAP":
-                throw MongoError.unsupportedFeature("GSSAP")
-            case "PLAIN":
-                throw MongoError.unsupportedFeature("PLAIN")
-            default:
-                mechanism = .SCRAM_SHA_1
-            }
+            let mechanism = AuthenticationMechanism(rawValue: queries["authMechanism"]?.uppercased() ?? "") ?? AuthenticationMechanism.SCRAM_SHA_1
 
             let authSource = queries["authSource"]
 
@@ -102,21 +88,19 @@ extension ClientSettings {
         }
 
         let ssl: Bool
-        var sslVerify: Bool = false
+        var sslVerify: Bool = true
 
         if let sslOption = queries["ssl"] {
             ssl = Bool(stringLiteral: sslOption)
 
-            if let _ = queries["sslVerify"] {
-                sslVerify = true
-            } else {
-                sslVerify = false
+            if let verifyOption = queries["sslVerify"] {
+                sslVerify = Bool(stringLiteral: verifyOption)
             }
         } else {
             ssl = false
             
         }
         
-        self.init(hosts: hosts, sslSettings: ssl ? SSLSettings(enabled: true, invalidHostNameAllowed: sslVerify, invalidCertificateAllowed: sslVerify) : nil, credentials: authentication, maxConnectionsPerServer: 10)
+        self.init(hosts: hosts, sslSettings: ssl ? SSLSettings(enabled: true, invalidHostNameAllowed: !sslVerify, invalidCertificateAllowed: !sslVerify) : nil, credentials: authentication, maxConnectionsPerServer: 10)
     }
 }
