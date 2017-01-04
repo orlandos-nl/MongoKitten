@@ -14,7 +14,8 @@ class ClientSettingsTest: XCTestCase {
     static var allTests: [(String, (ClientSettingsTest) -> () throws -> Void)] {
         return [
                 ("testAuthentication", testAuthentication),
-                ("testSSLSettings", testSSLSettings)
+                ("testSSLSettings", testSSLSettings),
+                ("testMultiHost", testMultiHost)
         ]
 
     }

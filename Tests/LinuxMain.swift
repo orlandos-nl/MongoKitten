@@ -4,5 +4,6 @@ import XCTest
 XCTMain([
     testCase(CollectionTests.allTests),
     testCase(AdministrationCommandsTests.allTests),
-    testCase(DatabaseTests.allTests)
+    testCase(DatabaseTests.allTests),
+    testCase(ClientSettingsTest.allTests)
 ])
