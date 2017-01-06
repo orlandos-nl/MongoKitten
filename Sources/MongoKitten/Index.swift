@@ -40,6 +40,7 @@ public enum IndexParameter {
     case buildInBackground
     case weight(Int)
     case text([String])
+    case geo2dsphere(field: String)
     
     internal var document: Document {
         switch self {
@@ -82,8 +83,9 @@ public enum IndexParameter {
         case .buildInBackground:
             return ["background": true]
         case .weight(let weight):
-            return ["weights": Int32(weight)]
-            //            case .text
+            return ["weights": Int32(weight)]            
+        case .geo2dsphere(let field):
+            return ["key":[field:"2dsphere"] as Document]
         }
     }
 }

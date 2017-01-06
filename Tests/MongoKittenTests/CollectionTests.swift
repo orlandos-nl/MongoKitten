@@ -42,6 +42,13 @@ class CollectionTests: XCTestCase {
     }
     
     override func tearDown() {
+
+        // Cleaning
+        do {
+            try TestManager.db["airports"].drop()
+        } catch {
+
+        }
         try! TestManager.disconnect()
     }
     
@@ -207,6 +214,23 @@ class CollectionTests: XCTestCase {
             return
         }
         
+        XCTFail()
+    }
+
+    func testGeo2SphereIndex() throws {
+        let airports = TestManager.db["airports"]
+        let jfkAirport: Document = [ "iata": "JFK", "loc":["type":"Point", "coordinates":[-73.778925, 40.639751] as Document] as Document]
+        try airports.insert(jfkAirport)
+        try airports.createIndex(named: "loc_index", withParameters: .geo2dsphere(field: "loc"))
+
+
+        for index in try airports.listIndexes() where index["name"] as String? == "loc_index" {
+            if let _ = index["2dsphereIndexVersion"] as Int?  {
+                print(index.dictionaryValue)
+                return
+            }
+        }
+
         XCTFail()
     }
     
