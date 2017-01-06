@@ -1,4 +1,7 @@
-internal protocol BSONBytesProtocol {}
+
+internal protocol BSONBytesProtocol {
+    func makeBytes() -> [UInt8]
+}
 
 extension Int : BSONBytesProtocol {
     internal func makeBytes() -> [UInt8] {
