@@ -27,7 +27,8 @@ class CollectionTests: XCTestCase {
                 ("testUpdate", testUpdate),
                 ("testRemovingAll", testRemovingAll),
                 ("testRemovingOne", testRemovingOne),
-                ("testHelperObjects", testHelperObjects)
+                ("testHelperObjects", testHelperObjects),
+                ("testGeo2SphereIndex", testGeo2SphereIndex)
         ]
     }
     
