@@ -1,49 +1,70 @@
 import Foundation
 import BSON
 
-
+/// A Pipeline used for aggregation queries
 public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
+    /// The resulting Document that can be modified by the user.
     public var pipelineDocument: Document = []
     
+    /// A getter for the pipeline Document.
+    /// TODO: Evaluate removing access to pipelineDocument or removing this property
     public var pipeline: Document {
         return pipelineDocument
     }
     
+    /// Creates a Document that can be sent to the server
+    /// TODO: This is practically useless now as the conforming protocol has been removed.
     public func makeDocument() -> Document {
         return self.pipelineDocument
     }
     
+    /// Allows embedding this pipeline inside another Document
     public func makeBSONPrimitive() -> BSONPrimitive {
         return self.pipelineDocument
     }
     
+    /// You can easily and naturally create an aggregate by providing a variadic list of stages.
     public init(arrayLiteral elements: Stage...) {
         self.pipelineDocument = Document(array: elements.map {
             $0.makeDocument()
         })
     }
     
+    /// You can easily and naturally create an aggregate by providing an array of stages.
+    public init(arrayLiteral elements: [Stage]) {
+        self.pipelineDocument = Document(array: elements.map {
+            $0.makeDocument()
+        })
+    }
+    
+    /// Appends a stage to this pipeline
     public mutating func append(_ stage: Stage) {
         self.pipelineDocument.append(stage)
     }
     
+    /// Creates an empty pipeline
     public init() { }
     
     public struct Stage: ValueConvertible {
+        /// Allows embedding this stage inside another Document
         public func makeBSONPrimitive() -> BSONPrimitive {
             return self.document
         }
         
+        /// The Document that this stage consists of
         public func makeDocument() -> Document {
             return self.document
         }
         
+        /// The resulting Document that this Stage consists of
         var document: Document
         
+        /// Create a pipeline from a Document
         init(_ document: Document) {
             self.document = document
         }
         
+        /// A projection stage passes only the projected fields to the next stage.
         @discardableResult
         public static func projecting(_ projection: Projection) -> Stage {
             return Stage([
@@ -51,6 +72,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
                 ] as Document)
         }
         
+        /// A match stage only passed the documents that match the query to the next stage
         @discardableResult
         public static func matching(_ query: Query) -> Stage {
             return Stage([
@@ -58,6 +80,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
                 ] as Document)
         }
         
+        /// A match stage only passed the documents that match the query to the next stage
         @discardableResult
         public static func matching(_ query: Document) -> Stage {
             return Stage([
@@ -65,6 +88,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
                 ] as Document)
         }
         
+        /// Takes a sample with the size of `size`. These randomly selected Documents will be passed to the next stage.
         @discardableResult
         public static func sample(sizeOf size: Int) -> Stage {
             return Stage([
@@ -72,6 +96,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
                 ] as Document)
         }
         
+        /// This will skip the specified number of input Documents and leave them out. The rest will be passed to the next stage.
         @discardableResult
         public static func skipping(_ skip: Int) -> Stage {
             return Stage([
@@ -79,6 +104,11 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
                 ] as Document)
         }
         
+        /// This will limit the results to the specified number.
+        ///
+        /// The first Documents will be selected.
+        /// 
+        /// Anything after that will be discarted and will not be sent to the next stage.
         @discardableResult
         public static func limitedTo(_ limit: Int) -> Stage {
             return Stage([
@@ -86,6 +116,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
                 ] as Document)
         }
         
+        /// Sorts the input Documents by the specified `Sort` object and passed them in the newly sorted order to the next stage.
         @discardableResult
         public static func sortedBy(_ sort: Sort) -> Stage {
             return Stage([
@@ -93,6 +124,11 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
                 ] as Document)
         }
         
+        /// Groups the input Documents by the specified expression and outputs a Document to the next stage for each distinct grouping.
+        ///
+        /// This form accepts a Document for more flexiblity.
+        ///
+        /// https://docs.mongodb.com/manual/reference/operator/aggregation/group/
         @discardableResult
         public static func grouping(groupDocument: Document) -> Stage {
             return Stage([
@@ -100,6 +136,11 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
                 ] as Document)
         }
         
+        /// Groups the input Documents by the specified expression and outputs a Document to the next stage for each distinct grouping.
+        ///
+        /// This form accepts predefined options and works for almost all scenarios.
+        ///
+        /// https://docs.mongodb.com/manual/reference/operator/aggregation/group/
         @discardableResult
         public static func grouping(_ id: ExpressionRepresentable, computed computedFields: [String: AccumulatedGroupExpression] = [:]) -> Stage {
             let groupDocument = computedFields.reduce([:] as Document) { (doc, expressionPair) -> Document in
@@ -121,6 +162,9 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
                 ] as Document)
         }
         
+        /// Deconstructs an Array at the given path (key).
+        ///
+        /// https://docs.mongodb.com/manual/reference/operator/aggregation/unwind/#pipe._S_unwind
         @discardableResult
         public static func unwind(atPath path: String, includeArrayIndex: String? = nil, preserveNullAndEmptyArrays: Bool? = nil) -> Stage {
             let unwind: ValueConvertible
@@ -151,6 +195,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
                 ] as Document)
         }
         
+        /// Performs a left outer join to an unsharded collection in the same database
         @discardableResult
         public static func lookup(fromCollection from: String, localField: String, foreignField: String, as: String) -> Stage {
             return Stage([
@@ -163,6 +208,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
                 ] as Document)
         }
         
+        /// Performs a left outer join to an unsharded collection in the same database
         @discardableResult
         public static func lookup(fromCollection from: Collection, localField: String, foreignField: String, as: String) -> Stage {
             return Stage([
@@ -175,11 +221,13 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
                 ] as Document)
         }
         
+        /// Writes the resulting Documents to the provided Collection
         @discardableResult
         public static func writeOutput(toCollection collection: Collection) -> Stage {
             return self.writeOutput(toCollectionNamed: collection.name)
         }
         
+        /// Writes the resulting Documents to the provided Collection
         @discardableResult
         public static func writeOutput(toCollectionNamed collectionName: String) -> Stage {
             return Stage([
@@ -187,6 +235,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
                 ] as Document)
         }
         
+        /// Takes the input Documents and passes them through multiple Aggregation Pipelines. Every pipeline result will be placed at the provided key.
         @discardableResult
         public static func facet(_ facet: [String: AggregationPipeline]) -> Stage {
             return Stage([
@@ -196,6 +245,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
                 ] as Document)
         }
         
+        /// Counts the amounts of Documents that have been inputted. Places the result at the provided key.
         @discardableResult
         public static func counting(insertedAtKey key: String) -> Stage {
             return Stage([
@@ -203,6 +253,9 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
                 ] as Document)
         }
         
+        /// Takes an embedded Document resulting from the provided expression and replaces the entire Document with this result.
+        ///
+        /// You can take an embedded Document at a lower level of this Document and make it the new root.
         @discardableResult
         public static func replaceRoot(withExpression expression: ExpressionRepresentable) -> Stage {
             return Stage([
@@ -212,6 +265,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
                 ] as Document)
         }
         
+        /// Adds fields to the inputted Documents and sends these new Documents to the next stage.
         @discardableResult
         public static func addingFields(_ fields: [String: ExpressionRepresentable]) -> Stage {
             return Stage([
@@ -223,6 +277,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
     }
 }
 
+/// The expressions are currently only supporting literals.
 public enum Expression: ValueConvertible {
     case literal(ValueConvertible)
     

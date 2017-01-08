@@ -20,6 +20,7 @@ public class GridFS {
     /// The bucket for file data chunks
     public let chunks: Collection
     
+    /// The GridFS bucket name
     public let name: String
     
     /// Drops the GridFS bucket's collections

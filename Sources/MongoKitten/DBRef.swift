@@ -1,18 +1,27 @@
 import BSON
 
+/// DBRef is a structure made to keep references to other MongoDB objects and resolve them easily
 public struct DBRef: ValueConvertible {
     var collection: Collection
     var id: ValueConvertible
     
+    /// Converts this DBRef to a BSONPrimitive for easy embedding
     public func makeBSONPrimitive() -> BSONPrimitive {
         return self.documentValue
     }
     
+    /// Created a DBRef
+    ///
+    /// - parameter reference: The _id of the referenced object
+    /// - parameter collection: The collection where this references object resides
     public init(referencing reference: ValueConvertible, inCollection collection: Collection) {
         self.id = reference
         self.collection = collection
     }
     
+    /// Initializes this DBRef with a Document.
+    ///
+    /// This initializer fails when the Document isn't a valid DBRef Document
     public init?(_ document: Document, inServer server: Server) {
         guard let database = document["$db"] as String?, let collection = document["$ref"] as String? else {
             server.logger.debug("Provided DBRef document is not valid")
@@ -28,6 +37,9 @@ public struct DBRef: ValueConvertible {
         self.id = id
     }
     
+    /// Initializes this DBRef with a Document.
+    ///
+    /// This initializer fails when the Document isn't a valid DBRef Document
     public init?(_ document: Document, inDatabase database: Database) {
         guard let collection = document["$ref"] as String? else {
             return nil
@@ -41,6 +53,7 @@ public struct DBRef: ValueConvertible {
         self.id = id
     }
     
+    /// The Document representation of this DBRef
     public var documentValue: Document {
         return [
             "$ref": self.collection.name,

@@ -10,6 +10,11 @@ import Foundation
 import LogKitten
 import BSON
 
+/// A Cursor is a pointer to a sequence/collection of Documents on the MongoDB server.
+/// 
+/// It can be looped over using a `for let document in cursor` loop like any other sequence.
+///
+/// It can be transformed into an array with `Array(cursor)` and allows transformation to another type.
 public final class Cursor<T> {
     public let namespace: String
     public let collection: Collection
@@ -26,7 +31,6 @@ public final class Cursor<T> {
     typealias Transformer = (Document) -> (T?)
     let transform: Transformer
     
-    /// If firstDataSet is nil, reply.documents will be passed to transform as initial data
     internal convenience init?(namespace: String, collection: Collection, reply: Message, chunkSize: Int32, transform: @escaping Transformer) {
         guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
             return nil
@@ -52,6 +56,11 @@ public final class Cursor<T> {
         self.transform = transform
     }
     
+    /// Transforms the base cursor to a new cursor of a new type
+    ///
+    /// The transformer will get `B` as input and is expected to return `T?` for the new type.
+    ///
+    /// This allows you to easily map a Document cursor returned by MongoKitten to a new type like your model.
     public init<B>(base: Cursor<B>, transform: @escaping (B) -> (T?)) {
         self.namespace = base.namespace
         self.collection = base.collection
@@ -115,6 +124,7 @@ public final class Cursor<T> {
         }
     }
     
+    /// When deinitializing we're killing the cursor on the server as well
     deinit {
         if cursorID != 0 {
             do {
@@ -134,7 +144,7 @@ public final class Cursor<T> {
 }
 
 extension Cursor : Sequence {
-    /// Makes an iterator to loop over the data this cursor points to
+    /// Makes an iterator to loop over the data this cursor points to from (for example) a loop
     /// - returns: The iterator
     public func makeIterator() -> AnyIterator<T> {
         return AnyIterator {
@@ -142,6 +152,7 @@ extension Cursor : Sequence {
         }
     }
     
+    /// Allows you to fetch the first next entity in the Cursor 
     public func next() -> T? {
         if self.data.isEmpty && self.cursorID != 0 {
             // Get more data!
