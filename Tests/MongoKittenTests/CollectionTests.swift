@@ -29,7 +29,8 @@ class CollectionTests: XCTestCase {
                 ("testRemovingOne", testRemovingOne),
                 ("testHelperObjects", testHelperObjects),
                 ("testGeo2SphereIndex", testGeo2SphereIndex),
-                ("testAggregateLookup", testAggregateLookup)
+                ("testAggregateLookup", testAggregateLookup),
+                ("testNearQuery", testNearQuery)
         ]
     }
     
@@ -280,6 +281,19 @@ class CollectionTests: XCTestCase {
         }
 
         XCTFail()
+    }
+
+    func testNearQuery() throws {
+        let zips = TestManager.db["zips"]
+        let position = Position(values: [-72.844092,42.466234])
+        let query = Query(aqt: .near(key: "loc", point: Point(coordinate: position), maxDistance: 100.0, minDistance: 0.0))
+
+        let results = Array(try zips.find(matching: query))
+        if results.count == 1 {
+            XCTAssertEqual(results[0][raw: "city"]?.string, "GOSHEN")
+        } else {
+            XCTFail("Too many results")
+        }
     }
     
     private func runContainsQuery() throws {
