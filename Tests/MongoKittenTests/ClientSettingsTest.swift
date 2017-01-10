@@ -15,7 +15,8 @@ class ClientSettingsTest: XCTestCase {
         return [
                 ("testAuthentication", testAuthentication),
                 ("testSSLSettings", testSSLSettings),
-                ("testMultiHost", testMultiHost)
+                ("testMultiHost", testMultiHost),
+                ("testInvalidURI", testInvalidURI),
         ]
 
     }
@@ -57,6 +58,13 @@ class ClientSettingsTest: XCTestCase {
         }
     }
 
+    func testInvalidURI() {
+        XCTAssertThrowsError(try ClientSettings(mongoURL: "localhost:27017"))
+        
+        XCTAssertNil(try ClientSettings(mongoURL: "mongodb://localhost:27017/databasename/invalidpath").credentials?.database)
+        
+        XCTAssertEqual(try ClientSettings(mongoURL: "mongodb://localhost:kaas/baas").hosts[0].port, 27017)
+    }
 
     func testSSLSettings() throws {
         let clientSettings = try ClientSettings(mongoURL:"mongodb://user:passwor@localhost:27017?ssl=false")
