@@ -107,7 +107,9 @@ class SetupTests: XCTestCase {
     }
     
     func testFindPerformance() throws {
-        try TestManager.db["performance"].insert([Document](repeating: ["val": ObjectId()], count: 2048))
+        for _ in 0..<2048 {
+            try TestManager.db["performance"].insert(["val": ObjectId()])
+        }
         
         measure {
             do {
