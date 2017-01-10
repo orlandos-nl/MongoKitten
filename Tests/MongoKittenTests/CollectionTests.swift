@@ -259,6 +259,17 @@ class CollectionTests: XCTestCase {
     func testIndexes() throws {
         try TestManager.wcol.createIndex(named: "henkbob", withParameters: .sortedCompound(fields: [("name", .ascending), ("age", .descending)]), .expire(afterSeconds: 1), .buildInBackground)
         
+        let harriebob = TestManager.db["harriebob"]
+        
+        try harriebob.createIndex(named: "imdifferent", withParameters: .unique, .compound(fields: [("unique", Int32(1))]))
+        
+        try harriebob.insert(["unique": true])
+        try harriebob.insert(["unique": false])
+        try harriebob.insert(["unique": Null()])
+        XCTAssertThrowsError(try harriebob.insert(["unique": true]))
+        XCTAssertThrowsError(try harriebob.insert(["unique": false]))
+        XCTAssertThrowsError(try harriebob.insert(["unique": Null()]))
+        
         for index in try TestManager.wcol.listIndexes() where index["name"] as String? == "henkbob" {
             return
         }

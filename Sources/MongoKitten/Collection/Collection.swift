@@ -136,7 +136,7 @@ public final class Collection {
                     throw MongoError.insertFailure(documents: documents, error: nil)
                 }
                 
-                guard replyDocuments.first?["ok"] as Int? == 1 else {
+                guard replyDocuments.first?["ok"] as Int? == 1 && (replyDocuments.first?["writeErrors"] as Document? ?? [:]).count == 0 else {
                     throw MongoError.insertFailure(documents: documents, error: replyDocuments.first)
                 }
             } else {
@@ -337,7 +337,7 @@ public final class Collection {
                 throw MongoError.updateFailure(updates: updates, error: nil)
             }
             
-            guard documents.first?["ok"] as Int? == 1 else {
+            guard documents.first?["ok"] as Int? == 1 && (documents.first?["writeErrors"] as Document? ?? [:]).count == 0 else {
                 throw MongoError.updateFailure(updates: updates, error: documents.first)
             }
             
@@ -364,6 +364,7 @@ public final class Collection {
                 
                 let message = Message.Update(requestID: database.server.nextMessageID(), collection: self, flags: flags, findDocument: update.filter.queryDocument, replaceDocument: update.to)
                 try self.database.server.send(message: message, overConnection: connection)
+                // TODO: Check for errors
             }
             
             return updates.count
@@ -612,7 +613,7 @@ public final class Collection {
         
         let document = try firstDocument(in: try database.execute(command: command))
         
-        guard document["ok"] as Int? == 1 else {
+        guard document["ok"] as Int? == 1 && (document["writeErrors"] as Document? ?? [:]).count == 0 else {
             throw MongoError.commandFailure(error: document)
         }
         
