@@ -13,16 +13,16 @@ public protocol Geometry {
     func toDocument() -> Document
 }
 
-/// A single point for a geospatial query
+/// A representation of a GeoJSON Point.
 public struct Point: Geometry {
 
-    /// The coordinate this point is located at
+    /// The GeoJSON coordinates of this point.
     public let coordinate: Position
     
     /// The type of object
     public let type: GeoJsonObjectType = .point
 
-    /// Creates a point from a position on the map
+    /// Creates a point with the given coordinate
     public init(coordinate: Position) {
         self.coordinate = coordinate
     }
