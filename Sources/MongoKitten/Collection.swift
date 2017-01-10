@@ -136,7 +136,7 @@ public final class Collection {
                     throw MongoError.insertFailure(documents: documents, error: nil)
                 }
                 
-                guard replyDocuments.first?["ok"] as Int? == 1 else {
+                guard replyDocuments.first?["ok"] as Int? == 1 && (replyDocuments.first?["writeErrors"] as Document? ?? [:]).count == 0 else {
                     throw MongoError.insertFailure(documents: documents, error: replyDocuments.first)
                 }
             } else {
