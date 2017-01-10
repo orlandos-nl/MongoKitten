@@ -5,5 +5,6 @@ XCTMain([
     testCase(CollectionTests.allTests),
     testCase(AdministrationCommandsTests.allTests),
     testCase(DatabaseTests.allTests),
-    testCase(ClientSettingsTest.allTests)
+    testCase(ClientSettingsTest.allTests),
+    testCase(GeoJSONTests.allTests)
 ])

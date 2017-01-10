@@ -9,13 +9,15 @@
 import Foundation
 
 
+/// A representation of a GeoJSON Position.
+/// 
 public struct Position {
 
     public let values: [Double]
 
+    /// The GeoJSON Position.
     ///
-    ///
-    /// - Parameter values: positions
+    /// - Parameter values: positions at least 2.
     /// - Throws: GeoJSONError
     public init(values: [Double]) throws {
         guard values.count >= 2 else { throw GeoJSONError.positionMustContainTwoOrMoreElements }
@@ -43,13 +45,10 @@ extension Position: Hashable {
 
 
     public var hashValue: Int {
-        var value = 0
-
-        for current in values {
-            value = current.hashValue + value
+        // DJB2 Algorithm
+        return self.values.reduce(5381) {
+            ($0 << 5) &+ $0 &+ $1.hashValue
         }
-
-        return value
     }
 }
 
