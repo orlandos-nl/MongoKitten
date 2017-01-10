@@ -31,6 +31,7 @@ public final class Database {
     private var collections = [String: Weak<Collection>]()
     
     #if Xcode
+    /// XCode quick look debugging
     func debugQuickLookObject() -> AnyObject {
         var userInfo = ""
         
@@ -62,6 +63,9 @@ public final class Database {
         self.name = name
     }
     
+    /// Initializes this Database with a connection String.
+    ///
+    /// Requires a path with a databasee name
     public init(mongoURL url: String, usingTcpDriver driver: MongoTCP.Type? = nil, maxConnectionsPerServer maxConnections: Int = 10) throws {
         let path = url.characters.split(separator: "/", maxSplits: 2, omittingEmptySubsequences: true)
         
@@ -82,8 +86,10 @@ public final class Database {
         try connection.authenticate(toDatabase: self)
     }
     
+    /// A queue to prevent subscripting from creating multiple instances of the same database
     private static let subscriptQueue = DispatchQueue(label: "org.mongokitten.database.subscriptqueue")
     
+    /// Creates a GridFS collection in this database
     public func makeGridFS(named name: String = "fs") throws -> GridFS {
         return try GridFS(inDatabase: self, named: name)
     }
@@ -420,6 +426,7 @@ extension String {
 }
 
 extension Database: CustomStringConvertible {
+    /// A debugging string
     public var description: String {
         return "MongoKitten.Database<\(server.hostname)/\(self.name)>"
     }

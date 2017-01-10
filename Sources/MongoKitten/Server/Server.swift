@@ -16,7 +16,10 @@
 import Socks
 import TLS
 
+/// The default TCP Client used for creating a connection over non-SSL sockets
 public let DefaultTCPClient: MongoTCP.Type = Socks.TCPClient.self
+
+/// The default TCP Client used for creating a connection over SSL/TLS
 public let DefaultSSLTCPClient: MongoTCP.Type = TLS.Socket.self
 
 @_exported import BSON
@@ -38,10 +41,12 @@ internal typealias ResponseHandler = ((Message) -> Void)
 /// A server object is the core of MongoKitten as it's used to communicate to the server.
 /// You can select a `Database` by subscripting an instance of this Server with a `String`.
 public final class Server {
+    /// The logging instance
+    ///
+    /// Do not reply on this. LogKitten is an alpha product and exclusively used by MongoKitten for exposing debugging information
     public var logger: FrameworkLogger
     
-    
-    
+    /// All servers this library is connecting with
     internal var servers: [MongoHost] {
         get {
             return self.clientSettings.hosts
@@ -51,10 +56,12 @@ public final class Server {
         }
     }
     
+    /// Handles errors within cursors
     public var cursorErrorHandler: ((Error)->()) = { doc in
         print(doc)
     }
     
+    /// The ClientSettings used to connect to server(s)
     internal var clientSettings: ClientSettings
     
     /// The last Request we sent.. -1 if no request was sent
@@ -75,6 +82,7 @@ public final class Server {
     /// Lock to prevent multiple writes to/from the servers.
     private let hostPoolLock = NSLock()
     
+    /// A lock to prevent multiple mutations of the maintainance tasks array
     private let maintainanceLoopLock = NSLock()
     
     /// Keeps track of the connections
@@ -83,13 +91,19 @@ public final class Server {
     /// Did we initialize?
     private var isInitialized = false
     
+    /// SlaveOK should be `true` when it's allowed to query Replica set slaves for data
+    ///
+    /// TODO: Currently not supported in MongoKitten but a planned feature. Hence that it's private
+    /// TODO: MongoKitten should pass slaveOK together with the query in order for these requests to succeed
     private var slaveOK = false
     
+    /// The default timeout used for connections/queries
     internal var defaultTimeout: TimeInterval = 60
 
-
+    /// Whether to verify the remote host or not, that is the question
     internal var sslVerify = true
 
+    /// The server's details like the wire protocol version
     internal private(set) var serverData: (maxWriteBatchSize: Int32, maxWireVersion: Int32, minWireVersion: Int32, maxMessageSizeBytes: Int32)?
     
     /// Sets up the `Server` to connect to MongoDB.
@@ -190,9 +204,13 @@ public final class Server {
         try self.init(clientSettings)
     }
     
+    /// An array maintaining all maintainance tasks
     var maintainanceLoopCalls = [(()->())]()
+    
+    /// An internal variable that determines whether we're connected to a replica set or sharded cluster
     var isReplica = false
     
+    /// Tihs loop maintains all connections
     fileprivate func backgroundLoop() {
         maintainanceLoopLock.lock()
         for action in maintainanceLoopCalls {
@@ -207,8 +225,10 @@ public final class Server {
         self.connectionPoolMaintainanceQueue.async(execute: backgroundLoop)
     }
     
+    /// A MongoKitten internal variable that determines whether the driver is preparing for replica reinitialization
     var reinitializeReplica = false
     
+    /// Initializes the replica set connection pool
     func initializeReplica() {
         logger.debug("Disconnecting all connections because we're reconnecting")
         _ = try? disconnect()
@@ -278,6 +298,9 @@ public final class Server {
         reinitializeReplica = false
     }
     
+    /// Creates a new connection to the best selected instance
+    ///
+    /// - parameter authenticatedFor: The Database that this connection is opened for. Prepares this Connection for authentication to this Database
     private func makeConnection(writing: Bool = true, authenticatedFor: Database?) throws -> Connection {
         logger.verbose("Attempting to create a new connection")
         self.hostPoolLock.lock()
@@ -344,6 +367,9 @@ public final class Server {
         throw MongoError.internalInconsistency
     }
     
+    /// Makes a new connection for the connection pool to a predefined host
+    ///
+    /// - parameter authenticatedFor: The Database that this connection is opened for. Prepares this Connection for authentication to this Database
     private func makeConnection(toHost host: MongoHost, authenticatedFor: Database?) throws -> Connection {
         let connection = Connection(client: try tcpType.open(address: host.hostname, port: host.port, options: self.clientSettings), writable: host.isPrimary, host: host, logger: logger) {
             self.hostPoolLock.lock()
@@ -385,6 +411,11 @@ public final class Server {
         throw MongoError.internalInconsistency
     }
     
+    /// Reserves a connection to a database
+    ///
+    /// Can take a while when the connection pool is full.
+    ///
+    /// Takes the most efficient connection and prefers connections that are already authenticated to this database
     internal func reserveConnection(writing: Bool = false, authenticatedFor db: Database?, toHost host: (String, UInt16)? = nil) throws -> Connection {
         logger.verbose("Connection requested for database \(db)")        
         var bestMatch: Connection? = nil
@@ -503,6 +534,7 @@ public final class Server {
         return connection
     }
     
+    /// Returns a connection to the Connection pool
     internal func returnConnection(_ connection: Connection) {
         self.connectionPoolLock.lock()
         
@@ -537,8 +569,10 @@ public final class Server {
         return db
     }
     
+    /// A dispatch queue for maintainance tasks
     private let connectionPoolMaintainanceQueue = DispatchQueue(label: "org.mongokitten.server.maintainanceQueue")
     
+    /// A dispatch queue for incrementing the counter synchronously
     private let messageMutationQueue = DispatchQueue(label: "org.mongokitten.server.messageIncrementQueue")
     
     /// Generates a messageID for the next Message to be sent to the server
@@ -854,6 +888,7 @@ public final class Server {
     }
 }
 
+/// Helpful for debugging
 extension Server : CustomStringConvertible {
     /// A textual representation of this `Server`
     public var description: String {
@@ -868,7 +903,9 @@ extension Server : CustomStringConvertible {
     }
 }
 
+/// Iterates over all databases
 extension Server: Sequence {
+    /// Iterates over all databases
     public func makeIterator() -> AnyIterator<Database> {
         guard var databases = try? self.getDatabases() else {
             return AnyIterator { nil }
@@ -880,6 +917,7 @@ extension Server: Sequence {
     }
 }
 
+// TODO: REMOVE!
 extension Bool: ExpressibleByStringLiteral {
 
     public init(unicodeScalarLiteral value: String) {

@@ -2,6 +2,7 @@ import BSON
 
 /// CustomValueConvertible allows an object to be converted to a BSONPrimitive but also requires a conversion back using an initializer.
 public protocol CustomValueConvertible: ValueConvertible {
+    /// Initializes this object from a `BSONPrimitive`
     init?(_ value: BSONPrimitive)
 }
 

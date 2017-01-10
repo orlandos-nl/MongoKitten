@@ -8,7 +8,7 @@
 
 import Foundation
 
-extension Database: RoleManagement {
+extension Database {
     
     /// Grants roles to a user in this database
     ///

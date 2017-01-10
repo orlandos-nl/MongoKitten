@@ -16,9 +16,16 @@ import BSON
 ///
 /// It can be transformed into an array with `Array(cursor)` and allows transformation to another type.
 public final class Cursor<T> {
+    /// The collection's namespace
     public let namespace: String
+    
+    /// The collection this cursor is pointing to
     public let collection: Collection
+    
+    /// The cursor's identifier that allows us to fetch more data from the server
     fileprivate var cursorID: Int64
+    
+    /// The amount of Documents to receive each time from the server
     fileprivate let chunkSize: Int32
     
     var logger: FrameworkLogger {
@@ -28,9 +35,13 @@ public final class Cursor<T> {
     // documents already received by the server
     fileprivate var data: [T]
     
+    /// A closure that transforms a document to another type if possible, otherwise `nil`
     typealias Transformer = (Document) -> (T?)
+    
+    /// The transformer used for this cursor
     let transform: Transformer
     
+    /// This initializer creates a base cursor from a reply message
     internal convenience init?(namespace: String, collection: Collection, reply: Message, chunkSize: Int32, transform: @escaping Transformer) {
         guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
             return nil
@@ -39,6 +50,7 @@ public final class Cursor<T> {
         self.init(namespace: namespace, collection: collection, cursorID: cursorID, initialData: documents.flatMap(transform), chunkSize: chunkSize, transform: transform)
     }
     
+    /// This initializer creates a base cursor from a replied Document
     internal convenience init(cursorDocument cursor: Document, collection: Collection, chunkSize: Int32, transform: @escaping Transformer) throws {
         guard let cursorID = cursor["id"] as Int64?, let namespace = cursor["ns"] as String?, let firstBatch = cursor["firstBatch"] as Document? else {
             throw MongoError.cursorInitializationError(cursorDocument: cursor)
@@ -47,6 +59,7 @@ public final class Cursor<T> {
         self.init(namespace: namespace, collection: collection, cursorID: cursorID, initialData: firstBatch.arrayValue.flatMap{$0.documentValue}.flatMap(transform), chunkSize: chunkSize, transform: transform)
     }
     
+    /// This initializer creates a base cursor from provided specific data
     internal init(namespace: String, collection: Collection, cursorID: Int64, initialData: [T], chunkSize: Int32, transform: @escaping Transformer) {
         self.namespace = namespace
         self.collection = collection
@@ -164,6 +177,7 @@ extension Cursor : Sequence {
 }
 
 extension Cursor : CustomStringConvertible {
+    /// A description for debugging purposes
     public var description: String {
         return "MongoKitten.Cursor<\(namespace)>"
     }

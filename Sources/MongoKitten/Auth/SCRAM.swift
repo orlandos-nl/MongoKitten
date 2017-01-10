@@ -1,17 +1,31 @@
 import Foundation
 import CryptoKitten
 
+/// Authenticates over SCRAM-SHA-1 to authenticate a user with the provided password
+///
+/// TODO: Make this internal
 final public class SCRAMClient<Variant: Hash> {
+    /// Constant GS2BindFlag
     let gs2BindFlag = "n,,"
     
+    /// Creates a new SCRAM Client instance
+    ///
+    /// TODO: Make this internal
     public init() {
         
     }
     
+    /// Fixes the username to not contain variables that are essential to the SCRAM message structure
+    ///
+    /// - returns: The fixed username
     private func fixUsername(username user: String) -> String {
         return replaceOccurrences(in: replaceOccurrences(in: user, where: "=", with: "=3D"), where: ",", with: "=2C")
     }
     
+    /// Parses the SCRAM challenge and returns the values in there as a tuple
+    ///
+    /// - returns: The values in there as a tuple
+    /// - throws: Unable to parse this message to a sever signature
     private func parse(challenge response: String) throws -> (nonce: String, salt: String, iterations: Int) {
         var nonce: String? = nil
         var iterations: Int? = nil
@@ -43,6 +57,10 @@ final public class SCRAMClient<Variant: Hash> {
         throw SCRAMError.ChallengeParseError(challenge: response)
     }
     
+    /// Parses the final response and returns the server signature
+    ///
+    /// - returns: The server signature
+    /// - throws: Unable to parse this message to a sever signature
     private func parse(finalResponse response: String) throws -> [UInt8] {
         var signature: [UInt8]? = nil
         
@@ -71,10 +89,19 @@ final public class SCRAMClient<Variant: Hash> {
         throw SCRAMError.ResponseParseError(response: response)
     }
     
+    /// Generates an initial SCRAM-SHA-1 authentication String
+    ///
+    /// TODO: Make this internal
     public func authenticate(_ username: String, usingNonce nonce: String) throws -> String {
         return "\(gs2BindFlag)n=\(fixUsername(username: username)),r=\(nonce)"
     }
     
+    /// Processes the challenge and responds with the proof that we are the user we claim to be
+    ///
+    /// TODO: Make this internal
+    ///
+    /// - returns: A tuple where the proof is to be sent to the server and the signature is to be verified in the server's responses.
+    /// - throws: When unable to parse the challenge
     public func process(_ challenge: String, with details: (username: String, password: [UInt8]), usingNonce nonce: String) throws -> (proof: String, serverSignature: [UInt8]) {
         func xor(_ lhs: [UInt8], _ rhs: [UInt8]) -> [UInt8] {
             var result = [UInt8](repeating: 0, count: min(lhs.count, rhs.count))
@@ -127,6 +154,12 @@ final public class SCRAMClient<Variant: Hash> {
         return (proof: "\(noProof),p=\(proof)", serverSignature: serverSignature)
     }
     
+    /// Validates the server's signature
+    ///
+    /// TODO: Make this internal
+    ///
+    /// - returns: An empty string to proceed the process indefinitely until complete as per protocol definition
+    /// - throws: When the server's signature is invalid
     public func complete(fromResponse response: String, verifying signature: [UInt8]) throws -> String {
         let sig = try parse(finalResponse: response)
 
@@ -145,10 +178,20 @@ internal func replaceOccurrences(`in` string: String, `where` matching: String, 
     return string.replacingOccurrences(of: matching, with: replacement)
 }
 
+/// All possible authentication errors
 public enum SCRAMError: Error {
+    /// -
     case InvalidSignature(signature: [UInt8])
+    
+    /// -
     case Base64Failure(original: [UInt8])
+    
+    /// -
     case ChallengeParseError(challenge: String)
+    
+    /// -
     case ResponseParseError(response: String)
+    
+    /// -
     case InvalidNonce(nonce: String)
 }

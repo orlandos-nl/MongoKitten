@@ -312,6 +312,7 @@ public class GridFS {
             return allData
         }
         
+        /// Iterates over all chunks of data for this file
         public func makeIterator() -> AnyIterator<Chunk> {
             do {
                 return try self.chunked()
@@ -320,6 +321,9 @@ public class GridFS {
             }
         }
         
+        /// Creates an iterator of chunks.
+        ///
+        /// - throws: Unable to fetch chunks
         public func chunked() throws -> AnyIterator<Chunk> {
             let query: Document = ["files_id": id]
             

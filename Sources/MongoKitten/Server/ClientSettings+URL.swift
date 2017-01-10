@@ -12,7 +12,8 @@ import Foundation
 // mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]
 // MARK: - init ClientSettings with MONGO URI
 extension ClientSettings {
-    init(mongoURL url:String) throws {
+    /// Parses a MongoDB connection String to a ClientSettings object
+    init(mongoURL url: String) throws {
         var url = url
         guard url.characters.starts(with: "mongodb://".characters) else {
             throw MongoError.noMongoDBSchema

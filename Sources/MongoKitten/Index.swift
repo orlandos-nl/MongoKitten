@@ -16,10 +16,16 @@ import BSON
 /// - weight: the weighting object for use with a text index
 /// - text: 
 public enum IndexParameter {
+    /// A TextIndexVersion defines to MongoDB what kind of text index should be created.
+    /// Generally this is `.two`
     public enum TextIndexVersion: ValueConvertible {
+        /// First text index version
         case one
+        
+        /// Currently the default text index version
         case two
         
+        /// Converts this TextIndexVersion to something easily embeddable in a Document
         public func makeBSONPrimitive() -> BSONPrimitive {
             if self == .one {
                 return Int32(1)
@@ -29,18 +35,48 @@ public enum IndexParameter {
         }
     }
     
+    /// Sorts the specified field with in the given order
     case sort(field: String, order: SortOrder)
+    
+    /// Sorts the specified fields in the given order. The first specified key is the first key that will be used for sorting.
+    ///
+    /// The second key will be used for sorting only when documents match equally with on first key
     case sortedCompound(fields: [(field: String, order: SortOrder)])
+    
+    ///
     case compound(fields: [(field: String, value: ValueConvertible)])
+    
+    /// Removes a Document after it's been in the database for the provided amount of seconds
     case expire(afterSeconds: Int)
+    
+    /// Only indexes a Document when the Document contain the indexed fields, even if it's `Null`
     case sparse
+    
+    /// A custom index Document for unsupported features.
+    ///
+    /// Generally not useful. Make a Issue or PR if you happen to need this
     case custom(Document)
+    
+    /// Partial indexes only index Documents matching certain requirements. Like a user whose age is at least 25 years old. This is done using a provided raw MongoDB Document containing operators
     case partialFilter(Document)
+    
+    /// Requires indexed fields to be unique
     case unique
+    
+    /// Builds this index in the background. Useful for applications that have a lot of data
     case buildInBackground
+    
+    /// https://docs.mongodb.com/manual/tutorial/control-results-of-text-search/
+    ///
+    /// Used in combination with text indexes
+    ///
+    /// TODO: Broken. Should be fixed in a minor update which will break the API for this function.
     case weight(Int)
+    
+    /// Applies text indexing to the provided keys
     case text([String])
     
+    /// The Document representation for this Index
     internal var document: Document {
         switch self {
         case .text(let keys):
@@ -83,7 +119,6 @@ public enum IndexParameter {
             return ["background": true]
         case .weight(let weight):
             return ["weights": Int32(weight)]
-            //            case .text
         }
     }
 }

@@ -13,14 +13,19 @@ public struct Projection: CustomValueConvertible {
         self.document = document
     }
 
+    /// The raw underlying Document of this Projection
     var document: Document
     
+    /// Makes this Projection specification a Document
+    ///
+    /// Technically equal to `makeBSONPrimtive` with the main difference being that the correct type is already available without extraction
     public func makeDocument() -> Document {
         return self.document
     }
     
-    ///
+    /// An expression that can be specified to either include or exclude a field (or some custom value)
     public enum ProjectionExpression: ValueConvertible, ExpressibleByBooleanLiteral, ExpressibleByStringLiteral, ExpressibleByDictionaryLiteral {
+        /// Creates a BSONPrimitive of this ProjecitonExpression for easy embedding in Documents
         public func makeBSONPrimitive() -> BSONPrimitive {
             switch self {
             case .custom(let convertible): return convertible.makeBSONPrimitive()
@@ -29,39 +34,52 @@ public struct Projection: CustomValueConvertible {
             }
         }
         
+        /// A dictionary literal that makes this a custom ProjectionExpression
         public init(stringLiteral value: String) {
             self = .custom(value)
         }
         
+        /// A dictionary literal that makes this a custom ProjectionExpression
         public init(unicodeScalarLiteral value: String) {
             self = .custom(value)
         }
         
+        /// A dictionary literal that makes this a custom ProjectionExpression
         public init(extendedGraphemeClusterLiteral value: String) {
             self = .custom(value)
         }
 
+        /// A custom projection value
         case custom(ValueConvertible)
+        
+        /// Includes this field in the projection
         case included
+        
+        /// Excludes this field from the projection
         case excluded
         
+        /// Includes when `true`, Excludes when `false`
         public init(booleanLiteral value: Bool) {
             self = value ? .included : .excluded
         }
         
+        /// A dictionary literal that makes this a custom ProjectionExpression
         public init(dictionaryLiteral elements: (String, ValueConvertible?)...) {
             self = .custom(Document(dictionaryElements: elements))
         }
     }
     
+    /// Initializes this projection from a Document
     public init(_ document: Document) {
         self.document = document
     }
     
+    /// Supressed the _id key from being included in the projection
     public mutating func suppressIdentifier() {
         document["_id"] = false
     }
     
+    /// Creates a BSONPrimitive from this Projection for inclusion in a Document
     public func makeBSONPrimitive() -> BSONPrimitive {
         return self.document
     }

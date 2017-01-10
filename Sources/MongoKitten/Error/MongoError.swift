@@ -80,23 +80,39 @@ public enum MongoError : Error {
     /// GridFS was asked to return a negative amount of bytes
     case negativeBytesRequested(start: Int, end: Int)
     
+    /// Invalid MongoDB URI
     case invalidURI(uri: String)
     
+    /// The URI misses the MongoDB Schema
     case noMongoDBSchema
     
+    /// No servers available to connect to
     case noServersAvailable
     
+    /// Unsupported feature (Authentication for example)
     case unsupportedFeature(String)
 }
 
+/// Authenication failure
 public enum MongoAuthenticationError : Error {
+    /// Unable to decode Base64
     case base64Failure
+    
+    /// Generic error
     case authenticationFailure
+    
+    /// Invalid remote signature
     case serverSignatureInvalid
+    
+    /// Invalid credentials
     case incorrectCredentials
 }
 
+/// Internal errors
 internal enum InternalMongoError : Error {
+    /// Invalid message, couldn't be parsed to a Reply
     case incorrectReply(reply: Message)
+    
+    /// -
     case invalidCString
 }

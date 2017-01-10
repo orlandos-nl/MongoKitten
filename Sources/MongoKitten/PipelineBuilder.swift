@@ -45,6 +45,11 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
     /// Creates an empty pipeline
     public init() { }
     
+    /// A Pipeline stage. Pipelines pass their data of the collection through every stage. The last stage defines the output.
+    ///
+    /// The input are all Documents in the collection.
+    ///
+    /// The input of stage 2 is the output of stage 3 and so on..
     public struct Stage: ValueConvertible {
         /// Allows embedding this stage inside another Document
         public func makeBSONPrimitive() -> BSONPrimitive {
@@ -279,8 +284,12 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
 
 /// The expressions are currently only supporting literals.
 public enum Expression: ValueConvertible {
+    /// A literal value
+    ///
+    /// Any String starting with a `$` will be seen as a pointer to a Document key. In this case the value at that key will be used instead.
     case literal(ValueConvertible)
     
+    /// Converts an expression to a BSONPrimitive for easy embedding in Documents
     public func makeBSONPrimitive() -> BSONPrimitive {
         switch self {
         case .literal(let val):
@@ -289,141 +298,269 @@ public enum Expression: ValueConvertible {
     }
 }
 
+/// Objects conforming to this are represetnable as an Expression
 public protocol ExpressionRepresentable {
+    /// Creates an Expression from this object
     func makeExpression() -> Expression
 }
 
+/// Converts String to a literal Expression
 extension String: ExpressionRepresentable {
+    /// Converts String to a literal Expression
     public func makeExpression() -> Expression {
         return .literal(self)
     }
 }
 
+/// Converts Bool to a literal Expression
 extension Bool: ExpressionRepresentable {
+    /// Converts Bool to a literal Expression
     public func makeExpression() -> Expression {
         return .literal(self)
     }
 }
 
+/// Converts ObjectId to a literal Expression
 extension ObjectId: ExpressionRepresentable {
+    /// Converts ObjectId to a literal Expression
     public func makeExpression() -> Expression {
         return .literal(self)
     }
 }
 
+/// Converts Binary to a literal Expression
 extension Binary: ExpressionRepresentable {
+    /// Converts Binary to a literal Expression
     public func makeExpression() -> Expression {
         return .literal(self)
     }
 }
 
+/// Converts Null to a literal Expression
 extension Null: ExpressionRepresentable {
+    /// Converts Null to a literal Expression
     public func makeExpression() -> Expression {
         return .literal(self)
     }
 }
 
+/// Converts JavascriptCode to a literal Expression
 extension JavascriptCode: ExpressionRepresentable {
+    /// Converts JavascriptCode to a literal Expression
     public func makeExpression() -> Expression {
         return .literal(self)
     }
 }
 
+/// Converts String to a literal Expression
 extension RegularExpression: ExpressionRepresentable {
+    /// Converts String to a literal Expression
     public func makeExpression() -> Expression {
         return .literal(self)
     }
 }
 
+/// Converts Date to a literal Expression
 extension Date: ExpressionRepresentable {
+    /// Converts Date to a literal Expression
     public func makeExpression() -> Expression {
         return .literal(self)
     }
 }
 
+/// Converts Double to a literal Expression
 extension Double: ExpressionRepresentable {
+    /// Converts Double to a literal Expression
     public func makeExpression() -> Expression {
         return .literal(self)
     }
 }
 
+/// Converts Int to a literal Expression
 extension Int: ExpressionRepresentable {
+    /// Converts Int to a literal Expression
     public func makeExpression() -> Expression {
         return .literal(self)
     }
 }
 
+/// Converts Int32 to a literal Expression
 extension Int32: ExpressionRepresentable {
+    /// Converts Int32 to a literal Expression
     public func makeExpression() -> Expression {
         return .literal(self)
     }
 }
 
+/// Converts Int64 to a literal Expression
 extension Int64: ExpressionRepresentable {
+    /// Converts Int64 to a literal Expression
     public func makeExpression() -> Expression {
         return .literal(self)
     }
 }
 
+/// Converts Document to a literal Expression
 extension Document: ExpressionRepresentable {
+    /// Converts Document to a literal Expression
     public func makeExpression() -> Expression {
         return .literal(self)
     }
 }
 
+/// All Accumulated Group Expressions used for the group aggregation stage
 public enum AccumulatedGroupExpression {
+    /// A sum of multiple expressions (results)
     case sum([ExpressionRepresentable])
+    
+    /// The average of multiple expressions (results). When a
     case average([ExpressionRepresentable])
+    
+    /// The highest number among multiple expression (results)
     case max([ExpressionRepresentable])
+    
+    /// The lowest number among multiple expression (results)
     case min([ExpressionRepresentable])
+    
+    /// Returns the value that results from applying an expression to the first document in a group of documents.
+    ///
+    /// When a field is selected, the first Document's value at this key will be used.
     case first(ExpressionRepresentable)
+    
+    /// Returns the value that results from applying an expression to the last document in a group of documents.
+    ///
+    /// When a field is selected, the last Document's value at this key will be used.
     case last(ExpressionRepresentable)
-    // TODO: Reimplement https://docs.mongodb.com/manual/reference/operator/aggregation/push/#grp._S_push
+    
+    /// Returns an array of all values that result from applying an expression to each document in a group of documents that share the same group by key.
+    ///
+    /// https://docs.mongodb.com/manual/reference/operator/aggregation/push/
+    ///
+    /// WARNING: Only available in a group(ed) stage
     case push(ExpressionRepresentable)
+    
+    /// Returns an array of all unique values that results from applying an expression to each document in a group of documents that share the same group by key.
+    ///
+    /// https://docs.mongodb.com/manual/reference/operator/aggregation/addToSet/
     case addToSet(ExpressionRepresentable)
+    
     // TODO: Implement https://docs.mongodb.com/manual/reference/operator/aggregation/stdDevPop/#grp._S_stdDevPop
     // TODO: Implement https://docs.mongodb.com/manual/reference/operator/aggregation/stdDevSamp/#grp._S_stdDevSamp
     
     // MARK: Helpers
     
+    /// Creates a sum expression. Can contain one or more values.
+    ///
+    /// The result of this operator is the sum of all provided resulting values (when multiple are entered).
+    ///
+    /// All results must be numbers
+    ///
+    /// When a single expression is provided it will be regarded as a literal rather than an array and is useful when providing a selector for a field.
+    ///
+    /// When multiple expressions are provided this will be regarded as an array of expressions resulting in a number.
     public static func sumOf(_ expressions: ExpressionRepresentable...) -> AccumulatedGroupExpression {
         return .sum(expressions)
     }
     
+    /// Creates a sum expression. Can contain one or more values.
+    ///
+    /// The result of this operator is the sum of all provided resulting values (when multiple are entered).
+    ///
+    /// All results must be numbers
+    ///
+    /// When a single expression is provided it will be regarded as a literal rather than an array and is useful when providing a selector for a field.
+    ///
+    /// When multiple expressions are provided this will be regarded as an array of expressions resulting in a number.
     public static func sumOf(_ expressions: [ExpressionRepresentable]) -> AccumulatedGroupExpression {
         return .sum(expressions)
     }
     
+    /// Creates a avg expression. Can contain one or more values.
+    ///
+    /// The result of this operator is the average of all provided resulting values (when multiple are entered).
+    ///
+    /// All results must be numbers
+    ///
+    /// When a single expression is provided it will be regarded as a literal rather than an array and is useful when providing a selector for a field.
+    ///
+    /// When multiple expressions are provided this will be regarded as an array of expressions resulting in a number.
     public static func averageOf(_ expressions: ExpressionRepresentable...) -> AccumulatedGroupExpression {
         return .average(expressions)
     }
     
+    /// Creates a avg expression. Can contain one or more values.
+    ///
+    /// The result of this operator is the average of all provided resulting values (when multiple are entered).
+    ///
+    /// All results must be numbers
+    ///
+    /// When a single expression is provided it will be regarded as a literal rather than an array and is useful when providing a selector for a field.
+    ///
+    /// When multiple expressions are provided this will be regarded as an array of expressions resulting in a number.
     public static func averageOf(_ expressions: [ExpressionRepresentable]) -> AccumulatedGroupExpression {
         return .average(expressions)
     }
     
+    /// Creates a min expression. Can contain one or more values.
+    ///
+    /// The result of this operator is the smallest number amongst all provided resulting values (when multiple are entered).
+    ///
+    /// All results must be numbers
+    ///
+    /// When a single expression is provided it will be regarded as a literal rather than an array and is useful when providing a selector for a field.
+    ///
+    /// When multiple expressions are provided this will be regarded as an array of expressions resulting in a number.
     public static func minOf(_ expressions: ExpressionRepresentable...) -> AccumulatedGroupExpression {
         return .min(expressions)
     }
     
+    /// Creates a min expression. Can contain one or more values.
+    ///
+    /// The result of this operator is the smallest number amongst all provided resulting values (when multiple are entered).
+    ///
+    /// All results must be numbers
+    ///
+    /// When a single expression is provided it will be regarded as a literal rather than an array and is useful when providing a selector for a field.
+    ///
+    /// When multiple expressions are provided this will be regarded as an array of
     public static func minOf(_ expressions: [ExpressionRepresentable]) -> AccumulatedGroupExpression {
         return .min(expressions)
     }
     
+    /// Creates a max expression. Can contain one or more values.
+    ///
+    /// The result of this operator is the biggest number amongst all provided resulting values (when multiple are entered).
+    ///
+    /// All results must be numbers
+    ///
+    /// When a single expression is provided it will be regarded as a literal rather than an array and is useful when providing a selector for a field.
+    ///
+    /// When multiple expressions are provided this will be regarded as an array of
     public static func maxOf(_ expressions: ExpressionRepresentable...) -> AccumulatedGroupExpression {
         return .max(expressions)
     }
     
+    /// Creates a max expression. Can contain one or more values.
+    ///
+    /// The result of this operator is the biggest number amongst all provided resulting values (when multiple are entered).
+    ///
+    /// All results must be numbers
+    ///
+    /// When a single expression is provided it will be regarded as a literal rather than an array and is useful when providing a selector for a field.
+    ///
+    /// When multiple expressions are provided this will be regarded as an array of
     public static func maxOf(_ expressions: [ExpressionRepresentable]) -> AccumulatedGroupExpression {
         return .max(expressions)
     }
     
     // MARK: Converting
     
+    /// Converts this `AccumulatedGroupExpression` to a BSONPrimitive so that it can be embedded inside a Document easily
     public func makeBSONPrimitive() -> BSONPrimitive {
         return makeDocument()
     }
     
+    /// Converts this `AccumulatedGroupExpression` to a Document operator for MongoDB
     public func makeDocument() -> Document {
         switch self {
         case .sum(let expressions):

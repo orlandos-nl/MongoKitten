@@ -38,23 +38,42 @@ extension LogKitten.Message: ValueConvertible {
     }
 }*/
 
+/// Makes a Documetn subjectRepresentable meaning that it can be logged by LogKitten
+///
+/// WARNING: LogKitten is alpha software and subject to change. Do not rely on this
 extension Document: SubjectRepresentable {
+    /// Records the common LogKitten ID, used by LogKitten (currently) to identify this registered type
+    ///
+    /// WARNING: LogKitten is alpha software and subject to change. Do not rely on this
     public static var logKittenId = [UInt8:UInt8]()
     
+    /// Returns the common name for this Subject
+    ///
+    /// WARNING: LogKitten is alpha software and subject to change. Do not rely on this
     public static var name: String {
         return "Document"
     }
 
+    /// Makes this Subject a LogKitten type to log
+    ///
+    /// WARNING: LogKitten is alpha software and subject to change. Do not rely on this
     public func makeSubject(fromFramework framework: String) -> Subject {
         return .attributedData(type: Document.self, data: self.bytes)
     }
     
+    /// Converts this type to a String for logging
+    ///
+    /// WARNING: LogKitten is alpha software and subject to change. Do not rely on this
     static public func convertToString(fromData data: [UInt8]) -> String {
         return Document(data: data).makeExtendedJSON()
     }
 }
 
+/// Makes a Subject convertible to a BSONPrimtive
 extension Subject: ValueConvertible {
+    /// Converts this Subject to a BSONPrimitive for embedding into a log Document
+    ///
+    /// WARNING: LogKitten is alpha software and subject to change. Do not rely on this
     public func makeBSONPrimitive() -> BSONPrimitive {
         switch self {
         case .string(let s):

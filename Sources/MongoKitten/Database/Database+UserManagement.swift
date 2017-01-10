@@ -8,7 +8,7 @@
 
 import Foundation
 
-extension Database: UserManagement {
+extension Database {
     /// Creates a new user
     ///
     /// Warning: Use an SSL socket to create someone for security sake!

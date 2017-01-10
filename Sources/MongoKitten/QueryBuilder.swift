@@ -10,6 +10,7 @@ import Foundation
 import BSON
 
 #if os(macOS)
+    /// RegularExpression is named differently on Linux. Linux is our primary target.
     typealias RegularExpression = NSRegularExpression
 #endif
 
@@ -119,6 +120,7 @@ public prefix func !(query: Query) -> Query {
     return Query(aqt: .not(query.aqt))
 }
 
+/// Adds two queries to create a new Document (which can be converted to a Query)
 public func &=(lhs: Query, rhs: Query) -> Document {
     var lhs = lhs.queryDocument
     
@@ -137,6 +139,7 @@ public indirect enum AQT {
     ///
     /// The raw values are defined in https://docs.mongodb.com/manual/reference/operator/query/type/#op._S_type
     public enum AQTType: Int32 {
+        /// -
         case precisely
         
         /// Any number. So a `.double`, `.int32` or `.int64`
@@ -193,6 +196,7 @@ public indirect enum AQT {
         /// `Int64`
         case int64 = 18
         
+        /// High precision decimal
         case decimal128 = 19
         
         /// The min-key
@@ -294,23 +298,28 @@ public indirect enum AQT {
     /// Whether the String value within the `key` ends with this `String`.
     case endsWith(key: String, val: String)
     
+    /// A literal Document
     case exactly(Document)
 }
 
 /// A `Query` that consists of an `AQT` statement
 public struct Query: ExpressibleByDictionaryLiteral, ValueConvertible, ExpressibleByStringLiteral {
+    /// Initializes this Query with a String literal for a text search
     public init(stringLiteral value: String) {
         self = .textSearch(forString: value)
     }
     
+    /// Initializes this Query with a String literal for a text search
     public init(unicodeScalarLiteral value: String) {
         self = .textSearch(forString: value)
     }
     
+    /// Initializes this Query with a String literal for a text search
     public init(extendedGraphemeClusterLiteral value: String) {
         self = .textSearch(forString: value)
     }
     
+    /// Returns the Document state of this Query
     public func makeDocument() -> Document {
         return self.queryDocument
     }
@@ -320,6 +329,7 @@ public struct Query: ExpressibleByDictionaryLiteral, ValueConvertible, Expressib
         return self.queryDocument
     }
 
+    /// Creates a Query from a Dictionary Literal
     public init(dictionaryLiteral elements: (String, ValueConvertible?)...) {
         self.aqt = .exactly(Document(dictionaryElements: elements))
     }
@@ -337,10 +347,12 @@ public struct Query: ExpressibleByDictionaryLiteral, ValueConvertible, Expressib
         self.aqt = aqt
     }
     
+    /// Initializes a Query from a Document and uses this Document as the Query
     public init(_ document: Document) {
         self.aqt = .exactly(document)
     }
     
+    /// Creates a textSearch for a specified string
     public static func textSearch(forString string: String, language: String? = nil, caseSensitive: Bool = false, diacriticSensitive: Bool = false) -> Query {
         var textSearch: Document = ["$text": [
             "$search": string,

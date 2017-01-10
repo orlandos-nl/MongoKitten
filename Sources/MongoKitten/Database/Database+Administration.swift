@@ -8,7 +8,7 @@
 
 import Foundation
 
-extension Database: Administration {
+extension Database {
 
 
     /// Creates a new collection explicitly.

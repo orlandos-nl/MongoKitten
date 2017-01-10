@@ -17,15 +17,23 @@ public struct MongoHost: Equatable, ExpressibleByStringLiteral {
 
     /// mongod port
     public let port: UInt16
+    
+    /// The amount of currently open connection
     internal var openConnections = 0
+    
+    /// Os this host online
     public internal(set) var online = false
+    
+    /// Is this host a primary node
     public internal(set) var isPrimary = false
 
+    /// Creates a new Host object that specifies the location of this mongod instance
     public init(hostname: String, port: UInt16 = 27017) {
         self.hostname = hostname
         self.port = port
     }
     
+    /// Creates a new Host object from a string
     public init(stringLiteral value: String) {
         let parts = value.characters.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
         
@@ -33,6 +41,7 @@ public struct MongoHost: Equatable, ExpressibleByStringLiteral {
         port = parts.count == 2 ? UInt16(String(parts[1])) ?? 27017 : 27017
     }
     
+    /// Creates a new Host object from a string
     public init(unicodeScalarLiteral value: String) {
         let parts = value.characters.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
         
@@ -40,6 +49,7 @@ public struct MongoHost: Equatable, ExpressibleByStringLiteral {
         port = parts.count == 2 ? UInt16(String(parts[1])) ?? 27017 : 27017
     }
     
+    /// Creates a new Host object from a string
     public init(extendedGraphemeClusterLiteral value: String) {
         let parts = value.characters.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
         
@@ -60,6 +70,7 @@ public struct SSLSettings: ExpressibleByBooleanLiteral {
         self.invalidCertificateAllowed = false
     }
     
+    /// The certificate repository to use. This repository contains the root certificates for all trusted CAs.
     public var certificates: Certificates = .openbsd
     
     /// Enable SSL
@@ -71,7 +82,8 @@ public struct SSLSettings: ExpressibleByBooleanLiteral {
     /// Invalis certificate should be allowed. Defaults to false. Take care before setting this to true, as it makes the application susceptible to man-in-the-middle attacks.
     public let invalidCertificateAllowed: Bool
 
-    public init(enabled: Bool, invalidHostNameAllowed: Bool, invalidCertificateAllowed: Bool) {
+    /// Creates an SSLSettings specification
+    public init(enabled: Bool, invalidHostNameAllowed: Bool = false, invalidCertificateAllowed: Bool = false) {
         self.enabled = enabled
         self.invalidHostNameAllowed = invalidHostNameAllowed
         self.invalidCertificateAllowed = invalidCertificateAllowed
@@ -86,10 +98,19 @@ public struct SSLSettings: ExpressibleByBooleanLiteral {
 /// - PLAIN: The PLAIN mechanism.
 /// - GSSAPI: The GSSAPI mechanism. 
 public enum AuthenticationMechanism: String {
+    /// SCRAM-SHA-1 mechanism
     case SCRAM_SHA_1
+    
+    /// MongoDB Challenge-Response mechanism
     case MONGODB_CR
+    
+    /// X.509 certificate base authentication (currently unsupported)
     case MONGODB_X509
+    
+    /// PLAIN authentication (currently unsupported)
     case PLAIN
+    
+    /// GSSAPI authentication (currently unsupported)
     case GSSAPI
 }
 
@@ -136,9 +157,13 @@ public struct ClientSettings {
     /// The credentials to authenticate to a mongo server
     public let credentials: MongoCredentials?
 
+    /// Specified how many connections can be open per server
     public internal(set) var maxConnectionsPerServer: Int
+    
+    /// The default timeout for a request
     public let defaultTimeout: TimeInterval
 
+    /// Initializes the settings with a group of hosts, SSLsettings (if applicable) amonst other settings
     public init(hosts:[MongoHost], sslSettings: SSLSettings?,
                 credentials: MongoCredentials?, maxConnectionsPerServer: Int = 10, defaultTimeout: TimeInterval = 30) {
         self.hosts = hosts
@@ -148,6 +173,7 @@ public struct ClientSettings {
         self.defaultTimeout = defaultTimeout
     }
 
+    /// Initializes the settings with a single host, SSLsettings (if applicable) amonst other settings
     public init(host: MongoHost, sslSettings: SSLSettings?,
                 credentials: MongoCredentials?, maxConnectionsPerServer: Int = 10, defaultTimeout: TimeInterval = 30) {
         self.hosts = [host]

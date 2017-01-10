@@ -2,7 +2,10 @@ import BSON
 
 /// DBRef is a structure made to keep references to other MongoDB objects and resolve them easily
 public struct DBRef: ValueConvertible {
+    /// The collection this referenced Document resides in
     var collection: Collection
+    
+    /// The referenced Document's _id
     var id: ValueConvertible
     
     /// Converts this DBRef to a BSONPrimitive for easy embedding
@@ -62,6 +65,9 @@ public struct DBRef: ValueConvertible {
         ]
     }
     
+    /// Resolves this reference to a Document
+    ///
+    /// - returns: The Document or `nil` if the reference is invalid or the Document has been removed.
     public func resolve() throws -> Document? {
         return try collection.findOne(matching: "_id" == self.id)
     }
