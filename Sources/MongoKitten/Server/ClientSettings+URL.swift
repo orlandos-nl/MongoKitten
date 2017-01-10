@@ -92,10 +92,10 @@ extension ClientSettings {
         var sslVerify: Bool = true
 
         if let sslOption = queries["ssl"] {
-            ssl = Bool(stringLiteral: sslOption)
+            ssl = Bool(string: sslOption)
 
             if let verifyOption = queries["sslVerify"] {
-                sslVerify = Bool(stringLiteral: verifyOption)
+                sslVerify = Bool(string: verifyOption)
             }
         } else {
             ssl = false

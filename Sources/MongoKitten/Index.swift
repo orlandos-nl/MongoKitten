@@ -75,6 +75,7 @@ public enum IndexParameter {
     
     /// Applies text indexing to the provided keys
     case text([String])
+    case geo2dsphere(field: String)
     
     /// The Document representation for this Index
     internal var document: Document {
@@ -118,7 +119,9 @@ public enum IndexParameter {
         case .buildInBackground:
             return ["background": true]
         case .weight(let weight):
-            return ["weights": Int32(weight)]
+            return ["weights": Int32(weight)]            
+        case .geo2dsphere(let field):
+            return ["key":[field:"2dsphere"] as Document]
         }
     }
 }

@@ -253,6 +253,17 @@ public indirect enum AQT {
             return [key: ((try? RegularExpression(pattern: val + "$", options: .anchorsMatchLines)) ?? Null()) as ValueConvertible]
         case .nothing:
             return []
+        case .near(let key, let point, let maxDistance, let minDistance):
+            return [key: ["$near":[
+                            "$geometry":[
+                                "type":point.type.rawValue,
+                                "coordinates":[point.coordinate.values[0],point.coordinate.values[1]] as Document
+                                ] as Document,
+                            "$maxDistance":maxDistance,
+                            "$minDistance":minDistance
+                            ] as Document
+                        ] as Document
+                    ] as Document
         }
     }
     
@@ -300,6 +311,16 @@ public indirect enum AQT {
     
     /// A literal Document
     case exactly(Document)
+
+    /// Match all documents containing a `key` with geospatial data that is near the specified GeoJSON `Point`.
+    ///
+    /// - `key` the field name
+    /// - `point` the GeoJSON Point
+    /// - `maxDistance` : the maximum distance from the `point`, in meters
+    /// - `minDistance` : the minimum distance from the `point`, in meters
+    ///
+    /// - SeeAlso : https://docs.mongodb.com/manual/reference/operator/query/near/
+    case near(key: String, point: Point, maxDistance: Double, minDistance: Double)
 }
 
 /// A `Query` that consists of an `AQT` statement
