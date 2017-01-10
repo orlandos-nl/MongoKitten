@@ -75,6 +75,8 @@ public enum IndexParameter {
     
     /// Applies text indexing to the provided keys
     case text([String])
+    
+    /// A Geospatial index on a field
     case geo2dsphere(field: String)
     
     /// The Document representation for this Index

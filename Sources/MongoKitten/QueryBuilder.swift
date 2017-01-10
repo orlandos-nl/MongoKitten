@@ -254,16 +254,17 @@ public indirect enum AQT {
         case .nothing:
             return []
         case .near(let key, let point, let maxDistance, let minDistance):
-            return [key: ["$near":[
-                            "$geometry":[
-                                "type":point.type.rawValue,
-                                "coordinates":[point.coordinate.values[0],point.coordinate.values[1]] as Document
-                                ] as Document,
-                            "$maxDistance":maxDistance,
-                            "$minDistance":minDistance
-                            ] as Document
-                        ] as Document
+            return [key:
+                ["$near":[
+                    "$geometry":[
+                        "type":point.type.rawValue,
+                        "coordinates":[point.coordinate.location.longitude, point.coordinate.location.latitude] as Document
+                        ] as Document,
+                    "$maxDistance":maxDistance,
+                    "$minDistance":minDistance
                     ] as Document
+                ] as Document
+            ] as Document
         }
     }
     
