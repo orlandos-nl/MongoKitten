@@ -8,8 +8,9 @@
 
 import Foundation
 
+
 /// Defines a geo
-enum GeoJsonObjectType: String {
+public enum GeoJsonObjectType: String {
     /// A single point
     case point = "Point"
     

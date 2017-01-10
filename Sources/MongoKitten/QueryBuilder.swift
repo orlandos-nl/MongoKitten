@@ -258,10 +258,7 @@ public indirect enum AQT {
         case .near(let key, let point, let maxDistance, let minDistance):
             return [key:
                 ["$near":[
-                    "$geometry":[
-                        "type":point.type.rawValue,
-                        "coordinates":[point.coordinate.location.longitude, point.coordinate.location.latitude] as Document
-                        ] as Document,
+                    "$geometry": point.toDocument(),
                     "$maxDistance":maxDistance,
                     "$minDistance":minDistance
                     ] as Document

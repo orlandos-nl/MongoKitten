@@ -30,7 +30,7 @@ class CollectionTests: XCTestCase {
                 ("testHelperObjects", testHelperObjects),
                 ("testGeo2SphereIndex", testGeo2SphereIndex),
                 ("testAggregateLookup", testAggregateLookup),
-                ("testNearQuery", testNearQuery)
+                ("testNearQuery", testNearQuery),
                 ("testAggregateLookup", testAggregateLookup)
 
         ]
@@ -299,7 +299,7 @@ class CollectionTests: XCTestCase {
     func testNearQuery() throws {
         let zips = TestManager.db["zips"]
         try zips.createIndex(named: "loc_index", withParameters: .geo2dsphere(field: "loc"))
-        let position = Position(values: [-72.844092,42.466234])
+        let position = try Position(values: [-72.844092,42.466234])
         let query = Query(aqt: .near(key: "loc", point: Point(coordinate: position), maxDistance: 100.0, minDistance: 0.0))
 
         let results = Array(try zips.find(matching: query))

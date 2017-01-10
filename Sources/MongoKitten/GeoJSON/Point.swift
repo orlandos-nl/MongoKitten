@@ -8,21 +8,26 @@
 
 import Foundation
 
-protocol Geometry {
-
+public protocol Geometry {
+    var type: GeoJsonObjectType { get }
+    func toDocument() -> Document
 }
 
 /// A single point for a geospatial query
 public struct Point: Geometry {
+
     /// The coordinate this point is located at
-    let coordinate: Position
+    public let coordinate: Position
     
     /// The type of object
-    let type: GeoJsonObjectType = .point
+    public let type: GeoJsonObjectType = .point
 
     /// Creates a point from a position on the map
     public init(coordinate: Position) {
         self.coordinate = coordinate
     }
-}
 
+    public func toDocument() -> Document {
+        return ["type": self.type.rawValue, "coordinates": [self.coordinate.values[0], self.coordinate.values[1]] as Document ] as Document
+    }
+}

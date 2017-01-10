@@ -8,11 +8,17 @@
 
 import Foundation
 
+
 public struct Position {
 
     public let values: [Double]
 
-    public init(values: [Double]) {
+    ///
+    ///
+    /// - Parameter values: positions
+    /// - Throws: GeoJSONError
+    public init(values: [Double]) throws {
+        guard values.count >= 2 else { throw GeoJSONError.positionMustContainTwoOrMoreElements }
         self.values = values
     }
 
