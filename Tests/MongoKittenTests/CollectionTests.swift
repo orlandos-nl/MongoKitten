@@ -31,6 +31,8 @@ class CollectionTests: XCTestCase {
                 ("testGeo2SphereIndex", testGeo2SphereIndex),
                 ("testAggregateLookup", testAggregateLookup),
                 ("testNearQuery", testNearQuery)
+                ("testAggregateLookup", testAggregateLookup)
+
         ]
     }
     
