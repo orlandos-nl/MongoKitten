@@ -256,14 +256,9 @@ public indirect enum AQT {
         case .nothing:
             return []
         case .near(let key, let point, let maxDistance, let minDistance):
-            return [key:
-                ["$near":[
-                    "$geometry": point.toDocument(),
-                    "$maxDistance":maxDistance,
-                    "$minDistance":minDistance
-                    ] as Document
-                ] as Document
-            ] as Document
+            return GeometryOperator(key: key, operatorName: "$near", geometry: point, maxDistance: maxDistance, minDistance: minDistance).document()            
+        case .geoWithin(let key, let polygon):
+            return GeometryOperator(key: key, operatorName: "$geoWithin", geometry: polygon).document()
         }
     }
     
@@ -324,6 +319,8 @@ public indirect enum AQT {
     ///
     /// - SeeAlso : https://docs.mongodb.com/manual/reference/operator/query/near/
     case near(key: String, point: Point, maxDistance: Double, minDistance: Double)
+
+    case geoWithin(key: String, polygon: Polygon)
 }
 
 /// A `Query` that consists of an `AQT` statement
