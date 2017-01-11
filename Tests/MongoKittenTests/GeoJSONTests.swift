@@ -17,6 +17,8 @@ class GeoJSONTests: XCTestCase {
         return [
             ("testPositionHashable", testPositionHashable),
             ("testPositionInit", testPositionInit),
+            ("testPolygonInit", testPolygonInit),
+            ("testPolygonDocument", testPolygonDocument)
         ]
     }
 
@@ -43,11 +45,8 @@ class GeoJSONTests: XCTestCase {
     }
 
     func testPositionInit()  {
-        do {
-            let _ = try Position(values: [1.0])
-        } catch let error {
-            XCTAssertNotNil(error)
-        }
+
+        XCTAssertThrowsError(try Position(values: [1.0]))
 
         do {
             let position = try Position(values: [1.0,2.0])
@@ -63,5 +62,36 @@ class GeoJSONTests: XCTestCase {
         let position3 = Position(first: 1.0, second: 1.0, remaining: 3.0, 4.0)
         XCTAssertNotNil(position3)
         XCTAssertEqual(position3.values.count, 4)
+    }
+
+
+    func testPolygonInit() throws  {
+
+        XCTAssertThrowsError(try Polygon(exterior: [Position(values: [1.0,1.0])]))
+        XCTAssertThrowsError(try Polygon(exterior: [Position(values: [1.0,1.0]), Position(values: [1.0,2.0]),Position(values: [2.0,2.0]), Position(values: [2.0,1.0])]))
+
+        let polygon = try Polygon(exterior: [Position(values: [1.0,1.0]), Position(values: [1.0,2.0]),Position(values: [2.0,2.0]), Position(values: [1.0,1.0])])
+        XCTAssertNotNil(polygon)
+    }
+
+    func testPolygonDocument() throws {
+        let polygon = try Polygon(exterior: [Position(values: [1.0,1.0]), Position(values: [1.0,2.0]),Position(values: [2.0,2.0]), Position(values: [1.0,1.0])])
+        XCTAssertNotNil(polygon)
+
+        let polyDoc = polygon.makeBSONPrimitive()
+        guard let polyDico = polyDoc.documentValue?.dictionaryValue else { XCTFail(); return }
+        guard let exter = polyDico["coordinates"]?.documentValue?.arrayValue else { XCTFail(); return }
+        XCTAssertEqual(exter.count, 1) // One Exterior ring 
+
+        let exterior  = try [Position(values: [100.0, 0.0]), Position(values: [101.0, 0.0]),Position(values: [101.0, 1.0]), Position(values: [100.0, 1.0]), Position(values: [100.0, 0.0])]
+        let hole =  try [Position(values: [100.2, 0.2]),Position(values: [100.8, 0.2]), Position(values: [100.8, 0.8]),Position(values: [100.2, 0.8]),Position(values: [100.2, 0.2])]
+
+        let polygonWithHole = try Polygon(exterior:exterior, holes:hole)
+        XCTAssertNotNil(polygonWithHole)
+  
+        let polygonHoleDoc = polygonWithHole.makeBSONPrimitive()
+        guard let dic = polygonHoleDoc.documentValue?.dictionaryValue else { XCTFail(); return }
+        guard let coordinates = dic["coordinates"]?.documentValue?.arrayValue else { XCTFail(); return }
+        XCTAssertEqual(coordinates.count, 2) // One Exterior ring and One Hole ring
     }
 }
