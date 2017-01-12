@@ -14,6 +14,7 @@ import Dispatch
 class CollectionTests: XCTestCase {
     static var allTests: [(String, (CollectionTests) -> () throws -> Void)] {
         return [
+                ("testUniqueIndex", testUniqueIndex),
                 ("testQuery", testQuery),
                 ("testRename", testRename),
                 ("testDistinct", testDistinct),
