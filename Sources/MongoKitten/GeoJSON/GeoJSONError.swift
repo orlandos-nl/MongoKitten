@@ -12,4 +12,6 @@ import Foundation
 public enum GeoJSONError: Error {
     case positionMustContainTwoOrMoreElements
     case coordinatesMustContainTwoOrMoreElements
+    case firstAndLastPositionMustBeTheSame
+    case ringMustContainFourOrMoreElements
 }

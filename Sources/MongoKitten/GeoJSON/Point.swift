@@ -8,11 +8,6 @@
 
 import Foundation
 
-public protocol Geometry {
-    var type: GeoJsonObjectType { get }
-    func toDocument() -> Document
-}
-
 /// A representation of a GeoJSON Point.
 public struct Point: Geometry {
 
@@ -27,7 +22,10 @@ public struct Point: Geometry {
         self.coordinate = coordinate
     }
 
-    public func toDocument() -> Document {
-        return ["type": self.type.rawValue, "coordinates": [self.coordinate.values[0], self.coordinate.values[1]] as Document ] as Document
+}
+
+extension Point: ValueConvertible {
+    public func makeBSONPrimitive() -> BSONPrimitive {
+        return ["type": self.type.rawValue, "coordinates": self.coordinate ] as Document
     }
 }

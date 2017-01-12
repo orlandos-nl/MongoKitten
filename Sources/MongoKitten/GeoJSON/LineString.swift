@@ -23,11 +23,11 @@ struct LineString: Geometry {
         guard coordinates.count < 2 else { throw GeoJSONError.coordinatesMustContainTwoOrMoreElements }
         self.coordinates = coordinates
     }
+}
 
-    public func toDocument() -> Document {
-        let coords = coordinates.map { [$0.values[0],$0.values[1]] as Document }
-        return ["type": self.type.rawValue, "coordinates": Document(array: coords) ] as Document
+extension LineString: ValueConvertible {
+    public func makeBSONPrimitive() -> BSONPrimitive {
+        return ["type": self.type.rawValue, "coordinates": Document(array: self.coordinates) ] as Document
     }
-
 }
 
