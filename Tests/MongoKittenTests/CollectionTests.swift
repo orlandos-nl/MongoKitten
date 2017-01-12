@@ -503,4 +503,18 @@ class CollectionTests: XCTestCase {
             "kaas": true
             ])
     }
+
+    func testUniqueIndex() throws {
+        let alphabetCollection = TestManager.db["alphabet"]
+        try alphabetCollection.createIndex(named: "letter", withParameters:.sort(field: "letter", order: .ascending),.unique)
+
+        let aDocument: Document = ["letter":"A"]
+        let id = try alphabetCollection.insert(aDocument)
+        XCTAssertNotNil(id)
+
+        let aBisDocument: Document = ["letter":"A"]
+
+        XCTAssertThrowsError(try alphabetCollection.insert(aBisDocument))
+        try TestManager.db["alphabet"].drop()
+    }
 }
