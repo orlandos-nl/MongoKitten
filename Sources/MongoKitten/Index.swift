@@ -35,6 +35,9 @@ public enum IndexParameter {
         }
     }
     
+    /// Applies Collation rules to String comparison
+    case collation(Collation)
+    
     /// Sorts the specified field with in the given order
     case sort(field: String, order: SortOrder)
     
@@ -82,6 +85,8 @@ public enum IndexParameter {
     /// The Document representation for this Index
     internal var document: Document {
         switch self {
+        case .collation(let collation):
+            return ["collation": collation]
         case .text(let keys):
             var doc: Document = [:]
             
