@@ -131,6 +131,8 @@ public final class Collection {
                     command["ordered"] = ordered
                 }
                 
+                command[raw: "writeConcern"] = database.defaultWriteConcern
+                
                 let reply = try self.database.execute(command: command, until: timeout)
                 guard case .Reply(_, _, _, _, _, _, let replyDocuments) = reply else {
                     throw MongoError.insertFailure(documents: documents, error: nil)
@@ -233,6 +235,9 @@ public final class Collection {
                 command["limit"] = Int32(limit)
             }
             
+            command[raw: "readConcern"] = database.defaultReadConcern
+            command[raw: "collation"] = database.defaultCollation
+            
             command["batchSize"] = Int32(batchSize)
             
             let reply = try database.execute(command: command, writing: false)
@@ -332,6 +337,8 @@ public final class Collection {
                 command["ordered"] = ordered
             }
             
+            command[raw: "writeConcern"] = database.defaultWriteConcern
+            
             let reply = try self.database.execute(command: command)
             guard case .Reply(_, _, _, _, _, _, let documents) = reply else {
                 throw MongoError.updateFailure(updates: updates, error: nil)
@@ -420,6 +427,8 @@ public final class Collection {
             if let ordered = ordered {
                 command["ordered"] = ordered
             }
+            
+            command[raw: "writeConcern"] = database.defaultWriteConcern
             
             let reply = try self.database.execute(command: command)
             let documents = try allDocuments(in: reply)
@@ -547,6 +556,9 @@ public final class Collection {
             command["limit"] = Int32(limit)
         }
         
+        command[raw: "readConcern"] = database.defaultReadConcern
+        command[raw: "collation"] = database.defaultCollation
+        
         let reply = try self.database.execute(command: command, writing: false)
         
         guard case .Reply(_, _, _, _, _, _, let documents) = reply, let document = documents.first else {
@@ -636,6 +648,9 @@ public final class Collection {
         if let filter = filter {
             command["query"] = filter
         }
+        
+        command[raw: "readConcern"] = database.defaultReadConcern
+        command[raw: "collation"] = database.defaultCollation
         
         return try firstDocument(in: try self.database.execute(command: command, writing: false))[raw: "values"]?.documentValue?.arrayValue ?? []
     }
@@ -784,6 +799,9 @@ public final class Collection {
     public func aggregate(pipeline: AggregationPipeline, explain: Bool? = nil, allowDiskUse: Bool? = nil, cursorOptions: Document = ["batchSize":10], bypassDocumentValidation: Bool? = nil) throws -> Cursor<Document> {
         // construct command. we always use cursors in MongoKitten, so that's why the default value for cursorOptions is an empty document.
         var command: Document = ["aggregate": self.name, "pipeline": pipeline.pipelineDocument, "cursor": cursorOptions]
+        
+        command[raw: "readConcern"] = database.defaultReadConcern
+        command[raw: "collation"] = database.defaultCollation
         
         if let explain = explain { command["explain"] = explain }
         if let allowDiskUse = allowDiskUse { command["allowDiskUse"] = allowDiskUse }

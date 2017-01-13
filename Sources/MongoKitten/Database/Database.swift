@@ -25,6 +25,21 @@ public final class Database {
         return server.logger
     }
     
+    /// The default ReadConcern for collections in this Database.
+    ///
+    /// When a ReadConcern is provided in the method call it'll still override this
+    public var defaultReadConcern: ReadConcern? = nil
+    
+    /// The default WriteConcern for collections in this Database.
+    ///
+    /// When a WriteConcern is provided in the method call it'll still override this
+    public var defaultWriteConcern: WriteConcern? = nil
+    
+    /// The default Collation for collections in this Database.
+    ///
+    /// When a Collation is provided in the method call it'll still override this
+    public var defaultCollation: Collation? = nil
+    
     /// A cache of all collections in this Database.
     ///
     /// Mainly used for keeping track of event listeners
