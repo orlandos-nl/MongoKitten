@@ -11,8 +11,11 @@ import Foundation
 
 /// Coordinates for a GeoJSON Polygon.
 public struct PolygonCoordinates {
-    
+
+    /// The exterior ring of the polygon
     public let exterior: [Position]
+    
+    /// The interior rings of the polygon
     public let holes: [[Position]]
 
     public init(exterior: [Position], holes:[[Position]]) throws {
