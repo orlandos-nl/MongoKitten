@@ -301,6 +301,10 @@ public class GridFS {
                 endChunk += 1
             }
             
+            guard start >= 0 else {
+                throw MongoError.negativeDataRequested
+            }
+            
             let cursor = try chunksCollection.find(matching: ["files_id": id], sortedBy: ["n": .ascending], skipping: Int32(skipChunks), limitedTo: Int32(endChunk - skipChunks))
             let chunkCursor = Cursor(base: cursor, transform: { Chunk(document: $0, chunksCollection: self.chunksCollection, filesCollection: self.filesCollection) })
             var allData = [UInt8]()
@@ -309,16 +313,19 @@ public class GridFS {
                 // `if skipChunks == 1` then we need the chunk.n to be 1 too,
                 // start counting at 0
                 if chunk.n == Int32(skipChunks) {
-                    print("start\(chunk.n)")
-                    allData.append(contentsOf: chunk.data[(start % Int(self.chunkSize))..<Int(self.chunkSize)])
+                    allData.append(contentsOf: chunk.data[(start % Int(self.chunkSize))..<Swift.min(Int(self.chunkSize), chunk.data.count)])
                     
                 // if endChunk == 10 then we need the current chunk to be 9
                 // start counting at 0
                 } else if chunk.n == Int32(endChunk - 1) {
-                    print("end\(chunk.n)")
-                    allData.append(contentsOf: chunk.data[0..<(lastByte % Int(self.chunkSize))])
+                    let endIndex = (lastByte % Int(self.chunkSize))
+                    
+                    guard chunk.data.count == endIndex else {
+                        throw MongoError.tooMuchDataRequested(contains: Int((chunk.n - 1) * self.chunkSize) + chunk.data.count, requested: lastByte)
+                    }
+                    
+                    allData.append(contentsOf: chunk.data[0..<endIndex])
                 } else {
-                    print(chunk.n)
                     allData.append(contentsOf: chunk.data)
                 }
             }

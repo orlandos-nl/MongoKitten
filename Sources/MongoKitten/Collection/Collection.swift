@@ -85,8 +85,6 @@ public final class Collection {
     
     /// TODO: Detect how many bytes are being sent. Max is 48000000 bytes or 48MB
     ///
-    /// TODO: Insert more than 1000 documents
-    ///
     /// Inserts multiple documents in this collection and adds a BSON ObjectId to documents that do not have an "_id" field
     ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/insert/#dbcmd.insert

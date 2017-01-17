@@ -91,6 +91,12 @@ public enum MongoError : Error {
     
     /// Unsupported feature (Authentication for example)
     case unsupportedFeature(String)
+    
+    /// GridFS had a request for data that does not exist
+    case tooMuchDataRequested(contains: Int, requested: Int)
+    
+    /// GridFS had a request for data that had a negative index
+    case negativeDataRequested
 }
 
 /// Authenication failure

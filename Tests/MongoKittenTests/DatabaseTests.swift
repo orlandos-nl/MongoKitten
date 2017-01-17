@@ -54,6 +54,13 @@ class DatabaseTests: XCTestCase {
         
         XCTAssertEqual(try file.read(), [0x05, 0x04, 0x01, 0x02, 0x03, 0x00])
         
+        XCTAssertThrowsError(try file.read(from: -1, to: 7))
+        XCTAssertThrowsError(try file.read(from: -1, to: 5))
+        
+        // TODO: XCTAssertThrowsError(try file.read(from: 1, to: 6))
+        
+        XCTAssertEqual(try file.read(from: 0, to: 5), [0x05, 0x04, 0x01, 0x02, 0x03, 0x00])
+        
         XCTAssertEqual(gridFS.chunks.name, "fs.chunks")
         XCTAssertEqual(gridFS.files.name, "fs.files")
     }

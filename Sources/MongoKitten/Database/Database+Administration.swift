@@ -25,7 +25,10 @@ extension Database {
     /// - parameter options: Optionally, configuration options for creating this collection.
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func createCollection(named name: String, options: Document? = nil) throws {
+    ///
+    /// - returns: The created collection
+    @discardableResult
+    public func createCollection(named name: String, validatedBy validator: Query? = nil, options: Document? = nil) throws -> Collection {
         var command: Document = ["create": name]
 
         if let options = options {
@@ -33,6 +36,8 @@ extension Database {
                 command[raw: option.key] = option.value
             }
         }
+        
+        command[raw: "validator"] = validator
 
         let document = try firstDocument(in: try execute(command: command))
 
@@ -43,6 +48,8 @@ extension Database {
             logger.error(options ?? [:])
             throw MongoError.commandFailure(error: document)
         }
+        
+        return self[name]
     }
 
     /// All information about the `Collection`s in this `Database`

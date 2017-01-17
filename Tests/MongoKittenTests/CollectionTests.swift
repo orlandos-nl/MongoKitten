@@ -33,8 +33,8 @@ class CollectionTests: XCTestCase {
                 ("testAggregateLookup", testAggregateLookup),
                 ("testNearQuery", testNearQuery),
                 ("testAggregateLookup", testAggregateLookup),
-                ("testFindAndModify", testFindAndModify)
-
+                ("testFindAndModify", testFindAndModify),
+                ("testDocumentValidation", testDocumentValidation),
         ]
     }
     
@@ -57,6 +57,43 @@ class CollectionTests: XCTestCase {
 
         }
         try! TestManager.disconnect()
+    }
+    
+    func testDocumentValidation() throws {
+        try TestManager.db["validationtest"].drop()
+        
+        let validator: Query = "username" == "henk" && "age" > 21 && "drinks" == "beer"
+        let collection = try TestManager.db.createCollection(named: "validationtest", validatedBy: validator)
+        
+        XCTAssertThrowsError(try collection.insert([
+                "username": "henk",
+                "age": 12,
+                "drinks": "beer"
+            ]))
+        
+        XCTAssertThrowsError(try collection.insert([
+            "username": "henk",
+            "age": 40,
+            "drinks": "coca cola"
+            ]))
+        
+        XCTAssertThrowsError(try collection.insert([
+            "username": "gerrit",
+            "age": 21,
+            "drinks": "beer"
+            ]))
+        
+        _ = try collection.insert([
+            "username": "henk",
+            "age": 22,
+            "drinks": "beer"
+            ])
+        
+        _ = try collection.insert([
+            "username": "henk",
+            "age": 42,
+            "drinks": "beer"
+            ])
     }
     
     func testQuery() throws {

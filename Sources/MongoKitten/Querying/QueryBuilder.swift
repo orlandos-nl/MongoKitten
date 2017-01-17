@@ -259,6 +259,10 @@ public indirect enum AQT {
             return GeometryOperator(key: key, operatorName: "$near", geometry: point, maxDistance: maxDistance, minDistance: minDistance).document()            
         case .geoWithin(let key, let polygon):
             return GeometryOperator(key: key, operatorName: "$geoWithin", geometry: polygon).document()
+        case .exists(key: let key):
+            return [
+                key: [ "$exists": true ] as Document
+            ]
         }
     }
     
@@ -309,6 +313,9 @@ public indirect enum AQT {
     
     /// A literal Document
     case exactly(Document)
+    
+    /// Value at this key exists, even if it is `Null`
+    case exists(key: String)
 
     /// Match all documents containing a `key` with geospatial data that is near the specified GeoJSON `Point`.
     ///
