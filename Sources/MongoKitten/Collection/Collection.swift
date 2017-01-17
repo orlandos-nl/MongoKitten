@@ -629,7 +629,7 @@ public final class Collection {
             throw MongoError.commandFailure(error: document)
         }
         
-        return document["value"] ?? Null()
+        return document[raw: "value"] ?? Null()
     }
     
     /// Returns all distinct values for a key in this collection. Allows filtering using query
