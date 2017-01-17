@@ -279,6 +279,11 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
                 })
                 ] as Document)
         }
+
+        @discardableResult
+        public static func geoNear(geoNearOption: GeoNearOption) -> Stage {
+            return Stage(["$geoNear": geoNearOption] as Document)
+        }
     }
 }
 

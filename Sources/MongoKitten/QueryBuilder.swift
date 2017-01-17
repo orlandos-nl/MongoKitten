@@ -256,9 +256,14 @@ public indirect enum AQT {
         case .nothing:
             return []
         case .near(let key, let point, let maxDistance, let minDistance):
-            return GeometryOperator(key: key, operatorName: "$near", geometry: point, maxDistance: maxDistance, minDistance: minDistance).document()            
+            return GeometryOperator(key: key, operatorName: "$near", geometry: point, maxDistance: maxDistance, minDistance: minDistance).document()
         case .geoWithin(let key, let polygon):
             return GeometryOperator(key: key, operatorName: "$geoWithin", geometry: polygon).document()
+        case .geoIntersects(let key, let geometry):
+            return GeometryOperator(key: key, operatorName: "$geoIntersects", geometry: geometry).document()
+        case .nearSphere(let key, let point, let maxDistance, let minDistance):
+            return GeometryOperator(key: key, operatorName: "$nearSphere", geometry: point, maxDistance: maxDistance, minDistance: minDistance).document()
+
         }
     }
     
@@ -321,6 +326,8 @@ public indirect enum AQT {
     case near(key: String, point: Point, maxDistance: Double, minDistance: Double)
 
     case geoWithin(key: String, polygon: Polygon)
+    case geoIntersects(key: String, geometry: Geometry)
+    case nearSphere(key: String, point: Point,maxDistance: Double, minDistance: Double)
 }
 
 /// A `Query` that consists of an `AQT` statement
