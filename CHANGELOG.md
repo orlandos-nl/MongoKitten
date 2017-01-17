@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 ##### Enhancements
 * Geo2Sphere Index
 * $near Query
+* Better GridFS support
+* `db.createCollection` now accepts a `Query` as validator
 
 ## [3.0.3](https://github.com/OpenKitten/MongoKitten/releases/tag/3.0.3)
 ##### Bug Fixes

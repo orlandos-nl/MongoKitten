@@ -248,7 +248,7 @@ public final class Collection {
                 throw MongoError.invalidResponse(documents: documents)
             }
             
-            return try Cursor(cursorDocument: cursorDoc, collection: self, chunkSize: 10, transform: { doc in
+            return try Cursor(cursorDocument: cursorDoc, collection: self, chunkSize: batchSize, transform: { doc in
                 return doc
             })
         } else {
