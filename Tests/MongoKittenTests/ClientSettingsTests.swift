@@ -88,6 +88,35 @@ class ClientSettingsTest: XCTestCase {
 
         let invalidValueSettings = try ClientSettings(mongoURL:"mongodb://user:passwor@localhost:27017?ssl=test")
         XCTAssertNil(invalidValueSettings.sslSettings)
+        
+        let SSLsettings: SSLSettings = true
+        
+        XCTAssertEqual(SSLsettings.enabled, true)
+        XCTAssertEqual(SSLsettings.invalidHostNameAllowed, false)
+        XCTAssertEqual(SSLsettings.invalidCertificateAllowed, false)
+    }
+    
+    func testHostLiteralExpression() {
+        let host1: MongoHost = "example.com"
+        let host2: MongoHost = "127.0.0.1:12345"
+        let host3: MongoHost = "[2001:0db8:0000:0000:0000:ff00:0042:8329]:12345"
+        let host4: MongoHost = "[::1]:12345"
+        let host5: MongoHost = "localhost:12345"
+        
+        XCTAssertEqual(host1.hostname, "example.com")
+        XCTAssertEqual(host1.port, 27017)
+        
+        XCTAssertEqual(host2.hostname, "127.0.0.1")
+        XCTAssertEqual(host2.port, 12345)
+        
+        XCTAssertEqual(host3.hostname, "[2001:0db8:0000:0000:0000:ff00:0042:8329]")
+        XCTAssertEqual(host3.port, 12345)
+        
+        XCTAssertEqual(host4.hostname, "[::1]")
+        XCTAssertEqual(host4.port, 12345)
+        
+        XCTAssertEqual(host5.hostname, "localhost")
+        XCTAssertEqual(host5.port, 12345)
     }
 
     func testMultiHost() throws {

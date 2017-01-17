@@ -285,7 +285,7 @@ public class GridFS {
             var bytesRequested = Int(self.length) - start
             
             if let end = end {
-                guard start > end else {
+                guard start < end else {
                     throw MongoError.negativeBytesRequested(start: start, end: end)
                 }
                 
@@ -306,7 +306,21 @@ public class GridFS {
             var allData = [UInt8]()
             
             for chunk in chunkCursor {
-                allData.append(contentsOf: chunk.data)
+                // `if skipChunks == 1` then we need the chunk.n to be 1 too,
+                // start counting at 0
+                if chunk.n == Int32(skipChunks) {
+                    print("start\(chunk.n)")
+                    allData.append(contentsOf: chunk.data[(start % Int(self.chunkSize))..<Int(self.chunkSize)])
+                    
+                // if endChunk == 10 then we need the current chunk to be 9
+                // start counting at 0
+                } else if chunk.n == Int32(endChunk - 1) {
+                    print("end\(chunk.n)")
+                    allData.append(contentsOf: chunk.data[0..<(lastByte % Int(self.chunkSize))])
+                } else {
+                    print(chunk.n)
+                    allData.append(contentsOf: chunk.data)
+                }
             }
             
             return allData
