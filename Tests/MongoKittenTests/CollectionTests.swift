@@ -32,7 +32,8 @@ class CollectionTests: XCTestCase {
                 ("testGeo2SphereIndex", testGeo2SphereIndex),
                 ("testAggregateLookup", testAggregateLookup),
                 ("testNearQuery", testNearQuery),
-                ("testAggregateLookup", testAggregateLookup)
+                ("testAggregateLookup", testAggregateLookup),
+                ("testFindAndModify", testFindAndModify)
 
         ]
     }
@@ -558,6 +559,44 @@ class CollectionTests: XCTestCase {
             ])
     }
 
+    
+    func testFindAndModify() throws {
+        let base: Document = ["username": "bob", "age": 25, "kittens": 6, "dogs": 0, "beers": 90]
+        
+        var inserts: [Document]
+        
+        var brokenUsername = base
+        var brokenAge = base
+        var brokenKittens = base
+        var brokenKittens2 = base
+        var brokenDogs = base
+        var brokenBeers = base
+        
+        brokenUsername["username"] = "harrie"
+        brokenAge["age"] = 24
+        brokenKittens["kittens"] = 3
+        brokenKittens2["kittens"] = 1
+        brokenDogs["dogs"] = 2
+        brokenBeers["beers"] = "broken"
+        
+        inserts = [base, brokenUsername, brokenUsername, brokenAge, brokenDogs, brokenKittens, brokenKittens2, brokenBeers, base]
+        try TestManager.wcol.insert(inserts)
+        
+        let query: Query = ("username" == "henk" || "username" == "bob") && "age" > 24 && "kittens" >= 2 && "kittens" != 3 && "dogs" <= 1 && "beers" < 100
+        
+        let modifiedDocument = try TestManager.wcol.findAndModify(matching: query, action: .update(with: ["testieBool": true], returnModified: true, upserting: false) )
+        
+        XCTAssertNotNil(modifiedDocument.documentValue)
+        
+        let response = Array(try TestManager.wcol.find(matching: "testieBool" == true))
+        XCTAssertEqual(response.count, 1)
+        
+        let response2 = Array(try TestManager.wcol.find(matching: query))
+        XCTAssertEqual(response2.count, 1)
+    }
+
+
+
     func testUniqueIndex() throws {
         let alphabetCollection = TestManager.db["alphabet"]
         try alphabetCollection.createIndex(named: "letter", withParameters:.sort(field: "letter", order: .ascending),.unique)
@@ -571,4 +610,5 @@ class CollectionTests: XCTestCase {
         XCTAssertThrowsError(try alphabetCollection.insert(aBisDocument))
         try TestManager.db["alphabet"].drop()
     }
+
 }
