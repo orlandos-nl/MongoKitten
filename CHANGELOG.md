@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 * $near Query
 * Better GridFS support
 * `db.createCollection` now accepts a `Query` as validator
+* Updated the batchSize of read queries to 100 by default
 
 ## [3.0.3](https://github.com/OpenKitten/MongoKitten/releases/tag/3.0.3)
 ##### Bug Fixes
