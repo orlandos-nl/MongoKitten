@@ -35,26 +35,29 @@ public struct MongoHost: Equatable, ExpressibleByStringLiteral {
     
     /// Creates a new Host object from a string
     public init(stringLiteral value: String) {
-        let parts = value.characters.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
+        // Split the last ':', specifically for IPv6 addresses
+        let parts = value.characters.reversed().split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
         
-        hostname = String(parts[0])
-        port = parts.count == 2 ? UInt16(String(parts[1])) ?? 27017 : 27017
+        hostname = String(parts[parts.count == 2 ? 1 : 0].reversed())
+        port = parts.count == 2 ? UInt16(String(parts[0].reversed())) ?? 27017 : 27017
     }
     
     /// Creates a new Host object from a string
     public init(unicodeScalarLiteral value: String) {
-        let parts = value.characters.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
+        // Split the last ':', specifically for IPv6 addresses
+        let parts = value.characters.reversed().split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
         
-        hostname = String(parts[0])
-        port = parts.count == 2 ? UInt16(String(parts[1])) ?? 27017 : 27017
+        hostname = String(parts[parts.count == 2 ? 1 : 0].reversed())
+        port = parts.count == 2 ? UInt16(String(parts[0].reversed())) ?? 27017 : 27017
     }
     
     /// Creates a new Host object from a string
     public init(extendedGraphemeClusterLiteral value: String) {
-        let parts = value.characters.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
+        // Split the last ':', specifically for IPv6 addresses
+        let parts = value.characters.reversed().split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
         
-        hostname = String(parts[0])
-        port = parts.count == 2 ? UInt16(String(parts[1])) ?? 27017 : 27017
+        hostname = String(parts[parts.count == 2 ? 1 : 0].reversed())
+        port = parts.count == 2 ? UInt16(String(parts[0].reversed())) ?? 27017 : 27017
     }
     
     public static func ==(lhs: MongoHost, rhs: MongoHost) -> Bool {
