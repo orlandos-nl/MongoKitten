@@ -2,6 +2,7 @@
 All notable changes to this project will be documented in this file.
 `MongoKitten` adheres to [Semantic Versioning](http://semver.org/).
 ## [3.0.3](https://github.com/OpenKitten/MongoKitten/releases/tag/3.0.3)
+##### Bug Fixes
 * Fix findAndModify not returning any Value
 
 ## [3.0.2](https://github.com/OpenKitten/MongoKitten/releases/tag/3.0.2)
