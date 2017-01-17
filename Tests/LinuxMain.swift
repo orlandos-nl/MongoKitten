@@ -6,5 +6,7 @@ XCTMain([
     testCase(AdministrationCommandsTests.allTests),
     testCase(DatabaseTests.allTests),
     testCase(ClientSettingsTest.allTests),
-    testCase(GeoJSONTests.allTests)
+    testCase(GeoJSONTests.allTests),
+    testCase(AggregationTests.allTests),
+    testCase(GridFSTest.allTests)
 ])

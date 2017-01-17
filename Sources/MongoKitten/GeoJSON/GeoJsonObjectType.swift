@@ -9,11 +9,6 @@
 import Foundation
 
 
-public protocol Geometry {
-    var type: GeoJsonObjectType { get }
-}
-
-
 /// Defines a geo
 public enum GeoJsonObjectType: String {
     /// A single point
@@ -38,14 +33,20 @@ public enum GeoJsonObjectType: String {
     case geometryCollection = "GeometryCollection"
 }
 
+public protocol Geometry {
+    var type: GeoJsonObjectType { get }
+    
+}
+
+
 struct GeometryOperator {
     let key: String
     let operatorName: String
-    let geometry: ValueConvertible
+    let geometry: Geometry
     let maxDistance: Double?
     let minDistance: Double?
 
-    init(key: String, operatorName: String, geometry: ValueConvertible, maxDistance: Double? = nil, minDistance: Double? = nil) {
+    init(key: String, operatorName: String, geometry: Geometry, maxDistance: Double? = nil, minDistance: Double? = nil) {
         self.key = key
         self.operatorName = operatorName
         self.geometry = geometry
@@ -54,7 +55,9 @@ struct GeometryOperator {
     }
 
     func document() -> Document {
-        var geometry = Document(dictionaryLiteral: ("$geometry",self.geometry))
+
+        guard let geoValue = self.geometry as? ValueConvertible else { return Document() }
+        var geometry = Document(dictionaryLiteral: ("$geometry", geoValue))
 
         if let maxDistance = self.maxDistance {
             geometry["$maxDistance"] = maxDistance
@@ -65,5 +68,53 @@ struct GeometryOperator {
         }
 
        return [key: [operatorName:geometry] as Document ] as Document
+    }
+}
+
+public struct GeoNearOption {
+
+    public let near: Point
+    public let distanceField: String
+    public let spherical: Bool
+    public let limit: Int?
+    public let num: Int?
+    public let minDistance: Double?
+    public let maxDistance: Double?
+    public let query: Document?
+    public let distanceMultiplier: Double?
+    public let uniqueDocs: Bool?
+    public let includeLocs: String?
+
+    public init(near: Point, spherical: Bool, distanceField: String, limit: Int? = nil, num: Int? = nil, minDistance: Double? = nil, maxDistance: Double? = nil, query: Document? = nil, distanceMultiplier: Double? = nil, uniqueDocs: Bool? = nil, includeLocs: String? = nil) {
+        self.near = near
+        self.spherical = spherical
+        self.distanceField = distanceField
+        self.limit = limit
+        self.num = num
+        self.minDistance = minDistance
+        self.maxDistance = maxDistance
+        self.query = query
+        self.distanceMultiplier = distanceMultiplier
+        self.uniqueDocs = uniqueDocs
+        self.includeLocs = includeLocs
+    }
+}
+
+extension GeoNearOption: ValueConvertible {
+    public func makeBSONPrimitive() -> BSONPrimitive {
+        return  ["near":near,
+                                 "spherical": spherical,
+                                 "distanceField": distanceField,
+                                 "limit": limit,
+                                 "num": num,
+                                 "minDistance": minDistance,
+                                 "maxDistance": maxDistance,
+                                 "query": query,
+                                 "distanceMultiplier": distanceMultiplier,
+                                 "uniqueDocs": uniqueDocs,
+                                 "includeLocs": includeLocs] as Document
+
+
+
     }
 }
