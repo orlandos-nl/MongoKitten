@@ -320,7 +320,7 @@ public class GridFS {
                 } else if chunk.n == Int32(endChunk - 1) {
                     let endIndex = (lastByte % Int(self.chunkSize))
                     
-                    guard chunk.data.count == endIndex else {
+                    guard chunk.data.count >= endIndex else {
                         throw MongoError.tooMuchDataRequested(contains: Int((chunk.n - 1) * self.chunkSize) + chunk.data.count, requested: lastByte)
                     }
                     
