@@ -174,7 +174,7 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A Cursor pointing to the response Documents.
-    public func execute(command: Document = [], usingFlags flags: QueryFlags = [], fetching fetchChunkSize: Int32 = 2_000, timeout: TimeInterval = 0) throws -> Cursor<Document> {
+    public func execute(command: Document = [], usingFlags flags: QueryFlags = [], fetching fetchChunkSize: Int32 = 100, timeout: TimeInterval = 0) throws -> Cursor<Document> {
         let timeout = timeout > 0 ? timeout : database.server.defaultTimeout
         
         let connection = try database.server.reserveConnection(writing: true, authenticatedFor: self.database)
