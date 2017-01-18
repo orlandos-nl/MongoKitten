@@ -80,7 +80,7 @@ public final class Database {
     /// Initializes this Database with a connection String.
     ///
     /// Requires a path with a databasee name
-    public init(mongoURL url: String, usingTcpDriver driver: MongoTCP.Type? = nil, maxConnectionsPerServer maxConnections: Int = 10) throws {
+    public init(mongoURL url: String, usingTcpDriver driver: MongoTCP.Type? = nil, maxConnectionsPerServer maxConnections: Int = 100) throws {
         let path = url.characters.split(separator: "/", maxSplits: 2, omittingEmptySubsequences: true)
         
         guard path.count == 3, let dbname = path.last?.split(separator: "?")[0] else {

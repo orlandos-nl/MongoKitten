@@ -15,6 +15,8 @@ extension Bool {
             self = true
         case "false":
             self = false
+        case "":
+            self = true
         default:
             self = false
         }

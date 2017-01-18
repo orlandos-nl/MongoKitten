@@ -168,7 +168,7 @@ public struct ClientSettings {
 
     /// Initializes the settings with a group of hosts, SSLsettings (if applicable) amonst other settings
     public init(hosts:[MongoHost], sslSettings: SSLSettings?,
-                credentials: MongoCredentials?, maxConnectionsPerServer: Int = 10, defaultTimeout: TimeInterval = 30) {
+                credentials: MongoCredentials?, maxConnectionsPerServer: Int = 100, defaultTimeout: TimeInterval = 30) {
         self.hosts = hosts
         self.sslSettings = sslSettings
         self.credentials = credentials
@@ -178,7 +178,7 @@ public struct ClientSettings {
 
     /// Initializes the settings with a single host, SSLsettings (if applicable) amonst other settings
     public init(host: MongoHost, sslSettings: SSLSettings?,
-                credentials: MongoCredentials?, maxConnectionsPerServer: Int = 10, defaultTimeout: TimeInterval = 30) {
+                credentials: MongoCredentials?, maxConnectionsPerServer: Int = 100, defaultTimeout: TimeInterval = 30) {
         self.hosts = [host]
         self.credentials = credentials
         self.sslSettings = sslSettings
