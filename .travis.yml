@@ -5,30 +5,7 @@ language: generic
 sudo: required
 dist: trusty
 osx_image: xcode8.1
-env:
-  - SWIFT_VERSION=3.0.1
 services: 
   - docker
-before_install:
-  - mkdir -p Tools/storage/mongodb/dbdockerssl
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 0C49F3730359A14518585931BC711F9BA15703C6;
-      echo "deb http://repo.mongodb.org/apt/ubuntu trusty/mongodb-org/3.4 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.4.list;
-      sudo apt-get update;
-      sudo apt-get install mongodb-org-shell mongodb-org-tools;
-      docker pull mongo:latest;
-      docker run -p 27017:27017 -v $PWD/Tools/storage/mongodb/dbdockerssl:/data/db --name mongokittenplain -d mongo mongod;
-    fi
-install: 
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      eval "$(curl -sL https://gist.githubusercontent.com/kylef/5c0475ff02b7c7671d2a/raw/9f442512a46d7a2af7b850d65a7e9bd31edfb09b/swiftenv-install.sh)";    
-    fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      brew update;
-      brew install mongodb;
-      brew services start mongodb;
-    fi
-  - mongoimport --host localhost --port 27017 --db=mongokitten-unittest --collection=zips --drop Tools/zips.json  
 script:
-  - swift build
-  - swift test
+  - eval "$(curl -sL https://raw.githubusercontent.com/OpenKitten/Mongo-Assets/master/travisci)"
