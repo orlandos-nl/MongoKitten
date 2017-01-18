@@ -36,6 +36,16 @@ A MongoDB server (local or online) running MongoDB 2.6 or above.
 
 We host all our documentation [here](http://docs.openkitten.org).
 
+## Tests
+
+To run tests on your local machine you must have a running `mongod` instance on your localhost and accessible via 27017 port.
+Tests use the `zips` collection in `mongokitten-unittest` database. Retrieve the dataset from [here](https://raw.githubusercontent.com/OpenKitten/Mongo-Assets/master/zips.json) and save to a file named `zips.json`.
+In the system shell or command prompt, use `mongoimport` to insert the `zips` collection in the `mongokitten-unittest` database. If the collection already exists the operation will drop the `zips` collection first.
+
+```sh
+mongoimport --db=mongokitten-unittest --collection=zips --drop zips.json
+```
+
 ## Supporters
 
 To keep this project up and running we have [a donation page set up here.](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=265MBC3CZFN7Y) If you add your email address we'll contact you and we'll put your photo underneath here.
