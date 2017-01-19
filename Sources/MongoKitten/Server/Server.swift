@@ -262,9 +262,10 @@ public final class Server {
                 connections.append(connection)
                 
                 let cmd = authDB["$cmd"]
-                let document: Document = [
+                var document: Document = [
                     "isMaster": Int32(1)
                 ]
+                document.append(self.driverInformation, forKey: "client")
                 
                 let commandMessage = Message.Query(requestID: self.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
                 let response = try self.sendAndAwait(message: commandMessage, overConnection: connection, timeout: defaultTimeout)
