@@ -97,6 +97,15 @@ public final class Server {
     /// TODO: MongoKitten should pass slaveOK together with the query in order for these requests to succeed
     private var slaveOK = false
     
+    /// The default write concern at the Server level
+    public var writeConcern: WriteConcern?
+    
+    /// The default read concern at the Server level
+    public var readConcern: ReadConcern?
+    
+    /// The default Collation for collections at the Server level.
+    public var collation: Collation? = nil
+    
     /// The default timeout used for connections/queries
     internal var defaultTimeout: TimeInterval = 60
 

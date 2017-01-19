@@ -27,17 +27,47 @@ public final class Database {
     /// The default ReadConcern for collections in this Database.
     ///
     /// When a ReadConcern is provided in the method call it'll still override this
-    public var defaultReadConcern: ReadConcern? = nil
+    private var defaultReadConcern: ReadConcern? = nil
     
     /// The default WriteConcern for collections in this Database.
     ///
     /// When a WriteConcern is provided in the method call it'll still override this
-    public var defaultWriteConcern: WriteConcern? = nil
+    private var defaultWriteConcern: WriteConcern? = nil
+    
+    /// Sets or gets the default write concern at the database level
+    public var writeConcern: WriteConcern? {
+        get {
+            return self.defaultWriteConcern ?? server.writeConcern
+        }
+        set {
+            self.defaultWriteConcern = newValue
+        }
+    }
+    
+    /// Sets or gets the default read concern at the database level
+    public var readConcern: ReadConcern? {
+        get {
+            return self.defaultReadConcern ?? server.readConcern
+        }
+        set {
+            self.defaultReadConcern = newValue
+        }
+    }
     
     /// The default Collation for collections in this Database.
     ///
     /// When a Collation is provided in the method call it'll still override this
-    public var defaultCollation: Collation? = nil
+    private var defaultCollation: Collation? = nil
+    
+    /// Sets or gets the default collation at the database level
+    public var collation: Collation? {
+        get {
+            return self.defaultCollation ?? server.collation
+        }
+        set {
+            self.defaultCollation = newValue
+        }
+    }
     
     /// A cache of all collections in this Database.
     ///

@@ -49,6 +49,51 @@ public final class Collection {
         return "\(database.name).\(name)"
     }
     
+    /// The default ReadConcern for this Collection.
+    ///
+    /// When a ReadConcern is provided in the method call it'll still override this
+    private var defaultReadConcern: ReadConcern? = nil
+    
+    /// The default WriteConcern for this Collection.
+    ///
+    /// When a WriteConcern is provided in the method call it'll still override this
+    private var defaultWriteConcern: WriteConcern? = nil
+    
+    /// Sets or gets the default write concern at the collection level
+    public var writeConcern: WriteConcern? {
+        get {
+            return self.defaultWriteConcern ?? database.writeConcern
+        }
+        set {
+            self.defaultWriteConcern = newValue
+        }
+    }
+    
+    /// Sets or gets the default read concern at the collection level
+    public var readConcern: ReadConcern? {
+        get {
+            return self.defaultReadConcern ?? database.readConcern
+        }
+        set {
+            self.defaultReadConcern = newValue
+        }
+    }
+    
+    /// The default Collation for collections in this Server.
+    ///
+    /// When a Collation is provided in the method call it'll still override this
+    private var defaultCollation: Collation? = nil
+    
+    /// Sets or gets the default read concern at the collection level
+    public var collation: Collation? {
+        get {
+            return self.defaultCollation ?? database.collation
+        }
+        set {
+            self.defaultCollation = newValue
+        }
+    }
+    
     /// Initializes this collection with a database and name
     ///
     /// - parameter name: The collection name
@@ -129,7 +174,7 @@ public final class Collection {
                     command["ordered"] = ordered
                 }
                 
-                command[raw: "writeConcern"] = database.defaultWriteConcern
+                command[raw: "writeConcern"] = self.writeConcern
                 
                 let reply = try self.database.execute(command: command, until: timeout)
                 guard case .Reply(_, _, _, _, _, _, let replyDocuments) = reply else {
@@ -233,8 +278,8 @@ public final class Collection {
                 command["limit"] = Int32(limit)
             }
             
-            command[raw: "readConcern"] = database.defaultReadConcern
-            command[raw: "collation"] = database.defaultCollation
+            command[raw: "readConcern"] = self.readConcern
+            command[raw: "collation"] = self.collation
             
             command["batchSize"] = Int32(batchSize)
             
@@ -335,7 +380,7 @@ public final class Collection {
                 command["ordered"] = ordered
             }
             
-            command[raw: "writeConcern"] = database.defaultWriteConcern
+            command[raw: "writeConcern"] = self.writeConcern
             
             let reply = try self.database.execute(command: command)
             guard case .Reply(_, _, _, _, _, _, let documents) = reply else {
@@ -426,7 +471,7 @@ public final class Collection {
                 command["ordered"] = ordered
             }
             
-            command[raw: "writeConcern"] = database.defaultWriteConcern
+            command[raw: "writeConcern"] = self.writeConcern
             
             let reply = try self.database.execute(command: command)
             let documents = try allDocuments(in: reply)
@@ -554,8 +599,8 @@ public final class Collection {
             command["limit"] = Int32(limit)
         }
         
-        command[raw: "readConcern"] = database.defaultReadConcern
-        command[raw: "collation"] = database.defaultCollation
+        command[raw: "readConcern"] = self.readConcern
+        command[raw: "collation"] = self.collation
         
         let reply = try self.database.execute(command: command, writing: false)
         
@@ -647,8 +692,8 @@ public final class Collection {
             command["query"] = filter
         }
         
-        command[raw: "readConcern"] = database.defaultReadConcern
-        command[raw: "collation"] = database.defaultCollation
+        command[raw: "readConcern"] = self.readConcern
+        command[raw: "collation"] = self.collation
         
         return try firstDocument(in: try self.database.execute(command: command, writing: false))[raw: "values"]?.documentValue?.arrayValue ?? []
     }
@@ -798,8 +843,8 @@ public final class Collection {
         // construct command. we always use cursors in MongoKitten, so that's why the default value for cursorOptions is an empty document.
         var command: Document = ["aggregate": self.name, "pipeline": pipeline.pipelineDocument, "cursor": cursorOptions]
         
-        command[raw: "readConcern"] = database.defaultReadConcern
-        command[raw: "collation"] = database.defaultCollation
+        command[raw: "readConcern"] = self.readConcern
+        command[raw: "collation"] = self.collation
         
         if let explain = explain { command["explain"] = explain }
         if let allowDiskUse = allowDiskUse { command["allowDiskUse"] = allowDiskUse }
