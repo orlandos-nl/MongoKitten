@@ -8,10 +8,11 @@
 
 import Foundation
 
-// TODO: Needs to be conform to this https://docs.mongodb.com/manual/reference/connection-string/
-// mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]
-// MARK: - init ClientSettings with MONGO URI
+/// init ClientSettings with MONGO URI
+/// mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]
+/// - SeeAlso : https://github.com/mongodb/specifications/blob/master/source/connection-string/connection-string-spec.rst
 extension ClientSettings {
+    
     /// Parses a MongoDB connection String to a ClientSettings object
     init(mongoURL url: String) throws {
         var url = url
