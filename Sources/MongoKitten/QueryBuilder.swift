@@ -325,7 +325,7 @@ public struct Query: ExpressibleByDictionaryLiteral, ValueConvertible, Expressib
         return self.queryDocument
     }
 
-    public init(dictionaryLiteral elements: (String, ValueConvertible?)...) {
+    public init(dictionaryLiteral elements: (StringVariant, ValueConvertible?)...) {
         self.aqt = .exactly(Document(dictionaryElements: elements))
     }
     

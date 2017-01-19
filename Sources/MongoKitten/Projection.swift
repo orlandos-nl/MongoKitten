@@ -44,7 +44,7 @@ public struct Projection: CustomValueConvertible {
             self = value ? .included : .excluded
         }
         
-        public init(dictionaryLiteral elements: (String, ValueConvertible?)...) {
+        public init(dictionaryLiteral elements: (StringVariant, ValueConvertible?)...) {
             self = .custom(Document(dictionaryElements: elements))
         }
     }
@@ -63,7 +63,7 @@ public struct Projection: CustomValueConvertible {
 }
 
 extension Projection: ExpressibleByArrayLiteral {
-    public init(arrayLiteral elements: String...) {
+    public init(arrayLiteral elements: StringVariant...) {
         self.document = Document(dictionaryElements: elements.map {
             return ($0, true)
         }).flattened()
@@ -71,7 +71,7 @@ extension Projection: ExpressibleByArrayLiteral {
 }
 
 extension Projection: ExpressibleByDictionaryLiteral {
-    public init(dictionaryLiteral elements: (String, ProjectionExpression)...) {
+    public init(dictionaryLiteral elements: (StringVariant, ProjectionExpression)...) {
         self.document = Document(dictionaryElements: elements.map {
             // FIXME: Mapping as a workarond for the compiler being unable to infer the compliance to a protocol
             ($0.0, $0.1)
