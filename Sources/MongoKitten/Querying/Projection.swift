@@ -63,8 +63,9 @@ public struct Projection: CustomValueConvertible {
             self = value ? .included : .excluded
         }
         
+
         /// A dictionary literal that makes this a custom ProjectionExpression
-        public init(dictionaryLiteral elements: (String, ValueConvertible?)...) {
+        public init(dictionaryLiteral elements: (StringVariant, ValueConvertible?)...) {
             self = .custom(Document(dictionaryElements: elements))
         }
     }
@@ -87,7 +88,7 @@ public struct Projection: CustomValueConvertible {
 
 extension Projection: ExpressibleByArrayLiteral {
     /// Projection can be initialized with an array of Strings. Each string represents a field that needs to be included.
-    public init(arrayLiteral elements: String...) {
+    public init(arrayLiteral elements: StringVariant...) {
         self.document = Document(dictionaryElements: elements.map {
             return ($0, true)
         }).flattened()
@@ -100,7 +101,7 @@ extension Projection: ExpressibleByDictionaryLiteral {
     /// The values are an expression defining whether the key is included, excluded or has a custom value.
     ///
     /// Custom values are rarely used.
-    public init(dictionaryLiteral elements: (String, ProjectionExpression)...) {
+    public init(dictionaryLiteral elements: (StringVariant, ProjectionExpression)...) {
         self.document = Document(dictionaryElements: elements.map {
             // FIXME: Mapping as a workarond for the compiler being unable to infer the compliance to a protocol
             ($0.0, $0.1)
