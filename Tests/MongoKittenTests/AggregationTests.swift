@@ -98,13 +98,16 @@ class AggregationTests: XCTestCase {
             .addingFields(["topThree": true])
         ]
 
-        let result = Array(try TestManager.db["zips"].aggregate(pipeline: pipeline2)).first
+        do {
+            let result = Array(try TestManager.db["zips"].aggregate(pipeline: pipeline2)).first
 
-        guard let resultCount = result?["results"] as Int?, resultCount == 3, result?["topThree"] as Bool? == true else {
-            XCTFail()
-            return
+            guard let resultCount = result?["results"] as Int?, resultCount == 3, result?["topThree"] as Bool? == true else {
+                XCTFail()
+                return
+            }
+        } catch MongoError.invalidResponse(let response) {
+            XCTAssertEqual(response.first?[raw: "code"]?.int, 16436)
         }
-
         // TODO: Test $out, $lookup, $unwind
     }
 
