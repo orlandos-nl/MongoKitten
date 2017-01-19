@@ -74,11 +74,6 @@ class ClientSettingsTest: XCTestCase {
         XCTAssertNotNil(sslClientSettings)
         XCTAssertEqual(sslClientSettings.sslSettings?.enabled, true)
         XCTAssertEqual(sslClientSettings.sslSettings?.invalidCertificateAllowed, false)
-        
-        let sslSimpleClientSettings = try ClientSettings(mongoURL:"mongodb://user:passwor@localhost:27017?ssl")
-        XCTAssertNotNil(sslSimpleClientSettings)
-        XCTAssertEqual(sslSimpleClientSettings.sslSettings?.enabled, true)
-        XCTAssertEqual(sslSimpleClientSettings.sslSettings?.invalidCertificateAllowed, false)
 
         let sslInvalidCertSettings = try ClientSettings(mongoURL:"mongodb://user:passwor@localhost:27017?ssl=true&sslVerify=false")
         XCTAssertNotNil(sslInvalidCertSettings)
