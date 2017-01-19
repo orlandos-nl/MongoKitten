@@ -20,7 +20,7 @@ final class TestManager {
     static var server: Server {
         return db.server
     }
-    static var db: Database = try! Database(mongoURL: "mongodb://localhost:27017/mongokitten-unittest")
+    static var db: Database = try! Database(mongoURL: "mongodb://localhost:27017/mongokitten-unittest?appname=xctest")
     static let wcol = db["wcol"]
     
     static var testingUsers = [Document]()

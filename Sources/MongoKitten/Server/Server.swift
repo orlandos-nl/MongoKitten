@@ -105,12 +105,18 @@ public final class Server {
 
     /// The server's details like the wire protocol version
     internal private(set) var serverData: (maxWriteBatchSize: Int32, maxWireVersion: Int32, minWireVersion: Int32, maxMessageSizeBytes: Int32)?
-    
+
+
+    fileprivate let driverInformation: MongoDriverInformation
+
     /// Sets up the `Server` to connect to MongoDB.
     ///
     /// - Parameter clientSettings: The Client Settings
     /// - Throws: When we can't connect automatically, when the scheme/host is invalid and when we can't connect automatically
     public init(_ clientSettings: ClientSettings) throws {
+        
+        self.driverInformation = MongoDriverInformation(name: "MongoKitten", version: "3.0.1", osName: "", architecture: "", appName: clientSettings.applicationName)
+
         self.clientSettings = clientSettings
 
         if let sslSettings = clientSettings.sslSettings {
@@ -146,9 +152,11 @@ public final class Server {
 
             let authDB = self[self.clientSettings.credentials?.database ?? "admin"]
             let cmd = authDB["$cmd"]
-            let document: Document = [
+            var document: Document = [
                 "isMaster": Int32(1)
             ]
+            
+            document.append(self.driverInformation, forKey: "client")
 
             let commandMessage = Message.Query(requestID: self.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
             let response = try self.sendAndAwait(message: commandMessage, overConnection: connection, timeout: defaultTimeout)
