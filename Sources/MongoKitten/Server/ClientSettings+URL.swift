@@ -99,11 +99,16 @@ extension ClientSettings {
             }
         } else {
             ssl = false
-            
         }
 
-
+        let maxConnections: Int
         
-        self.init(hosts: hosts, sslSettings: ssl ? SSLSettings(enabled: true, invalidHostNameAllowed: !sslVerify, invalidCertificateAllowed: !sslVerify) : nil, credentials: authentication, maxConnectionsPerServer: 10, applicationName: queries["appname"])
+        if let maxConnectionsOption = queries["maxConnections"], let maxConnectionsNumber = Int(maxConnectionsOption) {
+            maxConnections = maxConnectionsNumber
+        } else {
+            maxConnections = 100
+        }
+        
+        self.init(hosts: hosts, sslSettings: ssl ? SSLSettings(enabled: true, invalidHostNameAllowed: !sslVerify, invalidCertificateAllowed: !sslVerify) : nil, credentials: authentication, maxConnectionsPerServer: maxConnections, applicationName: queries["appname"])
     }
 }
