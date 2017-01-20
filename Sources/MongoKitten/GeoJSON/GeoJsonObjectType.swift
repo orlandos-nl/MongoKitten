@@ -71,6 +71,7 @@ struct GeometryOperator {
     }
 }
 
+/// 
 public struct GeoNearOption {
 
     public let near: Point

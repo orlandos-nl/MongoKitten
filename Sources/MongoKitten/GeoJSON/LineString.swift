@@ -9,7 +9,7 @@
 import Foundation
 
 /// A representation of a GeoJSON LineString.
-struct LineString: Geometry {
+public struct LineString: Geometry {
 
     /// The GeoJSON coordinates of this LineString
     public let coordinates: [Position]

@@ -49,6 +49,7 @@ extension PolygonCoordinates: ValueConvertible {
 
 
 extension PolygonCoordinates: Hashable {
+
     public static func == (lhs: PolygonCoordinates, rhs: PolygonCoordinates) -> Bool {
 
         if lhs.holes.count != rhs.holes.count {

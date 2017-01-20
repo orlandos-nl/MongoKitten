@@ -339,8 +339,25 @@ public indirect enum AQT {
     /// - SeeAlso : https://docs.mongodb.com/manual/reference/operator/query/near/
     case near(key: String, point: Point, maxDistance: Double, minDistance: Double)
 
+    /// Match all documents containing a `key` with geospatial data that exists entirely within the specified `Polygon`.
+    /// - `key` the field name
+    /// - `polygon` the GeoJSON Polygon
+    /// - SeeAlso : https://docs.mongodb.com/manual/reference/operator/query/geoWithin/
     case geoWithin(key: String, polygon: Polygon)
+
+    /// Match all documents containing a `key` with geospatial data that intersects with the specified shape.
+    /// - `key` the field name
+    /// - `geometry` the GeoJSON Geometry
+    /// - SeeAlso : https://docs.mongodb.com/manual/reference/operator/query/geoIntersects/
     case geoIntersects(key: String, geometry: Geometry)
+
+    /// Match all documents containing a `key` with geospatial data that is near the specified GeoJSON point using spherical geometry.
+    ///
+    /// - `point` the GeoJSON Point
+    /// - `maxDistance` : the maximum distance from the `point`, in meters
+    /// - `minDistance` : the minimum distance from the `point`, in meters
+    ///
+    /// - SeeAlso : https://docs.mongodb.com/manual/reference/operator/query/nearSphere/
     case nearSphere(key: String, point: Point,maxDistance: Double, minDistance: Double)
 }
 

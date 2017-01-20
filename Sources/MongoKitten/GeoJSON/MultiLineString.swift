@@ -8,7 +8,7 @@
 
 import Foundation
 
-struct MultiLineString: Geometry {
+public struct MultiLineString: Geometry {
     public let coordinates: [LineString]
 
     public let type: GeoJsonObjectType = .multiLineString
