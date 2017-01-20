@@ -94,4 +94,30 @@ class GeoJSONTests: XCTestCase {
         guard let coordinates = dic["coordinates"]?.documentValue?.arrayValue else { XCTFail(); return }
         XCTAssertEqual(coordinates.count, 2) // One Exterior ring and One Hole ring
     }
+
+    func testPolygonHashable() throws {
+        let polygon1 = try Polygon(exterior: [Position(values: [1.0,1.0]), Position(values: [1.0,2.0]),Position(values: [2.0,2.0]), Position(values: [1.0,1.0])])
+        let polygon2 = try Polygon(exterior: [Position(values: [1.0,1.0]), Position(values: [1.0,2.0]),Position(values: [2.0,2.0]), Position(values: [1.0,1.0])])
+
+        XCTAssertEqual(polygon1, polygon2)
+        XCTAssertEqual(polygon1.hashValue, polygon2.hashValue)
+
+        let exterior  = try [Position(values: [100.0, 0.0]), Position(values: [101.0, 0.0]),Position(values: [101.0, 1.0]), Position(values: [100.0, 1.0]), Position(values: [100.0, 0.0])]
+        let hole =  try [Position(values: [100.2, 0.2]),Position(values: [100.8, 0.2]), Position(values: [100.8, 0.8]),Position(values: [100.2, 0.8]),Position(values: [100.2, 0.2])]
+
+        let hole2 =  try [Position(values: [100.0, 0.2]),Position(values: [100.8, 0.2]), Position(values: [100.8, 0.8]),Position(values: [100.2, 0.8]),Position(values: [100.0, 0.2])]
+
+        let polygonWithHole1 = try Polygon(exterior:exterior, holes:hole)
+        let polygonWithHole2 = try Polygon(exterior:exterior, holes:hole)
+        let polygonWithHole3 = try Polygon(exterior:exterior, holes:hole2)
+
+        XCTAssertEqual(polygonWithHole1, polygonWithHole2)
+        XCTAssertEqual(polygonWithHole1.hashValue, polygonWithHole2.hashValue)
+
+        XCTAssertNotEqual(polygon1, polygonWithHole1)
+        XCTAssertNotEqual(polygon1.hashValue, polygonWithHole1.hashValue)
+
+        XCTAssertNotEqual(polygonWithHole1, polygonWithHole3)
+        XCTAssertNotEqual(polygonWithHole1.hashValue, polygonWithHole3.hashValue)
+    }
 }

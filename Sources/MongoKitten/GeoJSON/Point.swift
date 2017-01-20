@@ -29,3 +29,14 @@ extension Point: ValueConvertible {
         return ["type": self.type.rawValue, "coordinates": self.coordinate ] as Document
     }
 }
+
+extension Point: Hashable {
+    public static func == (lhs: Point, rhs: Point) -> Bool {
+        return lhs.coordinate == rhs.coordinate
+    }
+
+
+    public var hashValue: Int {
+        return self.coordinate.hashValue
+    }
+}
