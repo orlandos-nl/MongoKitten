@@ -37,7 +37,7 @@ class GridFSTest: XCTestCase {
         var dataEquivalent = [UInt8](repeating: 0x02, count: 500_000)
         dataEquivalent.append(contentsOf: [UInt8](repeating: 0x03, count: 500_000))
         XCTAssertEqual(data.count, 1_000_000)
-        XCTAssertEqual(data, dataEquivalent)
+        XCTAssert(data == dataEquivalent)
         
         var dbFileData = [UInt8]()
         

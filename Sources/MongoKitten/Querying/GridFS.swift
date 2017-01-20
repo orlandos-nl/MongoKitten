@@ -333,8 +333,10 @@ public class GridFS {
                     }
                     
                     allData.append(contentsOf: chunk.data[0..<endIndex])
-                } else {
+                } else if chunk.n < Int32(endChunk - 1) {
                     allData.append(contentsOf: chunk.data)
+                } else {
+                    throw MongoError.internalInconsistency
                 }
             }
             

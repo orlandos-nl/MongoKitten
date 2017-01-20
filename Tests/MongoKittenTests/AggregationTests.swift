@@ -112,6 +112,10 @@ class AggregationTests: XCTestCase {
     }
 
     func testFacetAggregate() throws {
+        if TestManager.server.buildInfo.version < Version(3, 4, 0) {
+            return
+        }
+        
         let pipeline: AggregationPipeline = [
             .grouping("$state", computed: ["totalPop": .sumOf("$pop")]),
             .sortedBy(["totalPop": .ascending]),
@@ -136,6 +140,10 @@ class AggregationTests: XCTestCase {
     }
 
     func testAggregateLookup() throws {
+        if TestManager.server.buildInfo.version < Version(3, 2, 0) {
+            return
+        }
+        
         let orders = TestManager.db["orders"]
         let inventory = TestManager.db["inventory"]
 
