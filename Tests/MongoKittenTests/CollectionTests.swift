@@ -56,6 +56,10 @@ class CollectionTests: XCTestCase {
     }
     
     func testDocumentValidation() throws {
+        if TestManager.server.buildInfo.version < Version(3, 2, 0) {
+            return
+        }
+        
         try TestManager.db["validationtest"].drop()
         
         let validator: Query = "username" == "henk" && "age" > 21 && "drinks" == "beer"
@@ -273,6 +277,11 @@ class CollectionTests: XCTestCase {
     }
     
     func testIndexes() throws {
+        // TODO: Partially enable for 3.0
+        if TestManager.server.buildInfo.version < Version(3, 2, 0) {
+            return
+        }
+        
         try TestManager.wcol.createIndex(named: "henkbob", withParameters: .sortedCompound(fields: [("name", .ascending), ("age", .descending)]), .expire(afterSeconds: 1), .buildInBackground)
         
         let harriebob = TestManager.db["harriebob"]
@@ -294,6 +303,10 @@ class CollectionTests: XCTestCase {
     }
     
     func testGeo2SphereIndex() throws {
+        if TestManager.server.buildInfo.version < Version(3, 2, 0) {
+            return
+        }
+        
         let airports = TestManager.db["airports"]
         let jfkAirport: Document = [ "iata": "JFK", "loc":["type":"Point", "coordinates":[-73.778925, 40.639751] as Document] as Document]
         try airports.insert(jfkAirport)
@@ -351,6 +364,10 @@ class CollectionTests: XCTestCase {
     
     
     func testTextOperator() throws {
+        if TestManager.server.buildInfo.version < Version(3, 2, 0) {
+            return
+        }
+        
         let textSearch = TestManager.db["textsearch"]
         try textSearch.createIndex(named: "subject", withParameters: .text(["subject"]))
         

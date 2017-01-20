@@ -253,9 +253,7 @@ public final class Collection {
     ///
     /// - returns: A cursor pointing to the found Documents
     public func find(matching filter: Query? = nil, sortedBy sort: Sort? = nil, projecting projection: Projection? = nil, skipping skip: Int32? = nil, limitedTo limit: Int32? = nil, withBatchSize batchSize: Int32 = 100) throws -> Cursor<Document> {
-        let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
-        
-        if protocolVersion >= 4 {
+        if database.server.buildInfo.version >= Version(3,2,0) {
             var command: Document = ["find": self.name]
             
             if let filter = filter {
@@ -307,11 +305,26 @@ public final class Collection {
             
             let reply = try self.database.server.sendAndAwait(message: queryMsg, overConnection: connection)
             
-            guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
+            guard case .Reply(_, _, _, let cursorID, _, _, var documents) = reply else {
                 throw InternalMongoError.incorrectReply(reply: reply)
             }
             
+            if let limit = limit {
+                if documents.count > Int(limit) {
+                    documents.removeLast(documents.count - Int(limit))
+                }
+            }
+            
+            var returned: Int32 = 0
+            
             return Cursor(namespace: self.fullName, collection: self, cursorID: cursorID, initialData: documents, chunkSize: batchSize, transform: { doc in
+                if let limit = limit {
+                    guard returned < limit else {
+                        return nil
+                    }
+                    
+                    returned += 1
+                }
                 return doc
             })
         }

@@ -97,6 +97,9 @@ public enum MongoError : Error {
     
     /// GridFS had a request for data that had a negative index
     case negativeDataRequested
+    
+    /// The received Document that contains the MongoDB server build info is invalid
+    case invalidBuildInfoDocument
 }
 
 /// Authenication failure

@@ -115,7 +115,12 @@ public final class Server {
     /// The server's details like the wire protocol version
     internal private(set) var serverData: (maxWriteBatchSize: Int32, maxWireVersion: Int32, minWireVersion: Int32, maxMessageSizeBytes: Int32)?
 
-
+    /// The server's BuildInfo
+    ///
+    /// Do not access from the initialization process!
+    public private(set) var buildInfo: BuildInfo! = nil
+    
+    /// This driver's information
     fileprivate let driverInformation: MongoDriverInformation
 
     /// Sets up the `Server` to connect to MongoDB.
@@ -123,7 +128,6 @@ public final class Server {
     /// - Parameter clientSettings: The Client Settings
     /// - Throws: When we can't connect automatically, when the scheme/host is invalid and when we can't connect automatically
     public init(_ clientSettings: ClientSettings) throws {
-        
         self.driverInformation = MongoDriverInformation(name: "MongoKitten", version: "3.0.1", osName: "", architecture: "", appName: clientSettings.applicationName)
 
         self.clientSettings = clientSettings
@@ -138,7 +142,7 @@ public final class Server {
         self.connectionPoolSemaphore = DispatchSemaphore(value: self.clientSettings.maxConnectionsPerServer * self.clientSettings.hosts.count)
         self.defaultTimeout = self.clientSettings.defaultTimeout
         self.logger = Logger.forFramework(withIdentifier: "org.openkitten.mongokitten")
-
+        
         if clientSettings.hosts.count > 1 {
             self.isReplica = true
             initializeReplica()
@@ -187,9 +191,9 @@ public final class Server {
             self.serverData = (maxWriteBatchSize: batchSize, maxWireVersion: maxWireVersion, minWireVersion: minWireVersion, maxMessageSizeBytes: maxMessageSizeBytes)
         }
         
+        self.buildInfo = try getBuildInfo()
         _ = try? logger.registerSubject(Document.self)
         self.connectionPoolMaintainanceQueue.async(execute: backgroundLoop)
-
     }
 
     /// Sets up the `Server` to connect to the specified URL.
@@ -903,6 +907,27 @@ public final class Server {
         }
         
         return users
+    }
+    
+    /// Returns the MongoDB Build Information
+    internal func getBuildInfo() throws -> BuildInfo {
+        var command: Document = [
+            "buildInfo": Int32(1)
+        ]
+        
+        let commandMessage = Message.Query(requestID: self.nextMessageID(), flags: [], collection: self["admin"]["$cmd"], numbersToSkip: 0, numbersToReturn: 1, query: [
+            "buildInfo": Int32(1)
+            ], returnFields: nil)
+        
+        let connection = try self.reserveConnection(authenticatedFor: nil)
+        
+        defer { returnConnection(connection) }
+        
+        let successResponse = try self.sendAndAwait(message: commandMessage, overConnection: connection)
+        
+        let successDocument = try firstDocument(in: successResponse)
+        
+        return try BuildInfo(fromDocument: successDocument)
     }
 }
 
