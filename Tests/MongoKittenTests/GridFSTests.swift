@@ -47,7 +47,7 @@ class GridFSTest: XCTestCase {
         
         XCTAssertEqual(dbFileData, file)
         
-        XCTAssertThrowsError(try dbFile.read(from: 995_000, to: 1_050_000))
+        XCTAssertThrowsError(try dbFile.read(from: 4_900_000, to: 5_050_000))
         
         try fs.remove(byId: id)
     }

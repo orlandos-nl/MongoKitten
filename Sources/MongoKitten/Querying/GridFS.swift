@@ -289,6 +289,10 @@ public class GridFS {
                     throw MongoError.negativeBytesRequested(start: start, end: end)
                 }
                 
+                guard Int(length) >= end else {
+                    throw MongoError.tooMuchDataRequested(contains: Int(length), requested: end)
+                }
+                
                 bytesRequested = end - start
             }
             
@@ -318,7 +322,11 @@ public class GridFS {
                 // if endChunk == 10 then we need the current chunk to be 9
                 // start counting at 0
                 } else if chunk.n == Int32(endChunk - 1) {
-                    let endIndex = (lastByte % Int(self.chunkSize))
+                    let endIndex = lastByte - Int(chunk.n * self.chunkSize)
+                    
+                    guard endIndex >= 0 else {
+                        throw MongoError.tooMuchDataRequested(contains: Int(chunk.n * (self.chunkSize)) + chunk.data.count, requested: end ?? -1)
+                    }
                     
                     guard chunk.data.count >= endIndex else {
                         throw MongoError.tooMuchDataRequested(contains: Int((chunk.n - 1) * self.chunkSize) + chunk.data.count, requested: lastByte)
