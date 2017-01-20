@@ -38,5 +38,17 @@ class GridFSTest: XCTestCase {
         dataEquivalent.append(contentsOf: [UInt8](repeating: 0x03, count: 500_000))
         XCTAssertEqual(data.count, 1_000_000)
         XCTAssertEqual(data, dataEquivalent)
+        
+        var dbFileData = [UInt8]()
+        
+        for chunk in dbFile {
+            dbFileData.append(contentsOf: chunk.data)
+        }
+        
+        XCTAssertEqual(dbFileData, file)
+        
+        XCTAssertThrowsError(try dbFile.read(from: 995_000, to: 1_050_000))
+        
+        try fs.remove(byId: id)
     }
 }

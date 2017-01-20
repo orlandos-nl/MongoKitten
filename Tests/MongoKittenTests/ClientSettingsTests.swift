@@ -22,6 +22,11 @@ class ClientSettingsTest: XCTestCase {
     }
 
     func testAuthentication() throws {
+        let simpleClientSettings = ClientSettings(host: "openkitten.org:12345", sslSettings: false, credentials: nil)
+        
+        XCTAssertEqual(simpleClientSettings.sslSettings?.enabled, false)
+        XCTAssertNil(simpleClientSettings.credentials)
+        XCTAssertEqual(simpleClientSettings.hosts.first?.hostname, "openkitten.org")
 
         let clientSettings = try ClientSettings(mongoURL: "mongodb://user:password@localhost:1234?authMechanism=MONGODB_CR")
         XCTAssertNotNil(clientSettings.credentials)

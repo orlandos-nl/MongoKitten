@@ -14,23 +14,23 @@ import Dispatch
 class CollectionTests: XCTestCase {
     static var allTests: [(String, (CollectionTests) -> () throws -> Void)] {
         return [
-                ("testUniqueIndex", testUniqueIndex),
-                ("testQuery", testQuery),
-                ("testRename", testRename),
-                ("testDistinct", testDistinct),
-                ("testFind", testFind),
-                ("testDBRef", testDBRef),
-                ("testProjection", testProjection),
-                ("testIndexes", testIndexes),
-                ("testTextOperator", testTextOperator),
-                ("testUpdate", testUpdate),
-                ("testRemovingAll", testRemovingAll),
-                ("testRemovingOne", testRemovingOne),
-                ("testHelperObjects", testHelperObjects),
-                ("testGeo2SphereIndex", testGeo2SphereIndex),
-                ("testNearQuery", testNearQuery),                
-                ("testFindAndModify", testFindAndModify),
-                ("testDocumentValidation", testDocumentValidation),
+            ("testUniqueIndex", testUniqueIndex),
+            ("testQuery", testQuery),
+            ("testRename", testRename),
+            ("testDistinct", testDistinct),
+            ("testFind", testFind),
+            ("testDBRef", testDBRef),
+            ("testProjection", testProjection),
+            ("testIndexes", testIndexes),
+            ("testTextOperator", testTextOperator),
+            ("testUpdate", testUpdate),
+            ("testRemovingAll", testRemovingAll),
+            ("testRemovingOne", testRemovingOne),
+            ("testHelperObjects", testHelperObjects),
+            ("testGeo2SphereIndex", testGeo2SphereIndex),
+            ("testNearQuery", testNearQuery),
+            ("testFindAndModify", testFindAndModify),
+            ("testDocumentValidation", testDocumentValidation),
         ]
     }
     
@@ -45,12 +45,12 @@ class CollectionTests: XCTestCase {
     }
     
     override func tearDown() {
-
+        
         // Cleaning
         do {
             try TestManager.db["airports"].drop()
         } catch {
-
+            
         }
         try! TestManager.disconnect()
     }
@@ -62,9 +62,9 @@ class CollectionTests: XCTestCase {
         let collection = try TestManager.db.createCollection(named: "validationtest", validatedBy: validator)
         
         XCTAssertThrowsError(try collection.insert([
-                "username": "henk",
-                "age": 12,
-                "drinks": "beer"
+            "username": "henk",
+            "age": 12,
+            "drinks": "beer"
             ]))
         
         XCTAssertThrowsError(try collection.insert([
@@ -107,6 +107,29 @@ class CollectionTests: XCTestCase {
             "$diacriticSensitive": false
             ] as Document
             ])
+        
+        let andQuery: Query = ("username" == "henk" && "age" > 2) && ("password" == "bob" && "age" < 12)
+        
+        XCTAssertEqual(andQuery.queryDocument, [
+            "$and": [
+                ["username": ["$eq": "henk"] as Document] as Document,
+                ["age": ["$gt": 2] as Document ] as Document,
+                ["password": ["$eq": "bob"] as Document] as Document,
+                ["age":
+                    ["$lt": 12] as Document
+                ] as Document
+            ] as Document
+        ] as Document)
+        
+        let notQuery: Query = !("username" == "henk")
+        
+        XCTAssertEqual(notQuery.queryDocument, [
+            "username": [
+                "$not": [
+                    "$eq": "henk"
+                    ] as Document
+                ] as Document
+            ] as Document)
     }
     
     func testRename() throws {
@@ -141,37 +164,37 @@ class CollectionTests: XCTestCase {
         XCTAssertEqual(distinct.count, 51)
     }
     
-//    func testPerformance() throws {
-//        let collection = TestManager.db["zips"]
-//        var documents = [Document]()
-//        documents.reserveCapacity(29353)
-//        
-//        func testQueue(max: Int = 10) {
-//            let perQueue = 25_000 / max
-//            
-//            for i in 0..<max {
-//                let start = i * perQueue
-//                
-//                let q = DispatchQueue(label: "org.openkitten.tests.performance.\(i)")
-//                let e = expectation(description: "kaas \(i)")
-//                
-//                q.async {
-//                    for j in start..<start+perQueue {
-//                        _ = try! collection.findOne(skipping: Int32(j))
-//                    }
-//                    
-//                    e.fulfill()
-//                }
-//            }
-//        }
-//        
-//        testQueue()
-//        
-//        waitForExpectations(timeout: 300)
-//    }
-
-
-
+    //    func testPerformance() throws {
+    //        let collection = TestManager.db["zips"]
+    //        var documents = [Document]()
+    //        documents.reserveCapacity(29353)
+    //
+    //        func testQueue(max: Int = 10) {
+    //            let perQueue = 25_000 / max
+    //
+    //            for i in 0..<max {
+    //                let start = i * perQueue
+    //
+    //                let q = DispatchQueue(label: "org.openkitten.tests.performance.\(i)")
+    //                let e = expectation(description: "kaas \(i)")
+    //
+    //                q.async {
+    //                    for j in start..<start+perQueue {
+    //                        _ = try! collection.findOne(skipping: Int32(j))
+    //                    }
+    //
+    //                    e.fulfill()
+    //                }
+    //            }
+    //        }
+    //
+    //        testQueue()
+    //
+    //        waitForExpectations(timeout: 300)
+    //    }
+    
+    
+    
     func testFind() throws {
         let base: Document = ["username": "bob", "age": 25, "kittens": 6, "dogs": 0, "beers": 90]
         
@@ -246,7 +269,7 @@ class CollectionTests: XCTestCase {
         
         let projection2: Projection = ["henk": .included, "bob": .excluded]
         
-         XCTAssertEqual(projection2.makeBSONPrimitive() as? Document, ["henk": true, "bob": false])
+        XCTAssertEqual(projection2.makeBSONPrimitive() as? Document, ["henk": true, "bob": false])
     }
     
     func testIndexes() throws {
@@ -269,30 +292,30 @@ class CollectionTests: XCTestCase {
         
         XCTFail()
     }
-
+    
     func testGeo2SphereIndex() throws {
         let airports = TestManager.db["airports"]
         let jfkAirport: Document = [ "iata": "JFK", "loc":["type":"Point", "coordinates":[-73.778925, 40.639751] as Document] as Document]
         try airports.insert(jfkAirport)
         try airports.createIndex(named: "loc_index", withParameters: .geo2dsphere(field: "loc"))
-
-
+        
+        
         for index in try airports.listIndexes() where index["name"] as String? == "loc_index" {
             if let _ = index["2dsphereIndexVersion"] as Int?  {
                 print(index.dictionaryValue)
                 return
             }
         }
-
+        
         XCTFail()
     }
-
+    
     func testNearQuery() throws {
         let zips = TestManager.db["zips"]
         try zips.createIndex(named: "loc_index", withParameters: .geo2dsphere(field: "loc"))
         let position = try Position(values: [-72.844092,42.466234])
         let query = Query(aqt: .near(key: "loc", point: Point(coordinate: position), maxDistance: 100.0, minDistance: 0.0))
-
+        
         let results = Array(try zips.find(matching: query))
         if results.count == 1 {
             XCTAssertEqual(results[0][raw: "city"]?.string, "GOSHEN")
@@ -325,7 +348,7 @@ class CollectionTests: XCTestCase {
         XCTAssert(response.count == 2)
     }
     
-
+    
     
     func testTextOperator() throws {
         let textSearch = TestManager.db["textsearch"]
@@ -454,7 +477,7 @@ class CollectionTests: XCTestCase {
             "henk": 1 as Int32,
             "klaas": -1 as Int32,
             "roekoe": 1 as Int32
-        ] as Document
+            ] as Document
         let sort = Sort(document)
         
         XCTAssertEqual(document, sort.makeDocument())
@@ -471,7 +494,7 @@ class CollectionTests: XCTestCase {
             "kaas": true
             ])
     }
-
+    
     
     func testFindAndModify() throws {
         let base: Document = ["username": "bob", "age": 25, "kittens": 6, "dogs": 0, "beers": 90]
@@ -507,21 +530,21 @@ class CollectionTests: XCTestCase {
         let response2 = Array(try TestManager.wcol.find(matching: query))
         XCTAssertEqual(response2.count, 1)
     }
-
-
-
+    
+    
+    
     func testUniqueIndex() throws {
         let alphabetCollection = TestManager.db["alphabet"]
         try alphabetCollection.createIndex(named: "letter", withParameters:.sort(field: "letter", order: .ascending),.unique)
-
+        
         let aDocument: Document = ["letter":"A"]
         let id = try alphabetCollection.insert(aDocument)
         XCTAssertNotNil(id)
-
+        
         let aBisDocument: Document = ["letter":"A"]
-
+        
         XCTAssertThrowsError(try alphabetCollection.insert(aBisDocument))
         try TestManager.db["alphabet"].drop()
     }
-
+    
 }

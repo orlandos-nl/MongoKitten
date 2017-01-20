@@ -246,7 +246,15 @@ public indirect enum AQT {
             
             return ["$or": Document(array: expressions) ]
         case .not(let aqt):
-            return ["$not": aqt.document]
+            var query: Document = [:]
+            
+            for (key, value) in aqt.document {
+                query[key] = [
+                    "$not": value
+                ]
+            }
+            
+            return query
         case .contains(let key, let val, let options):
             return [key: ((try? RegularExpression(pattern: val, options: options)) ?? Null()) as ValueConvertible] as Document
         case .startsWith(let key, let val):

@@ -29,6 +29,14 @@ class SetupTests: XCTestCase {
     
     func testSetup() throws {
         let server = try Server(mongoURL: "mongodb://mongokitten-unittest-user:mongokitten-unittest-password@127.0.0.1:27017")
+        
+        guard server.contains(where: { db in
+                return db.name == "mongokitten-unittest"
+        }) else {
+            XCTFail()
+            return
+        }
+        
         let distinct = try server["mongokitten-unittest"]["zips"].distinct(onField: "state")!
         
         XCTAssertEqual(distinct.count, 51)
