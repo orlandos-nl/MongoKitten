@@ -48,6 +48,43 @@ extension PolygonCoordinates: ValueConvertible {
 }
 
 
+extension PolygonCoordinates: Hashable {
+    public static func == (lhs: PolygonCoordinates, rhs: PolygonCoordinates) -> Bool {
+
+        if lhs.holes.count != rhs.holes.count {
+            return false
+        } else {
+            for i in 0..<lhs.holes.count {
+                if lhs.holes[i] != rhs.holes[i] {
+                    return false
+                }
+            }
+        }
+
+        return lhs.exterior == rhs.exterior
+    }
+
+
+    public var hashValue: Int {
+
+        var hashVal = 5381
+
+        for hole in self.holes {
+            hashVal = hole.reduce(hashVal){
+                ($0 << 5) &+ $0 &+ $1.hashValue
+            }
+        }
+
+       hashVal = self.exterior.reduce(hashVal) {
+            ($0 << 5) &+ $0 &+ $1.hashValue
+        }
+
+        return hashVal
+    }
+}
+
+
+
 /// A representation of a GeoJSON Polygon.
 public struct Polygon: Geometry {
 
@@ -64,5 +101,17 @@ public struct Polygon: Geometry {
 extension Polygon: ValueConvertible {
     public func makeBSONPrimitive() -> BSONPrimitive {
         return ["type":self.type.rawValue, "coordinates":self.coordinates] as Document
+    }
+}
+
+
+extension Polygon: Hashable {
+    public static func == (lhs: Polygon, rhs: Polygon) -> Bool {
+        return lhs.coordinates == rhs.coordinates
+    }
+
+
+    public var hashValue: Int {
+        return self.coordinates.hashValue
     }
 }
