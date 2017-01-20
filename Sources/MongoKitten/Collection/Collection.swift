@@ -142,7 +142,7 @@ public final class Collection {
     ///
     /// - returns: The documents' ids
     @discardableResult
-    public func insert(_ documents: [Document], stoppingOnError ordered: Bool? = nil, timeout customTimeout: TimeInterval? = nil) throws -> [ValueConvertible] {
+    public func insert(_ documents: [Document], stoppingOnError ordered: Bool? = nil, writeConcern: WriteConcern? = nil, timeout customTimeout: TimeInterval? = nil) throws -> [ValueConvertible] {
         let timeout: TimeInterval = customTimeout ?? (database.server.defaultTimeout + (Double(documents.count) / 50))
         
         var documents = documents
@@ -174,7 +174,7 @@ public final class Collection {
                     command["ordered"] = ordered
                 }
                 
-                command[raw: "writeConcern"] = self.writeConcern
+                command[raw: "writeConcern"] = writeConcern ?? self.writeConcern
                 
                 let reply = try self.database.execute(command: command, until: timeout)
                 guard case .Reply(_, _, _, _, _, _, let replyDocuments) = reply else {
@@ -252,7 +252,7 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A cursor pointing to the found Documents
-    public func find(matching filter: Query? = nil, sortedBy sort: Sort? = nil, projecting projection: Projection? = nil, skipping skip: Int32? = nil, limitedTo limit: Int32? = nil, withBatchSize batchSize: Int32 = 100) throws -> Cursor<Document> {
+    public func find(matching filter: Query? = nil, sortedBy sort: Sort? = nil, projecting projection: Projection? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil, skipping skip: Int32? = nil, limitedTo limit: Int32? = nil, withBatchSize batchSize: Int32 = 100) throws -> Cursor<Document> {
         if database.server.buildInfo.version >= Version(3,2,0) {
             var command: Document = ["find": self.name]
             
@@ -276,8 +276,8 @@ public final class Collection {
                 command["limit"] = Int32(limit)
             }
             
-            command[raw: "readConcern"] = self.readConcern
-            command[raw: "collation"] = self.collation
+            command[raw: "readConcern"] = readConcern ?? self.readConcern
+            command[raw: "collation"] = collation ?? self.collation
             
             command["batchSize"] = Int32(batchSize)
             
@@ -371,7 +371,7 @@ public final class Collection {
     ///
     /// - returns: The amount of updated documents
     @discardableResult
-    public func update(_ updates: [(filter: Query, to: Document, upserting: Bool, multiple: Bool)], stoppingOnError ordered: Bool? = nil) throws -> Int {
+    public func update(_ updates: [(filter: Query, to: Document, upserting: Bool, multiple: Bool)], writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
         if protocolVersion >= 2 {
@@ -393,7 +393,7 @@ public final class Collection {
                 command["ordered"] = ordered
             }
             
-            command[raw: "writeConcern"] = self.writeConcern
+            command[raw: "writeConcern"] = writeConcern ??  self.writeConcern
             
             let reply = try self.database.execute(command: command)
             guard case .Reply(_, _, _, _, _, _, let documents) = reply else {
@@ -464,7 +464,7 @@ public final class Collection {
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     @discardableResult
-    public func remove(matching removals: [(filter: Query, limit: Int32)], stoppingOnError ordered: Bool? = nil) throws -> Int {
+    public func remove(matching removals: [(filter: Query, limit: Int32)], writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
         if protocolVersion >= 2 {
@@ -484,7 +484,7 @@ public final class Collection {
                 command["ordered"] = ordered
             }
             
-            command[raw: "writeConcern"] = self.writeConcern
+            command[raw: "writeConcern"] = writeConcern ?? self.writeConcern
             
             let reply = try self.database.execute(command: command)
             let documents = try allDocuments(in: reply)
@@ -597,7 +597,7 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: The amount of matching `Document`s
-    public func count(matching filter: Query? = nil, limitedTo limit: Int32? = nil, skipping skip: Int32? = nil) throws -> Int {
+    public func count(matching filter: Query? = nil, limitedTo limit: Int32? = nil, skipping skip: Int32? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil) throws -> Int {
         var command: Document = ["count": self.name]
         
         if let filter = filter?.queryDocument {
@@ -612,8 +612,8 @@ public final class Collection {
             command["limit"] = Int32(limit)
         }
         
-        command[raw: "readConcern"] = self.readConcern
-        command[raw: "collation"] = self.collation
+        command[raw: "readConcern"] = readConcern ?? self.readConcern
+        command[raw: "collation"] = collation ?? self.collation
         
         let reply = try self.database.execute(command: command, writing: false)
         
@@ -698,15 +698,15 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A list of all distinct values for this key
-    public func distinct(onField key: String, usingFilter filter: Document? = nil) throws -> [ValueConvertible]? {
+    public func distinct(onField key: String, usingFilter filter: Document? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil) throws -> [ValueConvertible]? {
         var command: Document = ["distinct": self.name, "key": key]
         
         if let filter = filter {
             command["query"] = filter
         }
         
-        command[raw: "readConcern"] = self.readConcern
-        command[raw: "collation"] = self.collation
+        command[raw: "readConcern"] = readConcern ?? self.readConcern
+        command[raw: "collation"] = collation ?? self.collation
         
         return try firstDocument(in: try self.database.execute(command: command, writing: false))[raw: "values"]?.documentValue?.arrayValue ?? []
     }
@@ -852,12 +852,12 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A `Cursor` pointing to the found `Document`s
-    public func aggregate(pipeline: AggregationPipeline, explain: Bool? = nil, allowDiskUse: Bool? = nil, cursorOptions: Document = ["batchSize": 100], bypassDocumentValidation: Bool? = nil) throws -> Cursor<Document> {
+    public func aggregate(pipeline: AggregationPipeline, explain: Bool? = nil, allowDiskUse: Bool? = nil, cursorOptions: Document = ["batchSize": 100], bypassDocumentValidation: Bool? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil) throws -> Cursor<Document> {
         // construct command. we always use cursors in MongoKitten, so that's why the default value for cursorOptions is an empty document.
         var command: Document = ["aggregate": self.name, "pipeline": pipeline.pipelineDocument, "cursor": cursorOptions]
         
-        command[raw: "readConcern"] = self.readConcern
-        command[raw: "collation"] = self.collation
+        command[raw: "readConcern"] = readConcern ?? self.readConcern
+        command[raw: "collation"] = collation ?? self.collation
         
         if let explain = explain { command["explain"] = explain }
         if let allowDiskUse = allowDiskUse { command["allowDiskUse"] = allowDiskUse }
