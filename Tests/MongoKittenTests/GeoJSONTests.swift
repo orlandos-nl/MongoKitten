@@ -18,7 +18,9 @@ class GeoJSONTests: XCTestCase {
             ("testPositionHashable", testPositionHashable),
             ("testPositionInit", testPositionInit),
             ("testPolygonInit", testPolygonInit),
-            ("testPolygonDocument", testPolygonDocument)
+            ("testPolygonDocument", testPolygonDocument),
+            ("testPolygonHashable", testPolygonHashable),
+            ("testPointHashable", testPointHashable)
         ]
     }
 
@@ -64,6 +66,18 @@ class GeoJSONTests: XCTestCase {
         XCTAssertEqual(position3.values.count, 4)
     }
 
+
+    func testPointHashable() throws {
+
+        let point1 = try Point(coordinate: Position(values: [1.0,1.0]))
+        let point2 = try Point(coordinate: Position(values: [1.0,1.0]))
+        let point3 = try Point(coordinate: Position(values: [1.0,1.1]))
+
+        XCTAssertEqual(point1, point2)
+        XCTAssertEqual(point1.hashValue, point2.hashValue)
+        XCTAssertNotEqual(point1, point3)
+        XCTAssertNotEqual(point1.hashValue, point3.hashValue)
+    }
 
     func testPolygonInit() throws  {
 
@@ -119,5 +133,41 @@ class GeoJSONTests: XCTestCase {
 
         XCTAssertNotEqual(polygonWithHole1, polygonWithHole3)
         XCTAssertNotEqual(polygonWithHole1.hashValue, polygonWithHole3.hashValue)
+    }
+
+    func testCRS() {
+        let crsTest = CoordinateReferenceSystem(typeName: "urn:x-mongodb:crs:strictwinding:EPSG:4326")
+        XCTAssertEqual(crsTest.typeName, "urn:x-mongodb:crs:strictwinding:EPSG:4326")
+
+        let crsLiteral = CoordinateReferenceSystem(stringLiteral: "CRS84_TEST")
+        XCTAssertEqual(crsLiteral.typeName, "CRS84_TEST")
+
+        let crsGLiteral = CoordinateReferenceSystem(extendedGraphemeClusterLiteral: "CRS84_TEST_GRAPHEME")
+        XCTAssertEqual(crsGLiteral.typeName, "CRS84_TEST_GRAPHEME")
+
+        let crsUni = CoordinateReferenceSystem(unicodeScalarLiteral: "CRS84_TEST_UNI")
+        XCTAssertEqual(crsUni.typeName, "CRS84_TEST_UNI")
+
+        let strict = MongoCRS.strictCRS
+        let crs84 = MongoCRS.crs84CRS
+        let epsg = MongoCRS.epsg4326CRS
+
+        XCTAssertEqual(strict.rawValue.typeName, "urn:x-mongodb:crs:strictwinding:EPSG:4326")
+        XCTAssertEqual(crs84.rawValue.typeName, "urn:ogc:def:crs:OGC:1.3:CRS84")
+        XCTAssertEqual(epsg.rawValue.typeName, "EPSG:4326")
+
+        XCTAssertEqual(crsTest, strict.rawValue)
+        XCTAssertEqual(crsTest.hashValue, strict.rawValue.hashValue)
+
+        XCTAssertNotEqual(strict.rawValue, crs84.rawValue)
+        XCTAssertNotEqual(strict.rawValue.hashValue, crs84.rawValue.hashValue)
+
+        let crsDocument = strict.rawValue.makeBSONPrimitive()
+        guard let dic = crsDocument.documentValue?.dictionaryValue else { XCTFail(); return }
+        guard let properties = dic["properties"]?.documentValue?.dictionaryValue else { XCTFail(); return }
+        guard let typeName = properties["name"] as? String else { XCTFail(); return }
+        XCTAssertEqual(typeName, "urn:x-mongodb:crs:strictwinding:EPSG:4326")
+
+
     }
 }
