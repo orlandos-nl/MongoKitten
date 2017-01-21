@@ -3,6 +3,7 @@ import XCTest
 
 XCTMain([
     testCase(AdministrationCommandsTests.allTests),
+    testCase(AuthenticationTests.allTests),    
     testCase(AggregationTests.allTests),
     testCase(ClientSettingsTest.allTests),
     testCase(CollectionTests.allTests),    
