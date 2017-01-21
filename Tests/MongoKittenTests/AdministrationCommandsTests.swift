@@ -41,8 +41,6 @@ class AdministrationCommandsTests: XCTestCase {
            dbExists = true
         }
         
-        XCTAssertEqual(TestManager.server.hostname, "mongodb://localhost:27017")
-        
         XCTAssert(dbExists)
         
         try TestManager.db.copy(toDatabase: "mongokitten-unittest-temp")
