@@ -3,6 +3,8 @@
 [![Swift 3.0.1](https://img.shields.io/badge/swift-3.0.1-orange.svg)](https://swift.org)
 ![License](https://img.shields.io/github/license/openkitten/mongokitten.svg)
 [![Build Status](http://cimongo.l18.io:8080/buildStatus/icon?job=MongoKitten(3.1.X))](http://cimongo.l18.io:8080/job/MongoKitten(3.1.X))
+[![Code Coverage](https://codecov.io/gh/openkitten/mongokitten/branch/mongokitten31/graph/badge.svg)](https://codecov.io/gh/openkitten/mongokitten/branch/mongokitten31)
+
 
 Native MongoDB driver for Swift, written in Swift. This library does not wrap around the mongoc driver. It uses:
 

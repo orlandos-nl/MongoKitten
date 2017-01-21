@@ -20,7 +20,8 @@ class GeoJSONTests: XCTestCase {
             ("testPolygonInit", testPolygonInit),
             ("testPolygonDocument", testPolygonDocument),
             ("testPolygonHashable", testPolygonHashable),
-            ("testPointHashable", testPointHashable)
+            ("testPointHashable", testPointHashable),
+            ("testCRS", testCRS)
         ]
     }
 
