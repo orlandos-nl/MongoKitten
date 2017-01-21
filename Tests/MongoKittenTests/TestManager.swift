@@ -20,7 +20,15 @@ final class TestManager {
     static var server: Server {
         return db.server
     }
-    static var db: Database = try! Database(mongoURL: "mongodb://localhost:27017/mongokitten-unittest?appname=xctest")
+    
+    static var mongoURL: String {
+        let defaultURL = "mongodb://localhost:27017/mongokitten-unittest?appname=xctest"
+        
+        guard let out = getenv("mongokittentest") else { return defaultURL }
+        return String(validatingUTF8: out) ?? defaultURL
+    }
+    
+    static var db: Database = try! Database(mongoURL: mongoURL)
     static let wcol = db["wcol"]
     
     static var testingUsers = [Document]()
