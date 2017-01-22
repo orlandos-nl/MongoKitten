@@ -289,7 +289,7 @@ class CollectionTests: XCTestCase {
     }
     
     func testIndexes() throws {
-        for db in TestManager.dbs {
+        loop: for db in TestManager.dbs {
             // TODO: Partially enable for 3.0
             if db.server.buildInfo.version < Version(3, 2, 0) {
                 return
@@ -309,7 +309,7 @@ class CollectionTests: XCTestCase {
             XCTAssertThrowsError(try harriebob.insert(["unique": Null()]))
             
             for index in try db["wcol"].listIndexes() where index["name"] as String? == "henkbob" {
-                continue
+                continue loop
             }
             
             XCTFail()
