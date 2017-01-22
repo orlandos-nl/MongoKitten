@@ -448,7 +448,7 @@ extension Database {
         // Check for success
         guard successDocument["ok"] as Int? == 1 else {
             logger.error("Authentication for MongoDB user \(details.username) with MongoCR failed against \(details.database) for the following reason")
-            logger.error((successDocument["errmsg"] as String?)!)
+            logger.error(document)
             throw InternalMongoError.incorrectReply(reply: successResponse)
         }
     }
