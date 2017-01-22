@@ -19,7 +19,7 @@ class SetupTests: XCTestCase {
     
     override func setUp() {
         super.setUp()
-
+        
         try! TestManager.clean()
     }
     
@@ -31,7 +31,7 @@ class SetupTests: XCTestCase {
         let server = try Server(mongoURL: "mongodb://mongokitten-unittest-user:mongokitten-unittest-password@127.0.0.1:27017")
         
         guard server.contains(where: { db in
-                return db.name == "mongokitten-unittest"
+            return db.name == "mongokitten-unittest"
         }) else {
             XCTFail()
             return
@@ -48,24 +48,24 @@ class SetupTests: XCTestCase {
         let otherCollection = database["otherdata"]
         
         var userDocument: Document = [
-                                         "username": "Joannis",
-                                         "password": "myPassword",
-                                         "age": 19,
-                                         "male": true
-                                         ]
+            "username": "Joannis",
+            "password": "myPassword",
+            "age": 19,
+            "male": true
+        ]
         
         let niceBoolean = true
         
         let testDocument: Document = [
-                                         "example": "data",
-                                         "userDocument": userDocument,
-                                         "niceBoolean": niceBoolean,
-                                         "embeddedDocument": [
-                                                                 "name": "Henk",
-                                                                 "male": false,
-                                                                 "age": 12,
-                                                                 "pets": ["dog", "dog", "cat", "cat"] as Document
-            ] as Document
+            "example": "data",
+            "userDocument": userDocument,
+            "niceBoolean": niceBoolean,
+            "embeddedDocument": [
+                "name": "Henk",
+                "male": false,
+                "age": 12,
+                "pets": ["dog", "dog", "cat", "cat"] as Document
+                ] as Document
         ]
         
         _ = userDocument[raw: "username"]
@@ -115,16 +115,18 @@ class SetupTests: XCTestCase {
     }
     
     func testFindPerformance() throws {
-        for _ in 0..<2048 {
-            try TestManager.db["performance"].insert(["val": ObjectId()])
-        }
-        
-        measure {
-            do {
-                let performanceDocs = Array(try TestManager.db["performance"].find())
-                _ = performanceDocs.count
-            } catch {
-                XCTFail()
+        for db in TestManager.dbs {
+            for _ in 0..<2048 {
+                try db["performance"].insert(["val": ObjectId()])
+            }
+            
+            measure {
+                do {
+                    let performanceDocs = Array(try db["performance"].find())
+                    _ = performanceDocs.count
+                } catch {
+                    XCTFail()
+                }
             }
         }
     }

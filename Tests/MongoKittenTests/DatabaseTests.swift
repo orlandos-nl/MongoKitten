@@ -27,41 +27,45 @@ class DatabaseTests: XCTestCase {
     }
     
     func testUsers() throws {
-        let roles: Document = [["role": "dbOwner", "db": TestManager.db.name] as Document]
-        
-        try TestManager.db.createUser("mongokitten-unittest-testuser", password: "hunter2", roles: roles, customData: ["testdata": false])
-        
-        guard let userInfo = try? TestManager.server.getUserInfo(forUserNamed: "mongokitten-unittest-testuser", inDatabase: TestManager.db), let testData = userInfo[0, "customData", "testdata"] as Bool? else {
-            XCTFail()
-            return
+        for db in TestManager.dbs {
+            let roles: Document = [["role": "dbOwner", "db": db.name] as Document]
+            
+            try db.createUser("mongokitten-unittest-testuser", password: "hunter2", roles: roles, customData: ["testdata": false])
+            
+            guard let userInfo = try? db.server.getUserInfo(forUserNamed: "mongokitten-unittest-testuser", inDatabase: db), let testData = userInfo[0, "customData", "testdata"] as Bool? else {
+                XCTFail()
+                return
+            }
+            
+            XCTAssertEqual(testData, false)
+            
+            try db.update(user: "mongokitten-unittest-testuser", password: "hunter2", roles: roles, customData: ["testdata": true])
+            
+            try db.drop(user: "mongokitten-unittest-testuser")
         }
-        
-        XCTAssertEqual(testData, false)
-        
-        try TestManager.db.update(user: "mongokitten-unittest-testuser", password: "hunter2", roles: roles, customData: ["testdata": true])
-        
-        try TestManager.db.drop(user: "mongokitten-unittest-testuser")
     }
     
     func testMakeGridFS() throws {
-        let gridFS = try TestManager.db.makeGridFS()
-        
-        let id = try gridFS.store(data: [0x05, 0x04, 0x01, 0x02, 0x03, 0x00])
-        guard let file = try gridFS.findOne(byID: id) else {
-            XCTFail()
-            return
+        for db in TestManager.dbs {
+            let gridFS = try db.makeGridFS()
+            
+            let id = try gridFS.store(data: [0x05, 0x04, 0x01, 0x02, 0x03, 0x00])
+            guard let file = try gridFS.findOne(byID: id) else {
+                XCTFail()
+                return
+            }
+            
+            XCTAssertEqual(try file.read(), [0x05, 0x04, 0x01, 0x02, 0x03, 0x00])
+            
+            XCTAssertThrowsError(try file.read(from: -1, to: 7))
+            XCTAssertThrowsError(try file.read(from: -1, to: 5))
+            
+            // TODO: XCTAssertThrowsError(try file.read(from: 1, to: 6))
+            
+            XCTAssertEqual(try file.read(from: 0, to: 5), [0x05, 0x04, 0x01, 0x02, 0x03, 0x00])
+            
+            XCTAssertEqual(gridFS.chunks.name, "fs.chunks")
+            XCTAssertEqual(gridFS.files.name, "fs.files")
         }
-        
-        XCTAssertEqual(try file.read(), [0x05, 0x04, 0x01, 0x02, 0x03, 0x00])
-        
-        XCTAssertThrowsError(try file.read(from: -1, to: 7))
-        XCTAssertThrowsError(try file.read(from: -1, to: 5))
-        
-        // TODO: XCTAssertThrowsError(try file.read(from: 1, to: 6))
-        
-        XCTAssertEqual(try file.read(from: 0, to: 5), [0x05, 0x04, 0x01, 0x02, 0x03, 0x00])
-        
-        XCTAssertEqual(gridFS.chunks.name, "fs.chunks")
-        XCTAssertEqual(gridFS.files.name, "fs.files")
     }
 }

@@ -15,10 +15,14 @@ final class TestManager {
         case TestDataNotPresent
     }
     
-    //static var server = try! Server(hostname: "localhost", port: 27017, authenticatedAs: ("mongokitten-unittest-user", "mongokitten-unittest-password", "mongokitten-unittest"))
-    
-    static var server: Server {
-        return db.server
+    static var codecov: Bool {
+        guard let out = getenv("mongokittencodecov") else { return false }
+        
+        guard let s = String(validatingUTF8: out) else {
+            return false
+        }
+        
+        return s.lowercased().contains("true")
     }
     
     static var mongoURL: String {
@@ -28,8 +32,20 @@ final class TestManager {
         return String(validatingUTF8: out) ?? defaultURL
     }
     
-    static var db: Database = try! Database(mongoURL: mongoURL)
-    static let wcol = db["wcol"]
+    private static var db: Database = try! Database(mongoURL: mongoURL)
+    
+    static var dbs: [Database] {
+        var databases = [db]
+        if let codecovDb = codecovDb {
+            databases.append(codecovDb)
+        }
+        
+        return databases
+    }
+    
+    private static weak var codecovDb: Database? = {
+        return codecov ? try! Database(mongoURL: "mongodb://localhost:27018/mongokitten-unittest?appname=xctest") : nil
+    }()
     
     static var testingUsers = [Document]()
     
