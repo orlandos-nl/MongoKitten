@@ -16,8 +16,15 @@ import Foundation
 /// - firstAndLastPositionMustBeTheSame: First and Last `Position` must be the same
 /// - ringMustContainFourOrMoreElements: Ring must containa at least four `Position`
 public enum GeoJSONError: Error {
+    /// -
     case positionMustContainTwoOrMoreElements
+    
+    /// -
     case coordinatesMustContainTwoOrMoreElements
+    
+    /// -
     case firstAndLastPositionMustBeTheSame
+    
+    /// - 
     case ringMustContainFourOrMoreElements
 }

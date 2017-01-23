@@ -264,17 +264,17 @@ public indirect enum AQT {
         case .nothing:
             return []
         case .near(let key, let point, let maxDistance, let minDistance):
-            return GeometryOperator(key: key, operatorName: "$near", geometry: point, maxDistance: maxDistance, minDistance: minDistance).document()
+            return GeometryOperator(key: key, operatorName: "$near", geometry: point, maxDistance: maxDistance, minDistance: minDistance).makeDocument()
         case .geoWithin(let key, let polygon):
-            return GeometryOperator(key: key, operatorName: "$geoWithin", geometry: polygon).document()
+            return GeometryOperator(key: key, operatorName: "$geoWithin", geometry: polygon).makeDocument()
         case .exists(key: let key):
             return [
                 key: [ "$exists": true ] as Document
             ]
         case .geoIntersects(let key, let geometry):
-            return GeometryOperator(key: key, operatorName: "$geoIntersects", geometry: geometry).document()
+            return GeometryOperator(key: key, operatorName: "$geoIntersects", geometry: geometry).makeDocument()
         case .nearSphere(let key, let point, let maxDistance, let minDistance):
-            return GeometryOperator(key: key, operatorName: "$nearSphere", geometry: point, maxDistance: maxDistance, minDistance: minDistance).document()
+            return GeometryOperator(key: key, operatorName: "$nearSphere", geometry: point, maxDistance: maxDistance, minDistance: minDistance).makeDocument()
         }
     }
     

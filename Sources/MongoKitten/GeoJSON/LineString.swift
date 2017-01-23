@@ -9,10 +9,12 @@
 import Foundation
 
 /// A representation of a GeoJSON LineString.
-public struct LineString: Geometry {
+public struct LineString: Geometry, ValueConvertible {
 
     /// The GeoJSON coordinates of this LineString
     public let coordinates: [Position]
+    
+    /// The type name of this geometric object
     public let type: GeoJsonObjectType = .lineString
 
     /// A GeoJSON LineString with the given coordinates
@@ -23,11 +25,10 @@ public struct LineString: Geometry {
         guard coordinates.count < 2 else { throw GeoJSONError.coordinatesMustContainTwoOrMoreElements }
         self.coordinates = coordinates
     }
-}
-
-extension LineString: ValueConvertible {
+    
+    /// Converts this object to an embeddable BSONPrimtive
     public func makeBSONPrimitive() -> BSONPrimitive {
-        return ["type": self.type.rawValue, "coordinates": Document(array: self.coordinates) ] as Document
+        return ["type": self.type, "coordinates": Document(array: self.coordinates) ] as Document
     }
 }
 

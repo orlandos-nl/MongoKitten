@@ -60,6 +60,7 @@ public struct MongoHost: Equatable, ExpressibleByStringLiteral {
         port = parts.count == 2 ? UInt16(String(parts[0].reversed())) ?? 27017 : 27017
     }
     
+    /// Compares two hosts to be equal
     public static func ==(lhs: MongoHost, rhs: MongoHost) -> Bool {
         return lhs.hostname == rhs.hostname && lhs.port == rhs.port
     }
@@ -166,6 +167,7 @@ public struct ClientSettings {
     /// The default timeout for a request
     public let defaultTimeout: TimeInterval
 
+    /// The application's identifier
     public let applicationName: String?
 
     /// Initializes the settings with a group of hosts, SSLsettings (if applicable) amonst other settings

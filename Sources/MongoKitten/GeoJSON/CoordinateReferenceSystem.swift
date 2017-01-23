@@ -12,33 +12,34 @@ import Foundation
 
 /// A GeoJSon Coordinate Reference System (CRS).
 public struct CoordinateReferenceSystem {
-
-
     /// The type of this Coordinate Reference System.
     public let typeName: String
 
+    /// Creates a new CoordinateReferenceSystem object
     public init(typeName: String) {
         self.typeName = typeName
     }
 }
 
-
 extension CoordinateReferenceSystem: ValueConvertible {
+    /// Converts the CoordinateReferenceSystem to an embeddable BSON Type
     public func makeBSONPrimitive() -> BSONPrimitive {
         return ["type": "name", "properties": ["name": self.typeName] as Document] as Document
     }
 }
 
-
 extension CoordinateReferenceSystem: ExpressibleByStringLiteral{
+    /// Allows instantiation of a CoordinateReferenceSystem with a String
     public init(stringLiteral value: String) {
         self.typeName = value
     }
-
+    
+    /// Allows instantiation of a CoordinateReferenceSystem with a String
     public init(extendedGraphemeClusterLiteral value: String) {
         self.typeName = value
     }
-
+    
+    /// Allows instantiation of a CoordinateReferenceSystem with a String
     public init(unicodeScalarLiteral value: String) {
         self.typeName = value
     }
@@ -46,10 +47,12 @@ extension CoordinateReferenceSystem: ExpressibleByStringLiteral{
 
 
 extension CoordinateReferenceSystem: Hashable {
-    public static func == (lhs: CoordinateReferenceSystem, rhs: CoordinateReferenceSystem) -> Bool {
+    /// Compares two CoordinateReferenceSystems
+    public static func ==(lhs: CoordinateReferenceSystem, rhs: CoordinateReferenceSystem) -> Bool {
         return lhs.typeName == rhs.typeName
     }
 
+    /// Makes a CoordinateReferenceSystem hashable
     public var hashValue: Int {
         return self.typeName.hashValue
     }

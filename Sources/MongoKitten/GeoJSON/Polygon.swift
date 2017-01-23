@@ -18,6 +18,7 @@ public struct PolygonCoordinates {
     /// The interior rings of the polygon
     public let holes: [[Position]]
 
+    /// Creates a polygon from it's exterior and holes
     public init(exterior: [Position], holes:[[Position]]) throws {
 
         guard exterior.count >= 4 else { throw GeoJSONError.ringMustContainFourOrMoreElements }
@@ -36,6 +37,7 @@ public struct PolygonCoordinates {
 
 
 extension PolygonCoordinates: ValueConvertible {
+    /// Converts this object to an embeddable BSONPrimtive
     public func makeBSONPrimitive() -> BSONPrimitive {
         var docs: Document = []
         docs.append(Document(array: exterior))
@@ -49,8 +51,8 @@ extension PolygonCoordinates: ValueConvertible {
 
 
 extension PolygonCoordinates: Hashable {
-
-    public static func == (lhs: PolygonCoordinates, rhs: PolygonCoordinates) -> Bool {
+    /// Compares to coordinate sets to be equal
+    public static func ==(lhs: PolygonCoordinates, rhs: PolygonCoordinates) -> Bool {
 
         if lhs.holes.count != rhs.holes.count {
             return false
@@ -65,9 +67,8 @@ extension PolygonCoordinates: Hashable {
         return lhs.exterior == rhs.exterior
     }
 
-
+    /// Makes the polygon coordinates hashable
     public var hashValue: Int {
-
         var hashVal = 5381
 
         for hole in self.holes {
@@ -88,11 +89,13 @@ extension PolygonCoordinates: Hashable {
 
 /// A representation of a GeoJSON Polygon.
 public struct Polygon: Geometry {
-
+    /// The coordinates
     public let coordinates: PolygonCoordinates
 
+    /// The type name of this geometric object
     public let type: GeoJsonObjectType = .polygon
 
+    /// Creates a new polygon
     public init(exterior:[Position], holes:[Position]...) throws {
         self.coordinates = try PolygonCoordinates(exterior: exterior, holes: holes)
     }
@@ -100,6 +103,7 @@ public struct Polygon: Geometry {
 }
 
 extension Polygon: ValueConvertible {
+    /// Converts this object to an embeddable BSONPrimtive
     public func makeBSONPrimitive() -> BSONPrimitive {
         return ["type":self.type.rawValue, "coordinates":self.coordinates] as Document
     }
@@ -107,11 +111,12 @@ extension Polygon: ValueConvertible {
 
 
 extension Polygon: Hashable {
-    public static func == (lhs: Polygon, rhs: Polygon) -> Bool {
+    /// Compares to polygons to be equal
+    public static func ==(lhs: Polygon, rhs: Polygon) -> Bool {
         return lhs.coordinates == rhs.coordinates
     }
 
-
+    /// Makes the polygon hashable
     public var hashValue: Int {
         return self.coordinates.hashValue
     }
