@@ -9,8 +9,7 @@
 
 import XCTest
 @testable import MongoKitten
-import CryptoKitten
-import Dispatch
+
 
 class GeoJSONTests: XCTestCase {
     static var allTests: [(String, (GeoJSONTests) -> () throws -> Void)] {
@@ -90,7 +89,7 @@ class GeoJSONTests: XCTestCase {
     }
 
     func testPolygonDocument() throws {
-        let polygon = try Polygon(exterior: [Position(values: [1.0,1.0]), Position(values: [1.0,2.0]),Position(values: [2.0,2.0]), Position(values: [1.0,1.0])])
+        let polygon = try Polygon(exterior: [Position(values: [0.0, 0.0]), Position(values: [0.0,4.0]),Position(values: [4.0,4.0]), Position(values: [4.0,0.0]), Position(values: [0.0,0.0])])
         XCTAssertNotNil(polygon)
 
         let polyDoc = polygon.makeBSONPrimitive()

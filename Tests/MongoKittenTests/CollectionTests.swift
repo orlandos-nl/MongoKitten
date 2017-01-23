@@ -27,8 +27,6 @@ class CollectionTests: XCTestCase {
             ("testRemovingAll", testRemovingAll),
             ("testRemovingOne", testRemovingOne),
             ("testHelperObjects", testHelperObjects),
-            ("testGeo2SphereIndex", testGeo2SphereIndex),
-            ("testNearQuery", testNearQuery),
             ("testFindAndModify", testFindAndModify),
             ("testDocumentValidation", testDocumentValidation),
         ]
@@ -45,15 +43,7 @@ class CollectionTests: XCTestCase {
     }
     
     override func tearDown() {
-        
         // Cleaning
-        do {
-            for db in TestManager.dbs {
-                try db["airports"].drop()
-            }
-        } catch {
-            
-        }
         try! TestManager.disconnect()
     }
     
@@ -315,46 +305,7 @@ class CollectionTests: XCTestCase {
             XCTFail()
         }
     }
-    
-    func testGeo2SphereIndex() throws {
-        loop: for db in TestManager.dbs {
-            if db.server.buildInfo.version < Version(3, 2, 0) {
-                return
-            }
-            
-            let airports = db["airports"]
-            let jfkAirport: Document = [ "iata": "JFK", "loc":["type":"Point", "coordinates":[-73.778925, 40.639751] as Document] as Document]
-            try airports.insert(jfkAirport)
-            try airports.createIndex(named: "loc_index", withParameters: .geo2dsphere(field: "loc"))
-            
-            
-            for index in try airports.listIndexes() where index["name"] as String? == "loc_index" {
-                if let _ = index["2dsphereIndexVersion"] as Int?  {
-                    print(index.dictionaryValue)
-                    continue loop
-                }
-            }
-            
-            XCTFail()
-        }
-    }
-    
-    func testNearQuery() throws {
-        for db in TestManager.dbs {
-            let zips = db["zips"]
-            try zips.createIndex(named: "loc_index", withParameters: .geo2dsphere(field: "loc"))
-            let position = try Position(values: [-72.844092,42.466234])
-            let query = Query(aqt: .near(key: "loc", point: Point(coordinate: position), maxDistance: 100.0, minDistance: 0.0))
-            
-            let results = Array(try zips.find(matching: query))
-            if results.count == 1 {
-                XCTAssertEqual(results[0][raw: "city"]?.string, "GOSHEN")
-            } else {
-                XCTFail("Too many results")
-            }
-        }
-    }
-    
+        
     private func runContainsQuery() throws {
         for db in TestManager.dbs {
             let query = Query(aqt: .contains(key: "username", val: "ar", options: []))

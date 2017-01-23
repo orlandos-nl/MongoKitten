@@ -3,14 +3,15 @@ import XCTest
 
 XCTMain([
     testCase(AdministrationCommandsTests.allTests),
-    testCase(AuthenticationTests.allTests),    
     testCase(AggregationTests.allTests),
+    testCase(AuthenticationTests.allTests),        
     testCase(ClientSettingsTest.allTests),
     testCase(CollectionTests.allTests),    
     testCase(DatabaseTests.allTests),
-    testCase(GridFSTest.allTests),
     testCase(GeoJSONTests.allTests),
-    testCase(HelperObjectTests.allTests),
+    testCase(GeospatialQueryingTest.allTests),
+    testCase(GridFSTest.allTests),  
+    testCase(HelperObjectTests.allTests),    
     testCase(InternalTests.allTests),
     testCase(SetupTests.allTests)    
 ])
