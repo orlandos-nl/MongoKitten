@@ -17,7 +17,8 @@ class GeospatialQueryingTest: XCTestCase {
             ("testNearQuery", testNearQuery),
             ("testGeoWithInQuery", testGeoWithInQuery),
             ("testGeoIntersectsQuery", testGeoIntersectsQuery),
-            ("testGeoNearSphereQuery", testGeoNearSphereQuery)
+            ("testGeoNearSphereQuery", testGeoNearSphereQuery),
+            ("testGeoNearCommand", testGeoNearCommand)
         ]
     }
 
@@ -85,6 +86,21 @@ class GeospatialQueryingTest: XCTestCase {
             let results = Array(try zips.aggregate(pipeline: pipeline))
 
             XCTAssertEqual(results.count, 6)
+        }
+    }
+
+    func testGeoNearCommand() throws {
+        for db in TestManager.dbs {
+            let zips = db["zips"]
+            try zips.createIndex(named: "loc_index", withParameters: .geo2dsphere(field: "loc"))
+            let position = try Position(values: [-72.844092,42.466234])
+            let near = Point(coordinate: position)
+
+            let geoNearOption = GeoNearOption(near: near, spherical: true, distanceField: "dist.calculated", maxDistance: 10000.0)
+
+            let results = try zips.near(options: geoNearOption)
+
+            XCTAssertEqual((results["results"] as Array?)?.count , 6)
         }
     }
 
