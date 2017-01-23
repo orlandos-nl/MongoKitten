@@ -15,7 +15,8 @@ class GeospatialQueryingTest: XCTestCase {
             ("testGeo2SphereIndex", testGeo2SphereIndex),
             ("testGeoNear", testGeoNear),
             ("testNearQuery", testNearQuery),
-            ("testGeoWithInQuery", testGeoWithInQuery)
+            ("testGeoWithInQuery", testGeoWithInQuery),
+            ("testGeoIntersectsQuery", testGeoIntersectsQuery)
         ]
     }
 
@@ -36,7 +37,7 @@ class GeospatialQueryingTest: XCTestCase {
         do {
             for db in TestManager.dbs {
                 try db["airports"].drop()
-                //try db["GeoCollection"].drop()
+                try db["GeoCollection"].drop()
             }
         } catch {
 
@@ -124,7 +125,49 @@ class GeospatialQueryingTest: XCTestCase {
 
             do {
                 let results = Array(try collection.find(matching: query))
-                XCTAssertEqual(results, [firstPoint,thirdPoint])
+                XCTAssertTrue(results.contains(firstPoint))
+                XCTAssertTrue(results.contains(thirdPoint))
+                XCTAssertFalse(results.contains(secondPoint))
+            } catch MongoError.invalidResponse(let documentError) {
+                XCTFail(documentError.first?[raw: "errmsg"]?.string ?? "")
+            }
+        }
+    }
+
+    func testGeoIntersectsQuery() throws {
+        var firstPoint: Document = ["geo": Point(coordinate: try Position(values: [1.0, 1.0]))]
+        var secondPoint: Document = ["geo": Point(coordinate: try Position(values: [45.0,2.0]))]
+        var thirdPoint: Document = ["geo": Point(coordinate: try Position(values: [3.0,3.0]))]
+        var firstPolygon: Document = ["geo":try Polygon(exterior: [Position(values: [2.0, 2.0]),
+                                                                   Position(values: [6.0, 2.0]),
+                                                                   Position(values: [6.0, 6.0]),
+                                                                   Position(values: [2.0, 6.0]),
+                                                                   Position(values: [2.0, 2.0])])]
+
+        for db in TestManager.dbs {
+            let collection = db["GeoCollection"]
+            let firstId = try collection.insert(firstPoint)
+            let secondId = try collection.insert(secondPoint)
+            let thirdId = try collection.insert(thirdPoint)
+            let firstPolygonId = try collection.insert(firstPolygon)
+
+            firstPoint[raw: "_id"] = firstId
+            secondPoint[raw: "_id"] = secondId
+            thirdPoint[raw: "_id"] = thirdId
+            firstPolygon[raw: "_id"] = firstPolygonId
+
+            try collection.createIndex(named: "geoIndex", withParameters: .geo2dsphere(field: "geo"))
+
+            let polygon = try Polygon(exterior: [Position(values: [0.0, 0.0]), Position(values: [0.0,4.0]),Position(values: [4.0,4.0]), Position(values: [4.0,0.0]), Position(values: [0.0,0.0])])
+
+            let query = Query(aqt: .geoIntersects(key: "geo", geometry: polygon))
+
+            do {
+                let results = Array(try collection.find(matching: query))
+                XCTAssertTrue(results.contains(firstPoint))
+                XCTAssertTrue(results.contains(thirdPoint))
+                XCTAssertTrue(results.contains(firstPolygon))
+                XCTAssertFalse(results.contains(secondPoint))
             } catch MongoError.invalidResponse(let documentError) {
                 XCTFail(documentError.first?[raw: "errmsg"]?.string ?? "")
             }
