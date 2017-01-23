@@ -15,6 +15,7 @@ class GeospatialQueryingTest: XCTestCase {
             ("testGeo2SphereIndex", testGeo2SphereIndex),
             ("testGeoNear", testGeoNear),
             ("testNearQuery", testNearQuery),
+            ("testGeoWithInQuery", testGeoWithInQuery)
         ]
     }
 
