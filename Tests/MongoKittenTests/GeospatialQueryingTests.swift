@@ -103,26 +103,29 @@ class GeospatialQueryingTest: XCTestCase {
     }
 
     func testGeoWithInQuery() throws {
-        let firstPoint: Document = ["geo": Point(coordinate: try Position(values: [1.0, 1.0]))]
-        let secondPoint: Document = ["geo": Point(coordinate: try Position(values: [45.0,2.0]))]
-        let thirdPoint: Document = ["geo": Point(coordinate: try Position(values: [3.0,3.0]))]
+        var firstPoint: Document = ["geo": Point(coordinate: try Position(values: [1.0, 1.0]))]
+        var secondPoint: Document = ["geo": Point(coordinate: try Position(values: [45.0,2.0]))]
+        var thirdPoint: Document = ["geo": Point(coordinate: try Position(values: [3.0,3.0]))]
 
         for db in TestManager.dbs {
             let collection = db["GeoCollection"]
-            try collection.insert(firstPoint)
-            try collection.insert(secondPoint)
-            try collection.insert(thirdPoint)
+            let firstId = try collection.insert(firstPoint)
+            let secondId = try collection.insert(secondPoint)
+            let thirdId = try collection.insert(thirdPoint)
+            firstPoint[raw: "_id"] = firstId
+            secondPoint[raw: "_id"] = secondId
+            thirdPoint[raw: "_id"] = thirdId
+
             try collection.createIndex(named: "geoIndex", withParameters: .geo2dsphere(field: "geo"))
 
             let polygon = try Polygon(exterior: [Position(values: [0.0, 0.0]), Position(values: [0.0,4.0]),Position(values: [4.0,4.0]), Position(values: [4.0,0.0]), Position(values: [0.0,0.0])])
 
             let query = Query(aqt: .geoWithin(key: "geo", polygon: polygon))
-            print(query.queryDocument)
+
             do {
                 let results = Array(try collection.find(matching: query))
-                print(results)
+                XCTAssertEqual(results, [firstPoint,thirdPoint])
             } catch MongoError.invalidResponse(let documentError) {
-                print(documentError)
                 XCTFail(documentError.first?[raw: "errmsg"]?.string ?? "")
             }
         }
