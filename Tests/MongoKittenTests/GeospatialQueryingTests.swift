@@ -104,6 +104,27 @@ class GeospatialQueryingTest: XCTestCase {
         }
     }
 
+    func testGeoNearFailCommand() throws {
+        for db in TestManager.dbs {
+            let zips = db["zips"]
+
+            for index in try zips.listIndexes() {
+                if let _ = index[raw: "2dsphereIndexVersion"]?.int, let indexName = index[raw: "name"]?.string {
+                   try zips.dropIndex(named: indexName)              
+                }
+            }
+
+            let position = try Position(values: [-72.844092,42.466234])
+            let near = Point(coordinate: position)
+
+            let geoNearOption = GeoNearOption(near: near, spherical: true, distanceField: "dist.calculated", maxDistance: 10000.0)
+
+            XCTAssertThrowsError(try zips.near(options: geoNearOption))
+
+
+        }
+    }
+
     func testNearQuery() throws {
         for db in TestManager.dbs {
             let zips = db["zips"]
