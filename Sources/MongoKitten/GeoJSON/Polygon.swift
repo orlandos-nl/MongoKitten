@@ -37,7 +37,7 @@ public struct PolygonCoordinates {
 
 extension PolygonCoordinates: ValueConvertible {
     public func makeBSONPrimitive() -> BSONPrimitive {
-        var docs = Document()
+        var docs: Document = []
         docs.append(Document(array: exterior))
         for coords in holes {
             docs.append(Document(array: coords))
