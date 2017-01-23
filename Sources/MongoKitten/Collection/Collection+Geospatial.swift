@@ -32,13 +32,11 @@ extension Collection {
          "distanceMultiplier": options.distanceMultiplier,
          "uniqueDocs": options.uniqueDocs,
          "includeLocs": options.includeLocs]
-        
+
         command[raw: "readConcern"] = readConcern ?? self.readConcern
 
-
-        print(command)
         let reply = try database.execute(command: command, writing: false)
-        print(reply)
+
 
         guard case .Reply(_, _, _, _, _, _, let documents) = reply else {
             throw InternalMongoError.incorrectReply(reply: reply)
@@ -47,7 +45,6 @@ extension Collection {
         guard let responseDoc = documents.first, responseDoc[raw: "ok"]?.int == 1 else {
             throw MongoError.invalidResponse(documents: documents)
         }
-        print(responseDoc)
 
         return try firstDocument(in: reply)
     }
