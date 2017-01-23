@@ -16,7 +16,9 @@ class GeospatialQueryingTest: XCTestCase {
             ("testGeoNear", testGeoNear),
             ("testNearQuery", testNearQuery),
             ("testGeoWithInQuery", testGeoWithInQuery),
-            ("testGeoIntersectsQuery", testGeoIntersectsQuery)
+            ("testGeoIntersectsQuery", testGeoIntersectsQuery),
+            ("testGeoNearSphereQuery", testGeoNearSphereQuery),
+            ("testGeoNearCommand", testGeoNearCommand)
         ]
     }
 
@@ -84,6 +86,42 @@ class GeospatialQueryingTest: XCTestCase {
             let results = Array(try zips.aggregate(pipeline: pipeline))
 
             XCTAssertEqual(results.count, 6)
+        }
+    }
+
+    func testGeoNearCommand() throws {
+        for db in TestManager.dbs {
+            let zips = db["zips"]
+            try zips.createIndex(named: "loc_index", withParameters: .geo2dsphere(field: "loc"))
+            let position = try Position(values: [-72.844092,42.466234])
+            let near = Point(coordinate: position)
+
+            let geoNearOption = GeoNearOption(near: near, spherical: true, distanceField: "dist.calculated", maxDistance: 10000.0)
+
+            let results = try zips.near(options: geoNearOption)
+
+            XCTAssertEqual((results["results"] as Array?)?.count , 6)
+        }
+    }
+
+    func testGeoNearFailCommand() throws {
+        for db in TestManager.dbs {
+            let zips = db["zips"]
+
+            for index in try zips.listIndexes() {
+                if let _ = index[raw: "2dsphereIndexVersion"]?.int, let indexName = index[raw: "name"]?.string {
+                   try zips.dropIndex(named: indexName)              
+                }
+            }
+
+            let position = try Position(values: [-72.844092,42.466234])
+            let near = Point(coordinate: position)
+
+            let geoNearOption = GeoNearOption(near: near, spherical: true, distanceField: "dist.calculated", maxDistance: 10000.0)
+
+            XCTAssertThrowsError(try zips.near(options: geoNearOption))
+
+
         }
     }
 
@@ -167,6 +205,36 @@ class GeospatialQueryingTest: XCTestCase {
                 XCTAssertTrue(results.contains(firstPoint))
                 XCTAssertTrue(results.contains(thirdPoint))
                 XCTAssertTrue(results.contains(firstPolygon))
+                XCTAssertFalse(results.contains(secondPoint))
+            } catch MongoError.invalidResponse(let documentError) {
+                XCTFail(documentError.first?[raw: "errmsg"]?.string ?? "")
+            }
+        }
+    }
+
+
+    func testGeoNearSphereQuery() throws {
+        var firstPoint: Document = ["geo": Point(coordinate: try Position(values: [1.0, 1.0]))]
+        var secondPoint: Document = ["geo": Point(coordinate: try Position(values: [45.0,2.0]))]
+        var thirdPoint: Document = ["geo": Point(coordinate: try Position(values: [3.0,3.0]))]
+
+        for db in TestManager.dbs {
+            let collection = db["GeoCollection"]
+            let firstId = try collection.insert(firstPoint)
+            let secondId = try collection.insert(secondPoint)
+            let thirdId = try collection.insert(thirdPoint)
+            firstPoint[raw: "_id"] = firstId
+            secondPoint[raw: "_id"] = secondId
+            thirdPoint[raw: "_id"] = thirdId
+
+            try collection.createIndex(named: "geoIndex", withParameters: .geo2dsphere(field: "geo"))
+
+            let query = Query(aqt: .nearSphere(key:"geo", point: Point(coordinate: try Position(values: [1.01, 1.01])), maxDistance: 10000.0, minDistance: 0.0))
+
+            do {
+                let results = Array(try collection.find(matching: query))
+                XCTAssertTrue(results.contains(firstPoint))
+                XCTAssertFalse(results.contains(thirdPoint))
                 XCTAssertFalse(results.contains(secondPoint))
             } catch MongoError.invalidResponse(let documentError) {
                 XCTFail(documentError.first?[raw: "errmsg"]?.string ?? "")

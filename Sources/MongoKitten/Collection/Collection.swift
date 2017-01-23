@@ -783,7 +783,12 @@ public final class Collection {
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func dropIndex(named index: String) throws {
-        try database.execute(command: ["dropIndexes": self.name, "index": name])
+        let reply = try database.execute(command: ["dropIndexes": self.name, "index": index])
+
+        let dropIndexResponse = try firstDocument(in: reply)
+        guard dropIndexResponse["ok"] as Int? == 1 else {
+            throw MongoError.commandFailure(error: dropIndexResponse)
+        }
     }
     
     /// Lists all indexes for this collection

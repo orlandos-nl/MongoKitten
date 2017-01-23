@@ -22,6 +22,7 @@ class CollectionTests: XCTestCase {
             ("testDBRef", testDBRef),
             ("testProjection", testProjection),
             ("testIndexes", testIndexes),
+            ("testDropIndex", testDropIndex),
             ("testTextOperator", testTextOperator),
             ("testUpdate", testUpdate),
             ("testRemovingAll", testRemovingAll),
@@ -305,7 +306,18 @@ class CollectionTests: XCTestCase {
             XCTFail()
         }
     }
-        
+
+    func testDropIndex() throws {
+        for db in TestManager.dbs {
+            let collection = db["mycollection"]
+            try collection.insert(["name":"john"] as Document)
+
+            try collection.createIndex(named: "name_index", withParameters: .sort(field: "name", order: .ascending))
+
+            try collection.dropIndex(named: "name_index")            
+        }
+    }
+
     private func runContainsQuery() throws {
         for db in TestManager.dbs {
             let query = Query(aqt: .contains(key: "username", val: "ar", options: []))

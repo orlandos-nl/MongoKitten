@@ -178,17 +178,12 @@ public final class Server {
                 throw InternalMongoError.incorrectReply(reply: response)
             }
 
-            guard let batchSize = doc["maxWriteBatchSize"] as Int32?, let minWireVersion = doc["minWireVersion"] as Int32?, let maxWireVersion = doc["maxWireVersion"] as Int32? else {
-                serverData = (maxWriteBatchSize: 1000, maxWireVersion: 4, minWireVersion: 0, maxMessageSizeBytes: 48000000)
-                return
-            }
-
             var maxMessageSizeBytes = doc["maxMessageSizeBytes"] as Int32? ?? 0
             if maxMessageSizeBytes == 0 {
                 maxMessageSizeBytes = 48000000
             }
 
-            self.serverData = (maxWriteBatchSize: batchSize, maxWireVersion: maxWireVersion, minWireVersion: minWireVersion, maxMessageSizeBytes: maxMessageSizeBytes)
+            self.serverData = (maxWriteBatchSize: doc[raw: "maxWriteBatchSize"]?.int32 ?? 1000, maxWireVersion: doc[raw: "maxWireVersion"]?.int32 ?? 4, minWireVersion: doc[raw: "minWireVersion"]?.int32 ?? 0, maxMessageSizeBytes: maxMessageSizeBytes)
         }
         
         self.buildInfo = try getBuildInfo()
