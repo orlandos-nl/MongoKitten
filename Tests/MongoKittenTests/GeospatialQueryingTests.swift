@@ -50,7 +50,7 @@ class GeospatialQueryingTest: XCTestCase {
     func testGeo2SphereIndex() throws {
         loop: for db in TestManager.dbs {
             if db.server.buildInfo.version < Version(3, 2, 0) {
-                return
+                continue loop
             }
 
             let airports = db["airports"]
@@ -71,7 +71,11 @@ class GeospatialQueryingTest: XCTestCase {
     }
 
     func testGeoNear() throws {
-        for db in TestManager.dbs {
+        loop: for db in TestManager.dbs {
+            if db.server.buildInfo.version < Version(3, 4, 0) {
+                continue loop
+            }
+            
             let zips = db["zips"]
             try zips.createIndex(named: "loc_index", withParameters: .geo2dsphere(field: "loc"))
             let position = try Position(values: [-72.844092,42.466234])

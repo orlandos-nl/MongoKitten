@@ -13,11 +13,11 @@ extension Collection {
 
     /// Returns documents in order of proximity to a specified point, from the nearest to farthest. geoNear requires a geospatial index.
     ///
-    /// - Parameters:
+    /// - parameters:
     ///   - options: Geo Near options
     ///   - readConcern: Specifies the read concern.
-    /// - Returns: a Document with the results
-    /// - Throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - returns: a Document with the results
+    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     /// - SeeAlso : https://docs.mongodb.com/manual/reference/command/geoNear/
     func near(options: GeoNearOption, readConcern: ReadConcern? = nil) throws -> Document {
         var command: Document = ["geoNear": self.name,
@@ -25,7 +25,6 @@ extension Collection {
          "spherical": options.spherical,
          "distanceField": options.distanceField,
          "limit": options.limit,
-         "num":options.num,
          "minDistance": options.minDistance,
          "maxDistance": options.maxDistance,
          "query": options.query,

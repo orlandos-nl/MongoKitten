@@ -284,11 +284,8 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         ///
         /// Outputs all documents that are near the provided location in the options matching the parameters
         @discardableResult
-        public static func geoNear(geoNearOptions: GeoNearOption, outputAtKey distanceField: String) -> Stage {
-            var options = geoNearOptions.makeDocument()
-            options["distanceField"] = distanceField
-            
-            return Stage(["$geoNear": options] as Document)
+        public static func geoNear(geoNearOption: GeoNearOption) -> Stage {
+            return Stage(["$geoNear": geoNearOption] as Document)
         }
     }
 }

@@ -64,7 +64,12 @@ extension CoordinateReferenceSystem: Hashable {
 /// - epsg4326CRS: http://spatialreference.org/ref/epsg/4326/
 /// - strictCRS: http://www.geojson.org/geojson-spec.html#named-crs
 public enum MongoCRS: CoordinateReferenceSystem {
+    /// http://portal.opengeospatial.org/files/?artifact_id=24045
     case crs84CRS = "urn:ogc:def:crs:OGC:1.3:CRS84"
+    
+    /// http://spatialreference.org/ref/epsg/4326/
     case epsg4326CRS = "EPSG:4326"
+    
+    /// http://www.geojson.org/geojson-spec.html#named-crs
     case strictCRS = "urn:x-mongodb:crs:strictwinding:EPSG:4326"
 }

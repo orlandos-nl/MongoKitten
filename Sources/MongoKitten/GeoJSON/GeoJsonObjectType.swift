@@ -32,6 +32,7 @@ public enum GeoJsonObjectType: String, ValueConvertible {
     /// A collection of geometrical objects
     case geometryCollection = "GeometryCollection"
     
+    /// Converts the enum case to an embeddable BSON Primtive type
     public func makeBSONPrimitive() -> BSONPrimitive {
         return self.rawValue
     }
@@ -90,6 +91,9 @@ public struct GeoNearOption: ValueConvertible {
     /// The point which you're looking near
     public let near: Point
     
+    /// The output field that contains the calculated distance.
+    public let distanceField: String
+    
     /// If true, then MongoDB uses spherical geometry to calculate distances in meters if the specified (near) point is a GeoJSON point and in radians if the specified (near) point is a legacy coordinate pair.
     ///
     /// If false, then MongoDB uses 2d planar geometry to calculate distance between points.
@@ -121,9 +125,10 @@ public struct GeoNearOption: ValueConvertible {
     public let includeLocs: String?
 
     /// Creates GeoNear options
-    public init(near: Point, spherical: Bool, limit: Int? = nil, minDistance: Double? = nil, maxDistance: Double? = nil, query: Query? = nil, distanceMultiplier: Double? = nil, uniqueDocs: Bool? = nil, includeLocs: String? = nil) {
+    public init(near: Point, spherical: Bool, distanceField: String, limit: Int? = nil, minDistance: Double? = nil, maxDistance: Double? = nil, query: Query? = nil, distanceMultiplier: Double? = nil, uniqueDocs: Bool? = nil, includeLocs: String? = nil) {
         self.near = near
         self.spherical = spherical
+        self.distanceField = distanceField
         self.limit = limit
         self.minDistance = minDistance
         self.maxDistance = maxDistance
@@ -137,6 +142,7 @@ public struct GeoNearOption: ValueConvertible {
     public func makeDocument() -> Document {
         return ["near":near,
                 "spherical": spherical,
+                "distanceField": distanceField,
                 "limit": limit,
                 "minDistance": minDistance,
                 "maxDistance": maxDistance,
