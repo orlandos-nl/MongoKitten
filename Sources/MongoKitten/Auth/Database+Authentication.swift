@@ -224,10 +224,14 @@ extension Database {
     ///
     /// - throws: When failing authentication, being unable to base64 encode or failing to send/receive messages
     internal func authenticate(mongoCR details: MongoCredentials, usingConnection connection: Connection) throws {
+        let cmd = self["$cmd"]
+        
         // Get the server's nonce
-        let response = try self.execute(command: [
+        let nonceMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: [
             "getnonce": Int32(1)
-            ], writing: false)
+            ], returnFields: nil)
+        
+        let response = try server.sendAndAwait(message: nonceMessage, overConnection: connection, timeout: 0)
         
         // Get the server's challenge
         let document = try firstDocument(in: response)
@@ -243,9 +247,8 @@ extension Database {
         bytes.append(contentsOf: "\(details.username):mongo:\(details.password)".utf8)
         
         let digest = MD5.hash(bytes)
-        let key = MD5.hash([UInt8]("\(nonce)\(details.username)\(digest)".utf8)).hexString
+        let key = MD5.hash([UInt8]("\(nonce)\(details.username)\(digest.hexString)".utf8)).hexString
         
-        let cmd = self["$cmd"]
         let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: [
             "authenticate": 1,
             "nonce": nonce,
