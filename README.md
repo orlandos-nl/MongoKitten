@@ -1,3 +1,5 @@
+Please leave a star to show your support for the project.
+
 # MongoKitten
 
 [![Swift 3.0.1](https://img.shields.io/badge/swift-3.0.1-orange.svg)](https://swift.org)
@@ -20,25 +22,30 @@ And `import MongoKitten` in your project.
 
 ## Supported Features
 
-- SSL (MongoKitten 3)
-- Sharded Clusters (MongoKitten 3)
-- Replica Sets (MongoKitten 3)
-- DBRefs (MongoKitten 3)
+- All basic CRUD operations
+- SSL
+- Sharded Clusters
+- Replica Sets
+- Geospatial queries
+- Read/Write concerns
+- Collation
+- User management
+- Indexes
+- DBRef
 - GridFS
-- Aggregates
-- All basic MongoDB features
+- Aggregation pipelines
+- Much more
 
 ## Requirements
 
-A MongoDB server (local or online) running MongoDB 2.6 or above.
+- A MongoDB server (local or online) running MongoDB 2.6 or above.
+- Swift 3.x.x
 
 ## Learn
 
-We host all our documentation [here](http://docs.openkitten.org).
+[We host all our tutorials here](http://docs.openkitten.org)
 
-## Supporters
-
-To keep this project up and running we have [a donation page set up here.](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=265MBC3CZFN7Y) If you add your email address we'll contact you and we'll put your photo underneath here.
+[And we host the MongoKitten documentation including dash docset here](http://mongokitten.openkitten.org)
 
 ## License
 
