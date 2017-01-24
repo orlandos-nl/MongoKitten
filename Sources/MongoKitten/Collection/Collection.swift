@@ -799,10 +799,10 @@ public final class Collection {
     ///
     /// - returns: A Cursor pointing to the Index results
     public func listIndexes() throws -> Cursor<Document> {
-        guard let wireVersion = database.server.serverData?.maxWireVersion , wireVersion > 3 else {
+        guard database.server.buildInfo.version >= Version(3,0,0) else {
             throw MongoError.unsupportedOperations
         }
-        
+    
         let result = try firstDocument(in: try database.execute(command: ["listIndexes": self.name], writing: false))
         
         guard let cursorDocument = result["cursor"] as Document? else {

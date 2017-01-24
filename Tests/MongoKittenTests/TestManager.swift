@@ -15,15 +15,23 @@ final class TestManager {
         case TestDataNotPresent
     }
     
+    #if Xcode
     static var codecov: Bool {
-        guard let out = getenv("mongokittencodecov") else { return false }
-        
-        guard let s = String(validatingUTF8: out) else {
-            return false
-        }
-        
-        return s.lowercased().contains("true")
+        let parent = #file.characters.split(separator: "/").map(String.init).dropLast().joined(separator: "/")
+        let path = "/\(parent)/../../codecov"
+        return FileManager.default.fileExists(atPath: path)
     }
+    #else
+        static var codecov: Bool {
+            guard let out = getenv("mongokittencodecov") else { return false }
+            
+            guard let s = String(validatingUTF8: out) else {
+                return false
+            }
+            
+            return s.lowercased().contains("true")
+        }
+    #endif
     
     static var mongoURL: String {
         let defaultURL = "mongodb://localhost:27017/mongokitten-unittest?appname=xctest"
@@ -43,21 +51,23 @@ final class TestManager {
         return databases
     }
     
-    private static weak var codecovDb: Database? = {
+    private static var codecovDb: Database? = {
         return codecov ? try! Database(mongoURL: "mongodb://localhost:27018/mongokitten-unittest?appname=xctest") : nil
     }()
     
     static var testingUsers = [Document]()
     
     static func clean() throws {
-        // Erase the testing database:
-        for aCollection in try db.listCollections() where !aCollection.name.contains("system") && aCollection.name != "zips" && aCollection.name != "restaurants" {
-            try aCollection.drop()
-        }
-        
-        // Validate zips count
-        if try db["zips"].count() != 29353 {
-            throw TestError.TestDataNotPresent
+        for db in dbs {
+            // Erase the testing database:
+            for aCollection in try db.listCollections() where !aCollection.name.contains("system") && aCollection.name != "zips" && aCollection.name != "restaurants" {
+                try aCollection.drop()
+            }
+            
+            // Validate zips count
+            if try db["zips"].count() != 29353 {
+                throw TestError.TestDataNotPresent
+            }
         }
     }
     

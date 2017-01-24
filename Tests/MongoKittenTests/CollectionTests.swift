@@ -232,10 +232,10 @@ class CollectionTests: XCTestCase {
             
             XCTAssertEqual(response.first, response2)
             
-            try runContainsQuery()
-            try runContainsCaseInsensitiveQuery()
-            try runStartsWithQuery()
-            try runEndsWithQuery()
+            try runContainsQuery(onDB: db)
+            try runContainsCaseInsensitiveQuery(onDB: db)
+            try runStartsWithQuery(onDB: db)
+            try runEndsWithQuery(onDB: db)
         }
     }
     
@@ -318,35 +318,28 @@ class CollectionTests: XCTestCase {
         }
     }
 
-    private func runContainsQuery() throws {
-        for db in TestManager.dbs {
-            let query = Query(aqt: .contains(key: "username", val: "ar", options: []))
-            let response = Array(try db["wcol"].find(matching: query))
-            XCTAssert(response.count == 2)
-        }
+    private func runContainsQuery(onDB db: Database) throws {
+        let query = Query(aqt: .contains(key: "username", val: "ar", options: []))
+        let response = Array(try db["wcol"].find(matching: query))
+        XCTAssert(response.count == 2)
     }
     
-    private func runStartsWithQuery() throws {
-        for db in TestManager.dbs {
-            let query = Query(aqt: .startsWith(key: "username", val: "har"))
-            let response = Array(try db["wcol"].find(matching: query))
-            XCTAssert(response.count == 2)
-        }
+    private func runStartsWithQuery(onDB db: Database) throws {
+        let query = Query(aqt: .startsWith(key: "username", val: "har"))
+        let response = Array(try db["wcol"].find(matching: query))
+        XCTAssert(response.count == 2)
     }
     
-    private func runEndsWithQuery() throws {
-        for db in TestManager.dbs {
-            let query = Query(aqt: .endsWith(key: "username", val: "rrie"))
-            let response = Array(try db["wcol"].find(matching: query))
-            XCTAssert(response.count == 2)
-        }
+    private func runEndsWithQuery(onDB db: Database) throws {
+        let query = Query(aqt: .endsWith(key: "username", val: "rrie"))
+        let response = Array(try db["wcol"].find(matching: query))
+        XCTAssert(response.count == 2)
     }
     
-    private func runContainsCaseInsensitiveQuery() throws {for db in TestManager.dbs {
+    private func runContainsCaseInsensitiveQuery(onDB db: Database) throws {
         let query = Query(aqt: .contains(key: "username", val: "AR", options: .caseInsensitive))
         let response = Array(try db["wcol"].find(matching: query))
         XCTAssert(response.count == 2)
-        }
     }
     
     
