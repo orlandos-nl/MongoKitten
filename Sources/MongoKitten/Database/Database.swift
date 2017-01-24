@@ -166,6 +166,27 @@ public final class Database {
     ///
     /// - returns: A `Message` containing the response
     @discardableResult
+    public func execute(dbCommand document: Document, until timeout: TimeInterval = 0, writing: Bool = true) throws -> [Document] {
+        let timeout = timeout > 0 ? timeout : server.defaultTimeout
+        
+        let connection = try server.reserveConnection(writing: writing, authenticatedFor: self)
+        
+        defer {
+            server.returnConnection(connection)
+        }
+        
+        let cmd = self["$cmd"]
+        let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
+        return try allDocuments(in: try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: timeout))
+    }
+    
+    /// Executes a command `Document` on this database using a query message
+    ///
+    /// - parameter command: The command `Document` to execute
+    /// - parameter timeout: The timeout in seconds for listening for a response
+    ///
+    /// - returns: A `Message` containing the response
+    @discardableResult
     internal func execute(command document: Document, until timeout: TimeInterval = 0, writing: Bool = true) throws -> Message {
         let timeout = timeout > 0 ? timeout : server.defaultTimeout
         

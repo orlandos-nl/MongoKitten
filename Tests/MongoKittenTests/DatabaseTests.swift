@@ -12,7 +12,9 @@ import XCTest
 class DatabaseTests: XCTestCase {
     static var allTests: [(String, (DatabaseTests) -> () throws -> Void)] {
         return [
-                   ("testUsers", testUsers),
+            ("testUsers", testUsers),
+            ("testMakeGridFS", testMakeGridFS),
+            ("testPing", testPing),
         ]
     }
     
@@ -66,6 +68,17 @@ class DatabaseTests: XCTestCase {
             
             XCTAssertEqual(gridFS.chunks.name, "fs.chunks")
             XCTAssertEqual(gridFS.files.name, "fs.files")
+        }
+    }
+    
+    func testPing() throws {
+        for db in TestManager.dbs {
+            let documents = try db.execute(dbCommand: [
+                "ping": 1
+                ])
+            
+            XCTAssertEqual(documents.count, 1)
+            XCTAssertEqual(documents.first?["ok"] as Int32?, 1)
         }
     }
 }
