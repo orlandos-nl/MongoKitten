@@ -27,6 +27,7 @@ And `import MongoKitten` in your project.
 ## Supported Features
 
 - All basic CRUD operations
+- [Blazing fast performance](Performance.md)
 - SSL
 - Sharded Clusters
 - Replica Sets
