@@ -11,7 +11,7 @@ import LogKitten
 import Dispatch
 
 class Connection {
-
+    
     let logger: FrameworkLogger
     let client: MongoTCP
     let buffer = TCPBuffer()
@@ -20,28 +20,28 @@ class Connection {
     var authenticatedDBs: [String] = []
     var onClose: (()->())
     let host: MongoHost
-
+    
     private static let receiveQueue = DispatchQueue(label: "org.mongokitten.server.receiveQueue", attributes: .concurrent)
-
+    
     var waitingForResponses = [Int32:(Message)->()]()
-
+    
     /// A cache for incoming responses
     var incomingMutateLock = NSLock()
-
+    
     public var isConnected: Bool {
         return client.isConnected
     }
-
+    
     init(client: MongoTCP, writable: Bool, host: MongoHost, logger: FrameworkLogger, onClose: @escaping (()->())) {
         self.client = client
         self.writable = writable
         self.onClose = onClose
         self.host = host
         self.logger = logger
-
+        
         Connection.receiveQueue.async(execute: backgroundLoop)
     }
-
+    
     func authenticate(toDatabase db: Database) throws {
         if let details = db.server.clientSettings.credentials {
             do {
@@ -53,13 +53,13 @@ class Connection {
                 default:
                     throw MongoError.unsupportedFeature("authentication Method")
                 }
-
+                
                 self.authenticatedDBs.append(db.name)
             } catch { }
         }
     }
-
-
+    
+    
     /// Receives response messages from the server and gives them to the callback closure
     /// After handling the response with the closure it removes the closure
     fileprivate func backgroundLoop() {
@@ -73,18 +73,18 @@ class Connection {
                 logger.fatal("Please file a report on https://github.com/openkitten/mongokitten")
             }
             incomingMutateLock.unlock()
-
+            
             return
         }
-
+        
         Connection.receiveQueue.async(execute: backgroundLoop)
     }
-
+    
     func close() {
         _ = try? client.close()
         onClose()
     }
-
+    
     /// Called by the server thread to handle MongoDB Wire messages
     ///
     /// - parameter bufferSize: The amount of bytes to fetch at a time
@@ -94,26 +94,26 @@ class Connection {
         // TODO: Respect bufferSize
         let incomingBuffer: [UInt8] = try client.receive()
         buffer.data += incomingBuffer
-
+        
         while buffer.data.count >= 36 {
-            let length = Int(try fromBytes(buffer.data[0...3]) as Int32)
-
+            let length = Int(buffer.data[0...3].makeInt32())
+            
             guard length <= buffer.data.count else {
                 // Ignore: Wait for more data
                 return
             }
-
+            
             let responseData = buffer.data[0..<length]*
-            let responseId = try fromBytes(buffer.data[8...11]) as Int32
+            let responseId = buffer.data[8...11].makeInt32()
             let reply = try Message.makeReply(from: responseData)
-
+            
             if let closure = waitingForResponses[responseId] {
                 closure(reply)
                 waitingForResponses[responseId] = nil
             } else {
-
+                
             }
-
+            
             buffer.data.removeSubrange(0..<length)
         }
     }

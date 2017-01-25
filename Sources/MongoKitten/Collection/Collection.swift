@@ -10,7 +10,7 @@ import Foundation
 import BSON
 
 public typealias MongoCollection = Collection
- 
+
 /// Represents a single MongoDB collection.
 ///
 /// **### Definition ###**
@@ -149,22 +149,22 @@ public final class Collection {
         var newIds = [ValueConvertible]()
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
-        let commandDocuments = documents[0..<min(1000, documents.count)].map({ (input: Document) -> ValueConvertible in
-            if let id = input[raw: "_id"] {
-                newIds.append(id)
-                return input
-            } else {
-                var output = input
-                let oid = ObjectId()
-                output[raw: "_id"] = oid
-                newIds.append(oid)
-                return output
-            }
-        })
-        
         while !documents.isEmpty {
             if protocolVersion >= 2 {
                 var command: Document = ["insert": self.name]
+                
+                let commandDocuments = documents[0..<min(1000, documents.count)].map({ (input: Document) -> ValueConvertible in
+                    if let id = input[raw: "_id"] {
+                        newIds.append(id)
+                        return input
+                    } else {
+                        var output = input
+                        let oid = ObjectId()
+                        output[raw: "_id"] = oid
+                        newIds.append(oid)
+                        return output
+                    }
+                })
                 
                 documents.removeFirst(min(1000, documents.count))
                 
@@ -235,7 +235,7 @@ public final class Collection {
         
         return cursor
     }
-        
+    
     /// Finds `Document`s in this `Collection`
     ///
     /// Can be used to execute DBCommands in MongoDB 2.6 and below. Be careful!
@@ -784,7 +784,7 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func dropIndex(named index: String) throws {
         let reply = try database.execute(command: ["dropIndexes": self.name, "index": index])
-
+        
         let dropIndexResponse = try firstDocument(in: reply)
         guard dropIndexResponse["ok"] as Int? == 1 else {
             throw MongoError.commandFailure(error: dropIndexResponse)
@@ -802,7 +802,7 @@ public final class Collection {
         guard database.server.buildInfo.version >= Version(3,0,0) else {
             throw MongoError.unsupportedOperations
         }
-    
+        
         let result = try firstDocument(in: try database.execute(command: ["listIndexes": self.name], writing: false))
         
         guard let cursorDocument = result["cursor"] as Document? else {

@@ -105,6 +105,7 @@ public final class Database {
     public init(named name: String, atServer server: Server) {
         self.server = server
         self.name = name
+        self.cmd = Collection(named: "$cmd", in: self)
     }
     
     /// Initializes this Database with a connection String.
@@ -120,7 +121,9 @@ public final class Database {
         self.server = try Server(mongoURL: url, maxConnectionsPerServer: maxConnections)
         
         self.name = String(dbname)
-
+        
+        self.cmd = Collection(named: "$cmd", in: self)
+        
         let connection = try server.reserveConnection(writing: false, authenticatedFor: nil)
         
         defer {
@@ -159,6 +162,9 @@ public final class Database {
         return c
     }
     
+    /// Stores the $cmd collection to reduce the load on the collection subscript
+    internal private(set) var cmd: Collection! = nil
+    
     /// Executes a command `Document` on this database using a query message
     ///
     /// - parameter command: The command `Document` to execute
@@ -175,7 +181,6 @@ public final class Database {
             server.returnConnection(connection)
         }
         
-        let cmd = self["$cmd"]
         let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
         return try allDocuments(in: try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: timeout))
     }
@@ -196,7 +201,6 @@ public final class Database {
             server.returnConnection(connection)
         }
         
-        let cmd = self["$cmd"]
         let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
         return try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: timeout)
     }

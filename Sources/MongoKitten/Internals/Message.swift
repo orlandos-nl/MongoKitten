@@ -75,7 +75,7 @@ enum Message {
         }
         
         // Get the message length
-        let length = try fromBytes(data[0...3]) as Int32
+        let length = data[0...3].makeInt32()
         
         // Check the message length
         if length != Int32(data.count) {
@@ -83,13 +83,13 @@ enum Message {
         }
         
         /// Get our variables from the message
-        let requestID = try fromBytes(data[4...7]) as Int32
-        let responseTo = try fromBytes(data[8...11]) as Int32
+        let requestID = data[4...7].makeInt32()
+        let responseTo = data[8...11].makeInt32()
         
-        let flags = try fromBytes(data[16...19]) as Int32
-        let cursorID = try fromBytes(data[20...27]) as Int64
-        let startingFrom = try fromBytes(data[28...31]) as Int32
-        let numbersReturned = try fromBytes(data[32...35]) as Int32
+        let flags = data[16...19].makeInt32()
+        let cursorID = data[20...27].makeInt64()
+        let startingFrom = data[28...31].makeInt32()
+        let numbersReturned = data[32...35].makeInt32()
         let documents = [Document](bsonBytes: data[36..<data.endIndex]*)
         
         // Return the constructed reply
@@ -138,7 +138,7 @@ enum Message {
             requestID = requestIdentifier
         case .GetMore(let requestIdentifier, let namespace, let numberToReturn, let cursorID):
             body += Int32(0).makeBytes()
-
+            
             /// TODO: Fix inconsistency `namespace`
             body += namespace.cStringBytes
             body += numberToReturn.makeBytes()
@@ -186,7 +186,7 @@ enum Message {
     /// - parameter findDocument: The filter to use when finding documents to update
     /// - parameter replaceDocument: The Document to replace the results with
     case Update(requestID: Int32, collection: Collection, flags: UpdateFlags, findDocument: Document, replaceDocument: Document)
-
+    
     /// Insert data into the server using an older method
     /// - parameter requestID: The Request ID that you can get from the server by calling `server.nextMessageID()`
     /// - parameter flags: The flags to be sent with this message
