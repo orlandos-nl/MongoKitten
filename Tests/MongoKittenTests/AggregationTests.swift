@@ -9,7 +9,6 @@
 
 import XCTest
 import MongoKitten
-import CryptoKitten
 import Dispatch
 
 class AggregationTests: XCTestCase {

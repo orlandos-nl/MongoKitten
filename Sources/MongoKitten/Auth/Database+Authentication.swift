@@ -1,8 +1,8 @@
-import CryptoKitten
 import Dispatch
 import Foundation
 import BSON
 import LogKitten
+import CryptoSwift
 
 /// Authentication extensions
 extension Database {
@@ -133,7 +133,7 @@ extension Database {
     /// - parameter previousInformation: The nonce, response and `SCRAMClient` instance
     ///
     /// - throws: When the authentication fails, when Base64 fails
-    private func challenge(with details: MongoCredentials, using previousInformation: (nonce: String, response: Document, scram: SCRAMClient<SHA1>), usingConnection connection: Connection) throws {
+    private func challenge(with details: MongoCredentials, using previousInformation: (nonce: String, response: Document, scram: SCRAMClient), usingConnection connection: Connection) throws {
         // If we failed the authentication
         guard previousInformation.response["ok"] as Int? == 1 else {
             logger.error("Authentication for MongoDB user \(details.username) with SASL failed against \(details.database) because of the following error")
@@ -162,7 +162,7 @@ extension Database {
         digestBytes.append(contentsOf: "\(details.username):mongo:\(details.password)".utf8)
         
         var passwordBytes = [UInt8]()
-        passwordBytes.append(contentsOf: MD5.hash(digestBytes).hexString.utf8)
+        passwordBytes.append(contentsOf: Digest.md5(digestBytes).toHexString().utf8)
         
         let result = try previousInformation.scram.process(decodedStringResponse, with: (username: details.username, password: passwordBytes), usingNonce: previousInformation.nonce)
         
@@ -198,7 +198,7 @@ extension Database {
     internal func authenticate(SASL details: MongoCredentials, usingConnection connection: Connection) throws {
         let nonce = randomNonce()
         
-        let auth = SCRAMClient<SHA1>()
+        let auth = SCRAMClient()
         
         let authPayload = try auth.authenticate(details.username, usingNonce: nonce)
         
@@ -246,8 +246,8 @@ extension Database {
         var bytes = [UInt8]()
         bytes.append(contentsOf: "\(details.username):mongo:\(details.password)".utf8)
         
-        let digest = MD5.hash(bytes)
-        let key = MD5.hash([UInt8]("\(nonce)\(details.username)\(digest.hexString)".utf8)).hexString
+        let digest = Digest.md5(bytes)
+        let key = Digest.md5([UInt8]("\(nonce)\(details.username)\(digest.toHexString())".utf8)).toHexString()
         
         let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: [
             "authenticate": 1,

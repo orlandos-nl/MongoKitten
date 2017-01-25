@@ -19,8 +19,8 @@ import TLS
 
 @_exported import BSON
 
+import CryptoSwift
 import Foundation
-import CryptoKitten
 import LogKitten
 import Dispatch
 
@@ -764,8 +764,8 @@ public final class Server {
             command["username"] = user.user
             command["nonce"] = user.nonce
             
-            let passHash = MD5.hash([UInt8]("\(user.user):mongo:\(user.password)".utf8)).hexString
-            let key = MD5.hash([UInt8]("\(user.nonce)\(user.user)\(passHash))".utf8)).hexString
+            let passHash = Digest.md5([UInt8]("\(user.user):mongo:\(user.password)".utf8)).toHexString()
+            let key = Digest.md5([UInt8]("\(user.nonce)\(user.user)\(passHash))".utf8)).toHexString()
             command["key"] = key
         }
 

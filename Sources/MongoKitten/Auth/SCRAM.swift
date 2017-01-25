@@ -1,19 +1,17 @@
 import Foundation
-import CryptoKitten
+import CryptoSwift
 
 /// Authenticates over SCRAM-SHA-1 to authenticate a user with the provided password
 ///
 /// TODO: Make this internal
-final public class SCRAMClient<Variant: Hash> {
+final class SCRAMClient {
     /// Constant GS2BindFlag
     let gs2BindFlag = "n,,"
     
     /// Creates a new SCRAM Client instance
     ///
     /// TODO: Make this internal
-    public init() {
-        
-    }
+    init() {}
     
     /// Fixes the username to not contain variables that are essential to the SCRAM message structure
     ///
@@ -92,7 +90,7 @@ final public class SCRAMClient<Variant: Hash> {
     /// Generates an initial SCRAM-SHA-1 authentication String
     ///
     /// TODO: Make this internal
-    public func authenticate(_ username: String, usingNonce nonce: String) throws -> String {
+    func authenticate(_ username: String, usingNonce nonce: String) throws -> String {
         return "\(gs2BindFlag)n=\(fixUsername(username: username)),r=\(nonce)"
     }
     
@@ -102,7 +100,7 @@ final public class SCRAMClient<Variant: Hash> {
     ///
     /// - returns: A tuple where the proof is to be sent to the server and the signature is to be verified in the server's responses.
     /// - throws: When unable to parse the challenge
-    public func process(_ challenge: String, with details: (username: String, password: [UInt8]), usingNonce nonce: String) throws -> (proof: String, serverSignature: [UInt8]) {
+    func process(_ challenge: String, with details: (username: String, password: [UInt8]), usingNonce nonce: String) throws -> (proof: String, serverSignature: [UInt8]) {
         func xor(_ lhs: [UInt8], _ rhs: [UInt8]) -> [UInt8] {
             var result = [UInt8](repeating: 0, count: min(lhs.count, rhs.count))
             
@@ -130,24 +128,24 @@ final public class SCRAMClient<Variant: Hash> {
         }
         
         let salt = Array(data)
-        let saltedPassword = try PBKDF2<Variant>.derive(fromPassword: details.password, usingSalt: salt, iterating: parsedResponse.iterations)
+        let saltedPassword = try PKCS5.PBKDF2(password: details.password, salt: salt, iterations: parsedResponse.iterations, variant: .sha1).calculate()
         
         let ck = [UInt8]("Client Key".utf8)
         let sk = [UInt8]("Server Key".utf8)
         
-        let clientKey = HMAC<Variant>.authenticate(message: ck, withKey: saltedPassword)
-        let serverKey = HMAC<Variant>.authenticate(message: sk, withKey: saltedPassword)
+        let clientKey = try HMAC(key: saltedPassword, variant: .sha1).authenticate(ck)
+        let serverKey = try HMAC(key: saltedPassword, variant: .sha1).authenticate(sk)
 
-        let storedKey = Variant.hash(clientKey)
+        let storedKey = Digest.sha1(clientKey)
 
         let authenticationMessage = "n=\(fixUsername(username: details.username)),r=\(nonce),\(challenge),\(noProof)"
 
         var authenticationMessageBytes = [UInt8]()
         authenticationMessageBytes.append(contentsOf: authenticationMessage.utf8)
         
-        let clientSignature = HMAC<Variant>.authenticate(message: authenticationMessageBytes, withKey: storedKey)
+        let clientSignature = try HMAC(key: storedKey, variant: .sha1).authenticate(authenticationMessageBytes)
         let clientProof = xor(clientKey, clientSignature)
-        let serverSignature = HMAC<Variant>.authenticate(message: authenticationMessageBytes, withKey: serverKey)
+        let serverSignature = try HMAC(key: serverKey, variant: .sha1).authenticate(authenticationMessageBytes)
         
         let proof = Data(bytes: clientProof).base64EncodedString()
 
@@ -160,7 +158,7 @@ final public class SCRAMClient<Variant: Hash> {
     ///
     /// - returns: An empty string to proceed the process indefinitely until complete as per protocol definition
     /// - throws: When the server's signature is invalid
-    public func complete(fromResponse response: String, verifying signature: [UInt8]) throws -> String {
+    func complete(fromResponse response: String, verifying signature: [UInt8]) throws -> String {
         let sig = try parse(finalResponse: response)
 
         if sig != signature {

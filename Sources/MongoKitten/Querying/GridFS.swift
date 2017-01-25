@@ -8,7 +8,7 @@
 
 import BSON
 import Foundation
-import CryptoKitten
+import CryptoSwift
 
 /// A GridFS instance similar to a collection
 ///
@@ -156,8 +156,8 @@ public class GridFS {
             "length": Int64(dataSize),
             "chunkSize": Int32(chunkSize),
             "uploadDate": Date(timeIntervalSinceNow: 0),
-            "md5": MD5.hash(data).hexString]
-        
+            "md5": Digest.md5(data).toHexString()
+        ]
         
         if let contentType = contentType {
             insertData["contentType"] = contentType
