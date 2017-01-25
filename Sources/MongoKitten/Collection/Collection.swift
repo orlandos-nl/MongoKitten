@@ -344,8 +344,8 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: The found Document
-    public func findOne(matching filter: Query? = nil, sortedBy sort: Sort? = nil, projecting projection: Projection? = nil, skipping skip: Int32? = nil) throws -> Document? {
-        return try self.find(matching: filter, sortedBy: sort, projecting: projection, skipping: skip, limitedTo:
+    public func findOne(matching filter: Query? = nil, sortedBy sort: Sort? = nil, projecting projection: Projection? = nil, skipping skip: Int32? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil) throws -> Document? {
+        return try self.find(matching: filter, sortedBy: sort, projecting: projection, readConcern: readConcern, collation: collation, skipping: skip, limitedTo:
             1).next()
     }
     
@@ -449,8 +449,8 @@ public final class Collection {
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     @discardableResult
-    public func update(matching filter: Query = [:], to updated: Document, upserting upsert: Bool = false, multiple multi: Bool = false, stoppingOnError ordered: Bool? = nil) throws -> Int {
-        return try self.update([(filter: filter, to: updated, upserting: upsert, multiple: multi)], stoppingOnError: ordered)
+    public func update(matching filter: Query = [:], to updated: Document, upserting upsert: Bool = false, multiple multi: Bool = false, writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
+        return try self.update([(filter: filter, to: updated, upserting: upsert, multiple: multi)], writeConcern: writeConcern, stoppingOnError: ordered)
     }
     
     // Delete
@@ -537,8 +537,8 @@ public final class Collection {
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     @discardableResult
-    public func remove(matching filter: Query, limitedTo limit: Int32 = 0, stoppingOnError ordered: Bool? = nil) throws -> Int {
-        return try self.remove(matching: [(filter: filter, limit: limit)], stoppingOnError: ordered)
+    public func remove(matching filter: Query, limitedTo limit: Int32 = 0, writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
+        return try self.remove(matching: [(filter: filter, limit: limit)], writeConcern: writeConcern, stoppingOnError: ordered)
     }
     
     /// The drop command removes an entire collection from a database. This command also removes any indexes associated with the dropped collection.
