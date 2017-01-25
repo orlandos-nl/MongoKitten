@@ -8,4 +8,4 @@ So far we've tested faster against all other tested libraries. You can check it 
 From our local tests the following results have come up:
 
 - MongoKitten is 55% faster than the mongo-dart driver
-- MongoKitten is 6% faster than the Ruby MongoDB drive
+- MongoKitten is 6% faster than the Ruby MongoDB driver
