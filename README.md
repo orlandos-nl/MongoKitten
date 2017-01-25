@@ -18,6 +18,10 @@ Add this to your `Package.swift` for the stable
 
 `.Package(url: "https://github.com/OpenKitten/MongoKitten.git", majorVersion: 3)`
 
+Or add this to join the [MongoKitten 3.1 beta](https://github.com/OpenKitten/MongoKitten/releases/tag/3.1.0-beta):
+
+`.Package(url: "https://github.com/OpenKitten/MongoKitten.git", "3.1.0-beta")`
+
 And `import MongoKitten` in your project.
 
 ## Supported Features
@@ -26,9 +30,9 @@ And `import MongoKitten` in your project.
 - SSL
 - Sharded Clusters
 - Replica Sets
-- Geospatial queries
-- Read/Write concerns
-- Collation
+- Geospatial queries (3.1)
+- Read/Write concerns (3.1)
+- Collation (3.1)
 - User management
 - Indexes
 - DBRef
