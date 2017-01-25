@@ -16,11 +16,6 @@
 import Socks
 import TLS
 
-/// The default TCP Client used for creating a connection over non-SSL sockets
-public let DefaultTCPClient: MongoTCP.Type = Socks.TCPClient.self
-
-/// The default TCP Client used for creating a connection over SSL/TLS
-public let DefaultSSLTCPClient: MongoTCP.Type = TLS.Socket.self
 
 @_exported import BSON
 
@@ -133,10 +128,10 @@ public final class Server {
         self.clientSettings = clientSettings
 
         if let sslSettings = clientSettings.sslSettings {
-            self.tcpType = sslSettings.enabled ? DefaultSSLTCPClient : DefaultTCPClient
+            self.tcpType = sslSettings.enabled ? TLS.Socket.self : Socks.TCPClient.self
             self.sslVerify = !sslSettings.invalidCertificateAllowed
         } else {
-            self.tcpType = DefaultTCPClient
+            self.tcpType = Socks.TCPClient.self
         }
 
         self.connectionPoolSemaphore = DispatchSemaphore(value: self.clientSettings.maxConnectionsPerServer * self.clientSettings.hosts.count)
