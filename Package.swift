@@ -22,5 +22,3 @@ var package = Package(
         .Package(url: "https://github.com/OpenKitten/LogKitten.git", majorVersion: 0, minor: 3),
     ]
 )
-
-let lib = Product(name: "MongoKitten", type: .Library(.Dynamic), modules: "MongoKitten")
