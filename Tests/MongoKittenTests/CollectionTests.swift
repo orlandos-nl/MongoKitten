@@ -277,6 +277,18 @@ class CollectionTests: XCTestCase {
             XCTAssertEqual(originalDocument["name"] as String?, "Harrie Bob")
         }
     }
+
+    func testFindProjection() throws {
+        for db in TestManager.dbs {
+            let results = Array(try db["zips"].find(matching: "city" == "BARRE", projecting: ["city","pop"] as Projection))
+
+            XCTAssertEqual(results.count, 2)
+            XCTAssertNil(results.first?[raw: "state"]?.string)
+            XCTAssertNotNil(results.first?[raw: "city"]?.string)
+            XCTAssertEqual(results.first?[raw: "city"]?.string, "BARRE")
+            XCTAssertNotNil(results.first?[raw: "pop"]?.int)
+        }
+    }
     
     func testProjection() {
         let projection: Projection = ["name", "age", "awesome"]
@@ -350,6 +362,8 @@ class CollectionTests: XCTestCase {
         let response = Array(try db["wcol"].find(matching: query))
         XCTAssert(response.count == 2)
     }
+
+
     
     
     
