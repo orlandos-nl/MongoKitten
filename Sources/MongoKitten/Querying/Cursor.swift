@@ -11,7 +11,7 @@ import LogKitten
 import BSON
 
 /// A Cursor is a pointer to a sequence/collection of Documents on the MongoDB server.
-/// 
+///
 /// It can be looped over using a `for let document in cursor` loop like any other sequence.
 ///
 /// It can be transformed into an array with `Array(cursor)` and allows transformation to another type.
@@ -34,6 +34,8 @@ public final class Cursor<T> {
     
     // documents already received by the server
     fileprivate var data: [T]
+    
+    fileprivate var position = 0
     
     /// A closure that transforms a document to another type if possible, otherwise `nil`
     typealias Transformer = (Document) -> (T?)
@@ -105,7 +107,7 @@ public final class Cursor<T> {
                 }
                 
                 let documents = resultDocs.first?["cursor", "nextBatch"] as Document? ?? []
-                for (_, value) in documents {
+                for value in documents.arrayValue {
                     if let doc = transform(value.documentValue ?? [:]) {
                         self.data.append(doc)
                     }
@@ -165,14 +167,18 @@ extension Cursor : Sequence {
         }
     }
     
-    /// Allows you to fetch the first next entity in the Cursor 
+    /// Allows you to fetch the first next entity in the Cursor
     public func next() -> T? {
-        if self.data.isEmpty && self.cursorID != 0 {
+        defer { position += 1 }
+        
+        if position >= self.data.count && self.cursorID != 0 {
+            position = 0
+            self.data = []
             // Get more data!
             self.getMore()
         }
         
-        return self.data.isEmpty ? nil : self.data.removeFirst()
+        return position < self.data.count ? self.data[position] : nil
     }
 }
 
