@@ -205,22 +205,6 @@ public final class Database {
         return try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: timeout)
     }
     
-    /// Returns a document that describes the role of the mongod instance.
-    ///
-    ///If the instance is a member of a replica set, then isMaster returns a subset of the replica set configuration and status including whether or not the instance is the primary of the replica set.
-    ///
-    /// When sent to a mongod instance that is not a member of a replica set, isMaster returns a subset of this information.
-    ///
-    /// For more information: https://docs.mongodb.com/manual/reference/command/isMaster/#dbcmd.isMaster
-    ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    ///
-    /// - returns: `ismaster` response Document
-    internal func isMaster() throws -> Document {
-        let response = try self.execute(command: ["isMaster": Int32(1)])
-        
-        return try firstDocument(in: response)
-    }
 }
 
 extension Database: CustomStringConvertible {

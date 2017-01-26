@@ -35,5 +35,7 @@ class InternalTests: XCTestCase {
         XCTAssertEqual(UInt16.max.makeBytes(), [0xff, 0xff])
         
         XCTAssertEqual(UInt8.max.makeBytes(), [0xff])
+
+        XCTAssertEqual(Double(10).makeBytes(), [0x00, 0x00,0x00,0x00,0x00,0x00, 0x24, 0x40])
     }
 }
