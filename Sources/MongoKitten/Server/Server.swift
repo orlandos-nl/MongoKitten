@@ -81,7 +81,7 @@ public final class Server {
     private let maintainanceLoopLock = NSLock()
     
     /// Keeps track of the connections
-    private var currentConnections = 0, maximumConnections = 1, maximumConnectionsPerHost = 1
+    private var currentConnections = 0, maximumConnections = 100, maximumConnectionsPerHost = 100
     
     /// Did we initialize?
     private var isInitialized = false
