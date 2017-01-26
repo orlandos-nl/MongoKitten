@@ -160,10 +160,20 @@ class CollectionTests: XCTestCase {
     
     func testDistinct() throws {
         for db in TestManager.dbs {
-            let distinct = try db["zips"].distinct(onField: "state")!
+            let distinct = try db["zips"].distinct(onField: "state")
             
-            XCTAssertEqual(distinct.count, 51)
+            XCTAssertEqual(distinct?.count, 51)
         }
+    }
+
+    func testDistinctWithFilter() throws {
+
+        for db in TestManager.dbs {
+            let query = Query(aqt: .startsWith(key: "state", val: "A"))
+            let distinct = try db["zips"].distinct(on: "state", usingFilter: query)
+            XCTAssertEqual(distinct?.count, 4)
+        }
+
     }
     
     //    func testPerformance() throws {

@@ -722,7 +722,7 @@ public final class Collection {
     ///
     /// - returns: A list of all distinct values for this key
     public func distinct(on key: String, usingFilter query: Query) throws -> [ValueConvertible]? {
-        return try self.distinct(on: key, usingFilter: query)
+        return try self.distinct(onField: key, usingFilter: query.queryDocument)
     }
     
     /// Creates an `Index` in this `Collection` on the specified keys.
