@@ -17,5 +17,5 @@ Authentication shouldn't be enough of a drain to have a big impact on your syste
 From our local tests the following results have come up:
 
 - MongoKitten is 65% faster than the mongo-dart driver
-- MongoKitten is 25% faster than the official Ruby MongoDB driver
+- MongoKitten is 13% faster than the official Ruby MongoDB driver
 - MongoKitten is 12% faster than the official NodeJS driver
