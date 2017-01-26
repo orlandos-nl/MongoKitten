@@ -12,11 +12,6 @@ This all happens over an unsecured connection. This is not an encryption/authent
 
 Authentication shouldn't be enough of a drain to have a big impact on your system and SSL performance is left to Libre/OpenSSL.
 
-## The difference
+## Results
 
-From our local tests the following results have come up:
-
-- MongoKitten is 65% faster than the mongo-dart driver
-- MongoKitten is 13% faster than the official Ruby MongoDB driver
-- MongoKitten is 12% faster than the official NodeJS driver
-- MongoKitten is 10% faster than the official Java driver (in single test runs)
+MongoKitten 3.1 is still being optimized but has proven to be as performant as the officially supported MongoDB drivers.
