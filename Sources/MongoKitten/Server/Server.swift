@@ -615,8 +615,15 @@ public final class Server {
         connectionPoolLock.lock()
         isInitialized = false
         
+        for connection in connections {
+            connection.close()
+        }
+        
         connections = []
         currentConnections = 0
+        
+        connectionPoolLock.unlock()
+        hostPoolLock.lock()
         
         for (index, server) in self.servers.enumerated() {
             var server = server
@@ -624,7 +631,7 @@ public final class Server {
             self.servers[index] = server
         }
         
-        connectionPoolLock.unlock()
+        hostPoolLock.unlock()
     }
     
     
