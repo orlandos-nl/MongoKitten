@@ -8,6 +8,7 @@
 
 import Foundation
 import BSON
+import GeoJSON
 
 #if os(macOS)
     /// RegularExpression is named differently on Linux. Linux is our primary target.
@@ -343,7 +344,7 @@ public indirect enum AQT {
     /// - `key` the field name
     /// - `polygon` the GeoJSON Polygon
     /// - SeeAlso : https://docs.mongodb.com/manual/reference/operator/query/geoWithin/
-    case geoWithin(key: String, polygon: Polygon)
+    case geoWithin(key: String, polygon: GeoJSON.Polygon)
 
     /// Match all documents containing a `key` with geospatial data that intersects with the specified shape.
     /// - `key` the field name

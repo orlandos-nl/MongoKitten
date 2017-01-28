@@ -8,6 +8,7 @@
 
 import XCTest
 @testable import MongoKitten
+@testable import GeoJSON
 
 class GeospatialQueryingTest: XCTestCase {
     static var allTests: [(String, (GeospatialQueryingTest) -> () throws -> Void)] {

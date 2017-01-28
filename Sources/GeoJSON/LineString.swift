@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import BSON
 
 /// A representation of a GeoJSON LineString.
 public struct LineString: Geometry, ValueConvertible {

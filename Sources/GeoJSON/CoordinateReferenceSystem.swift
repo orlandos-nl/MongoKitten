@@ -7,7 +7,7 @@
 //
 
 import Foundation
-
+import BSON
 
 
 /// A GeoJSon Coordinate Reference System (CRS).

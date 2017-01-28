@@ -1,5 +1,5 @@
 //
-//  MultiPoint.swift
+//  MultiLineString.swift
 //  MongoKitten
 //
 //  Created by Laurent Gaches on 17/01/2017.
@@ -7,22 +7,21 @@
 //
 
 import Foundation
+import BSON
 
-/// An array of positions
-public struct MultiPoint: Geometry {
-    /// The positions array
-    public let coordinates: [Point]
-    
+/// An array of LineStrings
+public struct MultiLineString: Geometry, ValueConvertible {
+    /// The LineStrings
+    public let coordinates: [LineString]
+
     /// The type name of this geometric object
-    public let type: GeoJsonObjectType = .multiPoint
+    public let type: GeoJsonObjectType = .multiLineString
 
-    /// Initializes this MultiPoint gemetric object
-    public init(coordinates: [Point]) {
+    /// Creates a new MultiLineString
+    public init(coordinates: [LineString]) {
         self.coordinates = coordinates
     }
-}
-
-extension MultiPoint: ValueConvertible {
+    
     /// Converts this object to an embeddable BSONPrimtive
     public func makeBSONPrimitive() -> BSONPrimitive {
         return ["type": self.type.rawValue, "coordinates": Document(array: self.coordinates) ] as Document

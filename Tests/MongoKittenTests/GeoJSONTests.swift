@@ -9,6 +9,7 @@
 
 import XCTest
 @testable import MongoKitten
+@testable import GeoJSON
 
 
 class GeoJSONTests: XCTestCase {

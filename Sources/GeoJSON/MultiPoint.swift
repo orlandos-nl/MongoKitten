@@ -1,5 +1,5 @@
 //
-//  MultiPolygon.swift
+//  MultiPoint.swift
 //  MongoKitten
 //
 //  Created by Laurent Gaches on 17/01/2017.
@@ -7,22 +7,23 @@
 //
 
 import Foundation
+import BSON
 
-/// An group of polygons
-public struct MultiPolygon: Geometry {
-    /// The polygons array
-    public let coordinates: [Polygon]
+/// An array of positions
+public struct MultiPoint: Geometry {
+    /// The positions array
+    public let coordinates: [Point]
     
     /// The type name of this geometric object
-    public let type: GeoJsonObjectType = .multiPolygon
+    public let type: GeoJsonObjectType = .multiPoint
 
-    /// Creates a new MultiPolygon object
-    public init(coordinates: [Polygon]) {
+    /// Initializes this MultiPoint gemetric object
+    public init(coordinates: [Point]) {
         self.coordinates = coordinates
     }
 }
 
-extension MultiPolygon: ValueConvertible {
+extension MultiPoint: ValueConvertible {
     /// Converts this object to an embeddable BSONPrimtive
     public func makeBSONPrimitive() -> BSONPrimitive {
         return ["type": self.type.rawValue, "coordinates": Document(array: self.coordinates) ] as Document

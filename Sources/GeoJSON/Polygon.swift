@@ -7,7 +7,7 @@
 //
 
 import Foundation
-
+import BSON
 
 /// Coordinates for a GeoJSON Polygon.
 public struct PolygonCoordinates {

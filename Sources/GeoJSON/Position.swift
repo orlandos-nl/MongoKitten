@@ -7,7 +7,7 @@
 //
 
 import Foundation
-
+import BSON
 
 /// A representation of a GeoJSON Position.
 /// 

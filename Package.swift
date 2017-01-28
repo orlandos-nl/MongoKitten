@@ -3,7 +3,8 @@ import PackageDescription
 var package = Package(
     name: "MongoKitten",
     targets: [
-        Target(name: "MongoKitten")
+        Target(name: "GeoJSON"),
+        Target(name: "MongoKitten", dependencies: ["GeoJSON"])
         ],
     dependencies: [
         // For MongoDB Documents
