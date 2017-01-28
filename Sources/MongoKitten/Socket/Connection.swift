@@ -9,6 +9,8 @@
 import Foundation
 import LogKitten
 import Dispatch
+import Socks
+import TLS
 
 class Connection {
     
@@ -32,8 +34,16 @@ class Connection {
         return client.isConnected
     }
     
-    init(client: MongoTCP, writable: Bool, host: MongoHost, logger: FrameworkLogger, onClose: @escaping (()->())) {
-        self.client = client
+    init(clientSettings: ClientSettings, writable: Bool, host: MongoHost, logger: FrameworkLogger, onClose: @escaping (()->())) throws {
+
+        let tcpType: MongoTCP.Type
+        if let sslSettings = clientSettings.sslSettings {
+            tcpType = sslSettings.enabled ? TLS.Socket.self : Socks.TCPClient.self
+        } else {
+            tcpType = Socks.TCPClient.self
+        }
+
+        self.client = try tcpType.open(address: host.hostname, port: host.port, options: clientSettings)
         self.writable = writable
         self.onClose = onClose
         self.host = host

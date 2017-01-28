@@ -13,10 +13,6 @@
     import Darwin.C
 #endif
 
-import Socks
-import TLS
-
-
 @_exported import BSON
 
 import CryptoSwift
@@ -66,7 +62,7 @@ public final class Server {
     private var connections = [Connection]()
     
     /// `MongoTCP` class to use for clients
-    public let tcpType: MongoTCP.Type
+//    public let tcpType: MongoTCP.Type
     
     /// Semaphore to use for safely managing connections
     private let connectionPoolSemaphore: DispatchSemaphore
@@ -126,14 +122,6 @@ public final class Server {
         self.driverInformation = MongoDriverInformation(name: "MongoKitten", version: "3.0.1", osName: "", architecture: "", appName: clientSettings.applicationName)
         
         self.clientSettings = clientSettings
-        
-        if let sslSettings = clientSettings.sslSettings {
-            self.tcpType = sslSettings.enabled ? TLS.Socket.self : Socks.TCPClient.self
-            self.sslVerify = !sslSettings.invalidCertificateAllowed
-        } else {
-            self.tcpType = Socks.TCPClient.self
-        }
-        
         self.connectionPoolSemaphore = DispatchSemaphore(value: self.clientSettings.maxConnectionsPerServer * self.clientSettings.hosts.count)
         self.defaultTimeout = self.clientSettings.defaultTimeout
         self.logger = Logger.forFramework(withIdentifier: "org.openkitten.mongokitten")
@@ -347,7 +335,7 @@ public final class Server {
             throw MongoError.noServersAvailable
         }
         
-        let connection = Connection(client: try tcpType.open(address: lowestOpenConnections.hostname, port: lowestOpenConnections.port, options: self.clientSettings), writable: lowestOpenConnections.isPrimary, host: lowestOpenConnections, logger: self.logger) {
+        let connection = try Connection(clientSettings: self.clientSettings, writable: lowestOpenConnections.isPrimary, host: lowestOpenConnections, logger: self.logger) {
             self.hostPoolLock.lock()
             for (id, server) in self.servers.enumerated() where server == lowestOpenConnections {
                 var host = server
@@ -383,7 +371,7 @@ public final class Server {
     ///
     /// - parameter authenticatedFor: The Database that this connection is opened for. Prepares this Connection for authentication to this Database
     private func makeConnection(toHost host: MongoHost, authenticatedFor: Database?) throws -> Connection {
-        let connection = Connection(client: try tcpType.open(address: host.hostname, port: host.port, options: self.clientSettings), writable: host.isPrimary, host: host, logger: logger) {
+        let connection = try Connection(clientSettings: self.clientSettings, writable: host.isPrimary, host: host, logger: logger) {
             self.hostPoolLock.lock()
             for (id, server) in self.servers.enumerated() where server == host {
                 var host = server
