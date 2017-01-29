@@ -22,7 +22,7 @@ import Socks
 /// `close` is already defined in `Socks.TCPClient`
 extension Socks.TCPClient : MongoTCP {
     /// Opens a socket to the given address at the given port with the given settings
-    public static func open(address hostname: String, port: UInt16, options: ClientSettings) throws -> MongoTCP {
+    public static func open(address hostname: String, port: UInt16, options: [String: Any]) throws -> MongoTCP {
         let address = hostname.lowercased() == "localhost" ? InternetAddress.localhost(port: port) : InternetAddress(hostname: hostname, port: port)
         return try TCPClient(address: address)
     }

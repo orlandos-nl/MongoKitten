@@ -16,7 +16,7 @@ class TCPBuffer {
 /// Any socket conforming to this protocol can be used to connect to a server.
 public protocol MongoTCP : class {
     /// Opens a socket to the given address at the given port with the given settings
-    static func open(address hostname: String, port: UInt16, options: ClientSettings) throws -> MongoTCP
+    static func open(address hostname: String, port: UInt16, options: [String:Any]) throws -> MongoTCP
 
     /// Closes the connection
     func close() throws

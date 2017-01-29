@@ -7,11 +7,13 @@ extension TLS.Socket: MongoTCP {
     /// Opens a Socket using TLS to the specified host
     ///
     /// Makes use of the ClientSettings' SSLSettings
-    public static func open(address hostname: String, port: UInt16, options: ClientSettings) throws -> MongoTCP {
+    public static func open(address hostname: String, port: UInt16, options: [String:Any]) throws -> MongoTCP {
         let address = hostname.lowercased() == "localhost" ? InternetAddress.localhost(port: port) : InternetAddress.init(hostname: hostname, port: port)
         
         let internetSocket = try TCPInternetSocket(address: address)
-        let config = try TLS.Config(mode: .client, certificates: .openbsd, verifyHost: !(options.sslSettings?.invalidHostNameAllowed ?? false), verifyCertificates: !(options.sslSettings?.invalidCertificateAllowed ?? false))
+        let invalidCertificateAllowed = options["invalidCertificateAllowed"] as? Bool ?? false
+        let invalidHostNameAllowed = options["invalidHostNameAllowed"] as? Bool ?? false
+        let config = try TLS.Config(mode: .client, certificates: .openbsd, verifyHost: !invalidHostNameAllowed, verifyCertificates: !invalidCertificateAllowed)
         
         let socket = try TLS.Socket(config: config, socket: internetSocket)
         
