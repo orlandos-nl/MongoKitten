@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import TLS
 
 /// Settings for connecting to MongoDB via SSL.
 public struct SSLSettings: ExpressibleByBooleanLiteral {
@@ -16,9 +15,6 @@ public struct SSLSettings: ExpressibleByBooleanLiteral {
         self.invalidHostNameAllowed = false
         self.invalidCertificateAllowed = false
     }
-
-    /// The certificate repository to use. This repository contains the root certificates for all trusted CAs.
-//    public var certificates: Certificates = .openbsd
 
     /// Enable SSL
     public let enabled: Bool
