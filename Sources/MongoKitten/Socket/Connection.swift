@@ -11,6 +11,7 @@ import LogKitten
 import Dispatch
 import Socks
 import TLS
+import MongoSocket
 
 class Connection {
     

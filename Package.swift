@@ -4,7 +4,8 @@ var package = Package(
     name: "MongoKitten",
     targets: [
         Target(name: "GeoJSON"),
-        Target(name: "MongoKitten", dependencies: ["GeoJSON"])
+        Target(name: "MongoSocket"),
+        Target(name: "MongoKitten", dependencies: ["GeoJSON", "MongoSocket"])
         ],
     dependencies: [
         // For MongoDB Documents

@@ -8,9 +8,11 @@
 import Foundation
 
 /// A class buffer that stores all received bytes without Copy-on-Write for efficiency
-class TCPBuffer {
+public class TCPBuffer {
     /// The buffer data
-    var data: [UInt8] = []
+    public var data: [UInt8] = []
+
+    public init() { }
 }
 
 /// Any socket conforming to this protocol can be used to connect to a server.
