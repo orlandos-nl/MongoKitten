@@ -60,10 +60,7 @@ public final class Server {
     
     /// `MongoTCP` Socket bound to the MongoDB Server
     private var connections = [Connection]()
-    
-    /// `MongoTCP` class to use for clients
-//    public let tcpType: MongoTCP.Type
-    
+
     /// Semaphore to use for safely managing connections
     private let connectionPoolSemaphore: DispatchSemaphore
     
