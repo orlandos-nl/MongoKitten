@@ -81,4 +81,14 @@ class DatabaseTests: XCTestCase {
             XCTAssertEqual(documents.first?["ok"] as Int32?, 1)
         }
     }
+
+    func testDisconnect() throws {
+
+        let server =  try Server(mongoURL: TestManager.mongoURL)
+        XCTAssertTrue(server.isConnected)
+
+        try server.disconnect()
+        XCTAssertFalse(server.isConnected)
+
+    }
 }
