@@ -158,7 +158,7 @@ class AggregationTests: XCTestCase {
             
             do {
                 let cursor = try orders.aggregate(pipeline: pipe)
-                let results = cursor.array
+                let results = Array(cursor)
                 XCTAssertEqual(results.count, 1)
                 if results.count == 1 {
                     let document = results[0]

@@ -15,10 +15,7 @@ var package = Package(
         .Package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", Version(0,6,7)),
         
         // Provides sockets
-        .Package(url: "https://github.com/vapor/socks.git", majorVersion: 1),
-
-        // SSL
-        .Package(url: "https://github.com/vapor/tls.git", majorVersion: 1),
+        .Package(url: "https://github.com/IBM-Swift/BlueSSLService.git", majorVersion: 0, minor: 12),
 
         // Logging
         .Package(url: "https://github.com/OpenKitten/LogKitten.git", majorVersion: 0, minor: 3),
