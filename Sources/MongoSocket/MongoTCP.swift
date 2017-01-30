@@ -7,6 +7,10 @@
 
 import Foundation
 
+public enum MongoSocketError:Error {
+    case clientNotInitialized
+}
+
 /// A class buffer that stores all received bytes without Copy-on-Write for efficiency
 public class TCPBuffer {
     /// The buffer data
@@ -17,8 +21,9 @@ public class TCPBuffer {
 
 /// Any socket conforming to this protocol can be used to connect to a server.
 public protocol MongoTCP : class {
+
     /// Opens a socket to the given address at the given port with the given settings
-    static func open(address hostname: String, port: UInt16, options: [String:Any]) throws -> MongoTCP
+    init(address hostname: String, port: UInt16, options: [String: Any]) throws
 
     /// Closes the connection
     func close() throws
