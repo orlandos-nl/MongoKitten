@@ -29,16 +29,14 @@ public final class MongoSocket: MongoTCP {
 
     /// Sends the data to the other side of the connection
     public func send(data binary: [UInt8]) throws {
-        try socket.write(from: Data(bytes: binary))
+        try socket.write(from: UnsafeRawPointer(binary), bufSize: binary.count)
     }
 
     /// Receives any available data from the socket
     public func receive() throws -> [UInt8] {
         var myData = Data()
         _ = try socket.read(into: &myData)
-        let bytes = myData.map { UInt8($0) }
-
-        return bytes
+        return [UInt8](myData)
     }
 
     /// `true` when connected, `false` otherwise
