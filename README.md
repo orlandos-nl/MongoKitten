@@ -18,10 +18,6 @@ Add this to your `Package.swift` for the stable
 
 `.Package(url: "https://github.com/OpenKitten/MongoKitten.git", majorVersion: 3)`
 
-Or add this to join the [MongoKitten 3.1 beta](https://github.com/OpenKitten/MongoKitten/releases/tag/3.1.0-beta):
-
-`.Package(url: "https://github.com/OpenKitten/MongoKitten.git", "3.1.0-beta3")`
-
 Or add this to use with Kitura
 
 `.Package(url: "https://github.com/lgaches/MongoKitten.git", "3.1.0-beta3")`

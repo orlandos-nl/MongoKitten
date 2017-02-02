@@ -2,14 +2,24 @@
 All notable changes to this project will be documented in this file.
 `MongoKitten` adheres to [Semantic Versioning](http://semver.org/).
 
-## [3.1.0-Beta](https://github.com/OpenKitten/MongoKitten/tree/mongokitten31)
+## [3.1.0](https://github.com/OpenKitten/MongoKitten/tree/mongokitten31)
 ##### Enhancements
 * Geo2Sphere Index
 * Geospatial Query Operators
 * Geospatial Aggregation Operator
+* Geospatial collection commands
 * Better GridFS support
 * `db.createCollection` now accepts a `Query` as validator
-* Updated the batchSize of read queries to 100 by default
+* `collection.createIndex` doesn't require a name anymore
+* Updated the batchSize of read queries to 100 by default. This will increase performance noticably
+* Updated the default connection pool limit to 100 by default. This will increase performance on more heavily used applications.
+* Fixed MONGODB-CR authentication
+* Better support for pre-MongoDB 3.2 instances
+* More information about the MongoDB server is available from the server object
+* Better GridFS support
+* Read/Write concern support on server, database, collection and method level
+* Collation support on server, database, collection and method level
+* Fixed a tonne of tiny bugs
 
 ## [3.0.5](https://github.com/OpenKitten/MongoKitten/releases/tag/3.0.5)
 ##### Enhancements
