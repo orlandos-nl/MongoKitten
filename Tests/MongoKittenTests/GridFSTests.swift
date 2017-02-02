@@ -27,12 +27,14 @@ class GridFSTest: XCTestCase {
             file.append(contentsOf: [UInt8](repeating: 0x04, count: 1_000_000))
             file.append(contentsOf: [UInt8](repeating: 0x05, count: 1_000_000))
             
-            let id = try fs.store(data: file)
+            let id = try fs.store(data: file, named: "myFile.binary")
             
             guard let dbFile = try fs.findOne(byID: id) else {
                 XCTFail()
                 return
             }
+            
+            XCTAssertEqual(dbFile.filename, "myFile.binary")
             
             let data = try dbFile.read(from: 1_500_000, to: 2_500_000)
             var dataEquivalent = [UInt8](repeating: 0x02, count: 500_000)
