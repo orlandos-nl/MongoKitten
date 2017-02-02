@@ -736,7 +736,7 @@ public final class Collection {
     /// - parameter unique: Used to create unique fields like usernames. Default should be `false`
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func createIndex(named name: String, withParameters parameters: IndexParameter...) throws {
+    public func createIndex(named name: String? = nil, withParameters parameters: IndexParameter...) throws {
         try self.createIndexes([(name: name, parameters: parameters)])
     }
     
@@ -747,7 +747,7 @@ public final class Collection {
     /// - parameter indexes: The indexes to create using a Tuple as specified in `createIndex`
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func createIndexes(_ indexes: [(name: String, parameters: [IndexParameter])]) throws {
+    public func createIndexes(_ indexes: [(name: String?, parameters: [IndexParameter])]) throws {
         guard let wireVersion = database.server.serverData?.maxWireVersion , wireVersion >= 2 else {
             throw MongoError.unsupportedOperations
         }
