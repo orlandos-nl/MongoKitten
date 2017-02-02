@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 * Geospatial collection commands
 * Better GridFS support
 * `db.createCollection` now accepts a `Query` as validator
+* `collection.createIndex` doesn't require a name anymore
 * Updated the batchSize of read queries to 100 by default. This will increase performance noticably
 * Updated the default connection pool limit to 100 by default. This will increase performance on more heavily used applications.
 * Fixed MONGODB-CR authentication
