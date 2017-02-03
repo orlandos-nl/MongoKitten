@@ -7,11 +7,14 @@ import CryptoSwift
 final class SCRAMClient {
     /// Constant GS2BindFlag
     let gs2BindFlag = "n,,"
+    var server: Server
     
     /// Creates a new SCRAM Client instance
     ///
     /// TODO: Make this internal
-    init() {}
+    init(_ server: Server) {
+        self.server = server
+    }
     
     /// Fixes the username to not contain variables that are essential to the SCRAM message structure
     ///
@@ -123,12 +126,21 @@ final class SCRAMClient {
         
         let noProof = "c=\(encodedHeader),r=\(parsedResponse.nonce)"
         
+        print(parsedResponse.salt)
+        
         guard let data = Data(base64Encoded: parsedResponse.salt) else {
             throw MongoError.invalidBase64String
         }
         
         let salt = Array(data)
-        let saltedPassword = try PKCS5.PBKDF2(password: details.password, salt: salt, iterations: parsedResponse.iterations, variant: .sha1).calculate()
+        let saltedPassword: [UInt8]
+        
+        if let hashedPassword = server.hashedPassword {
+            saltedPassword = hashedPassword
+        } else {
+            saltedPassword = try PKCS5.PBKDF2(password: details.password, salt: salt, iterations: parsedResponse.iterations, variant: .sha1).calculate()
+            server.hashedPassword = saltedPassword
+        }
         
         let ck = [UInt8]("Client Key".utf8)
         let sk = [UInt8]("Server Key".utf8)
