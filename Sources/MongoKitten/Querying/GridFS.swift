@@ -159,6 +159,10 @@ public class GridFS {
             "md5": Digest.md5(data).toHexString()
         ]
         
+        if let filename = filename {
+            insertData["filename"] = filename
+        }
+        
         if let contentType = contentType {
             insertData["contentType"] = contentType
         }

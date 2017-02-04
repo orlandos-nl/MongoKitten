@@ -57,7 +57,7 @@ public enum IndexParameter {
     
     /// A custom index Document for unsupported features.
     ///
-    /// Generally not useful. Make a Issue or PR if you happen to need this
+    /// Generally not useful. Make a Issue or PR for the implemented feature if you happen to need this
     case custom(Document)
     
     /// Partial indexes only index Documents matching certain requirements. Like a user whose age is at least 25 years old. This is done using a provided raw MongoDB Document containing operators

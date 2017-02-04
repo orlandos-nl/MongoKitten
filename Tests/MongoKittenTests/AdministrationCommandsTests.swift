@@ -43,9 +43,9 @@ class AdministrationCommandsTests: XCTestCase {
             
             XCTAssert(dbExists)
             
+            try db.server["mongokitten-unittest-temp"].drop()
             try db.copy(toDatabase: "mongokitten-unittest-temp")
             let _ = try db.server.getDatabaseInfos()
-            try db.server["mongokitten-unittest-temp"].drop()
         }
     }
     

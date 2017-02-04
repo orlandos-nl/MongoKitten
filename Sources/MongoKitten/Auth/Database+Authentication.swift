@@ -198,7 +198,7 @@ extension Database {
     internal func authenticate(SASL details: MongoCredentials, usingConnection connection: Connection) throws {
         let nonce = randomNonce()
         
-        let auth = SCRAMClient()
+        let auth = SCRAMClient(server)
         
         let authPayload = try auth.authenticate(details.username, usingNonce: nonce)
         

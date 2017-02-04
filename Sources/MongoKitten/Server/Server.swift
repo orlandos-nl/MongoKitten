@@ -47,6 +47,9 @@ public final class Server {
         }
     }
     
+    /// Caches the password hash for this server's authentication details
+    internal var hashedPassword: [UInt8]? = nil
+    
     /// Handles errors within cursors
     public var cursorErrorHandler: ((Error)->()) = { doc in
         print(doc)
