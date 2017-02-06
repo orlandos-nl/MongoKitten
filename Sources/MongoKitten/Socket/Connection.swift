@@ -21,7 +21,8 @@ class Connection {
     var authenticatedDBs: [String] = []
     var onClose: (()->())
     let host: MongoHost
-    
+    var incomingBuffer = [UInt8]()
+
     private static let receiveQueue = DispatchQueue(label: "org.mongokitten.server.receiveQueue", attributes: .concurrent)
     
     var waitingForResponses = [Int32:(Message)->()]()
@@ -102,8 +103,7 @@ class Connection {
     ///
     /// - throws: Unable to receive or parse the reply
     private func receive(bufferSize: Int = 1024) throws {
-        // TODO: Respect bufferSize
-        let incomingBuffer: [UInt8] = try client.receive()
+        try client.receive(into: &incomingBuffer)
         buffer.data += incomingBuffer
         
         while buffer.data.count >= 36 {

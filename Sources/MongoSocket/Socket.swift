@@ -49,13 +49,14 @@ public final class MongoSocket: MongoTCP {
     }
 
     /// Receives any available data from the socket
-    public func receive() throws -> [UInt8] {
+    public func receive(into buffer: inout [UInt8]) throws {
+        buffer.removeAll()
         if sslEnabled {
             guard let sslClient = sslClient else { throw MongoSocketError.clientNotInitialized }
-            return try sslClient.receive(max: Int(UInt16.max))
+            buffer.append(contentsOf: try sslClient.receive(max: Int(UInt16.max)))
         } else {
             guard let plainClient = plainClient else { throw MongoSocketError.clientNotInitialized }
-            return try plainClient.receive(maxBytes: Int(UInt16.max))
+            buffer.append(contentsOf: try plainClient.receive(maxBytes: Int(UInt16.max)))
         }
     }
 
