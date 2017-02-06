@@ -32,7 +32,7 @@ public protocol MongoTCP : class {
     func send(data binary: [UInt8]) throws
 
     /// Receives any available data from the socket
-    func receive() throws -> [UInt8]
+    func receive(into buffer: inout [UInt8]) throws
 
     /// `true` when connected, `false` otherwise
     var isConnected: Bool { get }
