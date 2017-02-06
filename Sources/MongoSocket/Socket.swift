@@ -15,6 +15,8 @@ public final class MongoSocket: MongoTCP {
 
     private var sslEnabled = false
 
+    private var data: Data = Data(capacity: 2048)
+
     public init(address hostname: String, port: UInt16, options: [String: Any]) throws {
 
         self.sslEnabled = options["sslEnabled"] as? Bool ?? false
@@ -33,10 +35,12 @@ public final class MongoSocket: MongoTCP {
     }
 
     /// Receives any available data from the socket
-    public func receive() throws -> [UInt8] {
-        var myData = Data()
-        _ = try socket.read(into: &myData)
-        return [UInt8](myData)
+    public func receive(into buffer: inout [UInt8]) throws {
+        self.data.count = 0
+        buffer.removeAll()
+
+        _ = try socket.read(into: &self.data)
+        buffer.append(contentsOf: self.data)
     }
 
     /// `true` when connected, `false` otherwise
