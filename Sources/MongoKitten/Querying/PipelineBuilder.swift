@@ -45,6 +45,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
     /// Creates an empty pipeline
     public init() { }
     
+    /// Create a pipeline from a Document
     public init(_ document: Document) {
         self.pipelineDocument = document
     }
@@ -68,7 +69,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         /// The resulting Document that this Stage consists of
         var document: Document
         
-        /// Create a pipeline from a Document
+        /// Create a stage from a Document
         public init(_ document: Document) {
             self.document = document
         }
