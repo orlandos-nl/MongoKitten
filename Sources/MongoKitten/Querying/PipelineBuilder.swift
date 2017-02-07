@@ -45,6 +45,10 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
     /// Creates an empty pipeline
     public init() { }
     
+    public init(_ document: Document) {
+        self.pipelineDocument = document
+    }
+    
     /// A Pipeline stage. Pipelines pass their data of the collection through every stage. The last stage defines the output.
     ///
     /// The input are all Documents in the collection.
@@ -65,7 +69,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         var document: Document
         
         /// Create a pipeline from a Document
-        init(_ document: Document) {
+        public init(_ document: Document) {
             self.document = document
         }
         
