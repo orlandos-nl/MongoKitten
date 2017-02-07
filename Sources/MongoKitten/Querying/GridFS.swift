@@ -9,6 +9,7 @@
 import BSON
 import Foundation
 import CryptoSwift
+import CLibreSSL
 
 /// A GridFS instance similar to a collection
 ///
@@ -151,12 +152,16 @@ public class GridFS {
         let id = ObjectId()
         let dataSize = data.count
         
+        var context = MD5_CTX()
+        guard MD5_Init(&context) == 1 else {
+            throw MongoError.couldNotHashFile
+        }
+        
         var insertData: Document = [
             "_id": id,
             "length": Int64(dataSize),
             "chunkSize": Int32(chunkSize),
             "uploadDate": Date(timeIntervalSinceNow: 0),
-            "md5": Digest.md5(data).toHexString()
         ]
         
         if let filename = filename {
@@ -171,22 +176,39 @@ public class GridFS {
             insertData[raw: "metadata"] = metadata
         }
         
-        _ = try files.insert(insertData)
-        
         var n = 0
         
-        while !data.isEmpty {
-            let smallestMax = min(data.count, chunkSize)
+        do {
+            while !data.isEmpty {
+                let smallestMax = min(data.count, chunkSize)
+                
+                let chunk = Array(data[0..<smallestMax])
+                
+                guard MD5_Update(&context, chunk, chunk.count) == 1 else {
+                    throw MongoError.couldNotHashFile
+                }
+                
+                _ = try chunks.insert(["files_id": id,
+                                       "n": Int64(n),
+                                       "data": Binary(data: chunk, withSubtype: .generic)] as Document)
+                
+                n += 1
+                
+                data.removeFirst(smallestMax)
+            }
             
-            let chunk = Array(data[0..<smallestMax])
+            var digest = [UInt8](repeating: 0, count: Int(MD5_DIGEST_LENGTH))
             
-            _ = try chunks.insert(["files_id": id,
-                                   "n": Int64(n),
-                                   "data": Binary(data: chunk, withSubtype: .generic)] as Document)
+            guard MD5_Final(&digest, &context) == 1 else {
+                throw MongoError.couldNotHashFile
+            }
             
-            n += 1
+            insertData["md5"] = digest.toHexString()
             
-            data.removeFirst(smallestMax)
+            _ = try files.insert(insertData)
+        } catch {
+            try chunks.remove(matching: "files_id" == id)
+            throw error
         }
         
         return id
