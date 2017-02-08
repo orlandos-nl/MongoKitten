@@ -126,8 +126,6 @@ final class SCRAMClient {
         
         let noProof = "c=\(encodedHeader),r=\(parsedResponse.nonce)"
         
-        print(parsedResponse.salt)
-        
         guard let data = Data(base64Encoded: parsedResponse.salt) else {
             throw MongoError.invalidBase64String
         }
