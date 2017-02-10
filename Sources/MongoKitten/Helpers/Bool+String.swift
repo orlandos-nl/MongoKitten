@@ -1,9 +1,11 @@
 //
-//  Bool+StringLiteral.swift
-//  MongoKitten
+// This source file is part of the MongoKitten open source project
 //
-//  Created by Laurent Gaches on 06/01/2017.
+// Copyright (c) 2016 - 2017 OpenKitten and the MongoKitten project authors
+// Licensed under MIT
 //
+// See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/LICENSE.md for license information
+// See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of Swift project authors
 //
 
 import Foundation
