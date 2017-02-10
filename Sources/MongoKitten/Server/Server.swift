@@ -120,7 +120,7 @@ public final class Server {
     /// - Parameter clientSettings: The Client Settings
     /// - Throws: When we can't connect automatically, when the scheme/host is invalid and when we can't connect automatically
     public init(_ clientSettings: ClientSettings) throws {
-        self.driverInformation = MongoDriverInformation(name: "MongoKitten", version: "3.0.1", osName: "", architecture: "", appName: clientSettings.applicationName)
+        self.driverInformation = MongoDriverInformation(appName: clientSettings.applicationName)
         
         self.clientSettings = clientSettings
         self.connectionPoolSemaphore = DispatchSemaphore(value: self.clientSettings.maxConnectionsPerServer * self.clientSettings.hosts.count)

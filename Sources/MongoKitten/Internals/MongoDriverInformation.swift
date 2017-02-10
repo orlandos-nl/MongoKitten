@@ -10,23 +10,10 @@
 
 import Foundation
 
-
 /// MongoDriverInformation allows to add extra information about the driver. This information is then available in the MongoD/MongoS logs.
 ///
 /// - SeeAlso : https://github.com/mongodb/specifications/blob/master/source/mongodb-handshake/handshake.rst
 struct MongoDriverInformation: ValueConvertible {
-
-    /// Driver Name
-    let name: String
-
-    /// Driver Version
-    let version: String
-
-    /// OS Name
-    let osName: String
-
-    /// OS Architecture
-    let architecture: String
 
     /// Application Name
     let appName: String?
@@ -34,17 +21,23 @@ struct MongoDriverInformation: ValueConvertible {
     /// Converts this to an embeddable BSONPrimitive
     public func makeBSONPrimitive() -> BSONPrimitive {
 
-        let driver: Document = ["name":"MongoKitten","version":"3.1.0"]
+        let driver: Document = ["name":"MongoKitten","version":"3.1.5"]
 
 
         var client: Document = ["driver": driver]
 
+
         if client.byteCount < 512 {
             #if os(Linux)
-                let os: Document = ["type":"Linux"]
+                var os: Document = ["type":"Linux"]
             #else
-                let os: Document = ["type":"Darwin"]
+                var os: Document = ["type":"Darwin"]
             #endif
+
+            if ProcessInfo.processInfo.operatingSystemVersion.majorVersion != -1 {
+                os.append("\(ProcessInfo.processInfo.operatingSystemVersion.majorVersion).\(ProcessInfo.processInfo.operatingSystemVersion.minorVersion).\(ProcessInfo.processInfo.operatingSystemVersion.patchVersion)", forKey: "version")
+            }
+
             client.append(os, forKey: "os")
         }
 

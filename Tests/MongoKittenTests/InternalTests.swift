@@ -16,6 +16,7 @@ class InternalTests: XCTestCase {
     static var allTests: [(String, (InternalTests) -> () throws -> Void)] {
         return [
             ("testNumberSerialization", testNumberSerialization),
+            ("testDriverInformation", testDriverInformation)
         ]
     }
     
@@ -39,5 +40,12 @@ class InternalTests: XCTestCase {
         XCTAssertEqual(UInt8.max.makeBytes(), [0xff])
 
         XCTAssertEqual(Double(10).makeBytes(), [0x00, 0x00,0x00,0x00,0x00,0x00, 0x24, 0x40])
+    }
+
+    func testDriverInformation() {
+        let driverInfo = MongoDriverInformation(appName: "XCTest")
+        let document = driverInfo.makeBSONPrimitive().documentValue
+        XCTAssertEqual(document?["driver"]?["name"]?.string,"MongoKitten")
+        XCTAssertEqual(document?["application"]?["name"]?.string,"XCTest")
     }
 }
