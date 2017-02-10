@@ -5,7 +5,7 @@
 // Licensed under MIT
 //
 // See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/LICENSE.md for license information
-// See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of Swift project authors
+// See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of MongoKitten project authors
 //
 import XCTest
 @testable import MongoKitten
