@@ -2,8 +2,7 @@
 //  Socket.swift
 //  MongoKitten
 //
-//  Created by Robbert Brandsma on 18-04-16.
-//
+//  Copyright © 2016-2017 OpenKitten. All rights reserved.
 //
 
 import Foundation
@@ -28,7 +27,7 @@ public final class MongoSocket: MongoTCP {
             let internetSocket = try TCPInternetSocket(address: address)
             let invalidCertificateAllowed = options["invalidCertificateAllowed"] as? Bool ?? false
             let invalidHostNameAllowed = options["invalidHostNameAllowed"] as? Bool ?? false
-            let config = try TLS.Config(mode: .client, certificates: .openbsd, verifyHost: !invalidHostNameAllowed, verifyCertificates: !invalidCertificateAllowed)
+            let config = try TLS.Config(mode: .client, certificates: .defaults, verifyHost: !invalidHostNameAllowed, verifyCertificates: !invalidCertificateAllowed)
 
             sslClient = try TLS.Socket(config: config, socket: internetSocket)
             try sslClient?.connect(servername: hostname)
