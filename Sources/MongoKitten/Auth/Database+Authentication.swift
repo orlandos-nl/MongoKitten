@@ -136,7 +136,7 @@ extension Database {
     private func challenge(with details: MongoCredentials, using previousInformation: (nonce: String, response: Document, scram: SCRAMClient), usingConnection connection: Connection) throws {
         // If we failed the authentication
         guard previousInformation.response["ok"] as Int? == 1 else {
-            logger.error("Authentication for MongoDB user \(details.username) with SASL failed against \(details.database) because of the following error")
+            logger.error("Authentication for MongoDB user \(details.username) with SASL failed against \(String(describing: details.database)) because of the following error")
             logger.error(previousInformation.response)
             throw MongoAuthenticationError.incorrectCredentials
         }
@@ -182,7 +182,7 @@ extension Database {
         
         // If we don't get a correct reply
         guard case .Reply(_, _, _, _, _, _, let documents) = response, let responseDocument = documents.first else {
-            logger.error("Authentication for MongoDB user \(details.username) with SASL failed against \(details.database) because no valid reply has been received")
+            logger.error("Authentication for MongoDB user \(details.username) with SASL failed against \(String(describing: details.database)) because no valid reply has been received")
             throw InternalMongoError.incorrectReply(reply: response)
         }
         
@@ -237,7 +237,7 @@ extension Database {
         let document = try firstDocument(in: response)
         
         guard let nonce = document["nonce"] as String? else {
-            logger.error("Authentication for MongoDB user \(details.username) with MongoCR failed against \(details.database) because no nonce was provided by MongoDB")
+            logger.error("Authentication for MongoDB user \(details.username) with MongoCR failed against \(String(describing: details.database)) because no nonce was provided by MongoDB")
             logger.error(document)
             throw MongoAuthenticationError.authenticationFailure
         }
@@ -261,7 +261,7 @@ extension Database {
         
         // Check for success
         guard successDocument["ok"] as Int? == 1 else {
-            logger.error("Authentication for MongoDB user \(details.username) with MongoCR failed against \(details.database) for the following reason")
+            logger.error("Authentication for MongoDB user \(details.username) with MongoCR failed against \(String(describing: details.database)) for the following reason")
             logger.error(document)
             throw InternalMongoError.incorrectReply(reply: successResponse)
         }

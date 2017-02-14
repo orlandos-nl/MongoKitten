@@ -26,6 +26,8 @@ public enum MongoError : Error {
     /// Can't disconnect the socket
     case cannotDisconnect
     
+    case integerOverInt32
+    
     /// The body of this message is an invalid length
     case invalidBodyLength
     
@@ -42,10 +44,10 @@ public enum MongoError : Error {
     case queryFailure(query: Document, error: Document?)
     
     /// Can't update documents with the given selector and update
-    case updateFailure(updates: [(filter: Query, to: Document, upserting: Bool, multiple: Bool)], error: Document?)
+    case updateFailure(updates: [UpdateRequest.UpdateQuery], error: Document?)
     
     /// Can't remove documents matching the given query
-    case removeFailure(removals: [(filter: Query, limit: Int32)], error: Document?)
+    case removeFailure(removals: [RemoveRequest.RemoveQuery], error: Document?)
     
     /// Can't find a handler for this reply
     case handlerNotFound

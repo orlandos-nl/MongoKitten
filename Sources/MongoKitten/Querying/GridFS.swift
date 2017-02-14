@@ -335,7 +335,7 @@ public class GridFS {
                 throw MongoError.negativeDataRequested
             }
             
-            let cursor = try chunksCollection.find(matching: ["files_id": id], sortedBy: ["n": .ascending], skipping: Int32(skipChunks), limitedTo: Int32(endChunk - skipChunks))
+            let cursor = try chunksCollection.find(matching: ["files_id": id], sortingBy: ["n": .ascending], skipping: skipChunks, limitingTo: endChunk - skipChunks)
             let chunkCursor = Cursor(base: cursor, transform: { Chunk(document: $0, chunksCollection: self.chunksCollection, filesCollection: self.filesCollection) })
             var allData = [UInt8]()
             
@@ -384,7 +384,7 @@ public class GridFS {
         public func chunked() throws -> AnyIterator<Chunk> {
             let query: Document = ["files_id": id]
             
-            let cursor = try chunksCollection.find(matching: Query(query), sortedBy: ["n": .ascending])
+            let cursor = try chunksCollection.find(matching: Query(query), sortingBy: ["n": .ascending])
             
             let chunkCursor = Cursor(base: cursor, transform: { Chunk(document: $0, chunksCollection: self.chunksCollection, filesCollection: self.filesCollection) })
             

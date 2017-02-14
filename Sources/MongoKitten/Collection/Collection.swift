@@ -54,6 +54,16 @@ public final class Collection {
     /// When a ReadConcern is provided in the method call it'll still override this
     private var defaultReadConcern: ReadConcern? = nil
     
+    /// Sets or gets the default read concern at the collection level
+    public var readConcern: ReadConcern? {
+        get {
+            return self.defaultReadConcern ?? database.readConcern
+        }
+        set {
+            self.defaultReadConcern = newValue
+        }
+    }
+    
     /// The default WriteConcern for this Collection.
     ///
     /// When a WriteConcern is provided in the method call it'll still override this
@@ -69,14 +79,22 @@ public final class Collection {
         }
     }
     
-    /// Sets or gets the default read concern at the collection level
-    public var readConcern: ReadConcern? {
-        get {
-            return self.defaultReadConcern ?? database.readConcern
-        }
-        set {
-            self.defaultReadConcern = newValue
-        }
+    public var hook: Hook? = nil
+    
+    public var findHook: FindHook? {
+        return self.hook?.findHook ?? database.findHook
+    }
+    
+    public var insertHook: InsertHook? {
+        return self.hook?.insertHook ?? database.insertHook
+    }
+    
+    public var updateHook: UpdateHook? {
+        return self.hook?.updateHook ?? database.updateHook
+    }
+    
+    public var removeHook: RemoveHook? {
+        return self.hook?.removeHook ?? database.removeHook
     }
     
     /// The default Collation for collections in this Server.
@@ -104,103 +122,6 @@ public final class Collection {
     }
     
     // MARK: - CRUD Operations
-    
-    // Create
-    
-    /// Insert a single document in this collection
-    ///
-    /// For more information: https://docs.mongodb.com/manual/reference/command/insert/#dbcmd.insert
-    ///
-    /// - parameter document: The BSON Document to be inserted
-    ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    ///
-    /// - returns: The inserted document's id
-    @discardableResult
-    public func insert(_ document: Document) throws -> ValueConvertible {
-        let result = try self.insert([document])
-        
-        guard let newId = result.first else {
-            database.server.logger.error("No identifier could be generated")
-            throw MongoError.insertFailure(documents: [document], error: nil)
-        }
-        
-        return newId
-    }
-    
-    /// TODO: Detect how many bytes are being sent. Max is 48000000 bytes or 48MB
-    ///
-    /// Inserts multiple documents in this collection and adds a BSON ObjectId to documents that do not have an "_id" field
-    ///
-    /// For more information: https://docs.mongodb.com/manual/reference/command/insert/#dbcmd.insert
-    ///
-    /// - parameter documents: The BSON Documents that should be inserted
-    /// - parameter ordered: On true we'll stop inserting when one document fails. On false we'll ignore failed inserts
-    /// - parameter timeout: A custom timeout. The default timeout is 60 seconds + 1 second for every 50 documents, so when inserting 5000 documents at once, the timeout is 560 seconds.
-    ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    ///
-    /// - returns: The documents' ids
-    @discardableResult
-    public func insert(_ documents: [Document], stoppingOnError ordered: Bool? = nil, writeConcern: WriteConcern? = nil, timeout customTimeout: TimeInterval? = nil) throws -> [ValueConvertible] {
-        let timeout: TimeInterval = customTimeout ?? (database.server.defaultTimeout + (Double(documents.count) / 50))
-        
-        var documents = documents
-        var newIds = [ValueConvertible]()
-        let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
-        
-        while !documents.isEmpty {
-            if protocolVersion >= 2 {
-                var command: Document = ["insert": self.name]
-                
-                let commandDocuments = documents[0..<min(1000, documents.count)].map({ (input: Document) -> ValueConvertible in
-                    if let id = input[raw: "_id"] {
-                        newIds.append(id)
-                        return input
-                    } else {
-                        var output = input
-                        let oid = ObjectId()
-                        output[raw: "_id"] = oid
-                        newIds.append(oid)
-                        return output
-                    }
-                })
-                
-                documents.removeFirst(min(1000, documents.count))
-                
-                command["documents"] = Document(array: commandDocuments)
-                
-                if let ordered = ordered {
-                    command["ordered"] = ordered
-                }
-                
-                command[raw: "writeConcern"] = writeConcern ?? self.writeConcern
-                
-                let reply = try self.database.execute(command: command, until: timeout)
-                guard case .Reply(_, _, _, _, _, _, let replyDocuments) = reply else {
-                    throw MongoError.insertFailure(documents: documents, error: nil)
-                }
-                
-                guard replyDocuments.first?["ok"] as Int? == 1 && (replyDocuments.first?["writeErrors"] as Document? ?? [:]).count == 0 else {
-                    throw MongoError.insertFailure(documents: documents, error: replyDocuments.first)
-                }
-            } else {
-                let connection = try database.server.reserveConnection(writing: true, authenticatedFor: self.database)
-                
-                defer {
-                    database.server.returnConnection(connection)
-                }
-                
-                let commandDocuments = Array(documents[0..<min(1000, documents.count)])
-                documents.removeFirst(min(1000, documents.count))
-                
-                let insertMsg = Message.Insert(requestID: database.server.nextMessageID(), flags: [], collection: self, documents: commandDocuments)
-                _ = try self.database.server.send(message: insertMsg, overConnection: connection)
-            }
-        }
-        
-        return newIds
-    }
     
     // Read
     
@@ -236,119 +157,6 @@ public final class Collection {
         return cursor
     }
     
-    /// Finds `Document`s in this `Collection`
-    ///
-    /// Can be used to execute DBCommands in MongoDB 2.6 and below. Be careful!
-    ///
-    /// For more information: https://docs.mongodb.com/manual/reference/command/find/#dbcmd.find
-    ///
-    /// - parameter filter: The filter we're using to match Documents in this collection against
-    /// - parameter sort: The Sort Specification used to sort the found Documents
-    /// - parameter projection: The Projection Specification used to filter which fields to return
-    /// - parameter skip: The amount of Documents to skip before returning the matching Documents
-    /// - parameter limit: The maximum amount of matching documents to return
-    /// - parameter batchSize: The initial amount of Documents to return.
-    ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    ///
-    /// - returns: A cursor pointing to the found Documents
-    public func find(matching filter: Query? = nil, sortedBy sort: Sort? = nil, projecting projection: Projection? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil, skipping skip: Int32? = nil, limitedTo limit: Int32? = nil, withBatchSize batchSize: Int32 = 100) throws -> Cursor<Document> {
-        if database.server.buildInfo.version >= Version(3,2,0) {
-            var command: Document = ["find": self.name]
-            
-            if let filter = filter {
-                command[raw: "filter"] = filter
-            }
-            
-            if let sort = sort {
-                command[raw: "sort"] = sort
-            }
-            
-            if let projection = projection {
-                command[raw: "projection"] = projection
-            }
-            
-            if let skip = skip {
-                command["skip"] = Int32(skip)
-            }
-            
-            if let limit = limit {
-                command["limit"] = Int32(limit)
-            }
-            
-            command[raw: "readConcern"] = readConcern ?? self.readConcern
-            command[raw: "collation"] = collation ?? self.collation
-            
-            command["batchSize"] = Int32(batchSize)
-            
-            let reply = try database.execute(command: command, writing: false)
-            
-            guard case .Reply(_, _, _, _, _, _, let documents) = reply else {
-                throw InternalMongoError.incorrectReply(reply: reply)
-            }
-            
-            guard let responseDoc = documents.first, let cursorDoc = responseDoc["cursor"] as Document? else {
-                throw MongoError.invalidResponse(documents: documents)
-            }
-            
-            return try Cursor(cursorDocument: cursorDoc, collection: self, chunkSize: batchSize, transform: { doc in
-                return doc
-            })
-        } else {
-            let connection = try database.server.reserveConnection(authenticatedFor: self.database)
-            
-            defer {
-                database.server.returnConnection(connection)
-            }
-            
-            let queryMsg = Message.Query(requestID: database.server.nextMessageID(), flags: [], collection: self, numbersToSkip: skip ?? 0, numbersToReturn: batchSize, query: filter?.queryDocument ?? [], returnFields: projection?.document)
-            
-            let reply = try self.database.server.sendAndAwait(message: queryMsg, overConnection: connection)
-            
-            guard case .Reply(_, _, _, let cursorID, _, _, var documents) = reply else {
-                throw InternalMongoError.incorrectReply(reply: reply)
-            }
-            
-            if let limit = limit {
-                if documents.count > Int(limit) {
-                    documents.removeLast(documents.count - Int(limit))
-                }
-            }
-            
-            var returned: Int32 = 0
-            
-            return Cursor(namespace: self.fullName, collection: self, cursorID: cursorID, initialData: documents, chunkSize: batchSize, transform: { doc in
-                if let limit = limit {
-                    guard returned < limit else {
-                        return nil
-                    }
-                    
-                    returned += 1
-                }
-                return doc
-            })
-        }
-    }
-    
-    /// Finds Documents in this collection
-    ///
-    /// Can be used to execute DBCommands in MongoDB 2.6 and below
-    ///
-    /// For more information: https://docs.mongodb.com/manual/reference/command/find/#dbcmd.find
-    ///
-    /// - parameter filter: The QueryBuilder filter we're using to match Documents in this collection against
-    /// - parameter sort: The Sort Specification used to sort the found Documents
-    /// - parameter projection: The Projection Specification used to filter which fields to return
-    /// - parameter skip: The amount of Documents to skip before returning the matching Documents
-    ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    ///
-    /// - returns: The found Document
-    public func findOne(matching filter: Query? = nil, sortedBy sort: Sort? = nil, projecting projection: Projection? = nil, skipping skip: Int32? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil) throws -> Document? {
-        return try self.find(matching: filter, sortedBy: sort, projecting: projection, readConcern: readConcern, collation: collation, skipping: skip, limitedTo:
-            1).next()
-    }
-    
     // Update
     
     /// Updates a list of `Document`s using a counterpart `Document`.
@@ -370,88 +178,6 @@ public final class Collection {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: The amount of updated documents
-    @discardableResult
-    public func update(_ updates: [(filter: Query, to: Document, upserting: Bool, multiple: Bool)], writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
-        let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
-        
-        if protocolVersion >= 2 {
-            var command: Document = ["update": self.name]
-            var newUpdates = [ValueConvertible]()
-            
-            for u in updates {
-                newUpdates.append([
-                    "q": u.filter.queryDocument,
-                    "u": u.to,
-                    "upsert": u.upserting,
-                    "multi": u.multiple
-                    ] as Document)
-            }
-            
-            command["updates"] = Document(array: newUpdates)
-            
-            if let ordered = ordered {
-                command["ordered"] = ordered
-            }
-            
-            command[raw: "writeConcern"] = writeConcern ??  self.writeConcern
-            
-            let reply = try self.database.execute(command: command)
-            guard case .Reply(_, _, _, _, _, _, let documents) = reply else {
-                throw MongoError.updateFailure(updates: updates, error: nil)
-            }
-            
-            guard documents.first?["ok"] as Int? == 1 && (documents.first?["writeErrors"] as Document? ?? [:]).count == 0 else {
-                throw MongoError.updateFailure(updates: updates, error: documents.first)
-            }
-            
-            return documents.first?["nModified"] as Int? ?? 0
-        } else {
-            let connection = try database.server.reserveConnection(writing: true, authenticatedFor: self.database)
-            
-            defer {
-                database.server.returnConnection(connection)
-            }
-            
-            for update in updates {
-                var flags: UpdateFlags = []
-                
-                if update.multiple {
-                    // TODO: Remove this assignment when the standard library is updated.
-                    let _ = flags.insert(UpdateFlags.MultiUpdate)
-                }
-                
-                if update.upserting {
-                    // TODO: Remove this assignment when the standard library is updated.
-                    let _ = flags.insert(UpdateFlags.Upsert)
-                }
-                
-                let message = Message.Update(requestID: database.server.nextMessageID(), collection: self, flags: flags, findDocument: update.filter.queryDocument, replaceDocument: update.to)
-                try self.database.server.send(message: message, overConnection: connection)
-                // TODO: Check for errors
-            }
-            
-            return updates.count
-        }
-    }
-    
-    /// Updates a `Document` using a counterpart `Document`.
-    ///
-    /// In most cases the `$set` operator is useful for updating only parts of a `Document`
-    /// As described here: https://docs.mongodb.com/manual/reference/operator/update/set/#up._S_set
-    ///
-    /// For more information about this command: https://docs.mongodb.com/manual/reference/command/update/#dbcmd.update
-    ///
-    /// - parameter filter: The QueryBuilder filter to use when searching for Documents to update
-    /// - parameter updated: The data to update these Documents with
-    /// - parameter upsert: Insert when we can't find anything to update
-    /// - parameter multi: Updates more than one result if true
-    /// - parameter ordered: If true, stop updating when one operation fails - defaults to true
-    ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    @discardableResult
-    public func update(matching filter: Query = [:], to updated: Document, upserting upsert: Bool = false, multiple multi: Bool = false, writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
-        return try self.update([(filter: filter, to: updated, upserting: upsert, multiple: multi)], writeConcern: writeConcern, stoppingOnError: ordered)
-    }
     
     // Delete
     
@@ -463,83 +189,7 @@ public final class Collection {
     /// - parameter stoppingOnError: If true, stop removing when one operation fails - defaults to true
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    @discardableResult
-    public func remove(matching removals: [(filter: Query, limit: Int32)], writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
-        let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
-        
-        if protocolVersion >= 2 {
-            var command: Document = ["delete": self.name]
-            var newDeletes = [ValueConvertible]()
-            
-            for d in removals {
-                newDeletes.append([
-                    "q": d.filter.queryDocument,
-                    "limit": d.limit
-                    ] as Document)
-            }
-            
-            command["deletes"] = Document(array: newDeletes)
-            
-            if let ordered = ordered {
-                command["ordered"] = ordered
-            }
-            
-            command[raw: "writeConcern"] = writeConcern ?? self.writeConcern
-            
-            let reply = try self.database.execute(command: command)
-            let documents = try allDocuments(in: reply)
-            
-            guard let document = documents.first, document["ok"] as Int? == 1 else {
-                throw MongoError.removeFailure(removals: removals, error: documents.first)
-            }
-            
-            return document["n"] as Int? ?? 0
-            
-            // If we're talking to an older MongoDB server
-        } else {
-            let connection = try database.server.reserveConnection(authenticatedFor: self.database)
-            
-            defer {
-                database.server.returnConnection(connection)
-            }
-            
-            for removal in removals {
-                var flags: DeleteFlags = []
-                
-                // If the limit is 0, make the for loop run exactly once so the message sends
-                // If the limit is not 0, set the limit properly
-                let limit = removal.limit == 0 ? 1 : removal.limit
-                
-                // If the limit is not '0' and thus removes a set amount of documents. Set it to RemoveOne so we'll remove one document at a time using the older method
-                if removal.limit != 0 {
-                    // TODO: Remove this assignment when the standard library is updated.
-                    let _ = flags.insert(DeleteFlags.RemoveOne)
-                }
-                
-                let message = Message.Delete(requestID: database.server.nextMessageID(), collection: self, flags: flags, removeDocument: removal.filter.queryDocument)
-                
-                for _ in 0..<limit {
-                    try self.database.server.send(message: message, overConnection: connection)
-                }
-            }
-            
-            return removals.count
-        }
-    }
     
-    /// Removes `Document`s matching the `filter` until the `limit` is reached
-    ///
-    /// For more information: https://docs.mongodb.com/manual/reference/command/delete/#dbcmd.delete
-    ///
-    /// - parameter matching: The QueryBuilder filter to use when finding Documents that are going to be removed
-    /// - parameter limitedTo: The amount of times this filter can be used to find and remove a Document (0 is every document)
-    /// - parameter stoppingOnError: If true, stop removing when one operation fails - defaults to true
-    ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    @discardableResult
-    public func remove(matching filter: Query, limitedTo limit: Int32 = 0, writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
-        return try self.remove(matching: [(filter: filter, limit: limit)], writeConcern: writeConcern, stoppingOnError: ordered)
-    }
     
     /// The drop command removes an entire collection from a database. This command also removes any indexes associated with the dropped collection.
     ///

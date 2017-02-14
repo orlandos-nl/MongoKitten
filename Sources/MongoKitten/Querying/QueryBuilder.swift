@@ -12,7 +12,7 @@ import GeoJSON
 
 #if os(macOS)
     /// RegularExpression is named differently on Linux. Linux is our primary target.
-    typealias RegularExpression = NSRegularExpression
+    public typealias RegularExpression = NSRegularExpression
 #endif
 
 
