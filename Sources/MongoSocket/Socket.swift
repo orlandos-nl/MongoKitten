@@ -1,9 +1,11 @@
 //
-//  Socket.swift
-//  MongoKitten
+// This source file is part of the MongoKitten open source project
 //
-//  Created by Robbert Brandsma on 18-04-16.
+// Copyright (c) 2016 - 2017 OpenKitten and the MongoKitten project authors
+// Licensed under MIT
 //
+// See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/LICENSE.md for license information
+// See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of MongoKitten project authors
 //
 
 import Foundation
@@ -28,7 +30,7 @@ public final class MongoSocket: MongoTCP {
             let internetSocket = try TCPInternetSocket(address: address)
             let invalidCertificateAllowed = options["invalidCertificateAllowed"] as? Bool ?? false
             let invalidHostNameAllowed = options["invalidHostNameAllowed"] as? Bool ?? false
-            let config = try TLS.Config(mode: .client, certificates: .openbsd, verifyHost: !invalidHostNameAllowed, verifyCertificates: !invalidCertificateAllowed)
+            let config = try TLS.Config(mode: .client, certificates: .defaults, verifyHost: !invalidHostNameAllowed, verifyCertificates: !invalidCertificateAllowed)
 
             sslClient = try TLS.Socket(config: config, socket: internetSocket)
             try sslClient?.connect(servername: hostname)
