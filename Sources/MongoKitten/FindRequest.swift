@@ -102,6 +102,8 @@ public struct FindRequest : ReadDatabaseRequest {
             guard limit <= maxInt32 else {
                 throw MongoError.integerOverInt32
             }
+            
+            command[raw: "limit"] = limit
         }
         
         if let filter = filter {
