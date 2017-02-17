@@ -294,11 +294,11 @@ class CollectionTests: XCTestCase {
     func testProjection() {
         let projection: Projection = ["name", "age", "awesome"]
         
-        XCTAssertEqual(projection.makeBSONPrimitive() as? Document, ["name": true, "age": true, "awesome": true])
+        XCTAssertEqual(projection.makePrimitive() as? Document, ["name": true, "age": true, "awesome": true])
         
         let projection2: Projection = ["henk": .included, "bob": .excluded]
         
-        XCTAssertEqual(projection2.makeBSONPrimitive() as? Document, ["henk": true, "bob": false])
+        XCTAssertEqual(projection2.makePrimitive() as? Document, ["henk": true, "bob": false])
     }
     
     func testIndexes() throws {

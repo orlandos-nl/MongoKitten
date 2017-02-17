@@ -82,7 +82,7 @@ public struct GeoNearOption: ValueConvertible {
     }
 
     /// Makes this an embeddable primitive
-    public func makeBSONPrimitive() -> BSONPrimitive {
+    public func makePrimitive() -> BSON.Primitive {
         return makeDocument()
     }
 }

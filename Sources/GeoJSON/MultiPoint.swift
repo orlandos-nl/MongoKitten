@@ -27,7 +27,7 @@ public struct MultiPoint: Geometry {
 
 extension MultiPoint: ValueConvertible {
     /// Converts this object to an embeddable BSONPrimtive
-    public func makeBSONPrimitive() -> BSONPrimitive {
+    public func makePrimitive() -> BSON.Primitive {
         return ["type": self.type.rawValue, "coordinates": Document(array: self.coordinates) ]
     }
 }

@@ -68,7 +68,7 @@ extension Database {
     /// - parameter signature: The server signatue to verify
     ///
     /// - throws: On authentication failure or an incorrect Server Signature
-    private func complete(SASL payload: String, using response: Document, verifying signature: [UInt8], usingConnection connection: Connection) throws {
+    private func complete(SASL payload: String, using response: Document, verifying signature: Bytes, usingConnection connection: Connection) throws {
         // If we failed authentication
         guard Int(response["ok"]) == 1 else {
             logger.error("Authentication failed because of the following reason")
@@ -169,10 +169,10 @@ extension Database {
             throw MongoAuthenticationError.base64Failure
         }
         
-        var digestBytes = [UInt8]()
+        var digestBytes = Bytes()
         digestBytes.append(contentsOf: "\(details.username):mongo:\(details.password)".utf8)
         
-        var passwordBytes = [UInt8]()
+        var passwordBytes = Bytes()
         passwordBytes.append(contentsOf: Digest.md5(digestBytes).toHexString().utf8)
         
         let result = try previousInformation.scram.process(decodedStringResponse, with: (username: details.username, password: passwordBytes), usingNonce: previousInformation.nonce)
@@ -254,11 +254,11 @@ extension Database {
         }
         
         // Digest our password and prepare it for sending
-        var bytes = [UInt8]()
+        var bytes = Bytes()
         bytes.append(contentsOf: "\(details.username):mongo:\(details.password)".utf8)
         
         let digest = Digest.md5(bytes)
-        let key = Digest.md5([UInt8]("\(nonce)\(details.username)\(digest.toHexString())".utf8)).toHexString()
+        let key = Digest.md5(Bytes("\(nonce)\(details.username)\(digest.toHexString())".utf8)).toHexString()
         
         let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: [
             "authenticate": 1,

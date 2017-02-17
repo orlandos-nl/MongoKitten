@@ -9,14 +9,14 @@
 //
 
 internal protocol BSONBytesProtocol {
-    func makeBytes() -> [UInt8]
+    func makeBytes() -> Bytes
 }
 
 extension Int : BSONBytesProtocol {
-    internal func makeBytes() -> [UInt8] {
+    internal func makeBytes() -> Bytes {
         var integer = self.littleEndian
         return withUnsafePointer(to: &integer) {
-            $0.withMemoryRebound(to: UInt8.self, capacity: MemoryLayout<Int>.size) {
+            $0.withMemoryRebound(to: Byte.self, capacity: MemoryLayout<Int>.size) {
                 Array(UnsafeBufferPointer(start: $0, count: MemoryLayout<Int>.size))
             }
         }
@@ -24,57 +24,57 @@ extension Int : BSONBytesProtocol {
 }
 
 extension Int64 : BSONBytesProtocol {
-    internal func makeBytes() -> [UInt8] {
+    internal func makeBytes() -> Bytes {
         let integer = self.littleEndian
         
         return [
-            UInt8(integer & 0xFF),
-            UInt8((integer >> 8) & 0xFF),
-            UInt8((integer >> 16) & 0xFF),
-            UInt8((integer >> 24) & 0xFF),
-            UInt8((integer >> 32) & 0xFF),
-            UInt8((integer >> 40) & 0xFF),
-            UInt8((integer >> 48) & 0xFF),
-            UInt8((integer >> 56) & 0xFF),
+            Byte(integer & 0xFF),
+            Byte((integer >> 8) & 0xFF),
+            Byte((integer >> 16) & 0xFF),
+            Byte((integer >> 24) & 0xFF),
+            Byte((integer >> 32) & 0xFF),
+            Byte((integer >> 40) & 0xFF),
+            Byte((integer >> 48) & 0xFF),
+            Byte((integer >> 56) & 0xFF),
         ]
     }
 }
 
 extension Int32 : BSONBytesProtocol {
-    internal func makeBytes() -> [UInt8] {
+    internal func makeBytes() -> Bytes {
         let integer = self.littleEndian
         
         return [
-            UInt8(integer & 0xFF),
-            UInt8((integer >> 8) & 0xFF),
-            UInt8((integer >> 16) & 0xFF),
-            UInt8((integer >> 24) & 0xFF),
+            Byte(integer & 0xFF),
+            Byte((integer >> 8) & 0xFF),
+            Byte((integer >> 16) & 0xFF),
+            Byte((integer >> 24) & 0xFF),
         ]
     }
 }
 
 extension Int16 : BSONBytesProtocol {
-    internal func makeBytes() -> [UInt8] {
+    internal func makeBytes() -> Bytes {
         let integer = self.littleEndian
         
         return [
-            UInt8((integer >> 8) & 0xFF),
-            UInt8(integer & 0xFF)
+            Byte((integer >> 8) & 0xFF),
+            Byte(integer & 0xFF)
         ]
     }
 }
 
 extension Int8 : BSONBytesProtocol {
-    internal func makeBytes() -> [UInt8] {
-        return [UInt8(self)]
+    internal func makeBytes() -> Bytes {
+        return [Byte(self)]
     }
 }
 
 extension UInt : BSONBytesProtocol {
-    internal func makeBytes() -> [UInt8] {
+    internal func makeBytes() -> Bytes {
         var integer = self.littleEndian
         return withUnsafePointer(to: &integer) {
-            $0.withMemoryRebound(to: UInt8.self, capacity: MemoryLayout<UInt>.size) {
+            $0.withMemoryRebound(to: Byte.self, capacity: MemoryLayout<UInt>.size) {
                 Array(UnsafeBufferPointer(start: $0, count: MemoryLayout<UInt>.size))
             }
         }
@@ -82,57 +82,57 @@ extension UInt : BSONBytesProtocol {
 }
 
 extension UInt64 : BSONBytesProtocol {
-    internal func makeBytes() -> [UInt8] {
+    internal func makeBytes() -> Bytes {
         let integer = self.littleEndian
         
         return [
-            UInt8(integer & 0xFF),
-            UInt8((integer >> 8) & 0xFF),
-            UInt8((integer >> 16) & 0xFF),
-            UInt8((integer >> 24) & 0xFF),
-            UInt8((integer >> 32) & 0xFF),
-            UInt8((integer >> 40) & 0xFF),
-            UInt8((integer >> 48) & 0xFF),
-            UInt8((integer >> 56) & 0xFF),
+            Byte(integer & 0xFF),
+            Byte((integer >> 8) & 0xFF),
+            Byte((integer >> 16) & 0xFF),
+            Byte((integer >> 24) & 0xFF),
+            Byte((integer >> 32) & 0xFF),
+            Byte((integer >> 40) & 0xFF),
+            Byte((integer >> 48) & 0xFF),
+            Byte((integer >> 56) & 0xFF),
         ]
     }
 }
 
 extension UInt32 : BSONBytesProtocol {
-    internal func makeBytes() -> [UInt8] {
+    internal func makeBytes() -> Bytes {
         let integer = self.littleEndian
         
         return [
-            UInt8(integer & 0xFF),
-            UInt8((integer >> 8) & 0xFF),
-            UInt8((integer >> 16) & 0xFF),
-            UInt8((integer >> 24) & 0xFF),
+            Byte(integer & 0xFF),
+            Byte((integer >> 8) & 0xFF),
+            Byte((integer >> 16) & 0xFF),
+            Byte((integer >> 24) & 0xFF),
         ]
     }
 }
 
 extension UInt16 : BSONBytesProtocol {
-    internal func makeBytes() -> [UInt8] {
+    internal func makeBytes() -> Bytes {
         let integer = self.littleEndian
         
         return [
-            UInt8(integer & 0xFF),
-            UInt8((integer >> 8) & 0xFF)
+            Byte(integer & 0xFF),
+            Byte((integer >> 8) & 0xFF)
         ]
     }
 }
 
-extension UInt8 : BSONBytesProtocol {
-    internal func makeBytes() -> [UInt8] {
+extension Byte : BSONBytesProtocol {
+    internal func makeBytes() -> Bytes {
         return [self]
     }
 }
 
 extension Double : BSONBytesProtocol {
-    internal func makeBytes() -> [UInt8] {
+    internal func makeBytes() -> Bytes {
         var integer = self
         return withUnsafePointer(to: &integer) {
-            $0.withMemoryRebound(to: UInt8.self, capacity: MemoryLayout<Double>.size) {
+            $0.withMemoryRebound(to: Byte.self, capacity: MemoryLayout<Double>.size) {
                 Array(UnsafeBufferPointer(start: $0, count: MemoryLayout<Double>.size))
             }
         }

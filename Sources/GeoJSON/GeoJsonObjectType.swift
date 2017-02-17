@@ -36,7 +36,7 @@ public enum GeoJsonObjectType: String, ValueConvertible {
     case geometryCollection = "GeometryCollection"
     
     /// Converts the enum case to an embeddable BSON Primtive type
-    public func makeBSONPrimitive() -> BSONPrimitive {
+    public func makePrimitive() -> BSON.Primitive {
         return self.rawValue
     }
 }

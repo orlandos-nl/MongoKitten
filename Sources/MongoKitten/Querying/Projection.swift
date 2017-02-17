@@ -26,8 +26,8 @@ public struct Projection: ValueConvertible {
     
     /// An expression that can be specified to either include or exclude a field (or some custom value)
     public enum ProjectionExpression: ValueConvertible, ExpressibleByBooleanLiteral, ExpressibleByStringLiteral, ExpressibleByDictionaryLiteral {
-        /// Creates a BSONPrimitive of this ProjecitonExpression for easy embedding in Documents
-        public func makeBSONPrimitive() -> BSONPrimitive {
+        /// Creates a BSON.Primitive of this ProjecitonExpression for easy embedding in Documents
+        public func makePrimitive() -> BSON.Primitive {
             switch self {
             case .custom(let convertible): return convertible
             case .included: return true
@@ -51,7 +51,7 @@ public struct Projection: ValueConvertible {
         }
 
         /// A custom projection value
-        case custom(BSONPrimitive)
+        case custom(BSON.Primitive)
         
         /// Includes this field in the projection
         case included
@@ -66,7 +66,7 @@ public struct Projection: ValueConvertible {
         
 
         /// A dictionary literal that makes this a custom ProjectionExpression
-        public init(dictionaryLiteral elements: (StringVariant, BSONPrimitive?)...) {
+        public init(dictionaryLiteral elements: (StringVariant, BSON.Primitive?)...) {
             self = .custom(Document(dictionaryElements: elements))
         }
     }
@@ -81,8 +81,8 @@ public struct Projection: ValueConvertible {
         document["_id"] = false
     }
     
-    /// Creates a BSONPrimitive from this Projection for inclusion in a Document
-    public func makeBSONPrimitive() -> BSONPrimitive {
+    /// Creates a BSON.Primitive from this Projection for inclusion in a Document
+    public func makePrimitive() -> BSON.Primitive {
         return self.document
     }
 }

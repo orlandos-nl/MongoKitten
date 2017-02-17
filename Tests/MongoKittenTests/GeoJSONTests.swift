@@ -95,8 +95,8 @@ class GeoJSONTests: XCTestCase {
         let polygon = try Polygon(exterior: [Position(values: [0.0, 0.0]), Position(values: [0.0,4.0]),Position(values: [4.0,4.0]), Position(values: [4.0,0.0]), Position(values: [0.0,0.0])])
         XCTAssertNotNil(polygon)
 
-        let polyDoc = polygon.makeBSONPrimitive()
-        guard let polyDico = [String: BSONPrimitive](polyDoc) else { XCTFail(); return }
+        let polyDoc = polygon.makePrimitive()
+        guard let polyDico = [String: Primitive](polyDoc) else { XCTFail(); return }
         guard let exter = (polyDico["coordinates"] as? Document)?.arrayValue else { XCTFail(); return }
         XCTAssertEqual(exter.count, 1) // One Exterior ring 
 
@@ -106,7 +106,7 @@ class GeoJSONTests: XCTestCase {
         let polygonWithHole = try Polygon(exterior:exterior, holes:hole)
         XCTAssertNotNil(polygonWithHole)
   
-        let polygonHoleDoc = polygonWithHole.makeBSONPrimitive()
+        let polygonHoleDoc = polygonWithHole.makePrimitive()
         guard let dic = (polygonHoleDoc as? Document)?.dictionaryValue else { XCTFail(); return }
         guard let coordinates = (dic["coordinates"] as? Document)?.arrayValue else { XCTFail(); return }
         XCTAssertEqual(coordinates.count, 2) // One Exterior ring and One Hole ring
@@ -165,8 +165,8 @@ class GeoJSONTests: XCTestCase {
         XCTAssertNotEqual(strict.rawValue, crs84.rawValue)
         XCTAssertNotEqual(strict.rawValue.hashValue, crs84.rawValue.hashValue)
 
-        let crsDocument = strict.rawValue.makeBSONPrimitive()
-        guard let dic = [String: BSONPrimitive](crsDocument) else { XCTFail(); return }
+        let crsDocument = strict.rawValue.makePrimitive()
+        guard let dic = [String: Primitive](crsDocument) else { XCTFail(); return }
         guard let properties = (dic["properties"] as? Document)?.dictionaryValue else { XCTFail(); return }
         guard let typeName = properties["name"] as? String else { XCTFail(); return }
         XCTAssertEqual(typeName, "urn:x-mongodb:crs:strictwinding:EPSG:4326")

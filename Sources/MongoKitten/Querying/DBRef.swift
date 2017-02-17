@@ -16,10 +16,10 @@ public struct DBRef: ValueConvertible {
     var collection: Collection
     
     /// The referenced Document's _id
-    var id: BSONPrimitive
+    var id: BSON.Primitive
     
-    /// Converts this DBRef to a BSONPrimitive for easy embedding
-    public func makeBSONPrimitive() -> BSONPrimitive {
+    /// Converts this DBRef to a BSON.Primitive for easy embedding
+    public func makePrimitive() -> BSON.Primitive {
         return self.documentValue
     }
     
@@ -27,7 +27,7 @@ public struct DBRef: ValueConvertible {
     ///
     /// - parameter reference: The _id of the referenced object
     /// - parameter collection: The collection where this references object resides
-    public init(referencing reference: BSONPrimitive, inCollection collection: Collection) {
+    public init(referencing reference: BSON.Primitive, inCollection collection: Collection) {
         self.id = reference
         self.collection = collection
     }

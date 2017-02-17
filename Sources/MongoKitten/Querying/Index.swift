@@ -36,7 +36,7 @@ public enum IndexParameter {
         case two
         
         /// Converts this TextIndexVersion to something easily embeddable in a Document
-        public func makeBSONPrimitive() -> BSONPrimitive {
+        public func makePrimitive() -> BSON.Primitive {
             if self == .one {
                 return Int32(1)
             }
@@ -57,7 +57,7 @@ public enum IndexParameter {
     case sortedCompound(fields: [(field: String, order: SortOrder)])
     
     ///
-    case compound(fields: [(field: String, value: BSONPrimitive)])
+    case compound(fields: [(field: String, value: BSON.Primitive)])
     
     /// Removes a Document after it's been in the database for the provided amount of seconds
     case expire(afterSeconds: Int)

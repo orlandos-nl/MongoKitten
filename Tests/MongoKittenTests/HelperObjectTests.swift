@@ -25,8 +25,8 @@ class HelperObjectTests: XCTestCase {
     }
     
     func testIndex() throws {
-        XCTAssertEqual(Int32(IndexParameter.TextIndexVersion.one.makeBSONPrimitive()), Int32(1))
-        XCTAssertEqual(Int32(IndexParameter.TextIndexVersion.two.makeBSONPrimitive()), Int32(2))
+        XCTAssertEqual(Int32(IndexParameter.TextIndexVersion.one.makePrimitive()), Int32(1))
+        XCTAssertEqual(Int32(IndexParameter.TextIndexVersion.two.makePrimitive()), Int32(2))
     }
     
     func testCustomValueConvertible() {
@@ -54,7 +54,7 @@ class HelperObjectTests: XCTestCase {
         
         XCTAssertEqual(projection.makeDocument(), projection.document)
         
-        XCTAssertEqual(projection.makeBSONPrimitive() as? Document, [
+        XCTAssertEqual(projection.makePrimitive() as? Document, [
                 "field": true,
                 "name": true,
                 "age": true,
@@ -63,13 +63,13 @@ class HelperObjectTests: XCTestCase {
     }
     
     func testReadConcern() {
-        XCTAssertEqual(ReadConcern.local.makeBSONPrimitive() as? Document, [
+        XCTAssertEqual(ReadConcern.local.makePrimitive() as? Document, [
                 "level": ReadConcern.local.rawValue
             ])
     }
     
     func testWriteConcern() {
-        let concern = WriteConcern.custom(w: "majority", j: true, wTimeout: 0).makeBSONPrimitive()
+        let concern = WriteConcern.custom(w: "majority", j: true, wTimeout: 0).makePrimitive()
         
         XCTAssertEqual(concern as? Document, [
                 "w": "majority",
@@ -96,7 +96,7 @@ struct SpecialData : ValueConvertible, Equatable {
         self.intData = int
     }
     
-    init?(_ value: BSONPrimitive?) {
+    init?(_ value: BSON.Primitive?) {
         guard let value = value as? Document else {
             return nil
         }
@@ -109,7 +109,7 @@ struct SpecialData : ValueConvertible, Equatable {
         self.intData = i
     }
     
-    func makeBSONPrimitive() -> BSONPrimitive {
+    func makePrimitive() -> BSON.Primitive {
         return [
             "string": self.stringData,
             "int": self.intData

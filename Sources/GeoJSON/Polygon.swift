@@ -40,7 +40,7 @@ public struct PolygonCoordinates {
 
 extension PolygonCoordinates: ValueConvertible {
     /// Converts this object to an embeddable BSONPrimtive
-    public func makeBSONPrimitive() -> BSONPrimitive {
+    public func makePrimitive() -> BSON.Primitive {
         var docs: Document = []
         docs.append(Document(array: exterior))
         for coords in holes {
@@ -106,7 +106,7 @@ public struct Polygon: Geometry {
 
 extension Polygon: ValueConvertible {
     /// Converts this object to an embeddable BSONPrimtive
-    public func makeBSONPrimitive() -> BSONPrimitive {
+    public func makePrimitive() -> BSON.Primitive {
         return ["type":self.type.rawValue, "coordinates":self.coordinates] as Document
     }
 }

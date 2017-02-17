@@ -142,7 +142,7 @@ public class GridFS {
     /// - parameter inChunksOf: The amount of bytes to put in one chunk
     ///
     /// TODO: Accept data streams
-    public func store(data binary: [UInt8], named filename: String? = nil, withType contentType: String? = nil, usingMetadata metadata: BSONPrimitive? = nil, inChunksOf chunkSize: Int = 255_000) throws -> ObjectId {
+    public func store(data binary: Bytes, named filename: String? = nil, withType contentType: String? = nil, usingMetadata metadata: BSON.Primitive? = nil, inChunksOf chunkSize: Int = 255_000) throws -> ObjectId {
         guard chunkSize < 15_000_000 else {
             throw MongoError.invalidChunkSize(chunkSize: chunkSize)
         }
@@ -196,7 +196,7 @@ public class GridFS {
                 data.removeFirst(smallestMax)
             }
             
-            var digest = [UInt8](repeating: 0, count: Int(MD5_DIGEST_LENGTH))
+            var digest = Bytes(repeating: 0, count: Int(MD5_DIGEST_LENGTH))
             
             guard MD5_Final(&digest, &context) == 1 else {
                 throw MongoError.couldNotHashFile
@@ -219,7 +219,7 @@ public class GridFS {
     /// - parameter withType: The optional MIME type to use for this data
     /// - parameter usingMetadata: The optional metadata to store with this file
     /// - parameter inChunksOf: The amount of bytes to put in one chunk
-    public func store(data nsdata: NSData, named filename: String? = nil, withType contentType: String? = nil, usingMetadata metadata: BSONPrimitive? = nil, inChunksOf chunkSize: Int = 255000) throws -> ObjectId {
+    public func store(data nsdata: NSData, named filename: String? = nil, withType contentType: String? = nil, usingMetadata metadata: BSON.Primitive? = nil, inChunksOf chunkSize: Int = 255000) throws -> ObjectId {
         return try self.store(data: Array(Data(referencing: nsdata)), named: filename, withType: contentType, usingMetadata: metadata, inChunksOf: chunkSize)
     }
     
@@ -250,7 +250,7 @@ public class GridFS {
         public let aliases: [String]?
         
         /// The metadata for this file (if any)
-        public let metadata: BSONPrimitive?
+        public let metadata: BSON.Primitive?
         
         /// The collection where the chunks are stored
         let chunksCollection: Collection
@@ -287,7 +287,7 @@ public class GridFS {
             
             var aliases = [String]()
             
-            for alias in [BSONPrimitive](document["aliases"]) ?? [] {
+            for alias in [Primitive](document["aliases"]) ?? [] {
                 if let alias = alias as? String {
                     aliases.append(alias)
                 }
@@ -303,7 +303,7 @@ public class GridFS {
         ///
         /// - parameter start: The `Byte` where you start fetching
         /// - parameter end: The `Byte` where you stop fetching
-        public func read(from start: Int = 0, to end: Int? = nil) throws -> [UInt8] {
+        public func read(from start: Int = 0, to end: Int? = nil) throws -> Bytes {
             let remainderValue = start % Int(self.chunkSize)
             let skipChunks = (start - remainderValue) / Int(self.chunkSize)
             
@@ -337,7 +337,7 @@ public class GridFS {
             let chunkCursor = try Cursor(in: chunksCollection, where: "files_id" == id, transform: {
                 Chunk(document: $0, chunksCollection: self.chunksCollection, filesCollection: self.filesCollection)
             }).find(sortedBy: ["n": .ascending], skipping: skipChunks, limitedTo: endChunk - skipChunks)
-            var allData = [UInt8]()
+            var allData = Bytes()
             
             for chunk in chunkCursor {
                 // `if skipChunks == 1` then we need the chunk.n to be 1 too,
@@ -399,7 +399,7 @@ public class GridFS {
             public let n: Int32
             
             /// The data for our chunk
-            public let data: [UInt8]
+            public let data: Bytes
             
             /// The chunk `Collection` which this chunk is stored in
             let chunksCollection: Collection

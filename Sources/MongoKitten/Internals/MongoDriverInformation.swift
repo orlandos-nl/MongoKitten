@@ -18,8 +18,8 @@ struct MongoDriverInformation: ValueConvertible {
     /// Application Name
     let appName: String?
 
-    /// Converts this to an embeddable BSONPrimitive
-    public func makeBSONPrimitive() -> BSONPrimitive {
+    /// Converts this to an embeddable BSON.Primitive
+    public func makePrimitive() -> BSON.Primitive {
 
         let driver: Document = ["name":"MongoKitten","version":"3.1.5"]
 

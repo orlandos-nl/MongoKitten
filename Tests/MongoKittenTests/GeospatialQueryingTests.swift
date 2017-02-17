@@ -106,7 +106,7 @@ class GeospatialQueryingTest: XCTestCase {
 
             let results = try zips.near(options: geoNearOption)
 
-            XCTAssertEqual([BSONPrimitive](results["results"])?.count , 6)
+            XCTAssertEqual([Primitive](results["results"])?.count , 6)
         }
     }
 

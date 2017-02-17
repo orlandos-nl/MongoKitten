@@ -49,7 +49,7 @@ public final class Server {
     }
     
     /// Caches the password hash for this server's authentication details
-    internal var hashedPassword: [UInt8]? = nil
+    internal var hashedPassword: Bytes? = nil
     
     /// Handles errors within cursors
     public var cursorErrorHandler: ((Error)->()) = { doc in
@@ -760,8 +760,8 @@ public final class Server {
             command["username"] = user.user
             command["nonce"] = user.nonce
             
-            let passHash = Digest.md5([UInt8]("\(user.user):mongo:\(user.password)".utf8)).toHexString()
-            let key = Digest.md5([UInt8]("\(user.nonce)\(user.user)\(passHash))".utf8)).toHexString()
+            let passHash = Digest.md5(Bytes("\(user.user):mongo:\(user.password)".utf8)).toHexString()
+            let key = Digest.md5(Bytes("\(user.nonce)\(user.user)\(passHash))".utf8)).toHexString()
             command["key"] = key
         }
         

@@ -108,7 +108,7 @@ internal final class _Cursor<T> {
                     throw InternalMongoError.incorrectReply(reply: reply)
                 }
                 
-                let documents = [BSONPrimitive](resultDocs.first?["cursor"]["nextBatch"]) ?? []
+                let documents = [Primitive](resultDocs.first?["cursor"]["nextBatch"]) ?? []
                 for value in documents {
                     if let doc = transform(value as? Document ?? [:]) {
                         self.data.append(doc)

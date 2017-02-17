@@ -20,10 +20,10 @@ public enum WriteConcern: ValueConvertible {
     /// j: Acknowledgement for the completion of writing this information to the journal
     ///
     /// wTimeout: The time in milliseconds that's being waited for the acknowledgement. An error will be thrown otherwise.
-    case custom(w: BSONPrimitive, j: Bool?, wTimeout: Int)
+    case custom(w: BSON.Primitive, j: Bool?, wTimeout: Int)
     
-    /// Converts this WriteConcern to a BSONPrimitive for embedding
-    public func makeBSONPrimitive() -> BSONPrimitive {
+    /// Converts this WriteConcern to a BSON.Primitive for embedding
+    public func makePrimitive() -> BSON.Primitive {
         switch self {
         case .custom(let w, let j, let timeout):
             return [
@@ -50,8 +50,8 @@ public enum ReadConcern: String, ValueConvertible {
     /// The query returns data that reflects all successful writes issued with a write concern of "majority" and acknowledged prior to the start of the read operation.
     case linearizable
     
-    /// Converts this object to a BSONPrimitive
-    public func makeBSONPrimitive() -> BSONPrimitive {
+    /// Converts this object to a BSON.Primitive
+    public func makePrimitive() -> BSON.Primitive {
         return [
             "level": self.rawValue
         ] as Document
@@ -88,7 +88,7 @@ public struct Collation: ValueConvertible {
     let normalization: Bool
     
     /// Converts this Collation to a BSONPrimtive so it can be embedded
-    public func makeBSONPrimitive() -> BSONPrimitive {
+    public func makePrimitive() -> BSON.Primitive {
         return [
             "locale": locale,
             "caseLevel": caseLevel,
@@ -109,8 +109,8 @@ public struct Collation: ValueConvertible {
         /// Whitespace are “ignorable”, i.e. not considered base characters.
         case space = "space"
         
-        /// Converts this object to a BSONPrimitive
-        public func makeBSONPrimitive() -> BSONPrimitive {
+        /// Converts this object to a BSON.Primitive
+        public func makePrimitive() -> BSON.Primitive {
             return self.rawValue
         }
     }
@@ -123,8 +123,8 @@ public struct Collation: ValueConvertible {
         /// Whitespace and punctuation are not considered base characters and are only distinguished at strength levels greater than 3.
         case shifted
         
-        /// Converts this to a BSONPrimitive
-        public func makeBSONPrimitive() -> BSONPrimitive {
+        /// Converts this to a BSON.Primitive
+        public func makePrimitive() -> BSON.Primitive {
             return self.rawValue
         }
     }
@@ -146,8 +146,8 @@ public struct Collation: ValueConvertible {
         /// 5: Identical texts
         case identical = 5
         
-        /// Converts this Strength to a BSONPrimitive
-        public func makeBSONPrimitive() -> BSONPrimitive {
+        /// Converts this Strength to a BSON.Primitive
+        public func makePrimitive() -> BSON.Primitive {
             return self.rawValue
         }
     }
