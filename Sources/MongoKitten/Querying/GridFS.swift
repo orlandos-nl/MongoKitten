@@ -55,8 +55,8 @@ public class GridFS {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A cursor pointing to all resulting files
-    public func find(byID id: ObjectId) throws -> Cursor<File> {
-        return try self.find(matching: ["_id": id])
+    public func find(byID id: ObjectId) throws -> AnyIterator<File> {
+        return try self.find(matching: ["_id": id]).makeIterator()
     }
     
     /// Finds using all files file matching this filename
@@ -66,8 +66,8 @@ public class GridFS {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A cursor pointing to all resulting files
-    public func find(byName filename: String) throws -> Cursor<File> {
-        return try self.find(matching: ["filename": filename])
+    public func find(byName filename: String) throws -> AnyIterator<File> {
+        return try self.find(matching: ["filename": filename]).makeIterator()
     }
     
     /// Finds using all files matching this MD5 hash
@@ -77,8 +77,8 @@ public class GridFS {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A cursor pointing to all resulting files
-    public func find(byHash hash: String) throws -> Cursor<File> {
-        return try self.find(matching: ["md5": hash])
+    public func find(byHash hash: String) throws -> AnyIterator<File> {
+        return try self.find(matching: ["md5": hash]).makeIterator()
     }
     
     /// Finds the first file matching this ObjectID
@@ -121,12 +121,10 @@ public class GridFS {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A cursor pointing to all resulting files
-    public func find(matching filter: Query? = nil) throws -> Cursor<File> {
-        let cursor = try files.find(matching: filter)
-        
-        let gridFSCursor: Cursor<File> = Cursor(base: cursor, transform: { File(document: $0, chunksCollection: self.chunks, filesCollection: self.files) })
-        
-        return gridFSCursor
+    public func find(matching filter: Query? = nil) throws -> AnyIterator<File> {
+        return Cursor(in: files, where: filter) {
+            File(document: $0, chunksCollection: self.chunks, filesCollection: self.files)
+        }.makeIterator()
     }
     
     /// Removes a file by it's identifier
@@ -336,8 +334,9 @@ public class GridFS {
                 throw MongoError.negativeDataRequested
             }
             
-            let cursor = try chunksCollection.find(matching: ["files_id": id], sortedBy: ["n": .ascending], skipping: skipChunks, limitedTo: endChunk - skipChunks)
-            let chunkCursor = Cursor(base: cursor, transform: { Chunk(document: $0, chunksCollection: self.chunksCollection, filesCollection: self.filesCollection) })
+            let chunkCursor = try Cursor(in: chunksCollection, where: "files_id" == id, transform: {
+                Chunk(document: $0, chunksCollection: self.chunksCollection, filesCollection: self.filesCollection)
+            }).find(sortedBy: ["n": .ascending], skipping: skipChunks, limitedTo: endChunk - skipChunks)
             var allData = [UInt8]()
             
             for chunk in chunkCursor {
@@ -383,13 +382,9 @@ public class GridFS {
         ///
         /// - throws: Unable to fetch chunks
         public func chunked() throws -> AnyIterator<Chunk> {
-            let query: Document = ["files_id": id]
-            
-            let cursor = try chunksCollection.find(matching: Query(query), sortedBy: ["n": .ascending])
-            
-            let chunkCursor = Cursor(base: cursor, transform: { Chunk(document: $0, chunksCollection: self.chunksCollection, filesCollection: self.filesCollection) })
-            
-            return chunkCursor.makeIterator()
+            return try Cursor(in: chunksCollection, where: "files_id" == id) {
+                    Chunk(document: $0, chunksCollection: self.chunksCollection, filesCollection: self.filesCollection)
+                }.find(sortedBy: ["n": .ascending])
         }
         
         /// A GridFS Byte Chunk that's part of a file

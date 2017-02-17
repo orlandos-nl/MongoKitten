@@ -63,7 +63,7 @@ extension Database {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A cursor to the resulting documents with collection info
-    public func getCollectionInfos(matching filter: Document? = nil) throws -> Cursor<Document> {
+    internal func getCollectionInfos(matching filter: Document? = nil) throws -> _Cursor<Document> {
         var request: Document = ["listCollections": 1]
         if let filter = filter {
             request["filter"] = filter
@@ -81,7 +81,11 @@ extension Database {
             throw MongoError.commandFailure(error: result)
         }
 
-        return try Cursor(cursorDocument: cursor, collection: self["$cmd"], chunkSize: 10, transform: { $0 })
+        return try _Cursor(cursorDocument: cursor, collection: self["$cmd"], chunkSize: 10, transform: { $0 })
+    }
+    
+    public func getCollectionInfos(matching filter: Document? = nil) throws -> AnyIterator<Document> {
+        return try getCollectionInfos(matching: filter).makeIterator()
     }
 
     /// Gets the `Collection`s in this `Database`
@@ -91,15 +95,15 @@ extension Database {
     /// - parameter matching: The filter to apply when looking for Collections
     ///
     /// - returns: A `Cursor` to all `Collection`s in this `Database`
-    public func listCollections(matching filter: Document? = nil) throws -> Cursor<Collection> {
-        let infoCursor = try self.getCollectionInfos(matching: filter)
-        return Cursor(base: infoCursor) { collectionInfo in
+    public func listCollections(matching filter: Document? = nil) throws -> AnyIterator<Collection> {
+        let infoCursor = try self.getCollectionInfos(matching: filter) as _Cursor<Document>
+        return _Cursor(base: infoCursor) { collectionInfo in
             guard let name = collectionInfo["name"] as? String else {
                 return nil
             }
             
             return self[name]
-        }
+        }.makeIterator()
     }
 
     /// Drops this database and it's collections

@@ -19,11 +19,11 @@ public typealias MongoCollection = Collection
 /// A grouping of MongoDB documents. A collection is the equivalent of an RDBMS table. A collection exists within a single database. Collections do not enforce a schema. Documents within a collection can have different fields. Typically, all documents in a collection have a similar or related purpose. See Namespaces.
 public final class Collection: Sequence {
     public func makeIterator() -> AnyIterator<Document> {
-        guard let cursor = try? self.find() else {
+        guard let iterator = try? self.find() else {
             return AnyIterator { nil }
         }
         
-        return cursor.makeIterator()
+        return iterator
     }
     
     /// The Database this collection is in
@@ -154,30 +154,30 @@ public final class Collection: Sequence {
     public func insert(contentsOf documents: [Document], stoppingOnError ordered: Bool? = nil, writeConcern: WriteConcern? = nil, timeout customTimeout: TimeInterval? = nil) throws -> [BSONPrimitive] {
         let timeout: TimeInterval = customTimeout ?? (database.server.defaultTimeout + (Double(documents.count) / 50))
         
-        var documents = documents
         var newIds = [BSONPrimitive]()
-        let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
+        var documents = documents.map({ (input: Document) -> Document in
+            if let id = input["_id"] {
+                newIds.append(id)
+                return input
+            } else {
+                var output = input
+                let oid = ObjectId()
+                output["_id"] = oid
+                newIds.append(oid)
+                return output
+            }
+        })
         
-        while !documents.isEmpty {
+        let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
+        var position = 0
+        
+        while position < documents.count {
+            defer { position += 1000 }
+            
             if protocolVersion >= 2 {
                 var command: Document = ["insert": self.name]
                 
-                let commandDocuments = documents[0..<Swift.min(1000, documents.count)].map({ (input: Document) -> BSONPrimitive in
-                    if let id = input["_id"] {
-                        newIds.append(id)
-                        return input
-                    } else {
-                        var output = input
-                        let oid = ObjectId()
-                        output["_id"] = oid
-                        newIds.append(oid)
-                        return output
-                    }
-                })
-                
-                documents.removeFirst(Swift.min(1000, documents.count))
-                
-                command["documents"] = Document(array: commandDocuments)
+                command["documents"] = Document(array: Array(documents[position..<Swift.min(position + 1000, documents.count)]))
                 
                 if let ordered = ordered {
                     command["ordered"] = ordered
@@ -200,8 +200,7 @@ public final class Collection: Sequence {
                     database.server.returnConnection(connection)
                 }
                 
-                let commandDocuments = Array(documents[0..<Swift.min(1000, documents.count)])
-                documents.removeFirst(Swift.min(1000, documents.count))
+                let commandDocuments = Array(documents[position..<Swift.min(position + 1000, documents.count)])
                 
                 let insertMsg = Message.Insert(requestID: database.server.nextMessageID(), flags: [], collection: self, documents: commandDocuments)
                 _ = try self.database.server.send(message: insertMsg, overConnection: connection)
@@ -226,7 +225,7 @@ public final class Collection: Sequence {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A Cursor pointing to the response Documents.
-    public func execute(command: Document = [], usingFlags flags: QueryFlags = [], fetching fetchChunkSize: Int = 100, timeout: TimeInterval = 0) throws -> Cursor<Document> {
+    public func execute(command: Document = [], usingFlags flags: QueryFlags = [], fetching fetchChunkSize: Int = 100, timeout: TimeInterval = 0) throws -> AnyIterator<Document> {
         precondition(fetchChunkSize < Int(Int32.max))
         
         let timeout = timeout > 0 ? timeout : database.server.defaultTimeout
@@ -240,11 +239,11 @@ public final class Collection: Sequence {
         let queryMsg = Message.Query(requestID: database.server.nextMessageID(), flags: flags, collection: self, numbersToSkip: 0, numbersToReturn: Int32(fetchChunkSize), query: command, returnFields: nil)
         
         let response = try self.database.server.sendAndAwait(message: queryMsg, overConnection: connection, timeout: timeout)
-        guard let cursor = Cursor(namespace: self.fullName, collection: self, reply: response, chunkSize: Int32(fetchChunkSize), transform: { $0 }) else {
+        guard let cursor = _Cursor(namespace: self.fullName, collection: self, reply: response, chunkSize: Int32(fetchChunkSize), transform: { $0 }) else {
             throw MongoError.invalidReply
         }
         
-        return cursor
+        return cursor.makeIterator()
     }
     
     /// Finds `Document`s in this `Collection`
@@ -263,86 +262,12 @@ public final class Collection: Sequence {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A cursor pointing to the found Documents
-    public func find(matching filter: Query? = nil, sortedBy sort: Sort? = nil, projecting projection: Projection? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil, skipping skip: Int? = nil, limitedTo limit: Int? = nil, withBatchSize batchSize: Int = 100) throws -> Cursor<Document> {
+    public func find(matching filter: Query? = nil, sortedBy sort: Sort? = nil, projecting projection: Projection? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil, skipping skip: Int? = nil, limitedTo limit: Int? = nil, withBatchSize batchSize: Int = 100) throws -> AnyIterator<Document> {
         precondition(batchSize < Int(Int32.max))
         precondition(skip ?? 0 < Int(Int32.max))
         precondition(limit ?? 0 < Int(Int32.max))
         
-        if database.server.buildInfo.version >= Version(3,2,0) {
-            var command: Document = ["find": self.name]
-            
-            if let filter = filter {
-                command["filter"] = filter
-            }
-            
-            if let sort = sort {
-                command["sort"] = sort
-            }
-            
-            if let projection = projection {
-                command["projection"] = projection
-            }
-            
-            if let skip = skip {
-                command["skip"] = Int32(skip)
-            }
-            
-            if let limit = limit {
-                command["limit"] = Int32(limit)
-            }
-            
-            command["readConcern"] = readConcern ?? self.readConcern
-            command["collation"] = collation ?? self.collation
-            
-            command["batchSize"] = Int32(batchSize)
-            
-            let reply = try database.execute(command: command, writing: false)
-            
-            guard case .Reply(_, _, _, _, _, _, let documents) = reply else {
-                throw InternalMongoError.incorrectReply(reply: reply)
-            }
-            
-            guard let responseDoc = documents.first, let cursorDoc = responseDoc["cursor"] as? Document else {
-                throw MongoError.invalidResponse(documents: documents)
-            }
-            
-            return try Cursor(cursorDocument: cursorDoc, collection: self, chunkSize: Int32(batchSize), transform: { doc in
-                return doc
-            })
-        } else {
-            let connection = try database.server.reserveConnection(authenticatedFor: self.database)
-            
-            defer {
-                database.server.returnConnection(connection)
-            }
-            
-            let queryMsg = Message.Query(requestID: database.server.nextMessageID(), flags: [], collection: self, numbersToSkip: Int32(skip) ?? 0, numbersToReturn: Int32(batchSize), query: filter?.queryDocument ?? [], returnFields: projection?.document)
-            
-            let reply = try self.database.server.sendAndAwait(message: queryMsg, overConnection: connection)
-            
-            guard case .Reply(_, _, _, let cursorID, _, _, var documents) = reply else {
-                throw InternalMongoError.incorrectReply(reply: reply)
-            }
-            
-            if let limit = limit {
-                if documents.count > Int(limit) {
-                    documents.removeLast(documents.count - Int(limit))
-                }
-            }
-            
-            var returned: Int = 0
-            
-            return Cursor(namespace: self.fullName, collection: self, cursorID: cursorID, initialData: documents, chunkSize: Int32(batchSize), transform: { doc in
-                if let limit = limit {
-                    guard returned < limit else {
-                        return nil
-                    }
-                    
-                    returned += 1
-                }
-                return doc
-            })
-        }
+        return try Cursor(in: self, where: filter).find(sortedBy: sort, projecting: projection, readConcern: readConcern, collation: collation, skipping: skip, limitedTo: limit, withBatchSize: batchSize).makeIterator()
     }
     
     /// Finds Documents in this collection
@@ -548,7 +473,7 @@ public final class Collection: Sequence {
     ///
     /// - parameter matching: The QueryBuilder filter to use when finding Documents that are going to be removed
     /// - parameter limitedTo: The amount of times this filter can be used to find and remove a Document (0 is every document)
-    /// - parameter stoppingOnError: If true, stop removing when one operation fails - defaults to true
+    /// - parameter stoppingfOnError: If true, stop removing when one operation fails - defaults to true
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     @discardableResult
@@ -613,34 +538,7 @@ public final class Collection: Sequence {
     ///
     /// - returns: The amount of matching `Document`s
     public func count(matching filter: Query? = nil, limitedTo limit: Int? = nil, skipping skip: Int? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil) throws -> Int {
-        var command: Document = ["count": self.name]
-        
-        if let filter = filter?.queryDocument {
-            command["query"] = filter
-        }
-        
-        if let skip = skip {
-            command["skip"] = Int32(skip)
-        }
-        
-        if let limit = limit {
-            command["limit"] = Int32(limit)
-        }
-        
-        command["readConcern"] = readConcern ?? self.readConcern
-        command["collation"] = collation ?? self.collation
-        
-        let reply = try self.database.execute(command: command, writing: false)
-        
-        guard case .Reply(_, _, _, _, _, _, let documents) = reply, let document = documents.first else {
-            throw InternalMongoError.incorrectReply(reply: reply)
-        }
-        
-        guard let n = Int(document["n"]), Int(document["ok"]) == 1 else {
-            throw InternalMongoError.incorrectReply(reply: reply)
-        }
-        
-        return n
+        return try Cursor<Document>(in: self, where: filter).count(limitedTo: limit, skipping: skip, readConcern: readConcern, collation: collation)
     }
     
     /// `findAndModify` only has two operations that can be used. Update and Delete
@@ -813,7 +711,7 @@ public final class Collection: Sequence {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A Cursor pointing to the Index results
-    public func listIndexes() throws -> Cursor<Document> {
+    public func listIndexes() throws -> AnyIterator<Document> {
         guard database.server.buildInfo.version >= Version(3,0,0) else {
             throw MongoError.unsupportedOperations
         }
@@ -830,7 +728,7 @@ public final class Collection: Sequence {
             database.server.returnConnection(connection)
         }
         
-        return try Cursor(cursorDocument: cursorDocument, collection: self, chunkSize: 100, transform: { $0 })
+        return try _Cursor(cursorDocument: cursorDocument, collection: self, chunkSize: 100, transform: { $0 }).makeIterator()
     }
     
     /// Modifies the collection. Requires access to `collMod`
@@ -872,7 +770,7 @@ public final class Collection: Sequence {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A `Cursor` pointing to the found `Document`s
-    public func aggregate(pipeline: AggregationPipeline, explain: Bool? = nil, allowDiskUse: Bool? = nil, cursorOptions: Document = ["batchSize": 100], bypassDocumentValidation: Bool? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil) throws -> Cursor<Document> {
+    public func aggregate(pipeline: AggregationPipeline, explain: Bool? = nil, allowDiskUse: Bool? = nil, cursorOptions: Document = ["batchSize": 100], bypassDocumentValidation: Bool? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil) throws -> AnyIterator<Document> {
         // construct command. we always use cursors in MongoKitten, so that's why the default value for cursorOptions is an empty document.
         var command: Document = ["aggregate": self.name, "pipeline": pipeline.pipelineDocument, "cursor": cursorOptions]
         
@@ -894,7 +792,7 @@ public final class Collection: Sequence {
             throw MongoError.invalidResponse(documents: documents)
         }
         
-        return try Cursor(cursorDocument: cursorDoc, collection: self, chunkSize: Int32(cursorOptions["batchSize"]) ?? 100, transform: { $0 })
+        return try _Cursor(cursorDocument: cursorDoc, collection: self, chunkSize: Int32(cursorOptions["batchSize"]) ?? 100, transform: { $0 }).makeIterator()
     }
 }
 

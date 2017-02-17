@@ -7,82 +7,154 @@
 // See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/LICENSE.md for license information
 // See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of MongoKitten project authors
 //
-
-import Foundation
-import LogKitten
 import BSON
 
-/// A Cursor is a pointer to a sequence/collection of Documents on the MongoDB server.
-///
-/// It can be looped over using a `for let document in cursor` loop like any other sequence.
-///
-/// It can be transformed into an array with `Array(cursor)` and allows transformation to another type.
-public final class Cursor<T> {
-    /// The collection's namespace
-    public let namespace: String
-    
-    /// The collection this cursor is pointing to
+public class Cursor<T> : Sequence {
     public let collection: Collection
     
-    /// The cursor's identifier that allows us to fetch more data from the server
-    fileprivate var cursorID: Int
+    public var filter: Query?
     
-    /// The amount of Documents to receive each time from the server
-    fileprivate let chunkSize: Int32
+    public typealias Transformer = (Document) -> (T?)
     
-    var logger: FrameworkLogger {
-        return self.collection.database.server.logger
-    }
+    public let transform: Transformer
     
-    // documents already received by the server
-    fileprivate var data: [T]
-    
-    fileprivate var position = 0
-    
-    /// A closure that transforms a document to another type if possible, otherwise `nil`
-    typealias Transformer = (Document) -> (T?)
-    
-    /// The transformer used for this cursor
-    let transform: Transformer
-    
-    /// This initializer creates a base cursor from a reply message
-    internal convenience init?(namespace: String, collection: Collection, reply: Message, chunkSize: Int32, transform: @escaping Transformer) {
-        guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
-            return nil
+    public func count(limitedTo limit: Int? = nil, skipping skip: Int? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil) throws -> Int {
+        var command: Document = ["count": collection.name]
+        
+        if let filter = filter {
+            command["query"] = filter
         }
         
-        self.init(namespace: namespace, collection: collection, cursorID: cursorID, initialData: documents.flatMap(transform), chunkSize: chunkSize, transform: transform)
-    }
-    
-    /// This initializer creates a base cursor from a replied Document
-    internal convenience init(cursorDocument cursor: Document, collection: Collection, chunkSize: Int32, transform: @escaping Transformer) throws {
-        guard let cursorID = Int(cursor["id"]), let namespace = cursor["ns"] as? String, let firstBatch = cursor["firstBatch"] as? Document else {
-            throw MongoError.cursorInitializationError(cursorDocument: cursor)
+        if let skip = skip {
+            command["skip"] = Int32(skip)
         }
         
-        self.init(namespace: namespace, collection: collection, cursorID: cursorID, initialData: firstBatch.arrayValue.flatMap{ $0 as? Document }.flatMap(transform), chunkSize: chunkSize, transform: transform)
+        if let limit = limit {
+            command["limit"] = Int32(limit)
+        }
+        
+        command["readConcern"] = readConcern ?? collection.readConcern
+        command["collation"] = collation ?? collection.collation
+        
+        let reply = try collection.database.execute(command: command, writing: false)
+        
+        guard case .Reply(_, _, _, _, _, _, let documents) = reply, let document = documents.first else {
+            throw InternalMongoError.incorrectReply(reply: reply)
+        }
+        
+        guard let n = Int(document["n"]), Int(document["ok"]) == 1 else {
+            throw InternalMongoError.incorrectReply(reply: reply)
+        }
+        
+        return n
     }
     
-    /// This initializer creates a base cursor from provided specific data
-    internal init(namespace: String, collection: Collection, cursorID: Int, initialData: [T], chunkSize: Int32, transform: @escaping Transformer) {
-        self.namespace = namespace
-        self.collection = collection
-        self.cursorID = cursorID
-        self.data = initialData
-        self.chunkSize = chunkSize
-        self.transform = transform
+    public func find(sortedBy sort: Sort? = nil, projecting projection: Projection? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil, skipping skip: Int? = nil, limitedTo limit: Int? = nil, withBatchSize batchSize: Int = 100) throws -> AnyIterator<T> {
+        precondition(batchSize < Int(Int32.max))
+        precondition(skip ?? 0 < Int(Int32.max))
+        precondition(limit ?? 0 < Int(Int32.max))
+        
+        if collection.database.server.buildInfo.version >= Version(3,2,0) {
+            var command: Document = [
+                "find": collection.name,
+                "readConcern": readConcern ?? collection.readConcern,
+                "collation": collation ?? collection.collation,
+                "batchSize": Int32(batchSize)
+            ]
+            
+            if let filter = filter {
+                command["filter"] = filter
+            }
+            
+            if let sort = sort {
+                command["sort"] = sort
+            }
+            
+            if let projection = projection {
+                command["projection"] = projection
+            }
+            
+            if let skip = skip {
+                command["skip"] = Int32(skip)
+            }
+            
+            if let limit = limit {
+                command["limit"] = Int32(limit)
+            }
+            
+            let reply = try collection.database.execute(command: command, writing: false)
+            
+            guard case .Reply(_, _, _, _, _, _, let documents) = reply else {
+                throw InternalMongoError.incorrectReply(reply: reply)
+            }
+            
+            guard let responseDoc = documents.first, let cursorDoc = responseDoc["cursor"] as? Document else {
+                throw MongoError.invalidResponse(documents: documents)
+            }
+            
+            let cursor = try _Cursor(cursorDocument: cursorDoc, collection: collection, chunkSize: Int32(batchSize), transform: { doc in
+                return doc
+            })
+            
+            return _Cursor(base: cursor) {
+                self.transform($0)
+            }.makeIterator()
+        } else {
+            let connection = try collection.database.server.reserveConnection(authenticatedFor: collection.database)
+            
+            defer {
+                collection.database.server.returnConnection(connection)
+            }
+            
+            let queryMsg = Message.Query(requestID: collection.database.server.nextMessageID(), flags: [], collection: collection, numbersToSkip: Int32(skip) ?? 0, numbersToReturn: Int32(batchSize), query: filter?.queryDocument ?? [], returnFields: projection?.document)
+            
+            let reply = try collection.database.server.sendAndAwait(message: queryMsg, overConnection: connection)
+            
+            guard case .Reply(_, _, _, let cursorID, _, _, var documents) = reply else {
+                throw InternalMongoError.incorrectReply(reply: reply)
+            }
+            
+            if let limit = limit {
+                if documents.count > Int(limit) {
+                    documents.removeLast(documents.count - Int(limit))
+                }
+            }
+            
+            var returned: Int = 0
+            
+            let cursor = _Cursor(namespace: collection.fullName, collection: collection, cursorID: cursorID, initialData: documents, chunkSize: Int32(batchSize), transform: { doc in
+                if let limit = limit {
+                    guard returned < limit else {
+                        return nil
+                    }
+                    
+                    returned += 1
+                }
+                return doc
+            })
+            
+            return _Cursor(base: cursor) {
+                self.transform($0)
+            }.makeIterator()
+        }
     }
     
-    /// Transforms the base cursor to a new cursor of a new type
-    ///
-    /// The transformer will get `B` as input and is expected to return `T?` for the new type.
-    ///
-    /// This allows you to easily map a Document cursor returned by MongoKitten to a new type like your model.
+    public func update(to document: Document, upserting: Bool, multiple: Bool, writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
+        return try collection.update(matching: filter ?? [:], to: document, upserting: upserting, multiple: multiple, writeConcern: writeConcern, stoppingOnError: ordered)
+    }
+    
+    @discardableResult
+    public func remove(limitedTo limit: Int = 0, writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
+        return try collection.remove(matching: filter ?? [:], limitedTo: limit, writeConcern: writeConcern, stoppingOnError: ordered)
+    }
+    
+    public func flatMap<B>(transform: @escaping (T) -> (B?)) -> Cursor<B> {
+        return Cursor<B>(base: self, transform: transform)
+    }
+    
     public init<B>(base: Cursor<B>, transform: @escaping (B) -> (T?)) {
-        self.namespace = base.namespace
         self.collection = base.collection
-        self.cursorID = base.cursorID
-        self.chunkSize = base.chunkSize
+        self.filter = base.filter
         self.transform = {
             if let bValue = base.transform($0) {
                 return transform(bValue)
@@ -90,103 +162,25 @@ public final class Cursor<T> {
                 return nil
             }
         }
-        self.data = base.data.flatMap(transform)
     }
     
-    /// Gets more information and puts it in the buffer
-    fileprivate func getMore() {
-        do {
-            if collection.database.server.serverData?.maxWireVersion ?? 0 >= 4 {
-                let reply = try collection.database.execute(command: [
-                    "getMore": Int(self.cursorID),
-                    "collection": collection.name,
-                    "batchSize": Int32(chunkSize)
-                    ], writing: false)
-                
-                guard case .Reply(_, _, _, _, _, _, let resultDocs) = reply else {
-                    logger.error("Incorrect Cursor reply received")
-                    throw InternalMongoError.incorrectReply(reply: reply)
-                }
-                
-                let documents = [BSONPrimitive](resultDocs.first?["cursor"]["nextBatch"]) ?? []
-                for value in documents {
-                    if let doc = transform(value as? Document ?? [:]) {
-                        self.data.append(doc)
-                    }
-                }
-                
-                self.cursorID = Int(resultDocs.first?["cursor"]["id"]) ?? -1
-            } else {
-                let connection = try collection.database.server.reserveConnection(authenticatedFor: self.collection.database)
-                
-                defer {
-                    collection.database.server.returnConnection(connection)
-                }
-                
-                let request = Message.GetMore(requestID: collection.database.server.nextMessageID(), namespace: namespace, numberToReturn: chunkSize, cursor: cursorID)
-                
-                let reply = try collection.database.server.sendAndAwait(message: request, overConnection: connection)
-                
-                guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
-                    logger.error("Incorrect Cursor reply received")
-                    throw InternalMongoError.incorrectReply(reply: reply)
-                }
-                
-                self.data += documents.flatMap(transform)
-                self.cursorID = cursorID
-            }
-        } catch {
-            logger.error("Could not fetch extra data from the cursor due to error: \(error)")
-            collection.database.server.cursorErrorHandler(error)
-        }
-    }
-    
-    /// When deinitializing we're killing the cursor on the server as well
-    deinit {
-        if cursorID != 0 {
-            do {
-                let connection = try collection.database.server.reserveConnection(authenticatedFor: self.collection.database)
-                
-                defer {
-                    collection.database.server.returnConnection(connection)
-                }
-                
-                let killCursorsMessage = Message.KillCursors(requestID: collection.database.server.nextMessageID(), cursorIDs: [self.cursorID])
-                try collection.database.server.send(message: killCursorsMessage, overConnection: connection)
-            } catch {
-                collection.database.server.cursorErrorHandler(error)
-            }
-        }
-    }
-}
-
-extension Cursor : Sequence {
-    /// Makes an iterator to loop over the data this cursor points to from (for example) a loop
-    /// - returns: The iterator
     public func makeIterator() -> AnyIterator<T> {
-        return AnyIterator {
-            return self.next()
+        do {
+            return try find()
+        } catch {
+            return AnyIterator { nil }
         }
     }
     
-    /// Allows you to fetch the first next entity in the Cursor
-    public func next() -> T? {
-        defer { position += 1 }
-        
-        if position >= self.data.count && self.cursorID != 0 {
-            position = 0
-            self.data = []
-            // Get more data!
-            self.getMore()
-        }
-        
-        return position < self.data.count ? self.data[position] : nil
+    public init(`in` collection: Collection, `where` filter: Query? = nil, transform: @escaping Transformer) {
+        self.collection = collection
+        self.filter = filter
+        self.transform = transform
     }
 }
 
-extension Cursor : CustomStringConvertible {
-    /// A description for debugging purposes
-    public var description: String {
-        return "MongoKitten.Cursor<\(namespace)>"
+extension Cursor where T == Document {
+    public convenience init(`in` collection: Collection, `where` filter: Query? = nil) {
+        self.init(in: collection, where: filter) { $0 }
     }
 }
