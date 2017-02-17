@@ -66,19 +66,19 @@ class SetupTests: XCTestCase {
 //                "name": "Henk",
 //                "male": false,
 //                "age": 12,
-//                "pets": ["dog", "dog", "cat", "cat"] as Document
-//                ] as Document
+//                "pets": ["dog", "dog", "cat", "cat"]
+//                ]
 //        ]
 //        
-//        _ = userDocument[raw: "username"]
+//        _ = userDocument["username"]
 //        _ = userDocument["username"] as String?
 //        _ = userDocument["age"] as String?
-//        _ = userDocument[raw: "age"]?.string ?? ""
+//        _ = userDocument["age"]?.string ?? ""
 //        
 //        userDocument["bool"] = true
 //        userDocument["int32"] = Int32(10)
 //        userDocument["int64"] = Int64(200)
-//        userDocument["array"] = ["one", 2, "three"] as Document
+//        userDocument["array"] = ["one", 2, "three"]
 //        userDocument["binary"] = Binary(data: [0x00, 0x01, 0x02, 0x03, 0x04], withSubtype: .generic)
 //        userDocument["date"] = Date()
 //        userDocument["null"] = Null()
@@ -108,7 +108,7 @@ class SetupTests: XCTestCase {
 //        _ = try userCollection.findOne(matching: q)
 //        
 //        for user in try userCollection.find(matching: "male" == true) {
-//            _ = user[raw: "username"]
+//            _ = user["username"]
 //        }
 //    }
 //    

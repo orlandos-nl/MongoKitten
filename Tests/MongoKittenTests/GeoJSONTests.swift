@@ -96,8 +96,8 @@ class GeoJSONTests: XCTestCase {
         XCTAssertNotNil(polygon)
 
         let polyDoc = polygon.makeBSONPrimitive()
-        guard let polyDico = polyDoc.documentValue?.dictionaryValue else { XCTFail(); return }
-        guard let exter = polyDico["coordinates"]?.documentValue?.arrayValue else { XCTFail(); return }
+        guard let polyDico = [String: BSONPrimitive](polyDoc) else { XCTFail(); return }
+        guard let exter = (polyDico["coordinates"] as? Document)?.arrayValue else { XCTFail(); return }
         XCTAssertEqual(exter.count, 1) // One Exterior ring 
 
         let exterior  = try [Position(values: [100.0, 0.0]), Position(values: [101.0, 0.0]),Position(values: [101.0, 1.0]), Position(values: [100.0, 1.0]), Position(values: [100.0, 0.0])]
@@ -107,8 +107,8 @@ class GeoJSONTests: XCTestCase {
         XCTAssertNotNil(polygonWithHole)
   
         let polygonHoleDoc = polygonWithHole.makeBSONPrimitive()
-        guard let dic = polygonHoleDoc.documentValue?.dictionaryValue else { XCTFail(); return }
-        guard let coordinates = dic["coordinates"]?.documentValue?.arrayValue else { XCTFail(); return }
+        guard let dic = (polygonHoleDoc as? Document)?.dictionaryValue else { XCTFail(); return }
+        guard let coordinates = (dic["coordinates"] as? Document)?.arrayValue else { XCTFail(); return }
         XCTAssertEqual(coordinates.count, 2) // One Exterior ring and One Hole ring
     }
 
@@ -166,8 +166,8 @@ class GeoJSONTests: XCTestCase {
         XCTAssertNotEqual(strict.rawValue.hashValue, crs84.rawValue.hashValue)
 
         let crsDocument = strict.rawValue.makeBSONPrimitive()
-        guard let dic = crsDocument.documentValue?.dictionaryValue else { XCTFail(); return }
-        guard let properties = dic["properties"]?.documentValue?.dictionaryValue else { XCTFail(); return }
+        guard let dic = [String: BSONPrimitive](crsDocument) else { XCTFail(); return }
+        guard let properties = (dic["properties"] as? Document)?.dictionaryValue else { XCTFail(); return }
         guard let typeName = properties["name"] as? String else { XCTFail(); return }
         XCTAssertEqual(typeName, "urn:x-mongodb:crs:strictwinding:EPSG:4326")
 

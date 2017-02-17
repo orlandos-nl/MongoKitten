@@ -81,6 +81,6 @@ public struct GeometryOperator {
         geometry["$maxDistance"] = self.maxDistance
         geometry["$minDistance"]  = self.minDistance
 
-       return [key: [operatorName:geometry] as Document ] as Document
+       return [key: [operatorName:geometry] ]
     }
 }

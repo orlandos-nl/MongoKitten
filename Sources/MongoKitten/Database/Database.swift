@@ -56,11 +56,6 @@ public final class Database {
         }
     }
     
-    public var findHook: FindHook? = nil
-    public var insertHook: InsertHook? = nil
-    public var updateHook: UpdateHook? = nil
-    public var removeHook: RemoveHook? = nil
-    
     /// The default Collation for collections in this Database.
     ///
     /// When a Collation is provided in the method call it'll still override this

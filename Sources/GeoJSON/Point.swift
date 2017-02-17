@@ -30,7 +30,7 @@ public struct Point: Geometry {
 extension Point: ValueConvertible {
     /// Converts this object to an embeddable BSONPrimtive
     public func makeBSONPrimitive() -> BSONPrimitive {
-        return ["type": self.type.rawValue, "coordinates": self.coordinate ] as Document
+        return ["type": self.type.rawValue, "coordinates": self.coordinate ]
     }
 }
 

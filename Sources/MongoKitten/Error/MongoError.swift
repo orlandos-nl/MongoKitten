@@ -46,10 +46,10 @@ public enum MongoError : Error {
     case queryFailure(query: Document, error: Document?)
     
     /// Can't update documents with the given selector and update
-    case updateFailure(updates: [UpdateRequest.UpdateQuery], error: Document?)
+    case updateFailure(updates: [(filter: Query, to: Document, upserting: Bool, multiple: Bool)], error: Document?)
     
     /// Can't remove documents matching the given query
-    case removeFailure(removals: [RemoveRequest.RemoveQuery], error: Document?)
+    case removeFailure(removals: [(filter: Query, limit: Int)], error: Document?)
     
     /// Can't find a handler for this reply
     case handlerNotFound

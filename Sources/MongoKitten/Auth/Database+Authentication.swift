@@ -70,24 +70,24 @@ extension Database {
     /// - throws: On authentication failure or an incorrect Server Signature
     private func complete(SASL payload: String, using response: Document, verifying signature: [UInt8], usingConnection connection: Connection) throws {
         // If we failed authentication
-        guard response["ok"] as Int? == 1 else {
+        guard Int(response["ok"]) == 1 else {
             logger.error("Authentication failed because of the following reason")
             logger.error(response)
             throw MongoAuthenticationError.incorrectCredentials
         }
         
-        if response["done"] as Bool? == true {
+        if response["done"] as? Bool == true {
             logger.verbose("Authentication was successful")
             return
         }
         
-        guard let stringResponse = response["payload"] as String? else {
+        guard let stringResponse = response["payload"] as? String else {
             logger.error("Authentication to MongoDB with SASL failed because no payload has been received")
             logger.debug(response)
             throw MongoAuthenticationError.authenticationFailure
         }
         
-        guard let conversationId = response[raw: "conversationId"] else {
+        guard let conversationId = response["conversationId"] else {
             logger.error("Authentication to MongoDB with SASL failed because no conversationId was kept")
             logger.debug(response)
             throw MongoAuthenticationError.authenticationFailure
@@ -146,20 +146,20 @@ extension Database {
     /// - throws: When the authentication fails, when Base64 fails
     private func challenge(with details: MongoCredentials, using previousInformation: (nonce: String, response: Document, scram: SCRAMClient), usingConnection connection: Connection) throws {
         // If we failed the authentication
-        guard previousInformation.response["ok"] as Int? == 1 else {
+        guard Int(previousInformation.response["ok"]) == 1 else {
             logger.error("Authentication for MongoDB user \(details.username) with SASL failed against \(String(describing: details.database)) because of the following error")
             logger.error(previousInformation.response)
             throw MongoAuthenticationError.incorrectCredentials
         }
         
         // Get our ConversationID
-        guard let conversationId = previousInformation.response[raw: "conversationId"] else {
+        guard let conversationId = previousInformation.response["conversationId"] else {
             logger.error("Authentication for MongoDB user \(details.username) with SASL failed because no conversation has been kept")
             throw MongoAuthenticationError.authenticationFailure
         }
         
         // Decode the challenge
-        guard let stringResponse = previousInformation.response["payload"] as String? else {
+        guard let stringResponse = previousInformation.response["payload"] as? String else {
             logger.error("Authentication for MongoDB user \(details.username) with SASL failed because no SASL payload has been received")
             throw MongoAuthenticationError.authenticationFailure
         }
@@ -247,7 +247,7 @@ extension Database {
         // Get the server's challenge
         let document = try firstDocument(in: response)
         
-        guard let nonce = document["nonce"] as String? else {
+        guard let nonce = document["nonce"] as? String else {
             logger.error("Authentication for MongoDB user \(details.username) with MongoCR failed against \(String(describing: details.database)) because no nonce was provided by MongoDB")
             logger.error(document)
             throw MongoAuthenticationError.authenticationFailure
@@ -271,7 +271,7 @@ extension Database {
         let successDocument = try firstDocument(in: successResponse)
         
         // Check for success
-        guard successDocument["ok"] as Int? == 1 else {
+        guard Int(successDocument["ok"]) == 1 else {
             logger.error("Authentication for MongoDB user \(details.username) with MongoCR failed against \(String(describing: details.database)) for the following reason")
             logger.error(document)
             throw InternalMongoError.incorrectReply(reply: successResponse)

@@ -19,14 +19,14 @@ public enum SortOrder: ValueConvertible {
     case descending
     
     /// Custom can be useful for more complex MongoDB behaviour. Generally not used.
-    case custom(ValueConvertible)
+    case custom(BSONPrimitive)
     
     /// Converts the SortOrder to a BSON primitive for easy embedding
     public func makeBSONPrimitive() -> BSONPrimitive {
         switch self {
         case .ascending: return Int32(1)
         case .descending: return Int32(-1)
-        case .custom(let value): return value.makeBSONPrimitive()
+        case .custom(let value): return value
         }
     }
 }
@@ -34,19 +34,7 @@ public enum SortOrder: ValueConvertible {
 /// A Sort object specifies to MongoDB in what order certain Documents need to be ordered
 ///
 /// This can be used in normal and aggregate queries
-public struct Sort: CustomValueConvertible, ExpressibleByDictionaryLiteral {
-    /// Creates a Sort object from a BSONPrimitive
-    ///
-    /// Only accepts a Document
-    public init?(_ value: BSONPrimitive) {
-        guard let document = value as? Document else {
-            return nil
-        }
-        
-        self.document = document
-    }
-
-    /// The underlying Document
+public struct Sort: ValueConvertible, ExpressibleByDictionaryLiteral {    /// The underlying Document
     var document: Document
     
     /// Makes this Sort specification a Document

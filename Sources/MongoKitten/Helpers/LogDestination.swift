@@ -43,8 +43,8 @@ extension LogKitten.Message: ValueConvertible {
                 "filePath": self.origin.filePath,
                 "line": self.origin.line,
                 "column": self.origin.column
-            ] as Document
-        ] as Document
+            ]
+        ]
     }
 }*/
 
@@ -75,7 +75,8 @@ extension Document: SubjectRepresentable {
     ///
     /// WARNING: LogKitten is alpha software and subject to change. Do not rely on this
     static public func convertToString(fromData data: [UInt8]) -> String {
-        return Document(data: data).makeExtendedJSON()
+        fatalError("TODO: ")
+//        return Document(data: data)
     }
 }
 

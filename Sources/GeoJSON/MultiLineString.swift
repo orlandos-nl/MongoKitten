@@ -26,6 +26,6 @@ public struct MultiLineString: Geometry, ValueConvertible {
     
     /// Converts this object to an embeddable BSONPrimtive
     public func makeBSONPrimitive() -> BSONPrimitive {
-        return ["type": self.type.rawValue, "coordinates": Document(array: self.coordinates) ] as Document
+        return ["type": self.type.rawValue, "coordinates": Document(array: self.coordinates) ]
     }
 }

@@ -57,7 +57,7 @@ public enum IndexParameter {
     case sortedCompound(fields: [(field: String, order: SortOrder)])
     
     ///
-    case compound(fields: [(field: String, value: ValueConvertible)])
+    case compound(fields: [(field: String, value: BSONPrimitive)])
     
     /// Removes a Document after it's been in the database for the provided amount of seconds
     case expire(afterSeconds: Int)
@@ -106,12 +106,12 @@ public enum IndexParameter {
             
             return ["key": doc]
         case .sort(let field, let order):
-            return ["key": [field: order] as Document]
+            return ["key": [field: order]]
         case .sortedCompound(let fields):
             var index: Document = [:]
             
             for field in fields {
-                index[raw: field.field] = field.order
+                index[field.field] = field.order
             }
             
             return ["key": (index.flattened())]
@@ -119,7 +119,7 @@ public enum IndexParameter {
             var index: Document = [:]
             
             for field in fields {
-                index[raw: field.field] = field.value
+                index[field.field] = field.value
             }
             
             return ["key": (index.flattened())]
@@ -138,7 +138,7 @@ public enum IndexParameter {
         case .weight(let weight):
             return ["weights": Int32(weight)]            
         case .geo2dsphere(let field):
-            return ["key":[field:"2dsphere"] as Document]
+            return ["key":[field:"2dsphere"]]
         }
     }
 }

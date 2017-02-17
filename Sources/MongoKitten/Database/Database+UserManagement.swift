@@ -39,7 +39,7 @@ extension Database {
         let reply = try execute(command: command)
         let document = try firstDocument(in: reply)
 
-        guard document["ok"] as Int? == 1 else {
+        guard Int(document["ok"]) == 1 else {
             logger.error("createUser was not successful for user \(user) because of the following error")
             logger.error(document)
             logger.error("createUser had the following roiles and customData provided")
@@ -73,7 +73,7 @@ extension Database {
 
         let document = try firstDocument(in: try execute(command: command))
 
-        guard document["ok"] as Int? == 1 else {
+        guard Int(document["ok"]) == 1 else {
             logger.error("updateUser was not successful for user \(username) because of the following error")
             logger.error(document)
             logger.error("updateUser had the following roles and customData")
@@ -97,7 +97,7 @@ extension Database {
 
         let document = try firstDocument(in: try execute(command: command))
 
-        guard document["ok"] as Int? == 1 else {
+        guard Int(document["ok"]) == 1 else {
             logger.error("dropUser was not successful for user \(username) because of the following error")
             logger.error(document)
             throw MongoError.commandFailure(error: document)
@@ -116,7 +116,7 @@ extension Database {
 
         let document = try firstDocument(in: try execute(command: command))
 
-        guard document["ok"] as Int? == 1 else {
+        guard Int(document["ok"]) == 1 else {
             logger.error("dropAllUsersFromDatabase was not successful because of the following error")
             logger.error(document)
             throw MongoError.commandFailure(error: document)

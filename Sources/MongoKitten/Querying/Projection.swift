@@ -13,16 +13,7 @@ import BSON
 /// A projection removes any keys from it's input Documents that have not been specified to be included except _id.
 ///
 /// If you don't want to include _id you'll have to explicitely not include it.
-public struct Projection: CustomValueConvertible {
-    /// Initializes this projection from a Document BSONPrimitive
-    public init?(_ value: BSONPrimitive) {
-        guard let document = value as? Document else {
-            return nil
-        }
-        
-        self.document = document
-    }
-
+public struct Projection: ValueConvertible {
     /// The raw underlying Document of this Projection
     var document: Document
     
@@ -38,7 +29,7 @@ public struct Projection: CustomValueConvertible {
         /// Creates a BSONPrimitive of this ProjecitonExpression for easy embedding in Documents
         public func makeBSONPrimitive() -> BSONPrimitive {
             switch self {
-            case .custom(let convertible): return convertible.makeBSONPrimitive()
+            case .custom(let convertible): return convertible
             case .included: return true
             case .excluded: return false
             }
@@ -60,7 +51,7 @@ public struct Projection: CustomValueConvertible {
         }
 
         /// A custom projection value
-        case custom(ValueConvertible)
+        case custom(BSONPrimitive)
         
         /// Includes this field in the projection
         case included
@@ -75,7 +66,7 @@ public struct Projection: CustomValueConvertible {
         
 
         /// A dictionary literal that makes this a custom ProjectionExpression
-        public init(dictionaryLiteral elements: (StringVariant, ValueConvertible?)...) {
+        public init(dictionaryLiteral elements: (StringVariant, BSONPrimitive?)...) {
             self = .custom(Document(dictionaryElements: elements))
         }
     }

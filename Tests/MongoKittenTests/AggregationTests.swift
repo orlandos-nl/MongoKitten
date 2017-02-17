@@ -51,14 +51,14 @@ class AggregationTests: XCTestCase {
             var count = 0
             var previousPopulation = 0
             for populationDoc in cursor {
-                let population = populationDoc["totalPop"] as Int? ?? -1
+                let population = Int(populationDoc["totalPop"]) ?? -1
                 
                 guard population > previousPopulation else {
                     XCTFail()
                     continue
                 }
                 
-                guard populationDoc[raw: "_id"] == nil else {
+                guard populationDoc["_id"] == nil else {
                     XCTFail()
                     continue
                 }
@@ -84,12 +84,12 @@ class AggregationTests: XCTestCase {
             do {
                 let result = Array(try db["zips"].aggregate(pipeline: pipeline2)).first
                 
-                guard let resultCount = result?["results"] as Int?, resultCount == 3, result?["topThree"] as Bool? == true else {
+                guard let resultCount = Int(result?["results"]), resultCount == 3, result?["topThree"] as? Bool == true else {
                     XCTFail()
                     return
                 }
             } catch MongoError.invalidResponse(let response) {
-                XCTAssertEqual(response.first?[raw: "code"]?.int, 16436)
+                XCTAssertEqual(Int(response.first?["code"]), 16436)
             }
         }
         // TODO: Test $out, $lookup, $unwind
@@ -120,8 +120,8 @@ class AggregationTests: XCTestCase {
                 return
             }
             
-            XCTAssertEqual(result["count", 0, "resultCount"] as Int?, 51)
-            XCTAssertEqual(result["totalPop", 0, "population"] as Int?, 248408400)
+            XCTAssertEqual(Int(result["count"][0]["resultCount"]), 51)
+            XCTAssertEqual(Int(result["totalPop"][0]["population"]), 248408400)
         }
     }
     
@@ -137,9 +137,9 @@ class AggregationTests: XCTestCase {
             try orders.drop()
             try inventory.drop()
             
-            let orderDocument: Document = ["_id": 1, "item": "MON1003", "price": 350, "quantity": 2, "specs": [ "27 inch", "Retina display", "1920x1080" ] as Document, "type": "Monitor"]
+            let orderDocument: Document = ["_id": 1, "item": "MON1003", "price": 350, "quantity": 2, "specs": [ "27 inch", "Retina display", "1920x1080" ], "type": "Monitor"]
             let orderId = try orders.insert(orderDocument)
-            XCTAssertEqual(orderId.int, 1)
+            XCTAssertEqual(Int(orderId), 1)
             
             let inventoryDocument1: Document = ["_id": 1, "sku": "MON1003", "type": "Monitor", "instock": 120, "size": "27 inch", "resolution": "1920x1080"]
             let inventoryDocument2: Document = ["_id": 2, "sku": "MON1012", "type": "Monitor", "instock": 85, "size": "23 inch", "resolution": "1280x800"]
@@ -149,13 +149,13 @@ class AggregationTests: XCTestCase {
             let inventory2 = try inventory.insert(inventoryDocument2)
             let inventory3 = try inventory.insert(inventoryDocument3)
             
-            XCTAssertEqual(inventory1.int, 1)
-            XCTAssertEqual(inventory2.int, 2)
-            XCTAssertEqual(inventory3.int, 3)
+            XCTAssertEqual(Int(inventory1), 1)
+            XCTAssertEqual(Int(inventory2), 2)
+            XCTAssertEqual(Int(inventory3), 3)
             
             let unwind = AggregationPipeline.Stage.unwind(atPath: "$specs")
             let lookup = AggregationPipeline.Stage.lookup(fromCollection: inventory, localField: "specs", foreignField: "size", as: "inventory_docs")
-            let match = AggregationPipeline.Stage.matching(["inventory_docs": ["$ne":[] as Document] as Document] as Document)
+            let match = AggregationPipeline.Stage.matching(["inventory_docs": ["$ne":[]]] as Document)
             let pipe = AggregationPipeline(arrayLiteral: unwind, lookup, match)
             
             do {
@@ -164,9 +164,9 @@ class AggregationTests: XCTestCase {
                 XCTAssertEqual(results.count, 1)
                 if results.count == 1 {
                     let document = results[0]
-                    XCTAssertEqual(document[raw: "item"]?.string, "MON1003")
-                    XCTAssertEqual(document[raw: "price"]?.int, 350)
-                    XCTAssertEqual(document[raw: "inventory_docs"]?.documentValue?.arrayValue.count, 1)
+                    XCTAssertEqual(String(document["item"]), "MON1003")
+                    XCTAssertEqual(Int(document["price"]), 350)
+                    XCTAssertEqual([BSONPrimitive](document["inventory_docs"])?.count, 1)
                 }
             } catch let error as MongoError {
                 XCTFail(error.localizedDescription)

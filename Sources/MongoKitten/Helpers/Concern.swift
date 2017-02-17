@@ -20,7 +20,7 @@ public enum WriteConcern: ValueConvertible {
     /// j: Acknowledgement for the completion of writing this information to the journal
     ///
     /// wTimeout: The time in milliseconds that's being waited for the acknowledgement. An error will be thrown otherwise.
-    case custom(w: ValueConvertible, j: Bool?, wTimeout: Int)
+    case custom(w: BSONPrimitive, j: Bool?, wTimeout: Int)
     
     /// Converts this WriteConcern to a BSONPrimitive for embedding
     public func makeBSONPrimitive() -> BSONPrimitive {
@@ -59,7 +59,7 @@ public enum ReadConcern: String, ValueConvertible {
 }
 
 /// https://docs.mongodb.com/manual/reference/collation/#collation-document-fields
-public struct Collation: CustomValueConvertible {
+public struct Collation: ValueConvertible {
     /// The ICU locale
     /// "simple" for binary comparison
     let locale: String
@@ -87,26 +87,6 @@ public struct Collation: CustomValueConvertible {
     /// Determines whether to check if text require normalization and to perform normalization.
     let normalization: Bool
     
-    /// Creates an instance of Alternate from a Collation, if possible
-    public init?(_ value: BSONPrimitive) {
-        guard let doc = value.documentValue else {
-            return nil
-        }
-        
-        guard let caseLevel = doc["caseLevel"] as Bool? else {
-            return nil
-        }
-        
-        self.locale = doc["locale"] as String? ?? "simple"
-        self.strength = (doc.extract("strength") as Strength?) ?? .tertiary
-        self.caseLevel = caseLevel
-        self.numericOrdering = doc["numericOrdering"] as Bool? ?? false
-        self.alternate = (doc.extract("alternate") as Alternate?) ?? .nonIgnorable
-        self.normalization = (doc["normalization"] as Bool?) ?? false
-        self.backwards = (doc["backwards"] as Bool?) ?? false
-        self.maxVariable = doc.extract("maxVariable") as IgnorableCharacters?
-    }
-    
     /// Converts this Collation to a BSONPrimtive so it can be embedded
     public func makeBSONPrimitive() -> BSONPrimitive {
         return [
@@ -122,28 +102,12 @@ public struct Collation: CustomValueConvertible {
     }
     
     /// Determines up to which characters are considered ignorable when alternate: "shifted".
-    public enum IgnorableCharacters: String, CustomValueConvertible {
+    public enum IgnorableCharacters: String, ValueConvertible {
         /// Both whitespaces and punctuation are “ignorable”, i.e. not considered base characters.
         case punct = "punct"
         
         /// Whitespace are “ignorable”, i.e. not considered base characters.
         case space = "space"
-        
-        /// Creates an instance of IgnorableCharacters from a BSONPrimitive, if possible
-        public init?(_ value: BSONPrimitive) {
-            guard let string = value.string else {
-                return nil
-            }
-            
-            switch string {
-            case "punct":
-                self = .punct
-            case "space":
-                self = .space
-            default:
-                return nil
-            }
-        }
         
         /// Converts this object to a BSONPrimitive
         public func makeBSONPrimitive() -> BSONPrimitive {
@@ -152,28 +116,12 @@ public struct Collation: CustomValueConvertible {
     }
     
     /// Determines whether collation should consider whitespace and punctuation as base characters for purposes of comparison.
-    public enum Alternate: String, CustomValueConvertible {
+    public enum Alternate: String, ValueConvertible {
         /// Whitespace and punctuation are considered base characters.
         case nonIgnorable = "non-ignorable"
         
         /// Whitespace and punctuation are not considered base characters and are only distinguished at strength levels greater than 3.
         case shifted
-        
-        /// Creates an instance of Alternate from a BSONPrimitive, if possible
-        public init?(_ value: BSONPrimitive) {
-            guard let string = value.string else {
-                return nil
-            }
-            
-            switch string {
-            case "non-ignorable":
-                self = .nonIgnorable
-            case "shifted":
-                self = .shifted
-            default:
-                return nil
-            }
-        }
         
         /// Converts this to a BSONPrimitive
         public func makeBSONPrimitive() -> BSONPrimitive {
@@ -182,7 +130,7 @@ public struct Collation: CustomValueConvertible {
     }
     
     /// The ICU comparison level: http://userguide.icu-project.org/collation/concepts#TOC-Comparison-Levels
-    public enum Strength: Int32, CustomValueConvertible {
+    public enum Strength: Int32, ValueConvertible {
         /// 1: Performs comparisons of the base characters only, ignoring other differences such as diacritics and case
         case primary = 1
         
@@ -197,28 +145,6 @@ public struct Collation: CustomValueConvertible {
         
         /// 5: Identical texts
         case identical = 5
-        
-        /// Creates a Strength instance from a BSONPrimitive
-        public init?(_ value: BSONPrimitive) {
-            guard let number = value.int32 else {
-                return nil
-            }
-            
-            switch number {
-            case 1:
-                self = .primary
-            case 2:
-                self = .secondary
-            case 3:
-                self = .tertiary
-            case 4:
-                self = .quaternary
-            case 5:
-                self = .identical
-            default:
-                return nil
-            }
-        }
         
         /// Converts this Strength to a BSONPrimitive
         public func makeBSONPrimitive() -> BSONPrimitive {

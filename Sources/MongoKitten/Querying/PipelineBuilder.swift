@@ -89,7 +89,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         public static func projecting(_ projection: Projection) -> Stage {
             return Stage([
                 "$project": projection
-                ] as Document)
+                ])
         }
         
         /// A match stage only passed the documents that match the query to the next stage
@@ -97,7 +97,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         public static func matching(_ query: Query) -> Stage {
             return Stage([
                 "$match": query
-                ] as Document)
+                ])
         }
         
         /// A match stage only passed the documents that match the query to the next stage
@@ -105,15 +105,15 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         public static func matching(_ query: Document) -> Stage {
             return Stage([
                 "$match": query
-                ] as Document)
+                ])
         }
         
         /// Takes a sample with the size of `size`. These randomly selected Documents will be passed to the next stage.
         @discardableResult
         public static func sample(sizeOf size: Int) -> Stage {
             return Stage([
-                "$sample": ["size": size] as Document
-                ] as Document)
+                "$sample": ["size": size]
+                ])
         }
         
         /// This will skip the specified number of input Documents and leave them out. The rest will be passed to the next stage.
@@ -121,7 +121,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         public static func skipping(_ skip: Int) -> Stage {
             return Stage([
                 "$skip": skip
-                ] as Document)
+                ])
         }
         
         /// This will limit the results to the specified number.
@@ -133,7 +133,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         public static func limitedTo(_ limit: Int) -> Stage {
             return Stage([
                 "$limit": limit
-                ] as Document)
+                ])
         }
         
         /// Sorts the input Documents by the specified `Sort` object and passed them in the newly sorted order to the next stage.
@@ -141,7 +141,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         public static func sortedBy(_ sort: Sort) -> Stage {
             return Stage([
                 "$sort": sort
-                ] as Document)
+                ])
         }
         
         /// Groups the input Documents by the specified expression and outputs a Document to the next stage for each distinct grouping.
@@ -153,7 +153,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         public static func grouping(groupDocument: Document) -> Stage {
             return Stage([
                 "$group": groupDocument
-                ] as Document)
+                ])
         }
         
         /// Groups the input Documents by the specified expression and outputs a Document to the next stage for each distinct grouping.
@@ -163,7 +163,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         /// https://docs.mongodb.com/manual/reference/operator/aggregation/group/
         @discardableResult
         public static func grouping(_ id: ExpressionRepresentable, computed computedFields: [String: AccumulatedGroupExpression] = [:]) -> Stage {
-            let groupDocument = computedFields.reduce([:] as Document) { (doc, expressionPair) -> Document in
+            let groupDocument = computedFields.reduce([:]) { (doc, expressionPair) -> Document in
                 guard expressionPair.key != "_id" else {
                     return doc
                 }
@@ -172,14 +172,14 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
                 
                 doc[expressionPair.key] = expressionPair.value.makeDocument()
                 
-                doc[raw: "_id"] = id.makeExpression()
+                doc["_id"] = id.makeExpression()
                 
                 return doc
             }
             
             return Stage([
                 "$group": groupDocument
-                ] as Document)
+                ])
         }
         
         /// Deconstructs an Array at the given path (key).
@@ -187,12 +187,12 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         /// https://docs.mongodb.com/manual/reference/operator/aggregation/unwind/#pipe._S_unwind
         @discardableResult
         public static func unwind(atPath path: String, includeArrayIndex: String? = nil, preserveNullAndEmptyArrays: Bool? = nil) -> Stage {
-            let unwind: ValueConvertible
+            let unwind: BSONPrimitive
             
             if let includeArrayIndex = includeArrayIndex {
                 var unwind1 = [
                     "path": path
-                    ] as Document
+                ] as Document
                 
                 unwind1["includeArrayIndex"] = includeArrayIndex
                 
@@ -205,14 +205,14 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
                 unwind = [
                     "path": path,
                     "preserveNullAndEmptyArrays": preserveNullAndEmptyArrays
-                    ] as Document
+                    ]
             } else {
                 unwind = path
             }
             
             return Stage([
                 "$unwind": unwind
-                ] as Document)
+                ])
         }
         
         /// Performs a left outer join to an unsharded collection in the same database
@@ -224,8 +224,8 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
                     "localField": localField,
                     "foreignField": foreignField,
                     "as": `as`
-                    ] as Document
-                ] as Document)
+                    ]
+                ])
         }
         
         /// Performs a left outer join to an unsharded collection in the same database
@@ -237,8 +237,8 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
                     "localField": localField,
                     "foreignField": foreignField,
                     "as": `as`
-                    ] as Document
-                ] as Document)
+                    ]
+                ])
         }
         
         /// Writes the resulting Documents to the provided Collection
@@ -252,7 +252,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         public static func writeOutput(toCollectionNamed collectionName: String) -> Stage {
             return Stage([
                 "$out": collectionName
-                ] as Document)
+                ])
         }
         
         /// Takes the input Documents and passes them through multiple Aggregation Pipelines. Every pipeline result will be placed at the provided key.
@@ -262,7 +262,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
                 "$facet": Document(dictionaryElements: facet.map {
                     ($0.0, $0.1)
                 })
-                ] as Document)
+                ])
         }
         
         /// Counts the amounts of Documents that have been inputted. Places the result at the provided key.
@@ -270,7 +270,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         public static func counting(insertedAtKey key: String) -> Stage {
             return Stage([
                 "$count": key
-                ] as Document)
+                ])
         }
         
         /// Takes an embedded Document resulting from the provided expression and replaces the entire Document with this result.
@@ -281,8 +281,8 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
             return Stage([
                 "$replaceRoot": [
                     "newRoot": expression.makeExpression()
-                    ] as Document
-                ] as Document)
+                    ]
+                ])
         }
         
         /// Adds fields to the inputted Documents and sends these new Documents to the next stage.
@@ -292,7 +292,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
                 "$addFields": Document(dictionaryElements: fields.map {
                     ($0.0, $0.1.makeExpression())
                 })
-                ] as Document)
+                ])
         }
 
         /// Runs a geospatial query on the inputted Documents
@@ -300,7 +300,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         /// Outputs all documents that are near the provided location in the options matching the parameters
         @discardableResult
         public static func geoNear(geoNearOption: GeoNearOption) -> Stage {
-            return Stage(["$geoNear": geoNearOption] as Document)
+            return Stage(["$geoNear": geoNearOption])
         }
     }
 }
@@ -310,13 +310,13 @@ public enum Expression: ValueConvertible {
     /// A literal value
     ///
     /// Any String starting with a `$` will be seen as a pointer to a Document key. In this case the value at that key will be used instead.
-    case literal(ValueConvertible)
+    case literal(BSONPrimitive)
     
     /// Converts an expression to a BSONPrimitive for easy embedding in Documents
     public func makeBSONPrimitive() -> BSONPrimitive {
         switch self {
         case .literal(let val):
-            return val.makeBSONPrimitive()
+            return val
         }
     }
 }
@@ -410,14 +410,6 @@ extension Int: ExpressionRepresentable {
 /// Converts Int32 to a literal Expression
 extension Int32: ExpressionRepresentable {
     /// Converts Int32 to a literal Expression
-    public func makeExpression() -> Expression {
-        return .literal(self)
-    }
-}
-
-/// Converts Int64 to a literal Expression
-extension Int64: ExpressionRepresentable {
-    /// Converts Int64 to a literal Expression
     public func makeExpression() -> Expression {
         return .literal(self)
     }

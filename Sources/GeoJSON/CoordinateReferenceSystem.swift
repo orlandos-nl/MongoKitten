@@ -26,7 +26,7 @@ public struct CoordinateReferenceSystem {
 extension CoordinateReferenceSystem: ValueConvertible {
     /// Converts the CoordinateReferenceSystem to an embeddable BSON Type
     public func makeBSONPrimitive() -> BSONPrimitive {
-        return ["type": "name", "properties": ["name": self.typeName] as Document] as Document
+        return ["type": "name", "properties": ["name": self.typeName]] as Document
     }
 }
 

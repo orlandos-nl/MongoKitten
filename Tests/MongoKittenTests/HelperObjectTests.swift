@@ -15,7 +15,6 @@ import XCTest
 class HelperObjectTests: XCTestCase {
     static var allTests: [(String, (HelperObjectTests) -> () throws -> Void)] {
         return [
-            ("testSort", testSort),
             ("testIndex", testIndex),
             ("testProjection", testProjection),
             ("testWriteConcern", testWriteConcern),
@@ -25,21 +24,9 @@ class HelperObjectTests: XCTestCase {
         ]
     }
     
-    func testSort() throws {
-        guard let kaas = Sort(([
-            "order": Int32(-1),
-            "otherOrder": Int32(1)
-            ] as Document) as BSONPrimitive) else {
-                XCTFail()
-                return
-        }
-        
-        XCTAssertEqual(kaas.makeDocument(), (["order": .descending, "otherOrder": .ascending] as Sort).makeDocument())
-    }
-    
     func testIndex() throws {
-        XCTAssertEqual(IndexParameter.TextIndexVersion.one.makeBSONPrimitive() as? Int32, Int32(1))
-        XCTAssertEqual(IndexParameter.TextIndexVersion.two.makeBSONPrimitive() as? Int32, Int32(2))
+        XCTAssertEqual(Int32(IndexParameter.TextIndexVersion.one.makeBSONPrimitive()), Int32(1))
+        XCTAssertEqual(Int32(IndexParameter.TextIndexVersion.two.makeBSONPrimitive()), Int32(2))
     }
     
     func testCustomValueConvertible() {
@@ -48,11 +35,11 @@ class HelperObjectTests: XCTestCase {
             "embedded": [
                 "document": [
                     "value": specialData
-                ] as Document
-            ] as Document
+                ]
+            ]
         ]
         
-        guard let newSpecialData = doc.extract("embedded", "document", "value") as SpecialData? else {
+        guard let newSpecialData = SpecialData(doc["embedded"]["document"]["value"]) else {
             XCTFail()
             return
         }
@@ -72,13 +59,13 @@ class HelperObjectTests: XCTestCase {
                 "name": true,
                 "age": true,
                 "gender": true
-            ] as Document)
+            ])
     }
     
     func testReadConcern() {
         XCTAssertEqual(ReadConcern.local.makeBSONPrimitive() as? Document, [
                 "level": ReadConcern.local.rawValue
-            ] as Document)
+            ])
     }
     
     func testWriteConcern() {
@@ -88,7 +75,7 @@ class HelperObjectTests: XCTestCase {
                 "w": "majority",
                 "j": true,
                 "wtimeout": 0
-            ] as Document)
+            ])
     }
     
     func testCollation() {
@@ -96,7 +83,7 @@ class HelperObjectTests: XCTestCase {
     }
 }
 
-struct SpecialData : CustomValueConvertible, Equatable {
+struct SpecialData : ValueConvertible, Equatable {
     public static func ==(lhs: SpecialData, rhs: SpecialData) -> Bool {
         return lhs.stringData == rhs.stringData && lhs.intData == rhs.intData
     }
@@ -109,12 +96,12 @@ struct SpecialData : CustomValueConvertible, Equatable {
         self.intData = int
     }
     
-    init?(_ value: BSONPrimitive) {
+    init?(_ value: BSONPrimitive?) {
         guard let value = value as? Document else {
             return nil
         }
         
-        guard let s = value["string"] as String?, let i = value["int"] as Int? else {
+        guard let s = value["string"] as? String, let i = Int(value["int"]) else {
             return nil
         }
         
@@ -126,6 +113,6 @@ struct SpecialData : CustomValueConvertible, Equatable {
         return [
             "string": self.stringData,
             "int": self.intData
-        ] as Document
+        ]
     }
 }

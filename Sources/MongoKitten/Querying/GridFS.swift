@@ -144,7 +144,7 @@ public class GridFS {
     /// - parameter inChunksOf: The amount of bytes to put in one chunk
     ///
     /// TODO: Accept data streams
-    public func store(data binary: [UInt8], named filename: String? = nil, withType contentType: String? = nil, usingMetadata metadata: ValueConvertible? = nil, inChunksOf chunkSize: Int = 255_000) throws -> ObjectId {
+    public func store(data binary: [UInt8], named filename: String? = nil, withType contentType: String? = nil, usingMetadata metadata: BSONPrimitive? = nil, inChunksOf chunkSize: Int = 255_000) throws -> ObjectId {
         guard chunkSize < 15_000_000 else {
             throw MongoError.invalidChunkSize(chunkSize: chunkSize)
         }
@@ -160,7 +160,7 @@ public class GridFS {
         
         var insertData: Document = [
             "_id": id,
-            "length": Int64(dataSize),
+            "length": dataSize,
             "chunkSize": Int32(chunkSize),
             "uploadDate": Date(timeIntervalSinceNow: 0),
         ]
@@ -174,7 +174,7 @@ public class GridFS {
         }
         
         if let metadata = metadata {
-            insertData[raw: "metadata"] = metadata
+            insertData["metadata"] = metadata
         }
         
         var n = 0
@@ -190,8 +190,8 @@ public class GridFS {
                 }
                 
                 _ = try chunks.insert(["files_id": id,
-                                       "n": Int64(n),
-                                       "data": Binary(data: chunk, withSubtype: .generic)] as Document)
+                                       "n": n,
+                                       "data": Binary(data: chunk, withSubtype: .generic)])
                 
                 n += 1
                 
@@ -221,7 +221,7 @@ public class GridFS {
     /// - parameter withType: The optional MIME type to use for this data
     /// - parameter usingMetadata: The optional metadata to store with this file
     /// - parameter inChunksOf: The amount of bytes to put in one chunk
-    public func store(data nsdata: NSData, named filename: String? = nil, withType contentType: String? = nil, usingMetadata metadata: ValueConvertible? = nil, inChunksOf chunkSize: Int = 255000) throws -> ObjectId {
+    public func store(data nsdata: NSData, named filename: String? = nil, withType contentType: String? = nil, usingMetadata metadata: BSONPrimitive? = nil, inChunksOf chunkSize: Int = 255000) throws -> ObjectId {
         return try self.store(data: Array(Data(referencing: nsdata)), named: filename, withType: contentType, usingMetadata: metadata, inChunksOf: chunkSize)
     }
     
@@ -231,7 +231,7 @@ public class GridFS {
         public let id: ObjectId
         
         /// The amount of bytes in this file
-        public let length: Int64
+        public let length: Int
         
         /// The amount of data per chunk
         public let chunkSize: Int32
@@ -252,7 +252,7 @@ public class GridFS {
         public let aliases: [String]?
         
         /// The metadata for this file (if any)
-        public let metadata: ValueConvertible?
+        public let metadata: BSONPrimitive?
         
         /// The collection where the chunks are stored
         let chunksCollection: Collection
@@ -266,11 +266,11 @@ public class GridFS {
         /// - parameter chunksCollection: The `Collection` where the `File` `Chunk`s are stored
         /// - parameter chunksCollection: The `Collection` where the `File` data is stored
         internal init?(document: Document, chunksCollection: Collection, filesCollection: Collection) {
-            guard let id = document["_id"] as ObjectId?,
-                let length = document["length"] as Int64?,
-                let chunkSize = document["chunkSize"] as Int32?,
-                let uploadDate = document["uploadDate"] as Date?,
-                let md5 = document["md5"] as String?
+            guard let id = document["_id"] as? ObjectId,
+                let length = Int(document["length"]),
+                let chunkSize = Int32(document["chunkSize"]),
+                let uploadDate = document["uploadDate"] as? Date,
+                let md5 = document["md5"] as? String
                 else {
                     return nil
             }
@@ -284,19 +284,19 @@ public class GridFS {
             self.uploadDate = uploadDate
             self.md5 = md5
             
-            self.filename = document["filename"] as String?
-            self.contentType = document["contentType"] as String?
+            self.filename = document["filename"] as? String
+            self.contentType = document["contentType"] as? String
             
             var aliases = [String]()
             
-            for alias in (document["aliases"] as Document?)?.arrayValue ?? [] {
-                if let alias = alias.stringValue {
+            for alias in [BSONPrimitive](document["aliases"]) ?? [] {
+                if let alias = alias as? String {
                     aliases.append(alias)
                 }
             }
             
             self.aliases = aliases
-            self.metadata = document[raw: "metadata"]
+            self.metadata = document["metadata"]
         }
         
         /// Finds all or specific chunks
@@ -336,7 +336,7 @@ public class GridFS {
                 throw MongoError.negativeDataRequested
             }
             
-            let cursor = try chunksCollection.find(matching: ["files_id": id], sortingBy: ["n": .ascending], skipping: skipChunks, limitingTo: endChunk - skipChunks)
+            let cursor = try chunksCollection.find(matching: ["files_id": id], sortedBy: ["n": .ascending], skipping: skipChunks, limitedTo: endChunk - skipChunks)
             let chunkCursor = Cursor(base: cursor, transform: { Chunk(document: $0, chunksCollection: self.chunksCollection, filesCollection: self.filesCollection) })
             var allData = [UInt8]()
             
@@ -385,7 +385,7 @@ public class GridFS {
         public func chunked() throws -> AnyIterator<Chunk> {
             let query: Document = ["files_id": id]
             
-            let cursor = try chunksCollection.find(matching: Query(query), sortingBy: ["n": .ascending])
+            let cursor = try chunksCollection.find(matching: Query(query), sortedBy: ["n": .ascending])
             
             let chunkCursor = Cursor(base: cursor, transform: { Chunk(document: $0, chunksCollection: self.chunksCollection, filesCollection: self.filesCollection) })
             
@@ -414,9 +414,9 @@ public class GridFS {
             
             /// Initializes with a `Document` found when looking for chunks
             init?(document: Document, chunksCollection: Collection, filesCollection: Collection) {
-                guard let id = document["_id"] as ObjectId?,
-                    let filesID = document["files_id"] as ObjectId?,
-                    let binary = document["data"] as Binary? else {
+                guard let id = document["_id"] as? ObjectId,
+                    let filesID = document["files_id"] as? ObjectId,
+                    let binary = document["data"] as? Binary else {
                         return nil
                 }
                 
@@ -425,7 +425,7 @@ public class GridFS {
                 
                 self.id = id
                 self.filesID = filesID
-                self.n = document["n"] as Int32? ?? -1
+                self.n = Int32(document["n"]) ?? -1
                 self.data = binary.makeBytes()
             }
         }

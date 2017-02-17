@@ -46,7 +46,7 @@ class AuthenticationTests: XCTestCase {
         let document = try collection.findOne()
         XCTAssertNotNil(document)
 
-        XCTAssertEqual(document?[raw:"hello"]?.string, "world")
+        XCTAssertEqual(String(document?["hello"]), "world")
     }
 
 

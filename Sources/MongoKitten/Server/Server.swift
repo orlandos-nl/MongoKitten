@@ -162,12 +162,12 @@ public final class Server {
                 throw InternalMongoError.incorrectReply(reply: response)
             }
             
-            var maxMessageSizeBytes = doc["maxMessageSizeBytes"] as Int32? ?? 0
+            var maxMessageSizeBytes = Int32(doc["maxMessageSizeBytes"]) ?? 0
             if maxMessageSizeBytes == 0 {
                 maxMessageSizeBytes = 48000000
             }
             
-            self.serverData = (maxWriteBatchSize: doc[raw: "maxWriteBatchSize"]?.int32 ?? 1000, maxWireVersion: doc[raw: "maxWireVersion"]?.int32 ?? 4, minWireVersion: doc[raw: "minWireVersion"]?.int32 ?? 0, maxMessageSizeBytes: maxMessageSizeBytes)
+            self.serverData = (maxWriteBatchSize: Int32(doc["maxWriteBatchSize"]) ?? 1000, maxWireVersion: Int32(doc["maxWireVersion"]) ?? 4, minWireVersion: Int32(doc["minWireVersion"]) ?? 0, maxMessageSizeBytes: maxMessageSizeBytes)
         }
         
         self.buildInfo = try getBuildInfo()
@@ -267,16 +267,16 @@ public final class Server {
                 }
                 
                 isMasterTest: if let doc = documents.first {
-                    if doc["ismaster"] as Bool? == true {
+                    if doc["ismaster"] as? Bool == true {
                         logger.debug("Found a master connection at \(host.hostname):\(host.port)")
                         host.isPrimary = true
-                        guard let batchSize = doc["maxWriteBatchSize"] as Int32?, let minWireVersion = doc["minWireVersion"] as Int32?, let maxWireVersion = doc["maxWireVersion"] as Int32? else {
+                        guard let batchSize = Int32(doc["maxWriteBatchSize"]), let minWireVersion = Int32(doc["minWireVersion"]), let maxWireVersion = Int32(doc["maxWireVersion"]) else {
                             logger.debug("No usable ismaster response found. Assuming defaults.")
                             serverData = (maxWriteBatchSize: 1000, maxWireVersion: 4, minWireVersion: 0, maxMessageSizeBytes: 48000000)
                             break isMasterTest
                         }
                         
-                        var maxMessageSizeBytes = doc["maxMessageSizeBytes"] as Int32? ?? 0
+                        var maxMessageSizeBytes = Int32(doc["maxMessageSizeBytes"]) ?? 0
                         if maxMessageSizeBytes == 0 {
                             maxMessageSizeBytes = 48000000
                         }
@@ -712,13 +712,13 @@ public final class Server {
     /// - returns: All databases
     public func getDatabases() throws -> [Database] {
         let infos = try getDatabaseInfos()
-        guard let databaseInfos = infos["databases"] as Document? else {
+        guard let databaseInfos = infos["databases"] as? Document else {
             throw MongoError.commandError(error: "No database Document found")
         }
         
         var databases = [Database]()
         for case (_, let dbDef) in databaseInfos {
-            guard let dbDef = dbDef as? Document, let name = dbDef["name"] as String? else {
+            guard let dbDef = dbDef as? Document, let name = dbDef["name"] as? String else {
                 logger.error("Fetching databases list was not successful because a database name was missing")
                 logger.error(databaseInfos)
                 throw MongoError.commandError(error: "No database name found")
@@ -768,7 +768,7 @@ public final class Server {
         let reply = try self["admin"].execute(command: command)
         let response = try firstDocument(in: reply)
         
-        guard response["ok"] as Int? == 1 else {
+        guard Int(response["ok"]) == 1 else {
             logger.error("copydb was not successful because of the following error")
             logger.error(response)
             throw MongoError.commandFailure(error: response)
@@ -790,7 +790,7 @@ public final class Server {
         let reply = try self["admin"].execute(command: command)
         let response = try firstDocument(in: reply)
         
-        guard response["ok"] as Int? == 1 else {
+        guard Int(response["ok"]) == 1 else {
             logger.error("clone was not successful because of the following error")
             logger.error(response)
             throw MongoError.commandFailure(error: response)
@@ -815,7 +815,7 @@ public final class Server {
         
         let response = try firstDocument(in: try self["$cmd"].execute(command: command))
         
-        guard response["ok"] as Int? == 1 else {
+        guard Int(response["ok"]) == 1 else {
             logger.error("shutdown was not successful because of the following error")
             logger.error(response)
             throw MongoError.commandFailure(error: response)
@@ -844,7 +844,7 @@ public final class Server {
         let reply = try self[self.clientSettings.credentials?.database ?? "admin"].execute(command: command, writing: true)
         let response = try firstDocument(in: reply)
         
-        guard response["ok"] as Int? == 1 else {
+        guard Int(response["ok"]) == 1 else {
             logger.error("fsync was not successful because of the following error")
             logger.error(response)
             throw MongoError.commandFailure(error: response)
@@ -865,7 +865,7 @@ public final class Server {
     /// - returns: The user's information (plus optionally the credentials and privileges)
     public func getUserInfo(forUserNamed user: String, inDatabase database: Database? = nil, showCredentials: Bool? = nil, showPrivileges: Bool? = nil) throws -> Document {
         var command: Document = [
-            "usersInfo": ["user": user, "db": (database?.name ?? "admin")] as Document
+            "usersInfo": ["user": user, "db": (database?.name ?? "admin")]
         ]
         
         if let showCredentials = showCredentials {
@@ -880,13 +880,13 @@ public final class Server {
         
         let document = try firstDocument(in: try db.execute(command: command, writing: false))
         
-        guard document["ok"] as Int? == 1 else {
+        guard Int(document["ok"]) == 1 else {
             logger.error("usersInfo was not successful because of the following error")
             logger.error(document)
             throw MongoError.commandFailure(error: document)
         }
         
-        guard let users = document["users"] as Document? else {
+        guard let users = document["users"] as? Document else {
             logger.error("The user Document received from `usersInfo` could was not recognizable")
             logger.error(document)
             throw MongoError.commandError(error: "No users found")

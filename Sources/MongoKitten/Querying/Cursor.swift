@@ -25,7 +25,7 @@ public final class Cursor<T> {
     public let collection: Collection
     
     /// The cursor's identifier that allows us to fetch more data from the server
-    fileprivate var cursorID: Int64
+    fileprivate var cursorID: Int
     
     /// The amount of Documents to receive each time from the server
     fileprivate let chunkSize: Int32
@@ -56,15 +56,15 @@ public final class Cursor<T> {
     
     /// This initializer creates a base cursor from a replied Document
     internal convenience init(cursorDocument cursor: Document, collection: Collection, chunkSize: Int32, transform: @escaping Transformer) throws {
-        guard let cursorID = cursor["id"] as Int64?, let namespace = cursor["ns"] as String?, let firstBatch = cursor["firstBatch"] as Document? else {
+        guard let cursorID = Int(cursor["id"]), let namespace = cursor["ns"] as? String, let firstBatch = cursor["firstBatch"] as? Document else {
             throw MongoError.cursorInitializationError(cursorDocument: cursor)
         }
         
-        self.init(namespace: namespace, collection: collection, cursorID: cursorID, initialData: firstBatch.arrayValue.flatMap{$0.documentValue}.flatMap(transform), chunkSize: chunkSize, transform: transform)
+        self.init(namespace: namespace, collection: collection, cursorID: cursorID, initialData: firstBatch.arrayValue.flatMap{ $0 as? Document }.flatMap(transform), chunkSize: chunkSize, transform: transform)
     }
     
     /// This initializer creates a base cursor from provided specific data
-    internal init(namespace: String, collection: Collection, cursorID: Int64, initialData: [T], chunkSize: Int32, transform: @escaping Transformer) {
+    internal init(namespace: String, collection: Collection, cursorID: Int, initialData: [T], chunkSize: Int32, transform: @escaping Transformer) {
         self.namespace = namespace
         self.collection = collection
         self.cursorID = cursorID
@@ -98,7 +98,7 @@ public final class Cursor<T> {
         do {
             if collection.database.server.serverData?.maxWireVersion ?? 0 >= 4 {
                 let reply = try collection.database.execute(command: [
-                    "getMore": Int64(self.cursorID),
+                    "getMore": Int(self.cursorID),
                     "collection": collection.name,
                     "batchSize": Int32(chunkSize)
                     ], writing: false)
@@ -108,14 +108,14 @@ public final class Cursor<T> {
                     throw InternalMongoError.incorrectReply(reply: reply)
                 }
                 
-                let documents = resultDocs.first?["cursor", "nextBatch"] as Document? ?? []
-                for value in documents.arrayValue {
-                    if let doc = transform(value.documentValue ?? [:]) {
+                let documents = [BSONPrimitive](resultDocs.first?["cursor"]["nextBatch"]) ?? []
+                for value in documents {
+                    if let doc = transform(value as? Document ?? [:]) {
                         self.data.append(doc)
                     }
                 }
                 
-                self.cursorID = resultDocs.first?["cursor", "id"] as Int64? ?? -1
+                self.cursorID = Int(resultDocs.first?["cursor"]["id"]) ?? -1
             } else {
                 let connection = try collection.database.server.reserveConnection(authenticatedFor: self.collection.database)
                 

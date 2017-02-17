@@ -11,7 +11,7 @@
 import BSON
 
 /// A semantic version
-public struct Version: CustomValueConvertible, Comparable {
+public struct Version: ValueConvertible, Comparable {
     /// -
     public let major: Int
     
@@ -29,8 +29,8 @@ public struct Version: CustomValueConvertible, Comparable {
     }
     
     /// Converts to this from a String
-    public init?(_ value: BSONPrimitive) {
-        guard let value = value as? String else {
+    public init?(_ value: BSONPrimitive?) {
+        guard let value = String(value) else {
             return nil
         }
         
@@ -119,7 +119,7 @@ public struct Version: CustomValueConvertible, Comparable {
 }
 
 /// MongoDB build information
-public struct BuildInfo: CustomValueConvertible {
+public struct BuildInfo: ValueConvertible {
     /// The git version
     public let gitVersion: String
     
@@ -147,50 +147,37 @@ public struct BuildInfo: CustomValueConvertible {
     /// The add-on modules on the server
     public let modules: Document
     
-    /// Creates this object from a Document
-    public init?(_ value: BSONPrimitive) {
-        guard let value = value as? Document else {
-            return nil
-        }
-        
-        guard let info = try? BuildInfo(fromDocument: value) else {
-            return nil
-        }
-        
-        self = info
-    }
-    
     /// Creates this from a Document, but throwable
     public init(fromDocument document: Document) throws {
-        guard let gitVersion = document["gitVersion"] as String? else {
+        guard let gitVersion = document["gitVersion"] as? String else {
             throw MongoError.invalidBuildInfoDocument
         }
         
-        guard let versionArray = document["versionArray"] as Document? else {
+        guard let versionArray = document["versionArray"] as? Document else {
             throw MongoError.invalidBuildInfoDocument
         }
         
-        guard let version = document.extract("version") as Version? else {
+        guard let version = Version(document["version"]) else {
             throw MongoError.invalidBuildInfoDocument
         }
         
-        let storageEngines = document["storageEngines"] as Document?
+        let storageEngines = document["storageEngines"] as? Document
         
-        guard let bits = document["bits"] as Int? else {
+        guard let bits = Int(document["bits"]) else {
             throw MongoError.invalidBuildInfoDocument
         }
         
-        guard let debug = document["debug"] as Bool? else {
+        guard let debug = document["debug"] as? Bool else {
             throw MongoError.invalidBuildInfoDocument
         }
         
-        guard let maxBsonObjectSize = document["maxBsonObjectSize"] as Int? else {
+        guard let maxBsonObjectSize = Int(document["maxBsonObjectSize"]) else {
             throw MongoError.invalidBuildInfoDocument
         }
         
-        let openSSL = document["openssl"] as Document?
+        let openSSL = document["openssl"] as? Document
         
-        let modules = document["modules"] as Document? ?? []
+        let modules = (document["modules"] as? Document) ?? []
         
         self.gitVersion = gitVersion
         self.versionArray = versionArray

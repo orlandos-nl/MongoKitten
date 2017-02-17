@@ -27,7 +27,7 @@ extension Collection {
         
         let document = try firstDocument(in: try database.execute(command: command))
         
-        guard document["ok"] as Int? == 1 else {
+        guard Int(document["ok"]) == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -41,7 +41,7 @@ extension Collection {
     /// For more information: https://docs.mongodb.com/manual/reference/command/convertToCapped/#dbcmd.convertToCapped
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func convertToCapped(cappingAt cap: Int32) throws {
+    public func convertToCapped(cappingAt cap: Int) throws {
         let command: Document = [
             "convertToCapped": self.name,
             "size": Int32(cap)
@@ -49,7 +49,7 @@ extension Collection {
         
         let document = try firstDocument(in: try database.execute(command: command))
         
-        guard document["ok"] as Int? == 1 else {
+        guard Int(document["ok"]) == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -68,7 +68,7 @@ extension Collection {
         
         let document = try firstDocument(in: try database.execute(command: command))
         
-        guard document["ok"] as Int? == 1 else {
+        guard Int(document["ok"]) == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -93,7 +93,7 @@ extension Collection {
         
         let document = try firstDocument(in: try database.execute(command: command))
         
-        guard document["ok"] as Int? == 1 else {
+        guard Int(document["ok"]) == 1 else {
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -106,7 +106,7 @@ extension Collection {
     /// - parameter capped: The cap to apply
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func clone(toCappedCollectionNamed otherCollection: String, capped: Int32) throws {
+    public func clone(toCappedCollectionNamed otherCollection: String, capped: Int) throws {
         try database.clone(collection: self, toCappedCollectionNamed: otherCollection, cappedTo: capped)
     }
 }

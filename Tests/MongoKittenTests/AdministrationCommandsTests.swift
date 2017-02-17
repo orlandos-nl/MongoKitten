@@ -55,11 +55,11 @@ class AdministrationCommandsTests: XCTestCase {
         for db in TestManager.dbs {
             try db.createUser("mongokitten-henk", password: "banapple", roles: [], customData: ["num": Int32(3)])
             let info = try db.server.getUserInfo(forUserNamed: "mongokitten-henk", inDatabase: db)
-            XCTAssertEqual(info[0, "customData", "num"] as Int32?, Int32(3))
+            XCTAssertEqual(Int32(info[0]["customData"]["num"]), Int32(3))
             
             try db.update(user: "mongokitten-henk", password: "banappol", roles: [], customData: ["num": Int32(5)])
             let newInfo = try db.server.getUserInfo(forUserNamed: "mongokitten-henk", inDatabase: db)
-            XCTAssertEqual(newInfo[0, "customData", "num"] as Int32?, 5)
+            XCTAssertEqual(Int32(newInfo[0]["customData"]["num"]), 5)
             
             try db.drop(user: "mongokitten-henk")
             
@@ -79,7 +79,7 @@ class AdministrationCommandsTests: XCTestCase {
     func testCollection() throws {
         for db in TestManager.dbs {
             let test = db["test"]
-            _ = try test.insert(["your": ["int": 3] as Document] as Document)
+            _ = try test.insert(["your": ["int": 3]])
             try db["test"].compact()
             XCTAssertEqual(try test.count(), 1)
             

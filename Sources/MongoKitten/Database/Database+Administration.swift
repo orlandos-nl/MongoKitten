@@ -35,15 +35,15 @@ extension Database {
 
         if let options = options {
             for option in options {
-                command[raw: option.key] = option.value
+                command[option.key] = option.value
             }
         }
         
-        command[raw: "validator"] = validator
+        command["validator"] = validator
 
         let document = try firstDocument(in: try execute(command: command))
 
-        guard document["ok"] as Int? == 1 else {
+        guard Int(document["ok"]) == 1 else {
             logger.error("createCollection for collection \"\(name)\" was not successful because of the following error")
             logger.error(document)
             logger.error("createCollection failed with the following options:")
@@ -73,7 +73,7 @@ extension Database {
 
         let result = try firstDocument(in: reply)
 
-        guard let cursor = result["cursor"] as Document?, result["ok"] as Int? == 1 else {
+        guard let cursor = result["cursor"] as? Document, Int(result["ok"]) == 1 else {
             logger.error("The collection infos could not be fetched because of the following error")
             logger.error(result)
             logger.error("The collection infos were being found using the following filter")
@@ -94,7 +94,11 @@ extension Database {
     public func listCollections(matching filter: Document? = nil) throws -> Cursor<Collection> {
         let infoCursor = try self.getCollectionInfos(matching: filter)
         return Cursor(base: infoCursor) { collectionInfo in
-            return self[collectionInfo["name"] as String? ?? ""]
+            guard let name = collectionInfo["name"] as? String else {
+                return nil
+            }
+            
+            return self[name]
         }
     }
 
@@ -110,7 +114,7 @@ extension Database {
 
         let document = try firstDocument(in: try execute(command: command))
 
-        guard document["ok"] as Int? == 1 else {
+        guard Int(document["ok"]) == 1 else {
             logger.error("dropDatabase was not successful for \"\(self.name)\" because of the following error")
             logger.error(document)
             throw MongoError.commandFailure(error: document)
@@ -149,7 +153,7 @@ extension Database {
 
         let document = try firstDocument(in: try execute(command: command))
 
-        guard document["ok"] as Int? == 1 else {
+        guard Int(document["ok"]) == 1 else {
             logger.error("cloneCollection was not successful because of the following error")
             logger.error(document)
             throw MongoError.commandFailure(error: document)
@@ -179,11 +183,11 @@ extension Database {
         let document = try firstDocument(in: try execute(command: command))
 
         // If we're done
-        if document["done"] as Bool? == true {
+        if document["done"] as? Bool == true {
             return
         }
 
-        guard document["ok"] as Int? == 1 else {
+        guard Int(document["ok"]) == 1 else {
             logger.error("cloneCollection was not successful because of the following error")
             logger.error(document)
             throw MongoError.commandFailure(error: document)
@@ -199,7 +203,7 @@ extension Database {
     /// - parameter capped: The new cap
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func clone(collection instance: Collection, toCappedCollectionNamed otherCollection: String, cappedTo capped: Int32) throws {
+    public func clone(collection instance: Collection, toCappedCollectionNamed otherCollection: String, cappedTo capped: Int) throws {
         let command: Document = [
             "cloneCollectionAsCapped": instance.name,
             "toCollection": otherCollection,
@@ -208,7 +212,7 @@ extension Database {
 
         let document = try firstDocument(in: try execute(command: command))
 
-        guard document["ok"] as Int? == 1 else {
+        guard Int(document["ok"]) == 1 else {
             logger.error("cloneCollectionAsCapped was not successful because of the following error")
             logger.error(document)
             throw MongoError.commandFailure(error: document)

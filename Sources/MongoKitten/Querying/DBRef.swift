@@ -16,7 +16,7 @@ public struct DBRef: ValueConvertible {
     var collection: Collection
     
     /// The referenced Document's _id
-    var id: ValueConvertible
+    var id: BSONPrimitive
     
     /// Converts this DBRef to a BSONPrimitive for easy embedding
     public func makeBSONPrimitive() -> BSONPrimitive {
@@ -27,7 +27,7 @@ public struct DBRef: ValueConvertible {
     ///
     /// - parameter reference: The _id of the referenced object
     /// - parameter collection: The collection where this references object resides
-    public init(referencing reference: ValueConvertible, inCollection collection: Collection) {
+    public init(referencing reference: BSONPrimitive, inCollection collection: Collection) {
         self.id = reference
         self.collection = collection
     }
@@ -36,13 +36,13 @@ public struct DBRef: ValueConvertible {
     ///
     /// This initializer fails when the Document isn't a valid DBRef Document
     public init?(_ document: Document, inServer server: Server) {
-        guard let database = document["$db"] as String?, let collection = document["$ref"] as String? else {
+        guard let database = document["$db"] as? String, let collection = document["$ref"] as? String else {
             server.logger.debug("Provided DBRef document is not valid")
             server.logger.debug(document)
             return nil
         }
         
-        guard let id = document[raw: "$id"] else {
+        guard let id = document["$id"] else {
             return nil
         }
         
@@ -54,11 +54,11 @@ public struct DBRef: ValueConvertible {
     ///
     /// This initializer fails when the Document isn't a valid DBRef Document
     public init?(_ document: Document, inDatabase database: Database) {
-        guard let collection = document["$ref"] as String? else {
+        guard let collection = document["$ref"] as? String else {
             return nil
         }
         
-        guard let id = document[raw: "$id"] else {
+        guard let id = document["$id"] else {
             return nil
         }
         

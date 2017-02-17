@@ -89,7 +89,7 @@ enum Message {
         let responseTo = data[8...11].makeInt32()
         
         let flags = data[16...19].makeInt32()
-        let cursorID = data[20...27].makeInt64()
+        let cursorID = Int(data[20...27].makeInt64())
         let startingFrom = data[28...31].makeInt32()
         let numbersReturned = data[32...35].makeInt32()
         let documents = [Document](bsonBytes: data[36..<data.endIndex]*)
@@ -179,7 +179,7 @@ enum Message {
     /// - parameter startingFrom: The position in this cursor to start
     /// - parameter numbersReturned: The amount of returned results in this reply
     /// - parameter documents: The documents that have been returned
-    case Reply(requestID: Int32, responseTo: Int32, flags: ReplyFlags, cursorID: Int64, startingFrom: Int32, numbersReturned: Int32, documents: [Document])
+    case Reply(requestID: Int32, responseTo: Int32, flags: ReplyFlags, cursorID: Int, startingFrom: Int32, numbersReturned: Int32, documents: [Document])
     
     /// Updates data on the server using an older method
     /// - parameter requestID: The Request ID that you can get from the server by calling `server.nextMessageID()`
@@ -211,7 +211,7 @@ enum Message {
     /// - parameter namespace: The namespace to get more information from like `mydatabase.mycollection` or `mydatabase.mybucket.mycollection`
     /// - parameter numbersToReturn: The amount of results to return
     /// - parameter cursor: The ID of the cursor that we will fetch more information from
-    case GetMore(requestID: Int32, namespace: String, numberToReturn: Int32, cursor: Int64)
+    case GetMore(requestID: Int32, namespace: String, numberToReturn: Int32, cursor: Int)
     
     /// Delete data from the server using an older method
     /// - parameter requestID: The Request ID that you can get from the server by calling `server.nextMessageID()`
@@ -221,5 +221,21 @@ enum Message {
     /// The message we send when we don't need the selected information anymore
     /// - parameter requestID: The Request ID that you can get from the server by calling `server.nextMessageID()`
     /// - parameter cursorIDs: The list of IDs that refer to cursors that need to be killed
-    case KillCursors(requestID: Int32, cursorIDs: [Int64])
+    case KillCursors(requestID: Int32, cursorIDs: [Int])
+}
+
+extension Swift.Collection where Self.Iterator.Element == UInt8, Self.Index == Int {
+    fileprivate func makeInt64() -> Int64 {
+        var number: Int64 = 0
+        number |= self.count > 7 ? Int64(self[startIndex.advanced(by: 7)]) << 56 : 0
+        number |= self.count > 6 ? Int64(self[startIndex.advanced(by: 6)]) << 48 : 0
+        number |= self.count > 5 ? Int64(self[startIndex.advanced(by: 5)]) << 40 : 0
+        number |= self.count > 4 ? Int64(self[startIndex.advanced(by: 4)]) << 32 : 0
+        number |= self.count > 3 ? Int64(self[startIndex.advanced(by: 3)]) << 24 : 0
+        number |= self.count > 2 ? Int64(self[startIndex.advanced(by: 2)]) << 16 : 0
+        number |= self.count > 1 ? Int64(self[startIndex.advanced(by: 1)]) << 8 : 0
+        number |= self.count > 0 ? Int64(self[startIndex.advanced(by: 0)]) << 0 : 0
+        
+        return number
+    }
 }

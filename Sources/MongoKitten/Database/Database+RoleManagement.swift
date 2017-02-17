@@ -28,7 +28,7 @@ extension Database {
 
         let document = try firstDocument(in: try execute(command: command))
 
-        guard document["ok"] as Int? == 1 else {
+        guard Int(document["ok"]) == 1 else {
             logger.error("grantRolesToUser for user \"\(user)\" was not successful because of the following error")
             logger.error(document)
             logger.error("grantRolesToUser failed with the following roles")

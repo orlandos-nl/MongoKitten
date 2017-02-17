@@ -12,21 +12,16 @@ import Foundation
 import BSON
 import GeoJSON
 
-#if os(macOS)
-    /// RegularExpression is named differently on Linux. Linux is our primary target.
-    public typealias RegularExpression = NSRegularExpression
-#endif
-
 
 // MARK: Equations
 
 /// Equals
-public func ==(key: String, pred: ValueConvertible) -> Query {
+public func ==(key: String, pred: BSONPrimitive) -> Query {
     return Query(aqt: .valEquals(key: key, val: pred))
 }
 
 /// MongoDB: `$ne`
-public func !=(key: String, pred: ValueConvertible) -> Query {
+public func !=(key: String, pred: BSONPrimitive) -> Query {
     return Query(aqt: .valNotEquals(key: key, val: pred))
 }
 
@@ -37,7 +32,7 @@ public func !=(key: String, pred: ValueConvertible) -> Query {
 /// Checks whether the `Value` in `key` is larger than the `Value` provided
 ///
 /// - returns: A new `Query` requiring the `Value` in the `key` to be larger than the provided `Value`
-public func >(key: String, pred: ValueConvertible) -> Query {
+public func >(key: String, pred: BSONPrimitive) -> Query {
     return Query(aqt: .greaterThan(key: key, val: pred))
 }
 
@@ -46,7 +41,7 @@ public func >(key: String, pred: ValueConvertible) -> Query {
 /// Checks whether the `Value` in `key` is larger than or equal to the `Value` provided
 ///
 /// - returns: A new `Query` requiring the `Value` in the `key` to be larger than or equal to the provided `Value`
-public func >=(key: String, pred: ValueConvertible) -> Query {
+public func >=(key: String, pred: BSONPrimitive) -> Query {
     return Query(aqt: .greaterThanOrEqual(key: key, val: pred))
 }
 
@@ -55,7 +50,7 @@ public func >=(key: String, pred: ValueConvertible) -> Query {
 /// Checks whether the `Value` in `key` is smaller than the `Value` provided
 ///
 /// - returns: A new `Query` requiring the `Value` in the `key` to be smaller than the provided `Value`
-public func <(key: String, pred: ValueConvertible) -> Query {
+public func <(key: String, pred: BSONPrimitive) -> Query {
     return Query(aqt: .smallerThan(key: key, val: pred))
 }
 
@@ -64,7 +59,7 @@ public func <(key: String, pred: ValueConvertible) -> Query {
 /// Checks whether the `Value` in `key` is smaller than or equal to the `Value` provided
 ///
 /// - returns: A new `Query` requiring the `Value` in the `key` to be smaller than or equal to the provided `Value`
-public func <=(key: String, pred: ValueConvertible) -> Query {
+public func <=(key: String, pred: BSONPrimitive) -> Query {
     return Query(aqt: .smallerThanOrEqual(key: key, val: pred))
 }
 
@@ -128,7 +123,7 @@ public func &=(lhs: Query, rhs: Query) -> Document {
     var lhs = lhs.queryDocument
     
     for (key, value) in rhs.queryDocument {
-        lhs[raw: key] = value
+        lhs[key] = value
     }
     
     return lhs
@@ -222,24 +217,24 @@ public indirect enum AQT {
                 return aqt.document
                 
             } else {
-                return [key: ["$type": type.rawValue] as Document]
+                return [key: ["$type": type.rawValue]]
             }
         case .exactly(let doc):
             return doc
         case .valEquals(let key, let val):
-            return [key: ["$eq": val] as Document]
+            return [key: ["$eq": val]]
         case .valNotEquals(let key, let val):
-            return [key: ["$ne": val] as Document]
+            return [key: ["$ne": val]]
         case .greaterThan(let key, let val):
-            return [key: ["$gt": val] as Document]
+            return [key: ["$gt": val]]
         case .greaterThanOrEqual(let key, let val):
-            return [key: ["$gte": val] as Document]
+            return [key: ["$gte": val]]
         case .smallerThan(let key, let val):
-            return [key: ["$lt": val] as Document]
+            return [key: ["$lt": val]]
         case .smallerThanOrEqual(let key, let val):
-            return [key: ["$lte": val] as Document]
+            return [key: ["$lte": val]]
         case .containsElement(let key, let aqt):
-            return [key: ["$elemMatch": aqt.document] as Document]
+            return [key: ["$elemMatch": aqt.document]]
         case .and(let aqts):
             let expressions = aqts.map{ $0.document }
             
@@ -259,11 +254,11 @@ public indirect enum AQT {
             
             return query
         case .contains(let key, let val, let options):
-            return [key: ((try? RegularExpression(pattern: val, options: options)) ?? Null()) as ValueConvertible] as Document
+            return [key: RegularExpression(pattern: val, options: options)]
         case .startsWith(let key, let val):
-            return [key: ((try? RegularExpression(pattern: "^" + val, options: .anchorsMatchLines)) ?? Null()) as ValueConvertible]
+            return [key: RegularExpression(pattern: "^" + val, options: .anchorsMatchLines)]
         case .endsWith(let key, let val):
-            return [key: ((try? RegularExpression(pattern: val + "$", options: .anchorsMatchLines)) ?? Null()) as ValueConvertible]
+            return [key: RegularExpression(pattern: val + "$", options: .anchorsMatchLines)]
         case .nothing:
             return []
         case .near(let key, let point, let maxDistance, let minDistance):
@@ -272,7 +267,7 @@ public indirect enum AQT {
             return GeometryOperator(key: key, operatorName: "$geoWithin", geometry: polygon).makeDocument()
         case .exists(key: let key):
             return [
-                key: [ "$exists": true ] as Document
+                key: [ "$exists": true ]
             ]
         case .geoIntersects(let key, let geometry):
             return GeometryOperator(key: key, operatorName: "$geoIntersects", geometry: geometry).makeDocument()
@@ -285,22 +280,22 @@ public indirect enum AQT {
     case typeof(key: String, type: AQTType)
     
     /// Does the `Value` within the `key` match this `Value`
-    case valEquals(key: String, val: ValueConvertible)
+    case valEquals(key: String, val: BSONPrimitive)
     
     /// The `Value` within the `key` does not match this `Value`
-    case valNotEquals(key: String, val: ValueConvertible)
+    case valNotEquals(key: String, val: BSONPrimitive)
     
     /// Whether the `Value` within the `key` is greater than this `Value`
-    case greaterThan(key: String, val: ValueConvertible)
+    case greaterThan(key: String, val: BSONPrimitive)
     
     /// Whether the `Value` within the `key` is greater than or equal to this `Value`
-    case greaterThanOrEqual(key: String, val: ValueConvertible)
+    case greaterThanOrEqual(key: String, val: BSONPrimitive)
     
     /// Whether the `Value` within the `key` is smaller than this `Value`
-    case smallerThan(key: String, val: ValueConvertible)
+    case smallerThan(key: String, val: BSONPrimitive)
     
     /// Whether the `Value` within the `key` is smaller than or equal to this `Value`
-    case smallerThanOrEqual(key: String, val: ValueConvertible)
+    case smallerThanOrEqual(key: String, val: BSONPrimitive)
     
     /// Whether a subdocument in the array within the `key` matches one of the queries/filters
     case containsElement(key: String, match: AQT)
@@ -318,7 +313,7 @@ public indirect enum AQT {
     case nothing
     
     /// Whether the String value within the `key` contains this `String`.
-    case contains(key: String, val: String, options: RegularExpression.Options)
+    case contains(key: String, val: String, options: NSRegularExpression.Options)
     
     /// Whether the String value within the `key` starts with this `String`.
     case startsWith(key: String, val: String)
@@ -393,7 +388,7 @@ public struct Query: ExpressibleByDictionaryLiteral, ValueConvertible, Expressib
 
 
     /// Creates a Query from a Dictionary Literal
-    public init(dictionaryLiteral elements: (StringVariant, ValueConvertible?)...) {
+    public init(dictionaryLiteral elements: (StringVariant, BSONPrimitive?)...) {
         self.aqt = .exactly(Document(dictionaryElements: elements))
     }
     
@@ -421,7 +416,7 @@ public struct Query: ExpressibleByDictionaryLiteral, ValueConvertible, Expressib
             "$search": string,
             "$caseSensitive": caseSensitive,
             "$diacriticSensitive": diacriticSensitive
-            ] as Document
+            ]
         ]
     
         if let language = language {

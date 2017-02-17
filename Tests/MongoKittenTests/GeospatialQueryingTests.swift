@@ -56,13 +56,13 @@ class GeospatialQueryingTest: XCTestCase {
             }
 
             let airports = db["airports"]
-            let jfkAirport: Document = [ "iata": "JFK", "loc":["type":"Point", "coordinates":[-73.778925, 40.639751] as Document] as Document]
+            let jfkAirport: Document = [ "iata": "JFK", "loc":["type":"Point", "coordinates":[-73.778925, 40.639751]]]
             try airports.insert(jfkAirport)
             try airports.createIndex(named: "loc_index", withParameters: .geo2dsphere(field: "loc"))
 
 
-            for index in try airports.listIndexes() where index["name"] as String? == "loc_index" {
-                if let _ = index["2dsphereIndexVersion"] as Int?  {
+            for index in try airports.listIndexes() where String(index["name"]) == "loc_index" {
+                if let _ = Int(index["2dsphereIndexVersion"])  {
                     print(index.dictionaryValue)
                     continue loop
                 }
@@ -106,7 +106,7 @@ class GeospatialQueryingTest: XCTestCase {
 
             let results = try zips.near(options: geoNearOption)
 
-            XCTAssertEqual((results["results"] as Array?)?.count , 6)
+            XCTAssertEqual([BSONPrimitive](results["results"])?.count , 6)
         }
     }
 
@@ -115,7 +115,7 @@ class GeospatialQueryingTest: XCTestCase {
             let zips = db["zips"]
 
             for index in try zips.listIndexes() {
-                if let _ = index[raw: "2dsphereIndexVersion"]?.int, let indexName = index[raw: "name"]?.string {
+                if let _ = Int(index["2dsphereIndexVersion"]), let indexName = String(index["name"]) {
                    try zips.dropIndex(named: indexName)              
                 }
             }
@@ -140,7 +140,7 @@ class GeospatialQueryingTest: XCTestCase {
 
             let results = Array(try zips.find(matching: query))
             if results.count == 1 {
-                XCTAssertEqual(results[0][raw: "city"]?.string, "GOSHEN")
+                XCTAssertEqual(String(results[0]["city"]), "GOSHEN")
             } else {
                 XCTFail("Too many results")
             }
@@ -157,9 +157,9 @@ class GeospatialQueryingTest: XCTestCase {
             let firstId = try collection.insert(firstPoint)
             let secondId = try collection.insert(secondPoint)
             let thirdId = try collection.insert(thirdPoint)
-            firstPoint[raw: "_id"] = firstId
-            secondPoint[raw: "_id"] = secondId
-            thirdPoint[raw: "_id"] = thirdId
+            firstPoint["_id"] = firstId
+            secondPoint["_id"] = secondId
+            thirdPoint["_id"] = thirdId
 
             try collection.createIndex(named: "geoIndex", withParameters: .geo2dsphere(field: "geo"))
 
@@ -173,7 +173,7 @@ class GeospatialQueryingTest: XCTestCase {
                 XCTAssertTrue(results.contains(thirdPoint))
                 XCTAssertFalse(results.contains(secondPoint))
             } catch MongoError.invalidResponse(let documentError) {
-                XCTFail(documentError.first?[raw: "errmsg"]?.string ?? "")
+                XCTFail(String(documentError.first?["errmsg"]) ?? "")
             }
         }
     }
@@ -195,10 +195,10 @@ class GeospatialQueryingTest: XCTestCase {
             let thirdId = try collection.insert(thirdPoint)
             let firstPolygonId = try collection.insert(firstPolygon)
 
-            firstPoint[raw: "_id"] = firstId
-            secondPoint[raw: "_id"] = secondId
-            thirdPoint[raw: "_id"] = thirdId
-            firstPolygon[raw: "_id"] = firstPolygonId
+            firstPoint["_id"] = firstId
+            secondPoint["_id"] = secondId
+            thirdPoint["_id"] = thirdId
+            firstPolygon["_id"] = firstPolygonId
 
             try collection.createIndex(named: "geoIndex", withParameters: .geo2dsphere(field: "geo"))
 
@@ -213,7 +213,7 @@ class GeospatialQueryingTest: XCTestCase {
                 XCTAssertTrue(results.contains(firstPolygon))
                 XCTAssertFalse(results.contains(secondPoint))
             } catch MongoError.invalidResponse(let documentError) {
-                XCTFail(documentError.first?[raw: "errmsg"]?.string ?? "")
+                XCTFail(String(documentError.first?["errmsg"]) ?? "")
             }
         }
     }
@@ -229,9 +229,9 @@ class GeospatialQueryingTest: XCTestCase {
             let firstId = try collection.insert(firstPoint)
             let secondId = try collection.insert(secondPoint)
             let thirdId = try collection.insert(thirdPoint)
-            firstPoint[raw: "_id"] = firstId
-            secondPoint[raw: "_id"] = secondId
-            thirdPoint[raw: "_id"] = thirdId
+            firstPoint["_id"] = firstId
+            secondPoint["_id"] = secondId
+            thirdPoint["_id"] = thirdId
 
             try collection.createIndex(named: "geoIndex", withParameters: .geo2dsphere(field: "geo"))
 
@@ -243,7 +243,7 @@ class GeospatialQueryingTest: XCTestCase {
                 XCTAssertFalse(results.contains(thirdPoint))
                 XCTAssertFalse(results.contains(secondPoint))
             } catch MongoError.invalidResponse(let documentError) {
-                XCTFail(documentError.first?[raw: "errmsg"]?.string ?? "")
+                XCTFail(String(documentError.first?["errmsg"]) ?? "")
             }
         }
     }

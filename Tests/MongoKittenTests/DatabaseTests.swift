@@ -32,11 +32,11 @@ class DatabaseTests: XCTestCase {
     
     func testUsers() throws {
         for db in TestManager.dbs {
-            let roles: Document = [["role": "dbOwner", "db": db.name] as Document]
+            let roles: Document = [["role": "dbOwner", "db": db.name]]
             
             try db.createUser("mongokitten-unittest-testuser", password: "hunter2", roles: roles, customData: ["testdata": false])
             
-            guard let userInfo = try? db.server.getUserInfo(forUserNamed: "mongokitten-unittest-testuser", inDatabase: db), let testData = userInfo[0, "customData", "testdata"] as Bool? else {
+            guard let userInfo = try? db.server.getUserInfo(forUserNamed: "mongokitten-unittest-testuser", inDatabase: db), let testData = userInfo[0, "customData", "testdata"] as? Bool else {
                 XCTFail()
                 return
             }
@@ -80,7 +80,7 @@ class DatabaseTests: XCTestCase {
                 ])
             
             XCTAssertEqual(documents.count, 1)
-            XCTAssertEqual(documents.first?["ok"] as Int32?, 1)
+            XCTAssertEqual(Int32(documents.first?["ok"]), 1)
         }
     }
 

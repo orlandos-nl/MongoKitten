@@ -70,6 +70,6 @@ extension Position: CustomStringConvertible, CustomDebugStringConvertible {
 extension Position: ValueConvertible {
     /// Converts this object to an embeddable BSONPrimtive
     public func makeBSONPrimitive() -> BSONPrimitive {
-        return [values[0], values[1]] as Document
+        return [values[0], values[1]]
     }
 }

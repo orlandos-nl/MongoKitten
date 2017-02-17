@@ -33,7 +33,7 @@ extension Collection {
          "uniqueDocs": options.uniqueDocs,
          "includeLocs": options.includeLocs]
 
-        command[raw: "readConcern"] = readConcern ?? self.readConcern
+        command["readConcern"] = readConcern ?? self.readConcern
 
         let reply = try database.execute(command: command, writing: false)
 
@@ -42,7 +42,7 @@ extension Collection {
             throw InternalMongoError.incorrectReply(reply: reply)
         }
 
-        guard let responseDoc = documents.first, responseDoc[raw: "ok"]?.int == 1 else {
+        guard let responseDoc = documents.first, Int(responseDoc["ok"]) == 1 else {
             throw MongoError.invalidResponse(documents: documents)
         }
 

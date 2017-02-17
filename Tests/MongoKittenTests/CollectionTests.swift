@@ -95,7 +95,7 @@ class CollectionTests: XCTestCase {
         let query: Query = "name_first" == "Henk"
         
         XCTAssertEqual(query.makeDocument(), [
-            "name_first": ["$eq": "Henk"] as Document
+            "name_first": ["$eq": "Henk"]
             ])
         
         let query2: Query = "textSearchTerm"
@@ -104,21 +104,21 @@ class CollectionTests: XCTestCase {
             "$search": "textSearchTerm",
             "$caseSensitive": false,
             "$diacriticSensitive": false
-            ] as Document
+            ]
             ])
         
         let andQuery: Query = ("username" == "henk" && "age" > 2) && ("password" == "bob" && "age" < 12)
         
         XCTAssertEqual(andQuery.queryDocument, [
             "$and": [
-                ["username": ["$eq": "henk"] as Document] as Document,
-                ["age": ["$gt": 2] as Document ] as Document,
-                ["password": ["$eq": "bob"] as Document] as Document,
+                ["username": ["$eq": "henk"]],
+                ["age": ["$gt": 2] ],
+                ["password": ["$eq": "bob"]],
                 ["age":
-                    ["$lt": 12] as Document
-                    ] as Document
-                ] as Document
-            ] as Document)
+                    ["$lt": 12]
+                    ]
+                ]
+            ])
         
         let notQuery: Query = !("username" == "henk")
         
@@ -126,9 +126,9 @@ class CollectionTests: XCTestCase {
             "username": [
                 "$not": [
                     "$eq": "henk"
-                    ] as Document
-                ] as Document
-            ] as Document)
+                    ]
+                ]
+            ])
     }
     
     func testRename() throws {
@@ -230,7 +230,7 @@ class CollectionTests: XCTestCase {
             
             inserts = [base, brokenUsername, brokenUsername, brokenAge, brokenDogs, brokenKittens, brokenKittens2, brokenBeers, base]
             
-            _ = try db["wcol"].insert(inserts)
+            _ = try db["wcol"].insert(contentsOf: inserts)
             
             let query: Query = ("username" == "henk" || "username" == "bob") && "age" > 24 && "kittens" >= 2 && "kittens" != 3 && "dogs" <= 1 && "beers" < 100
             
@@ -254,18 +254,18 @@ class CollectionTests: XCTestCase {
             let colA = db["collectionA"]
             let colB = db["collectionB"]
             
-            let id = try colA.insert(["name": "Harrie Bob"] as Document)
+            let id = try colA.insert(["name": "Harrie Bob"])
             
             let dbref = DBRef(referencing: id, inCollection: colA)
             
-            let referenceID = try colB.insert(["reference": dbref] as Document)
+            let referenceID = try colB.insert(["reference": dbref])
             
             guard let reference = try colB.findOne(matching: "_id" == referenceID) else {
                 XCTFail()
                 return
             }
             
-            guard let colAreference = DBRef(reference["reference"] as Document? ?? [:], inDatabase: db) else {
+            guard let colAreference = DBRef(reference["reference"] as? Document ?? [:], inDatabase: db) else {
                 XCTFail()
                 return
             }
@@ -275,7 +275,7 @@ class CollectionTests: XCTestCase {
                 return
             }
             
-            XCTAssertEqual(originalDocument["name"] as String?, "Harrie Bob")
+            XCTAssertEqual(String(originalDocument["name"]), "Harrie Bob")
         }
     }
 
@@ -284,17 +284,17 @@ class CollectionTests: XCTestCase {
             let results = Array(try db["zips"].find(matching: "city" == "BARRE", projecting: ["city","pop"] as Projection))
 
             XCTAssertEqual(results.count, 2)
-            XCTAssertNil(results.first?[raw: "state"]?.string)
-            XCTAssertNotNil(results.first?[raw: "city"]?.string)
-            XCTAssertEqual(results.first?[raw: "city"]?.string, "BARRE")
-            XCTAssertNotNil(results.first?[raw: "pop"]?.int)
+            XCTAssertNil(String(results.first?["state"]))
+            XCTAssertNotNil(String(results.first?["city"]))
+            XCTAssertEqual(String(results.first?["city"]), "BARRE")
+            XCTAssertNotNil(Int(results.first?["pop"]))
         }
     }
     
     func testProjection() {
         let projection: Projection = ["name", "age", "awesome"]
         
-        XCTAssertEqual(projection.makeBSONPrimitive() as? Document, ["name": true, "age": true, "awesome": true] as Document)
+        XCTAssertEqual(projection.makeBSONPrimitive() as? Document, ["name": true, "age": true, "awesome": true])
         
         let projection2: Projection = ["henk": .included, "bob": .excluded]
         
@@ -321,7 +321,7 @@ class CollectionTests: XCTestCase {
             XCTAssertThrowsError(try harriebob.insert(["unique": false]))
             XCTAssertThrowsError(try harriebob.insert(["unique": Null()]))
             
-            for index in try db["wcol"].listIndexes() where index["name"] as String? == "henkbob" {
+            for index in try db["wcol"].listIndexes() where String(index["name"]) == "henkbob" {
                 continue loop
             }
             
@@ -332,7 +332,7 @@ class CollectionTests: XCTestCase {
     func testDropIndex() throws {
         for db in TestManager.dbs {
             let collection = db["mycollection"]
-            try collection.insert(["name":"john"] as Document)
+            try collection.insert(["name":"john"])
 
             try collection.createIndex(named: "name_index", withParameters: .sort(field: "name", order: .ascending))
 
@@ -370,8 +370,8 @@ class CollectionTests: XCTestCase {
     
     func testTextOperator() throws {
         for db in TestManager.dbs {
-            if db.server.buildInfo.version < Version(3, 2, 0) {
-                return
+            guard db.server.buildInfo.version >= Version(3, 2, 0) else {
+                continue
             }
             
             let textSearch = db["textsearch"]
@@ -379,15 +379,15 @@ class CollectionTests: XCTestCase {
             
             try textSearch.remove(matching: Query([:]))
             
-            try textSearch.insert([
-                ["_id": 1, "subject": "coffee", "author": "xyz", "views": 50] as Document,
-                ["_id": 2, "subject": "Coffee Shopping", "author": "efg", "views": 5] as Document,
-                ["_id": 3, "subject": "Baking a cake", "author": "abc", "views": 90] as Document,
-                ["_id": 4, "subject": "baking", "author": "xyz", "views": 100] as Document,
-                ["_id": 5, "subject": "Café Con Leche", "author": "abc", "views": 200] as Document,
-                ["_id": 6, "subject": "Сырники", "author": "jkl", "views": 80] as Document,
-                ["_id": 7, "subject": "coffee and cream", "author": "efg", "views": 10] as Document,
-                ["_id": 8, "subject": "Cafe con Leche", "author": "xyz", "views": 10] as Document
+            try textSearch.insert(contentsOf: [
+                ["_id": 1, "subject": "coffee", "author": "xyz", "views": 50],
+                ["_id": 2, "subject": "Coffee Shopping", "author": "efg", "views": 5],
+                ["_id": 3, "subject": "Baking a cake", "author": "abc", "views": 90],
+                ["_id": 4, "subject": "baking", "author": "xyz", "views": 100],
+                ["_id": 5, "subject": "Café Con Leche", "author": "abc", "views": 200],
+                ["_id": 6, "subject": "Сырники", "author": "jkl", "views": 80],
+                ["_id": 7, "subject": "coffee and cream", "author": "efg", "views": 10],
+                ["_id": 8, "subject": "Cafe con Leche", "author": "xyz", "views": 10]
                 ])
             
             let resultCount = try textSearch.count(matching: .textSearch(forString: "coffee"))
@@ -417,7 +417,7 @@ class CollectionTests: XCTestCase {
             brokenBeers["beers"] = "broken"
             
             inserts = [base, brokenUsername, brokenUsername, brokenAge, brokenDogs, brokenKittens, brokenKittens2, brokenBeers, base]
-            try db["wcol"].insert(inserts)
+            try db["wcol"].insert(contentsOf: inserts)
             
             let query: Query = ("username" == "henk" || "username" == "bob") && "age" > 24 && "kittens" >= 2 && "kittens" != 3 && "dogs" <= 1 && "beers" < 100
             
@@ -455,7 +455,7 @@ class CollectionTests: XCTestCase {
             
             inserts = [base, brokenUsername, brokenUsername, brokenAge, brokenDogs, brokenKittens, brokenKittens2, brokenBeers, base]
             
-            _ = try db["wcol"].insert(inserts)
+            _ = try db["wcol"].insert(contentsOf: inserts)
             
             let query: Query = ("username" == "henk" || "username" == "bob") && "age" > 24 && "kittens" >= 2 && "kittens" != 3 && "dogs" <= 1 && "beers" < 100
             
@@ -489,7 +489,7 @@ class CollectionTests: XCTestCase {
             
             inserts = [base, brokenUsername, brokenUsername, brokenAge, brokenDogs, brokenKittens, brokenKittens2, brokenBeers, base]
             
-            try db["wcol"].insert(inserts)
+            try db["wcol"].insert(contentsOf: inserts)
             
             let query: Query = ("username" == "henk" || "username" == "bob") && "age" > 24 && "kittens" >= 2 && "kittens" != 3 && "dogs" <= 1 && "beers" < 100
             
@@ -547,13 +547,13 @@ class CollectionTests: XCTestCase {
             brokenBeers["beers"] = "broken"
             
             inserts = [base, brokenUsername, brokenUsername, brokenAge, brokenDogs, brokenKittens, brokenKittens2, brokenBeers, base]
-            try db["wcol"].insert(inserts)
+            try db["wcol"].insert(contentsOf: inserts)
             
             let query: Query = ("username" == "henk" || "username" == "bob") && "age" > 24 && "kittens" >= 2 && "kittens" != 3 && "dogs" <= 1 && "beers" < 100
             
             let modifiedDocument = try db["wcol"].findAndModify(matching: query, action: .update(with: ["testieBool": true], returnModified: true, upserting: false) )
             
-            XCTAssertNotNil(modifiedDocument.documentValue)
+            XCTAssertNotNil(modifiedDocument as? Document)
             
             let response = Array(try db["wcol"].find(matching: "testieBool" == true))
             XCTAssertEqual(response.count, 1)
