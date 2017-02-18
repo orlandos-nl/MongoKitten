@@ -136,11 +136,11 @@ class CollectionTests: XCTestCase {
             try db["zips"].rename(to: "zipschange")
             
             let pipeline: AggregationPipeline = [
-                .grouping("$state", computed: ["totalPop": .sumOf("$pop")]),
-                .matching("totalPop" > 10_000_000),
-                .sortedBy(["totalPop": .ascending]),
-                .projecting(["_id": false, "totalPop": true]),
-                .skipping(2)
+                .group("$state", computed: ["totalPop": .sumOf("$pop")]),
+                .match("totalPop" > 10_000_000),
+                .sort(["totalPop": .ascending]),
+                .project(["_id": false, "totalPop": true]),
+                .skip(2)
             ]
             
             var zipsDocs = Array(try db["zips"].aggregate(pipeline: pipeline))

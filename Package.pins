@@ -5,7 +5,7 @@
       "package": "BSON",
       "reason": null,
       "repositoryURL": "https://github.com/OpenKitten/BSON.git",
-      "version": "5.0.0-obbut"
+      "version": "5.0.0-obbut2"
     },
     {
       "package": "CLibreSSL",

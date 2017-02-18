@@ -39,11 +39,11 @@ class AggregationTests: XCTestCase {
     func testAggregate() throws {
         for db in TestManager.dbs {
             let pipeline: AggregationPipeline = [
-                .grouping("$state", computed: ["totalPop": .sumOf("$pop")]),
-                .matching("totalPop" > 10_000_000),
-                .sortedBy(["totalPop": .ascending]),
-                .projecting(["_id": false, "totalPop": true]),
-                .skipping(2)
+                .group("$state", computed: ["totalPop": .sumOf("$pop")]),
+                .match("totalPop" > 10_000_000),
+                .sort(["totalPop": .ascending]),
+                .project(["_id": false, "totalPop": true]),
+                .skip(2)
             ]
             
             let cursor = try db["zips"].aggregate(pipeline: pipeline)
@@ -71,14 +71,14 @@ class AggregationTests: XCTestCase {
             XCTAssertEqual(count, 5)
             
             let pipeline2: AggregationPipeline = [
-                .grouping("$state", computed: ["totalPop": .sumOf("$pop")]),
-                .matching("totalPop" > 10_000_000),
-                .sortedBy(["totalPop": .ascending]),
-                .projecting(["_id": false, "totalPop": true]),
-                .skipping(2),
-                .limitedTo(3),
-                .counting(insertedAtKey: "results"),
-                .addingFields(["topThree": true])
+                .group("$state", computed: ["totalPop": .sumOf("$pop")]),
+                .match("totalPop" > 10_000_000),
+                .sort(["totalPop": .ascending]),
+                .project(["_id": false, "totalPop": true]),
+                .skip(2),
+                .limit(3),
+                .count(insertedAtKey: "results"),
+                .addFields(["topThree": true])
             ]
             
             do {
@@ -102,15 +102,15 @@ class AggregationTests: XCTestCase {
             }
             
             let pipeline: AggregationPipeline = [
-                .grouping("$state", computed: ["totalPop": .sumOf("$pop")]),
-                .sortedBy(["totalPop": .ascending]),
+                .group("$state", computed: ["totalPop": .sumOf("$pop")]),
+                .sort(["totalPop": .ascending]),
                 .facet([
                     "count": [
-                        .counting(insertedAtKey: "resultCount"),
-                        .projecting(["resultCount": true])
+                        .count(insertedAtKey: "resultCount"),
+                        .project(["resultCount": true])
                     ],
                     "totalPop": [
-                        .grouping(Null(), computed: ["population": .sumOf("$totalPop")])
+                        .group(Null(), computed: ["population": .sumOf("$totalPop")])
                     ]
                     ])
             ]
@@ -155,7 +155,7 @@ class AggregationTests: XCTestCase {
             
             let unwind = AggregationPipeline.Stage.unwind(atPath: "$specs")
             let lookup = AggregationPipeline.Stage.lookup(fromCollection: inventory, localField: "specs", foreignField: "size", as: "inventory_docs")
-            let match = AggregationPipeline.Stage.matching(["inventory_docs": ["$ne":[]]] as Document)
+            let match = AggregationPipeline.Stage.match(["inventory_docs": ["$ne":[]]] as Document)
             let pipe = AggregationPipeline(arrayLiteral: unwind, lookup, match)
             
             do {
