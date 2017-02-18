@@ -13,11 +13,8 @@ var package = Package(
 
         // Authentication
         .Package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", Version(0,6,7)),
-        
-        // Provides sockets
-        .Package(url: "https://github.com/vapor/socks.git", majorVersion: 1),
 
-        // SSL
+        // Provides Sockets + SSL
         .Package(url: "https://github.com/vapor/tls.git", majorVersion: 1),
 
         // Logging
