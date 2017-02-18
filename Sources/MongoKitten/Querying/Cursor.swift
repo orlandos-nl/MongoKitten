@@ -9,6 +9,8 @@
 //
 import BSON
 
+public typealias BasicCursor = Cursor<Document>
+
 public class Cursor<T> : Sequence {
     public let collection: Collection
     
@@ -47,6 +49,18 @@ public class Cursor<T> : Sequence {
         }
         
         return n
+    }
+    
+    public func findOne(sortedBy sort: Sort? = nil, projecting projection: Projection? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil, skipping skip: Int? = nil) throws -> T? {
+        return try self.find(sortedBy: sort, projecting: projection, readConcern: readConcern, collation: collation, skipping: skip, limitedTo: 1, withBatchSize: 1).next()
+    }
+    
+    public var first: T? {
+        do {
+            return try findOne()
+        } catch {
+            return nil
+        }
     }
     
     public func find(sortedBy sort: Sort? = nil, projecting projection: Projection? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil, skipping skip: Int? = nil, limitedTo limit: Int? = nil, withBatchSize batchSize: Int = 100) throws -> AnyIterator<T> {
