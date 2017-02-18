@@ -72,8 +72,8 @@ final class SCRAMClient {
     ///
     /// - returns: The server signature
     /// - throws: Unable to parse this message to a sever signature
-    private func parse(finalResponse response: String) throws -> [UInt8] {
-        var signature: [UInt8]? = nil
+    private func parse(finalResponse response: String) throws -> Bytes {
+        var signature: Bytes? = nil
         
         for part in response.characters.split(separator: ",") where String(part).characters.count >= 3 {
             let part = String(part)
@@ -113,9 +113,9 @@ final class SCRAMClient {
     ///
     /// - returns: A tuple where the proof is to be sent to the server and the signature is to be verified in the server's responses.
     /// - throws: When unable to parse the challenge
-    func process(_ challenge: String, with details: (username: String, password: [UInt8]), usingNonce nonce: String) throws -> (proof: String, serverSignature: [UInt8]) {
-        func xor(_ lhs: [UInt8], _ rhs: [UInt8]) -> [UInt8] {
-            var result = [UInt8](repeating: 0, count: min(lhs.count, rhs.count))
+    func process(_ challenge: String, with details: (username: String, password: Bytes), usingNonce nonce: String) throws -> (proof: String, serverSignature: Bytes) {
+        func xor(_ lhs: Bytes, _ rhs: Bytes) -> Bytes {
+            var result = Bytes(repeating: 0, count: min(lhs.count, rhs.count))
             
             for i in 0..<result.count {
                 result[i] = lhs[i] ^ rhs[i]
@@ -124,7 +124,7 @@ final class SCRAMClient {
             return result
         }
         
-        let encodedHeader = Data(bytes: [UInt8](gs2BindFlag.utf8)).base64EncodedString()
+        let encodedHeader = Data(bytes: Bytes(gs2BindFlag.utf8)).base64EncodedString()
         
         let parsedResponse = try parse(challenge: challenge)
 
@@ -141,7 +141,7 @@ final class SCRAMClient {
         }
         
         let salt = Array(data)
-        let saltedPassword: [UInt8]
+        let saltedPassword: Bytes
         
         if let hashedPassword = server.hashedPassword {
             saltedPassword = hashedPassword
@@ -150,8 +150,8 @@ final class SCRAMClient {
             server.hashedPassword = saltedPassword
         }
         
-        let ck = [UInt8]("Client Key".utf8)
-        let sk = [UInt8]("Server Key".utf8)
+        let ck = Bytes("Client Key".utf8)
+        let sk = Bytes("Server Key".utf8)
         
         let clientKey = try HMAC(key: saltedPassword, variant: .sha1).authenticate(ck)
         let serverKey = try HMAC(key: saltedPassword, variant: .sha1).authenticate(sk)
@@ -160,7 +160,7 @@ final class SCRAMClient {
 
         let authenticationMessage = "n=\(fixUsername(username: details.username)),r=\(nonce),\(challenge),\(noProof)"
 
-        var authenticationMessageBytes = [UInt8]()
+        var authenticationMessageBytes = Bytes()
         authenticationMessageBytes.append(contentsOf: authenticationMessage.utf8)
         
         let clientSignature = try HMAC(key: storedKey, variant: .sha1).authenticate(authenticationMessageBytes)
@@ -178,7 +178,7 @@ final class SCRAMClient {
     ///
     /// - returns: An empty string to proceed the process indefinitely until complete as per protocol definition
     /// - throws: When the server's signature is invalid
-    func complete(fromResponse response: String, verifying signature: [UInt8]) throws -> String {
+    func complete(fromResponse response: String, verifying signature: Bytes) throws -> String {
         let sig = try parse(finalResponse: response)
 
         if sig != signature {
@@ -199,10 +199,10 @@ internal func replaceOccurrences(`in` string: String, `where` matching: String, 
 /// All possible authentication errors
 public enum SCRAMError: Error {
     /// -
-    case InvalidSignature(signature: [UInt8])
+    case InvalidSignature(signature: Bytes)
     
     /// -
-    case Base64Failure(original: [UInt8])
+    case Base64Failure(original: Bytes)
     
     /// -
     case ChallengeParseError(challenge: String)

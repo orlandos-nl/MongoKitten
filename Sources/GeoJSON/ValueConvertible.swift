@@ -10,16 +10,16 @@
 
 import BSON
 
-internal protocol ValueConvertible : BSONPrimitive {
-    func makeBSONPrimitive() -> BSONPrimitive
+internal protocol ValueConvertible : BSON.Primitive {
+    func makePrimitive() -> BSON.Primitive
 }
 
 extension ValueConvertible {
-    public var typeIdentifier: UInt8 {
-        return makeBSONPrimitive().typeIdentifier
+    public var typeIdentifier: Byte {
+        return makePrimitive().typeIdentifier
     }
     
-    public func makeBSONBinary() -> [UInt8] {
-        return makeBSONPrimitive().makeBSONBinary()
+    public func makeBinary() -> Bytes {
+        return makePrimitive().makeBinary()
     }
 }

@@ -126,7 +126,7 @@ public final class Collection: Sequence {
     ///
     /// - returns: The inserted document's id
     @discardableResult
-    public func insert(_ document: Document) throws -> BSONPrimitive {
+    public func insert(_ document: Document) throws -> BSON.Primitive {
         let result = try self.insert(contentsOf: [document])
         
         guard let newId = result.first else {
@@ -151,10 +151,10 @@ public final class Collection: Sequence {
     ///
     /// - returns: The documents' ids
     @discardableResult
-    public func insert(contentsOf documents: [Document], stoppingOnError ordered: Bool? = nil, writeConcern: WriteConcern? = nil, timeout customTimeout: TimeInterval? = nil) throws -> [BSONPrimitive] {
+    public func insert(contentsOf documents: [Document], stoppingOnError ordered: Bool? = nil, writeConcern: WriteConcern? = nil, timeout customTimeout: TimeInterval? = nil) throws -> [BSON.Primitive] {
         let timeout: TimeInterval = customTimeout ?? (database.server.defaultTimeout + (Double(documents.count) / 50))
         
-        var newIds = [BSONPrimitive]()
+        var newIds = [Primitive]()
         var documents = documents.map({ (input: Document) -> Document in
             if let id = input["_id"] {
                 newIds.append(id)
@@ -568,7 +568,7 @@ public final class Collection: Sequence {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: The `Value` received from the server as specified in the link of the additional information
-    public func findAndModify(matching query: Query? = nil, sortedBy sort: Sort? = nil, action: FindAndModifyOperation, projection: Projection? = nil) throws -> BSONPrimitive {
+    public func findAndModify(matching query: Query? = nil, sortedBy sort: Sort? = nil, action: FindAndModifyOperation, projection: Projection? = nil) throws -> BSON.Primitive {
         var command: Document = ["findAndModify": self.name]
         
         if let query = query {
@@ -611,7 +611,7 @@ public final class Collection: Sequence {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A list of all distinct values for this key
-    public func distinct(onField key: String, usingFilter filter: Document? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil) throws -> [BSONPrimitive]? {
+    public func distinct(onField key: String, usingFilter filter: Document? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil) throws -> [BSON.Primitive]? {
         var command: Document = ["distinct": self.name, "key": key]
         
         if let filter = filter {
@@ -621,7 +621,7 @@ public final class Collection: Sequence {
         command["readConcern"] = readConcern ?? self.readConcern
         command["collation"] = collation ?? self.collation
         
-        return [BSONPrimitive](try firstDocument(in: try self.database.execute(command: command, writing: false))["values"])
+        return [Primitive](try firstDocument(in: try self.database.execute(command: command, writing: false))["values"])
     }
     
     /// Returns all distinct values for a key in this collection. Allows filtering using query
@@ -634,7 +634,7 @@ public final class Collection: Sequence {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A list of all distinct values for this key
-    public func distinct(on key: String, usingFilter query: Query) throws -> [BSONPrimitive]? {
+    public func distinct(on key: String, usingFilter query: Query) throws -> [BSON.Primitive]? {
         return try self.distinct(onField: key, usingFilter: query.queryDocument)
     }
     

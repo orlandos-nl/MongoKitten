@@ -16,12 +16,12 @@ import GeoJSON
 // MARK: Equations
 
 /// Equals
-public func ==(key: String, pred: BSONPrimitive) -> Query {
+public func ==(key: String, pred: BSON.Primitive) -> Query {
     return Query(aqt: .valEquals(key: key, val: pred))
 }
 
 /// MongoDB: `$ne`
-public func !=(key: String, pred: BSONPrimitive) -> Query {
+public func !=(key: String, pred: BSON.Primitive) -> Query {
     return Query(aqt: .valNotEquals(key: key, val: pred))
 }
 
@@ -32,7 +32,7 @@ public func !=(key: String, pred: BSONPrimitive) -> Query {
 /// Checks whether the `Value` in `key` is larger than the `Value` provided
 ///
 /// - returns: A new `Query` requiring the `Value` in the `key` to be larger than the provided `Value`
-public func >(key: String, pred: BSONPrimitive) -> Query {
+public func >(key: String, pred: BSON.Primitive) -> Query {
     return Query(aqt: .greaterThan(key: key, val: pred))
 }
 
@@ -41,7 +41,7 @@ public func >(key: String, pred: BSONPrimitive) -> Query {
 /// Checks whether the `Value` in `key` is larger than or equal to the `Value` provided
 ///
 /// - returns: A new `Query` requiring the `Value` in the `key` to be larger than or equal to the provided `Value`
-public func >=(key: String, pred: BSONPrimitive) -> Query {
+public func >=(key: String, pred: BSON.Primitive) -> Query {
     return Query(aqt: .greaterThanOrEqual(key: key, val: pred))
 }
 
@@ -50,7 +50,7 @@ public func >=(key: String, pred: BSONPrimitive) -> Query {
 /// Checks whether the `Value` in `key` is smaller than the `Value` provided
 ///
 /// - returns: A new `Query` requiring the `Value` in the `key` to be smaller than the provided `Value`
-public func <(key: String, pred: BSONPrimitive) -> Query {
+public func <(key: String, pred: BSON.Primitive) -> Query {
     return Query(aqt: .smallerThan(key: key, val: pred))
 }
 
@@ -59,7 +59,7 @@ public func <(key: String, pred: BSONPrimitive) -> Query {
 /// Checks whether the `Value` in `key` is smaller than or equal to the `Value` provided
 ///
 /// - returns: A new `Query` requiring the `Value` in the `key` to be smaller than or equal to the provided `Value`
-public func <=(key: String, pred: BSONPrimitive) -> Query {
+public func <=(key: String, pred: BSON.Primitive) -> Query {
     return Query(aqt: .smallerThanOrEqual(key: key, val: pred))
 }
 
@@ -280,22 +280,22 @@ public indirect enum AQT {
     case typeof(key: String, type: AQTType)
     
     /// Does the `Value` within the `key` match this `Value`
-    case valEquals(key: String, val: BSONPrimitive)
+    case valEquals(key: String, val: BSON.Primitive)
     
     /// The `Value` within the `key` does not match this `Value`
-    case valNotEquals(key: String, val: BSONPrimitive)
+    case valNotEquals(key: String, val: BSON.Primitive)
     
     /// Whether the `Value` within the `key` is greater than this `Value`
-    case greaterThan(key: String, val: BSONPrimitive)
+    case greaterThan(key: String, val: BSON.Primitive)
     
     /// Whether the `Value` within the `key` is greater than or equal to this `Value`
-    case greaterThanOrEqual(key: String, val: BSONPrimitive)
+    case greaterThanOrEqual(key: String, val: BSON.Primitive)
     
     /// Whether the `Value` within the `key` is smaller than this `Value`
-    case smallerThan(key: String, val: BSONPrimitive)
+    case smallerThan(key: String, val: BSON.Primitive)
     
     /// Whether the `Value` within the `key` is smaller than or equal to this `Value`
-    case smallerThanOrEqual(key: String, val: BSONPrimitive)
+    case smallerThanOrEqual(key: String, val: BSON.Primitive)
     
     /// Whether a subdocument in the array within the `key` matches one of the queries/filters
     case containsElement(key: String, match: AQT)
@@ -382,13 +382,13 @@ public struct Query: ExpressibleByDictionaryLiteral, ValueConvertible, Expressib
     }
     
     /// The `Document` that can be sent to the MongoDB Server as a query/filter
-    public func makeBSONPrimitive() -> BSONPrimitive {
+    public func makePrimitive() -> BSON.Primitive {
         return self.queryDocument
     }
 
 
     /// Creates a Query from a Dictionary Literal
-    public init(dictionaryLiteral elements: (StringVariant, BSONPrimitive?)...) {
+    public init(dictionaryLiteral elements: (StringVariant, BSON.Primitive?)...) {
         self.aqt = .exactly(Document(dictionaryElements: elements))
     }
     

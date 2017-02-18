@@ -19,10 +19,10 @@ public enum SortOrder: ValueConvertible {
     case descending
     
     /// Custom can be useful for more complex MongoDB behaviour. Generally not used.
-    case custom(BSONPrimitive)
+    case custom(BSON.Primitive)
     
     /// Converts the SortOrder to a BSON primitive for easy embedding
-    public func makeBSONPrimitive() -> BSONPrimitive {
+    public func makePrimitive() -> BSON.Primitive {
         switch self {
         case .ascending: return Int32(1)
         case .descending: return Int32(-1)
@@ -47,7 +47,7 @@ public struct Sort: ValueConvertible, ExpressibleByDictionaryLiteral {    /// Th
     /// Makes this Sort specification a BSONPrimtive.
     ///
     /// Useful for embedding in a Document
-    public func makeBSONPrimitive() -> BSONPrimitive {
+    public func makePrimitive() -> BSON.Primitive {
         return self.document
     }
     

@@ -32,7 +32,7 @@ import LogKitten
 }
 
 extension LogKitten.Message: ValueConvertible {
-    public func makeBSONPrimitive() -> BSONPrimitive {
+    public func makePrimitive() -> BSON.Primitive {
         return [
             "level": self.level.name,
             "subject": self.subject,
@@ -55,7 +55,7 @@ extension Document: SubjectRepresentable {
     /// Records the common LogKitten ID, used by LogKitten (currently) to identify this registered type
     ///
     /// WARNING: LogKitten is alpha software and subject to change. Do not rely on this
-    public static var logKittenId = [UInt8:UInt8]()
+    public static var logKittenId = [Byte:Byte]()
     
     /// Returns the common name for this Subject
     ///
@@ -74,7 +74,7 @@ extension Document: SubjectRepresentable {
     /// Converts this type to a String for logging
     ///
     /// WARNING: LogKitten is alpha software and subject to change. Do not rely on this
-    static public func convertToString(fromData data: [UInt8]) -> String {
+    static public func convertToString(fromData data: Bytes) -> String {
         fatalError("TODO: ")
 //        return Document(data: data)
     }
@@ -82,10 +82,10 @@ extension Document: SubjectRepresentable {
 
 /// Makes a Subject convertible to a BSONPrimtive
 extension Subject: ValueConvertible {
-    /// Converts this Subject to a BSONPrimitive for embedding into a log Document
+    /// Converts this Subject to a BSON.Primitive for embedding into a log Document
     ///
     /// WARNING: LogKitten is alpha software and subject to change. Do not rely on this
-    public func makeBSONPrimitive() -> BSONPrimitive {
+    public func makePrimitive() -> BSON.Primitive {
         switch self {
         case .string(let s):
             return s

@@ -71,7 +71,7 @@ enum Message {
     /// Builds a `.Reply` object from Binary JSON
     /// - parameter from: The data to create a Reply-message from
     /// - returns: The reply instance
-    static func makeReply(from data: [UInt8]) throws -> Message {
+    static func makeReply(from data: Bytes) throws -> Message {
         guard data.count > 4 else {
             throw DeserializationError.invalidDocumentLength
         }
@@ -100,8 +100,8 @@ enum Message {
     
     /// Generates BSON From a Message
     /// - returns: The data from this message
-    func generateData() throws -> [UInt8] {
-        var body = [UInt8]()
+    func generateData() throws -> Bytes {
+        var body = Bytes()
         var requestID: Int32
         
         // Generate the body
@@ -162,7 +162,7 @@ enum Message {
         }
         
         // Generate the header using the body
-        var header = [UInt8]()
+        var header = Bytes()
         header += Int32(16 + body.count).makeBytes()
         header += requestID.makeBytes()
         header += responseTo.makeBytes()
@@ -224,7 +224,7 @@ enum Message {
     case KillCursors(requestID: Int32, cursorIDs: [Int])
 }
 
-extension Swift.Collection where Self.Iterator.Element == UInt8, Self.Index == Int {
+extension Swift.Collection where Self.Iterator.Element == Byte, Self.Index == Int {
     fileprivate func makeInt64() -> Int64 {
         var number: Int64 = 0
         number |= self.count > 7 ? Int64(self[startIndex.advanced(by: 7)]) << 56 : 0

@@ -29,7 +29,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
     }
     
     /// Allows embedding this pipeline inside another Document
-    public func makeBSONPrimitive() -> BSONPrimitive {
+    public func makePrimitive() -> BSON.Primitive {
         return self.pipelineDocument
     }
     
@@ -67,7 +67,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
     /// The input of stage 2 is the output of stage 3 and so on..
     public struct Stage: ValueConvertible {
         /// Allows embedding this stage inside another Document
-        public func makeBSONPrimitive() -> BSONPrimitive {
+        public func makePrimitive() -> BSON.Primitive {
             return self.document
         }
         
@@ -187,7 +187,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         /// https://docs.mongodb.com/manual/reference/operator/aggregation/unwind/#pipe._S_unwind
         @discardableResult
         public static func unwind(atPath path: String, includeArrayIndex: String? = nil, preserveNullAndEmptyArrays: Bool? = nil) -> Stage {
-            let unwind: BSONPrimitive
+            let unwind: BSON.Primitive
             
             if let includeArrayIndex = includeArrayIndex {
                 var unwind1 = [
@@ -310,10 +310,10 @@ public enum Expression: ValueConvertible {
     /// A literal value
     ///
     /// Any String starting with a `$` will be seen as a pointer to a Document key. In this case the value at that key will be used instead.
-    case literal(BSONPrimitive)
+    case literal(BSON.Primitive)
     
-    /// Converts an expression to a BSONPrimitive for easy embedding in Documents
-    public func makeBSONPrimitive() -> BSONPrimitive {
+    /// Converts an expression to a BSON.Primitive for easy embedding in Documents
+    public func makePrimitive() -> BSON.Primitive {
         switch self {
         case .literal(let val):
             return val
@@ -570,8 +570,8 @@ public enum AccumulatedGroupExpression {
     
     // MARK: Converting
     
-    /// Converts this `AccumulatedGroupExpression` to a BSONPrimitive so that it can be embedded inside a Document easily
-    public func makeBSONPrimitive() -> BSONPrimitive {
+    /// Converts this `AccumulatedGroupExpression` to a BSON.Primitive so that it can be embedded inside a Document easily
+    public func makePrimitive() -> BSON.Primitive {
         return makeDocument()
     }
     

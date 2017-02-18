@@ -29,7 +29,7 @@ public struct Version: ValueConvertible, Comparable {
     }
     
     /// Converts to this from a String
-    public init?(_ value: BSONPrimitive?) {
+    public init?(_ value: BSON.Primitive?) {
         guard let value = String(value) else {
             return nil
         }
@@ -47,8 +47,8 @@ public struct Version: ValueConvertible, Comparable {
         self.patch = numbers[2]
     }
     
-    /// Creates an embeddable BSONPrimitive (String)
-    public func makeBSONPrimitive() -> BSONPrimitive {
+    /// Creates an embeddable BSON.Primitive (String)
+    public func makePrimitive() -> BSON.Primitive {
         return "\(major).\(minor).\(patch)"
     }
     
@@ -191,7 +191,7 @@ public struct BuildInfo: ValueConvertible {
     }
     
     /// Converts this back to a Document
-    public func makeBSONPrimitive() -> BSONPrimitive {
+    public func makePrimitive() -> BSON.Primitive {
         return [
             "gitVersion": gitVersion,
             "versionArray": versionArray,

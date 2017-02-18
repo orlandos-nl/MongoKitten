@@ -44,7 +44,7 @@ class InternalTests: XCTestCase {
 
     func testDriverInformation() {
         let driverInfo = MongoDriverInformation(appName: "XCTest")
-        let document = driverInfo.makeBSONPrimitive() as? Document
+        let document = driverInfo.makePrimitive() as? Document
         XCTAssertEqual(String(document?["driver"]["name"]), "MongoKitten")
         XCTAssertEqual(String(document?["application"]["name"]),"XCTest")
     }

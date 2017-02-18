@@ -166,7 +166,7 @@ class AggregationTests: XCTestCase {
                     let document = results[0]
                     XCTAssertEqual(String(document["item"]), "MON1003")
                     XCTAssertEqual(Int(document["price"]), 350)
-                    XCTAssertEqual([BSONPrimitive](document["inventory_docs"])?.count, 1)
+                    XCTAssertEqual([Primitive](document["inventory_docs"])?.count, 1)
                 }
             } catch let error as MongoError {
                 XCTFail(error.localizedDescription)

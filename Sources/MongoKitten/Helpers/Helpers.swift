@@ -37,7 +37,7 @@ internal func allDocuments(in message: Message) throws -> [Document] {
 postfix operator *
 
 /// Will convert an ArraySlice<Byte> to [Byte]
-internal postfix func * (slice: ArraySlice<UInt8>) -> [UInt8] {
+internal postfix func * (slice: ArraySlice<Byte>) -> Bytes {
     return Array(slice)
 }
 
