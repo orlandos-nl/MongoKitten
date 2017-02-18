@@ -1,12 +1,10 @@
 os:
   - linux
-  - osx
 language: generic
 sudo: required
 dist: trusty
-osx_image: xcode8.1
 services: 
   - docker
 script:
-  - eval "$(curl -sL https://raw.githubusercontent.com/OpenKitten/Mongo-Assets/master/travisci)"
+  - eval "$(curl -sL https://raw.githubusercontent.com/OpenKitten/Mongo-Assets/master/travisci-31)"
   - eval "$(curl -sL https://raw.githubusercontent.com/OpenKitten/Mongo-Assets/master/codecov)"
