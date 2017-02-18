@@ -10,8 +10,15 @@
 import BSON
 
 extension Document {
-    mutating func write(to collection: Collection) throws {
+    mutating func append(to collection: Collection) throws {
         let id = try collection.insert(self)
         self["_id"] = id
+    }
+    
+    mutating func upsert(into collection: Collection) throws {
+        let id = self["_id"] ?? ObjectId()
+        self["_id"] = id
+        
+        try collection.update(matching: "_id" == id, to: self, upserting: true)
     }
 }
