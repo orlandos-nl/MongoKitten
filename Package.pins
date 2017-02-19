@@ -5,13 +5,19 @@
       "package": "BSON",
       "reason": null,
       "repositoryURL": "https://github.com/OpenKitten/BSON.git",
-      "version": "5.0.0-obbut"
+      "version": "5.0.0-obbut2"
     },
     {
       "package": "CLibreSSL",
       "reason": null,
       "repositoryURL": "https://github.com/vapor/clibressl.git",
       "version": "1.0.0"
+    },
+    {
+      "package": "Cheetah",
+      "reason": null,
+      "repositoryURL": "https://github.com/OpenKitten/Cheetah.git",
+      "version": "0.2.0"
     },
     {
       "package": "Core",

@@ -606,12 +606,12 @@ public final class Collection: Sequence {
     /// For more information: https://docs.mongodb.com/manual/reference/command/distinct/#dbcmd.distinct
     ///
     /// - parameter on: The key that we distinct on
-    /// - parameter query: The Document query used to filter through the returned results
+    /// - parameter query: The query used to filter through the returned results
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A list of all distinct values for this key
-    public func distinct(onField key: String, usingFilter filter: Document? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil) throws -> [BSON.Primitive]? {
+    public func distinct(onField key: String, usingFilter filter: Query? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil) throws -> [BSON.Primitive]? {
         var command: Document = ["distinct": self.name, "key": key]
         
         if let filter = filter {
@@ -622,20 +622,6 @@ public final class Collection: Sequence {
         command["collation"] = collation ?? self.collation
         
         return [Primitive](try firstDocument(in: try self.database.execute(command: command, writing: false))["values"])
-    }
-    
-    /// Returns all distinct values for a key in this collection. Allows filtering using query
-    ///
-    /// For more information: https://docs.mongodb.com/manual/reference/command/distinct/#dbcmd.distinct
-    ///
-    /// - parameter on: The key that we distinct on
-    /// - parameter query: The query used to filter through the returned results
-    ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    ///
-    /// - returns: A list of all distinct values for this key
-    public func distinct(on key: String, usingFilter query: Query) throws -> [BSON.Primitive]? {
-        return try self.distinct(onField: key, usingFilter: query.queryDocument)
     }
     
     /// Creates an `Index` in this `Collection` on the specified keys.

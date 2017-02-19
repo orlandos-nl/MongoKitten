@@ -5,11 +5,15 @@ var package = Package(
     targets: [
         Target(name: "GeoJSON"),
         Target(name: "MongoSocket"),
+        Target(name: "ExtendedJSON"),
         Target(name: "MongoKitten", dependencies: ["GeoJSON", "MongoSocket"])
         ],
     dependencies: [
         // For MongoDB Documents
-        .Package(url: "https://github.com/OpenKitten/BSON.git", "5.0.0-obbut"),
+        .Package(url: "https://github.com/OpenKitten/BSON.git", "5.0.0-obbut2"),
+        
+        // For ExtendedJSON support
+        .Package(url: "https://github.com/OpenKitten/Cheetah.git", majorVersion: 0, minor: 2),
 
         // Authentication
         .Package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", Version(0,6,7)),
