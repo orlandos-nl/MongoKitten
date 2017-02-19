@@ -9,9 +9,6 @@ var package = Package(
         Target(name: "MongoKitten", dependencies: ["GeoJSON", "MongoSocket"])
         ],
     dependencies: [
-        // Core protocol conformance
-        .Package(url: "https://github.com/OpenKitten/KittenCore.git", majorVersion: 0),
-
         // For MongoDB Documents
         .Package(url: "https://github.com/OpenKitten/BSON.git", "5.0.0-obbut2"),
         
