@@ -86,7 +86,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         
         /// A projection stage passes only the projected fields to the next stage.
         @discardableResult
-        public static func projecting(_ projection: Projection) -> Stage {
+        public static func project(_ projection: Projection) -> Stage {
             return Stage([
                 "$project": projection
                 ])
@@ -94,7 +94,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         
         /// A match stage only passed the documents that match the query to the next stage
         @discardableResult
-        public static func matching(_ query: Query) -> Stage {
+        public static func match(_ query: Query) -> Stage {
             return Stage([
                 "$match": query
                 ])
@@ -102,7 +102,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         
         /// A match stage only passed the documents that match the query to the next stage
         @discardableResult
-        public static func matching(_ query: Document) -> Stage {
+        public static func match(_ query: Document) -> Stage {
             return Stage([
                 "$match": query
                 ])
@@ -118,7 +118,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         
         /// This will skip the specified number of input Documents and leave them out. The rest will be passed to the next stage.
         @discardableResult
-        public static func skipping(_ skip: Int) -> Stage {
+        public static func skip(_ skip: Int) -> Stage {
             return Stage([
                 "$skip": skip
                 ])
@@ -130,7 +130,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         /// 
         /// Anything after that will be discarted and will not be sent to the next stage.
         @discardableResult
-        public static func limitedTo(_ limit: Int) -> Stage {
+        public static func limit(_ limit: Int) -> Stage {
             return Stage([
                 "$limit": limit
                 ])
@@ -138,7 +138,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         
         /// Sorts the input Documents by the specified `Sort` object and passed them in the newly sorted order to the next stage.
         @discardableResult
-        public static func sortedBy(_ sort: Sort) -> Stage {
+        public static func sort(_ sort: Sort) -> Stage {
             return Stage([
                 "$sort": sort
                 ])
@@ -150,7 +150,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         ///
         /// https://docs.mongodb.com/manual/reference/operator/aggregation/group/
         @discardableResult
-        public static func grouping(groupDocument: Document) -> Stage {
+        public static func group(groupDocument: Document) -> Stage {
             return Stage([
                 "$group": groupDocument
                 ])
@@ -162,7 +162,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         ///
         /// https://docs.mongodb.com/manual/reference/operator/aggregation/group/
         @discardableResult
-        public static func grouping(_ id: ExpressionRepresentable, computed computedFields: [String: AccumulatedGroupExpression] = [:]) -> Stage {
+        public static func group(_ id: ExpressionRepresentable, computed computedFields: [String: AccumulatedGroupExpression] = [:]) -> Stage {
             let groupDocument = computedFields.reduce([:]) { (doc, expressionPair) -> Document in
                 guard expressionPair.key != "_id" else {
                     return doc
@@ -243,13 +243,13 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         
         /// Writes the resulting Documents to the provided Collection
         @discardableResult
-        public static func writeOutput(toCollection collection: Collection) -> Stage {
-            return self.writeOutput(toCollectionNamed: collection.name)
+        public static func out(toCollection collection: Collection) -> Stage {
+            return self.out(toCollectionNamed: collection.name)
         }
         
         /// Writes the resulting Documents to the provided Collection
         @discardableResult
-        public static func writeOutput(toCollectionNamed collectionName: String) -> Stage {
+        public static func out(toCollectionNamed collectionName: String) -> Stage {
             return Stage([
                 "$out": collectionName
                 ])
@@ -267,7 +267,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         
         /// Counts the amounts of Documents that have been inputted. Places the result at the provided key.
         @discardableResult
-        public static func counting(insertedAtKey key: String) -> Stage {
+        public static func count(insertedAtKey key: String) -> Stage {
             return Stage([
                 "$count": key
                 ])
@@ -287,7 +287,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         
         /// Adds fields to the inputted Documents and sends these new Documents to the next stage.
         @discardableResult
-        public static func addingFields(_ fields: [String: ExpressionRepresentable]) -> Stage {
+        public static func addFields(_ fields: [String: ExpressionRepresentable]) -> Stage {
             return Stage([
                 "$addFields": Document(dictionaryElements: fields.map {
                     ($0.0, $0.1.makeExpression())
