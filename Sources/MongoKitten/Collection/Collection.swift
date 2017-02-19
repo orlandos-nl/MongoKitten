@@ -239,7 +239,7 @@ public final class Collection: Sequence {
         let queryMsg = Message.Query(requestID: database.server.nextMessageID(), flags: flags, collection: self, numbersToSkip: 0, numbersToReturn: Int32(fetchChunkSize), query: command, returnFields: nil)
         
         let response = try self.database.server.sendAndAwait(message: queryMsg, overConnection: connection, timeout: timeout)
-        guard let cursor = _Cursor(namespace: self.fullName, collection: self, reply: response, chunkSize: Int32(fetchChunkSize), transform: { $0 }) else {
+        guard let cursor = try _Cursor(namespace: self.fullName, collection: self, reply: response, chunkSize: Int32(fetchChunkSize), transform: { $0 }) else {
             throw MongoError.invalidReply
         }
         

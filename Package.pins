@@ -32,6 +32,12 @@
       "version": "0.6.7"
     },
     {
+      "package": "KittenCore",
+      "reason": null,
+      "repositoryURL": "https://github.com/OpenKitten/KittenCore.git",
+      "version": "0.0.1"
+    },
+    {
       "package": "LogKitten",
       "reason": null,
       "repositoryURL": "https://github.com/OpenKitten/LogKitten.git",

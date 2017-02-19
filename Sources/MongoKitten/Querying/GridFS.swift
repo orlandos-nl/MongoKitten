@@ -122,9 +122,9 @@ public class GridFS {
     ///
     /// - returns: A cursor pointing to all resulting files
     public func find(matching filter: Query? = nil) throws -> AnyIterator<File> {
-        return Cursor(in: files, where: filter) {
+        return try Cursor(in: files, where: filter) {
             File(document: $0, chunksCollection: self.chunks, filesCollection: self.files)
-        }.makeIterator()
+        }.find()
     }
     
     /// Removes a file by it's identifier

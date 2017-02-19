@@ -11,12 +11,12 @@ import BSON
 
 public typealias BasicCursor = Cursor<Document>
 
-public class Cursor<T> : Sequence {
+public class Cursor<T> {
     public let collection: Collection
     
     public var filter: Query?
     
-    public typealias Transformer = (Document) -> (T?)
+    public typealias Transformer = (Document) throws -> (T?)
     
     public let transform: Transformer
     
@@ -110,8 +110,8 @@ public class Cursor<T> : Sequence {
                 return doc
             })
             
-            return _Cursor(base: cursor) {
-                self.transform($0)
+            return try _Cursor(base: cursor) { doc in
+                return try self.transform(doc)
             }.makeIterator()
         } else {
             let connection = try collection.database.server.reserveConnection(authenticatedFor: collection.database)
@@ -147,8 +147,8 @@ public class Cursor<T> : Sequence {
                 return doc
             })
             
-            return _Cursor(base: cursor) {
-                self.transform($0)
+            return try _Cursor(base: cursor) { doc in
+                return try self.transform(doc)
             }.makeIterator()
         }
     }
@@ -162,27 +162,19 @@ public class Cursor<T> : Sequence {
         return try collection.remove(matching: filter ?? [:], limitedTo: limit, writeConcern: writeConcern, stoppingOnError: ordered)
     }
     
-    public func flatMap<B>(transform: @escaping (T) -> (B?)) -> Cursor<B> {
+    public func flatMap<B>(transform: @escaping (T) throws -> (B?)) -> Cursor<B> {
         return Cursor<B>(base: self, transform: transform)
     }
     
-    public init<B>(base: Cursor<B>, transform: @escaping (B) -> (T?)) {
+    public init<B>(base: Cursor<B>, transform: @escaping (B) throws -> (T?)) {
         self.collection = base.collection
         self.filter = base.filter
         self.transform = {
-            if let bValue = base.transform($0) {
-                return transform(bValue)
+            if let bValue = try base.transform($0) {
+                return try transform(bValue)
             } else {
                 return nil
             }
-        }
-    }
-    
-    public func makeIterator() -> AnyIterator<T> {
-        do {
-            return try find()
-        } catch {
-            return AnyIterator { nil }
         }
     }
     

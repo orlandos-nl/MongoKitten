@@ -97,7 +97,7 @@ extension Database {
     /// - returns: A `Cursor` to all `Collection`s in this `Database`
     public func listCollections(matching filter: Document? = nil) throws -> AnyIterator<Collection> {
         let infoCursor = try self.getCollectionInfos(matching: filter) as _Cursor<Document>
-        return _Cursor(base: infoCursor) { collectionInfo in
+        return try _Cursor(base: infoCursor) { collectionInfo in
             guard let name = collectionInfo["name"] as? String else {
                 return nil
             }

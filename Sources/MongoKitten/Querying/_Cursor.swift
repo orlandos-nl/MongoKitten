@@ -40,18 +40,18 @@ internal final class _Cursor<T> {
     fileprivate var position = 0
     
     /// A closure that transforms a document to another type if possible, otherwise `nil`
-    typealias Transformer = (Document) -> (T?)
+    typealias Transformer = (Document) throws -> (T?)
     
     /// The transformer used for this cursor
     let transform: Transformer
     
     /// This initializer creates a base cursor from a reply message
-    internal convenience init?(namespace: String, collection: Collection, reply: Message, chunkSize: Int32, transform: @escaping Transformer) {
+    internal convenience init?(namespace: String, collection: Collection, reply: Message, chunkSize: Int32, transform: @escaping Transformer) throws {
         guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
             return nil
         }
         
-        self.init(namespace: namespace, collection: collection, cursorID: cursorID, initialData: documents.flatMap(transform), chunkSize: chunkSize, transform: transform)
+        self.init(namespace: namespace, collection: collection, cursorID: cursorID, initialData: try documents.flatMap(transform), chunkSize: chunkSize, transform: transform)
     }
     
     /// This initializer creates a base cursor from a replied Document
@@ -60,7 +60,7 @@ internal final class _Cursor<T> {
             throw MongoError.cursorInitializationError(cursorDocument: cursor)
         }
         
-        self.init(namespace: namespace, collection: collection, cursorID: cursorID, initialData: firstBatch.arrayValue.flatMap{ $0 as? Document }.flatMap(transform), chunkSize: chunkSize, transform: transform)
+        self.init(namespace: namespace, collection: collection, cursorID: cursorID, initialData: try firstBatch.arrayValue.flatMap{ $0 as? Document }.flatMap(transform), chunkSize: chunkSize, transform: transform)
     }
     
     /// This initializer creates a base cursor from provided specific data
@@ -78,23 +78,23 @@ internal final class _Cursor<T> {
     /// The transformer will get `B` as input and is expected to return `T?` for the new type.
     ///
     /// This allows you to easily map a Document cursor returned by MongoKitten to a new type like your model.
-    internal init<B>(base: _Cursor<B>, transform: @escaping (B) -> (T?)) {
+    internal init<B>(base: _Cursor<B>, transform: @escaping (B) throws -> (T?)) throws {
         self.namespace = base.namespace
         self.collection = base.collection
         self.cursorID = base.cursorID
         self.chunkSize = base.chunkSize
         self.transform = {
-            if let bValue = base.transform($0) {
-                return transform(bValue)
+            if let bValue = try base.transform($0) {
+                return try transform(bValue)
             } else {
                 return nil
             }
         }
-        self.data = base.data.flatMap(transform)
+        self.data = try base.data.flatMap(transform)
     }
     
     /// Gets more information and puts it in the buffer
-    fileprivate func getMore() {
+    fileprivate func getMore() throws {
         do {
             if collection.database.server.serverData?.maxWireVersion ?? 0 >= 4 {
                 let reply = try collection.database.execute(command: [
@@ -110,7 +110,7 @@ internal final class _Cursor<T> {
                 
                 let documents = [Primitive](resultDocs.first?["cursor"]["nextBatch"]) ?? []
                 for value in documents {
-                    if let doc = transform(value as? Document ?? [:]) {
+                    if let doc = try transform(value as? Document ?? [:]) {
                         self.data.append(doc)
                     }
                 }
@@ -132,7 +132,7 @@ internal final class _Cursor<T> {
                     throw InternalMongoError.incorrectReply(reply: reply)
                 }
                 
-                self.data += documents.flatMap(transform)
+                self.data += try documents.flatMap(transform)
                 self.cursorID = cursorID
             }
         } catch {
@@ -165,19 +165,23 @@ extension _Cursor : Sequence {
     /// - returns: The iterator
     internal func makeIterator() -> AnyIterator<T> {
         return AnyIterator {
-            return self.next()
+            while true {
+                do {
+                    return try self.next()
+                } catch {}
+            }
         }
     }
     
     /// Allows you to fetch the first next entity in the Cursor
-    internal func next() -> T? {
+    internal func next() throws -> T? {
         defer { position += 1 }
         
         if position >= self.data.count && self.cursorID != 0 {
             position = 0
             self.data = []
             // Get more data!
-            self.getMore()
+            try self.getMore()
         }
         
         return position < self.data.count ? self.data[position] : nil
