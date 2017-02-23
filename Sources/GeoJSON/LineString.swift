@@ -13,7 +13,7 @@ import BSON
 
 /// A representation of a GeoJSON LineString.
 public struct LineString: Geometry, ValueConvertible {
-
+    
     /// The GeoJSON coordinates of this LineString
     public let coordinates: [Position]
     

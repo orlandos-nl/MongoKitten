@@ -10,7 +10,7 @@ var package = Package(
         ],
     dependencies: [
         // For MongoDB Documents
-        .Package(url: "https://github.com/OpenKitten/BSON.git", "5.0.0-obbut3"),
+        .Package(url: "https://github.com/OpenKitten/BSON.git", "5.0.0-obbut4"),
         
         // For ExtendedJSON support
         .Package(url: "https://github.com/OpenKitten/Cheetah.git", majorVersion: 0, minor: 2),

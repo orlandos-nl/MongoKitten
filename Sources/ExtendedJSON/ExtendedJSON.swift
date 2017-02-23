@@ -10,7 +10,7 @@
 import Cheetah
 import BSON
 import Foundation
-import KittenCore
+@_exported import KittenCore
 
 extension JSONObject {
     internal func parseExtendedJSON() -> Primitive {
@@ -116,7 +116,7 @@ extension Document {
             case let array as JSONArray:
                 primitiveValue = Document(array)
             case is KittenCore.Null:
-                primitiveValue = KittenCore.Null()
+                primitiveValue = Null()
             default:
                 assertionFailure("Invalid (custom) JSON element provided")
                 continue
@@ -146,8 +146,8 @@ extension Document {
                 bsonArray.append(object.parseExtendedJSON())
             case let array as JSONArray:
                 bsonArray.append(Document(array))
-            case is Cheetah.Null:
-                bsonArray.append(BSON.Null())
+            case is NSNull:
+                bsonArray.append(NSNull())
             default:
                 assertionFailure("Invalid (custom) JSON element provided")
                 continue

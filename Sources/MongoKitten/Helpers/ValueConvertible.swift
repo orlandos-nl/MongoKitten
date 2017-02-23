@@ -15,6 +15,14 @@ internal protocol ValueConvertible : BSON.Primitive {
 }
 
 extension ValueConvertible {
+    public func convert<S>(toType type: S.Type) -> S.SupportedValue? where S : InitializableSequence {
+        return makePrimitive().convert(toType: type)
+    }
+    
+    public func convert<S>(toType type: S.Type) -> S.SequenceType.SupportedValue? where S : SerializableObject {
+        return makePrimitive().convert(toType: type)
+    }
+    
     public var typeIdentifier: Byte {
         return makePrimitive().typeIdentifier
     }

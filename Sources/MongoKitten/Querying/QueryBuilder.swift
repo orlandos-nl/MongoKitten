@@ -388,7 +388,7 @@ public struct Query: ExpressibleByDictionaryLiteral, ValueConvertible, Expressib
 
 
     /// Creates a Query from a Dictionary Literal
-    public init(dictionaryLiteral elements: (StringVariant, BSON.Primitive?)...) {
+    public init(dictionaryLiteral elements: (String, BSON.Primitive?)...) {
         self.aqt = .exactly(Document(dictionaryElements: elements))
     }
     
