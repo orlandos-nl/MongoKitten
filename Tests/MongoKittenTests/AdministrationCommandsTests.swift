@@ -76,6 +76,16 @@ class AdministrationCommandsTests: XCTestCase {
         }
     }
     
+    func testExample() throws {
+        let doc: Document = [
+            "username": "Joannis",
+            "age": 20,
+            "permissions": ["admin", "user", "moderator"]
+        ]
+
+        TestManager.db
+    }
+    
     func testCollection() throws {
         for db in TestManager.dbs {
             let test = db["test"]

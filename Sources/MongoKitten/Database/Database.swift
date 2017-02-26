@@ -140,7 +140,7 @@ public final class Database {
     
     /// Creates a GridFS collection in this database
     public func makeGridFS(named name: String = "fs") throws -> GridFS {
-        return try GridFS(inDatabase: self, named: name)
+        return try GridFS(in: self, named: name)
     }
     
     /// Get a `Collection` by providing a collection name as a `String`

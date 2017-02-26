@@ -37,7 +37,7 @@ public class GridFS {
     /// - parameter named: The optional name of this GridFS bucket (by default "fs")
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred or when it can't create it's indexes
-    public init(inDatabase database: Database, named bucketName: String = "fs") throws {
+    public init(in database: Database, named bucketName: String = "fs") throws {
         files = database["\(bucketName).files"]
         chunks = database["\(bucketName).chunks"]
         name = bucketName
@@ -48,39 +48,6 @@ public class GridFS {
         try files.createIndex(named: "filename", withParameters: .sortedCompound(fields: [("uploadDate", .ascending), ("filesindex", .ascending)]), .buildInBackground)
     }
     
-    /// Finds using all files matching this ObjectID
-    ///
-    /// - parameter byID: The ID to look for
-    ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    ///
-    /// - returns: A cursor pointing to all resulting files
-    public func find(byID id: ObjectId) throws -> AnyIterator<File> {
-        return try self.find(matching: ["_id": id]).makeIterator()
-    }
-    
-    /// Finds using all files file matching this filename
-    ///
-    /// - parameter filter: The filename to look for
-    ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    ///
-    /// - returns: A cursor pointing to all resulting files
-    public func find(byName filename: String) throws -> AnyIterator<File> {
-        return try self.find(matching: ["filename": filename]).makeIterator()
-    }
-    
-    /// Finds using all files matching this MD5 hash
-    ///
-    /// - parameter filter: The hash to look for
-    ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    ///
-    /// - returns: A cursor pointing to all resulting files
-    public func find(byHash hash: String) throws -> AnyIterator<File> {
-        return try self.find(matching: ["md5": hash]).makeIterator()
-    }
-    
     /// Finds the first file matching this ObjectID
     ///
     /// - parameter byID: The hash to look for
@@ -89,29 +56,7 @@ public class GridFS {
     ///
     /// - returns: The resulting file
     public func findOne(byID id: ObjectId) throws -> File? {
-        return try self.find(matching: ["_id": id]).makeIterator().next()
-    }
-    
-    /// Finds the first file matching this filename
-    ///
-    /// - parameter byName: The filename to look for
-    ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    ///
-    /// - returns: The resulting file
-    public func findOne(byName filename: String) throws -> File? {
-        return try self.find(matching: ["filename": filename]).makeIterator().next()
-    }
-    
-    /// Finds the first file matching this MD5 hash
-    ///
-    /// - parameter byHash: The hash to look for
-    ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    ///
-    /// - returns: The resulting file
-    public func findOne(byHash hash: String) throws -> File? {
-        return try self.find(matching: ["md5": hash]).makeIterator().next()
+        return try self.find("_id" == id).makeIterator().next()
     }
     
     /// Finds using a matching filter
@@ -121,7 +66,7 @@ public class GridFS {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A cursor pointing to all resulting files
-    public func find(matching filter: Query? = nil) throws -> AnyIterator<File> {
+    public func find(_ filter: Query? = nil) throws -> AnyIterator<File> {
         return try Cursor(in: files, where: filter) {
             File(document: $0, chunksCollection: self.chunks, filesCollection: self.files)
         }.find()
