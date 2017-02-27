@@ -32,26 +32,6 @@ public final class Collection: Sequence {
     /// The collection name
     public private(set) var name: String
     
-    #if Xcode
-    func debugQuickLookObject() -> AnyObject {
-        var userInfo = ""
-        
-        if let username = database.server.clientSettings.credentials?.username {
-            userInfo = "\(username):*********@"
-        }
-        
-        var collectionData = ""
-        
-        if let documentCount = try? self.count() {
-            collectionData = "Document count: \(documentCount)\n"
-        } else {
-            collectionData = "Unable to fetch collection data"
-        }
-        
-        return NSString(string: "mongodb://\(userInfo)\(database.server.hostname)/\(self.fullName)\n\n\(collectionData)")
-    }
-    #endif
-    
     /// The full (computed) collection name. Created by adding the Database's name with the Collection's name with a dot to seperate them
     /// Will be empty
     public var fullName: String {
@@ -151,8 +131,8 @@ public final class Collection: Sequence {
     ///
     /// - returns: The documents' ids
     @discardableResult
-    public func insert(contentsOf documents: [Document], stoppingOnError ordered: Bool? = nil, writeConcern: WriteConcern? = nil, timeout customTimeout: TimeInterval? = nil) throws -> [BSON.Primitive] {
-        let timeout: TimeInterval = customTimeout ?? (database.server.defaultTimeout + (Double(documents.count) / 50))
+    public func insert(contentsOf documents: [Document], stoppingOnError ordered: Bool? = nil, writeConcern: WriteConcern? = nil, timingOut afterTimeout: TimeInterval? = nil) throws -> [BSON.Primitive] {
+        let timeout: TimeInterval = afterTimeout ?? (database.server.defaultTimeout + (Double(documents.count) / 50))
         
         var newIds = [Primitive]()
         var documents = documents.map({ (input: Document) -> Document in
@@ -262,12 +242,12 @@ public final class Collection: Sequence {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A cursor pointing to the found Documents
-    public func find(matching filter: Query? = nil, sortedBy sort: Sort? = nil, projecting projection: Projection? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil, skipping skip: Int? = nil, limitedTo limit: Int? = nil, withBatchSize batchSize: Int = 100) throws -> AnyIterator<Document> {
+    public func find(_ filter: Query? = nil, sortedBy sort: Sort? = nil, projecting projection: Projection? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil, skipping skip: Int? = nil, limitedTo limit: Int? = nil, withBatchSize batchSize: Int = 100) throws -> AnyIterator<Document> {
         precondition(batchSize < Int(Int32.max))
         precondition(skip ?? 0 < Int(Int32.max))
         precondition(limit ?? 0 < Int(Int32.max))
         
-        return try Cursor(in: self, where: filter).find(sortedBy: sort, projecting: projection, readConcern: readConcern, collation: collation, skipping: skip, limitedTo: limit, withBatchSize: batchSize).makeIterator()
+        return try Cursor(in: self, where: filter).find(sorting: sort, projecting: projection, readConcern: readConcern, collation: collation, skipping: skip, limitedTo: limit, withBatchSize: batchSize).makeIterator()
     }
     
     /// Finds Documents in this collection
@@ -284,8 +264,8 @@ public final class Collection: Sequence {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: The found Document
-    public func findOne(matching filter: Query? = nil, sortedBy sort: Sort? = nil, projecting projection: Projection? = nil, skipping skip: Int? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil) throws -> Document? {
-        return try self.find(matching: filter, sortedBy: sort, projecting: projection, readConcern: readConcern, collation: collation, skipping: skip, limitedTo:
+    public func findOne(_ filter: Query? = nil, sortedBy sort: Sort? = nil, projecting projection: Projection? = nil, skipping skip: Int? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil) throws -> Document? {
+        return try self.find(filter, sortedBy: sort, projecting: projection, readConcern: readConcern, collation: collation, skipping: skip, limitedTo:
             1).next()
     }
     
@@ -311,7 +291,7 @@ public final class Collection: Sequence {
     ///
     /// - returns: The amount of updated documents
     @discardableResult
-    public func update(_ updates: [(filter: Query, to: Document, upserting: Bool, multiple: Bool)], writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
+    public func update(bulk updates: [(filter: Query, to: Document, upserting: Bool, multiple: Bool)], writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
         if protocolVersion >= 2 {
@@ -389,8 +369,8 @@ public final class Collection: Sequence {
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     @discardableResult
-    public func update(matching filter: Query = [:], to updated: Document, upserting upsert: Bool = false, multiple multi: Bool = false, writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
-        return try self.update([(filter: filter, to: updated, upserting: upsert, multiple: multi)], writeConcern: writeConcern, stoppingOnError: ordered)
+    public func update(_ filter: Query = [:], to updated: Document, upserting upsert: Bool = false, multiple multi: Bool = false, writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
+        return try self.update(bulk: [(filter: filter, to: updated, upserting: upsert, multiple: multi)], writeConcern: writeConcern, stoppingOnError: ordered)
     }
     
     // Delete
@@ -404,7 +384,7 @@ public final class Collection: Sequence {
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     @discardableResult
-    public func remove(matching removals: [(filter: Query, limit: Int)], writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
+    public func remove(bulk removals: [(filter: Query, limit: Int)], writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
         if protocolVersion >= 2 {
@@ -477,8 +457,8 @@ public final class Collection: Sequence {
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     @discardableResult
-    public func remove(matching filter: Query, limitedTo limit: Int = 0, writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
-        return try self.remove(matching: [(filter: filter, limit: limit)], writeConcern: writeConcern, stoppingOnError: ordered)
+    public func remove(_ filter: Query, limiting limit: Int = 0, writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
+        return try self.remove(bulk: [(filter: filter, limit: limit)], writeConcern: writeConcern, stoppingOnError: ordered)
     }
     
     /// The drop command removes an entire collection from a database. This command also removes any indexes associated with the dropped collection.
@@ -537,8 +517,8 @@ public final class Collection: Sequence {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: The amount of matching `Document`s
-    public func count(matching filter: Query? = nil, limitedTo limit: Int? = nil, skipping skip: Int? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil) throws -> Int {
-        return try Cursor<Document>(in: self, where: filter).count(limitedTo: limit, skipping: skip, readConcern: readConcern, collation: collation)
+    public func count(_ filter: Query? = nil, limiting limit: Int? = nil, skipping skip: Int? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil) throws -> Int {
+        return try Cursor<Document>(in: self, where: filter).count(limiting: limit, skipping: skip, readConcern: readConcern, collation: collation)
     }
     
     /// `findAndModify` only has two operations that can be used. Update and Delete
@@ -611,11 +591,11 @@ public final class Collection: Sequence {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A list of all distinct values for this key
-    public func distinct(onField key: String, usingFilter filter: Query? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil) throws -> [BSON.Primitive]? {
-        var command: Document = ["distinct": self.name, "key": key]
+    public func distinct(on field: String, filtering query: Query? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil) throws -> [BSON.Primitive]? {
+        var command: Document = ["distinct": self.name, "key": field]
         
-        if let filter = filter {
-            command["query"] = filter
+        if let query = query {
+            command["query"] = query
         }
         
         command["readConcern"] = readConcern ?? self.readConcern
@@ -729,7 +709,7 @@ public final class Collection: Sequence {
     ///
     /// - throws: When MongoDB doesn't return a document indicating success, we'll throw a `MongoError.commandFailure()` containing the error document sent by the server
     /// - throws: When the `flags` document contains the key `collMod`, which is prohibited.
-    public func modify(flags: Document) throws {
+    public func set(flags: Document) throws {
         guard flags["collMod"] == nil else {
             throw MongoError.commandError(error: "Cannot execute modify() on \(self.description): document `flags` contains prohibited key `collMod`.")
         }
@@ -743,30 +723,32 @@ public final class Collection: Sequence {
         }
     }
     
+    public func aggregate(_ pipeline: AggregationPipeline, readConcern: ReadConcern? = nil, collation: Collation? = nil, options: AggregationOptions...) throws -> AnyIterator<Document> {
+        return try aggregate(pipeline, readConcern: readConcern, collation: collation, options: options)
+    }
+    
     /// Uses the aggregation pipeline to process documents into aggregated results.
     ///
     /// See [the MongoDB docs on the aggregation pipeline](https://docs.mongodb.org/manual/reference/operator/aggregation-pipeline/) for more information.
     ///
     /// - parameter pipeline: An array of aggregation pipeline stages that process and transform the document stream as part of the aggregation pipeline.
-    /// - parameter explain: Specifies to return the information on the processing of the pipeline.
-    /// - parameter allowDiskUse: Enables writing to temporary files. When set to true, aggregation stages can write data to the _tmp subdirectory in the dbPath directory.
-    /// - parameter cursorOptions: Specify a document that contains options that control the creation of the cursor object.
-    /// - parameter bypassDocumentValidation: Available only if you specify the $out aggregation operator. Enables aggregate to bypass document validation during the operation. This lets you insert documents that do not meet the validation requirements. *Available for MongoDB 3.2 and later versions*
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A `Cursor` pointing to the found `Document`s
-    public func aggregate(pipeline: AggregationPipeline, explain: Bool? = nil, allowDiskUse: Bool? = nil, cursorOptions: Document = ["batchSize": 100], bypassDocumentValidation: Bool? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil) throws -> AnyIterator<Document> {
+    public func aggregate(_ pipeline: AggregationPipeline, readConcern: ReadConcern? = nil, collation: Collation? = nil, options: [AggregationOptions]) throws -> AnyIterator<Document> {
         // construct command. we always use cursors in MongoKitten, so that's why the default value for cursorOptions is an empty document.
-        var command: Document = ["aggregate": self.name, "pipeline": pipeline.pipelineDocument, "cursor": cursorOptions]
+        var command: Document = ["aggregate": self.name, "pipeline": [:] as Document]
         
         command["readConcern"] = readConcern ?? self.readConcern
         command["collation"] = collation ?? self.collation
-        
-        if let explain = explain { command["explain"] = explain }
-        if let allowDiskUse = allowDiskUse { command["allowDiskUse"] = allowDiskUse }
-        if let bypassDocumentValidation = bypassDocumentValidation { command["bypassDocumentValidation"] = bypassDocumentValidation }
-        
+
+        for option in options {
+            for (key, value) in option.fields {
+                command[key] = value
+            }
+        }
+
         // execute and construct cursor
         let reply = try database.execute(command: command)
         
@@ -778,7 +760,7 @@ public final class Collection: Sequence {
             throw MongoError.invalidResponse(documents: documents)
         }
         
-        return try _Cursor(cursorDocument: cursorDoc, collection: self, chunkSize: Int32(cursorOptions["batchSize"]) ?? 100, transform: { $0 }).makeIterator()
+        return try _Cursor(cursorDocument: cursorDoc, collection: self, chunkSize: Int32(command["cursor"]["batchSize"]) ?? 100, transform: { $0 }).makeIterator()
     }
 }
 

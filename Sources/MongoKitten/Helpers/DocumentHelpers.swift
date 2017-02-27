@@ -19,6 +19,6 @@ extension Document {
         let id = self["_id"] ?? ObjectId()
         self["_id"] = id
         
-        try collection.update(matching: "_id" == id, to: self, upserting: true)
+        try collection.update("_id" == id, to: self, upserting: true)
     }
 }

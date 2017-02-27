@@ -74,8 +74,8 @@ public class GridFS {
     
     /// Removes a file by it's identifier
     public func remove(byId identifier: ObjectId) throws {
-        try files.remove(matching: "_id" == identifier)
-        try chunks.remove(matching: "files_id" == identifier)
+        try files.remove("_id" == identifier)
+        try chunks.remove("files_id" == identifier)
     }
     
     /// Stores the data in GridFS
@@ -151,7 +151,7 @@ public class GridFS {
             
             _ = try files.insert(insertData)
         } catch {
-            try chunks.remove(matching: "files_id" == id)
+            try chunks.remove("files_id" == id)
             throw error
         }
         
@@ -281,7 +281,7 @@ public class GridFS {
             
             let chunkCursor = try Cursor(in: chunksCollection, where: "files_id" == id, transform: {
                 Chunk(document: $0, chunksCollection: self.chunksCollection, filesCollection: self.filesCollection)
-            }).find(sortedBy: ["n": .ascending], skipping: skipChunks, limitedTo: endChunk - skipChunks)
+            }).find(sorting: ["n": .ascending], skipping: skipChunks, limitedTo: endChunk - skipChunks)
             var allData = Bytes()
             
             for chunk in chunkCursor {
@@ -329,7 +329,7 @@ public class GridFS {
         public func chunked() throws -> AnyIterator<Chunk> {
             return try Cursor(in: chunksCollection, where: "files_id" == id) {
                     Chunk(document: $0, chunksCollection: self.chunksCollection, filesCollection: self.filesCollection)
-                }.find(sortedBy: ["n": .ascending])
+                }.find(sorting: ["n": .ascending])
         }
         
         /// A GridFS Byte Chunk that's part of a file

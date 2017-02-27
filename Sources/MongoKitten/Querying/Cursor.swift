@@ -20,7 +20,7 @@ public class Cursor<T> {
     
     public let transform: Transformer
     
-    public func count(limitedTo limit: Int? = nil, skipping skip: Int? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil) throws -> Int {
+    public func count(limiting limit: Int? = nil, skipping skip: Int? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil) throws -> Int {
         var command: Document = ["count": collection.name]
         
         if let filter = filter {
@@ -51,8 +51,8 @@ public class Cursor<T> {
         return n
     }
     
-    public func findOne(sortedBy sort: Sort? = nil, projecting projection: Projection? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil, skipping skip: Int? = nil) throws -> T? {
-        return try self.find(sortedBy: sort, projecting: projection, readConcern: readConcern, collation: collation, skipping: skip, limitedTo: 1, withBatchSize: 1).next()
+    public func findOne(sorting sort: Sort? = nil, projecting projection: Projection? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil, skipping skip: Int? = nil) throws -> T? {
+        return try self.find(sorting: sort, projecting: projection, readConcern: readConcern, collation: collation, skipping: skip, limitedTo: 1, withBatchSize: 1).next()
     }
     
     public var first: T? {
@@ -63,7 +63,7 @@ public class Cursor<T> {
         }
     }
     
-    public func find(sortedBy sort: Sort? = nil, projecting projection: Projection? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil, skipping skip: Int? = nil, limitedTo limit: Int? = nil, withBatchSize batchSize: Int = 100) throws -> AnyIterator<T> {
+    public func find(sorting sort: Sort? = nil, projecting projection: Projection? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil, skipping skip: Int? = nil, limitedTo limit: Int? = nil, withBatchSize batchSize: Int = 100) throws -> AnyIterator<T> {
         precondition(batchSize < Int(Int32.max))
         precondition(skip ?? 0 < Int(Int32.max))
         precondition(limit ?? 0 < Int(Int32.max))
@@ -154,12 +154,12 @@ public class Cursor<T> {
     }
     
     public func update(to document: Document, upserting: Bool, multiple: Bool, writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
-        return try collection.update(matching: filter ?? [:], to: document, upserting: upserting, multiple: multiple, writeConcern: writeConcern, stoppingOnError: ordered)
+        return try collection.update(filter ?? [:], to: document, upserting: upserting, multiple: multiple, writeConcern: writeConcern, stoppingOnError: ordered)
     }
     
     @discardableResult
-    public func remove(limitedTo limit: Int = 0, writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
-        return try collection.remove(matching: filter ?? [:], limitedTo: limit, writeConcern: writeConcern, stoppingOnError: ordered)
+    public func remove(limiting limit: Int = 0, writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
+        return try collection.remove(filter ?? [:], limiting: limit, writeConcern: writeConcern, stoppingOnError: ordered)
     }
     
     public func flatMap<B>(transform: @escaping (T) throws -> (B?)) -> Cursor<B> {

@@ -79,6 +79,6 @@ public struct DBRef: ValueConvertible {
     ///
     /// - returns: The Document or `nil` if the reference is invalid or the Document has been removed.
     public func resolve() throws -> Document? {
-        return try collection.findOne(matching: "_id" == self.id)
+        return try collection.findOne("_id" == self.id)
     }
 }
