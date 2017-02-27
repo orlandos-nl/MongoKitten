@@ -86,7 +86,7 @@ class DatabaseTests: XCTestCase {
 
     func testDisconnect() throws {
 
-        let server =  try Server(mongoURL: TestManager.mongoURL)
+        let server =  try Server(TestManager.mongoURL)
         XCTAssertTrue(server.isConnected)
 
         try server.disconnect()

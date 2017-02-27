@@ -186,7 +186,7 @@ public final class Server {
     /// - throws: When we can't connect automatically, when the scheme/host is invalid and when we can't connect automatically
     ///
     /// - parameter automatically: Whether to connect automatically
-    convenience public init(mongoURL url: String, maxConnectionsPerServer maxConnections: Int = 100, defaultTimeout: TimeInterval = 30) throws {
+    convenience public init(_ url: String, maxConnectionsPerServer maxConnections: Int = 100, defaultTimeout: TimeInterval = 30) throws {
         let clientSettings = try ClientSettings(mongoURL: url)
         try self.init(clientSettings)
     }

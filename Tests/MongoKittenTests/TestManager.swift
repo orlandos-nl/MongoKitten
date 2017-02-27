@@ -42,7 +42,7 @@ final class TestManager {
         return String(validatingUTF8: out) ?? defaultURL
     }
     
-    private static var db: Database = try! Database(mongoURL: mongoURL)
+    private static var db: Database = try! Database(mongoURL)
     
     static var dbs: [Database] {
         var databases = [db]
@@ -54,7 +54,7 @@ final class TestManager {
     }
     
     private static var codecovDb: Database? = {
-        return codecov ? try! Database(mongoURL: "mongodb://localhost:27018/mongokitten-unittest?appname=xctest") : nil
+        return codecov ? try! Database("mongodb://localhost:27018/mongokitten-unittest?appname=xctest") : nil
     }()
     
     static var testingUsers = [Document]()

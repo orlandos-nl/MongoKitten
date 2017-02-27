@@ -113,14 +113,14 @@ public final class Database {
     /// Initializes this Database with a connection String.
     ///
     /// Requires a path with a databasee name
-    public init(mongoURL url: String, maxConnectionsPerServer maxConnections: Int = 100) throws {
+    public init(_ url: String, maxConnectionsPerServer maxConnections: Int = 100) throws {
         let path = url.characters.split(separator: "/", maxSplits: 2, omittingEmptySubsequences: true)
         
         guard path.count == 3, let dbname = path.last?.split(separator: "?")[0] else {
             throw MongoError.invalidDatabase("")
         }
         
-        self.server = try Server(mongoURL: url, maxConnectionsPerServer: maxConnections)
+        self.server = try Server(url, maxConnectionsPerServer: maxConnections)
         
         self.name = String(dbname)
         
