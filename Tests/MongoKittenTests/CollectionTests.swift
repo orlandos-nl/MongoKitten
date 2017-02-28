@@ -143,25 +143,25 @@ class CollectionTests: XCTestCase {
                 .skip(2)
             ]
             
-            var zipsDocs = Array(try db["zips"].aggregate(pipeline: pipeline))
+            var zipsDocs = Array(try db["zips"].aggregate(pipeline))
             XCTAssertEqual(zipsDocs.count, 0)
             
-            zipsDocs = Array(try db["zipschange"].aggregate(pipeline: pipeline))
+            zipsDocs = Array(try db["zipschange"].aggregate(pipeline))
             XCTAssertEqual(zipsDocs.count, 5)
             
             try db["zipschange"].rename(to: "zips")
             
-            zipsDocs = Array(try db["zips"].aggregate(pipeline: pipeline))
+            zipsDocs = Array(try db["zips"].aggregate(pipeline))
             XCTAssertEqual(zipsDocs.count, 5)
             
-            zipsDocs = Array(try db["zipschange"].aggregate(pipeline: pipeline))
+            zipsDocs = Array(try db["zipschange"].aggregate(pipeline))
             XCTAssertEqual(zipsDocs.count, 0)
         }
     }
     
     func testDistinct() throws {
         for db in TestManager.dbs {
-            let distinct = try db["zips"].distinct(onField: "state")
+            let distinct = try db["zips"].distinct(on: "state")
             
             XCTAssertEqual(distinct?.count, 51)
         }
@@ -171,7 +171,7 @@ class CollectionTests: XCTestCase {
 
         for db in TestManager.dbs {
             let query = Query(aqt: .startsWith(key: "state", val: "A"))
-            let distinct = try db["zips"].distinct(on: "state", usingFilter: query)
+            let distinct = try db["zips"].distinct(on: "state", filtering: query)
             XCTAssertEqual(distinct?.count, 4)
         }
 
@@ -234,9 +234,9 @@ class CollectionTests: XCTestCase {
             
             let query: Query = ("username" == "henk" || "username" == "bob") && "age" > 24 && "kittens" >= 2 && "kittens" != 3 && "dogs" <= 1 && "beers" < 100
             
-            let response = Array(try db["wcol"].find(matching: query))
+            let response = Array(try db["wcol"].find(query))
             
-            let response2 = try db["wcol"].findOne(matching: query)!
+            let response2 = try db["wcol"].findOne(query)!
             
             XCTAssertEqual(response.count, 2)
             
@@ -260,7 +260,7 @@ class CollectionTests: XCTestCase {
             
             let referenceID = try colB.insert(["reference": dbref])
             
-            guard let reference = try colB.findOne(matching: "_id" == referenceID) else {
+            guard let reference = try colB.findOne("_id" == referenceID) else {
                 XCTFail()
                 return
             }
@@ -281,7 +281,7 @@ class CollectionTests: XCTestCase {
 
     func testFindProjection() throws {
         for db in TestManager.dbs {
-            let results = Array(try db["zips"].find(matching: "city" == "BARRE", projecting: ["city","pop"] as Projection))
+            let results = Array(try db["zips"].find("city" == "BARRE", projecting: ["city","pop"] as Projection))
 
             XCTAssertEqual(results.count, 2)
             XCTAssertNil(String(results.first?["state"]))
@@ -342,31 +342,27 @@ class CollectionTests: XCTestCase {
 
     private func runContainsQuery(onDB db: Database) throws {
         let query = Query(aqt: .contains(key: "username", val: "ar", options: []))
-        let response = Array(try db["wcol"].find(matching: query))
+        let response = Array(try db["wcol"].find(query))
         XCTAssert(response.count == 2)
     }
     
     private func runStartsWithQuery(onDB db: Database) throws {
         let query = Query(aqt: .startsWith(key: "username", val: "har"))
-        let response = Array(try db["wcol"].find(matching: query))
+        let response = Array(try db["wcol"].find(query))
         XCTAssert(response.count == 2)
     }
     
     private func runEndsWithQuery(onDB db: Database) throws {
         let query = Query(aqt: .endsWith(key: "username", val: "rrie"))
-        let response = Array(try db["wcol"].find(matching: query))
+        let response = Array(try db["wcol"].find(query))
         XCTAssert(response.count == 2)
     }
     
     private func runContainsCaseInsensitiveQuery(onDB db: Database) throws {
         let query = Query(aqt: .contains(key: "username", val: "AR", options: .caseInsensitive))
-        let response = Array(try db["wcol"].find(matching: query))
+        let response = Array(try db["wcol"].find(query))
         XCTAssert(response.count == 2)
     }
-
-
-    
-    
     
     func testTextOperator() throws {
         for db in TestManager.dbs {
@@ -377,7 +373,7 @@ class CollectionTests: XCTestCase {
             let textSearch = db["textsearch"]
             try textSearch.createIndex(named: "subject", withParameters: .text(["subject"]))
             
-            try textSearch.remove(matching: Query([:]))
+            try textSearch.remove(Query([:]))
             
             try textSearch.insert(contentsOf: [
                 ["_id": 1, "subject": "coffee", "author": "xyz", "views": 50],
@@ -390,7 +386,7 @@ class CollectionTests: XCTestCase {
                 ["_id": 8, "subject": "Cafe con Leche", "author": "xyz", "views": 10]
                 ])
             
-            let resultCount = try textSearch.count(matching: .textSearch(forString: "coffee"))
+            let resultCount = try textSearch.count(.textSearch(forString: "coffee"))
             
             XCTAssertEqual(resultCount, 3)
         }
@@ -421,14 +417,14 @@ class CollectionTests: XCTestCase {
             
             let query: Query = ("username" == "henk" || "username" == "bob") && "age" > 24 && "kittens" >= 2 && "kittens" != 3 && "dogs" <= 1 && "beers" < 100
             
-            try db["wcol"].update(matching: query, to: ["testieBool": true])
+            try db["wcol"].update(query, to: ["testieBool": true])
             
             try db.server.fsync()
             
-            let response = Array(try db["wcol"].find(matching: "testieBool" == true))
+            let response = Array(try db["wcol"].find("testieBool" == true))
             XCTAssertEqual(response.count, 1)
             
-            let response2 = Array(try db["wcol"].find(matching: query))
+            let response2 = Array(try db["wcol"].find(query))
             XCTAssertEqual(response2.count, 1)
         }
     }
@@ -459,9 +455,9 @@ class CollectionTests: XCTestCase {
             
             let query: Query = ("username" == "henk" || "username" == "bob") && "age" > 24 && "kittens" >= 2 && "kittens" != 3 && "dogs" <= 1 && "beers" < 100
             
-            XCTAssertGreaterThan(try db["wcol"].remove(matching: query), 0)
+            XCTAssertGreaterThan(try db["wcol"].remove(query), 0)
             
-            let response = Array(try db["wcol"].find(matching: query))
+            let response = Array(try db["wcol"].find(query))
             
             XCTAssertEqual(response.count, 0)
         }
@@ -493,10 +489,10 @@ class CollectionTests: XCTestCase {
             
             let query: Query = ("username" == "henk" || "username" == "bob") && "age" > 24 && "kittens" >= 2 && "kittens" != 3 && "dogs" <= 1 && "beers" < 100
             
-            XCTAssertEqual(try db["wcol"].remove(matching: query, limitedTo: 1), 1)
+            XCTAssertEqual(try db["wcol"].remove(query, limiting: 1), 1)
             try db.server.fsync()
             
-            let response = Array(try db["wcol"].find(matching: query))
+            let response = Array(try db["wcol"].find(query))
             
             XCTAssertEqual(response.count, 1)
         }
@@ -555,10 +551,10 @@ class CollectionTests: XCTestCase {
             
             XCTAssertNotNil(modifiedDocument as? Document)
             
-            let response = Array(try db["wcol"].find(matching: "testieBool" == true))
+            let response = Array(try db["wcol"].find("testieBool" == true))
             XCTAssertEqual(response.count, 1)
             
-            let response2 = Array(try db["wcol"].find(matching: query))
+            let response2 = Array(try db["wcol"].find(query))
             XCTAssertEqual(response2.count, 1)
         }
     }

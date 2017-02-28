@@ -127,7 +127,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         /// This will limit the results to the specified number.
         ///
         /// The first Documents will be selected.
-        /// 
+        ///
         /// Anything after that will be discarted and will not be sent to the next stage.
         @discardableResult
         public static func limit(_ limit: Int) -> Stage {
@@ -192,7 +192,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
             if let includeArrayIndex = includeArrayIndex {
                 var unwind1 = [
                     "path": path
-                ] as Document
+                    ] as Document
                 
                 unwind1["includeArrayIndex"] = includeArrayIndex
                 
@@ -205,7 +205,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
                 unwind = [
                     "path": path,
                     "preserveNullAndEmptyArrays": preserveNullAndEmptyArrays
-                    ]
+                ]
             } else {
                 unwind = path
             }
@@ -217,27 +217,27 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         
         /// Performs a left outer join to an unsharded collection in the same database
         @discardableResult
-        public static func lookup(fromCollection from: String, localField: String, foreignField: String, as: String) -> Stage {
+        public static func lookup(from collection: String, localField: String, foreignField: String, as: String) -> Stage {
             return Stage([
                 "$lookup": [
-                    "from": from,
+                    "from": collection,
                     "localField": localField,
                     "foreignField": foreignField,
                     "as": `as`
-                    ]
+                ]
                 ])
         }
         
         /// Performs a left outer join to an unsharded collection in the same database
         @discardableResult
-        public static func lookup(fromCollection from: Collection, localField: String, foreignField: String, as: String) -> Stage {
+        public static func lookup(from collection: Collection, localField: String, foreignField: String, as: String) -> Stage {
             return Stage([
                 "$lookup": [
-                    "from": from.name,
+                    "from": collection.name,
                     "localField": localField,
                     "foreignField": foreignField,
                     "as": `as`
-                    ]
+                ]
                 ])
         }
         
@@ -281,7 +281,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
             return Stage([
                 "$replaceRoot": [
                     "newRoot": expression.makeExpression()
-                    ]
+                ]
                 ])
         }
         
@@ -294,7 +294,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
                 })
                 ])
         }
-
+        
         /// Runs a geospatial query on the inputted Documents
         ///
         /// Outputs all documents that are near the provided location in the options matching the parameters

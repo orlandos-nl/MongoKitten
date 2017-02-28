@@ -736,19 +736,19 @@ public final class Collection: Sequence {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A `Cursor` pointing to the found `Document`s
-    public func aggregate(_ pipeline: AggregationPipeline, readConcern: ReadConcern? = nil, collation: Collation? = nil, options: [AggregationOptions]) throws -> AnyIterator<Document> {
+    public func aggregate(_ pipeline: AggregationPipeline, readConcern: ReadConcern? = nil, collation: Collation? = nil, options: [AggregationOptions] = []) throws -> AnyIterator<Document> {
         // construct command. we always use cursors in MongoKitten, so that's why the default value for cursorOptions is an empty document.
-        var command: Document = ["aggregate": self.name, "pipeline": [:] as Document]
+        var command: Document = ["aggregate": self.name, "pipeline": pipeline.makeDocument(), "cursor": ["batchSize": 100]]
         
         command["readConcern"] = readConcern ?? self.readConcern
         command["collation"] = collation ?? self.collation
-
+        
         for option in options {
             for (key, value) in option.fields {
                 command[key] = value
             }
         }
-
+        
         // execute and construct cursor
         let reply = try database.execute(command: command)
         

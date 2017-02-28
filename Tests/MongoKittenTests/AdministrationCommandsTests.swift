@@ -76,16 +76,6 @@ class AdministrationCommandsTests: XCTestCase {
         }
     }
     
-    func testExample() throws {
-        let doc: Document = [
-            "username": "Joannis",
-            "age": 20,
-            "permissions": ["admin", "user", "moderator"]
-        ]
-
-        TestManager.db
-    }
-    
     func testCollection() throws {
         for db in TestManager.dbs {
             let test = db["test"]
@@ -93,10 +83,10 @@ class AdministrationCommandsTests: XCTestCase {
             try db["test"].compact()
             XCTAssertEqual(try test.count(), 1)
             
-            XCTAssertEqual(try test.count(matching: "your.int" == 3), 1)
-            XCTAssertEqual(try test.count(matching: "your.int" == 4), 0)
+            XCTAssertEqual(try test.count("your.int" == 3), 1)
+            XCTAssertEqual(try test.count("your.int" == 4), 0)
             
-            XCTAssertEqual(try test.count(matching: nil, skipping: 1), 0)
+            XCTAssertEqual(try test.count(nil, skipping: 1), 0)
             
             XCTAssertEqual(test.fullName, "\(db.name).test")
         }

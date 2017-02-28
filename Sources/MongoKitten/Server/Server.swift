@@ -64,7 +64,7 @@ public final class Server {
     
     /// `MongoTCP` Socket bound to the MongoDB Server
     private var connections = [Connection]()
-
+    
     /// Semaphore to use for safely managing connections
     private let connectionPoolSemaphore: DispatchSemaphore
     

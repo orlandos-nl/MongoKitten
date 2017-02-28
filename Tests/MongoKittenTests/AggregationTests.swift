@@ -46,7 +46,7 @@ class AggregationTests: XCTestCase {
                 .skip(2)
             ]
             
-            let cursor = try db["zips"].aggregate(pipeline: pipeline)
+            let cursor = try db["zips"].aggregate(pipeline)
             
             var count = 0
             var previousPopulation = 0
@@ -82,7 +82,7 @@ class AggregationTests: XCTestCase {
             ]
             
             do {
-                let result = Array(try db["zips"].aggregate(pipeline: pipeline2)).first
+                let result = Array(try db["zips"].aggregate(pipeline2)).first
                 
                 guard let resultCount = Int(result?["results"]), resultCount == 3, result?["topThree"] as? Bool == true else {
                     XCTFail()
@@ -115,7 +115,7 @@ class AggregationTests: XCTestCase {
                     ])
             ]
             
-            guard let result = Array(try db["zips"].aggregate(pipeline: pipeline)).first else {
+            guard let result = Array(try db["zips"].aggregate(pipeline)).first else {
                 XCTFail()
                 return
             }
@@ -154,12 +154,12 @@ class AggregationTests: XCTestCase {
             XCTAssertEqual(Int(inventory3), 3)
             
             let unwind = AggregationPipeline.Stage.unwind(atPath: "$specs")
-            let lookup = AggregationPipeline.Stage.lookup(fromCollection: inventory, localField: "specs", foreignField: "size", as: "inventory_docs")
+            let lookup = AggregationPipeline.Stage.lookup(from: inventory, localField: "specs", foreignField: "size", as: "inventory_docs")
             let match = AggregationPipeline.Stage.match(["inventory_docs": ["$ne":[]]] as Document)
             let pipe = AggregationPipeline(arrayLiteral: unwind, lookup, match)
             
             do {
-                let cursor = try orders.aggregate(pipeline: pipe)
+                let cursor = try orders.aggregate(pipe)
                 let results = Array(cursor)
                 XCTAssertEqual(results.count, 1)
                 if results.count == 1 {

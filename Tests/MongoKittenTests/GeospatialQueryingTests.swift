@@ -89,7 +89,7 @@ class GeospatialQueryingTest: XCTestCase {
 
             let pipeline: AggregationPipeline = [geoNearStage]
 
-            let results = Array(try zips.aggregate(pipeline: pipeline))
+            let results = Array(try zips.aggregate(pipeline))
 
             XCTAssertEqual(results.count, 6)
         }
@@ -138,7 +138,7 @@ class GeospatialQueryingTest: XCTestCase {
             let position = try Position(values: [-72.844092,42.466234])
             let query = Query(aqt: .near(key: "loc", point: Point(coordinate: position), maxDistance: 100.0, minDistance: 0.0))
 
-            let results = Array(try zips.find(matching: query))
+            let results = Array(try zips.find(query))
             if results.count == 1 {
                 XCTAssertEqual(String(results[0]["city"]), "GOSHEN")
             } else {
@@ -168,7 +168,7 @@ class GeospatialQueryingTest: XCTestCase {
             let query = Query(aqt: .geoWithin(key: "geo", polygon: polygon))
 
             do {
-                let results = Array(try collection.find(matching: query))
+                let results = Array(try collection.find(query))
                 XCTAssertTrue(results.contains(firstPoint))
                 XCTAssertTrue(results.contains(thirdPoint))
                 XCTAssertFalse(results.contains(secondPoint))
@@ -207,7 +207,7 @@ class GeospatialQueryingTest: XCTestCase {
             let query = Query(aqt: .geoIntersects(key: "geo", geometry: polygon))
 
             do {
-                let results = Array(try collection.find(matching: query))
+                let results = Array(try collection.find(query))
                 XCTAssertTrue(results.contains(firstPoint))
                 XCTAssertTrue(results.contains(thirdPoint))
                 XCTAssertTrue(results.contains(firstPolygon))
@@ -238,7 +238,7 @@ class GeospatialQueryingTest: XCTestCase {
             let query = Query(aqt: .nearSphere(key:"geo", point: Point(coordinate: try Position(values: [1.01, 1.01])), maxDistance: 10000.0, minDistance: 0.0))
 
             do {
-                let results = Array(try collection.find(matching: query))
+                let results = Array(try collection.find(query))
                 XCTAssertTrue(results.contains(firstPoint))
                 XCTAssertFalse(results.contains(thirdPoint))
                 XCTAssertFalse(results.contains(secondPoint))
