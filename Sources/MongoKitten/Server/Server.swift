@@ -1,10 +1,11 @@
-
 //
-//  NewDatabase.swift
-//  MongoSwift
+// This source file is part of the MongoKitten open source project
 //
-//  Created by Joannis Orlandos on 24/01/16.
-//  Copyright © 2016 OpenKitten. All rights reserved.
+// Copyright (c) 2016 - 2017 OpenKitten and the MongoKitten project authors
+// Licensed under MIT
+//
+// See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/LICENSE.md for license information
+// See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of MongoKitten project authors
 //
 
 #if os(Linux)
@@ -119,7 +120,7 @@ public final class Server {
     /// - Parameter clientSettings: The Client Settings
     /// - Throws: When we can't connect automatically, when the scheme/host is invalid and when we can't connect automatically
     public init(_ clientSettings: ClientSettings) throws {
-        self.driverInformation = MongoDriverInformation(name: "MongoKitten", version: "3.0.1", osName: "", architecture: "", appName: clientSettings.applicationName)
+        self.driverInformation = MongoDriverInformation(appName: clientSettings.applicationName)
         
         self.clientSettings = clientSettings
         self.connectionPoolSemaphore = DispatchSemaphore(value: self.clientSettings.maxConnectionsPerServer * self.clientSettings.hosts.count)

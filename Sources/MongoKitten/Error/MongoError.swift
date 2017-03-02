@@ -1,9 +1,11 @@
 //
-//  MongoError.swift
-//  MongoKitten
+// This source file is part of the MongoKitten open source project
 //
-//  Created by Robbert Brandsma on 22-02-16.
-//  Copyright © 2016 OpenKitten. All rights reserved.
+// Copyright (c) 2016 - 2017 OpenKitten and the MongoKitten project authors
+// Licensed under MIT
+//
+// See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/LICENSE.md for license information
+// See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of MongoKitten project authors
 //
 
 import Foundation
@@ -100,6 +102,9 @@ public enum MongoError : Error {
     
     /// The received Document that contains the MongoDB server build info is invalid
     case invalidBuildInfoDocument
+    
+    /// MD5 file hashing in GridFS failed
+    case couldNotHashFile
 }
 
 /// Authenication failure
