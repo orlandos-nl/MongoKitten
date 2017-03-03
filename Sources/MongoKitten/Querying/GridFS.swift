@@ -10,7 +10,7 @@
 
 import BSON
 import Foundation
-import CLibreSSL
+import CryptoSwift
 
 /// A GridFS instance similar to a collection
 ///
@@ -153,16 +153,12 @@ public class GridFS {
         let id = ObjectId()
         let dataSize = data.count
         
-        var context = MD5_CTX()
-        guard MD5_Init(&context) == 1 else {
-            throw MongoError.couldNotHashFile
-        }
-        
         var insertData: Document = [
             "_id": id,
             "length": Int64(dataSize),
             "chunkSize": Int32(chunkSize),
             "uploadDate": Date(timeIntervalSinceNow: 0),
+            "md5": Digest.md5(data).toHexString()
         ]
         
         if let filename = filename {
@@ -177,39 +173,22 @@ public class GridFS {
             insertData[raw: "metadata"] = metadata
         }
         
+        _ = try files.insert(insertData)
+        
         var n = 0
         
-        do {
-            while !data.isEmpty {
-                let smallestMax = min(data.count, chunkSize)
-                
-                let chunk = Array(data[0..<smallestMax])
-                
-                guard MD5_Update(&context, chunk, chunk.count) == 1 else {
-                    throw MongoError.couldNotHashFile
-                }
-                
-                _ = try chunks.insert(["files_id": id,
-                                       "n": Int64(n),
-                                       "data": Binary(data: chunk, withSubtype: .generic)] as Document)
-                
-                n += 1
-                
-                data.removeFirst(smallestMax)
-            }
+        while !data.isEmpty {
+            let smallestMax = min(data.count, chunkSize)
             
-            var digest = [UInt8](repeating: 0, count: Int(MD5_DIGEST_LENGTH))
+            let chunk = Array(data[0..<smallestMax])
             
-            guard MD5_Final(&digest, &context) == 1 else {
-                throw MongoError.couldNotHashFile
-            }
+            _ = try chunks.insert(["files_id": id,
+                                   "n": Int64(n),
+                                   "data": Binary(data: chunk, withSubtype: .generic)] as Document)
             
-            insertData["md5"] = digest.toHexString()
+            n += 1
             
-            _ = try files.insert(insertData)
-        } catch {
-            try chunks.remove(matching: "files_id" == id)
-            throw error
+            data.removeFirst(smallestMax)
         }
         
         return id
@@ -346,8 +325,8 @@ public class GridFS {
                 if chunk.n == Int32(skipChunks) {
                     allData.append(contentsOf: chunk.data[(start % Int(self.chunkSize))..<Swift.min(Int(self.chunkSize), chunk.data.count)])
                     
-                // if endChunk == 10 then we need the current chunk to be 9
-                // start counting at 0
+                    // if endChunk == 10 then we need the current chunk to be 9
+                    // start counting at 0
                 } else if chunk.n == Int32(endChunk - 1) {
                     let endIndex = lastByte - Int(chunk.n * self.chunkSize)
                     

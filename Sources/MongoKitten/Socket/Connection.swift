@@ -16,7 +16,7 @@ import MongoSocket
 class Connection {
     
     let logger: FrameworkLogger
-    let client: MongoTCP
+    private let client: MongoTCP
     let buffer = TCPBuffer()
     var used = false
     var writable = false
@@ -43,6 +43,9 @@ class Connection {
             options["sslEnabled"]  = sslSettings.enabled
             options["invalidCertificateAllowed"]  = sslSettings.invalidCertificateAllowed
             options["invalidHostNameAllowed"] = sslSettings.invalidHostNameAllowed
+            if let sslCAFile = sslSettings.sslCAFile {
+                options["sslCAFile"] = sslCAFile
+            }
         } else {
             options["sslEnabled"]  = false
         }
@@ -53,7 +56,7 @@ class Connection {
         self.host = host
         self.logger = logger
         
-        Connection.receiveQueue.async(execute: backgroundLoop)
+//        Connection.receiveQueue.async(execute: backgroundLoop)
     }
     
     func authenticate(toDatabase db: Database) throws {
@@ -94,10 +97,17 @@ class Connection {
         Connection.receiveQueue.async(execute: backgroundLoop)
     }
     
+    
     func close() {
         _ = try? client.close()
         onClose()
     }
+    
+    func send(data binary: [UInt8]) throws {
+        try self.client.send(data: binary)
+        try self.receive()
+    }
+
     
     /// Called by the server thread to handle MongoDB Wire messages
     ///

@@ -23,7 +23,17 @@ public final class MongoSocket: MongoTCP {
         socket = try Socket.create() // tcp socket
         if sslEnabled {
             let invalidCertificateAllowed = options["invalidCertificateAllowed"] as? Bool ?? false
-            let sslConfig = SSLService.Configuration(withCACertificateFilePath: nil, usingCertificateFile: nil, withKeyFile: nil, usingSelfSignedCerts: invalidCertificateAllowed, cipherSuite: nil)
+            var sslConfig = SSLService.Configuration(withCipherSuite: nil)
+            if let sslCAFile = options["sslCAFile"] as? String {
+//                sslConfig = SSLService.Configuration(withCACertificateDirectory: sslCAFile, usingCertificateFile: sslCAFile)
+                #if os(Linux)
+                    if let cert = try? String(contentsOfFile: sslCAFile,encoding: .utf8) {
+                        print(cert)
+//                        sslConfig = SSLService.Configuration(withPEMCertificateString: cert)
+                        sslConfig = SSLService.Configuration(withCACertificateFilePath: sslCAFile, usingCertificateFile: nil)
+                    }
+                #endif
+            }
             socket.delegate = try SSLService(usingConfiguration: sslConfig)
         }
         try socket.connect(to: hostname, port: Int32(port))
@@ -38,7 +48,6 @@ public final class MongoSocket: MongoTCP {
     public func receive(into buffer: inout [UInt8]) throws {
         self.data.count = 0
         buffer.removeAll()
-
         _ = try socket.read(into: &self.data)
         buffer.append(contentsOf: self.data)
     }

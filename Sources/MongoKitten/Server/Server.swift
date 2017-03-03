@@ -653,7 +653,7 @@ public final class Server {
         let messageData = try msg.generateData()
         
         do {
-            try connection.client.send(data: messageData)
+            try connection.send(data: messageData)
         } catch {
             logger.debug("Could not send data because of the following error: \"\(error)\"")
             connection.close()
@@ -687,7 +687,7 @@ public final class Server {
     internal func send(message msg: Message, overConnection connection: Connection) throws -> Int32 {
         let messageData = try msg.generateData()
         
-        try connection.client.send(data: messageData)
+        try connection.send(data: messageData)
         
         return msg.requestID
     }
