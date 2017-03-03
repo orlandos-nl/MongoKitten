@@ -25,12 +25,9 @@ public final class MongoSocket: MongoTCP {
             let invalidCertificateAllowed = options["invalidCertificateAllowed"] as? Bool ?? false
             var sslConfig = SSLService.Configuration(withCipherSuite: nil)
             if let sslCAFile = options["sslCAFile"] as? String {
-//                sslConfig = SSLService.Configuration(withCACertificateDirectory: sslCAFile, usingCertificateFile: sslCAFile)
                 #if os(Linux)
                     if let cert = try? String(contentsOfFile: sslCAFile,encoding: .utf8) {
-                        print(cert)
-//                        sslConfig = SSLService.Configuration(withPEMCertificateString: cert)
-                        sslConfig = SSLService.Configuration(withCACertificateFilePath: sslCAFile, usingCertificateFile: nil)
+                        sslConfig = SSLService.Configuration(withPEMCertificateString: cert)
                     }
                 #endif
             }
