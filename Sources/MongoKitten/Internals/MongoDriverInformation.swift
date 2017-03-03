@@ -20,12 +20,9 @@ struct MongoDriverInformation: ValueConvertible {
 
     /// Converts this to an embeddable BSON.Primitive
     public func makePrimitive() -> BSON.Primitive {
-
         let driver: Document = ["name":"MongoKitten","version":"3.1.5"]
 
-
         var client: Document = ["driver": driver]
-
 
         if client.byteCount < 512 {
             #if os(Linux)

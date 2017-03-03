@@ -68,3 +68,7 @@ public struct Sort: ValueConvertible, ExpressibleByDictionaryLiteral {    /// Th
         self.document = document
     }
 }
+
+public func +(lhs: Sort, rhs: Sort) -> Sort {
+    return Sort(lhs.makeDocument() + rhs.makeDocument())
+}

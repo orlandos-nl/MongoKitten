@@ -61,7 +61,7 @@ extension Collection {
     /// For more information: https://docs.mongodb.com/manual/reference/command/reIndex/#dbcmd.reIndex
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func reIndex() throws {
+    public func rebuildIndexes() throws {
         let command: Document = [
             "reIndex": self.name
         ]
@@ -106,7 +106,7 @@ extension Collection {
     /// - parameter capped: The cap to apply
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func clone(toCappedCollectionNamed otherCollection: String, capped: Int) throws {
+    public func cloneToCappedCollection(named otherCollection: String, capped: Int) throws {
         try database.clone(collection: self, toCappedCollectionNamed: otherCollection, cappedTo: capped)
     }
 }

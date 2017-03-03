@@ -478,7 +478,7 @@ public final class Collection: Sequence {
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     public func rename(to newName: String) throws {
-        try self.move(toDatabase: database, renamedTo: newName)
+        try self.move(to: database, named: newName)
     }
     
     /// Move this collection to another database. Can also rename the collection in one go.
@@ -491,11 +491,11 @@ public final class Collection: Sequence {
     /// - parameter named: The new name for this collection
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    public func move(toDatabase database: Database, renamedTo newName: String? = nil, overwritingExistingCollection dropOldTarget: Bool? = nil) throws {
+    public func move(to database: Database, named collectionName: String? = nil, overwritingExistingCollection dropOldTarget: Bool? = nil) throws {
         // TODO: Fail if the target database exists.
         var command: Document = [
             "renameCollection": self.fullName,
-            "to": "\(database.name).\(newName ?? self.name)"
+            "to": "\(database.name).\(collectionName ?? self.name)"
         ]
         
         if let dropOldTarget = dropOldTarget { command["dropTarget"] = dropOldTarget }
@@ -503,7 +503,7 @@ public final class Collection: Sequence {
         _ = try self.database.server["admin"].execute(command: command)
         
         self.database = database
-        self.name = newName ?? name
+        self.name = collectionName ?? name
     }
     
     /// Counts the amount of `Document`s matching the `filter`. Stops counting when the `limit` it reached

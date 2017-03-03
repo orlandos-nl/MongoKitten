@@ -83,7 +83,7 @@ class GeospatialQueryingTest: XCTestCase {
             let position = try Position(values: [-72.844092,42.466234])
             let near = Point(coordinate: position)
 
-            let geoNearOption = GeoNearOption(near: near, spherical: true, distanceField: "dist.calculated", maxDistance: 10000.0)
+            let geoNearOption = GeoNearOptions(near: near, spherical: true, distanceField: "dist.calculated", maxDistance: 10000.0)
 
             let geoNearStage = AggregationPipeline.Stage.geoNear(geoNearOption: geoNearOption)
 
@@ -102,7 +102,7 @@ class GeospatialQueryingTest: XCTestCase {
             let position = try Position(values: [-72.844092,42.466234])
             let near = Point(coordinate: position)
 
-            let geoNearOption = GeoNearOption(near: near, spherical: true, distanceField: "dist.calculated", maxDistance: 10000.0)
+            let geoNearOption = GeoNearOptions(near: near, spherical: true, distanceField: "dist.calculated", maxDistance: 10000.0)
 
             let results = try zips.near(options: geoNearOption)
 
@@ -123,7 +123,7 @@ class GeospatialQueryingTest: XCTestCase {
             let position = try Position(values: [-72.844092,42.466234])
             let near = Point(coordinate: position)
 
-            let geoNearOption = GeoNearOption(near: near, spherical: true, distanceField: "dist.calculated", maxDistance: 10000.0)
+            let geoNearOption = GeoNearOptions(near: near, spherical: true, distanceField: "dist.calculated", maxDistance: 10000.0)
 
             XCTAssertThrowsError(try zips.near(options: geoNearOption))
 

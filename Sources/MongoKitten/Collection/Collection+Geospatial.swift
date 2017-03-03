@@ -20,7 +20,7 @@ extension Collection {
     /// - returns: a Document with the results
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     /// - SeeAlso : https://docs.mongodb.com/manual/reference/command/geoNear/
-    func near(options: GeoNearOption, readConcern: ReadConcern? = nil) throws -> Document {
+    func geoNear(options: GeoNearOptions, readConcern: ReadConcern? = nil) throws -> Document {
         var command: Document = ["geoNear": self.name,
          "near":options.near,
          "spherical": options.spherical,

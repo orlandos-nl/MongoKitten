@@ -16,7 +16,7 @@ import GeoJSON
 /// Also allows further configuration of the query
 ///
 /// Further information and details: https://docs.mongodb.com/manual/reference/command/geoNear/
-public struct GeoNearOption: ValueConvertible {
+public struct GeoNearOptions: ValueConvertible {
     /// The point which you're looking near
     public let near: Point
 

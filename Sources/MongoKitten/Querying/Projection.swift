@@ -87,6 +87,10 @@ public struct Projection: ValueConvertible {
     }
 }
 
+public func +(lhs: Projection, rhs: Projection) -> Projection {
+    return Projection(lhs.makeDocument() + rhs.makeDocument())
+}
+
 extension Projection: ExpressibleByArrayLiteral {
     /// Projection can be initialized with an array of Strings. Each string represents a field that needs to be included.
     public init(arrayLiteral elements: String...) {
