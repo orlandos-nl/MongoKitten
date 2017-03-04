@@ -85,7 +85,7 @@ class GeospatialQueryingTest: XCTestCase {
 
             let geoNearOption = GeoNearOptions(near: near, spherical: true, distanceField: "dist.calculated", maxDistance: 10000.0)
 
-            let geoNearStage = AggregationPipeline.Stage.geoNear(geoNearOption: geoNearOption)
+            let geoNearStage = AggregationPipeline.Stage.geoNear(options: geoNearOption)
 
             let pipeline: AggregationPipeline = [geoNearStage]
 
@@ -104,7 +104,7 @@ class GeospatialQueryingTest: XCTestCase {
 
             let geoNearOption = GeoNearOptions(near: near, spherical: true, distanceField: "dist.calculated", maxDistance: 10000.0)
 
-            let results = try zips.near(options: geoNearOption)
+            let results = try zips.geoNear(options: geoNearOption)
 
             XCTAssertEqual([Primitive](results["results"])?.count , 6)
         }
@@ -125,7 +125,7 @@ class GeospatialQueryingTest: XCTestCase {
 
             let geoNearOption = GeoNearOptions(near: near, spherical: true, distanceField: "dist.calculated", maxDistance: 10000.0)
 
-            XCTAssertThrowsError(try zips.near(options: geoNearOption))
+            XCTAssertThrowsError(try zips.geoNear(options: geoNearOption))
 
 
         }
