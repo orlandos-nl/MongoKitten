@@ -52,6 +52,14 @@ And `import MongoKitten` in your project.
 
 [And we host the MongoKitten documentation including dash docset here](http://mongokitten.openkitten.org)
 
+## Supporters
+
+MongoKitten is being developed by three developers.
+
+- [Joannis Orlandos](@joannis) is being supported by [Clear Blue Technologies](http://www.clearbluetechnologies.com).
+- [Laurent Gaches](@lgaches)
+- [Robbert Brandsma](@obbut)
+
 ## License
 
 MongoKitten is licensed under the MIT license.
