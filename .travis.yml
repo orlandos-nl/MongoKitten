@@ -9,4 +9,3 @@ services:
   - docker
 script:
   - eval "$(curl -sL https://raw.githubusercontent.com/OpenKitten/Mongo-Assets/master/travisci-kitura)"
-  - eval "$(curl -sL https://raw.githubusercontent.com/OpenKitten/Mongo-Assets/master/codecov)"
