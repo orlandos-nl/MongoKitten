@@ -94,9 +94,8 @@ class Connection {
     ///
     /// - throws: Unable to receive or parse the reply
     private func receive() throws {
-        var incommingData = Data()
-        try client.receive(into: &incommingData)
-        buffer.data += incommingData.bytes
+        try client.receive(into: &incomingBuffer)
+        buffer.data += incomingBuffer
         
         while buffer.data.count >= 36 {
             let length = Int(buffer.data[0...3].makeInt32())
