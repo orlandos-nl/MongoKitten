@@ -50,11 +50,6 @@ public final class MongoSocket: MongoTCP {
         buffer.append(contentsOf: self.data)
     }
     
-    /// Receives all available data from the socket
-    public func  receive(into data: inout Data) throws {
-        _ = try socket.read(into: &data)
-    }
-
     /// `true` when connected, `false` otherwise
     public var isConnected: Bool {
         return socket.isConnected
