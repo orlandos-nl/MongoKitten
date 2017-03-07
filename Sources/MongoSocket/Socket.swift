@@ -26,7 +26,7 @@ public final class MongoSocket: MongoTCP {
             var sslConfig = SSLService.Configuration(withCipherSuite: nil)
             if let sslCAFile = options["sslCAFile"] as? String {
                 #if os(Linux)
-                    if let cert = try? String(contentsOfFile: sslCAFile,encoding: .utf8) {
+                    if let cert = try? String(contentsOfFile: sslCAFile,encoding: .utf8)?.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines) {
                         sslConfig = SSLService.Configuration(withPEMCertificateString: cert)
                     }
                 #endif
@@ -47,6 +47,11 @@ public final class MongoSocket: MongoTCP {
         buffer.removeAll()
         _ = try socket.read(into: &self.data)
         buffer.append(contentsOf: self.data)
+    }
+    
+    /// Receives all available data from the socket
+    public func  receive(into data: inout Data) throws {
+        _ = try socket.read(into: &data)
     }
 
     /// `true` when connected, `false` otherwise

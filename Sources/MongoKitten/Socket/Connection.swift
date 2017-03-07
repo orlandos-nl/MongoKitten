@@ -56,7 +56,6 @@ class Connection {
         self.host = host
         self.logger = logger
         
-//        Connection.receiveQueue.async(execute: backgroundLoop)
     }
     
     func authenticate(toDatabase db: Database) throws {
@@ -77,26 +76,6 @@ class Connection {
     }
     
     
-    /// Receives response messages from the server and gives them to the callback closure
-    /// After handling the response with the closure it removes the closure
-    fileprivate func backgroundLoop() {
-        do {
-            try self.receive()
-        } catch {
-            // A receive failure is to be expected if the socket has been closed
-            incomingMutateLock.lock()
-            if self.isConnected {
-                logger.fatal("The MongoKitten background loop encountered an error and has stopped: \(error)")
-                logger.fatal("Please file a report on https://github.com/openkitten/mongokitten")
-            }
-            incomingMutateLock.unlock()
-            
-            return
-        }
-        
-        Connection.receiveQueue.async(execute: backgroundLoop)
-    }
-    
     
     func close() {
         _ = try? client.close()
@@ -114,15 +93,16 @@ class Connection {
     /// - parameter bufferSize: The amount of bytes to fetch at a time
     ///
     /// - throws: Unable to receive or parse the reply
-    private func receive(bufferSize: Int = 1024) throws {
-        try client.receive(into: &incomingBuffer)
-        buffer.data += incomingBuffer
+    private func receive() throws {
+        var incommingData = Data()
+        try client.receive(into: &incommingData)
+        buffer.data += incommingData.bytes
         
         while buffer.data.count >= 36 {
             let length = Int(buffer.data[0...3].makeInt32())
             
             guard length <= buffer.data.count else {
-                // Ignore: Wait for more data
+                try receive()
                 return
             }
             

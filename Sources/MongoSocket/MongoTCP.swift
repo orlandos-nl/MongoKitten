@@ -36,7 +36,10 @@ public protocol MongoTCP : class {
 
     /// Receives any available data from the socket
     func receive(into buffer: inout [UInt8]) throws
-
+    
+    /// Receives all available data from the socket
+    func  receive(into data: inout Data)throws
+    
     /// `true` when connected, `false` otherwise
     var isConnected: Bool { get }
 }
