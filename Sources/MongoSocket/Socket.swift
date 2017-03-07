@@ -26,8 +26,9 @@ public final class MongoSocket: MongoTCP {
             var sslConfig = SSLService.Configuration(withCipherSuite: nil)
             if let sslCAFile = options["sslCAFile"] as? String {
                 #if os(Linux)
-                    if let cert = try? String(contentsOfFile: sslCAFile,encoding: .utf8)?.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines) {
-                        sslConfig = SSLService.Configuration(withPEMCertificateString: cert)
+                    if let cert = try? String(contentsOfFile: sslCAFile,encoding: .utf8) {
+                        let trimmedCert = cert.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
+                        sslConfig = SSLService.Configuration(withPEMCertificateString: trimmedCert)
                     }
                 #endif
             }
