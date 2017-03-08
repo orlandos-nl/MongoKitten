@@ -209,11 +209,11 @@ public class GridFS {
         /// - parameter chunksCollection: The `Collection` where the `File` `Chunk`s are stored
         /// - parameter chunksCollection: The `Collection` where the `File` data is stored
         internal init?(document: Document, chunksCollection: Collection, filesCollection: Collection) {
-            guard let id = document["_id"] as? ObjectId,
+            guard let id = ObjectId(document["_id"]),
                 let length = Int(document["length"]),
                 let chunkSize = Int32(document["chunkSize"]),
-                let uploadDate = document["uploadDate"] as? Date,
-                let md5 = document["md5"] as? String
+                let uploadDate = Date(document["uploadDate"]),
+                let md5 = String(document["md5"])
                 else {
                     return nil
             }
@@ -227,13 +227,13 @@ public class GridFS {
             self.uploadDate = uploadDate
             self.md5 = md5
             
-            self.filename = document["filename"] as? String
-            self.contentType = document["contentType"] as? String
+            self.filename = String(document["filename"])
+            self.contentType = String(document["contentType"])
             
             var aliases = [String]()
             
             for alias in [Primitive](document["aliases"]) ?? [] {
-                if let alias = alias as? String {
+                if let alias = String(alias) {
                     aliases.append(alias)
                 }
             }
@@ -354,9 +354,9 @@ public class GridFS {
             
             /// Initializes with a `Document` found when looking for chunks
             init?(document: Document, chunksCollection: Collection, filesCollection: Collection) {
-                guard let id = document["_id"] as? ObjectId,
-                    let filesID = document["files_id"] as? ObjectId,
-                    let binary = document["data"] as? Binary else {
+                guard let id = ObjectId(document["_id"]),
+                    let filesID = ObjectId(document["files_id"]),
+                    let binary = Binary(document["data"]) else {
                         return nil
                 }
                 

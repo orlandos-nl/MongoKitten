@@ -96,6 +96,14 @@ public final class Collection: Sequence {
     
     // Create
     
+    public func append(_ document: Document) throws {
+        try self.insert(document)
+    }
+    
+    public func append(contentsOf documents: [Document]) throws {
+        try self.insert(contentsOf: documents)
+    }
+    
     /// Insert a single document in this collection
     ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/insert/#dbcmd.insert
@@ -106,8 +114,8 @@ public final class Collection: Sequence {
     ///
     /// - returns: The inserted document's id
     @discardableResult
-    public func insert(_ document: Document) throws -> BSON.Primitive {
-        let result = try self.insert(contentsOf: [document])
+    public func insert(_ document: Document, stoppingOnError ordered: Bool? = nil, writeConcern: WriteConcern? = nil, timingOut afterTimeout: TimeInterval? = nil) throws -> BSON.Primitive {
+        let result = try self.insert(contentsOf: [document], stoppingOnError: ordered, writeConcern: writeConcern, timingOut: afterTimeout)
         
         guard let newId = result.first else {
             database.server.logger.error("No identifier could be generated")
@@ -166,12 +174,9 @@ public final class Collection: Sequence {
                 command["writeConcern"] = writeConcern ?? self.writeConcern
                 
                 let reply = try self.database.execute(command: command, until: timeout)
-                guard case .Reply(_, _, _, _, _, _, let replyDocuments) = reply else {
-                    throw MongoError.insertFailure(documents: documents, error: nil)
-                }
                 
-                guard Int(replyDocuments.first?["ok"]) == 1 && (replyDocuments.first?["writeErrors"] as? Document ?? [:]).count == 0 else {
-                    throw MongoError.insertFailure(documents: documents, error: replyDocuments.first)
+                guard Int(reply.documents.first?["ok"]) == 1 && (Document(reply.documents.first?["writeErrors"]) ?? [:]).count == 0 else {
+                    throw MongoError.insertFailure(documents: documents, error: reply.documents.first)
                 }
             } else {
                 let connection = try database.server.reserveConnection(writing: true, authenticatedFor: self.database)
@@ -316,15 +321,12 @@ public final class Collection: Sequence {
             command["writeConcern"] = writeConcern ??  self.writeConcern
             
             let reply = try self.database.execute(command: command)
-            guard case .Reply(_, _, _, _, _, _, let documents) = reply else {
-                throw MongoError.updateFailure(updates: updates, error: nil)
+            
+            guard Int(reply.documents.first?["ok"]) == 1 && (Document(reply.documents.first?["writeErrors"]) ?? [:]).count == 0 else {
+                throw MongoError.updateFailure(updates: updates, error: reply.documents.first)
             }
             
-            guard Int(documents.first?["ok"]) == 1 && (documents.first?["writeErrors"] as? Document ?? [:]).count == 0 else {
-                throw MongoError.updateFailure(updates: updates, error: documents.first)
-            }
-            
-            return Int(documents.first?["nModified"]) ?? 0
+            return Int(reply.documents.first?["nModified"]) ?? 0
         } else {
             let connection = try database.server.reserveConnection(writing: true, authenticatedFor: self.database)
             
@@ -407,13 +409,12 @@ public final class Collection: Sequence {
             command["writeConcern"] = writeConcern ?? self.writeConcern
             
             let reply = try self.database.execute(command: command)
-            let documents = try allDocuments(in: reply)
             
-            guard let document = documents.first, Int(document["ok"]) == 1 else {
-                throw MongoError.removeFailure(removals: removals, error: documents.first)
+            guard Int(reply.documents.first?["ok"]) == 1 else {
+                throw MongoError.removeFailure(removals: removals, error: reply.documents.first ?? [:])
             }
             
-            return Int(document["n"]) ?? 0
+            return Int(reply.documents.first?["n"]) ?? 0
             
             // If we're talking to an older MongoDB server
         } else {
@@ -574,7 +575,7 @@ public final class Collection: Sequence {
         
         let document = try firstDocument(in: try database.execute(command: command))
         
-        guard Int(document["ok"]) == 1 && (document["writeErrors"] as? Document ?? [:]).count == 0 else {
+        guard Int(document["ok"]) == 1 && (Document(document["writeErrors"]) ?? [:]).count == 0 else {
             throw MongoError.commandFailure(error: document)
         }
         
@@ -684,7 +685,7 @@ public final class Collection: Sequence {
         
         let result = try firstDocument(in: try database.execute(command: ["listIndexes": self.name], writing: false))
         
-        guard let cursorDocument = result["cursor"] as? Document else {
+        guard let cursorDocument = Document(result["cursor"]) else {
             throw MongoError.cursorInitializationError(cursorDocument: result)
         }
         
@@ -752,12 +753,8 @@ public final class Collection: Sequence {
         // execute and construct cursor
         let reply = try database.execute(command: command)
         
-        guard case .Reply(_, _, _, _, _, _, let documents) = reply else {
-            throw InternalMongoError.incorrectReply(reply: reply)
-        }
-        
-        guard let responseDoc = documents.first, let cursorDoc = responseDoc["cursor"] as? Document else {
-            throw MongoError.invalidResponse(documents: documents)
+        guard let cursorDoc = Document(reply.documents.first?["cursor"]) else {
+            throw MongoError.invalidResponse(documents: reply.documents)
         }
         
         return try _Cursor(cursorDocument: cursorDoc, collection: self, chunkSize: Int32(command["cursor"]["batchSize"]) ?? 100, transform: { $0 }).makeIterator()

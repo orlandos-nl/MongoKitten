@@ -16,6 +16,7 @@
 
 @_exported import BSON
 
+import Schrodinger
 import CryptoSwift
 import Foundation
 import LogKitten
@@ -158,16 +159,12 @@ public final class Server {
             let commandMessage = Message.Query(requestID: self.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
             let response = try self.sendAndAwait(message: commandMessage, overConnection: connection, timeout: defaultTimeout)
             
-            guard case .Reply(_, _, _, _, _, _, let documents) = response, let doc = documents.first else {
-                throw InternalMongoError.incorrectReply(reply: response)
-            }
-            
-            var maxMessageSizeBytes = Int32(doc["maxMessageSizeBytes"]) ?? 0
+            var maxMessageSizeBytes = Int32(response.documents.first?["maxMessageSizeBytes"]) ?? 0
             if maxMessageSizeBytes == 0 {
                 maxMessageSizeBytes = 48000000
             }
             
-            self.serverData = (maxWriteBatchSize: Int32(doc["maxWriteBatchSize"]) ?? 1000, maxWireVersion: Int32(doc["maxWireVersion"]) ?? 4, minWireVersion: Int32(doc["minWireVersion"]) ?? 0, maxMessageSizeBytes: maxMessageSizeBytes)
+            self.serverData = (maxWriteBatchSize: Int32(response.documents.first?["maxWriteBatchSize"]) ?? 1000, maxWireVersion: Int32(response.documents.first?["maxWireVersion"]) ?? 4, minWireVersion: Int32(response.documents.first?["minWireVersion"]) ?? 0, maxMessageSizeBytes: maxMessageSizeBytes)
         }
         
         self.buildInfo = try getBuildInfo()
@@ -262,12 +259,8 @@ public final class Server {
                 let commandMessage = Message.Query(requestID: self.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
                 let response = try self.sendAndAwait(message: commandMessage, overConnection: connection, timeout: defaultTimeout)
                 
-                guard case .Reply(_, _, _, _, _, _, let documents) = response else {
-                    throw InternalMongoError.incorrectReply(reply: response)
-                }
-                
-                isMasterTest: if let doc = documents.first {
-                    if doc["ismaster"] as? Bool == true {
+                isMasterTest: if let doc = response.documents.first {
+                    if Bool(doc["ismaster"]) == true {
                         logger.debug("Found a master connection at \(host.hostname):\(host.port)")
                         host.isPrimary = true
                         guard let batchSize = Int32(doc["maxWriteBatchSize"]), let minWireVersion = Int32(doc["minWireVersion"]), let maxWireVersion = Int32(doc["maxWireVersion"]) else {
@@ -633,47 +626,26 @@ public final class Server {
     ///
     /// - returns: The reply from the server
     @discardableResult @warn_unqualified_access
-    internal func sendAndAwait(message msg: Message, overConnection connection: Connection, timeout: TimeInterval = 0) throws -> Message {
+    internal func sendAndAwait(message msg: Message, overConnection connection: Connection, timeout: TimeInterval = 0) throws -> ServerReply {
         let timeout = timeout > 0 ? timeout : defaultTimeout
         
         let requestId = msg.requestID
-        
-        let semaphore = DispatchSemaphore(value: 0)
-        
-        connection.incomingMutateLock.lock()
-        
-        var reply: Message? = nil
-        connection.waitingForResponses[requestId] = { message in
-            reply = message
-            semaphore.signal()
-        }
-        
-        connection.incomingMutateLock.unlock()
-        
         let messageData = try msg.generateData()
+        
+        let promise = ManualPromise<ServerReply>(timeout: .seconds(Int(timeout)))
+        
+        connection.waitingForResponses[requestId] = promise
         
         do {
             try connection.client.send(data: messageData)
         } catch {
             logger.debug("Could not send data because of the following error: \"\(error)\"")
             connection.close()
-        }
-        
-        guard semaphore.wait(timeout: DispatchTime.now() + timeout) == .success else {
-            connection.incomingMutateLock.lock()
             connection.waitingForResponses[requestId] = nil
-            connection.incomingMutateLock.unlock()
-            logger.debug("Waiting for request \(requestId) timed out")
-            throw MongoError.timeout
+            throw error
         }
         
-        guard let theReply = reply else {
-            logger.fatal("Reply was received but not found for id \(requestId)")
-            // If we get here, something is very, very wrong.
-            throw MongoError.internalInconsistency
-        }
-        
-        return theReply
+        return try promise.await()
     }
     
     /// Sends a message to the server
@@ -712,13 +684,13 @@ public final class Server {
     /// - returns: All databases
     public func getDatabases() throws -> [Database] {
         let infos = try getDatabaseInfos()
-        guard let databaseInfos = infos["databases"] as? Document else {
+        guard let databaseInfos = Document(infos["databases"]) else {
             throw MongoError.commandError(error: "No database Document found")
         }
         
         var databases = [Database]()
         for case (_, let dbDef) in databaseInfos {
-            guard let dbDef = dbDef as? Document, let name = dbDef["name"] as? String else {
+            guard let dbDef = Document(dbDef), let name = String(dbDef["name"]) else {
                 logger.error("Fetching databases list was not successful because a database name was missing")
                 logger.error(databaseInfos)
                 throw MongoError.commandError(error: "No database name found")
@@ -886,7 +858,7 @@ public final class Server {
             throw MongoError.commandFailure(error: document)
         }
         
-        guard let users = document["users"] as? Document else {
+        guard let users = Document(document["users"]) else {
             logger.error("The user Document received from `usersInfo` could was not recognizable")
             logger.error(document)
             throw MongoError.commandError(error: "No users found")

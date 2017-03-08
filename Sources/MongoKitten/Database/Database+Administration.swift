@@ -73,7 +73,7 @@ extension Database {
 
         let result = try firstDocument(in: reply)
 
-        guard let cursor = result["cursor"] as? Document, Int(result["ok"]) == 1 else {
+        guard let cursor = Document(result["cursor"]), Int(result["ok"]) == 1 else {
             logger.error("The collection infos could not be fetched because of the following error")
             logger.error(result)
             logger.error("The collection infos were being found using the following filter")
@@ -98,7 +98,7 @@ extension Database {
     public func listCollections(matching filter: Document? = nil) throws -> AnyIterator<Collection> {
         let infoCursor = try self.getCollectionInfos(matching: filter) as _Cursor<Document>
         return try _Cursor(base: infoCursor) { collectionInfo in
-            guard let name = collectionInfo["name"] as? String else {
+            guard let name = String(collectionInfo["name"]) else {
                 return nil
             }
             
@@ -187,7 +187,7 @@ extension Database {
         let document = try firstDocument(in: try execute(command: command))
 
         // If we're done
-        if document["done"] as? Bool == true {
+        if Bool(document["done"]) == true {
             return
         }
 

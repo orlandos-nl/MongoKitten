@@ -8,6 +8,7 @@
 // See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of MongoKitten project authors
 //
 
+import Schrodinger
 import Foundation
 import LogKitten
 import Dispatch
@@ -27,7 +28,7 @@ class Connection {
 
     private static let receiveQueue = DispatchQueue(label: "org.mongokitten.server.receiveQueue", attributes: .concurrent)
     
-    var waitingForResponses = [Int32:(Message)->()]()
+    var waitingForResponses = [Int32: ManualPromise<ServerReply>]()
     
     /// A cache for incoming responses
     var incomingMutateLock = NSLock()
@@ -120,8 +121,8 @@ class Connection {
             let responseId = buffer.data[8...11].makeInt32()
             let reply = try Message.makeReply(from: responseData)
             
-            if let closure = waitingForResponses[responseId] {
-                closure(reply)
+            if let promise = waitingForResponses[responseId] {
+                _ = try promise.complete(reply)
                 waitingForResponses[responseId] = nil
             } else {
                 

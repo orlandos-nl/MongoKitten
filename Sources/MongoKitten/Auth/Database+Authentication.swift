@@ -76,12 +76,12 @@ extension Database {
             throw MongoAuthenticationError.incorrectCredentials
         }
         
-        if response["done"] as? Bool == true {
+        if Bool(response["done"]) == true {
             logger.verbose("Authentication was successful")
             return
         }
         
-        guard let stringResponse = response["payload"] as? String else {
+        guard let stringResponse = String(response["payload"]) else {
             logger.error("Authentication to MongoDB with SASL failed because no payload has been received")
             logger.debug(response)
             throw MongoAuthenticationError.authenticationFailure
@@ -130,12 +130,7 @@ extension Database {
         
         let response = try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: 0)
         
-        guard case .Reply(_, _, _, _, _, _, let documents) = response, let responseDocument = documents.first else {
-            logger.error("Authentication to MongoDB with SASL failed because no valid reply was received from MongoDB")
-            throw InternalMongoError.incorrectReply(reply: response)
-        }
-        
-        try self.complete(SASL: payload, using: responseDocument, verifying: serverSignature, usingConnection: connection)
+        try self.complete(SASL: payload, using: response.documents.first ?? [:], verifying: serverSignature, usingConnection: connection)
     }
     
     /// Respond to a challenge
@@ -159,7 +154,7 @@ extension Database {
         }
         
         // Decode the challenge
-        guard let stringResponse = previousInformation.response["payload"] as? String else {
+        guard let stringResponse = String(previousInformation.response["payload"]) else {
             logger.error("Authentication for MongoDB user \(details.username) with SASL failed because no SASL payload has been received")
             throw MongoAuthenticationError.authenticationFailure
         }
@@ -192,13 +187,9 @@ extension Database {
         let response = try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: 0)
         
         // If we don't get a correct reply
-        guard case .Reply(_, _, _, _, _, _, let documents) = response, let responseDocument = documents.first else {
-            logger.error("Authentication for MongoDB user \(details.username) with SASL failed against \(String(describing: details.database)) because no valid reply has been received")
-            throw InternalMongoError.incorrectReply(reply: response)
-        }
         
         // Complete Authentication
-        try self.complete(SASL: payload, using: responseDocument, verifying: result.serverSignature, usingConnection: connection)
+        try self.complete(SASL: payload, using: response.documents.first ?? [:], verifying: result.serverSignature, usingConnection: connection)
     }
     
     /// Authenticates to this database using SASL
@@ -247,7 +238,7 @@ extension Database {
         // Get the server's challenge
         let document = try firstDocument(in: response)
         
-        guard let nonce = document["nonce"] as? String else {
+        guard let nonce = String(document["nonce"]) else {
             logger.error("Authentication for MongoDB user \(details.username) with MongoCR failed against \(String(describing: details.database)) because no nonce was provided by MongoDB")
             logger.error(document)
             throw MongoAuthenticationError.authenticationFailure

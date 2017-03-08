@@ -21,7 +21,7 @@ extension JSONObject {
             case ("$date", let string as String):
                 return parseISO8601(from: string) ?? string
             case ("$code", let string as String):
-                return JavascriptCode(string)
+                return JavascriptCode(code: string)
             case ("$minKey", let int as Int):
                 guard int == 1 else {
                     return Document(self)
@@ -42,7 +42,7 @@ extension JSONObject {
             case ("$regex", "$options", let regex as String, let options as String):
                 return RegularExpression(pattern: regex, options: regexOptions(fromString: options))
             case ("$code", "$scope", let code as String, let scope as JSONObject):
-                return JavascriptCode(code, withScope: Document(scope))
+                return JavascriptCode(code: code, withScope: Document(scope))
             case ("$binary", "$type", let base64 as String, let subType as String):
                 guard subType.characters.count == 2 else {
                     return Document(self)

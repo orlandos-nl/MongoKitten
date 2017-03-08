@@ -184,7 +184,7 @@ public final class Database {
         }
         
         let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
-        return try allDocuments(in: try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: timeout))
+        return try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: timeout).documents
     }
     
     /// Executes a command `Document` on this database using a query message
@@ -194,7 +194,7 @@ public final class Database {
     ///
     /// - returns: A `Message` containing the response
     @discardableResult
-    internal func execute(command document: Document, until timeout: TimeInterval = 0, writing: Bool = true) throws -> Message {
+    internal func execute(command document: Document, until timeout: TimeInterval = 0, writing: Bool = true) throws -> ServerReply {
         let timeout = timeout > 0 ? timeout : server.defaultTimeout
         
         let connection = try server.reserveConnection(writing: writing, authenticatedFor: self)

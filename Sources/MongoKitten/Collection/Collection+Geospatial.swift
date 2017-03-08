@@ -37,13 +37,8 @@ extension Collection {
 
         let reply = try database.execute(command: command, writing: false)
 
-
-        guard case .Reply(_, _, _, _, _, _, let documents) = reply else {
-            throw InternalMongoError.incorrectReply(reply: reply)
-        }
-
-        guard let responseDoc = documents.first, Int(responseDoc["ok"]) == 1 else {
-            throw MongoError.invalidResponse(documents: documents)
+        guard let responseDoc = reply.documents.first, Int(responseDoc["ok"]) == 1 else {
+            throw MongoError.invalidResponse(documents: reply.documents)
         }
 
         return try firstDocument(in: reply)

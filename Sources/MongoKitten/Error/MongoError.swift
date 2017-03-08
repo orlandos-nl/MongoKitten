@@ -127,7 +127,7 @@ public enum MongoAuthenticationError : Error {
 /// Internal errors
 internal enum InternalMongoError : Error {
     /// Invalid message, couldn't be parsed to a Reply
-    case incorrectReply(reply: Message)
+    case incorrectReply(reply: ServerReply)
     
     /// -
     case invalidCString

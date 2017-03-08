@@ -71,7 +71,7 @@ enum Message {
     /// Builds a `.Reply` object from Binary JSON
     /// - parameter from: The data to create a Reply-message from
     /// - returns: The reply instance
-    static func makeReply(from data: Bytes) throws -> Message {
+    static func makeReply(from data: Bytes) throws -> ServerReply {
         guard data.count > 4 else {
             throw DeserializationError.invalidDocumentLength
         }
@@ -95,7 +95,7 @@ enum Message {
         let documents = [Document](bsonBytes: data[36..<data.endIndex]*)
         
         // Return the constructed reply
-        return Message.Reply(requestID: requestID, responseTo: responseTo, flags: ReplyFlags.init(rawValue: flags), cursorID: cursorID, startingFrom: startingFrom, numbersReturned: numbersReturned, documents: documents)
+        return ServerReply(requestID: requestID, responseTo: responseTo, flags: ReplyFlags.init(rawValue: flags), cursorID: cursorID, startingFrom: startingFrom, numbersReturned: numbersReturned, documents: documents)
     }
     
     /// Generates BSON From a Message
@@ -222,6 +222,16 @@ enum Message {
     /// - parameter requestID: The Request ID that you can get from the server by calling `server.nextMessageID()`
     /// - parameter cursorIDs: The list of IDs that refer to cursors that need to be killed
     case KillCursors(requestID: Int32, cursorIDs: [Int])
+}
+
+struct ServerReply {
+    let requestID: Int32
+    let responseTo: Int32
+    let flags: ReplyFlags
+    let cursorID: Int
+    let startingFrom: Int32
+    let numbersReturned: Int32
+    var documents: [Document]
 }
 
 extension Swift.Collection where Self.Iterator.Element == Byte, Self.Index == Int {

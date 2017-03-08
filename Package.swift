@@ -23,5 +23,8 @@ var package = Package(
 
         // Logging
         .Package(url: "https://github.com/OpenKitten/LogKitten.git", majorVersion: 0, minor: 3),
+        
+        // Asynchronous behaviour
+        .Package(url: "https://github.com/OpenKitten/Schrodinger.git", majorVersion: 0, minor: 1),
     ]
 )

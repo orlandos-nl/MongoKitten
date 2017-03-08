@@ -46,21 +46,17 @@ internal final class _Cursor<T> {
     let transform: Transformer
     
     /// This initializer creates a base cursor from a reply message
-    internal convenience init?(namespace: String, collection: Collection, reply: Message, chunkSize: Int32, transform: @escaping Transformer) throws {
-        guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
-            return nil
-        }
-        
-        self.init(namespace: namespace, collection: collection, cursorID: cursorID, initialData: try documents.flatMap(transform), chunkSize: chunkSize, transform: transform)
+    internal convenience init?(namespace: String, collection: Collection, reply: ServerReply, chunkSize: Int32, transform: @escaping Transformer) throws {
+        self.init(namespace: namespace, collection: collection, cursorID: reply.cursorID, initialData: try reply.documents.flatMap(transform), chunkSize: chunkSize, transform: transform)
     }
     
     /// This initializer creates a base cursor from a replied Document
     internal convenience init(cursorDocument cursor: Document, collection: Collection, chunkSize: Int32, transform: @escaping Transformer) throws {
-        guard let cursorID = Int(cursor["id"]), let namespace = cursor["ns"] as? String, let firstBatch = cursor["firstBatch"] as? Document else {
+        guard let cursorID = Int(cursor["id"]), let namespace = String(cursor["ns"]), let firstBatch = Document(cursor["firstBatch"]) else {
             throw MongoError.cursorInitializationError(cursorDocument: cursor)
         }
         
-        self.init(namespace: namespace, collection: collection, cursorID: cursorID, initialData: try firstBatch.arrayValue.flatMap{ $0 as? Document }.flatMap(transform), chunkSize: chunkSize, transform: transform)
+        self.init(namespace: namespace, collection: collection, cursorID: cursorID, initialData: try firstBatch.arrayValue.flatMap{ Document($0) }.flatMap(transform), chunkSize: chunkSize, transform: transform)
     }
     
     /// This initializer creates a base cursor from provided specific data
@@ -103,19 +99,14 @@ internal final class _Cursor<T> {
                     "batchSize": Int32(chunkSize)
                     ], writing: false)
                 
-                guard case .Reply(_, _, _, _, _, _, let resultDocs) = reply else {
-                    logger.error("Incorrect Cursor reply received")
-                    throw InternalMongoError.incorrectReply(reply: reply)
-                }
-                
-                let documents = [Primitive](resultDocs.first?["cursor"]["nextBatch"]) ?? []
+                let documents = [Primitive](reply.documents.first?["cursor"]["nextBatch"]) ?? []
                 for value in documents {
-                    if let doc = try transform(value as? Document ?? [:]) {
+                    if let doc = try transform(Document(value) ?? [:]) {
                         self.data.append(doc)
                     }
                 }
                 
-                self.cursorID = Int(resultDocs.first?["cursor"]["id"]) ?? -1
+                self.cursorID = Int(reply.documents.first?["cursor"]["id"]) ?? -1
             } else {
                 let connection = try collection.database.server.reserveConnection(authenticatedFor: self.collection.database)
                 
@@ -127,13 +118,8 @@ internal final class _Cursor<T> {
                 
                 let reply = try collection.database.server.sendAndAwait(message: request, overConnection: connection)
                 
-                guard case .Reply(_, _, _, let cursorID, _, _, let documents) = reply else {
-                    logger.error("Incorrect Cursor reply received")
-                    throw InternalMongoError.incorrectReply(reply: reply)
-                }
-                
-                self.data += try documents.flatMap(transform)
-                self.cursorID = cursorID
+                self.data += try reply.documents.flatMap(transform)
+                self.cursorID = reply.cursorID
             }
         } catch {
             logger.error("Could not fetch extra data from the cursor due to error: \(error)")

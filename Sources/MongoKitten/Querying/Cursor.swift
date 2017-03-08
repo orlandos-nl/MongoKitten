@@ -40,11 +40,7 @@ public class Cursor<T> {
         
         let reply = try collection.database.execute(command: command, writing: false)
         
-        guard case .Reply(_, _, _, _, _, _, let documents) = reply, let document = documents.first else {
-            throw InternalMongoError.incorrectReply(reply: reply)
-        }
-        
-        guard let n = Int(document["n"]), Int(document["ok"]) == 1 else {
+        guard let n = Int(reply.documents.first?["n"]), Int(reply.documents.first?["ok"]) == 1 else {
             throw InternalMongoError.incorrectReply(reply: reply)
         }
         
@@ -98,12 +94,8 @@ public class Cursor<T> {
             
             let reply = try collection.database.execute(command: command, writing: false)
             
-            guard case .Reply(_, _, _, _, _, _, let documents) = reply else {
-                throw InternalMongoError.incorrectReply(reply: reply)
-            }
-            
-            guard let responseDoc = documents.first, let cursorDoc = responseDoc["cursor"] as? Document else {
-                throw MongoError.invalidResponse(documents: documents)
+            guard let responseDoc = reply.documents.first, let cursorDoc = Document(responseDoc["cursor"]) else {
+                throw MongoError.invalidResponse(documents: reply.documents)
             }
             
             let cursor = try _Cursor(cursorDocument: cursorDoc, collection: collection, chunkSize: Int32(batchSize), transform: { doc in
@@ -122,21 +114,17 @@ public class Cursor<T> {
             
             let queryMsg = Message.Query(requestID: collection.database.server.nextMessageID(), flags: [], collection: collection, numbersToSkip: Int32(skip) ?? 0, numbersToReturn: Int32(batchSize), query: filter?.queryDocument ?? [], returnFields: projection?.document)
             
-            let reply = try collection.database.server.sendAndAwait(message: queryMsg, overConnection: connection)
-            
-            guard case .Reply(_, _, _, let cursorID, _, _, var documents) = reply else {
-                throw InternalMongoError.incorrectReply(reply: reply)
-            }
+            var reply = try collection.database.server.sendAndAwait(message: queryMsg, overConnection: connection)
             
             if let limit = limit {
-                if documents.count > Int(limit) {
-                    documents.removeLast(documents.count - Int(limit))
+                if reply.documents.count > Int(limit) {
+                    reply.documents.removeLast(reply.documents.count - Int(limit))
                 }
             }
             
             var returned: Int = 0
             
-            let cursor = _Cursor(namespace: collection.fullName, collection: collection, cursorID: cursorID, initialData: documents, chunkSize: Int32(batchSize), transform: { doc in
+            let cursor = _Cursor(namespace: collection.fullName, collection: collection, cursorID: reply.cursorID, initialData: reply.documents, chunkSize: Int32(batchSize), transform: { doc in
                 if let limit = limit {
                     guard returned < limit else {
                         return nil
