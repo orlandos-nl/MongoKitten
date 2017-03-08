@@ -16,6 +16,9 @@ var package = Package(
         
         // Provides sockets
         .Package(url: "https://github.com/IBM-Swift/BlueSSLService.git", majorVersion: 0, minor: 12),
+        
+        //
+        .Package(url: "https://github.com/IBM-Swift/BlueCryptor.git", majorVersion:0, minor:8),
 
         // Logging
         .Package(url: "https://github.com/OpenKitten/LogKitten.git", majorVersion: 0, minor: 3),
