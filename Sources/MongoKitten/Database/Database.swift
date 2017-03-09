@@ -196,6 +196,7 @@ public final class Database {
     @discardableResult
     internal func execute(command document: Document, until timeout: TimeInterval = 0, writing: Bool = true) throws -> Message {
         let timeout = timeout > 0 ? timeout : server.defaultTimeout
+        let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
         
         let connection = try server.reserveConnection(writing: writing, authenticatedFor: self)
         
@@ -203,7 +204,7 @@ public final class Database {
             server.returnConnection(connection)
         }
         
-        let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
+        
         return try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: timeout)
     }
     

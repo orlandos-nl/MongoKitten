@@ -19,7 +19,10 @@ class GridFSTest: XCTestCase {
     }
 
     func testExample() throws {
-        for db in TestManager.dbs {
+        loop: for db in TestManager.dbs {
+            if db.server.buildInfo.version < Version(3, 4, 0) {
+                continue loop
+            }
             let fs = try db.makeGridFS()
             
             var file = [UInt8](repeating: 0x01, count: 1_000_000)

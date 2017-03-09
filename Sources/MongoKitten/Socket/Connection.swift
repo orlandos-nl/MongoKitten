@@ -12,28 +12,29 @@ import Foundation
 import LogKitten
 import Dispatch
 import MongoSocket
+import Socket
+import SSLService
 
-class Connection {
+final class Connection {
     
     let logger: FrameworkLogger
-    private let client: MongoTCP
-    let buffer = TCPBuffer()
+
     var used = false
     var writable = false
     var authenticatedDBs: [String] = []
     var onClose: (()->())
-    let host: MongoHost
-    var incomingBuffer = [UInt8]()
 
-    private static let receiveQueue = DispatchQueue(label: "org.mongokitten.server.receiveQueue", attributes: .concurrent)
+    let host: MongoHost
     
-    var waitingForResponses = [Int32:(Message)->()]()
+    private let socket: Socket
+
+    
     
     /// A cache for incoming responses
     var incomingMutateLock = NSLock()
     
     public var isConnected: Bool {
-        return client.isConnected
+        return socket.isConnected
     }
     
     init(clientSettings: ClientSettings, writable: Bool, host: MongoHost, logger: FrameworkLogger, onClose: @escaping (()->())) throws {
@@ -49,13 +50,35 @@ class Connection {
         } else {
             options["sslEnabled"]  = false
         }
+       
+        self.socket = try Socket.create() // tcp socket
 
-        self.client = try MongoSocket(address: host.hostname, port: host.port, options: options)
+        
+        if let sslSettings = clientSettings.sslSettings, sslSettings.enabled {
+            
+            var sslConfig = SSLService.Configuration(withCipherSuite: nil)
+            #if os(Linux)
+                if let sslCAFile = options["sslCAFile"] as? String {
+             
+                        if let cert = try? String(contentsOfFile: sslCAFile,encoding: .utf8) {
+                            let trimmedCert = cert.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
+                            sslConfig = SSLService.Configuration(withPEMCertificateString: trimmedCert)
+                        }
+                   
+                }
+            #endif
+            self.socket.delegate = try SSLService(usingConfiguration: sslConfig)
+        }
+        
+        try socket.connect(to: host.hostname, port: Int32(host.port))
+        
+        
+        
         self.writable = writable
         self.onClose = onClose
         self.host = host
         self.logger = logger
-        
+
     }
     
     func authenticate(toDatabase db: Database) throws {
@@ -76,47 +99,47 @@ class Connection {
     }
     
     
-    
     func close() {
-        _ = try? client.close()
+        socket.close()
         onClose()
     }
     
-    func send(data binary: [UInt8]) throws {
-        try self.client.send(data: binary)
-        try self.receive()
-    }
-
-    
-    /// Called by the server thread to handle MongoDB Wire messages
-    ///
-    /// - parameter bufferSize: The amount of bytes to fetch at a time
-    ///
-    /// - throws: Unable to receive or parse the reply
-    private func receive() throws {
-        try client.receive(into: &incomingBuffer)
-        buffer.data += incomingBuffer
+    func send(data binary: [UInt8]) throws -> (Int32,Message)? {
         
-        while buffer.data.count >= 36 {
-            let length = Int(buffer.data[0...3].makeInt32())
-            
-            guard length <= buffer.data.count else {
-                try receive()
-                return
-            }
-            
-            let responseData = buffer.data[0..<length]*
-            let responseId = buffer.data[8...11].makeInt32()
-            let reply = try Message.makeReply(from: responseData)
-            
-            if let closure = waitingForResponses[responseId] {
-                closure(reply)
-                waitingForResponses[responseId] = nil
-            } else {
+        try socket.write(from: UnsafeRawPointer(binary), bufSize: binary.count)
+        var readData = Data(capacity: self.socket.readBufferSize)
+
+        var shouldKeepRunning = true
+        var reply: Message?
+        var responseId: Int32?
+        var buffer = [UInt8]()
+        repeat {
+            let _ = try socket.read(into: &readData)
+            buffer += readData.bytes
+            readData.removeAll()
+
+            if buffer.count >= 36 {
+                
+                let length = Int(buffer[0...3].makeInt32())
+                if length <= buffer.count {
+                    let responseData = buffer[0..<length]*
+                    responseId = buffer[8...11].makeInt32()
+                    reply = try Message.makeReply(from: responseData)
+                    
+//                    if let closure = waitingForResponses[responseId] {
+//                        closure(reply)
+//                        waitingForResponses[responseId] = nil
+//                    }
+                    shouldKeepRunning = false
+                }
                 
             }
-            
-            buffer.data.removeSubrange(0..<length)
+        } while shouldKeepRunning
+
+        if let responseId = responseId, let reply = reply {
+            return (responseId,reply)
+        } else {
+            return nil
         }
     }
 }

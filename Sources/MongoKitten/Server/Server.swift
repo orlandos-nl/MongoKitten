@@ -638,35 +638,37 @@ public final class Server {
         
         let requestId = msg.requestID
         
-        let semaphore = DispatchSemaphore(value: 0)
+//        let semaphore = DispatchSemaphore(value: 0)
         
         connection.incomingMutateLock.lock()
         
         var reply: Message? = nil
-        connection.waitingForResponses[requestId] = { message in
-            reply = message
-            semaphore.signal()
-        }
+//        connection.waitingForResponses[requestId] = { message in
+//            reply = message
+//            semaphore.signal()
+//        }
         
-        connection.incomingMutateLock.unlock()
+     
         
         let messageData = try msg.generateData()
         
         do {
-            try connection.send(data: messageData)
+            reply = try connection.send(data: messageData)?.1
         } catch {
             logger.debug("Could not send data because of the following error: \"\(error)\"")
             connection.close()
         }
         
-        guard semaphore.wait(timeout: DispatchTime.now() + timeout) == .success else {
-            connection.incomingMutateLock.lock()
-            connection.waitingForResponses[requestId] = nil
-            connection.incomingMutateLock.unlock()
-            logger.debug("Waiting for request \(requestId) timed out")
-            throw MongoError.timeout
-        }
+        connection.incomingMutateLock.unlock()
         
+//        guard semaphore.wait(timeout: DispatchTime.now() + timeout) == .success else {
+//            connection.incomingMutateLock.lock()
+//            connection.waitingForResponses[requestId] = nil
+//            connection.incomingMutateLock.unlock()
+//            logger.debug("Waiting for request \(requestId) timed out")
+//            throw MongoError.timeout
+//        }
+//        
         guard let theReply = reply else {
             logger.fatal("Reply was received but not found for id \(requestId)")
             // If we get here, something is very, very wrong.
@@ -687,7 +689,7 @@ public final class Server {
     internal func send(message msg: Message, overConnection connection: Connection) throws -> Int32 {
         let messageData = try msg.generateData()
         
-        try connection.send(data: messageData)
+        let _ = try connection.send(data: messageData)
         
         return msg.requestID
     }
