@@ -177,7 +177,7 @@ public struct BuildInfo: CustomValueConvertible {
         let storageEngines = document["storageEngines"] as Document?
         
         guard let bits = document["bits"] as Int? else {
-            throw MongoError.missingBuildInfoField("storageEngines")
+            throw MongoError.missingBuildInfoField("bits")
         }
         
         guard let debug = document["debug"] as Bool? else {
