@@ -102,6 +102,7 @@ public enum MongoError : Error {
     
     /// The received Document that contains the MongoDB server build info is invalid
     case invalidBuildInfoDocument
+    case missingBuildInfoField(String)
     
     /// MD5 file hashing in GridFS failed
     case couldNotHashFile

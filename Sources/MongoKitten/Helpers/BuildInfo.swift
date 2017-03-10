@@ -163,29 +163,29 @@ public struct BuildInfo: CustomValueConvertible {
     /// Creates this from a Document, but throwable
     public init(fromDocument document: Document) throws {
         guard let gitVersion = document["gitVersion"] as String? else {
-            throw MongoError.invalidBuildInfoDocument
+            throw MongoError.missingBuildInfoField("gitVersion")
         }
         
         guard let versionArray = document["versionArray"] as Document? else {
-            throw MongoError.invalidBuildInfoDocument
+            throw MongoError.missingBuildInfoField("versionArray")
         }
         
         guard let version = document.extract("version") as Version? else {
-            throw MongoError.invalidBuildInfoDocument
+            throw MongoError.missingBuildInfoField("version")
         }
         
         let storageEngines = document["storageEngines"] as Document?
         
         guard let bits = document["bits"] as Int? else {
-            throw MongoError.invalidBuildInfoDocument
+            throw MongoError.missingBuildInfoField("storageEngines")
         }
         
         guard let debug = document["debug"] as Bool? else {
-            throw MongoError.invalidBuildInfoDocument
+            throw MongoError.missingBuildInfoField("debug")
         }
         
         guard let maxBsonObjectSize = document["maxBsonObjectSize"] as Int? else {
-            throw MongoError.invalidBuildInfoDocument
+            throw MongoError.missingBuildInfoField("maxBsonObjectSize")
         }
         
         let openSSL = document["openssl"] as Document?
