@@ -458,7 +458,7 @@ public final class Collection: Sequence {
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     @discardableResult
-    public func remove(_ filter: Query, limiting limit: Int = 0, writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
+    public func remove(_ filter: Query? = [:], limiting limit: Int = 0, writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
         return try self.remove(bulk: [(filter: filter, limit: limit)], writeConcern: writeConcern, stoppingOnError: ordered)
     }
     
