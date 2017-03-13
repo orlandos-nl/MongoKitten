@@ -141,7 +141,7 @@ public class Cursor<T> {
         }
     }
     
-    public func update(to document: Document, upserting: Bool, multiple: Bool, writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
+    public func update(to document: Document, upserting: Bool = false, multiple: Bool = false, writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
         return try collection.update(filter ?? [:], to: document, upserting: upserting, multiple: multiple, writeConcern: writeConcern, stoppingOnError: ordered)
     }
     
