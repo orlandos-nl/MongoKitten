@@ -66,7 +66,7 @@ class Connection {
                 case .MONGODB_CR:
                     try db.authenticate(mongoCR: details, usingConnection: self)
                 default:
-                    throw MongoError.unsupportedFeature("authentication Method")
+                    throw MongoError.unsupportedFeature("authentication Method \"\(details.authenticationMechanism.rawValue)\"")
                 }
                 
                 self.authenticatedDBs.append(db.name)
@@ -121,11 +121,10 @@ class Connection {
             let responseId = buffer.data[8...11].makeInt32()
             let reply = try Message.makeReply(from: responseData)
             
+            defer { waitingForResponses[responseId] = nil }
+            
             if let promise = waitingForResponses[responseId] {
                 _ = try promise.complete(reply)
-                waitingForResponses[responseId] = nil
-            } else {
-                
             }
             
             buffer.data.removeSubrange(0..<length)

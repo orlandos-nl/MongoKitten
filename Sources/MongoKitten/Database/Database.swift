@@ -203,10 +203,14 @@ public final class Database {
             server.returnConnection(connection)
         }
         
+        return try self.execute(command: document, until: timeout, writing: writing, using: connection)
+    }
+    
+    @discardableResult
+    internal func execute(command document: Document, until timeout: TimeInterval = 0, writing: Bool = true, using connection: Connection) throws -> ServerReply {
         let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
         return try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: timeout)
     }
-    
 }
 
 extension Database: CustomStringConvertible {
