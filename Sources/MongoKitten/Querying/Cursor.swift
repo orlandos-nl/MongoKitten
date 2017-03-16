@@ -11,7 +11,7 @@ import BSON
 
 public typealias BasicCursor = Cursor<Document>
 
-public class Cursor<T> {
+public class Cursor<T> : Sequence {
     public let collection: Collection
     
     public var filter: Query?
@@ -19,6 +19,14 @@ public class Cursor<T> {
     public typealias Transformer = (Document) throws -> (T?)
     
     public let transform: Transformer
+    
+    public func makeIterator() -> AnyIterator<T> {
+        do {
+            return try find()
+        } catch {
+            return AnyIterator { nil }
+        }
+    }
     
     public func count(limiting limit: Int? = nil, skipping skip: Int? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil) throws -> Int {
         var command: Document = ["count": collection.name]

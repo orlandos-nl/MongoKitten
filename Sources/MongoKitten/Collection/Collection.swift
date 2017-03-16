@@ -459,7 +459,7 @@ public final class Collection: Sequence {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     @discardableResult
     public func remove(_ filter: Query? = [:], limiting limit: Int = 0, writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
-        return try self.remove(bulk: [(filter: filter, limit: limit)], writeConcern: writeConcern, stoppingOnError: ordered)
+        return try self.remove(bulk: [(filter: filter ?? [:], limit: limit)], writeConcern: writeConcern, stoppingOnError: ordered)
     }
     
     /// The drop command removes an entire collection from a database. This command also removes any indexes associated with the dropped collection.
