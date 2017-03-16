@@ -16,13 +16,21 @@ import GeoJSON
 // MARK: Equations
 
 /// Equals
-public func ==(key: String, pred: BSON.Primitive) -> Query {
-    return Query(aqt: .valEquals(key: key, val: pred))
+public func ==(key: String, pred: BSON.Primitive?) -> Query {
+    if let pred = pred {
+        return Query(aqt: .valEquals(key: key, val: pred))
+    } else {
+        return Query(aqt: .exists(key: key, exists: false))
+    }
 }
 
-/// MongoDB: `$ne`
-public func !=(key: String, pred: BSON.Primitive) -> Query {
-    return Query(aqt: .valNotEquals(key: key, val: pred))
+/// Does not equal
+public func !=(key: String, pred: BSON.Primitive?) -> Query {
+    if let pred = pred {
+        return Query(aqt: .valNotEquals(key: key, val: pred))
+    } else {
+        return Query(aqt: .exists(key: key, exists: true))
+    }
 }
 
 // MARK: Comparisons
@@ -265,9 +273,9 @@ public indirect enum AQT {
             return GeometryOperator(key: key, operatorName: "$near", geometry: point, maxDistance: maxDistance, minDistance: minDistance).makeDocument()
         case .geoWithin(let key, let polygon):
             return GeometryOperator(key: key, operatorName: "$geoWithin", geometry: polygon).makeDocument()
-        case .exists(key: let key):
+        case .exists(let key, let exists):
             return [
-                key: [ "$exists": true ]
+                key: [ "$exists": exists ]
             ]
         case .geoIntersects(let key, let geometry):
             return GeometryOperator(key: key, operatorName: "$geoIntersects", geometry: geometry).makeDocument()
@@ -325,7 +333,7 @@ public indirect enum AQT {
     case exactly(Document)
     
     /// Value at this key exists, even if it is `Null`
-    case exists(key: String)
+    case exists(key: String, exists: Bool)
 
     /// Match all documents containing a `key` with geospatial data that is near the specified GeoJSON `Point`.
     ///

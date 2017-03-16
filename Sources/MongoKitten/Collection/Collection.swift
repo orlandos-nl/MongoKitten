@@ -452,9 +452,9 @@ public final class Collection: Sequence {
     ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/delete/#dbcmd.delete
     ///
-    /// - parameter matching: The QueryBuilder filter to use when finding Documents that are going to be removed
-    /// - parameter limitedTo: The amount of times this filter can be used to find and remove a Document (0 is every document)
-    /// - parameter stoppingfOnError: If true, stop removing when one operation fails - defaults to true
+    /// - parameter filter: The QueryBuilder filter to use when finding Documents that are going to be removed
+    /// - parameter limit: The amount of times this filter can be used to find and remove a Document (0 is every document)
+    /// - parameter ordered: If true, stop removing when one operation fails - defaults to true
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     @discardableResult
