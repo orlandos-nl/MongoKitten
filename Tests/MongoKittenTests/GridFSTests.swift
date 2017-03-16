@@ -49,7 +49,7 @@ class GridFSTest: XCTestCase {
                 dbFileData.append(contentsOf: chunk.data)
             }
             
-            XCTAssertEqual(dbFileData, file)
+            XCTAssert(dbFileData == file)
             
             XCTAssertThrowsError(try dbFile.read(from: 4_900_000, to: 5_050_000))
             
