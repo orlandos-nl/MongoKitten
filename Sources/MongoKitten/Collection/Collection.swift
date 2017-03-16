@@ -452,14 +452,14 @@ public final class Collection: Sequence {
     ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/delete/#dbcmd.delete
     ///
-    /// - parameter matching: The QueryBuilder filter to use when finding Documents that are going to be removed
-    /// - parameter limitedTo: The amount of times this filter can be used to find and remove a Document (0 is every document)
-    /// - parameter stoppingfOnError: If true, stop removing when one operation fails - defaults to true
+    /// - parameter filter: The QueryBuilder filter to use when finding Documents that are going to be removed
+    /// - parameter limit: The amount of times this filter can be used to find and remove a Document (0 is every document)
+    /// - parameter stopOnError: If true, stop removing when one operation fails - defaults to true
     ///
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     @discardableResult
-    public func remove(_ filter: Query? = [:], limiting limit: Int = 0, writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
-        return try self.remove(bulk: [(filter: filter, limit: limit)], writeConcern: writeConcern, stoppingOnError: ordered)
+    public func remove(_ filter: Query? = [:], limiting limit: Int = 0, writeConcern: WriteConcern? = nil, stoppingOnError stopOnError: Bool? = nil) throws -> Int {
+        return try self.remove(bulk: [(filter: filter, limit: limit)], writeConcern: writeConcern, stoppingOnError: stopOnError)
     }
     
     /// The drop command removes an entire collection from a database. This command also removes any indexes associated with the dropped collection.
