@@ -12,16 +12,12 @@ import Foundation
 import CryptoSwift
 
 /// Authenticates over SCRAM-SHA-1 to authenticate a user with the provided password
-///
-/// TODO: Make this internal
 final class SCRAMClient {
     /// Constant GS2BindFlag
     let gs2BindFlag = "n,,"
     var server: Server
     
     /// Creates a new SCRAM Client instance
-    ///
-    /// TODO: Make this internal
     init(_ server: Server) {
         self.server = server
     }
@@ -30,7 +26,7 @@ final class SCRAMClient {
     ///
     /// - returns: The fixed username
     private func fixUsername(username user: String) -> String {
-        return replaceOccurrences(in: replaceOccurrences(in: user, where: "=", with: "=3D"), where: ",", with: "=2C")
+        return user.replacingOccurrences(of: "=", with: "=3D").replacingOccurrences(of: ",", with: "=2C")
     }
     
     /// Parses the SCRAM challenge and returns the values in there as a tuple
@@ -65,7 +61,7 @@ final class SCRAMClient {
             return (nonce: nonce, salt: salt, iterations: iterations)
         }
         
-        throw SCRAMError.ChallengeParseError(challenge: response)
+        throw AuthenticationError.challengeParseError(challenge: response)
     }
     
     /// Parses the final response and returns the server signature
@@ -97,19 +93,15 @@ final class SCRAMClient {
             return signature
         }
         
-        throw SCRAMError.ResponseParseError(response: response)
+        throw AuthenticationError.responseParseError(response: response)
     }
     
     /// Generates an initial SCRAM-SHA-1 authentication String
-    ///
-    /// TODO: Make this internal
     func authenticate(_ username: String, usingNonce nonce: String) throws -> String {
         return "\(gs2BindFlag)n=\(fixUsername(username: username)),r=\(nonce)"
     }
     
     /// Processes the challenge and responds with the proof that we are the user we claim to be
-    ///
-    /// TODO: Make this internal
     ///
     /// - returns: A tuple where the proof is to be sent to the server and the signature is to be verified in the server's responses.
     /// - throws: When unable to parse the challenge
@@ -131,7 +123,7 @@ final class SCRAMClient {
         let remoteNonce = parsedResponse.nonce
         
         guard String(remoteNonce[remoteNonce.startIndex..<remoteNonce.index(remoteNonce.startIndex, offsetBy: 24)]) == nonce else {
-            throw SCRAMError.InvalidNonce(nonce: parsedResponse.nonce)
+            throw AuthenticationError.invalidNonce(nonce: parsedResponse.nonce)
         }
         
         let noProof = "c=\(encodedHeader),r=\(parsedResponse.nonce)"
@@ -174,42 +166,15 @@ final class SCRAMClient {
     
     /// Validates the server's signature
     ///
-    /// TODO: Make this internal
-    ///
     /// - returns: An empty string to proceed the process indefinitely until complete as per protocol definition
     /// - throws: When the server's signature is invalid
     func complete(fromResponse response: String, verifying signature: Bytes) throws -> String {
         let sig = try parse(finalResponse: response)
 
         if sig != signature {
-            throw SCRAMError.InvalidSignature(signature: sig)
+            throw AuthenticationError.serverSignatureInvalid
         }
         
         return ""
     }
-}
-
-/// Replaces occurrences of data with new data in a string
-/// Because "having a single cross-platform API for a programming language is stupid"
-/// TODO: Remove/update with the next Swift version
-internal func replaceOccurrences(`in` string: String, `where` matching: String, with replacement: String) -> String {
-    return string.replacingOccurrences(of: matching, with: replacement)
-}
-
-/// All possible authentication errors
-public enum SCRAMError: Error {
-    /// -
-    case InvalidSignature(signature: Bytes)
-    
-    /// -
-    case Base64Failure(original: Bytes)
-    
-    /// -
-    case ChallengeParseError(challenge: String)
-    
-    /// -
-    case ResponseParseError(response: String)
-    
-    /// -
-    case InvalidNonce(nonce: String)
 }
