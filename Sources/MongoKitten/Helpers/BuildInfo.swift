@@ -12,13 +12,13 @@ import BSON
 
 /// A semantic version
 public struct Version: ValueConvertible, Comparable {
-    /// -
+    /// Major level
     public let major: Int
     
-    /// -
+    /// Minor level
     public let minor: Int
     
-    /// -
+    /// Patch level
     public let patch: Int
 
     /// Initializes using the major, minor, patch

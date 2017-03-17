@@ -140,8 +140,6 @@ enum Message {
             requestID = requestIdentifier
         case .GetMore(let requestIdentifier, let namespace, let numberToReturn, let cursorID):
             body += Int32(0).makeBytes()
-            
-            /// TODO: Fix inconsistency `namespace`
             body += namespace.cStringBytes
             body += numberToReturn.makeBytes()
             body += cursorID.makeBytes()

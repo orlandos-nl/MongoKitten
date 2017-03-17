@@ -16,18 +16,6 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
     /// The resulting Document that can be modified by the user.
     public var pipelineDocument: Document = []
     
-    /// A getter for the pipeline Document.
-    /// TODO: Evaluate removing access to pipelineDocument or removing this property
-    public var pipeline: Document {
-        return pipelineDocument
-    }
-    
-    /// Creates a Document that can be sent to the server
-    /// TODO: This is practically useless now as the conforming protocol has been removed.
-    public func makeDocument() -> Document {
-        return self.pipelineDocument
-    }
-    
     /// Allows embedding this pipeline inside another Document
     public func makePrimitive() -> BSON.Primitive {
         return self.pipelineDocument

@@ -83,8 +83,8 @@ public enum IndexParameter {
     ///
     /// Used in combination with text indexes
     ///
-    /// TODO: Broken. Should be fixed in a minor update which will break the API for this function.
-    case weight(Int)
+    /// TODO: implement. Should be fixed in a minor update which will break the API for this function.
+//    case weight(Int)
     
     /// Applies text indexing to the provided keys
     case text([String])
@@ -135,8 +135,8 @@ public enum IndexParameter {
             return ["unique": true]
         case .buildInBackground:
             return ["background": true]
-        case .weight(let weight):
-            return ["weights": Int32(weight)]            
+//        case .weight(let weight):
+//            return ["weights": Int32(weight)]
         case .geo2dsphere(let field):
             return ["key":[field:"2dsphere"]]
         }

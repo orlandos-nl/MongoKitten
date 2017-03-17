@@ -338,13 +338,11 @@ public final class Collection: Sequence {
                 var flags: UpdateFlags = []
                 
                 if update.multiple {
-                    // TODO: Remove this assignment when the standard library is updated.
-                    let _ = flags.insert(UpdateFlags.MultiUpdate)
+                    flags.insert(UpdateFlags.MultiUpdate)
                 }
                 
                 if update.upserting {
-                    // TODO: Remove this assignment when the standard library is updated.
-                    let _ = flags.insert(UpdateFlags.Upsert)
+                    flags.insert(UpdateFlags.Upsert)
                 }
                 
                 let message = Message.Update(requestID: database.server.nextMessageID(), collection: self, flags: flags, findDocument: update.filter.queryDocument, replaceDocument: update.to)
@@ -433,8 +431,7 @@ public final class Collection: Sequence {
                 
                 // If the limit is not '0' and thus removes a set amount of documents. Set it to RemoveOne so we'll remove one document at a time using the older method
                 if removal.limit != 0 {
-                    // TODO: Remove this assignment when the standard library is updated.
-                    let _ = flags.insert(DeleteFlags.RemoveOne)
+                    flags.insert(DeleteFlags.RemoveOne)
                 }
                 
                 let message = Message.Delete(requestID: database.server.nextMessageID(), collection: self, flags: flags, removeDocument: removal.filter.queryDocument)
@@ -739,7 +736,7 @@ public final class Collection: Sequence {
     /// - returns: A `Cursor` pointing to the found `Document`s
     public func aggregate(_ pipeline: AggregationPipeline, readConcern: ReadConcern? = nil, collation: Collation? = nil, options: [AggregationOptions] = []) throws -> AnyIterator<Document> {
         // construct command. we always use cursors in MongoKitten, so that's why the default value for cursorOptions is an empty document.
-        var command: Document = ["aggregate": self.name, "pipeline": pipeline.makeDocument(), "cursor": ["batchSize": 100]]
+        var command: Document = ["aggregate": self.name, "pipeline": pipeline.pipelineDocument, "cursor": ["batchSize": 100]]
         
         command["readConcern"] = readConcern ?? self.readConcern
         command["collation"] = collation ?? self.collation
