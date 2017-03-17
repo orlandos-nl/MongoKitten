@@ -20,7 +20,7 @@ struct MongoDriverInformation: ValueConvertible {
 
     /// Converts this to an embeddable BSON.Primitive
     public func makePrimitive() -> BSON.Primitive {
-        let driver: Document = ["name":"MongoKitten","version":"3.1.5"]
+        let driver: Document = ["name":"MongoKitten","version":"4.0.0"]
 
         var client: Document = ["driver": driver]
 
