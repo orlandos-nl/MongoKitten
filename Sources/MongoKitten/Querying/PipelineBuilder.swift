@@ -218,12 +218,12 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         }
         
         /// Writes the resulting Documents to the provided Collection
-        public static func out(toCollection collection: Collection) -> Stage {
-            return self.out(toCollectionNamed: collection.name)
+        public static func out(to collection: Collection) -> Stage {
+            return self.out(to: collection.name)
         }
         
         /// Writes the resulting Documents to the provided Collection
-        public static func out(toCollectionNamed collectionName: String) -> Stage {
+        public static func out(to collectionName: String) -> Stage {
             return Stage([
                 "$out": collectionName
                 ])
