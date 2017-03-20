@@ -222,9 +222,22 @@ extension CollectionQueryable {
                     reply = try self.database.execute(command: command, writing: false)
                 }
                 
-                guard Int(reply.documents.first?["ok"]) == 1 && (Document(reply.documents.first?["writeErrors"]) ?? [:]).count == 0 else {
-                    fatalError()
-//                    throw MongoError.updateFailure(updates: updates, error: reply.documents.first)
+                if let writeErrors = Document(reply.documents.first?["writeErrors"]), (Int(reply.documents.first?["ok"]) != 1 || ordered == true) {
+                    let writeErrors = try writeErrors.arrayValue.flatMap { value -> UpdateError.WriteError in
+                        guard let document = Document(value),
+                            let index = Int(document["index"]),
+                            let code = Int(document["code"]),
+                            let message = String(document["errmsg"]),
+                            index < updates.count else {
+                                throw MongoError.invalidReply
+                        }
+                        
+                        let affectedUpdate = updates[index]
+                        
+                        return UpdateError.WriteError(index: index, code: code, message: message, affectedQuery: affectedUpdate.filter, affectedUpdate: affectedUpdate.to, upserting: affectedUpdate.upserting, multiple: affectedUpdate.multiple)
+                    }
+                    
+                    throw UpdateError(writeErrors: writeErrors)
                 }
                 
                 return Int(reply.documents.first?["nModified"]) ?? 0
@@ -297,9 +310,22 @@ extension CollectionQueryable {
                     reply = try self.database.execute(command: command, writing: false)
                 }
                 
-                guard Int(reply.documents.first?["ok"]) == 1 else {
-                    fatalError()
-//                    throw MongoError.removeFailure(removals: removals, error: reply.documents.first ?? [:])
+                if let writeErrors = Document(reply.documents.first?["writeErrors"]), (Int(reply.documents.first?["ok"]) != 1 || ordered == true) {
+                    let writeErrors = try writeErrors.arrayValue.flatMap { value -> RemoveError.WriteError in
+                        guard let document = Document(value),
+                            let index = Int(document["index"]),
+                            let code = Int(document["code"]),
+                            let message = String(document["errmsg"]),
+                            index < removals.count else {
+                                throw MongoError.invalidReply
+                        }
+                        
+                        let affectedRemove = removals[index]
+                        
+                        return RemoveError.WriteError(index: index, code: code, message: message, affectedQuery: affectedRemove.filter, limit: affectedRemove.limit)
+                    }
+                    
+                    throw RemoveError(writeErrors: writeErrors)
                 }
                 
                 return Int(reply.documents.first?["n"]) ?? 0

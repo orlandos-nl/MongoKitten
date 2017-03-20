@@ -14,23 +14,24 @@ import Dispatch
 class CollectionTests: XCTestCase {
     static var allTests: [(String, (CollectionTests) -> () throws -> Void)] {
         return [
-//            ("testUniqueIndex", testUniqueIndex),
-//            ("testQuery", testQuery),
-//            ("testRename", testRename),
-//            ("testDistinct", testDistinct),
-//            ("testFind", testFind),
-//            ("testDBRef", testDBRef),
-//            ("testProjection", testProjection),
-//            ("testIndexes", testIndexes),
-//            ("testDropIndex", testDropIndex),
-//            ("testTextOperator", testTextOperator),
-//            ("testUpdate", testUpdate),
-//            ("testRemovingAll", testRemovingAll),
-//            ("testRemovingOne", testRemovingOne),
-//            ("testHelperObjects", testHelperObjects),
-//            ("testFindAndModify", testFindAndModify),
-//            ("testDocumentValidation", testDocumentValidation),
-//            ("testErrors", testErrors),
+            ("testUniqueIndex", testUniqueIndex),
+            ("testQuery", testQuery),
+            ("testRename", testRename),
+            ("testDistinct", testDistinct),
+            ("testFind", testFind),
+            ("testDBRef", testDBRef),
+            ("testProjection", testProjection),
+            ("testIndexes", testIndexes),
+            ("testDropIndex", testDropIndex),
+            ("testTextOperator", testTextOperator),
+            ("testUpdate", testUpdate),
+            ("testRemovingAll", testRemovingAll),
+            ("testRemovingOne", testRemovingOne),
+            ("testHelperObjects", testHelperObjects),
+            ("testFindAndModify", testFindAndModify),
+            ("testDocumentValidation", testDocumentValidation),
+            ("testInsertErrors", testInsertErrors),
+            ("testUpdateErrors", testUpdateErrors),
         ]
     }
     
@@ -574,25 +575,25 @@ class CollectionTests: XCTestCase {
         }
     }
     
-    func testErrors() throws {
+    func testInsertErrors() throws {
         for db in TestManager.dbs {
             var documents = [Document]()
-                let duplicateID = ObjectId()
+            let duplicateID = ObjectId()
 
-                documents.append([
-                    "_id": duplicateID,
-                    "data": true
-                ])
+            documents.append([
+                "_id": duplicateID,
+                "data": true
+            ])
 
-                documents.append([
-                    "_id": duplicateID,
-                    "data": true
-                ])
+            documents.append([
+                "_id": duplicateID,
+                "data": true
+            ])
 
-                documents.append([
-                    "_id": duplicateID,
-                    "data": true
-                ])
+            documents.append([
+                "_id": duplicateID,
+                "data": true
+            ])
 
             do {
                 try db["errors"].append(contentsOf: documents)
@@ -608,5 +609,51 @@ class CollectionTests: XCTestCase {
         }
     }
 
-    
+    func testUpdateErrors() throws {
+        for db in TestManager.dbs {
+            var documents = [Document]()
+            documents.append([
+                "_id": 0,
+                "data": true
+            ])
+
+            documents.append([
+                "_id": 1,
+                "data": true
+            ])
+
+            documents.append([
+                "_id": 2,
+                "data": true
+            ])
+
+            try db["errors"].append(contentsOf: documents)
+            
+            try db.server.fsync()
+            
+            do {
+                try db["errors"].update("_id" == 2, to: [
+                    "$set": [
+                        "_id": 1
+                    ]
+                ], stoppingOnError: true)
+                XCTFail()
+            } catch let updateError as UpdateError {
+                XCTAssertEqual(updateError.writeErrors.count, 1)
+                XCTAssertEqual(updateError.writeErrors[0].affectedQuery.makeDocument(), [
+                    "_id": [
+                        "$eq": 2
+                    ]
+                    ])
+                
+                XCTAssertEqual(updateError.writeErrors[0].affectedUpdate, [
+                    "$set": [
+                        "_id": 1
+                    ]
+                    ])
+            } catch {
+                XCTFail()
+            }
+        }
+    }
 }
