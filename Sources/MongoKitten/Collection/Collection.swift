@@ -118,12 +118,12 @@ public final class Collection {
     ///
     /// - returns: The inserted document's id
     @discardableResult
-    public func insert(_ document: Document) throws -> ValueConvertible {
-        let result = try self.insert([document])
+    public func insert(_ document: Document, stoppingOnError ordered: Bool? = nil) throws -> ValueConvertible {
+        let result = try self.insert([document], stoppingOnError: ordered)
         
         guard let newId = result.first else {
             database.server.logger.error("No identifier could be generated")
-            throw MongoError.insertFailure(documents: [document], error: nil)
+            throw MongoError.internalInconsistency
         }
         
         return newId
@@ -146,8 +146,25 @@ public final class Collection {
     public func insert(_ documents: [Document], stoppingOnError ordered: Bool? = nil, writeConcern: WriteConcern? = nil, timeout customTimeout: TimeInterval? = nil) throws -> [ValueConvertible] {
         let timeout: TimeInterval = customTimeout ?? (database.server.defaultTimeout + (Double(documents.count) / 50))
         
-        var documents = documents
         var newIds = [ValueConvertible]()
+        var documents = documents
+        
+        var errors = Array<InsertErrors.InsertError>()
+        
+        func throwErrors() -> InsertErrors {
+            let positions = errors.flatMap { insertError in
+                return insertError.writeErrors.flatMap { writeError in
+                    return writeError.index
+                }
+                }.reduce([], +)
+            
+            for position in positions.reversed() {
+                newIds.remove(at: position)
+            }
+            
+            return InsertErrors(errors: errors, successfulIds: newIds)
+        }
+        
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
         while !documents.isEmpty {
@@ -177,13 +194,39 @@ public final class Collection {
                 
                 command[raw: "writeConcern"] = writeConcern ?? self.writeConcern
                 
-                let reply = try self.database.execute(command: command, until: timeout)
+                let reply = try self.database.execute(command: command)
+                
                 guard case .Reply(_, _, _, _, _, _, let replyDocuments) = reply else {
                     throw MongoError.insertFailure(documents: documents, error: nil)
                 }
                 
-                guard replyDocuments.first?["ok"] as Int? == 1 && (replyDocuments.first?["writeErrors"] as Document? ?? [:]).count == 0 else {
-                    throw MongoError.insertFailure(documents: documents, error: replyDocuments.first)
+                if let writeErrors = replyDocuments.first?["writeErrors"] as Document? {
+                    guard let documents = command["documents"] as Document? else {
+                        throw MongoError.invalidReply
+                    }
+                    
+                    let writeErrors = try writeErrors.arrayValue.flatMap { value -> InsertErrors.InsertError.WriteError in
+                        guard let document = value as? Document,
+                            let index = document["index"] as Int?,
+                            let code = document["code"] as Int?,
+                            let message = document["errmsg"] as String?,
+                            index < documents.count,
+                            let affectedDocument = documents[index] as Document? else {
+                                throw MongoError.invalidReply
+                        }
+                        
+                        return InsertErrors.InsertError.WriteError(index: index, code: code, message: message, affectedDocument: affectedDocument)
+                    }
+                    
+                    errors.append(InsertErrors.InsertError(writeErrors: writeErrors))
+                }
+                
+                guard replyDocuments.first?["ok"] as Int? == 1 else {
+                    throw throwErrors()
+                }
+
+                if errors.count > 0 && ordered != false {
+                    throw throwErrors()
                 }
             } else {
                 let connection = try database.server.reserveConnection(writing: true, authenticatedFor: self.database)
@@ -397,15 +440,29 @@ public final class Collection {
             command[raw: "writeConcern"] = writeConcern ??  self.writeConcern
             
             let reply = try self.database.execute(command: command)
-            guard case .Reply(_, _, _, _, _, _, let documents) = reply else {
+            guard case .Reply(_, _, _, _, _, _, let replyDocuments) = reply else {
                 throw MongoError.updateFailure(updates: updates, error: nil)
             }
             
-            guard documents.first?["ok"] as Int? == 1 && (documents.first?["writeErrors"] as Document? ?? [:]).count == 0 else {
-                throw MongoError.updateFailure(updates: updates, error: documents.first)
+            if let writeErrors = replyDocuments.first?["writeErrors"] as Document?, (replyDocuments.first?["ok"] as Int? != 1 || ordered == true) {
+                let writeErrors = try writeErrors.arrayValue.flatMap { value -> UpdateError.WriteError in
+                    guard let document = value as? Document,
+                        let index = document["index"] as Int?,
+                        let code = document["code"] as Int?,
+                        let message = document["errmsg"] as String?,
+                        index < updates.count else {
+                            throw MongoError.invalidReply
+                    }
+                    
+                    let affectedUpdate = updates[index]
+                    
+                    return UpdateError.WriteError(index: index, code: code, message: message, affectedQuery: affectedUpdate.filter, affectedUpdate: affectedUpdate.to, upserting: affectedUpdate.upserting, multiple: affectedUpdate.multiple)
+                }
+                
+                throw UpdateError(writeErrors: writeErrors)
             }
             
-            return documents.first?["nModified"] as Int? ?? 0
+            return replyDocuments.first?["nModified"] as Int? ?? 0
         } else {
             let connection = try database.server.reserveConnection(writing: true, authenticatedFor: self.database)
             
@@ -488,13 +545,27 @@ public final class Collection {
             command[raw: "writeConcern"] = writeConcern ?? self.writeConcern
             
             let reply = try self.database.execute(command: command)
-            let documents = try allDocuments(in: reply)
+            let replyDocuments = try allDocuments(in: reply)
             
-            guard let document = documents.first, document["ok"] as Int? == 1 else {
-                throw MongoError.removeFailure(removals: removals, error: documents.first)
+            if let writeErrors = replyDocuments.first?["writeErrors"] as Document?, (replyDocuments.first?["ok"] as Int? != 1 || ordered == true) {
+                let writeErrors = try writeErrors.arrayValue.flatMap { value -> RemoveError.WriteError in
+                    guard let document = value as? Document,
+                        let index = document["index"] as Int?,
+                        let code = document["code"] as Int?,
+                        let message = document["errmsg"] as String?,
+                        index < removals.count else {
+                            throw MongoError.invalidReply
+                    }
+                    
+                    let affectedRemove = removals[index]
+                    
+                    return RemoveError.WriteError(index: index, code: code, message: message, affectedQuery: affectedRemove.filter, limit: affectedRemove.limit)
+                }
+                
+                throw RemoveError(writeErrors: writeErrors)
             }
             
-            return document["n"] as Int? ?? 0
+            return replyDocuments.first?["n"] as Int? ?? 0
             
             // If we're talking to an older MongoDB server
         } else {

@@ -581,4 +581,86 @@ class CollectionTests: XCTestCase {
         }
     }
     
+    
+    func testInsertErrors() throws {
+        for db in TestManager.dbs {
+            var documents = [Document]()
+            let duplicateID = ObjectId()
+            
+            documents.append([
+                "_id": duplicateID,
+                "data": true
+                ])
+            
+            documents.append([
+                "_id": duplicateID,
+                "data": true
+                ])
+            
+            documents.append([
+                "_id": duplicateID,
+                "data": true
+                ])
+            
+            do {
+                try db["inserterrors"].insert(documents)
+                XCTFail()
+            } catch let insertErrors as InsertErrors {
+                XCTAssertEqual(insertErrors.successfulIds.count, 2)
+                XCTAssertEqual(insertErrors.errors.count, 1)
+                XCTAssertEqual(insertErrors.errors[0].writeErrors.count, 1)
+                XCTAssertEqual(insertErrors.errors[0].writeErrors[0].affectedDocument["_id"] as ObjectId?, duplicateID)
+            } catch {
+                XCTFail()
+            }
+        }
+    }
+    
+    func testUpdateErrors() throws {
+        for db in TestManager.dbs {
+            var documents = [Document]()
+            documents.append([
+                "_id": 0,
+                "data": true
+                ])
+            
+            documents.append([
+                "_id": 1,
+                "data": true
+                ])
+            
+            documents.append([
+                "_id": 2,
+                "data": true
+                ])
+            
+            try db["updateerrors"].insert(documents)
+            
+            try db.server.fsync()
+            
+            do {
+                try db["updateerrors"].update(matching: "_id" == 2, to: [
+                    "$set": [
+                        "_id": 1
+                    ] as Document
+                    ], stoppingOnError: true)
+                XCTFail()
+            } catch let updateError as UpdateError {
+                XCTAssertEqual(updateError.writeErrors.count, 1)
+                XCTAssertEqual(updateError.writeErrors[0].affectedQuery.makeDocument(), [
+                    "_id": [
+                        "$eq": 2
+                    ] as Document
+                    ])
+                
+                XCTAssertEqual(updateError.writeErrors[0].affectedUpdate, [
+                    "$set": [
+                        "_id": 1
+                    ] as Document
+                    ])
+            } catch {
+                XCTFail()
+            }
+        }
+    }
 }
