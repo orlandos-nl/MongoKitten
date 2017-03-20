@@ -137,6 +137,18 @@ public func &=(lhs: Query, rhs: Query) -> Document {
     return lhs
 }
 
+extension String {
+    /// MongoDB `$in` operator
+    public func `in`(_ elements: [Primitive]) -> Query {
+        return Query(aqt: .in(key: self, in: elements))
+    }
+    
+    /// MongoDB `$in` operator
+    public func `in`(_ elements: Primitive...) -> Query {
+        return self.in(elements)
+    }
+}
+
 /// Abstract Query Tree.
 ///
 /// Made to be easily readable/usable so that an `AQT` instance can be easily translated to a `Document` as a Query or even possibly `SQL` in the future.
@@ -269,6 +281,8 @@ public indirect enum AQT {
             return [key: RegularExpression(pattern: val + "$", options: .anchorsMatchLines)]
         case .nothing:
             return []
+        case .in(let key, let array):
+            return [key: ["$in": Document(array: array)] as Document]
         case .near(let key, let point, let maxDistance, let minDistance):
             return GeometryOperator(key: key, operatorName: "$near", geometry: point, maxDistance: maxDistance, minDistance: minDistance).makeDocument()
         case .geoWithin(let key, let polygon):
@@ -334,6 +348,9 @@ public indirect enum AQT {
     
     /// Value at this key exists, even if it is `Null`
     case exists(key: String, exists: Bool)
+    
+    /// Value is one of the given values
+    case `in`(key: String, in: [BSON.Primitive])
 
     /// Match all documents containing a `key` with geospatial data that is near the specified GeoJSON `Point`.
     ///
