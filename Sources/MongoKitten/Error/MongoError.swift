@@ -25,18 +25,6 @@ public enum MongoError : Error {
     /// We can't do this action because we're not yet connected
     case notConnected
     
-    /// Can't insert given documents
-    case insertFailure(documents: [Document], error: Document?)
-    
-    /// Can't query for documents matching given query
-    case queryFailure(query: Document, error: Document?)
-    
-    /// Can't update documents with the given selector and update
-    case updateFailure(updates: [(filter: Query, to: Document, upserting: Bool, multiple: Bool)], error: Document?)
-    
-    /// Can't remove documents matching the given query
-    case removeFailure(removals: [(filter: Query, limit: Int)], error: Document?)
-    
     /// The action timed out
     case timeout
     

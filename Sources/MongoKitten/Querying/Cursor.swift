@@ -8,11 +8,62 @@
 // See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of MongoKitten project authors
 //
 import BSON
+import Dispatch
+import Schrodinger
 
 public typealias BasicCursor = Cursor<Document>
 
-public class Cursor<T> : Sequence {
+public class Cursor<T> : CollectionQueryable, Sequence {
+    var timeout: DispatchTimeInterval?
+    
     public let collection: Collection
+    
+    var fullCollectionName: String {
+        return collection.fullName
+    }
+    
+    var collectionName: String {
+        return collection.name
+    }
+    
+    var database: Database {
+        return collection.database
+    }
+
+    var readConcern: ReadConcern? {
+        get {
+            return collection.readConcern
+        }
+        set {
+            collection.readConcern = newValue
+        }
+    }
+    
+    var writeConcern: WriteConcern? {
+        get {
+            return collection.writeConcern
+        }
+        set {
+            collection.writeConcern = newValue
+        }
+    }
+    
+    var collation: Collation? {
+        get {
+            return collection.collation
+        }
+        set {
+            collection.collation = newValue
+        }
+    }
+    
+    public func makeIterator() -> AnyIterator<T> {
+        do {
+            return try self.find()
+        } catch {
+            return AnyIterator { nil }
+        }
+    }
     
     public var filter: Query?
     
@@ -20,39 +71,8 @@ public class Cursor<T> : Sequence {
     
     public let transform: Transformer
     
-    public func makeIterator() -> AnyIterator<T> {
-        do {
-            return try find()
-        } catch {
-            return AnyIterator { nil }
-        }
-    }
-    
-    public func count(limiting limit: Int? = nil, skipping skip: Int? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil) throws -> Int {
-        var command: Document = ["count": collection.name]
-        
-        if let filter = filter {
-            command["query"] = filter
-        }
-        
-        if let skip = skip {
-            command["skip"] = Int32(skip)
-        }
-        
-        if let limit = limit {
-            command["limit"] = Int32(limit)
-        }
-        
-        command["readConcern"] = readConcern ?? collection.readConcern
-        command["collation"] = collation ?? collection.collation
-        
-        let reply = try collection.database.execute(command: command, writing: false)
-        
-        guard let n = Int(reply.documents.first?["n"]), Int(reply.documents.first?["ok"]) == 1 else {
-            throw InternalMongoError.incorrectReply(reply: reply)
-        }
-        
-        return n
+    public func count(limiting limit: Int? = nil, skipping skip: Int? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil, timingOut afterTimeout: DispatchTimeInterval? = nil) throws -> Int {
+        return try self.count(filter: filter, limit: limit, skip: skip, readConcern: readConcern, collation: collation, connection: nil, timeout: afterTimeout).await()
     }
     
     public func findOne(sorting sort: Sort? = nil, projecting projection: Projection? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil, skipping skip: Int? = nil) throws -> T? {
@@ -68,89 +88,13 @@ public class Cursor<T> : Sequence {
     }
     
     public func find(sorting sort: Sort? = nil, projecting projection: Projection? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil, skipping skip: Int? = nil, limitedTo limit: Int? = nil, withBatchSize batchSize: Int = 100) throws -> AnyIterator<T> {
-        precondition(batchSize < Int(Int32.max))
-        precondition(skip ?? 0 < Int(Int32.max))
-        precondition(limit ?? 0 < Int(Int32.max))
+        let cursor = try self.find(filter: filter, sort: sort, projection: projection, readConcern: readConcern, collation: collation, skip: skip, limit: limit, connection: nil).await()
         
-        if collection.database.server.buildInfo.version >= Version(3,2,0) {
-            var command: Document = [
-                "find": collection.name,
-                "readConcern": readConcern ?? collection.readConcern,
-                "collation": collation ?? collection.collation,
-                "batchSize": Int32(batchSize)
-            ]
-            
-            if let filter = filter {
-                command["filter"] = filter
-            }
-            
-            if let sort = sort {
-                command["sort"] = sort
-            }
-            
-            if let projection = projection {
-                command["projection"] = projection
-            }
-            
-            if let skip = skip {
-                command["skip"] = Int32(skip)
-            }
-            
-            if let limit = limit {
-                command["limit"] = Int32(limit)
-            }
-            
-            let reply = try collection.database.execute(command: command, writing: false)
-            
-            guard let responseDoc = reply.documents.first, let cursorDoc = Document(responseDoc["cursor"]) else {
-                throw MongoError.invalidResponse(documents: reply.documents)
-            }
-            
-            let cursor = try _Cursor(cursorDocument: cursorDoc, collection: collection, chunkSize: Int32(batchSize), transform: { doc in
-                return doc
-            })
-            
-            return try _Cursor(base: cursor) { doc in
-                return try self.transform(doc)
-            }.makeIterator()
-        } else {
-            let connection = try collection.database.server.reserveConnection(authenticatedFor: collection.database)
-            
-            defer {
-                collection.database.server.returnConnection(connection)
-            }
-            
-            let queryMsg = Message.Query(requestID: collection.database.server.nextMessageID(), flags: [], collection: collection, numbersToSkip: Int32(skip) ?? 0, numbersToReturn: Int32(batchSize), query: filter?.queryDocument ?? [], returnFields: projection?.document)
-            
-            var reply = try collection.database.server.sendAndAwait(message: queryMsg, overConnection: connection)
-            
-            if let limit = limit {
-                if reply.documents.count > Int(limit) {
-                    reply.documents.removeLast(reply.documents.count - Int(limit))
-                }
-            }
-            
-            var returned: Int = 0
-            
-            let cursor = _Cursor(namespace: collection.fullName, collection: collection, cursorID: reply.cursorID, initialData: reply.documents, chunkSize: Int32(batchSize), transform: { doc in
-                if let limit = limit {
-                    guard returned < limit else {
-                        return nil
-                    }
-                    
-                    returned += 1
-                }
-                return doc
-            })
-            
-            return try _Cursor(base: cursor) { doc in
-                return try self.transform(doc)
-            }.makeIterator()
-        }
+        return try _Cursor(base: cursor, transform: transform).makeIterator()
     }
-    
-    public func update(to document: Document, upserting: Bool = false, multiple: Bool = false, writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
-        return try collection.update(filter ?? [:], to: document, upserting: upserting, multiple: multiple, writeConcern: writeConcern, stoppingOnError: ordered)
+
+    public func update(to document: Document, writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
+        return try self.update(updates: [(filter ?? [:], document, false, true)], writeConcern: writeConcern, ordered: ordered, connection: nil, timeout: nil).await()
     }
     
     @discardableResult

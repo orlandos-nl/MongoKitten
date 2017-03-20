@@ -87,6 +87,7 @@ public struct Projection: ValueConvertible {
     }
 }
 
+/// Joins two projections
 public func +(lhs: Projection, rhs: Projection) -> Projection {
     return Projection(lhs.makeDocument() + rhs.makeDocument())
 }

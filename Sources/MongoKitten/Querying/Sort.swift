@@ -69,6 +69,7 @@ public struct Sort: ValueConvertible, ExpressibleByDictionaryLiteral {    /// Th
     }
 }
 
+/// Joins two sorts
 public func +(lhs: Sort, rhs: Sort) -> Sort {
     return Sort(lhs.makeDocument() + rhs.makeDocument())
 }

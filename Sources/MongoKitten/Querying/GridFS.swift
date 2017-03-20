@@ -120,7 +120,7 @@ public class GridFS {
             insertData["metadata"] = metadata
         }
         
-        var n = 0
+        var n: Int32 = 0
         
         do {
             while !data.isEmpty {
@@ -356,7 +356,8 @@ public class GridFS {
             init?(document: Document, chunksCollection: Collection, filesCollection: Collection) {
                 guard let id = ObjectId(document["_id"]),
                     let filesID = ObjectId(document["files_id"]),
-                    let binary = Binary(document["data"]) else {
+                    let binary = Binary(document["data"]),
+                    let num = Int32(document["n"]) else {
                         return nil
                 }
                 
@@ -365,7 +366,7 @@ public class GridFS {
                 
                 self.id = id
                 self.filesID = filesID
-                self.n = Int32(document["n"]) ?? -1
+                self.n = num
                 self.data = binary.makeBytes()
             }
         }

@@ -14,23 +14,30 @@ import Dispatch
 class CollectionTests: XCTestCase {
     static var allTests: [(String, (CollectionTests) -> () throws -> Void)] {
         return [
-            ("testUniqueIndex", testUniqueIndex),
-            ("testQuery", testQuery),
-            ("testRename", testRename),
-            ("testDistinct", testDistinct),
-            ("testFind", testFind),
-            ("testDBRef", testDBRef),
-            ("testProjection", testProjection),
-            ("testIndexes", testIndexes),
-            ("testDropIndex", testDropIndex),
-            ("testTextOperator", testTextOperator),
-            ("testUpdate", testUpdate),
-            ("testRemovingAll", testRemovingAll),
-            ("testRemovingOne", testRemovingOne),
-            ("testHelperObjects", testHelperObjects),
-            ("testFindAndModify", testFindAndModify),
-            ("testDocumentValidation", testDocumentValidation),
+//            ("testUniqueIndex", testUniqueIndex),
+//            ("testQuery", testQuery),
+//            ("testRename", testRename),
+//            ("testDistinct", testDistinct),
+//            ("testFind", testFind),
+//            ("testDBRef", testDBRef),
+//            ("testProjection", testProjection),
+//            ("testIndexes", testIndexes),
+//            ("testDropIndex", testDropIndex),
+//            ("testTextOperator", testTextOperator),
+//            ("testUpdate", testUpdate),
+//            ("testRemovingAll", testRemovingAll),
+//            ("testRemovingOne", testRemovingOne),
+//            ("testHelperObjects", testHelperObjects),
+//            ("testFindAndModify", testFindAndModify),
+//            ("testDocumentValidation", testDocumentValidation),
+//            ("testErrors", testErrors),
         ]
+    }
+    
+    var superQuery: Query {
+        let q: Query = ("username" == "henk" || "username" == "bob") && "age" > 24 && "kittens" >= 2
+        let q2: Query = "kittens" != 3 && "dogs" <= 1 && "beers" < 100
+        return q && q2
     }
     
     override func setUp() {
@@ -232,11 +239,9 @@ class CollectionTests: XCTestCase {
             
             _ = try db["wcol"].insert(contentsOf: inserts)
             
-            let query: Query = ("username" == "henk" || "username" == "bob") && "age" > 24 && "kittens" >= 2 && "kittens" != 3 && "dogs" <= 1 && "beers" < 100
+            let response = Array(try db["wcol"].find(superQuery))
             
-            let response = Array(try db["wcol"].find(query))
-            
-            let response2 = try db["wcol"].findOne(query)!
+            let response2 = try db["wcol"].findOne(superQuery)!
             
             XCTAssertEqual(response.count, 2)
             
@@ -305,7 +310,7 @@ class CollectionTests: XCTestCase {
         loop: for db in TestManager.dbs {
             // TODO: Partially enable for 3.0
             if db.server.buildInfo.version < Version(3, 2, 0) {
-                return
+                continue loop
             }
             
             try db["wcol"].createIndex(named: "henkbob", withParameters: .sortedCompound(fields: [("name", .ascending), ("age", .descending)]), .expire(afterSeconds: 1), .buildInBackground)
@@ -415,16 +420,14 @@ class CollectionTests: XCTestCase {
             inserts = [base, brokenUsername, brokenUsername, brokenAge, brokenDogs, brokenKittens, brokenKittens2, brokenBeers, base]
             try db["wcol"].insert(contentsOf: inserts)
             
-            let query: Query = ("username" == "henk" || "username" == "bob") && "age" > 24 && "kittens" >= 2 && "kittens" != 3 && "dogs" <= 1 && "beers" < 100
-            
-            try db["wcol"].update(query, to: ["testieBool": true])
+            try db["wcol"].update(superQuery, to: ["testieBool": true])
             
             try db.server.fsync()
             
             let response = Array(try db["wcol"].find("testieBool" == true))
             XCTAssertEqual(response.count, 1)
             
-            let response2 = Array(try db["wcol"].find(query))
+            let response2 = Array(try db["wcol"].find(superQuery))
             XCTAssertEqual(response2.count, 1)
         }
     }
@@ -453,11 +456,9 @@ class CollectionTests: XCTestCase {
             
             _ = try db["wcol"].insert(contentsOf: inserts)
             
-            let query: Query = ("username" == "henk" || "username" == "bob") && "age" > 24 && "kittens" >= 2 && "kittens" != 3 && "dogs" <= 1 && "beers" < 100
+            XCTAssertGreaterThan(try db["wcol"].remove(superQuery), 0)
             
-            XCTAssertGreaterThan(try db["wcol"].remove(query), 0)
-            
-            let response = Array(try db["wcol"].find(query))
+            let response = Array(try db["wcol"].find(superQuery))
             
             XCTAssertEqual(response.count, 0)
         }
@@ -487,12 +488,10 @@ class CollectionTests: XCTestCase {
             
             try db["wcol"].insert(contentsOf: inserts)
             
-            let query: Query = ("username" == "henk" || "username" == "bob") && "age" > 24 && "kittens" >= 2 && "kittens" != 3 && "dogs" <= 1 && "beers" < 100
-            
-            XCTAssertEqual(try db["wcol"].remove(query, limiting: 1), 1)
+            XCTAssertEqual(try db["wcol"].remove(superQuery, limiting: 1), 1)
             try db.server.fsync()
             
-            let response = Array(try db["wcol"].find(query))
+            let response = Array(try db["wcol"].find(superQuery))
             
             XCTAssertEqual(response.count, 1)
         }
@@ -545,16 +544,14 @@ class CollectionTests: XCTestCase {
             inserts = [base, brokenUsername, brokenUsername, brokenAge, brokenDogs, brokenKittens, brokenKittens2, brokenBeers, base]
             try db["wcol"].insert(contentsOf: inserts)
             
-            let query: Query = ("username" == "henk" || "username" == "bob") && "age" > 24 && "kittens" >= 2 && "kittens" != 3 && "dogs" <= 1 && "beers" < 100
-            
-            let modifiedDocument = try db["wcol"].findAndModify(matching: query, action: .update(with: ["testieBool": true], returnModified: true, upserting: false) )
+            let modifiedDocument = try db["wcol"].findAndModify(matching: superQuery, action: .update(with: ["testieBool": true], returnModified: true, upserting: false) )
             
             XCTAssertNotNil(modifiedDocument as? Document)
             
             let response = Array(try db["wcol"].find("testieBool" == true))
             XCTAssertEqual(response.count, 1)
             
-            let response2 = Array(try db["wcol"].find(query))
+            let response2 = Array(try db["wcol"].find(superQuery))
             XCTAssertEqual(response2.count, 1)
         }
     }
@@ -576,5 +573,40 @@ class CollectionTests: XCTestCase {
             try db["alphabet"].drop()
         }
     }
+    
+    func testErrors() throws {
+        for db in TestManager.dbs {
+            var documents = [Document]()
+                let duplicateID = ObjectId()
+
+                documents.append([
+                    "_id": duplicateID,
+                    "data": true
+                ])
+
+                documents.append([
+                    "_id": duplicateID,
+                    "data": true
+                ])
+
+                documents.append([
+                    "_id": duplicateID,
+                    "data": true
+                ])
+
+            do {
+                try db["errors"].append(contentsOf: documents)
+                XCTFail()
+            } catch let insertErrors as InsertErrors {
+                XCTAssertEqual(insertErrors.successfulIds.count, 2)
+                XCTAssertEqual(insertErrors.errors.count, 1)
+                XCTAssertEqual(insertErrors.errors[0].writeErrors.count, 1)
+                XCTAssertEqual(ObjectId(insertErrors.errors[0].writeErrors[0].affectedDocument["_id"]), duplicateID)
+            } catch {
+                XCTFail()
+            }
+        }
+    }
+
     
 }

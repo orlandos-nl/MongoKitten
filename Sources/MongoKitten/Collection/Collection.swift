@@ -17,7 +17,21 @@ public typealias MongoCollection = Collection
 /// **### Definition ###**
 ///
 /// A grouping of MongoDB documents. A collection is the equivalent of an RDBMS table. A collection exists within a single database. Collections do not enforce a schema. Documents within a collection can have different fields. Typically, all documents in a collection have a similar or related purpose. See Namespaces.
-public final class Collection: Sequence {
+public final class Collection: Sequence, CollectionQueryable {
+    var timeout: DispatchTimeInterval?
+
+    var collection: Collection {
+        return self
+    }
+    
+    var collectionName: String {
+        return self.name
+    }
+    
+    var fullCollectionName: String {
+        return self.fullName
+    }
+    
     public func makeIterator() -> AnyIterator<Document> {
         guard let iterator = try? self.find() else {
             return AnyIterator { nil }
@@ -114,12 +128,12 @@ public final class Collection: Sequence {
     ///
     /// - returns: The inserted document's id
     @discardableResult
-    public func insert(_ document: Document, stoppingOnError ordered: Bool? = nil, writeConcern: WriteConcern? = nil, timingOut afterTimeout: TimeInterval? = nil) throws -> BSON.Primitive {
-        let result = try self.insert(contentsOf: [document], stoppingOnError: ordered, writeConcern: writeConcern, timingOut: afterTimeout)
+    public func insert(_ document: Document, stoppingOnError ordered: Bool? = nil, writeConcern: WriteConcern? = nil, timingOut afterTimeout: DispatchTimeInterval? = nil) throws -> BSON.Primitive {
+        let result = try self.insert(documents: [document], ordered: ordered, writeConcern: writeConcern, timeout: afterTimeout, connection: nil).await()
         
         guard let newId = result.first else {
             database.server.logger.error("No identifier could be generated")
-            throw MongoError.insertFailure(documents: [document], error: nil)
+            throw MongoError.internalInconsistency
         }
         
         return newId
@@ -139,60 +153,8 @@ public final class Collection: Sequence {
     ///
     /// - returns: The documents' ids
     @discardableResult
-    public func insert(contentsOf documents: [Document], stoppingOnError ordered: Bool? = nil, writeConcern: WriteConcern? = nil, timingOut afterTimeout: TimeInterval? = nil) throws -> [BSON.Primitive] {
-        let timeout: TimeInterval = afterTimeout ?? (database.server.defaultTimeout + (Double(documents.count) / 50))
-        
-        var newIds = [Primitive]()
-        var documents = documents.map({ (input: Document) -> Document in
-            if let id = input["_id"] {
-                newIds.append(id)
-                return input
-            } else {
-                var output = input
-                let oid = ObjectId()
-                output["_id"] = oid
-                newIds.append(oid)
-                return output
-            }
-        })
-        
-        let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
-        var position = 0
-        
-        while position < documents.count {
-            defer { position += 1000 }
-            
-            if protocolVersion >= 2 {
-                var command: Document = ["insert": self.name]
-                
-                command["documents"] = Document(array: Array(documents[position..<Swift.min(position + 1000, documents.count)]))
-                
-                if let ordered = ordered {
-                    command["ordered"] = ordered
-                }
-                
-                command["writeConcern"] = writeConcern ?? self.writeConcern
-                
-                let reply = try self.database.execute(command: command, until: timeout)
-                
-                guard Int(reply.documents.first?["ok"]) == 1 && (Document(reply.documents.first?["writeErrors"]) ?? [:]).count == 0 else {
-                    throw MongoError.insertFailure(documents: documents, error: reply.documents.first)
-                }
-            } else {
-                let connection = try database.server.reserveConnection(writing: true, authenticatedFor: self.database)
-                
-                defer {
-                    database.server.returnConnection(connection)
-                }
-                
-                let commandDocuments = Array(documents[position..<Swift.min(position + 1000, documents.count)])
-                
-                let insertMsg = Message.Insert(requestID: database.server.nextMessageID(), flags: [], collection: self, documents: commandDocuments)
-                _ = try self.database.server.send(message: insertMsg, overConnection: connection)
-            }
-        }
-        
-        return newIds
+    public func insert(contentsOf documents: [Document], stoppingOnError ordered: Bool? = nil, writeConcern: WriteConcern? = nil, timingOut afterTimeout: DispatchTimeInterval? = nil) throws -> [BSON.Primitive] {
+        return try self.insert(documents: documents, ordered: ordered, writeConcern: writeConcern, timeout: afterTimeout, connection: nil).await()
     }
     
     // Read
@@ -252,7 +214,7 @@ public final class Collection: Sequence {
         precondition(skip ?? 0 < Int(Int32.max))
         precondition(limit ?? 0 < Int(Int32.max))
         
-        return try Cursor(in: self, where: filter).find(sorting: sort, projecting: projection, readConcern: readConcern, collation: collation, skipping: skip, limitedTo: limit, withBatchSize: batchSize).makeIterator()
+        return try self.find(filter: filter, sort: sort, projection: projection, readConcern: readConcern, collation: collation, skip: skip, limit: limit, connection: nil).await().makeIterator()
     }
     
     /// Finds Documents in this collection
@@ -297,61 +259,7 @@ public final class Collection: Sequence {
     /// - returns: The amount of updated documents
     @discardableResult
     public func update(bulk updates: [(filter: Query, to: Document, upserting: Bool, multiple: Bool)], writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
-        let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
-        
-        if protocolVersion >= 2 {
-            var command: Document = ["update": self.name]
-            var newUpdates = [Document]()
-            
-            for u in updates {
-                newUpdates.append([
-                    "q": u.filter.queryDocument,
-                    "u": u.to,
-                    "upsert": u.upserting,
-                    "multi": u.multiple
-                    ])
-            }
-            
-            command["updates"] = Document(array: newUpdates)
-            
-            if let ordered = ordered {
-                command["ordered"] = ordered
-            }
-            
-            command["writeConcern"] = writeConcern ??  self.writeConcern
-            
-            let reply = try self.database.execute(command: command)
-            
-            guard Int(reply.documents.first?["ok"]) == 1 && (Document(reply.documents.first?["writeErrors"]) ?? [:]).count == 0 else {
-                throw MongoError.updateFailure(updates: updates, error: reply.documents.first)
-            }
-            
-            return Int(reply.documents.first?["nModified"]) ?? 0
-        } else {
-            let connection = try database.server.reserveConnection(writing: true, authenticatedFor: self.database)
-            
-            defer {
-                database.server.returnConnection(connection)
-            }
-            
-            for update in updates {
-                var flags: UpdateFlags = []
-                
-                if update.multiple {
-                    flags.insert(UpdateFlags.MultiUpdate)
-                }
-                
-                if update.upserting {
-                    flags.insert(UpdateFlags.Upsert)
-                }
-                
-                let message = Message.Update(requestID: database.server.nextMessageID(), collection: self, flags: flags, findDocument: update.filter.queryDocument, replaceDocument: update.to)
-                try self.database.server.send(message: message, overConnection: connection)
-                // TODO: Check for errors
-            }
-            
-            return updates.count
-        }
+        return try update(updates: updates, writeConcern: writeConcern, ordered: ordered, connection: nil, timeout: nil).await()
     }
     
     /// Updates a `Document` using a counterpart `Document`.
@@ -385,64 +293,7 @@ public final class Collection: Sequence {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     @discardableResult
     public func remove(bulk removals: [(filter: Query, limit: Int)], writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
-        let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
-        
-        if protocolVersion >= 2 {
-            var command: Document = ["delete": self.name]
-            var newDeletes = [Document]()
-            
-            for d in removals {
-                newDeletes.append([
-                    "q": d.filter.queryDocument,
-                    "limit": d.limit
-                    ])
-            }
-            
-            command["deletes"] = Document(array: newDeletes)
-            
-            if let ordered = ordered {
-                command["ordered"] = ordered
-            }
-            
-            command["writeConcern"] = writeConcern ?? self.writeConcern
-            
-            let reply = try self.database.execute(command: command)
-            
-            guard Int(reply.documents.first?["ok"]) == 1 else {
-                throw MongoError.removeFailure(removals: removals, error: reply.documents.first ?? [:])
-            }
-            
-            return Int(reply.documents.first?["n"]) ?? 0
-            
-            // If we're talking to an older MongoDB server
-        } else {
-            let connection = try database.server.reserveConnection(authenticatedFor: self.database)
-            
-            defer {
-                database.server.returnConnection(connection)
-            }
-            
-            for removal in removals {
-                var flags: DeleteFlags = []
-                
-                // If the limit is 0, make the for loop run exactly once so the message sends
-                // If the limit is not 0, set the limit properly
-                let limit = removal.limit == 0 ? 1 : removal.limit
-                
-                // If the limit is not '0' and thus removes a set amount of documents. Set it to RemoveOne so we'll remove one document at a time using the older method
-                if removal.limit != 0 {
-                    flags.insert(DeleteFlags.RemoveOne)
-                }
-                
-                let message = Message.Delete(requestID: database.server.nextMessageID(), collection: self, flags: flags, removeDocument: removal.filter.queryDocument)
-                
-                for _ in 0..<limit {
-                    try self.database.server.send(message: message, overConnection: connection)
-                }
-            }
-            
-            return removals.count
-        }
+        return try self.remove(removals: removals, writeConcern: writeConcern, ordered: ordered, connection: nil, timeout: nil).await()
     }
     
     /// Removes `Document`s matching the `filter` until the `limit` is reached
@@ -722,7 +573,7 @@ public final class Collection: Sequence {
     }
     
     public func aggregate(_ pipeline: AggregationPipeline, readConcern: ReadConcern? = nil, collation: Collation? = nil, options: AggregationOptions...) throws -> AnyIterator<Document> {
-        return try aggregate(pipeline, readConcern: readConcern, collation: collation, options: options)
+        return try self.aggregate(pipeline, readConcern: readConcern, collation: collation, options: options, connection: nil, timeout: nil).await().makeIterator()
     }
     
     /// Uses the aggregation pipeline to process documents into aggregated results.
@@ -734,27 +585,7 @@ public final class Collection: Sequence {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A `Cursor` pointing to the found `Document`s
-    public func aggregate(_ pipeline: AggregationPipeline, readConcern: ReadConcern? = nil, collation: Collation? = nil, options: [AggregationOptions] = []) throws -> AnyIterator<Document> {
-        // construct command. we always use cursors in MongoKitten, so that's why the default value for cursorOptions is an empty document.
-        var command: Document = ["aggregate": self.name, "pipeline": pipeline.pipelineDocument, "cursor": ["batchSize": 100]]
-        
-        command["readConcern"] = readConcern ?? self.readConcern
-        command["collation"] = collation ?? self.collation
-        
-        for option in options {
-            for (key, value) in option.fields {
-                command[key] = value
-            }
-        }
-        
-        // execute and construct cursor
-        let reply = try database.execute(command: command)
-        
-        guard let cursorDoc = Document(reply.documents.first?["cursor"]) else {
-            throw MongoError.invalidResponse(documents: reply.documents)
-        }
-        
-        return try _Cursor(cursorDocument: cursorDoc, collection: self, chunkSize: Int32(command["cursor"]["batchSize"]) ?? 100, transform: { $0 }).makeIterator()
+    public func aggregate(_ pipeline: AggregationPipeline, readConcern: ReadConcern? = nil, collation: Collation? = nil, options: [AggregationOptions] = []) throws -> AnyIterator<Document> {        return try self.aggregate(pipeline, readConcern: readConcern, collation: collation, options: options, connection: nil, timeout: nil).await().makeIterator()
     }
 }
 
