@@ -10,7 +10,15 @@
 import Cheetah
 import BSON
 import Foundation
+import CryptoSwift
 @_exported import KittenCore
+
+internal let isoDateFormatter: DateFormatter = {
+    let fmt = DateFormatter()
+    fmt.locale = Locale(identifier: "en_US_POSIX")
+    fmt.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZZZZZ"
+    return fmt
+}()
 
 extension JSONObject {
     internal func parseExtendedJSON() -> Primitive {
@@ -82,6 +90,30 @@ fileprivate func regexOptions(fromString s: String) -> NSRegularExpression.Optio
     }
     
     return options
+}
+
+extension NSRegularExpression.Options {
+    func makeOptionString() -> String {
+        var options = ""
+        
+        if self.contains(.caseInsensitive) {
+            options.append("i")
+        }
+        
+        if self.contains(.anchorsMatchLines) {
+            options.append("m")
+        }
+        
+        if self.contains(.allowCommentsAndWhitespace) {
+            options.append("x")
+        }
+        
+        if self.contains(.dotMatchesLineSeparators) {
+            options.append("s")
+        }
+        
+        return options
+    }
 }
 
 extension Document {
@@ -163,5 +195,52 @@ extension Document {
     
     public init?(extendedJSON bytes: [UInt8]) throws {
         self.init(try JSON.parse(from: bytes))
+    }
+    
+    public func makeExtendedJSON(typeSafe: Bool = true) -> Cheetah.Value {
+        func makeJSONValue(_ original: BSON.Primitive) -> Cheetah.Value {
+            switch original {
+            case let int as Int:
+                if typeSafe {
+                    return ["$numberLong": "\(int)"] as JSONObject
+                } else {
+                    return int
+                }
+            case let int as Int32:
+                return Int(int)
+            case let string as String:
+                return string
+            case let document as Document:
+                return document.makeExtendedJSON(typeSafe: typeSafe)
+            case let objectId as ObjectId:
+                return ["$oid": objectId.hexString] as JSONObject
+            case let bool as Bool:
+                return bool
+            case let date as Date:
+                let dateString = isoDateFormatter.string(from: date)
+                return ["$date": dateString] as JSONObject
+            case let null as NSNull:
+                return null
+            case let regex as BSON.RegularExpression:
+                return ["$regex": regex.pattern, "$options": regex.options.makeOptionString()] as JSONObject
+            case let code as JavascriptCode:
+                return ["$code": code.code, "$scope": code.scope?.makeExtendedJSON(typeSafe: true) ?? NSNull()] as JSONObject
+            case let binary as Binary:
+                return ["$binary": binary.data.base64EncodedString(), "$type": [binary.subtype.rawValue].toHexString()] as JSONObject
+            case let timestamp as Timestamp:
+                return ["$timestamp": ["t": Int(timestamp.timestamp), "i": Int(timestamp.increment)] as JSONObject] as JSONObject
+            case is MinKey:
+                return ["$minKey": 1] as JSONObject
+            case is MaxKey:
+                return ["$maxKey": 1] as JSONObject
+            default: return NSNull() // TODO: Something different?
+            }
+        }
+        
+        if self.validatesAsArray() {
+            return JSONArray(self.map { makeJSONValue($0.1) })
+        } else {
+            return JSONObject(sequence: self.map { ($0.0, makeJSONValue($0.1)) })
+        }
     }
 }
