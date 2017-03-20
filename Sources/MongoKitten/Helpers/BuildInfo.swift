@@ -30,21 +30,32 @@ public struct Version: CustomValueConvertible, Comparable {
     
     /// Converts to this from a String
     public init?(_ value: BSONPrimitive) {
-        guard let value = value as? String else {
+        if let value = value as? String {
+            let numbers = value.components(separatedBy: ".").flatMap {
+                Int($0)
+            }
+            
+            guard numbers.count == 3 else {
+                return nil
+            }
+            
+            self.major = numbers[0]
+            self.minor = numbers[1]
+            self.patch = numbers[2]
+        } else if let document = value as? Document, document.count >= 3 {
+            guard
+                let major = document[0] as Int?,
+                let minor = document[1] as Int?,
+                let patch = document[2] as Int? else {
+                    return nil
+            }
+            
+            self.major = major
+            self.minor = minor
+            self.patch = patch
+        } else {
             return nil
         }
-        
-        let numbers = value.components(separatedBy: ".").flatMap {
-            Int($0)
-        }
-        
-        guard numbers.count == 3 else {
-            return nil
-        }
-        
-        self.major = numbers[0]
-        self.minor = numbers[1]
-        self.patch = numbers[2]
     }
     
     /// Creates an embeddable BSONPrimitive (String)
@@ -126,6 +137,9 @@ public struct BuildInfo: CustomValueConvertible {
     /// An array of version information
     public let versionArray: Document
     
+    /// An array of version information
+    public let versionString: String
+    
     /// The semantic version of this build
     public let version: Version
     
@@ -166,11 +180,11 @@ public struct BuildInfo: CustomValueConvertible {
             throw MongoError.missingBuildInfoField("gitVersion")
         }
         
-        guard let versionArray = document["versionArray"] as Document? else {
+        guard let versionArray = document["versionArray"] as Document?, let version = Version(versionArray) else {
             throw MongoError.missingBuildInfoField("versionArray")
         }
         
-        guard let version = document.extract("version") as Version? else {
+        guard let versionString = document["version"] as String? else {
             throw MongoError.missingBuildInfoField("version")
         }
         
@@ -194,6 +208,7 @@ public struct BuildInfo: CustomValueConvertible {
         
         self.gitVersion = gitVersion
         self.versionArray = versionArray
+        self.versionString = versionString
         self.version = version
         self.storageEngines = storageEngines
         self.bits = bits
