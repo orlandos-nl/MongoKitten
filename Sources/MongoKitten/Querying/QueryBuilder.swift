@@ -126,15 +126,20 @@ public prefix func !(query: Query) -> Query {
     return Query(aqt: .not(query.aqt))
 }
 
-/// Adds two queries to create a new Document (which can be converted to a Query)
-public func &=(lhs: Query, rhs: Query) -> Document {
-    var lhs = lhs.queryDocument
-    
-    for (key, value) in rhs.queryDocument {
-        lhs[key] = value
-    }
-    
-    return lhs
+/// MongoDB `$and`. Shorthand for `lhs = lhs && rhs`
+///
+/// Checks whether both these `Query` statements are true
+public func &=(lhs: inout Query, rhs: Query) {
+    lhs = lhs && rhs
+}
+
+infix operator ||=
+
+/// MongoDB `$or`. Shorthand for `lhs = lhs || rhs`
+///
+/// Checks wither either of these `Query` statements is true
+public func ||=(lhs: inout Query, rhs: Query) {
+    lhs = lhs || rhs
 }
 
 extension String {
