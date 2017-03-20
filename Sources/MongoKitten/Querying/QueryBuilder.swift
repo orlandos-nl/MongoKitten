@@ -147,11 +147,6 @@ extension String {
     public func `in`(_ elements: [Primitive]) -> Query {
         return Query(aqt: .in(key: self, in: elements))
     }
-    
-    /// MongoDB `$in` operator
-    public func `in`(_ elements: Primitive...) -> Query {
-        return self.in(elements)
-    }
 }
 
 /// Abstract Query Tree.
