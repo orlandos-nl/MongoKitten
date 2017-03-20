@@ -66,6 +66,9 @@ public final class Server {
     /// `MongoTCP` Socket bound to the MongoDB Server
     private var connections = [Connection]()
     
+    /// Maximum amount of simultanious operations per connection
+    public var maxActionsPerConnection = 10
+    
     /// Semaphore to use for safely managing connections
     private let connectionPoolSemaphore: DispatchSemaphore
     
@@ -460,10 +463,10 @@ public final class Server {
         
         // Find all possible matches to create a connection to
         let matches = self.connections.filter {
-            ((!writing && slaveOK) || $0.writable) && $0.isConnected
-            }.sorted(by: { (lhs, rhs) -> Bool in
-                return lhs.users < rhs.users
-            })
+            $0.users < self.maxActionsPerConnection && ((!writing && slaveOK) || $0.writable) && $0.isConnected
+        }.sorted(by: { (lhs, rhs) -> Bool in
+            return lhs.users < rhs.users
+        })
         
         // If we need a specific database, find a connection optimal for that database I.E. already authenticated
         matching: if let db = db {

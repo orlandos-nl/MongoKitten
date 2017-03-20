@@ -197,7 +197,7 @@ extension Document {
         self.init(try JSON.parse(from: bytes))
     }
     
-    public func makeExtendedJSON(typeSafe: Bool = true) -> Cheetah.Value {
+    public func makeExtendedJSON(typeSafe: Bool = false) -> Cheetah.Value {
         func makeJSONValue(_ original: BSON.Primitive) -> Cheetah.Value {
             switch original {
             case let int as Int:
