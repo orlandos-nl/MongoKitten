@@ -126,15 +126,32 @@ public prefix func !(query: Query) -> Query {
     return Query(aqt: .not(query.aqt))
 }
 
-/// Adds two queries to create a new Document (which can be converted to a Query)
-public func &=(lhs: Query, rhs: Query) -> Document {
-    var lhs = lhs.queryDocument
-    
-    for (key, value) in rhs.queryDocument {
-        lhs[key] = value
+/// MongoDB `$and`. Shorthand for `lhs = lhs && rhs`
+///
+/// Checks whether both these `Query` statements are true
+public func &=(lhs: inout Query, rhs: Query) {
+    lhs = lhs && rhs
+}
+
+infix operator ||=
+
+/// MongoDB `$or`. Shorthand for `lhs = lhs || rhs`
+///
+/// Checks wither either of these `Query` statements is true
+public func ||=(lhs: inout Query, rhs: Query) {
+    lhs = lhs || rhs
+}
+
+extension String {
+    /// MongoDB `$in` operator
+    public func `in`(_ elements: [Primitive]) -> Query {
+        return Query(aqt: .in(key: self, in: elements))
     }
     
-    return lhs
+    /// MongoDB `$in` operator
+    public func `in`(_ elements: Primitive...) -> Query {
+        return self.in(elements)
+    }
 }
 
 /// Abstract Query Tree.
@@ -269,6 +286,8 @@ public indirect enum AQT {
             return [key: RegularExpression(pattern: val + "$", options: .anchorsMatchLines)]
         case .nothing:
             return []
+        case .in(let key, let array):
+            return [key: ["$in": Document(array: array)] as Document]
         case .near(let key, let point, let maxDistance, let minDistance):
             return GeometryOperator(key: key, operatorName: "$near", geometry: point, maxDistance: maxDistance, minDistance: minDistance).makeDocument()
         case .geoWithin(let key, let polygon):
@@ -334,6 +353,9 @@ public indirect enum AQT {
     
     /// Value at this key exists, even if it is `Null`
     case exists(key: String, exists: Bool)
+    
+    /// Value is one of the given values
+    case `in`(key: String, in: [BSON.Primitive])
 
     /// Match all documents containing a `key` with geospatial data that is near the specified GeoJSON `Point`.
     ///

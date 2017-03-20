@@ -73,7 +73,6 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         }
         
         /// A projection stage passes only the projected fields to the next stage.
-        @discardableResult
         public static func project(_ projection: Projection) -> Stage {
             return Stage([
                 "$project": projection
@@ -81,7 +80,6 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         }
         
         /// A match stage only passed the documents that match the query to the next stage
-        @discardableResult
         public static func match(_ query: Query) -> Stage {
             return Stage([
                 "$match": query
@@ -89,7 +87,6 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         }
         
         /// A match stage only passed the documents that match the query to the next stage
-        @discardableResult
         public static func match(_ query: Document) -> Stage {
             return Stage([
                 "$match": query
@@ -97,7 +94,6 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         }
         
         /// Takes a sample with the size of `size`. These randomly selected Documents will be passed to the next stage.
-        @discardableResult
         public static func sample(sizeOf size: Int) -> Stage {
             return Stage([
                 "$sample": ["size": size]
@@ -105,7 +101,6 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         }
         
         /// This will skip the specified number of input Documents and leave them out. The rest will be passed to the next stage.
-        @discardableResult
         public static func skip(_ skip: Int) -> Stage {
             return Stage([
                 "$skip": skip
@@ -117,7 +112,6 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         /// The first Documents will be selected.
         ///
         /// Anything after that will be discarted and will not be sent to the next stage.
-        @discardableResult
         public static func limit(_ limit: Int) -> Stage {
             return Stage([
                 "$limit": limit
@@ -125,7 +119,6 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         }
         
         /// Sorts the input Documents by the specified `Sort` object and passed them in the newly sorted order to the next stage.
-        @discardableResult
         public static func sort(_ sort: Sort) -> Stage {
             return Stage([
                 "$sort": sort
@@ -137,7 +130,6 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         /// This form accepts a Document for more flexiblity.
         ///
         /// https://docs.mongodb.com/manual/reference/operator/aggregation/group/
-        @discardableResult
         public static func group(groupDocument: Document) -> Stage {
             return Stage([
                 "$group": groupDocument
@@ -149,7 +141,6 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         /// This form accepts predefined options and works for almost all scenarios.
         ///
         /// https://docs.mongodb.com/manual/reference/operator/aggregation/group/
-        @discardableResult
         public static func group(_ id: ExpressionRepresentable, computed computedFields: [String: AccumulatedGroupExpression] = [:]) -> Stage {
             let groupDocument = computedFields.reduce([:]) { (doc, expressionPair) -> Document in
                 guard expressionPair.key != "_id" else {
@@ -173,8 +164,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         /// Deconstructs an Array at the given path (key).
         ///
         /// https://docs.mongodb.com/manual/reference/operator/aggregation/unwind/#pipe._S_unwind
-        @discardableResult
-        public static func unwind(atPath path: String, includeArrayIndex: String? = nil, preserveNullAndEmptyArrays: Bool? = nil) -> Stage {
+        public static func unwind(_ path: String, includeArrayIndex: String? = nil, preserveNullAndEmptyArrays: Bool? = nil) -> Stage {
             let unwind: BSON.Primitive
             
             if let includeArrayIndex = includeArrayIndex {
@@ -204,7 +194,6 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         }
         
         /// Performs a left outer join to an unsharded collection in the same database
-        @discardableResult
         public static func lookup(from collection: String, localField: String, foreignField: String, as: String) -> Stage {
             return Stage([
                 "$lookup": [
@@ -217,7 +206,6 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         }
         
         /// Performs a left outer join to an unsharded collection in the same database
-        @discardableResult
         public static func lookup(from collection: Collection, localField: String, foreignField: String, as: String) -> Stage {
             return Stage([
                 "$lookup": [
@@ -230,13 +218,11 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         }
         
         /// Writes the resulting Documents to the provided Collection
-        @discardableResult
         public static func out(toCollection collection: Collection) -> Stage {
             return self.out(toCollectionNamed: collection.name)
         }
         
         /// Writes the resulting Documents to the provided Collection
-        @discardableResult
         public static func out(toCollectionNamed collectionName: String) -> Stage {
             return Stage([
                 "$out": collectionName
@@ -244,7 +230,6 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         }
         
         /// Takes the input Documents and passes them through multiple Aggregation Pipelines. Every pipeline result will be placed at the provided key.
-        @discardableResult
         public static func facet(_ facet: [String: AggregationPipeline]) -> Stage {
             return Stage([
                 "$facet": Document(dictionaryElements: facet.map {
@@ -254,7 +239,6 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         }
         
         /// Counts the amounts of Documents that have been inputted. Places the result at the provided key.
-        @discardableResult
         public static func count(insertedAtKey key: String) -> Stage {
             return Stage([
                 "$count": key
@@ -264,7 +248,6 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         /// Takes an embedded Document resulting from the provided expression and replaces the entire Document with this result.
         ///
         /// You can take an embedded Document at a lower level of this Document and make it the new root.
-        @discardableResult
         public static func replaceRoot(withExpression expression: ExpressionRepresentable) -> Stage {
             return Stage([
                 "$replaceRoot": [
@@ -274,7 +257,6 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         }
         
         /// Adds fields to the inputted Documents and sends these new Documents to the next stage.
-        @discardableResult
         public static func addFields(_ fields: [String: ExpressionRepresentable]) -> Stage {
             return Stage([
                 "$addFields": Document(dictionaryElements: fields.map {
@@ -286,7 +268,6 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
         /// Runs a geospatial query on the inputted Documents
         ///
         /// Outputs all documents that are near the provided location in the options matching the parameters
-        @discardableResult
         public static func geoNear(options: GeoNearOptions) -> Stage {
             return Stage(["$geoNear": options])
         }
