@@ -10,10 +10,12 @@
 import XCTest
 import MongoKitten
 import Dispatch
+import Schrodinger
 
 class CollectionTests: XCTestCase {
     static var allTests: [(String, (CollectionTests) -> () throws -> Void)] {
         return [
+            ("testEverything", testEverything),
             ("testUniqueIndex", testUniqueIndex),
             ("testQuery", testQuery),
             ("testRename", testRename),
@@ -54,6 +56,42 @@ class CollectionTests: XCTestCase {
     override func tearDown() {
         // Cleaning
         try! TestManager.disconnect()
+    }
+    
+    func testEverything() throws {
+        let everything: [() throws -> Void] = [
+            testUniqueIndex,
+            testQuery,
+            testRename,
+            testFind,
+            testDBRef,
+            testProjection,
+            testIndexes,
+            testDropIndex,
+            testTextOperator,
+            testUpdate,
+            testRemovingAll,
+            testRemovingOne,
+            testHelperObjects,
+            testFindAndModify,
+            testDocumentValidation,
+            testInsertErrors,
+            testUpdateErrors,
+            ]
+        
+        var futures = [Promise<Void>]()
+        
+        for test in everything {
+            let future = async {
+                try test()
+            }
+
+            futures.append(future)
+        }
+
+        for future in futures {
+            _ = try future.await()
+        }
     }
     
     func testDocumentValidation() throws {
@@ -238,11 +276,14 @@ class CollectionTests: XCTestCase {
             
             inserts = [base, brokenUsername, brokenUsername, brokenAge, brokenDogs, brokenKittens, brokenKittens2, brokenBeers, base]
             
-            _ = try db["wcol"].insert(contentsOf: inserts)
+            _ = try db["findTest"].insert(contentsOf: inserts)
             
-            let response = Array(try db["wcol"].find(superQuery))
+            let response = Array(try db["findTest"].find(superQuery))
             
-            let response2 = try db["wcol"].findOne(superQuery)!
+            guard let response2 = try db["findTest"].findOne(superQuery) else {
+                XCTFail()
+                return
+            }
             
             XCTAssertEqual(response.count, 2)
             
@@ -314,7 +355,7 @@ class CollectionTests: XCTestCase {
                 continue loop
             }
             
-            try db["wcol"].createIndex(named: "henkbob", withParameters: .sortedCompound(fields: [("name", .ascending), ("age", .descending)]), .expire(afterSeconds: 1), .buildInBackground)
+            try db["indexTest"].createIndex(named: "henkbob", withParameters: .sortedCompound(fields: [("name", .ascending), ("age", .descending)]), .expire(afterSeconds: 1), .buildInBackground)
             
             let harriebob = db["harriebob"]
             
@@ -327,7 +368,7 @@ class CollectionTests: XCTestCase {
             XCTAssertThrowsError(try harriebob.insert(["unique": false]))
             XCTAssertThrowsError(try harriebob.insert(["unique": Null()]))
             
-            for index in try db["wcol"].listIndexes() where String(index["name"]) == "henkbob" {
+            for index in try db["indexTest"].listIndexes() where String(index["name"]) == "henkbob" {
                 continue loop
             }
             
@@ -348,25 +389,25 @@ class CollectionTests: XCTestCase {
 
     private func runContainsQuery(onDB db: Database) throws {
         let query = Query(aqt: .contains(key: "username", val: "ar", options: []))
-        let response = Array(try db["wcol"].find(query))
+        let response = Array(try db["findTest"].find(query))
         XCTAssert(response.count == 2)
     }
     
     private func runStartsWithQuery(onDB db: Database) throws {
         let query = Query(aqt: .startsWith(key: "username", val: "har"))
-        let response = Array(try db["wcol"].find(query))
+        let response = Array(try db["findTest"].find(query))
         XCTAssert(response.count == 2)
     }
     
     private func runEndsWithQuery(onDB db: Database) throws {
         let query = Query(aqt: .endsWith(key: "username", val: "rrie"))
-        let response = Array(try db["wcol"].find(query))
+        let response = Array(try db["findTest"].find(query))
         XCTAssert(response.count == 2)
     }
     
     private func runContainsCaseInsensitiveQuery(onDB db: Database) throws {
         let query = Query(aqt: .contains(key: "username", val: "AR", options: .caseInsensitive))
-        let response = Array(try db["wcol"].find(query))
+        let response = Array(try db["findTest"].find(query))
         XCTAssert(response.count == 2)
     }
     
@@ -376,7 +417,7 @@ class CollectionTests: XCTestCase {
                 continue
             }
             
-            let textSearch = db["textsearch"]
+            let textSearch = db["textsearchTest"]
             try textSearch.createIndex(named: "subject", withParameters: .text(["subject"]))
             
             try textSearch.remove(Query([:]))
@@ -419,16 +460,16 @@ class CollectionTests: XCTestCase {
             brokenBeers["beers"] = "broken"
             
             inserts = [base, brokenUsername, brokenUsername, brokenAge, brokenDogs, brokenKittens, brokenKittens2, brokenBeers, base]
-            try db["wcol"].insert(contentsOf: inserts)
+            try db["updateTest"].insert(contentsOf: inserts)
             
-            try db["wcol"].update(superQuery, to: ["testieBool": true])
+            try db["updateTest"].update(superQuery, to: ["testieBool": true])
             
             try db.server.fsync()
             
-            let response = Array(try db["wcol"].find("testieBool" == true))
+            let response = Array(try db["updateTest"].find("testieBool" == true))
             XCTAssertEqual(response.count, 1)
             
-            let response2 = Array(try db["wcol"].find(superQuery))
+            let response2 = Array(try db["updateTest"].find(superQuery))
             XCTAssertEqual(response2.count, 1)
         }
     }
@@ -455,11 +496,11 @@ class CollectionTests: XCTestCase {
             
             inserts = [base, brokenUsername, brokenUsername, brokenAge, brokenDogs, brokenKittens, brokenKittens2, brokenBeers, base]
             
-            _ = try db["wcol"].insert(contentsOf: inserts)
+            _ = try db["removeAllTest"].insert(contentsOf: inserts)
             
-            XCTAssertGreaterThan(try db["wcol"].remove(superQuery), 0)
+            XCTAssertGreaterThan(try db["removeAllTest"].remove(superQuery), 0)
             
-            let response = Array(try db["wcol"].find(superQuery))
+            let response = Array(try db["removeAllTest"].find(superQuery))
             
             XCTAssertEqual(response.count, 0)
         }
@@ -487,12 +528,14 @@ class CollectionTests: XCTestCase {
             
             inserts = [base, brokenUsername, brokenUsername, brokenAge, brokenDogs, brokenKittens, brokenKittens2, brokenBeers, base]
             
-            try db["wcol"].insert(contentsOf: inserts)
+            try db["removeOneTest"].insert(contentsOf: inserts)
             
-            XCTAssertEqual(try db["wcol"].remove(superQuery, limiting: 1), 1)
             try db.server.fsync()
             
-            let response = Array(try db["wcol"].find(superQuery))
+            XCTAssertEqual(try db["removeOneTest"].remove(superQuery, limiting: 1), 1)
+            try db.server.fsync()
+            
+            let response = Array(try db["removeOneTest"].find(superQuery))
             
             XCTAssertEqual(response.count, 1)
         }
@@ -543,16 +586,16 @@ class CollectionTests: XCTestCase {
             brokenBeers["beers"] = "broken"
             
             inserts = [base, brokenUsername, brokenUsername, brokenAge, brokenDogs, brokenKittens, brokenKittens2, brokenBeers, base]
-            try db["wcol"].insert(contentsOf: inserts)
+            try db["findAndModifyTest"].append(contentsOf: inserts)
             
-            let modifiedDocument = try db["wcol"].findAndModify(matching: superQuery, action: .update(with: ["testieBool": true], returnModified: true, upserting: false) )
+            let modifiedDocument = try db["findAndModifyTest"].findAndModify(matching: superQuery, action: .update(with: ["testieBool": true], returnModified: true, upserting: false) )
             
             XCTAssertNotNil(modifiedDocument as? Document)
             
-            let response = Array(try db["wcol"].find("testieBool" == true))
+            let response = Array(try db["findAndModifyTest"].find("testieBool" == true))
             XCTAssertEqual(response.count, 1)
             
-            let response2 = Array(try db["wcol"].find(superQuery))
+            let response2 = Array(try db["findAndModifyTest"].find(superQuery))
             XCTAssertEqual(response2.count, 1)
         }
     }
@@ -596,7 +639,7 @@ class CollectionTests: XCTestCase {
             ])
 
             do {
-                try db["errors"].append(contentsOf: documents)
+                try db["inserterrors"].append(contentsOf: documents)
                 XCTFail()
             } catch let insertErrors as InsertErrors {
                 XCTAssertEqual(insertErrors.successfulIds.count, 2)
@@ -627,12 +670,12 @@ class CollectionTests: XCTestCase {
                 "data": true
             ])
 
-            try db["errors"].append(contentsOf: documents)
+            try db["updateerrors"].append(contentsOf: documents)
             
             try db.server.fsync()
             
             do {
-                try db["errors"].update("_id" == 2, to: [
+                try db["updateerrors"].update("_id" == 2, to: [
                     "$set": [
                         "_id": 1
                     ]

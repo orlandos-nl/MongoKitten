@@ -140,7 +140,7 @@ public final class Server {
             self.clientSettings.hosts[0].online = true
             
             let connection = try makeConnection(toHost: self.clientSettings.hosts[0], authenticatedFor: nil)
-            connection.used = true
+            connection.users += 1
             
             defer {
                 returnConnection(connection)
@@ -242,7 +242,7 @@ public final class Server {
             do {
                 let authDB = self[clientSettings.credentials?.database ?? "admin"]
                 let connection = try makeConnection(toHost: host, authenticatedFor: nil)
-                connection.used = true
+                connection.users += 1
                 
                 defer {
                     returnConnection(connection)
@@ -412,7 +412,7 @@ public final class Server {
     /// Takes the most efficient connection and prefers connections that are already authenticated to this database
     internal func reserveConnection(writing: Bool = false, authenticatedFor db: Database?, toHost host: (String, UInt16)? = nil) throws -> Connection {
         logger.verbose("Connection requested for database \(String(describing: db?.description))")
-        var bestMatch: Connection? = nil
+        var bestMatches = [Connection]()
         
         connectionPoolLock.lock()
         
@@ -460,30 +460,33 @@ public final class Server {
         
         // Find all possible matches to create a connection to
         let matches = self.connections.filter {
-            !$0.used && ((!writing && slaveOK) || $0.writable) && $0.isConnected
-        }
+            ((!writing && slaveOK) || $0.writable) && $0.isConnected
+            }.sorted(by: { (lhs, rhs) -> Bool in
+                return lhs.users < rhs.users
+            })
         
         // If we need a specific database, find a connection optimal for that database I.E. already authenticated
         matching: if let db = db {
             if !writing {
                 for match in matches {
                     if !match.writable && match.authenticatedDBs.contains(db.name) {
-                        bestMatch = match
-                        break matching
+                        bestMatches.append(match)
                     }
                 }
             } else {
-                if let match = matches.first(where: { $0.authenticatedDBs.contains(db.name) }) {
-                    bestMatch = match
+                bestMatches = matches.filter { connection in
+                    return connection.authenticatedDBs.contains(db.name)
                 }
             }
             // Otherwise, find any viable connection
         } else {
-            bestMatch = matches.first(where: { ((!writing && slaveOK) || $0.writable) })
+            bestMatches = matches.filter{ connection in
+                return ((!writing && slaveOK) || connection.writable)
+            }
         }
         
         // If no optimal match could be found. Take the first one that we can find
-        bestMatch = bestMatch ?? matches.first
+        let bestMatch = bestMatches.first ?? matches.first
         
         // This only fails if no available connection could be found
         guard let connection = bestMatch else {
@@ -510,7 +513,7 @@ public final class Server {
             }
             
             connections.append(connection)
-            connection.used = true
+            connection.users += 1
             
             return connection
         }
@@ -523,7 +526,7 @@ public final class Server {
             connection.authenticatedDBs.append(db.name)
         }
         
-        connection.used = true
+        connection.users += 1
         
         return connection
     }
@@ -537,7 +540,7 @@ public final class Server {
             self.connectionPoolSemaphore.signal()
         }
         
-        connection.used = false
+        connection.users -= 1
     }
     
     /// The database cache

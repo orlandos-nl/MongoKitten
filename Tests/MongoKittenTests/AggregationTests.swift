@@ -153,7 +153,7 @@ class AggregationTests: XCTestCase {
             XCTAssertEqual(Int(inventory2), 2)
             XCTAssertEqual(Int(inventory3), 3)
             
-            let unwind = AggregationPipeline.Stage.unwind(atPath: "$specs")
+            let unwind = AggregationPipeline.Stage.unwind("$specs")
             let lookup = AggregationPipeline.Stage.lookup(from: inventory, localField: "specs", foreignField: "size", as: "inventory_docs")
             let match = AggregationPipeline.Stage.match(["inventory_docs": ["$ne":[]]] as Document)
             let pipe = AggregationPipeline(arrayLiteral: unwind, lookup, match)

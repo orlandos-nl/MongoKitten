@@ -19,11 +19,11 @@ class Connection {
     let logger: FrameworkLogger
     let client: MongoTCP
     let buffer = TCPBuffer()
-    var used = false
     var writable = false
     var authenticatedDBs: [String] = []
     var onClose: (()->())
     let host: MongoHost
+    var users: Int = 0
     var incomingBuffer = Bytes()
 
     private static let receiveQueue = DispatchQueue(label: "org.mongokitten.server.receiveQueue", attributes: .concurrent)
