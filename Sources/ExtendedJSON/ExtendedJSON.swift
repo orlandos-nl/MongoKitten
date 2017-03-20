@@ -208,6 +208,8 @@ extension Document {
                 }
             case let int as Int32:
                 return Int(int)
+            case let double as Double:
+                return double
             case let string as String:
                 return string
             case let document as Document:
@@ -233,7 +235,8 @@ extension Document {
                 return ["$minKey": 1] as JSONObject
             case is MaxKey:
                 return ["$maxKey": 1] as JSONObject
-            default: return NSNull() // TODO: Something different?
+            default:
+                return NSNull() // TODO: Something different?
             }
         }
         
