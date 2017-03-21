@@ -243,6 +243,10 @@ public final class Collection {
             }
         }
         
+        if errors.count > 0 {
+            throw throwErrors()
+        }
+        
         return newIds
     }
     
@@ -441,10 +445,10 @@ public final class Collection {
             
             let reply = try self.database.execute(command: command)
             guard case .Reply(_, _, _, _, _, _, let replyDocuments) = reply else {
-                throw MongoError.updateFailure(updates: updates, error: nil)
+                throw MongoError.invalidReply
             }
             
-            if let writeErrors = replyDocuments.first?["writeErrors"] as Document?, (replyDocuments.first?["ok"] as Int? != 1 || ordered == true) {
+            if let writeErrors = replyDocuments.first?["writeErrors"] as Document? {
                 let writeErrors = try writeErrors.arrayValue.flatMap { value -> UpdateError.WriteError in
                     guard let document = value as? Document,
                         let index = document["index"] as Int?,
@@ -459,7 +463,9 @@ public final class Collection {
                     return UpdateError.WriteError(index: index, code: code, message: message, affectedQuery: affectedUpdate.filter, affectedUpdate: affectedUpdate.to, upserting: affectedUpdate.upserting, multiple: affectedUpdate.multiple)
                 }
                 
-                throw UpdateError(writeErrors: writeErrors)
+                if writeErrors.count > 0 {
+                    throw UpdateError(writeErrors: writeErrors)
+                }
             }
             
             return replyDocuments.first?["nModified"] as Int? ?? 0
@@ -547,7 +553,7 @@ public final class Collection {
             let reply = try self.database.execute(command: command)
             let replyDocuments = try allDocuments(in: reply)
             
-            if let writeErrors = replyDocuments.first?["writeErrors"] as Document?, (replyDocuments.first?["ok"] as Int? != 1 || ordered == true) {
+            if let writeErrors = replyDocuments.first?["writeErrors"] as Document? {
                 let writeErrors = try writeErrors.arrayValue.flatMap { value -> RemoveError.WriteError in
                     guard let document = value as? Document,
                         let index = document["index"] as Int?,
@@ -562,7 +568,9 @@ public final class Collection {
                     return RemoveError.WriteError(index: index, code: code, message: message, affectedQuery: affectedRemove.filter, limit: affectedRemove.limit)
                 }
                 
-                throw RemoveError(writeErrors: writeErrors)
+                if writeErrors.count > 0 {
+                    throw RemoveError(writeErrors: writeErrors)
+                }
             }
             
             return replyDocuments.first?["n"] as Int? ?? 0

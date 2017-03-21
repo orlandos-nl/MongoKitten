@@ -603,12 +603,12 @@ class CollectionTests: XCTestCase {
                 ])
             
             do {
-                try db["inserterrors"].insert(documents)
+                try db["inserterrors"].insert(documents, stoppingOnError: false)
                 XCTFail()
             } catch let insertErrors as InsertErrors {
-                XCTAssertEqual(insertErrors.successfulIds.count, 2)
+                XCTAssertEqual(insertErrors.successfulIds.count, 1)
                 XCTAssertEqual(insertErrors.errors.count, 1)
-                XCTAssertEqual(insertErrors.errors[0].writeErrors.count, 1)
+                XCTAssertEqual(insertErrors.errors[0].writeErrors.count, 2)
                 XCTAssertEqual(insertErrors.errors[0].writeErrors[0].affectedDocument["_id"] as ObjectId?, duplicateID)
             } catch {
                 XCTFail()
