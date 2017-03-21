@@ -9,7 +9,6 @@
 //
 
 import Foundation
-import LogKitten
 import BSON
 
 /// A Cursor is a pointer to a sequence/collection of Documents on the MongoDB server.
