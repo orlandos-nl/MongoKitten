@@ -123,7 +123,7 @@ extension CollectionQueryable {
         }
     }
     
-    func aggregate(_ pipeline: AggregationPipeline, readConcern: ReadConcern?, collation: Collation?, options: [AggregationOptions], connection: Connection?, timeout: DispatchTimeInterval?) throws -> Promise<_Cursor<Document>> {
+    func aggregate(_ pipeline: AggregationPipeline, readConcern: ReadConcern?, collation: Collation?, options: [AggregationOptions], connection: Connection?, timeout: DispatchTimeInterval?) throws -> Promise<Cursor<Document>> {
         // construct command. we always use cursors in MongoKitten, so that's why the default value for cursorOptions is an empty document.
         var command: Document = ["aggregate": self.collectionName, "pipeline": pipeline.pipelineDocument, "cursor": ["batchSize": 100]]
         
@@ -150,7 +150,7 @@ extension CollectionQueryable {
                 throw MongoError.invalidResponse(documents: reply.documents)
             }
             
-            return try _Cursor(cursorDocument: cursorDoc, collection: self.collection, chunkSize: Int32(command["cursor"]["batchSize"]) ?? 100, transform: { $0 })
+            return try Cursor(cursorDocument: cursorDoc, collection: self.collection, chunkSize: Int32(command["cursor"]["batchSize"]) ?? 100, transform: { $0 })
         }
     }
     
@@ -373,7 +373,7 @@ extension CollectionQueryable {
         }
     }
     
-    func find(filter: Query?, sort: Sort?, projection: Projection?, readConcern: ReadConcern?, collation: Collation?, skip: Int?, limit: Int?, batchSize: Int = 100, connection: Connection?) throws -> Promise<_Cursor<Document>> {
+    func find(filter: Query?, sort: Sort?, projection: Projection?, readConcern: ReadConcern?, collation: Collation?, skip: Int?, limit: Int?, batchSize: Int = 100, connection: Connection?) throws -> Promise<CollectionSlice<Document>> {
         if self.collection.database.server.buildInfo.version >= Version(3,2,0) {
             var command: Document = [
                 "find": collection.name,
@@ -409,9 +409,11 @@ extension CollectionQueryable {
                     throw MongoError.invalidResponse(documents: reply.documents)
                 }
                 
-                return try _Cursor(cursorDocument: cursorDoc, collection: self.collection, chunkSize: Int32(batchSize), transform: { doc in
+                let cursor = try Cursor(cursorDocument: cursorDoc, collection: self.collection, chunkSize: Int32(batchSize), transform: { doc in
                     return doc
                 })
+                
+                return CollectionSlice(cursor: cursor)
             }
         } else {
             let queryMsg = Message.Query(requestID: collection.database.server.nextMessageID(), flags: [], collection: collection, numbersToSkip: Int32(skip) ?? 0, numbersToReturn: Int32(batchSize), query: filter?.queryDocument ?? [], returnFields: projection?.document)
@@ -435,7 +437,7 @@ extension CollectionQueryable {
                 
                 var returned: Int = 0
                 
-                return _Cursor(namespace: self.fullCollectionName, collection: self.collection, cursorID: reply.cursorID, initialData: reply.documents, chunkSize: Int32(batchSize), transform: { doc in
+                let cursor = Cursor(namespace: self.fullCollectionName, collection: self.collection, cursorID: reply.cursorID, initialData: reply.documents, chunkSize: Int32(batchSize), transform: { doc in
                     if let limit = limit {
                         guard returned < limit else {
                             return nil
@@ -445,6 +447,8 @@ extension CollectionQueryable {
                     }
                     return doc
                 })
+                
+                return CollectionSlice(cursor: cursor)
             }
         }
     }

@@ -17,7 +17,7 @@ import BSON
 /// It can be looped over using a `for let document in cursor` loop like any other sequence.
 ///
 /// It can be transformed into an array with `Array(cursor)` and allows transformation to another type.
-internal final class _Cursor<T> {
+public final class Cursor<T> {
     /// The collection's namespace
     let namespace: String
     
@@ -74,7 +74,7 @@ internal final class _Cursor<T> {
     /// The transformer will get `B` as input and is expected to return `T?` for the new type.
     ///
     /// This allows you to easily map a Document cursor returned by MongoKitten to a new type like your model.
-    internal init<B>(base: _Cursor<B>, transform: @escaping (B) throws -> (T?)) throws {
+    internal init<B>(base: Cursor<B>, transform: @escaping (B) throws -> (T?)) throws {
         self.namespace = base.namespace
         self.collection = base.collection
         self.cursorID = base.cursorID
@@ -127,6 +127,10 @@ internal final class _Cursor<T> {
         }
     }
     
+    public func flatMap<B>(transform: @escaping (T) throws -> (B?)) throws -> Cursor<B> {
+        return try Cursor<B>(base: self, transform: transform)
+    }
+    
     /// When deinitializing we're killing the cursor on the server as well
     deinit {
         if cursorID != 0 {
@@ -146,37 +150,34 @@ internal final class _Cursor<T> {
     }
 }
 
-extension _Cursor : Sequence {
+extension Cursor : Sequence, IteratorProtocol {
     /// Makes an iterator to loop over the data this cursor points to from (for example) a loop
     /// - returns: The iterator
-    internal func makeIterator() -> AnyIterator<T> {
-        return AnyIterator {
-            while true {
-                do {
-                    return try self.next()
-                } catch {}
-            }
-        }
+    public func makeIterator() -> Cursor<T> {
+        return self
     }
     
-    /// Allows you to fetch the first next entity in the Cursor
-    internal func next() throws -> T? {
+    public func next() -> T? {
         defer { position += 1 }
         
         if position >= self.data.count && self.cursorID != 0 {
             position = 0
             self.data = []
             // Get more data!
-            try self.getMore()
+            do {
+                try self.getMore()
+            } catch {
+                return nil
+            }
         }
         
         return position < self.data.count ? self.data[position] : nil
     }
 }
 
-extension _Cursor : CustomStringConvertible {
+extension Cursor : CustomStringConvertible {
     /// A description for debugging purposes
-    internal var description: String {
+    public var description: String {
         return "MongoKitten.Cursor<\(namespace)>"
     }
 }

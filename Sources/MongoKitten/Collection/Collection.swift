@@ -17,7 +17,7 @@ public typealias MongoCollection = Collection
 /// **### Definition ###**
 ///
 /// A grouping of MongoDB documents. A collection is the equivalent of an RDBMS table. A collection exists within a single database. Collections do not enforce a schema. Documents within a collection can have different fields. Typically, all documents in a collection have a similar or related purpose. See Namespaces.
-public final class Collection: Sequence, CollectionQueryable {
+public final class Collection: CollectionQueryable {
     var timeout: DispatchTimeInterval?
 
     var collection: Collection {
@@ -30,14 +30,6 @@ public final class Collection: Sequence, CollectionQueryable {
     
     var fullCollectionName: String {
         return self.fullName
-    }
-    
-    public func makeIterator() -> AnyIterator<Document> {
-        guard let iterator = try? self.find() else {
-            return AnyIterator { nil }
-        }
-        
-        return iterator
     }
     
     /// The Database this collection is in
@@ -172,7 +164,8 @@ public final class Collection: Sequence, CollectionQueryable {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A Cursor pointing to the response Documents.
-    public func execute(command: Document = [], usingFlags flags: QueryFlags = [], fetching fetchChunkSize: Int = 100, timeout: TimeInterval = 0) throws -> AnyIterator<Document> {
+    public func execute(command: Document = [], usingFlags flags: QueryFlags = [], fetching fetchChunkSize: Int = 100, timeout: TimeInterval = 0) throws -> Cursor
+        <Document> {
         precondition(fetchChunkSize < Int(Int32.max))
         
         let timeout = timeout > 0 ? timeout : database.server.defaultTimeout
@@ -186,11 +179,11 @@ public final class Collection: Sequence, CollectionQueryable {
         let queryMsg = Message.Query(requestID: database.server.nextMessageID(), flags: flags, collection: self, numbersToSkip: 0, numbersToReturn: Int32(fetchChunkSize), query: command, returnFields: nil)
         
         let response = try self.database.server.sendAndAwait(message: queryMsg, overConnection: connection, timeout: timeout)
-        guard let cursor = try _Cursor(namespace: self.fullName, collection: self, reply: response, chunkSize: Int32(fetchChunkSize), transform: { $0 }) else {
+        guard let cursor = try Cursor(namespace: self.fullName, collection: self, reply: response, chunkSize: Int32(fetchChunkSize), transform: { $0 }) else {
             throw MongoError.invalidReply
         }
         
-        return cursor.makeIterator()
+        return cursor
     }
     
     /// Finds `Document`s in this `Collection`
@@ -209,12 +202,12 @@ public final class Collection: Sequence, CollectionQueryable {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A cursor pointing to the found Documents
-    public func find(_ filter: Query? = nil, sortedBy sort: Sort? = nil, projecting projection: Projection? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil, skipping skip: Int? = nil, limitedTo limit: Int? = nil, withBatchSize batchSize: Int = 100) throws -> AnyIterator<Document> {
+    public func find(_ filter: Query? = nil, sortedBy sort: Sort? = nil, projecting projection: Projection? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil, skipping skip: Int? = nil, limitedTo limit: Int? = nil, withBatchSize batchSize: Int = 100) throws -> CollectionSlice<Document> {
         precondition(batchSize < Int(Int32.max))
         precondition(skip ?? 0 < Int(Int32.max))
         precondition(limit ?? 0 < Int(Int32.max))
         
-        return try self.find(filter: filter, sort: sort, projection: projection, readConcern: readConcern, collation: collation, skip: skip, limit: limit, connection: nil).await().makeIterator()
+        return try self.find(filter: filter, sort: sort, projection: projection, readConcern: readConcern, collation: collation, skip: skip, limit: limit, connection: nil).await()
     }
     
     /// Finds Documents in this collection
@@ -367,7 +360,7 @@ public final class Collection: Sequence, CollectionQueryable {
     ///
     /// - returns: The amount of matching `Document`s
     public func count(_ filter: Query? = nil, limiting limit: Int? = nil, skipping skip: Int? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil) throws -> Int {
-        return try Cursor<Document>(in: self, where: filter).count(limiting: limit, skipping: skip, readConcern: readConcern, collation: collation)
+        return try self.count(filter: filter, limit: limit, skip: skip, readConcern: readConcern, collation: collation, connection: nil, timeout: nil).await()
     }
     
     /// `findAndModify` only has two operations that can be used. Update and Delete
@@ -526,7 +519,7 @@ public final class Collection: Sequence, CollectionQueryable {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A Cursor pointing to the Index results
-    public func listIndexes() throws -> AnyIterator<Document> {
+    public func listIndexes() throws -> Cursor<Document> {
         guard database.server.buildInfo.version >= Version(3,0,0) else {
             throw MongoError.unsupportedOperations
         }
@@ -543,7 +536,7 @@ public final class Collection: Sequence, CollectionQueryable {
             database.server.returnConnection(connection)
         }
         
-        return try _Cursor(cursorDocument: cursorDocument, collection: self, chunkSize: 100, transform: { $0 }).makeIterator()
+        return try Cursor(cursorDocument: cursorDocument, collection: self, chunkSize: 100, transform: { $0 })
     }
     
     /// Modifies the collection. Requires access to `collMod`
@@ -572,8 +565,8 @@ public final class Collection: Sequence, CollectionQueryable {
         }
     }
     
-    public func aggregate(_ pipeline: AggregationPipeline, readConcern: ReadConcern? = nil, collation: Collation? = nil, options: AggregationOptions...) throws -> AnyIterator<Document> {
-        return try self.aggregate(pipeline, readConcern: readConcern, collation: collation, options: options, connection: nil, timeout: nil).await().makeIterator()
+    public func aggregate(_ pipeline: AggregationPipeline, readConcern: ReadConcern? = nil, collation: Collation? = nil, options: AggregationOptions...) throws -> Cursor<Document> {
+        return try self.aggregate(pipeline, readConcern: readConcern, collation: collation, options: options, connection: nil, timeout: nil).await()
     }
     
     /// Uses the aggregation pipeline to process documents into aggregated results.
@@ -585,7 +578,8 @@ public final class Collection: Sequence, CollectionQueryable {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A `Cursor` pointing to the found `Document`s
-    public func aggregate(_ pipeline: AggregationPipeline, readConcern: ReadConcern? = nil, collation: Collation? = nil, options: [AggregationOptions] = []) throws -> AnyIterator<Document> {        return try self.aggregate(pipeline, readConcern: readConcern, collation: collation, options: options, connection: nil, timeout: nil).await().makeIterator()
+    public func aggregate(_ pipeline: AggregationPipeline, readConcern: ReadConcern? = nil, collation: Collation? = nil, options: [AggregationOptions] = []) throws -> Cursor<Document> {
+        return try self.aggregate(pipeline, readConcern: readConcern, collation: collation, options: options, connection: nil, timeout: nil).await()
     }
 }
 

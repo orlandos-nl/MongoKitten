@@ -66,10 +66,10 @@ public class GridFS {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A cursor pointing to all resulting files
-    public func find(_ filter: Query? = nil) throws -> AnyIterator<File> {
-        return try Cursor(in: files, where: filter) {
-            File(document: $0, chunksCollection: self.chunks, filesCollection: self.files)
-        }.find()
+    public func find(_ filter: Query? = nil) throws -> Cursor<File> {
+        return try files.find(filter).flatMap { doc -> File? in
+            return File(document: doc, chunksCollection: self.chunks, filesCollection: self.files)
+        }.cursor
     }
     
     /// Removes a file by it's identifier
@@ -279,9 +279,10 @@ public class GridFS {
                 throw MongoError.negativeDataRequested
             }
             
-            let chunkCursor = try Cursor(in: chunksCollection, where: "files_id" == id, transform: {
-                Chunk(document: $0, chunksCollection: self.chunksCollection, filesCollection: self.filesCollection)
-            }).find(sorting: ["n": .ascending], skipping: skipChunks, limitedTo: endChunk - skipChunks)
+            let chunkCursor = try chunksCollection.find("files_id" == id, sortedBy: ["n": .ascending], skipping: skipChunks, limitedTo: endChunk - skipChunks).flatMap { (doc) -> (Chunk?) in
+                return Chunk(document: doc, chunksCollection: self.chunksCollection, filesCollection: self.filesCollection)
+            }
+            
             var allData = Bytes()
             
             for chunk in chunkCursor {
@@ -317,7 +318,11 @@ public class GridFS {
         /// Iterates over all chunks of data for this file
         public func makeIterator() -> AnyIterator<Chunk> {
             do {
-                return try self.chunked()
+                let cursor = try self.chunked()
+                
+                return AnyIterator {
+                    return cursor.next()
+                }
             } catch {
                 return AnyIterator { nil }
             }
@@ -326,10 +331,10 @@ public class GridFS {
         /// Creates an iterator of chunks.
         ///
         /// - throws: Unable to fetch chunks
-        public func chunked() throws -> AnyIterator<Chunk> {
-            return try Cursor(in: chunksCollection, where: "files_id" == id) {
-                    Chunk(document: $0, chunksCollection: self.chunksCollection, filesCollection: self.filesCollection)
-                }.find(sorting: ["n": .ascending])
+        public func chunked() throws -> Cursor<Chunk> {
+            return try chunksCollection.find("files_id" == id).flatMap {
+                Chunk(document: $0, chunksCollection: self.chunksCollection, filesCollection: self.filesCollection)
+            }.cursor
         }
         
         /// A GridFS Byte Chunk that's part of a file

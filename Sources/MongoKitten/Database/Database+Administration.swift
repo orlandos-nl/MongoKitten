@@ -63,7 +63,7 @@ extension Database {
     /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
     ///
     /// - returns: A cursor to the resulting documents with collection info
-    internal func getCollectionInfos(matching filter: Document? = nil) throws -> _Cursor<Document> {
+    internal func getCollectionInfos(matching filter: Document? = nil) throws -> Cursor<Document> {
         var request: Document = ["listCollections": 1]
         if let filter = filter {
             request["filter"] = filter
@@ -81,7 +81,7 @@ extension Database {
             throw MongoError.commandFailure(error: result)
         }
 
-        return try _Cursor(cursorDocument: cursor, collection: self["$cmd"], chunkSize: 10, transform: { $0 })
+        return try Cursor(cursorDocument: cursor, collection: self["$cmd"], chunkSize: 10, transform: { $0 })
     }
     
     public func getCollectionInfos(matching filter: Document? = nil) throws -> AnyIterator<Document> {
@@ -95,15 +95,15 @@ extension Database {
     /// - parameter matching: The filter to apply when looking for Collections
     ///
     /// - returns: A `Cursor` to all `Collection`s in this `Database`
-    public func listCollections(matching filter: Document? = nil) throws -> AnyIterator<Collection> {
-        let infoCursor = try self.getCollectionInfos(matching: filter) as _Cursor<Document>
-        return try _Cursor(base: infoCursor) { collectionInfo in
+    public func listCollections(matching filter: Document? = nil) throws -> Cursor<Collection> {
+        let infoCursor = try self.getCollectionInfos(matching: filter) as Cursor<Document>
+        return try Cursor(base: infoCursor) { collectionInfo in
             guard let name = String(collectionInfo["name"]) else {
                 return nil
             }
             
             return self[name]
-        }.makeIterator()
+        }
     }
 
     /// Drops this database and it's collections
