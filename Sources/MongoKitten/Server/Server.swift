@@ -31,13 +31,22 @@ import Dispatch
 /// It's internal because ReplyMessages are an internal struct that is used for direct communication with MongoDB only
 internal typealias ResponseHandler = ((Message) -> Void)
 
+internal var log: Logger = PrintLogger()
+
 /// A server object is the core of MongoKitten as it's used to communicate to the server.
 /// You can select a `Database` by subscripting an instance of this Server with a `String`.
 public final class Server {
     /// The logging instance
     ///
     /// Do not reply on this. LogKitten is an alpha product and exclusively used by MongoKitten for exposing debugging information
-    public var logger: FrameworkLogger
+    public var logger: Logger {
+        get {
+            return log
+        }
+        set {
+            log = newValue
+        }
+    }
     
     /// All servers this library is connecting with
     internal var servers: [MongoHost] {
@@ -129,7 +138,6 @@ public final class Server {
         self.clientSettings = clientSettings
         self.connectionPoolSemaphore = DispatchSemaphore(value: self.clientSettings.maxConnectionsPerServer * self.clientSettings.hosts.count)
         self.defaultTimeout = self.clientSettings.defaultTimeout
-        self.logger = Logger.forFramework(withIdentifier: "org.openkitten.mongokitten")
         
         if clientSettings.hosts.count > 1 {
             self.isReplica = true
@@ -171,7 +179,6 @@ public final class Server {
         }
         
         self.buildInfo = try getBuildInfo()
-        _ = try? logger.registerSubject(Document.self)
         self.connectionPoolMaintainanceQueue.async(execute: backgroundLoop)
     }
     
@@ -332,7 +339,7 @@ public final class Server {
             throw MongoError.noServersAvailable
         }
         
-        let connection = try Connection(clientSettings: self.clientSettings, writable: lowestOpenConnections.isPrimary, host: lowestOpenConnections, logger: self.logger) {
+        let connection = try Connection(clientSettings: self.clientSettings, writable: lowestOpenConnections.isPrimary, host: lowestOpenConnections) {
             self.hostPoolLock.lock()
             for (id, server) in self.servers.enumerated() where server == lowestOpenConnections {
                 var host = server
@@ -368,7 +375,7 @@ public final class Server {
     ///
     /// - parameter authenticatedFor: The Database that this connection is opened for. Prepares this Connection for authentication to this Database
     private func makeConnection(toHost host: MongoHost, authenticatedFor: Database?) throws -> Connection {
-        let connection = try Connection(clientSettings: self.clientSettings, writable: host.isPrimary, host: host, logger: logger) {
+        let connection = try Connection(clientSettings: self.clientSettings, writable: host.isPrimary, host: host) {
             self.hostPoolLock.lock()
             for (id, server) in self.servers.enumerated() where server == host {
                 var host = server

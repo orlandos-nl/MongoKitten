@@ -71,53 +71,53 @@ extension Database {
     private func complete(SASL payload: String, using response: Document, verifying signature: Bytes, usingConnection connection: Connection) throws {
         // If we failed authentication
         guard Int(response["ok"]) == 1 else {
-            logger.error("Authentication failed because of the following reason")
-            logger.error(response)
+            log.error("Authentication failed because of the following reason")
+            log.error(response)
             throw AuthenticationError.incorrectCredentials
         }
         
         if Bool(response["done"]) == true {
-            logger.verbose("Authentication was successful")
+            log.verbose("Authentication was successful")
             return
         }
         
         guard let stringResponse = String(response["payload"]) else {
-            logger.error("Authentication to MongoDB with SASL failed because no payload has been received")
-            logger.debug(response)
+            log.error("Authentication to MongoDB with SASL failed because no payload has been received")
+            log.debug(response)
             throw AuthenticationError.responseParseError(response: payload)
         }
         
         guard let conversationId = response["conversationId"] else {
-            logger.error("Authentication to MongoDB with SASL failed because no conversationId was kept")
-            logger.debug(response)
+            log.error("Authentication to MongoDB with SASL failed because no conversationId was kept")
+            log.debug(response)
             throw AuthenticationError.responseParseError(response: payload)
         }
         
         guard let finalResponseData = Data(base64Encoded: stringResponse), let finalResponse = String(bytes: Array(finalResponseData), encoding: String.Encoding.utf8) else {
-            logger.error("Authentication to MongoDB with SASL failed because no valid response was received")
-            logger.debug(response)
+            log.error("Authentication to MongoDB with SASL failed because no valid response was received")
+            log.debug(response)
             throw MongoError.invalidBase64String
         }
         
         let dictionaryResponse = self.parse(response: finalResponse)
         
         guard let v = dictionaryResponse["v"] else {
-            logger.error("Authentication to MongoDB with SASL failed because no valid response was received")
-            logger.debug(response)
+            log.error("Authentication to MongoDB with SASL failed because no valid response was received")
+            log.debug(response)
             throw AuthenticationError.responseParseError(response: payload)
         }
         
         guard let serverSignatureData = Data(base64Encoded: v) else {
-            logger.error("Authentication to MongoDB with SASL failed because no valid Base64 was received")
-            logger.debug(response)
+            log.error("Authentication to MongoDB with SASL failed because no valid Base64 was received")
+            log.debug(response)
             throw MongoError.invalidBase64String
         }
         
         let serverSignature = Array(serverSignatureData)
         
         guard serverSignature == signature else {
-            logger.error("Authentication to MongoDB with SASL failed because the server signature is invalid")
-            logger.debug(response)
+            log.error("Authentication to MongoDB with SASL failed because the server signature is invalid")
+            log.debug(response)
             throw AuthenticationError.serverSignatureInvalid
         }
         
@@ -142,25 +142,25 @@ extension Database {
     private func challenge(with details: MongoCredentials, using previousInformation: (nonce: String, response: Document, scram: SCRAMClient), usingConnection connection: Connection) throws {
         // If we failed the authentication
         guard Int(previousInformation.response["ok"]) == 1 else {
-            logger.error("Authentication for MongoDB user \(details.username) with SASL failed against \(String(describing: details.database)) because of the following error")
-            logger.error(previousInformation.response)
+            log.error("Authentication for MongoDB user \(details.username) with SASL failed against \(String(describing: details.database)) because of the following error")
+            log.error(previousInformation.response)
             throw AuthenticationError.incorrectCredentials
         }
         
         // Get our ConversationID
         guard let conversationId = previousInformation.response["conversationId"] else {
-            logger.error("Authentication for MongoDB user \(details.username) with SASL failed because no conversation has been kept")
+            log.error("Authentication for MongoDB user \(details.username) with SASL failed because no conversation has been kept")
             throw AuthenticationError.authenticationFailure
         }
         
         // Decode the challenge
         guard let stringResponse = String(previousInformation.response["payload"]) else {
-            logger.error("Authentication for MongoDB user \(details.username) with SASL failed because no SASL payload has been received")
+            log.error("Authentication for MongoDB user \(details.username) with SASL failed because no SASL payload has been received")
             throw AuthenticationError.authenticationFailure
         }
         
         guard let stringResponseData = Data(base64Encoded: stringResponse), let decodedStringResponse = String(bytes: Array(stringResponseData), encoding: String.Encoding.utf8) else {
-            logger.error("Authentication for MongoDB user \(details.username) with SASL failed because no valid Base64 has been received")
+            log.error("Authentication for MongoDB user \(details.username) with SASL failed because no valid Base64 has been received")
             throw MongoError.invalidBase64String
         }
         
@@ -239,8 +239,8 @@ extension Database {
         let document = try firstDocument(in: response)
         
         guard let nonce = String(document["nonce"]) else {
-            logger.error("Authentication for MongoDB user \(details.username) with MongoCR failed against \(String(describing: details.database)) because no nonce was provided by MongoDB")
-            logger.error(document)
+            log.error("Authentication for MongoDB user \(details.username) with MongoCR failed against \(String(describing: details.database)) because no nonce was provided by MongoDB")
+            log.error(document)
             throw AuthenticationError.authenticationFailure
         }
         
@@ -263,8 +263,8 @@ extension Database {
         
         // Check for success
         guard Int(successDocument["ok"]) == 1 else {
-            logger.error("Authentication for MongoDB user \(details.username) with MongoCR failed against \(String(describing: details.database)) for the following reason")
-            logger.error(document)
+            log.error("Authentication for MongoDB user \(details.username) with MongoCR failed against \(String(describing: details.database)) for the following reason")
+            log.error(document)
             throw InternalMongoError.incorrectReply(reply: successResponse)
         }
     }

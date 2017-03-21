@@ -124,7 +124,7 @@ public final class Collection: CollectionQueryable {
         let result = try self.insert(documents: [document], ordered: ordered, writeConcern: writeConcern, timeout: afterTimeout, connection: nil).await()
         
         guard let newId = result.first else {
-            database.server.logger.error("No identifier could be generated")
+            log.error("No identifier could be generated")
             throw MongoError.internalInconsistency
         }
         

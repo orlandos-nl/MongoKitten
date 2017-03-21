@@ -1,54 +1,71 @@
-//
-//  LogKitten.swift
-//  MongoKitten
-//
-//  Created by Joannis Orlandos on 04/03/2017.
-//
-//
+import ExtendedJSON
 
-import BSON
-import LogKitten
-import Cheetah
+public protocol Logger {
+    func verbose(_ message: String)
+    func debug(_ message: String)
+    func info(_ message: String)
+    func warning(_ message: String)
+    func error(_ message: String)
+    func fatal(_ message: String)
+}
 
-extension Document: SubjectRepresentable {
-    /// Records the common LogKitten ID, used by LogKitten (currently) to identify this registered type
-    ///
-    /// WARNING: LogKitten is alpha software and subject to change. Do not rely on this
-    public static var logKittenId = [Byte:Byte]()
-    
-    /// Returns the common name for this Subject
-    ///
-    /// WARNING: LogKitten is alpha software and subject to change. Do not rely on this
-    public static var name: String {
-        return "Document"
+extension Logger {
+    func verbose(_ message: Document) {
+        self.verbose(String(bytes: message.makeExtendedJSON().serialize(), encoding: .utf8) ?? "")
     }
     
-    /// Makes this Subject a LogKitten type to log
-    ///
-    /// WARNING: LogKitten is alpha software and subject to change. Do not rely on this
-    public func makeSubject(fromFramework framework: String) -> Subject {
-        return .attributedData(type: Document.self, data: self.bytes)
+    func debug(_ message: Document) {
+        self.debug(String(bytes: message.makeExtendedJSON().serialize(), encoding: .utf8) ?? "")
     }
     
-    /// Converts this type to a String for logging
-    ///
-    /// WARNING: LogKitten is alpha software and subject to change. Do not rely on this
-    static public func convertToString(fromData data: Bytes) -> String {
-        return String(bytes: Document(data: data).convert(to: JSONData.self)?.serialize() ?? [], encoding: .utf8) ?? "Unknown Document"
+    func info(_ message: Document) {
+        self.info(String(bytes: message.makeExtendedJSON().serialize(), encoding: .utf8) ?? "")
+    }
+    
+    func warning(_ message: Document) {
+        self.warning(String(bytes: message.makeExtendedJSON().serialize(), encoding: .utf8) ?? "")
+    }
+    
+    func error(_ message: Document) {
+        self.error(String(bytes: message.makeExtendedJSON().serialize(), encoding: .utf8) ?? "")
+    }
+    
+    func fatal(_ message: Document) {
+        self.fatal(String(bytes: message.makeExtendedJSON().serialize(), encoding: .utf8) ?? "")
     }
 }
 
-/// Makes a Subject convertible to a BSONPrimtive
-extension Subject: ValueConvertible {
-    /// Converts this Subject to a BSON.Primitive for embedding into a log Document
-    ///
-    /// WARNING: LogKitten is alpha software and subject to change. Do not rely on this
-    public func makePrimitive() -> BSON.Primitive {
-        switch self {
-        case .string(let s):
-            return s
-        case .attributedData(_, let data):
-            return Document(data: data)
-        }
+public struct NotLogger : Logger {
+    public func verbose(_ message: String) {}
+    public func debug(_ message: String) {}
+    public func info(_ message: String) {}
+    public func warning(_ message: String) {}
+    public func error(_ message: String) {}
+    public func fatal(_ message: String) {}
+}
+
+public struct PrintLogger : Logger {
+    public func verbose(_ message: String) {
+        print(message)
+    }
+    
+    public func debug(_ message: String) {
+        print(message)
+    }
+    
+    public func info(_ message: String) {
+        print(message)
+    }
+    
+    public func warning(_ message: String) {
+        print(message)
+    }
+    
+    public func error(_ message: String) {
+        print(message)
+    }
+    
+    public func fatal(_ message: String) {
+        print(message)
     }
 }

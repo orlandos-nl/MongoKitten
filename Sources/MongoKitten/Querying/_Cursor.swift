@@ -30,10 +30,6 @@ public final class Cursor<T> {
     /// The amount of Documents to receive each time from the server
     fileprivate let chunkSize: Int32
     
-    var logger: FrameworkLogger {
-        return self.collection.database.server.logger
-    }
-    
     // documents already received by the server
     fileprivate var data: [T]
     
@@ -122,7 +118,7 @@ public final class Cursor<T> {
                 self.cursorID = reply.cursorID
             }
         } catch {
-            logger.error("Could not fetch extra data from the cursor due to error: \(error)")
+            log.error("Could not fetch extra data from the cursor due to error: \(error)")
             collection.database.server.cursorErrorHandler(error)
         }
     }

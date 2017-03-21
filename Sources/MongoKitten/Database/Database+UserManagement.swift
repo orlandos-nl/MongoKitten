@@ -40,11 +40,11 @@ extension Database {
         let document = try firstDocument(in: reply)
 
         guard Int(document["ok"]) == 1 else {
-            logger.error("createUser was not successful for user \(user) because of the following error")
-            logger.error(document)
-            logger.error("createUser had the following roiles and customData provided")
-            logger.error(roles)
-            logger.error(customData ?? [:])
+            log.error("createUser was not successful for user \(user) because of the following error")
+            log.error(document)
+            log.error("createUser had the following roiles and customData provided")
+            log.error(roles)
+            log.error(customData ?? [:])
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -74,11 +74,11 @@ extension Database {
         let document = try firstDocument(in: try execute(command: command))
 
         guard Int(document["ok"]) == 1 else {
-            logger.error("updateUser was not successful for user \(username) because of the following error")
-            logger.error(document)
-            logger.error("updateUser had the following roles and customData")
-            logger.error(roles)
-            logger.error(customData ?? [:])
+            log.error("updateUser was not successful for user \(username) because of the following error")
+            log.error(document)
+            log.error("updateUser had the following roles and customData")
+            log.error(roles)
+            log.error(customData ?? [:])
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -98,8 +98,8 @@ extension Database {
         let document = try firstDocument(in: try execute(command: command))
 
         guard Int(document["ok"]) == 1 else {
-            logger.error("dropUser was not successful for user \(username) because of the following error")
-            logger.error(document)
+            log.error("dropUser was not successful for user \(username) because of the following error")
+            log.error(document)
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -117,8 +117,8 @@ extension Database {
         let document = try firstDocument(in: try execute(command: command))
 
         guard Int(document["ok"]) == 1 else {
-            logger.error("dropAllUsersFromDatabase was not successful because of the following error")
-            logger.error(document)
+            log.error("dropAllUsersFromDatabase was not successful because of the following error")
+            log.error(document)
             throw MongoError.commandFailure(error: document)
         }
     }

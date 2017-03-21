@@ -15,8 +15,6 @@ import Dispatch
 import MongoSocket
 
 class Connection {
-    
-    let logger: FrameworkLogger
     let client: MongoTCP
     let buffer = TCPBuffer()
     var writable = false
@@ -37,7 +35,7 @@ class Connection {
         return client.isConnected
     }
     
-    init(clientSettings: ClientSettings, writable: Bool, host: MongoHost, logger: FrameworkLogger, onClose: @escaping (()->())) throws {
+    init(clientSettings: ClientSettings, writable: Bool, host: MongoHost, onClose: @escaping (()->())) throws {
 
         var options = [String:Any] ()
         if let sslSettings = clientSettings.sslSettings {
@@ -52,7 +50,6 @@ class Connection {
         self.writable = writable
         self.onClose = onClose
         self.host = host
-        self.logger = logger
         
         Connection.receiveQueue.async(execute: backgroundLoop)
     }
@@ -84,8 +81,8 @@ class Connection {
             // A receive failure is to be expected if the socket has been closed
             incomingMutateLock.lock()
             if self.isConnected {
-                logger.fatal("The MongoKitten background loop encountered an error and has stopped: \(error)")
-                logger.fatal("Please file a report on https://github.com/openkitten/mongokitten")
+                log.fatal("The MongoKitten background loop encountered an error and has stopped: \(error)")
+                log.fatal("Please file a report on https://github.com/openkitten/mongokitten")
             }
             incomingMutateLock.unlock()
             

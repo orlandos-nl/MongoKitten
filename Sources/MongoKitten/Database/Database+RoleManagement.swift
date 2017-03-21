@@ -29,10 +29,10 @@ extension Database {
         let document = try firstDocument(in: try execute(command: command))
 
         guard Int(document["ok"]) == 1 else {
-            logger.error("grantRolesToUser for user \"\(user)\" was not successful because of the following error")
-            logger.error(document)
-            logger.error("grantRolesToUser failed with the following roles")
-            logger.error(roleList)
+            log.error("grantRolesToUser for user \"\(user)\" was not successful because of the following error")
+            log.error(document)
+            log.error("grantRolesToUser failed with the following roles")
+            log.error(roleList)
             throw MongoError.commandFailure(error: document)
         }
     }

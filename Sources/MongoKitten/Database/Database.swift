@@ -22,10 +22,6 @@ public final class Database {
     /// The database's name
     public let name: String
     
-    var logger: FrameworkLogger {
-        return server.logger
-    }
-    
     /// The default ReadConcern for collections in this Database.
     ///
     /// When a ReadConcern is provided in the method call it'll still override this

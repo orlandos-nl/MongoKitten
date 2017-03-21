@@ -44,10 +44,10 @@ extension Database {
         let document = try firstDocument(in: try execute(command: command))
 
         guard Int(document["ok"]) == 1 else {
-            logger.error("createCollection for collection \"\(name)\" was not successful because of the following error")
-            logger.error(document)
-            logger.error("createCollection failed with the following options:")
-            logger.error(options ?? [:])
+            log.error("createCollection for collection \"\(name)\" was not successful because of the following error")
+            log.error(document)
+            log.error("createCollection failed with the following options:")
+            log.error(options ?? [:])
             throw MongoError.commandFailure(error: document)
         }
         
@@ -74,10 +74,10 @@ extension Database {
         let result = try firstDocument(in: reply)
 
         guard let cursor = Document(result["cursor"]), Int(result["ok"]) == 1 else {
-            logger.error("The collection infos could not be fetched because of the following error")
-            logger.error(result)
-            logger.error("The collection infos were being found using the following filter")
-            logger.error(filter ?? [:])
+            log.error("The collection infos could not be fetched because of the following error")
+            log.error(result)
+            log.error("The collection infos were being found using the following filter")
+            log.error(filter ?? [:])
             throw MongoError.commandFailure(error: result)
         }
 
@@ -119,8 +119,8 @@ extension Database {
         let document = try firstDocument(in: try execute(command: command))
 
         guard Int(document["ok"]) == 1 else {
-            logger.error("dropDatabase was not successful for \"\(self.name)\" because of the following error")
-            logger.error(document)
+            log.error("dropDatabase was not successful for \"\(self.name)\" because of the following error")
+            log.error(document)
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -158,8 +158,8 @@ extension Database {
         let document = try firstDocument(in: try execute(command: command))
 
         guard Int(document["ok"]) == 1 else {
-            logger.error("cloneCollection was not successful because of the following error")
-            logger.error(document)
+            log.error("cloneCollection was not successful because of the following error")
+            log.error(document)
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -192,8 +192,8 @@ extension Database {
         }
 
         guard Int(document["ok"]) == 1 else {
-            logger.error("cloneCollection was not successful because of the following error")
-            logger.error(document)
+            log.error("cloneCollection was not successful because of the following error")
+            log.error(document)
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -217,8 +217,8 @@ extension Database {
         let document = try firstDocument(in: try execute(command: command))
 
         guard Int(document["ok"]) == 1 else {
-            logger.error("cloneCollectionAsCapped was not successful because of the following error")
-            logger.error(document)
+            log.error("cloneCollectionAsCapped was not successful because of the following error")
+            log.error(document)
             throw MongoError.commandFailure(error: document)
         }
     }
