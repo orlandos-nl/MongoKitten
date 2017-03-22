@@ -9,6 +9,7 @@
 //
 import Foundation
 import BSON
+import Dispatch
 
 public typealias MongoCollection = Collection
 

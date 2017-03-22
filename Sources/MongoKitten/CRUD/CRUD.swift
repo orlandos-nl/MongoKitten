@@ -9,6 +9,7 @@
 import Dispatch
 import BSON
 import Schrodinger
+import Dispatch
 
 protocol CollectionQueryable {
     var fullCollectionName: String { get }
