@@ -139,18 +139,22 @@ extension CollectionQueryable {
         return Promise(timeout: timeout ?? self.timeout ?? .seconds(30)) {
             let reply: ServerReply
             
+            let newConnection: Connection
+            
             if let connection = connection {
-                // execute and construct cursor
-                reply = try self.database.execute(command: command, using: connection)
+                newConnection = connection
             } else {
-                reply = try self.database.execute(command: command)
+                newConnection = try self.database.server.reserveConnection(writing: true, authenticatedFor: self.database)
             }
+            
+            // execute and construct cursor
+            reply = try self.database.execute(command: command, using: newConnection)
             
             guard let cursorDoc = Document(reply.documents.first?["cursor"]) else {
                 throw MongoError.invalidResponse(documents: reply.documents)
             }
             
-            return try Cursor(cursorDocument: cursorDoc, collection: self.collection, chunkSize: Int32(command["cursor"]["batchSize"]) ?? 100, transform: { $0 })
+            return try Cursor(cursorDocument: cursorDoc, collection: self.collection, connection: newConnection, chunkSize: Int32(command["cursor"]["batchSize"]) ?? 100, transform: { $0 })
         }
     }
     
@@ -403,13 +407,15 @@ extension CollectionQueryable {
             }
             
             return Promise(timeout: timeout ?? self.timeout ?? .seconds(30)) {
-                let reply = try self.database.execute(command: command, writing: false)
+                let cursorConnection = try connection ?? (try self.database.server.reserveConnection(authenticatedFor: self.collection.database))
+                
+                let reply = try self.database.execute(command: command, writing: false, overConnection: cursorConnection)
                 
                 guard let responseDoc = reply.documents.first, let cursorDoc = Document(responseDoc["cursor"]) else {
                     throw MongoError.invalidResponse(documents: reply.documents)
                 }
                 
-                let cursor = try Cursor(cursorDocument: cursorDoc, collection: self.collection, chunkSize: Int32(batchSize), transform: { doc in
+                let cursor = try Cursor(cursorDocument: cursorDoc, collection: self.collection, connection: cursorConnection, chunkSize: Int32(batchSize), transform: { doc in
                     return doc
                 })
                 
@@ -421,12 +427,6 @@ extension CollectionQueryable {
             return Promise(timeout: timeout ?? self.timeout ?? .seconds(30)) {
                 let cursorConnection = try connection ?? (try self.database.server.reserveConnection(authenticatedFor: self.collection.database))
                 
-                defer {
-                    if connection != nil {
-                        self.database.server.returnConnection(cursorConnection)
-                    }
-                }
-                
                 var reply = try self.database.server.sendAndAwait(message: queryMsg, overConnection: cursorConnection)
                 
                 if let limit = limit {
@@ -437,7 +437,7 @@ extension CollectionQueryable {
                 
                 var returned: Int = 0
                 
-                let cursor = Cursor(namespace: self.fullCollectionName, collection: self.collection, cursorID: reply.cursorID, initialData: reply.documents, chunkSize: Int32(batchSize), transform: { doc in
+                let cursor = Cursor(namespace: self.fullCollectionName, collection: self.collection, connection: cursorConnection, cursorID: reply.cursorID, initialData: reply.documents, chunkSize: Int32(batchSize), transform: { doc in
                     if let limit = limit {
                         guard returned < limit else {
                             return nil

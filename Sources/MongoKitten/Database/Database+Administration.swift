@@ -11,8 +11,6 @@
 import Foundation
 
 extension Database {
-
-
     /// Creates a new collection explicitly.
     ///
     /// Because MongoDB creates a collection implicitly when the collection is first referenced in a
@@ -69,7 +67,9 @@ extension Database {
             request["filter"] = filter
         }
 
-        let reply = try execute(command: request)
+        let connection = try server.reserveConnection(authenticatedFor: self)
+        
+        let reply = try execute(command: request, using: connection)
 
         let result = try firstDocument(in: reply)
 
@@ -81,7 +81,7 @@ extension Database {
             throw MongoError.commandFailure(error: result)
         }
 
-        return try Cursor(cursorDocument: cursor, collection: self["$cmd"], chunkSize: 10, transform: { $0 })
+        return try Cursor(cursorDocument: cursor, collection: self["$cmd"], connection: connection, chunkSize: 10, transform: { $0 })
     }
     
     public func getCollectionInfos(matching filter: Document? = nil) throws -> AnyIterator<Document> {

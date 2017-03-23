@@ -66,6 +66,8 @@ public final class Server {
         print(doc)
     }
     
+    public var cursorStrategy: CursorStrategy = .lazy
+    
     /// The ClientSettings used to connect to server(s)
     internal var clientSettings: ClientSettings
     

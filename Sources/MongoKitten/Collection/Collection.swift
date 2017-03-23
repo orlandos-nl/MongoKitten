@@ -151,41 +151,6 @@ public final class Collection: CollectionQueryable {
     
     // Read
     
-    /// Executes a query on this `Collection` with a `Document`
-    ///
-    /// This is used to execute DBCommands. For finding `Document`s we recommend the `find` command
-    ///
-    /// For more information: https://docs.mongodb.com/manual/reference/mongodb-wire-protocol/
-    ///
-    /// - parameter query: The document that we're matching against in this collection
-    /// - parameter flags: The Query Flags that we'll use for this query
-    /// - parameter fetchChunkSize: The initial amount of returned Documents. We recommend at least 10 Documents.
-    ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    ///
-    /// - returns: A Cursor pointing to the response Documents.
-    public func execute(command: Document = [], usingFlags flags: QueryFlags = [], fetching fetchChunkSize: Int = 100, timeout: TimeInterval = 0) throws -> Cursor
-        <Document> {
-        precondition(fetchChunkSize < Int(Int32.max))
-        
-        let timeout = timeout > 0 ? timeout : database.server.defaultTimeout
-        
-        let connection = try database.server.reserveConnection(writing: true, authenticatedFor: self.database)
-        
-        defer {
-            database.server.returnConnection(connection)
-        }
-        
-        let queryMsg = Message.Query(requestID: database.server.nextMessageID(), flags: flags, collection: self, numbersToSkip: 0, numbersToReturn: Int32(fetchChunkSize), query: command, returnFields: nil)
-        
-        let response = try self.database.server.sendAndAwait(message: queryMsg, overConnection: connection, timeout: timeout)
-        guard let cursor = try Cursor(namespace: self.fullName, collection: self, reply: response, chunkSize: Int32(fetchChunkSize), transform: { $0 }) else {
-            throw MongoError.invalidReply
-        }
-        
-        return cursor
-    }
-    
     /// Finds `Document`s in this `Collection`
     ///
     /// Can be used to execute DBCommands in MongoDB 2.6 and below. Be careful!
@@ -532,11 +497,7 @@ public final class Collection: CollectionQueryable {
         
         let connection = try database.server.reserveConnection(authenticatedFor: self.database)
         
-        defer {
-            database.server.returnConnection(connection)
-        }
-        
-        return try Cursor(cursorDocument: cursorDocument, collection: self, chunkSize: 100, transform: { $0 })
+        return try Cursor(cursorDocument: cursorDocument, collection: self, connection: connection, chunkSize: 100, transform: { $0 })
     }
     
     /// Modifies the collection. Requires access to `collMod`

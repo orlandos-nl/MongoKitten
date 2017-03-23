@@ -106,10 +106,6 @@ public class CollectionSlice<Element> : CollectionQueryable, Sequence, IteratorP
         return CollectionSlice<B>(cursor: cursor)
     }
     
-    public init<B>(base: Cursor<B>, transform: @escaping (B) throws -> (Element?)) throws {
-        self.cursor = try Cursor<Element>(base: base, transform: transform)
-    }
-    
     internal init(cursor: Cursor<Element>) {
         self.cursor = cursor
     }

@@ -11,6 +11,12 @@
 import Foundation
 import LogKitten
 import BSON
+import Schrodinger
+
+public enum CursorStrategy {
+    case lazy
+    case agressive
+}
 
 /// A Cursor is a pointer to a sequence/collection of Documents on the MongoDB server.
 ///
@@ -33,7 +39,11 @@ public final class Cursor<T> {
     // documents already received by the server
     fileprivate var data: [T]
     
+    fileprivate let connection: Connection
+    
     fileprivate var position = 0
+    
+    public var strategy: CursorStrategy? = nil
     
     /// A closure that transforms a document to another type if possible, otherwise `nil`
     typealias Transformer = (Document) throws -> (T?)
@@ -42,24 +52,25 @@ public final class Cursor<T> {
     let transform: Transformer
     
     /// This initializer creates a base cursor from a reply message
-    internal convenience init?(namespace: String, collection: Collection, reply: ServerReply, chunkSize: Int32, transform: @escaping Transformer) throws {
-        self.init(namespace: namespace, collection: collection, cursorID: reply.cursorID, initialData: try reply.documents.flatMap(transform), chunkSize: chunkSize, transform: transform)
+    internal convenience init?(namespace: String, collection: Collection, connection: Connection, reply: ServerReply, chunkSize: Int32, transform: @escaping Transformer) throws {
+        self.init(namespace: namespace, collection: collection, connection: connection, cursorID: reply.cursorID, initialData: try reply.documents.flatMap(transform), chunkSize: chunkSize, transform: transform)
     }
     
     /// This initializer creates a base cursor from a replied Document
-    internal convenience init(cursorDocument cursor: Document, collection: Collection, chunkSize: Int32, transform: @escaping Transformer) throws {
+    internal convenience init(cursorDocument cursor: Document, collection: Collection, connection: Connection, chunkSize: Int32, transform: @escaping Transformer) throws {
         guard let cursorID = Int(cursor["id"]), let namespace = String(cursor["ns"]), let firstBatch = Document(cursor["firstBatch"]) else {
             throw MongoError.cursorInitializationError(cursorDocument: cursor)
         }
         
-        self.init(namespace: namespace, collection: collection, cursorID: cursorID, initialData: try firstBatch.arrayValue.flatMap{ Document($0) }.flatMap(transform), chunkSize: chunkSize, transform: transform)
+        self.init(namespace: namespace, collection: collection, connection: connection, cursorID: cursorID, initialData: try firstBatch.arrayValue.flatMap{ Document($0) }.flatMap(transform), chunkSize: chunkSize, transform: transform)
     }
     
     /// This initializer creates a base cursor from provided specific data
-    internal init(namespace: String, collection: Collection, cursorID: Int, initialData: [T], chunkSize: Int32, transform: @escaping Transformer) {
+    internal init(namespace: String, collection: Collection, connection: Connection, cursorID: Int, initialData: [T], chunkSize: Int32, transform: @escaping Transformer) {
         self.namespace = namespace
         self.collection = collection
         self.cursorID = cursorID
+        self.connection = connection
         self.data = initialData
         self.chunkSize = chunkSize
         self.transform = transform
@@ -75,6 +86,7 @@ public final class Cursor<T> {
         self.collection = base.collection
         self.cursorID = base.cursorID
         self.chunkSize = base.chunkSize
+        self.connection = try collection.database.server.reserveConnection(authenticatedFor: self.collection.database)
         self.transform = {
             if let bValue = try base.transform($0) {
                 return try transform(bValue)
@@ -84,42 +96,41 @@ public final class Cursor<T> {
         }
         self.data = try base.data.flatMap(transform)
     }
+
+    var fetching: Bool = false
     
     /// Gets more information and puts it in the buffer
-    fileprivate func getMore() throws {
-        do {
-            if collection.database.server.serverData?.maxWireVersion ?? 0 >= 4 {
-                let reply = try collection.database.execute(command: [
-                    "getMore": Int(self.cursorID),
-                    "collection": collection.name,
-                    "batchSize": Int32(chunkSize)
-                    ], writing: false)
-                
-                let documents = [Primitive](reply.documents.first?["cursor"]["nextBatch"]) ?? []
-                for value in documents {
-                    if let doc = try transform(Document(value) ?? [:]) {
-                        self.data.append(doc)
+    fileprivate func getMore() throws -> Promise<Void> {
+        return async {
+            do {
+                if self.collection.database.server.serverData?.maxWireVersion ?? 0 >= 4 {
+                    try self.collection.database
+                    let reply = try self.collection.database.execute(command: [
+                        "getMore": Int(self.cursorID),
+                        "collection": self.collection.name,
+                        "batchSize": Int32(self.chunkSize)
+                        ], writing: false)
+                    
+                    let documents = [Primitive](reply.documents.first?["cursor"]["nextBatch"]) ?? []
+                    for value in documents {
+                        if let doc = try self.transform(Document(value) ?? [:]) {
+                            self.data.append(doc)
+                        }
                     }
+                    
+                    self.cursorID = Int(reply.documents.first?["cursor"]["id"]) ?? -1
+                } else {
+                    let request = Message.GetMore(requestID: self.collection.database.server.nextMessageID(), namespace: self.namespace, numberToReturn: self.chunkSize, cursor: self.cursorID)
+                    
+                    let reply = try self.collection.database.server.sendAndAwait(message: request, overConnection: self.connection)
+                    
+                    self.data += try reply.documents.flatMap(self.transform)
+                    self.cursorID = reply.cursorID
                 }
-                
-                self.cursorID = Int(reply.documents.first?["cursor"]["id"]) ?? -1
-            } else {
-                let connection = try collection.database.server.reserveConnection(authenticatedFor: self.collection.database)
-                
-                defer {
-                    collection.database.server.returnConnection(connection)
-                }
-                
-                let request = Message.GetMore(requestID: collection.database.server.nextMessageID(), namespace: namespace, numberToReturn: chunkSize, cursor: cursorID)
-                
-                let reply = try collection.database.server.sendAndAwait(message: request, overConnection: connection)
-                
-                self.data += try reply.documents.flatMap(transform)
-                self.cursorID = reply.cursorID
+            } catch {
+                log.error("Could not fetch extra data from the cursor due to error: \(error)")
+                self.collection.database.server.cursorErrorHandler(error)
             }
-        } catch {
-            log.error("Could not fetch extra data from the cursor due to error: \(error)")
-            collection.database.server.cursorErrorHandler(error)
         }
     }
     
@@ -143,6 +154,8 @@ public final class Cursor<T> {
                 collection.database.server.cursorErrorHandler(error)
             }
         }
+        
+        self.collection.database.server.returnConnection(connection)
     }
 }
 
@@ -156,14 +169,26 @@ extension Cursor : Sequence, IteratorProtocol {
     public func next() -> T? {
         defer { position += 1 }
         
-        if position >= self.data.count && self.cursorID != 0 {
-            position = 0
-            self.data = []
-            // Get more data!
+        switch strategy ?? collection.database.server.cursorStrategy {
+        case .lazy:
+            if position >= self.data.count && self.cursorID != 0 {
+                position = 0
+                self.data = []
+                // Get more data!
+                do {
+                    try self.getMore()
+                } catch {
+                    return nil
+                }
+            }
+        case .agressive:
             do {
                 try self.getMore()
-            } catch {
-                return nil
+            } catch { }
+            
+            if position > 100 {
+                position -= 100
+                self.data.removeFirst(100)
             }
         }
         

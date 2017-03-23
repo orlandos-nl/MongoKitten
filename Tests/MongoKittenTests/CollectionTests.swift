@@ -58,6 +58,24 @@ class CollectionTests: XCTestCase {
         try! TestManager.disconnect()
     }
     
+    func testAgressiveZipFetching() throws {
+        for db in TestManager.dbs {
+            var counter = 0
+            
+            db.server.cursorStrategy = .agressive
+            
+            defer {
+                db.server.cursorStrategy = .lazy
+            }
+            
+            for _ in try db["zips"].find() {
+                counter += 1
+            }
+
+            XCTAssertEqual(counter, 29353)
+        }
+    }
+    
     func testEverything() throws {
         let everything: [() throws -> Void] = [
             testUniqueIndex,
