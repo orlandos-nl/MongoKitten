@@ -20,7 +20,7 @@ Add this to your `Package.swift` for the stable
 
 Or add this to use with Kitura
 
-`.Package(url: "https://github.com/lgaches/MongoKitten.git", "3.1.0-beta3")`
+`.Package(url: "https://github.com/lgaches/MongoKitten.git", majorVersion: 3)`
 
 And `import MongoKitten` in your project.
 
