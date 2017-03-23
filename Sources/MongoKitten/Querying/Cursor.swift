@@ -99,16 +99,16 @@ public final class Cursor<T> {
     var fetching: Bool = false
     
     /// Gets more information and puts it in the buffer
+    @discardableResult
     fileprivate func getMore() throws -> Promise<Void> {
         return async {
             do {
                 if self.collection.database.server.serverData?.maxWireVersion ?? 0 >= 4 {
-                    try self.collection.database
                     let reply = try self.collection.database.execute(command: [
                         "getMore": Int(self.cursorID),
                         "collection": self.collection.name,
                         "batchSize": Int32(self.chunkSize)
-                        ], writing: false)
+                        ], using: self.connection)
                     
                     let documents = [Primitive](reply.documents.first?["cursor"]["nextBatch"]) ?? []
                     for value in documents {
@@ -141,8 +141,6 @@ public final class Cursor<T> {
     deinit {
         if cursorID != 0 {
             do {
-                let connection = try collection.database.server.reserveConnection(authenticatedFor: self.collection.database)
-                
                 defer {
                     collection.database.server.returnConnection(connection)
                 }
@@ -175,7 +173,7 @@ extension Cursor : Sequence, IteratorProtocol {
                 self.data = []
                 // Get more data!
                 do {
-                    try self.getMore()
+                    _ = try self.getMore().await()
                 } catch {
                     return nil
                 }

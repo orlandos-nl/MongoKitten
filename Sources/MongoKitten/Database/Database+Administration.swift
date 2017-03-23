@@ -78,10 +78,16 @@ extension Database {
             log.error(result)
             log.error("The collection infos were being found using the following filter")
             log.error(filter ?? [:])
+            self.server.returnConnection(connection)
             throw MongoError.commandFailure(error: result)
         }
 
-        return try Cursor(cursorDocument: cursor, collection: self["$cmd"], connection: connection, chunkSize: 10, transform: { $0 })
+        do {
+            return try Cursor(cursorDocument: cursor, collection: self["$cmd"], connection: connection, chunkSize: 10, transform: { $0 })
+        } catch {
+            self.server.returnConnection(connection)
+            throw error
+        }
     }
     
     public func getCollectionInfos(matching filter: Document? = nil) throws -> AnyIterator<Document> {

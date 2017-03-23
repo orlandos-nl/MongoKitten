@@ -9,44 +9,39 @@
 //
 
 import Foundation
-import Socks
-import SocksCore
+import Sockets
 import TLS
 
 public final class MongoSocket: MongoTCP {
-
-    private let plainClient: Socks.TCPClient?
+    private let plainClient: TCPInternetSocket?
     private let sslClient: TLS.Socket?
     private var sslEnabled = false
 
     public init(address hostname: String, port: UInt16, options: [String: Any]) throws {
-
         self.sslEnabled = options["sslEnabled"] as? Bool ?? false
 
         if sslEnabled {
             plainClient = nil
             let address = hostname.lowercased() == "localhost" ? InternetAddress.localhost(port: port) : InternetAddress.init(hostname: hostname, port: port)
 
-            let internetSocket = try TCPInternetSocket(address: address)
-            let invalidCertificateAllowed = options["invalidCertificateAllowed"] as? Bool ?? false
-            let invalidHostNameAllowed = options["invalidHostNameAllowed"] as? Bool ?? false
-            let config = try TLS.Config(mode: .client, certificates: .defaults, verifyHost: !invalidHostNameAllowed, verifyCertificates: !invalidCertificateAllowed)
-
-            sslClient = try TLS.Socket(config: config, socket: internetSocket)
-            try sslClient?.connect(servername: hostname)
+            let internetSocket = try TCPInternetSocket(address, scheme: "mongodb")
+            
+            sslClient = try TLS.InternetSocket(internetSocket, TLS.Context(.client))
+            try sslClient?.socket.connect()
         } else {
             sslClient = nil
             let address = hostname.lowercased() == "localhost" ? InternetAddress.localhost(port: port) : InternetAddress(hostname: hostname, port: port)
-            plainClient = try TCPClient(address: address)
+            plainClient = try TCPInternetSocket(address, scheme: "mongodb")
+            try plainClient?.connect()
         }
     }
 
     /// Sends the data to the other side of the connection
     public func send(data binary: [UInt8]) throws {
         if sslEnabled {
-            try sslClient?.send(binary)
+            try sslClient?.socket.write(binary, flushing: true)
         } else {
-            try plainClient?.send(bytes: binary)
+            try plainClient?.write(binary, flushing: true)
         }
     }
 
@@ -55,19 +50,19 @@ public final class MongoSocket: MongoTCP {
         buffer.removeAll()
         if sslEnabled {
             guard let sslClient = sslClient else { throw MongoSocketError.clientNotInitialized }
-            buffer.append(contentsOf: try sslClient.receive(max: Int(UInt16.max)))
+            buffer.append(contentsOf: try sslClient.socket.read(max: Int(UInt16.max)))
         } else {
             guard let plainClient = plainClient else { throw MongoSocketError.clientNotInitialized }
-            buffer.append(contentsOf: try plainClient.receive(maxBytes: Int(UInt16.max)))
+            buffer.append(contentsOf: try plainClient.read(max: Int(UInt16.max)))
         }
     }
 
     /// `true` when connected, `false` otherwise
     public var isConnected: Bool {
         if sslEnabled {
-            return !(sslClient?.socket.closed ?? false)
+            return !(sslClient?.socket.isClosed ?? false)
         } else {
-            return !(plainClient?.socket.closed ?? false)
+            return !(plainClient?.isClosed ?? false)
         }
     }
 
