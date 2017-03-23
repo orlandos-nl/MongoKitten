@@ -12,7 +12,6 @@
 import Dispatch
 import Foundation
 import BSON
-import LogKitten
 import CryptoSwift
 
 /// Authentication extensions

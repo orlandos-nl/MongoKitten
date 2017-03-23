@@ -10,7 +10,6 @@
 
 import Schrodinger
 import Foundation
-import LogKitten
 import Dispatch
 import MongoSocket
 

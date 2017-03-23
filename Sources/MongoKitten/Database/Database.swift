@@ -11,7 +11,6 @@
 import Foundation
 import BSON
 import Dispatch
-import LogKitten
 
 /// A Mongo Database. Cannot be publically initialized.
 /// But you can get a database object by subscripting `Server` with a `String` as the database name
