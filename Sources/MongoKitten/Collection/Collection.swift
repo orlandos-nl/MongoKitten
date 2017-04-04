@@ -19,16 +19,20 @@ public typealias MongoCollection = Collection
 ///
 /// A grouping of MongoDB documents. A collection is the equivalent of an RDBMS table. A collection exists within a single database. Collections do not enforce a schema. Documents within a collection can have different fields. Typically, all documents in a collection have a similar or related purpose. See Namespaces.
 public final class Collection: CollectionQueryable {
+    /// TODO: Fully expose/implement
     var timeout: DispatchTimeInterval?
 
+    /// Internally used for CollectionQueryable
     var collection: Collection {
         return self
     }
     
+    /// Internally used for CollectionQueryable
     var collectionName: String {
         return self.name
     }
     
+    /// Internally used for CollectionQueryable
     var fullCollectionName: String {
         return self.fullName
     }
@@ -103,10 +107,16 @@ public final class Collection: CollectionQueryable {
     
     // Create
     
+    /// Inserts/appends the provided Document to this collection.
+    ///
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     public func append(_ document: Document) throws {
         try self.insert(document)
     }
     
+    /// Inserts/appends the provided Documents to this collection.
+    ///
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     public func append(contentsOf documents: [Document]) throws {
         try self.insert(contentsOf: documents)
     }
@@ -117,7 +127,7 @@ public final class Collection: CollectionQueryable {
     ///
     /// - parameter document: The BSON Document to be inserted
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     ///
     /// - returns: The inserted document's id
     @discardableResult
@@ -132,7 +142,7 @@ public final class Collection: CollectionQueryable {
         return newId
     }
     
-    /// TODO: Detect how many bytes are being sent. Max is 48000000 bytes or 48MB
+    /// TODO: Detect how many bytes are being sent. The default limit is 48000000 bytes or 48MB
     ///
     /// Inserts multiple documents in this collection and adds a BSON ObjectId to documents that do not have an "_id" field
     ///
@@ -140,9 +150,10 @@ public final class Collection: CollectionQueryable {
     ///
     /// - parameter documents: The BSON Documents that should be inserted
     /// - parameter ordered: On true we'll stop inserting when one document fails. On false we'll ignore failed inserts
-    /// - parameter timeout: A custom timeout. The default timeout is 60 seconds + 1 second for every 50 documents, so when inserting 5000 documents at once, the timeout is 560 seconds.
+    /// - parameter readConcern: The read concern to apply to this find operation
+    /// - parameter afterTimeout: A custom timeout. The default timeout is 60 seconds + 1 second for every 50 documents, so when inserting 5000 documents at once, the timeout is 560 seconds.
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     ///
     /// - returns: The documents' ids
     @discardableResult
@@ -162,10 +173,12 @@ public final class Collection: CollectionQueryable {
     /// - parameter sort: The Sort Specification used to sort the found Documents
     /// - parameter projection: The Projection Specification used to filter which fields to return
     /// - parameter skip: The amount of Documents to skip before returning the matching Documents
+    /// - parameter readConcern: The read concern to apply to this find operation
+    /// - parameter collation: The collation to use when comparing strings
     /// - parameter limit: The maximum amount of matching documents to return
     /// - parameter batchSize: The initial amount of Documents to return.
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     ///
     /// - returns: A cursor pointing to the found Documents
     public func find(_ filter: Query? = nil, sortedBy sort: Sort? = nil, projecting projection: Projection? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil, skipping skip: Int? = nil, limitedTo limit: Int? = nil, withBatchSize batchSize: Int = 100) throws -> CollectionSlice<Document> {
@@ -186,8 +199,10 @@ public final class Collection: CollectionQueryable {
     /// - parameter sort: The Sort Specification used to sort the found Documents
     /// - parameter projection: The Projection Specification used to filter which fields to return
     /// - parameter skip: The amount of Documents to skip before returning the matching Documents
+    /// - parameter readConcern: The read concern to apply to this find operation
+    /// - parameter collation: The collation to use when comparing strings
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     ///
     /// - returns: The found Document
     public func findOne(_ filter: Query? = nil, sortedBy sort: Sort? = nil, projecting projection: Projection? = nil, skipping skip: Int? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil) throws -> Document? {
@@ -204,16 +219,15 @@ public final class Collection: CollectionQueryable {
     ///
     /// For more information about this command: https://docs.mongodb.com/manual/reference/command/update/#dbcmd.update
     ///
-    /// TODO: Work on improving the updatefailure.  We don't handle writerrrors. Try using a normal query with multiple on true
-    ///
-    /// - parameter updates: A list of updates to be executed.
+    /// - parameters updates: A list of updates to be executed.
     ///     `query`: A filter to narrow down which Documents you want to update
     ///     `update`: The fields and values to update
     ///     `upsert`: If there isn't anything to update.. insert?
     ///     `multi`: Update all matching Documents instead of just one?
+    /// - parameter writeConcern: The `WriteConcern` used for this operation
     /// - parameter ordered: If true, stop updating when one operation fails - defaults to true
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     ///
     /// - returns: The amount of updated documents
     @discardableResult
@@ -232,9 +246,10 @@ public final class Collection: CollectionQueryable {
     /// - parameter updated: The data to update these Documents with
     /// - parameter upsert: Insert when we can't find anything to update
     /// - parameter multi: Updates more than one result if true
+    /// - parameter writeConcern: The `WriteConcern` used for this operation
     /// - parameter ordered: If true, stop updating when one operation fails - defaults to true
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     @discardableResult
     public func update(_ filter: Query = [:], to updated: Document, upserting upsert: Bool = false, multiple multi: Bool = false, writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
         return try self.update(bulk: [(filter: filter, to: updated, upserting: upsert, multiple: multi)], writeConcern: writeConcern, stoppingOnError: ordered)
@@ -247,9 +262,10 @@ public final class Collection: CollectionQueryable {
     /// For more information: https://docs.mongodb.com/manual/reference/command/delete/#dbcmd.delete
     ///
     /// - parameter removals: A list of filters to match documents against. Any given filter can be used infinite amount of removals if `0` or otherwise as often as specified in the limit
+    /// - parameter writeConcern: The `WriteConcern` used for this operation
     /// - parameter stoppingOnError: If true, stop removing when one operation fails - defaults to true
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     @discardableResult
     public func remove(bulk removals: [(filter: Query, limit: Int)], writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
         return try self.remove(removals: removals, writeConcern: writeConcern, ordered: ordered, connection: nil, timeout: nil).await()
@@ -263,28 +279,28 @@ public final class Collection: CollectionQueryable {
     /// - parameter limit: The amount of times this filter can be used to find and remove a Document (0 is every document)
     /// - parameter ordered: If true, stop removing when one operation fails - defaults to true
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     @discardableResult
     public func remove(_ filter: Query? = [:], limiting limit: Int = 0, writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
         return try self.remove(bulk: [(filter: filter ?? [:], limit: limit)], writeConcern: writeConcern, stoppingOnError: ordered)
     }
     
-    /// The drop command removes an entire collection from a database. This command also removes any indexes associated with the dropped collection.
+    /// Removes this collection from the server.
     ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/drop/#dbcmd.drop
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     public func drop() throws {
         _ = try self.database.execute(command: ["drop": self.name])
     }
     
-    /// Changes the name of an existing collection. This method supports renames within a single database only. To move the collection to a different database, use the `move` method on `Collection`.
+    /// Changes the name of an existing collection. To move the collection to a different database, use `move` instead.
     ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/renameCollection/#dbcmd.renameCollection
     ///
     /// - parameter to: The new name for this collection
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     public func rename(to newName: String) throws {
         try self.move(to: database, named: newName)
     }
@@ -298,7 +314,7 @@ public final class Collection: CollectionQueryable {
     /// - parameter to: The database to move this collection to
     /// - parameter named: The new name for this collection
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     public func move(to database: Database, named collectionName: String? = nil, overwritingExistingCollection dropOldTarget: Bool? = nil) throws {
         // TODO: Fail if the target database exists.
         var command: Document = [
@@ -318,45 +334,31 @@ public final class Collection: CollectionQueryable {
     ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/count/#dbcmd.count
     ///
-    /// - parameter filter: Optional. If specified limits the returned amount to anything matching this query
-    /// - parameter limit: Optional. Limits the amount of scanned `Document`s as specified
-    /// - parameter skip: Optional. The amount of Documents to skip before counting
+    /// - parameter filter: If specified limits the returned amount to anything matching this query
+    /// - parameter limit: Limits the amount of scanned `Document`s as specified
+    /// - parameter skip: The amount of Documents to skip before counting
+    /// - parameter readConcern: The read concern to apply to this operation
+    /// - parameter collation: The collation to apply to string comparisons
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     ///
     /// - returns: The amount of matching `Document`s
     public func count(_ filter: Query? = nil, limiting limit: Int? = nil, skipping skip: Int? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil) throws -> Int {
         return try self.count(filter: filter, limit: limit, skip: skip, readConcern: readConcern, collation: collation, connection: nil, timeout: nil).await()
     }
     
-    /// `findAndModify` only has two operations that can be used. Update and Delete
-    ///
-    /// To make these types of operations easily accessible in `findAndModify` this enum exists
-    public enum FindAndModifyOperation {
-        /// Remove the found `Document`
-        case remove
-        
-        /// Update the found `Document` with the provided `Document`
-        ///
-        /// - parameter with: Updated the found `Document` with this `Document`
-        /// - parameter returnModified: Return the modified `Document`?
-        /// - parameter upserting: Insert if it doesn't exist yet
-        case update(with: Document, returnModified: Bool, upserting: Bool)
-    }
-    
-    /// Finds and modifies the first `Document` in this `Collection`. If a query/filter is provided that'll be used to find this `Document`.
+    /// Finds and removes the first `Document` in this `Collection` that matches the provided `Query`.
     ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/findAndModify/#dbcmd.findAndModify
     ///
-    /// - parameter query: The `Query` to match the `Document`s in the `Collection` against
-    /// - parameter sort: The sorting specification to use while searching
-    /// - parameter action: A `FindAndModifyOperation` that specified which action to execute and it's required metadata
+    /// - parameter query: The `Query` to match the `Document`s in the `Collection` against for removal
+    /// - parameter sort: The sort order specification to use while searching for the first Document.
     /// - parameter projection: Which fields to project and how according to projection specification
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     ///
     /// - returns: The `Value` received from the server as specified in the link of the additional information
-    public func findAndModify(matching query: Query? = nil, sortedBy sort: Sort? = nil, action: FindAndModifyOperation, projection: Projection? = nil) throws -> BSON.Primitive {
+    public func findAndRemove(_ query: Query? = nil, sortedBy sort: Sort? = nil, projection: Projection? = nil) throws -> Document {
         var command: Document = ["findAndModify": self.name]
         
         if let query = query {
@@ -367,14 +369,7 @@ public final class Collection: CollectionQueryable {
             command["sort"] = sort
         }
         
-        switch action {
-        case .remove:
-            command["remove"] = true
-        case .update(let with, let new, let upsert):
-            command["update"] = with
-            command["new"] = new
-            command["upsert"] = upsert
-        }
+        command["remove"] = true
         
         if let projection = projection {
             command["fields"] = projection
@@ -382,21 +377,84 @@ public final class Collection: CollectionQueryable {
         
         let document = try firstDocument(in: try database.execute(command: command))
         
-        guard Int(document["ok"]) == 1 && (Document(document["writeErrors"]) ?? [:]).count == 0 else {
+        guard Int(document["ok"]) == 1 && (Document(document["writeErrors"]) ?? [:]).count == 0, let value = Document(document["value"]) else {
             throw MongoError.commandFailure(error: document)
         }
         
-        return document["value"] ?? Null()
+        return value
     }
     
+    /// Specifies to `findAndUpdate` what kind of Document to return.
+    public enum ReturnedDocument {
+        /// The new Document, after updating it
+        case new
+        
+        /// The old Document, before updating it
+        case old
+        
+        /// Converts this enum case to a boolean for `findAndUpdate`
+        internal var boolean: Bool {
+            switch self {
+            case .new:
+                return true
+            case .old:
+                return false
+            }
+        }
+    }
+    
+    /// Finds and removes the first `Document` in this `Collection` that matches the provided `Query`.
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/findAndModify/#dbcmd.findAndModify
+    ///
+    /// - parameter query: The `Query` to match the `Document`s in the `Collection` against for removal
+    /// - parameter with: The new Document
+    /// - parameter upserting: Insert if no Document matches the query
+    /// - parameter returnedDocument: The specification that determens the returned value of this function
+    /// - parameter sort: The sort order specification to use while searching for the first Document.
+    /// - parameter projection: Which fields to project and how according to projection specification
+    ///
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
+    ///
+    /// - returns: The `Value` received from the server as specified in the link of the additional information
+    public func findAndUpdate(_ query: Query? = nil, with: Document, upserting: Bool? = nil, returnedDocument: ReturnedDocument = .old, sortedBy sort: Sort? = nil, projection: Projection? = nil) throws -> Document {
+        var command: Document = ["findAndModify": self.name]
+        
+        if let query = query {
+            command["query"] = query.queryDocument
+        }
+        
+        if let sort = sort {
+            command["sort"] = sort
+        }
+        
+        command["update"] = with
+        command["new"] = returnedDocument.boolean
+        command["upsert"] = upserting
+        
+        if let projection = projection {
+            command["fields"] = projection
+        }
+        
+        let document = try firstDocument(in: try database.execute(command: command))
+        
+        guard Int(document["ok"]) == 1 && (Document(document["writeErrors"]) ?? [:]).count == 0, let value = Document(document["value"]) else {
+            throw MongoError.commandFailure(error: document)
+        }
+        
+        return value
+    }
+
     /// Returns all distinct values for a key in this collection. Allows filtering using query
     ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/distinct/#dbcmd.distinct
     ///
-    /// - parameter on: The key that we distinct on
-    /// - parameter query: The query used to filter through the returned results
+    /// - parameter field: The key that we look for distincts for
+    /// - parameter query: The query applied on all Documents before passing allowing their field at this key to be a distinct
+    /// - parameter readConcern: The read concern to apply on this read operation.
+    /// - parameter collation: The collation used to compare strings
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     ///
     /// - returns: A list of all distinct values for this key
     public func distinct(on field: String, filtering query: Query? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil) throws -> [BSON.Primitive]? {
@@ -416,13 +474,10 @@ public final class Collection: CollectionQueryable {
     ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/createIndexes/#dbcmd.createIndexes
     ///
-    /// - parameter keys: A Document with a `String` as the key to index and `ascending` as a `Bool`
-    /// - parameter name: The name to identify the index
-    /// - parameter filter: Only index `Document`s matching this filter
-    /// - parameter buildInBackground: Builds the index in the background so that this operation doesn't block other database activities.
-    /// - parameter unique: Used to create unique fields like usernames. Default should be `false`
+    /// - parameter name: The name of this index used to identify it
+    /// - parameter parameters: All `IndexParameter` options applied to the index
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     public func createIndex(named name: String? = nil, withParameters parameters: IndexParameter...) throws {
         try self.createIndexes([(name: name, parameters: parameters)])
     }
@@ -431,9 +486,9 @@ public final class Collection: CollectionQueryable {
     ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/createIndexes/#dbcmd.createIndexes
     ///
-    /// - parameter indexes: The indexes to create using a Tuple as specified in `createIndex`
+    /// - parameter indexes: The indexes to create. Accepts an array of tuples (each tuple representing an Index) which an contain a name and always contains an array of `IndexParameter`.
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     public func createIndexes(_ indexes: [(name: String?, parameters: [IndexParameter])]) throws {
         guard let wireVersion = database.server.serverData?.maxWireVersion , wireVersion >= 2 else {
             throw MongoError.unsupportedOperations
@@ -468,7 +523,7 @@ public final class Collection: CollectionQueryable {
     ///
     /// - parameter index: The index name (as specified when creating the index) that will removed. `*` for all indexes
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     public func dropIndex(named index: String) throws {
         let reply = try database.execute(command: ["dropIndexes": self.name, "index": index])
         
@@ -478,11 +533,11 @@ public final class Collection: CollectionQueryable {
         }
     }
     
-    /// Lists all indexes for this collection
+    /// Lists all indexes for this collection as Documents
     ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/listIndexes/#dbcmd.listIndexes
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     ///
     /// - returns: A Cursor pointing to the Index results
     public func listIndexes() throws -> Cursor<Document> {
@@ -537,7 +592,7 @@ public final class Collection: CollectionQueryable {
     ///
     /// - parameter pipeline: An array of aggregation pipeline stages that process and transform the document stream as part of the aggregation pipeline.
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     ///
     /// - returns: A `Cursor` pointing to the found `Document`s
     public func aggregate(_ pipeline: AggregationPipeline, readConcern: ReadConcern? = nil, collation: Collation? = nil, options: [AggregationOptions] = []) throws -> Cursor<Document> {

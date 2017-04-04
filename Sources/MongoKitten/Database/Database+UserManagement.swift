@@ -23,7 +23,7 @@ extension Database {
     /// - parameter roles: The roles document as specified in the additional information
     /// - parameter customData: The optional custom information to store
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     public func createUser(_ user: String, password: String, roles: Document, customData: Document? = nil) throws {
         var command: Document = [
             "createUser": user,
@@ -58,7 +58,7 @@ extension Database {
     /// - parameter roles: The roles to grant
     /// - parameter customData: The optional custom data you'll give him
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     public func update(user username: String, password: String, roles: Document, customData: Document? = nil) throws {
         var command: Document = [
             "updateUser": username,
@@ -89,7 +89,7 @@ extension Database {
     ///
     /// - parameter user: The username from the user to drop
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     public func drop(user username: String) throws {
         let command: Document = [
             "dropUser": username
@@ -108,7 +108,7 @@ extension Database {
     ///
     /// For additional information: https://docs.mongodb.com/manual/reference/command/dropAllUsersFromDatabase/#dbcmd.dropAllUsersFromDatabase
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     public func dropAllUsers() throws {
         let command: Document = [
             "dropAllUsersFromDatabase": Int32(1)

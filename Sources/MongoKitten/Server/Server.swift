@@ -682,7 +682,7 @@ public final class Server {
     ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/listDatabases/#dbcmd.listDatabases
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     public func getDatabaseInfos() throws -> Document {
         let request: Document = ["listDatabases": 1]
         
@@ -693,7 +693,7 @@ public final class Server {
     
     /// Returns all existing databases on this server. **Requires access to the `admin` database**
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     ///
     /// - returns: All databases
     public func getDatabases() throws -> [Database] {
@@ -725,7 +725,7 @@ public final class Server {
     /// - parameter user: The database's credentials
     /// - parameter remoteHost: The optional remote host to copy from
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     public func copy(database db: String, to otherDatabase: String, as user: (user: String, nonce: String, password: String)? = nil, at remoteHost: String? = nil, slaveOk: Bool? = nil) throws {
         var command: Document = [
             "copydb": Int32(1),
@@ -767,7 +767,7 @@ public final class Server {
     ///
     /// - parameter url: The URL
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     public func clone(from url: String) throws {
         let command: Document = [
             "clone": url
@@ -789,7 +789,7 @@ public final class Server {
     ///
     /// - parameter force: Force the s
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     public func shutdown(forced force: Bool? = nil) throws {
         var command: Document = [
             "shutdown": Int32(1)
@@ -846,7 +846,7 @@ public final class Server {
     /// - parameter showCredentials: Do you want to fetch the user's credentials
     /// - parameter showPrivileges: Do you want to fetch the user's privileges
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     ///
     /// - returns: The user's information (plus optionally the credentials and privileges)
     public func getUserInfo(forUserNamed user: String, inDatabase database: Database? = nil, showCredentials: Bool? = nil, showPrivileges: Bool? = nil) throws -> Document {

@@ -445,7 +445,7 @@ extension CollectionQueryable {
                     return doc
                 })
                 
-                return CollectionSlice(cursor: cursor)
+                return CollectionSlice(cursor: cursor, filter: filter, sort: sort, projection: projection, skip: skip, limit: limit)
             }
         } else {
             let queryMsg = Message.Query(requestID: collection.database.server.nextMessageID(), flags: [], collection: collection, numbersToSkip: Int32(skip) ?? 0, numbersToReturn: Int32(batchSize), query: filter?.queryDocument ?? [], returnFields: projection?.document)
@@ -474,7 +474,7 @@ extension CollectionQueryable {
                     return doc
                 })
                 
-                return CollectionSlice(cursor: cursor)
+                return CollectionSlice(cursor: cursor, filter: filter, sort: sort, projection: projection, skip: skip, limit: limit)
             }
         }
     }

@@ -11,18 +11,17 @@ import Foundation
 
 
 extension Collection {
-
     /// Returns documents in order of proximity to a specified point, from the nearest to farthest. geoNear requires a geospatial index.
     ///
-    /// - parameters:
-    ///   - options: Geo Near options
-    ///   - readConcern: Specifies the read concern.
+    /// For more information: https://docs.mongodb.com/manual/reference/command/geoNear/
+    ///
+    /// - parameter options: Geo Near options
+    /// - parameter readConcern: Specifies the read concern.
     /// - returns: a Document with the results
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
-    /// - SeeAlso : https://docs.mongodb.com/manual/reference/command/geoNear/
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     func geoNear(options: GeoNearOptions, readConcern: ReadConcern? = nil) throws -> Document {
         var command: Document = ["geoNear": self.name,
-         "near":options.near,
+         "near": options.near,
          "spherical": options.spherical,
          "distanceField": options.distanceField,
          "limit": options.limit,

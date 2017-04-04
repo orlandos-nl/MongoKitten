@@ -24,7 +24,7 @@ extension Database {
     /// - parameter name: The name of the collection to create.
     /// - parameter options: Optionally, configuration options for creating this collection.
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     ///
     /// - returns: The created collection
     @discardableResult
@@ -58,7 +58,7 @@ extension Database {
     ///
     /// - parameter matching: The filter to apply when searching for this information
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     ///
     /// - returns: A cursor to the resulting documents with collection info
     internal func getCollectionInfos(matching filter: Document? = nil) throws -> Cursor<Document> {
@@ -96,7 +96,7 @@ extension Database {
 
     /// Gets the `Collection`s in this `Database`
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     ///
     /// - parameter matching: The filter to apply when looking for Collections
     ///
@@ -116,7 +116,7 @@ extension Database {
     ///
     /// For additional information: https://docs.mongodb.com/manual/reference/command/dropDatabase/#dbcmd.dropDatabase
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     public func drop() throws {
         let command: Document = [
             "dropDatabase": Int32(1)
@@ -136,7 +136,7 @@ extension Database {
     /// - parameter database: The new database name
     /// - parameter user: The optional user credentials that you'll use to authenticate in the new DB
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     public func copy(toDatabase database: String, asUser user: (user: String, nonce: String, password: String)? = nil) throws {
         try server.copy(database: self.name, to: database, as: user)
     }
@@ -150,7 +150,7 @@ extension Database {
     /// - parameter server: The server URI you're copying from
     /// - parameter filter: The query you're using to filter this
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     public func clone(toNamespace ns: String, fromServer server: String, filteredBy filter: Query? = nil) throws {
         var command: Document = [
             "cloneCollection": ns,
@@ -179,7 +179,7 @@ extension Database {
     /// - parameter from: The server URI you're copying from
     /// - parameter filtering: The document filter you're using to filter this
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     public func clone(toNamespace ns: String, fromServer server: String, filteredBy filter: Document? = nil) throws {
         var command: Document = [
             "cloneCollection": ns,
@@ -212,7 +212,7 @@ extension Database {
     /// - parameter otherCollection: The new name to clone it to
     /// - parameter capped: The new cap
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     public func clone(collection instance: Collection, toCappedCollectionNamed otherCollection: String, cappedTo capped: Int) throws {
         let command: Document = [
             "cloneCollectionAsCapped": instance.name,

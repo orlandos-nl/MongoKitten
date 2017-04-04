@@ -36,7 +36,7 @@ public class GridFS {
     /// - parameter in: In which database does this GridFS bucket reside
     /// - parameter named: The optional name of this GridFS bucket (by default "fs")
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred or when it can't create it's indexes
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred or when it can't create it's indexes
     public init(in database: Database, named bucketName: String = "fs") throws {
         files = database["\(bucketName).files"]
         chunks = database["\(bucketName).chunks"]
@@ -52,7 +52,7 @@ public class GridFS {
     ///
     /// - parameter byID: The hash to look for
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     ///
     /// - returns: The resulting file
     public func findOne(byID id: ObjectId) throws -> File? {
@@ -63,7 +63,7 @@ public class GridFS {
     ///
     /// - parameter filter: The filter to use
     ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     ///
     /// - returns: A cursor pointing to all resulting files
     public func find(_ filter: Query? = nil) throws -> Cursor<File> {
@@ -164,8 +164,8 @@ public class GridFS {
     /// - parameter withType: The optional MIME type to use for this data
     /// - parameter usingMetadata: The optional metadata to store with this file
     /// - parameter inChunksOf: The amount of bytes to put in one chunk
-    public func store(data nsdata: NSData, named filename: String? = nil, withType contentType: String? = nil, usingMetadata metadata: BSON.Primitive? = nil, inChunksOf chunkSize: Int = 255000) throws -> ObjectId {
-        return try self.store(data: Array(Data(referencing: nsdata)), named: filename, withType: contentType, usingMetadata: metadata, inChunksOf: chunkSize)
+    public func store(data: Data, named filename: String? = nil, withType contentType: String? = nil, usingMetadata metadata: BSON.Primitive? = nil, inChunksOf chunkSize: Int = 255000) throws -> ObjectId {
+        return try self.store(data: Array(data), named: filename, withType: contentType, usingMetadata: metadata, inChunksOf: chunkSize)
     }
     
     /// A file in GridFS
