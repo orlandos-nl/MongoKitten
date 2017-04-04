@@ -22,6 +22,7 @@ extension Database {
     /// For more information and a full list of options: https://docs.mongodb.com/manual/reference/command/create/
     ///
     /// - parameter name: The name of the collection to create.
+    /// - parameter validator: The Document validator to apply to all Documents in this collection. All Documents must match this query 
     /// - parameter options: Optionally, configuration options for creating this collection.
     ///
     /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
@@ -208,9 +209,9 @@ extension Database {
     ///
     /// For additional information: https://docs.mongodb.com/manual/reference/command/cloneCollectionAsCapped/#dbcmd.cloneCollectionAsCapped
     ///
-    /// - parameter collection: The collection to clone
+    /// - parameter instance: The collection to clone
     /// - parameter otherCollection: The new name to clone it to
-    /// - parameter capped: The new cap
+    /// - parameter capped: The new capacity to apply
     ///
     /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     public func clone(collection instance: Collection, toCappedCollectionNamed otherCollection: String, cappedTo capped: Int) throws {

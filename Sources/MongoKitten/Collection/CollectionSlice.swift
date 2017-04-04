@@ -11,6 +11,7 @@ import BSON
 import Dispatch
 import Schrodinger
 
+/// A subset of data in Collection
 public class CollectionSlice<Element> : CollectionQueryable, Sequence, IteratorProtocol {
     /// The timeout to apply on operations
     var timeout: DispatchTimeInterval?

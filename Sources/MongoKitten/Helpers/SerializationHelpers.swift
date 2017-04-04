@@ -8,11 +8,14 @@
 // See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of MongoKitten project authors
 //
 
+/// A protocol that requires conversion to binary
 internal protocol BSONBytesProtocol {
+    /// Serialization to binary
     func makeBytes() -> Bytes
 }
 
 extension Int : BSONBytesProtocol {
+    /// Serializes this Int to binary
     internal func makeBytes() -> Bytes {
         var integer = self.littleEndian
         return withUnsafePointer(to: &integer) {
@@ -24,6 +27,7 @@ extension Int : BSONBytesProtocol {
 }
 
 extension Int64 : BSONBytesProtocol {
+    /// Serializes this Int64 to binary
     internal func makeBytes() -> Bytes {
         let integer = self.littleEndian
         
@@ -41,6 +45,7 @@ extension Int64 : BSONBytesProtocol {
 }
 
 extension Int32 : BSONBytesProtocol {
+    /// Serializes this Int32 to binary
     internal func makeBytes() -> Bytes {
         let integer = self.littleEndian
         
@@ -54,6 +59,7 @@ extension Int32 : BSONBytesProtocol {
 }
 
 extension Int16 : BSONBytesProtocol {
+    /// Serializes this Int16 to binary
     internal func makeBytes() -> Bytes {
         let integer = self.littleEndian
         
@@ -65,12 +71,14 @@ extension Int16 : BSONBytesProtocol {
 }
 
 extension Int8 : BSONBytesProtocol {
-    internal func makeBytes() -> Bytes {
+    /// Serializes this Int8 to binary
+    internal func makeBytes() -> Byte {
         return [Byte(self)]
     }
 }
 
 extension UInt : BSONBytesProtocol {
+    /// Serializes this UInt to binary
     internal func makeBytes() -> Bytes {
         var integer = self.littleEndian
         return withUnsafePointer(to: &integer) {
@@ -82,6 +90,7 @@ extension UInt : BSONBytesProtocol {
 }
 
 extension UInt64 : BSONBytesProtocol {
+    /// Serializes this UInt64 to binary
     internal func makeBytes() -> Bytes {
         let integer = self.littleEndian
         
@@ -99,6 +108,7 @@ extension UInt64 : BSONBytesProtocol {
 }
 
 extension UInt32 : BSONBytesProtocol {
+    /// Serializes this UInt32 to binary
     internal func makeBytes() -> Bytes {
         let integer = self.littleEndian
         
@@ -112,6 +122,7 @@ extension UInt32 : BSONBytesProtocol {
 }
 
 extension UInt16 : BSONBytesProtocol {
+    /// Serializes this UInt16 to binary
     internal func makeBytes() -> Bytes {
         let integer = self.littleEndian
         
@@ -123,12 +134,14 @@ extension UInt16 : BSONBytesProtocol {
 }
 
 extension Byte : BSONBytesProtocol {
+    /// Serializes this byte to binary
     internal func makeBytes() -> Bytes {
         return [self]
     }
 }
 
 extension Double : BSONBytesProtocol {
+    /// Serializes this Double to binary
     internal func makeBytes() -> Bytes {
         var integer = self
         return withUnsafePointer(to: &integer) {

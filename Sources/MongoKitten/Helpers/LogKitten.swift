@@ -10,61 +10,86 @@ public protocol Logger {
 }
 
 extension Logger {
-    func verbose(_ message: Document) {
+    /// Logs a Document as verbose
+    public func verbose(_ message: Document) {
         self.verbose(String(bytes: message.makeExtendedJSON().serialize(), encoding: .utf8) ?? "")
     }
     
-    func debug(_ message: Document) {
+    /// Logs a Document as debug
+    public func debug(_ message: Document) {
         self.debug(String(bytes: message.makeExtendedJSON().serialize(), encoding: .utf8) ?? "")
     }
     
-    func info(_ message: Document) {
+    /// Logs a Document as info
+    public func info(_ message: Document) {
         self.info(String(bytes: message.makeExtendedJSON().serialize(), encoding: .utf8) ?? "")
     }
     
-    func warning(_ message: Document) {
+    /// Logs a Document as warning
+    public func warning(_ message: Document) {
         self.warning(String(bytes: message.makeExtendedJSON().serialize(), encoding: .utf8) ?? "")
     }
     
-    func error(_ message: Document) {
+    /// Logs a Document as error
+    public func error(_ message: Document) {
         self.error(String(bytes: message.makeExtendedJSON().serialize(), encoding: .utf8) ?? "")
     }
     
-    func fatal(_ message: Document) {
+    /// Logs a Document as fatal
+    public func fatal(_ message: Document) {
         self.fatal(String(bytes: message.makeExtendedJSON().serialize(), encoding: .utf8) ?? "")
     }
 }
 
+/// Doesn't log
 public struct NotLogger : Logger {
+    /// Doesn't log
     public func verbose(_ message: String) {}
+    
+    /// Doesn't log
     public func debug(_ message: String) {}
+    
+    /// Doesn't log
     public func info(_ message: String) {}
+    
+    /// Doesn't log
     public func warning(_ message: String) {}
+    
+    /// Doesn't log
     public func error(_ message: String) {}
+    
+    /// Doesn't log
     public func fatal(_ message: String) {}
 }
 
+/// Prints all logs
 public struct PrintLogger : Logger {
+    /// Prints a verbose log
     public func verbose(_ message: String) {
         print(message)
     }
     
+    /// Prints a debug log
     public func debug(_ message: String) {
         print(message)
     }
     
+    /// Prints an info log
     public func info(_ message: String) {
         print(message)
     }
     
+    /// Prints a warning log
     public func warning(_ message: String) {
         print(message)
     }
     
+    /// Prints an error log
     public func error(_ message: String) {
         print(message)
     }
     
+    /// Prints a fatal log
     public func fatal(_ message: String) {
         print(message)
     }

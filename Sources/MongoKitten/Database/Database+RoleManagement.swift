@@ -16,8 +16,10 @@ extension Database {
     ///
     /// For additional information: https://docs.mongodb.com/manual/reference/command/grantRolesToUser/#dbcmd.grantRolesToUser
     ///
-    /// - parameter roles: The roles to grants
-    /// - parameter user: The user's username to grant the roles to
+    /// TODO: Easier roleList creation
+    ///
+    /// - parameter roleList: The roles to grants
+    /// - parameter user: The user to grant the roles to
     ///
     /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     public func grant(roles roleList: Document, to user: String) throws {

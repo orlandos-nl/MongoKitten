@@ -10,12 +10,22 @@
 import BSON
 
 extension Document {
-    mutating func append(to collection: Collection) throws {
+    /// Appends this Document to a collection
+    ///
+    /// - parameter collection: The collection to append this Document to
+    ///
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
+    public mutating func append(to collection: Collection) throws {
         let id = try collection.insert(self)
         self["_id"] = id
     }
     
-    mutating func upsert(into collection: Collection) throws {
+    /// Upserts this Document into a collection.
+    ///
+    /// - parameter collection: The collection to upsert this Doucment into
+    ///
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
+    public mutating func upsert(into collection: Collection) throws {
         let id = self["_id"] ?? ObjectId()
         self["_id"] = id
         

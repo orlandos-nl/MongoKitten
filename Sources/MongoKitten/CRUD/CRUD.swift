@@ -11,20 +11,44 @@ import BSON
 import Schrodinger
 import Dispatch
 
+/// Makes it internally queryable
 protocol CollectionQueryable {
+    /// The full collection name
     var fullCollectionName: String { get }
+    
+    /// The short collection name
     var collectionName: String { get }
+    
+    /// The collection object that's being queried
     var collection: Collection { get }
+    
+    /// The database that this collection resides in
     var database: Database { get }
     
+    /// The read concern to apply by default
     var readConcern: ReadConcern? { get set }
+    
+    /// The write concern to apply by default
     var writeConcern: WriteConcern? { get set }
+    
+    /// The collation to apply by default
     var collation: Collation? { get set }
+    
+    /// The timeout to apply by default
     var timeout: DispatchTimeInterval? { get set }
 }
 
 /// Internal functions for common interactions with MongoDB (CRUD operations)
 extension CollectionQueryable {
+    /// Inserts a set of Documents
+    ///
+    /// - parameter documents: The documents to insert
+    /// - parameter ordered: When true, stops inserting when an error occurs
+    /// - parameter writeConcern: The write concern to use on the server
+    /// - parameter timeout: The timeout to wait for
+    /// - parameter connection: The connection to use
+    ///
+    /// - throws: An `InsertError` when a write error occurs
     func insert(documents: [Document], ordered: Bool?, writeConcern: WriteConcern?, timeout: DispatchTimeInterval?, connection: Connection?) throws -> Promise<[BSON.Primitive]> {
         let timeout: DispatchTimeInterval = timeout ?? .seconds(Int(database.server.defaultTimeout + (Double(documents.count) / 50)))
         
@@ -133,6 +157,14 @@ extension CollectionQueryable {
         }
     }
     
+    /// Applies a pipeline over a collection's contentrs
+    ///
+    /// - parameter pipeline: The pipeline to use
+    /// - parameter readConcern: The read concern to use on the server
+    /// - parameter collation: The collation to use for string comparison
+    /// - parameter options: The aggregation options to use
+    /// - parameter connection: The connection to use
+    /// - parameter timeout: The timeout to wait for
     func aggregate(_ pipeline: AggregationPipeline, readConcern: ReadConcern?, collation: Collation?, options: [AggregationOptions], connection: Connection?, timeout: DispatchTimeInterval?) throws -> Promise<Cursor<Document>> {
         // construct command. we always use cursors in MongoKitten, so that's why the default value for cursorOptions is an empty document.
         var command: Document = ["aggregate": self.collectionName, "pipeline": pipeline.pipelineDocument, "cursor": ["batchSize": 100]]

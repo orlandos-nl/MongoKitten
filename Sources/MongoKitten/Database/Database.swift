@@ -107,7 +107,7 @@ public final class Database {
     
     /// Initializes this Database with a connection String.
     ///
-    /// Requires a path with a databasee name
+    /// Requires a path with a database name
     public init(_ url: String, maxConnectionsPerServer maxConnections: Int = 100) throws {
         let path = url.characters.split(separator: "/", maxSplits: 2, omittingEmptySubsequences: true)
         

@@ -33,6 +33,7 @@ protocol WeakProtocol {
     weak var value: Element? { get set }
 }
 
+/// Helper for capturing something as weak
 struct Weak<Element : AnyObject> : WeakProtocol {
     weak var value: Element?
     init(_ v: Element) {

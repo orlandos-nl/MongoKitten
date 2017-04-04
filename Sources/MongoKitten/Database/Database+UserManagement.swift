@@ -18,6 +18,8 @@ extension Database {
     ///
     /// For additional information: https://docs.mongodb.com/manual/reference/command/createUser/#dbcmd.createUser
     ///
+    /// TODO: Easier role creation
+    ///
     /// - parameter user: The user's username
     /// - parameter password: The plaintext password
     /// - parameter roles: The roles document as specified in the additional information
@@ -53,10 +55,10 @@ extension Database {
     ///
     /// For additional information: https://docs.mongodb.com/manual/reference/command/updateUser/#dbcmd.updateUser
     ///
-    /// - parameter user: The user to udpate
-    /// - parameter password: The new password
+    /// - parameter username: The user to update
+    /// - parameter password: The user's new password
     /// - parameter roles: The roles to grant
-    /// - parameter customData: The optional custom data you'll give him
+    /// - parameter customData: The optional custom data to apply to the user
     ///
     /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     public func update(user username: String, password: String, roles: Document, customData: Document? = nil) throws {
@@ -87,7 +89,7 @@ extension Database {
     ///
     /// For additional information: https://docs.mongodb.com/manual/reference/command/dropUser/#dbcmd.dropUser
     ///
-    /// - parameter user: The username from the user to drop
+    /// - parameter username: The username of the user to drop
     ///
     /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     public func drop(user username: String) throws {

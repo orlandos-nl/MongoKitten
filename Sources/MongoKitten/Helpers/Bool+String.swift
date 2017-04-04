@@ -11,7 +11,8 @@
 import Foundation
 
 extension Bool {
-    init(string value:String) {
+    /// Creates a boolean from a String
+    init(string value: String) {
         switch value.lowercased() {
         case "true":
             self = true
