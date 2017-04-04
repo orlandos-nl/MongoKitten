@@ -56,7 +56,7 @@ And `import MongoKitten` in your project.
 
 MongoKitten is being developed by three developers.
 
-- [Joannis Orlandos](@joannis) is being supported by [Clear Blue Technologies](http://www.clearbluetechnologies.com).
+- [Joannis Orlandos](@joannis)
 - [Laurent Gaches](@lgaches)
 - [Robbert Brandsma](@obbut)
 
