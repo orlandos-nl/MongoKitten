@@ -14,13 +14,13 @@ Native MongoDB driver for Swift, written in Swift. This library does not wrap ar
 
 ## Importing
 
-Add this to your `Package.swift` for the stable
+Add this to your `Package.swift` for the MongoKitten 3 stable.
 
 `.Package(url: "https://github.com/OpenKitten/MongoKitten.git", majorVersion: 3)`
 
-Or add this to use with Kitura
+Or add this to use the MongoKitten 4 beta.
 
-`.Package(url: "https://github.com/lgaches/MongoKitten.git", "3.1.0-beta3")`
+`.Package(url: "https://github.com/OpenKitten/MongoKitten.git", Version(0,0,22))`
 
 And `import MongoKitten` in your project.
 
@@ -31,9 +31,9 @@ And `import MongoKitten` in your project.
 - SSL
 - Sharded Clusters
 - Replica Sets
-- Geospatial queries (3.1)
-- Read/Write concerns (3.1)
-- Collation (3.1)
+- Geospatial queries
+- Read/Write concerns
+- Collation
 - User management
 - Indexes
 - DBRef
@@ -44,13 +44,19 @@ And `import MongoKitten` in your project.
 ## Requirements
 
 - A MongoDB server (local or online) running MongoDB 2.6 or above.
-- Swift 3.x.x
+- Swift 3.1
 
 ## Learn
 
-[We host all our tutorials here](http://docs.openkitten.org)
+[We host all our tutorials here](http://tutorials.openkitten.org)
 
-[And we host the MongoKitten documentation including dash docset here](http://mongokitten.openkitten.org)
+[And we host the MongoKitten documentation including dash docset here](http://docs.openkitten.org/mongokitten/)
+
+## Support
+
+[We're accepting donations for our project here](https://opencollective.com/mongokitten)
+
+The donations are used for creating and hosting tutorials, documentation and example projects.
 
 ## License
 
