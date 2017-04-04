@@ -84,7 +84,7 @@ extension Database {
         }
 
         do {
-            return try Cursor(cursorDocument: cursor, collection: self["$cmd"], connection: connection, chunkSize: 10, transform: { $0 })
+            return try Cursor(cursorDocument: cursor, collection: self["$cmd"], connection: connection, chunkSize: 100, transform: { $0 })
         } catch {
             self.server.returnConnection(connection)
             throw error

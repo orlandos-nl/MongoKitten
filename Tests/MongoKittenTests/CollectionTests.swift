@@ -58,23 +58,23 @@ class CollectionTests: XCTestCase {
         try! TestManager.disconnect()
     }
     
-    func testAgressiveZipFetching() throws {
-        for db in TestManager.dbs {
-            var counter = 0
-            
-            db.server.cursorStrategy = .agressive
-            
-            defer {
-                db.server.cursorStrategy = .lazy
-            }
-            
-            for _ in try db["zips"].find() {
-                counter += 1
-            }
-
-            XCTAssertEqual(counter, 29353)
-        }
-    }
+//    func testAgressiveZipFetching() throws {
+//        for db in TestManager.dbs {
+//            var counter = 0
+//            
+//            db.server.cursorStrategy = .agressive
+//            
+//            defer {
+//                db.server.cursorStrategy = .lazy
+//            }
+//            
+//            for _ in try db["zips"].find() {
+//                counter += 1
+//            }
+//
+//            XCTAssertEqual(counter, 29353)
+//        }
+//    }
     
     func testEverything() throws {
         let everything: [() throws -> Void] = [
@@ -199,6 +199,8 @@ class CollectionTests: XCTestCase {
         for db in TestManager.dbs {
             try db["zips"].rename(to: "zipschange")
             
+            try db.server.fsync(blocking: true)
+            
             let pipeline: AggregationPipeline = [
                 .group("$state", computed: ["totalPop": .sumOf("$pop")]),
                 .match("totalPop" > 10_000_000),
@@ -214,6 +216,8 @@ class CollectionTests: XCTestCase {
             XCTAssertEqual(zipsDocs.count, 5)
             
             try db["zipschange"].rename(to: "zips")
+            
+            try db.server.fsync(blocking: true)
             
             zipsDocs = Array(try db["zips"].aggregate(pipeline))
             XCTAssertEqual(zipsDocs.count, 5)
@@ -606,9 +610,7 @@ class CollectionTests: XCTestCase {
             inserts = [base, brokenUsername, brokenUsername, brokenAge, brokenDogs, brokenKittens, brokenKittens2, brokenBeers, base]
             try db["findAndModifyTest"].append(contentsOf: inserts)
             
-            let modifiedDocument = try db["findAndModifyTest"].findAndModify(matching: superQuery, action: .update(with: ["testieBool": true], returnModified: true, upserting: false) )
-            
-            XCTAssertNotNil(modifiedDocument as? Document)
+            _ = try db["findAndModifyTest"].findAndUpdate(superQuery, with: ["testieBool": true], upserting: false, returnedDocument: .old, sortedBy: nil, projection: nil)
             
             let response = Array(try db["findAndModifyTest"].find("testieBool" == true))
             XCTAssertEqual(response.count, 1)

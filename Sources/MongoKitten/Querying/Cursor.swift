@@ -14,7 +14,7 @@ import Schrodinger
 
 public enum CursorStrategy {
     case lazy
-    case agressive
+// TODO:   case agressive
 }
 
 /// A Cursor is a pointer to a sequence/collection of Documents on the MongoDB server.
@@ -43,6 +43,8 @@ public final class Cursor<T> {
     fileprivate var position = 0
     
     public var strategy: CursorStrategy? = nil
+    
+    fileprivate var agressiveFetches = [Promise<Void>]()
     
     /// A closure that transforms a document to another type if possible, otherwise `nil`
     typealias Transformer = (Document) throws -> (T?)
@@ -177,15 +179,6 @@ extension Cursor : Sequence, IteratorProtocol {
                 } catch {
                     return nil
                 }
-            }
-        case .agressive:
-            do {
-                try self.getMore()
-            } catch { }
-            
-            if position > 100 {
-                position -= 100
-                self.data.removeFirst(100)
             }
         }
         

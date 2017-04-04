@@ -186,7 +186,7 @@ public final class Collection: CollectionQueryable {
         precondition(skip ?? 0 < Int(Int32.max))
         precondition(limit ?? 0 < Int(Int32.max))
         
-        return try self.find(filter: filter, sort: sort, projection: projection, readConcern: readConcern, collation: collation, skip: skip, limit: limit, connection: nil).await()
+        return try self.find(filter: filter, sort: sort, projection: projection, readConcern: readConcern, collation: collation, skip: skip, limit: limit, batchSize: batchSize, connection: nil).await()
     }
     
     /// Finds Documents in this collection

@@ -1,4 +1,4 @@
-//
+
 // This source file is part of the MongoKitten open source project
 //
 // Copyright (c) 2016 - 2017 OpenKitten and the MongoKitten project authors
