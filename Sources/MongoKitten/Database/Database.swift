@@ -127,7 +127,7 @@ public final class Database {
             server.returnConnection(connection)
         }
         
-        try connection.authenticate(toDatabase: self)
+        try connection.authenticate(to: self)
     }
     
     /// A queue to prevent subscripting from creating multiple instances of the same database

@@ -34,7 +34,8 @@ public enum SortOrder: ValueConvertible {
 /// A Sort object specifies to MongoDB in what order certain Documents need to be ordered
 ///
 /// This can be used in normal and aggregate queries
-public struct Sort: ValueConvertible, ExpressibleByDictionaryLiteral {    /// The underlying Document
+public struct Sort: ValueConvertible, ExpressibleByDictionaryLiteral {
+    /// The underlying Document
     var document: Document
     
     /// Makes this Sort specification a Document

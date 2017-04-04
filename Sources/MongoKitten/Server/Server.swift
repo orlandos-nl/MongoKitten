@@ -520,7 +520,7 @@ public final class Server {
             
             if let db = db {
                 // On connection
-                try connection.authenticate(toDatabase: db)
+                try connection.authenticate(to: db)
             }
             
             connections.append(connection)
@@ -533,7 +533,7 @@ public final class Server {
         if let db = db, !connection.authenticatedDBs.contains(db.name) {
             // Authenticate
             logger.info("Authenticating the connection to \(db)")
-            try connection.authenticate(toDatabase: db)
+            try connection.authenticate(to: db)
             connection.authenticatedDBs.append(db.name)
         }
         

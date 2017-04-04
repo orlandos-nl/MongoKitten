@@ -12,6 +12,7 @@ import Foundation
 
 /// Settings for connecting to MongoDB via SSL.
 public struct SSLSettings: ExpressibleByBooleanLiteral {
+    /// Initializes SSLSettings using a boolean literal
     public init(booleanLiteral value: Bool) {
         self.enabled = value
         self.invalidHostNameAllowed = false

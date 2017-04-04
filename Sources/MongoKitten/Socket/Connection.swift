@@ -13,27 +13,47 @@ import Foundation
 import Dispatch
 import MongoSocket
 
+/// A connection to MongoDB
 class Connection {
+    /// The TCP socket
     let client: MongoTCP
+    
+    /// The received data TCP buffer
     let buffer = TCPBuffer()
+    
+    /// Whether this server supports write operations
     var writable = false
+    
+    /// This connection is authenticated against these DBs
     var authenticatedDBs: [String] = []
+    
+    /// Ran when closing
     var onClose: (()->())
+    
+    /// The host that's connected to
     let host: MongoHost
+    
+    /// The amount of current users
     var users: Int = 0
+    
+    /// The incoming temporary buffer
     var incomingBuffer = Bytes()
 
+    /// The dispatch queue that this connection listens on
     private static let receiveQueue = DispatchQueue(label: "org.mongokitten.server.receiveQueue", attributes: .concurrent)
     
+    /// The responses being waited for
     var waitingForResponses = [Int32: ManualPromise<ServerReply>]()
     
     /// A cache for incoming responses
     var incomingMutateLock = NSLock()
     
+    /// Whether this client is still connected
     public var isConnected: Bool {
         return client.isConnected
     }
     
+    /// Simply creates a new connection from existing data
     init(clientSettings: ClientSettings, writable: Bool, host: MongoHost, onClose: @escaping (()->())) throws {
 
         var options = [String:Any] ()
@@ -53,7 +73,12 @@ class Connection {
         Connection.receiveQueue.async(execute: backgroundLoop)
     }
     
-    func authenticate(toDatabase db: Database) throws {
+    /// Authenticates this connection to a database
+    ///
+    /// - parameter db: The database to authenticate to
+    ///
+    /// - throws: Authentication error
+    func authenticate(to db: Database) throws {
         if let details = db.server.clientSettings.credentials {
             do {
                 switch details.authenticationMechanism {
@@ -69,7 +94,6 @@ class Connection {
             } catch { }
         }
     }
-    
     
     /// Receives response messages from the server and gives them to the callback closure
     /// After handling the response with the closure it removes the closure
@@ -91,6 +115,7 @@ class Connection {
         Connection.receiveQueue.async(execute: backgroundLoop)
     }
     
+    /// Closes this connection
     func close() {
         _ = try? client.close()
         onClose()

@@ -379,6 +379,7 @@ public class GridFS {
 }
 
 extension GridFS : CustomStringConvertible {
+    /// Makes GridFS descriptive
     public var description: String {
         return "MongoKitten.GridFS<\(files.description), \(chunks.description)>"
     }

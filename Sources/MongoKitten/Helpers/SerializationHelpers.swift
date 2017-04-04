@@ -72,7 +72,7 @@ extension Int16 : BSONBytesProtocol {
 
 extension Int8 : BSONBytesProtocol {
     /// Serializes this Int8 to binary
-    internal func makeBytes() -> Byte {
+    internal func makeBytes() -> Bytes {
         return [Byte(self)]
     }
 }
