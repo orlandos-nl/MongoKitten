@@ -25,7 +25,7 @@ class Connection {
     let host: MongoHost
     var incomingBuffer = [UInt8]()
 
-    private static let receiveQueue = DispatchQueue(label: "org.mongokitten.server.receiveQueue", attributes: .concurrent)
+    private static let receiveQueue = DispatchQueue(label: "org.mongokitten.server.receiveQueue", qos: .userInteractive, attributes: .concurrent)
     
     var waitingForResponses = [Int32:(Message)->()]()
     

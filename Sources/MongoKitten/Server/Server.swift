@@ -571,10 +571,10 @@ public final class Server {
     }
     
     /// A dispatch queue for maintainance tasks
-    private let connectionPoolMaintainanceQueue = DispatchQueue(label: "org.mongokitten.server.maintainanceQueue")
+    private let connectionPoolMaintainanceQueue = DispatchQueue(label: "org.mongokitten.server.maintainanceQueue", qos: .userInitiated)
     
     /// A dispatch queue for incrementing the counter synchronously
-    private let messageMutationQueue = DispatchQueue(label: "org.mongokitten.server.messageIncrementQueue")
+    private let messageMutationQueue = DispatchQueue(label: "org.mongokitten.server.messageIncrementQueue", qos: .userInitiated)
     
     /// Generates a messageID for the next Message to be sent to the server
     ///
