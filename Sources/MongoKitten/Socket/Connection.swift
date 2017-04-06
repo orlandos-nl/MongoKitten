@@ -40,7 +40,10 @@ class Connection {
     var incomingBuffer = Bytes()
 
     /// The dispatch queue that this connection listens on
-    private static let receiveQueue = DispatchQueue(label: "org.mongokitten.server.receiveQueue", attributes: .concurrent)
+    private static let receiveQueue = DispatchQueue(label: "org.mongokitten.server.receiveQueue", qos: DispatchQoS.userInteractive, attributes: .concurrent)
+    
+    /// Handles mutations the response buffer
+    internal static let responseLock = NSLock()
     
     /// The responses being waited for
     var waitingForResponses = [Int32: ManualPromise<ServerReply>]()
@@ -142,7 +145,14 @@ class Connection {
             let responseId = buffer.data[8...11].makeInt32()
             let reply = try Message.makeReply(from: responseData)
             
-            defer { waitingForResponses[responseId] = nil }
+            defer {
+                Connection.responseLock.lock()
+                waitingForResponses[responseId] = nil
+                Connection.responseLock.unlock()
+            }
+            
+            Connection.responseLock.lock()
+            defer { Connection.responseLock.unlock() }
             
             if let promise = waitingForResponses[responseId] {
                 _ = try promise.complete(reply)

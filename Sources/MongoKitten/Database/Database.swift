@@ -131,7 +131,7 @@ public final class Database {
     }
     
     /// A queue to prevent subscripting from creating multiple instances of the same database
-    private static let subscriptQueue = DispatchQueue(label: "org.mongokitten.database.subscriptqueue")
+    private static let subscriptQueue = DispatchQueue(label: "org.mongokitten.database.subscriptqueue", qos: DispatchQoS.userInitiated)
     
     /// Creates a GridFS collection in this database
     public func makeGridFS(named name: String = "fs") throws -> GridFS {

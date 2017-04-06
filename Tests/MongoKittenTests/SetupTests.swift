@@ -28,6 +28,66 @@ class SetupTests: XCTestCase {
         try! TestManager.disconnect()
     }
     
+    func testPerformance() {
+        let numberOfDocuments = 500
+        
+        for db in TestManager.dbs {
+            var documents = [Document]()
+            for id in 0..<numberOfDocuments {
+                let doc: Document = [
+                    "_id": "\(id)",
+                    "customerId": "128374",
+                    "flightId": "AA231",
+                    "dateOfBooking": Date(),
+                    ]
+                documents.append(doc)
+            }
+            
+            let queue = DispatchQueue(label: "insertion", attributes: .concurrent)
+            let dispatchGroup = DispatchGroup()
+            let parallel = true
+            
+            documents.forEach { doc in
+                
+                if parallel {
+                    queue.async(group: dispatchGroup) {
+                        
+                        do {
+                            try db["rfd"].insert( doc )
+                            print(doc.makeExtendedJSON())
+                        } catch let error as InsertErrors {
+                            XCTFail("error: \(error)")
+                        } catch let error as MongoError {
+                            XCTFail("error: \(error)")
+                        } catch let error {
+                            XCTFail("error: \(error)")
+                            // returns timeout
+                        }
+                        
+                    }
+                    
+                } else {
+                    
+                    do {
+                        try db["rfd"].insert( doc )
+                        print(doc.makeExtendedJSON())
+                    } catch let error as InsertErrors {
+                        XCTFail("error \(error)")
+                    } catch {
+                        XCTFail("Anything else")
+                    }
+                }
+                
+            }
+            
+            if parallel {
+                dispatchGroup.wait()
+            }
+            
+            XCTAssertEqual(try db["rfd"].count(), numberOfDocuments)
+        }
+    }
+    
 //    func testSetup() throws {
 //        if !TestManager.
 //        let server = try Server(mongoURL: "mongodb://mongokitten-unittest-user:mongokitten-unittest-password@127.0.0.1:27017")

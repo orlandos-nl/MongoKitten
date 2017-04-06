@@ -578,10 +578,10 @@ public final class Server {
     }
     
     /// A dispatch queue for maintainance tasks
-    private let connectionPoolMaintainanceQueue = DispatchQueue(label: "org.mongokitten.server.maintainanceQueue")
+    private let connectionPoolMaintainanceQueue = DispatchQueue(label: "org.mongokitten.server.maintainanceQueue", qos: DispatchQoS.userInitiated)
     
     /// A dispatch queue for incrementing the counter synchronously
-    private let messageMutationQueue = DispatchQueue(label: "org.mongokitten.server.messageIncrementQueue")
+    private let messageMutationQueue = DispatchQueue(label: "org.mongokitten.server.messageIncrementQueue", qos: DispatchQoS.userInitiated)
     
     /// Generates a messageID for the next Message to be sent to the server
     ///
@@ -648,13 +648,17 @@ public final class Server {
         
         let promise = ManualPromise<ServerReply>(timeout: .seconds(Int(timeout)))
         
+        Connection.responseLock.lock()
         connection.waitingForResponses[requestId] = promise
+        Connection.responseLock.unlock()
         
         do {
             try connection.client.send(data: messageData)
         } catch {
             logger.debug("Could not send data because of the following error: \"\(error)\"")
             connection.close()
+            Connection.responseLock.lock()
+            defer { Connection.responseLock.unlock() }
             connection.waitingForResponses[requestId] = nil
             throw error
         }

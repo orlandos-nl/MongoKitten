@@ -175,7 +175,7 @@ extension Cursor : Sequence, IteratorProtocol {
                 self.data = []
                 // Get more data!
                 do {
-                    _ = try self.getMore().await()
+                    _ = try self.getMore()
                 } catch {
                     return nil
                 }
