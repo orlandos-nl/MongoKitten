@@ -220,6 +220,18 @@ public final class Server {
     
     /// Tihs loop maintains all connections
     fileprivate func backgroundLoop() {
+        connectionPoolLock.lock()
+        var disconnectionPool = [Connection]()
+        
+        for connection in connections where !connection.isConnected {
+            disconnectionPool.append(connection)
+        }
+        
+        if disconnectionPool.count > 0 {
+            handleDisconnect(for: disconnectionPool)
+        }
+        connectionPoolLock.unlock()
+        
         maintainanceLoopLock.lock()
         for action in maintainanceLoopCalls {
             action()
@@ -228,7 +240,7 @@ public final class Server {
         maintainanceLoopCalls = []
         maintainanceLoopLock.unlock()
         
-        Thread.sleep(forTimeInterval: 5)
+        Thread.sleep(forTimeInterval: 30)
         
         self.connectionPoolMaintainanceQueue.async(execute: backgroundLoop)
     }
@@ -416,6 +428,31 @@ public final class Server {
         throw MongoError.internalInconsistency
     }
     
+    /// Prepares a maintainance task for detected disconnected connections
+    internal func handleDisconnect(for disconnectionPool: [Connection]) {
+    // Close them for security sake
+        disconnectionPool.forEach({
+            $0.close()
+        })
+        
+        // If this is a replica server, set up a reconnect
+        if self.isReplica {
+            self.maintainanceLoopLock.lock()
+            defer { self.maintainanceLoopLock.unlock() }
+            
+            self.logger.error("Disconnected from the replica set. Will attempt to reconnect")
+            
+            // If reinitializing is already happening, don't do it more than once
+            if !self.reinitializeReplica {
+                self.reinitializeReplica = true
+                self.maintainanceLoopCalls.append {
+                    self.logger.info("Attempting to reconnect to the replica set.")
+                    self.initializeReplica()
+                }
+            }
+        }
+    }
+    
     /// Reserves a connection to a database
     ///
     /// Can take a while when the connection pool is full.
@@ -445,27 +482,7 @@ public final class Server {
         // If there are disconnected connections
         if disconnectionPool.count > 0 {
             connectionPoolMaintainanceQueue.async {
-                // Close them for security sake
-                disconnectionPool.forEach({
-                    $0.close()
-                })
-                
-                // If this is a replica server, set up a reconnect
-                if self.isReplica {
-                    self.maintainanceLoopLock.lock()
-                    defer { self.maintainanceLoopLock.unlock() }
-                    
-                    self.logger.error("Disconnected from the replica set. Will attempt to reconnect")
-                    
-                    // If reinitializing is already happening, don't do it more than once
-                    if !self.reinitializeReplica {
-                        self.reinitializeReplica = true
-                        self.maintainanceLoopCalls.append {
-                            self.logger.info("Attempting to reconnect to the replica set.")
-                            self.initializeReplica()
-                        }
-                    }
-                }
+                self.handleDisconnect(for: disconnectionPool)
             }
         }
         

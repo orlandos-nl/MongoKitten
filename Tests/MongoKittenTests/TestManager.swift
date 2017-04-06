@@ -67,7 +67,7 @@ final class TestManager {
             }
             
             // Validate zips count
-            if try db["zips"].count() != 25359 {
+            if try db["zips"].count() != 29353 {
                 throw TestError.TestDataNotPresent
             }
         }

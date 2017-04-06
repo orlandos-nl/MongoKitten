@@ -45,6 +45,9 @@ class Connection {
     /// Handles mutations the response buffer
     internal static let responseLock = NSLock()
     
+    /// Prevents a crash when the client disconnects while checking for the connection status
+    internal let isConnectedLock = NSLock()
+    
     /// The responses being waited for
     var waitingForResponses = [Int32: ManualPromise<ServerReply>]()
     
@@ -53,6 +56,9 @@ class Connection {
     
     /// Whether this client is still connected
     public var isConnected: Bool {
+        isConnectedLock.lock()
+        
+        defer { isConnectedLock.unlock() }
         return client.isConnected
     }
     
