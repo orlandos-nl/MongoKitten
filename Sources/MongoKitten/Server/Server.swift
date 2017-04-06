@@ -469,12 +469,16 @@ public final class Server {
             }
         }
         
+        connectionPoolLock.lock()
+        
         // Find all possible matches to create a connection to
         let matches = self.connections.filter {
             $0.users < self.maxActionsPerConnection && ((!writing && slaveOK) || $0.writable) && $0.isConnected
         }.sorted(by: { (lhs, rhs) -> Bool in
             return lhs.users < rhs.users
         })
+        
+        connectionPoolLock.unlock()
         
         // If we need a specific database, find a connection optimal for that database I.E. already authenticated
         matching: if let db = db {
@@ -537,6 +541,8 @@ public final class Server {
             connection.authenticatedDBs.append(db.name)
         }
         
+        self.connectionPoolLock.lock()
+        defer { self.connectionPoolLock.unlock() }
         connection.users += 1
         
         return connection

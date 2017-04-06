@@ -28,15 +28,37 @@ class SetupTests: XCTestCase {
         try! TestManager.disconnect()
     }
     
-    func testReadPerformance() throws {
+    func testAgressivePerformance() throws {
         for db in TestManager.dbs {
+            try db.server.fsync()
+            
+            db.server.cursorStrategy = .agressive
+            defer { db.server.cursorStrategy = .lazy }
+            
             var counter = 0
             
             for _ in try db["zips"].find() {
                 counter += 1
             }
             
-            XCTAssertEqual(counter, 29353)
+            XCTAssertEqual(counter, 25359)
+        }
+    }
+    
+    func testEfficientPerformance() throws {
+        for db in TestManager.dbs {
+            try db.server.fsync()
+            
+            db.server.cursorStrategy = .intelligent(bufferChunks: 3)
+            defer { db.server.cursorStrategy = .lazy }
+            
+            var counter = 0
+            
+            for _ in try db["zips"].find() {
+                counter += 1
+            }
+            
+            XCTAssertEqual(counter, 25359)
         }
     }
     
@@ -44,6 +66,11 @@ class SetupTests: XCTestCase {
         testInsertPerformance()
         
         for db in TestManager.dbs {
+            try db.server.fsync()
+            
+            db.server.cursorStrategy = .agressive
+            defer { db.server.cursorStrategy = .lazy }
+            
             var counter = 0
             
             for _ in try db["rfd"].find() {

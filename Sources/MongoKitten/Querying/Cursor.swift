@@ -15,7 +15,8 @@ import ExtendedJSON
 
 public enum CursorStrategy {
     case lazy
-// TODO:   case agressive
+    case agressive
+    case intelligent(bufferChunks: Int)
 }
 
 /// A Cursor is a pointer to a sequence/collection of Documents on the MongoDB server.
@@ -45,7 +46,7 @@ public final class Cursor<T> {
     
     public var strategy: CursorStrategy? = nil
     
-    fileprivate var agressiveFetches = [Promise<Void>]()
+    fileprivate var currentFetch: ManualPromise<Void>? = nil
     
     /// A closure that transforms a document to another type if possible, otherwise `nil`
     typealias Transformer = (Document) throws -> (T?)
@@ -169,7 +170,7 @@ extension Cursor : Sequence, IteratorProtocol {
     public func next() -> T? {
         defer { position += 1 }
         
-        switch strategy ?? collection.database.server.cursorStrategy {
+        strategy: switch strategy ?? collection.database.server.cursorStrategy {
         case .lazy:
             if position >= self.data.count && self.cursorID != 0 {
                 position = 0
@@ -181,6 +182,49 @@ extension Cursor : Sequence, IteratorProtocol {
                     return nil
                 }
             }
+        case .intelligent(let dataSets):
+            guard self.data.count - position < dataSets * Int(self.chunkSize) else {
+                break strategy
+            }
+            
+            fallthrough
+        case .agressive:
+            if let currentFetch = currentFetch {
+                if position == self.data.count {
+                    guard !currentFetch.isCompleted else {
+                        break strategy
+                    }
+                } else if !currentFetch.isCompleted {
+                    break strategy
+                }
+                
+                do {
+                    defer {
+                        self.currentFetch = nil
+                    }
+                    
+                    _ = try currentFetch.await()
+                } catch {
+                    return nil
+                }
+            } else if position == self.data.count && self.cursorID != 0 {
+                do {
+                    _ = try self.getMore().await()
+                } catch {
+                    return nil
+                }
+            } else if self.cursorID != 0 {
+                do {
+                    self.currentFetch = try self.getMore()
+                } catch {
+                    return nil
+                }
+            }
+        }
+        
+        if position > Int(self.chunkSize) {
+            position -= Int(self.chunkSize)
+            self.data.removeFirst(Int(self.chunkSize))
         }
         
         return position < self.data.count ? self.data[position] : nil
