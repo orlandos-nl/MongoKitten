@@ -10,6 +10,7 @@
 
 import Foundation
 import Sockets
+import libc
 import TLS
 
 public final class MongoSocket: MongoTCP {
@@ -46,15 +47,32 @@ public final class MongoSocket: MongoTCP {
     }
 
     /// Receives any available data from the socket
-    public func receive(into buffer: inout [UInt8]) throws {
-        buffer.removeAll()
+    public func receive(into buffer: Buffer) throws {
+        let receivedBytes: Int
+        
         if sslEnabled {
             guard let sslClient = sslClient else { throw MongoSocketError.clientNotInitialized }
-            buffer.append(contentsOf: try sslClient.socket.read(max: Int(UInt16.max)))
+            
+            receivedBytes = libc.recv(sslClient.socket.descriptor.raw, buffer.pointer, Int(UInt16.max), 0)
         } else {
             guard let plainClient = plainClient else { throw MongoSocketError.clientNotInitialized }
-            buffer.append(contentsOf: try plainClient.read(max: Int(UInt16.max)))
+            
+            receivedBytes = libc.recv(plainClient.descriptor.raw, buffer.pointer, Int(UInt16.max), 0)
         }
+        
+        guard receivedBytes != -1 else {
+            if errno == ECONNRESET {
+                // closed by peer, need to close this side.
+                // Since this is not an error, no need to throw unless the close
+                // itself throws an error.
+                _ = try self.close()
+                return
+            } else {
+                throw SocketsError(.readFailed)
+            }
+        }
+        
+        buffer.usedCapacity = receivedBytes
     }
 
     /// `true` when connected, `false` otherwise

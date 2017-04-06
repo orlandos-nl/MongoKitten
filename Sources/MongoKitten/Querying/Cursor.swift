@@ -11,6 +11,7 @@
 import Foundation
 import BSON
 import Schrodinger
+import ExtendedJSON
 
 public enum CursorStrategy {
     case lazy
@@ -175,7 +176,7 @@ extension Cursor : Sequence, IteratorProtocol {
                 self.data = []
                 // Get more data!
                 do {
-                    _ = try self.getMore()
+                    _ = try self.getMore().await()
                 } catch {
                     return nil
                 }

@@ -14,6 +14,22 @@ public enum MongoSocketError:Error {
     case clientNotInitialized
 }
 
+public final class Buffer {
+    public let pointer: UnsafeMutablePointer<UInt8>
+    public let capacity: Int
+    public var usedCapacity: Int = 0
+    
+    public init(capacity: Int = 65_507) {
+        pointer = UnsafeMutablePointer<UInt8>.allocate(capacity: capacity)
+        self.capacity = capacity
+    }
+    
+    deinit {
+        free(pointer)
+    }
+}
+
+
 /// A class buffer that stores all received bytes without Copy-on-Write for efficiency
 public class TCPBuffer {
     /// The buffer data
@@ -35,7 +51,7 @@ public protocol MongoTCP : class {
     func send(data binary: [UInt8]) throws
 
     /// Receives any available data from the socket
-    func receive(into buffer: inout [UInt8]) throws
+    func receive(into buffer: Buffer) throws
 
     /// `true` when connected, `false` otherwise
     var isConnected: Bool { get }

@@ -37,7 +37,7 @@ class Connection {
     var users: Int = 0
     
     /// The incoming temporary buffer
-    var incomingBuffer = Bytes()
+    var incomingBuffer = Buffer()
 
     /// The dispatch queue that this connection listens on
     private static let receiveQueue = DispatchQueue(label: "org.mongokitten.server.receiveQueue", qos: DispatchQoS.userInteractive, attributes: .concurrent)
@@ -130,8 +130,9 @@ class Connection {
     ///
     /// - throws: Unable to receive or parse the reply
     private func receive(bufferSize: Int = 1024) throws {
-        try client.receive(into: &incomingBuffer)
-        buffer.data += incomingBuffer
+        try client.receive(into: incomingBuffer)
+        let b = UnsafeBufferPointer<Byte>(start: incomingBuffer.pointer, count: incomingBuffer.usedCapacity)
+        buffer.data += [UInt8](b)
         
         while buffer.data.count >= 36 {
             let length = Int(buffer.data[0...3].makeInt32())
