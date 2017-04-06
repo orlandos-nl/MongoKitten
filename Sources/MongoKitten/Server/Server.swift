@@ -30,7 +30,7 @@ import Dispatch
 /// It's internal because ReplyMessages are an internal struct that is used for direct communication with MongoDB only
 internal typealias ResponseHandler = ((Message) -> Void)
 
-internal var log: Logger = PrintLogger()
+internal var log: Logger = NotLogger()
 
 /// A server object is the core of MongoKitten as it's used to communicate to the server.
 /// You can select a `Database` by subscripting an instance of this Server with a `String`.

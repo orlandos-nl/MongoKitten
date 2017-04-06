@@ -43,6 +43,8 @@ extension Logger {
 
 /// Doesn't log
 public struct NotLogger : Logger {
+    public init() {}
+    
     /// Doesn't log
     public func verbose(_ message: String) {}
     
@@ -64,6 +66,8 @@ public struct NotLogger : Logger {
 
 /// Prints all logs
 public struct PrintLogger : Logger {
+    public init() {}
+    
     /// Prints a verbose log
     public func verbose(_ message: String) {
         print(message)
