@@ -347,7 +347,7 @@ public final class Collection: CollectionQueryable {
         return try self.count(filter: filter, limit: limit, skip: skip, readConcern: readConcern, collation: collation, connection: nil, timeout: nil)
     }
     
-    /// Finds and removes the first `Document` in this `Collection` that matches the provided `Query`.
+    /// Finds and removes the all `Document`s in this `Collection` that match the provided `Query`.
     ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/findAndModify/#dbcmd.findAndModify
     ///
@@ -403,7 +403,7 @@ public final class Collection: CollectionQueryable {
         }
     }
     
-    /// Finds and removes the first `Document` in this `Collection` that matches the provided `Query`.
+    /// Finds and updates all `Document`s in this `Collection` that match the provided `Query`.
     ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/findAndModify/#dbcmd.findAndModify
     ///

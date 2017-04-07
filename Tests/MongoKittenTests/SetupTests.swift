@@ -32,7 +32,7 @@ class SetupTests: XCTestCase {
         for db in TestManager.dbs {
             try db.server.fsync()
             
-            db.server.cursorStrategy = .agressive
+            db.server.cursorStrategy = .aggressive
             defer { db.server.cursorStrategy = .lazy }
             
             var counter = 0
@@ -68,7 +68,7 @@ class SetupTests: XCTestCase {
         for db in TestManager.dbs {
             try db.server.fsync()
             
-            db.server.cursorStrategy = .agressive
+            db.server.cursorStrategy = .aggressive
             defer { db.server.cursorStrategy = .lazy }
             
             var counter = 0

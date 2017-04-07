@@ -62,7 +62,7 @@ class CollectionTests: XCTestCase {
 //        for db in TestManager.dbs {
 //            var counter = 0
 //            
-//            db.server.cursorStrategy = .agressive
+//            db.server.cursorStrategy = .aggressive
 //            
 //            defer {
 //                db.server.cursorStrategy = .lazy

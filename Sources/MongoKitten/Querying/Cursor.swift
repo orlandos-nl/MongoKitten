@@ -15,7 +15,7 @@ import ExtendedJSON
 
 public enum CursorStrategy {
     case lazy
-    case agressive
+    case aggressive
     case intelligent(bufferChunks: Int)
 }
 
@@ -188,7 +188,7 @@ extension Cursor : Sequence, IteratorProtocol {
             }
             
             fallthrough
-        case .agressive:
+        case .aggressive:
             if let currentFetch = currentFetch {
                 if position == self.data.count {
                     guard !currentFetch.isCompleted else {
