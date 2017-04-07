@@ -41,7 +41,7 @@ class SetupTests: XCTestCase {
                 counter += 1
             }
             
-            XCTAssertEqual(counter, 25359)
+            XCTAssertEqual(counter, 29353)
         }
     }
     
@@ -58,7 +58,7 @@ class SetupTests: XCTestCase {
                 counter += 1
             }
             
-            XCTAssertEqual(counter, 25359)
+            XCTAssertEqual(counter, 29353)
         }
     }
     
