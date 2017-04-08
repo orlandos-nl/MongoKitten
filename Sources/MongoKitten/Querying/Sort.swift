@@ -52,6 +52,33 @@ public struct Sort: ValueConvertible, ExpressibleByDictionaryLiteral {
         return self.document
     }
     
+    /// Helper to make mutating/reading sort specifications more accessible
+    public subscript(key: String) -> SortOrder? {
+        get {
+            guard let value = self.document[key] else {
+                return nil
+            }
+            
+            switch value {
+            case let bool as Bool:
+                return bool ? .ascending : .descending
+            case let spec as Int32:
+                if spec == 1 {
+                    return .ascending
+                } else if spec == -1 {
+                    return .descending
+                }
+                
+                fallthrough
+            default:
+                return .custom(value)
+            }
+        }
+        set {
+            self.document[key] = newValue
+        }
+    }
+    
     /// Initializes a Sort object from a Dictionary literal.
     ///
     /// The key in the Dictionary Literal is the key you want to have sorted.
