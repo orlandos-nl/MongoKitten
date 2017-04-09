@@ -53,9 +53,9 @@ And `import MongoKitten` in your project.
 
 ## Learn
 
-[We host all our tutorials here](http://tutorials.openkitten.org)
+[We host all our tutorials here](http://docs.openkitten.org)
 
-[And we host the MongoKitten documentation including dash docset here](http://docs.openkitten.org/mongokitten/)
+[And we host the MongoKitten documentation including dash docset here](http://beta.openkitten.org/)
 
 ## Support
 
