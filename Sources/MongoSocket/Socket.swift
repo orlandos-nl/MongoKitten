@@ -9,43 +9,51 @@
 //
 
 import Foundation
-import Sockets
-import libc
+import Socks
+import SocksCore
 import TLS
+import libc
 
 public final class MongoSocket: MongoTCP {
-    private let plainClient: TCPInternetSocket?
+    private let plainClient: Socks.TCPClient?
     private let sslClient: TLS.Socket?
     private var sslEnabled = false
-
+    
+    enum Error : Swift.Error {
+        case disconnectedByPeer
+    }
+    
     public init(address hostname: String, port: UInt16, options: [String: Any]) throws {
+        
         self.sslEnabled = options["sslEnabled"] as? Bool ?? false
-
+        
         if sslEnabled {
             plainClient = nil
             let address = hostname.lowercased() == "localhost" ? InternetAddress.localhost(port: port) : InternetAddress.init(hostname: hostname, port: port)
-
-            let internetSocket = try TCPInternetSocket(address, scheme: "mongodb")
             
-            sslClient = try TLS.InternetSocket(internetSocket, TLS.Context(.client))
-            try sslClient?.socket.connect()
+            let internetSocket = try TCPInternetSocket(address: address)
+            let invalidCertificateAllowed = options["invalidCertificateAllowed"] as? Bool ?? false
+            let invalidHostNameAllowed = options["invalidHostNameAllowed"] as? Bool ?? false
+            let config = try TLS.Config(mode: .client, certificates: .openbsd, verifyHost: !invalidHostNameAllowed, verifyCertificates: !invalidCertificateAllowed)
+            
+            sslClient = try TLS.Socket(config: config, socket: internetSocket)
+            try sslClient?.connect(servername: hostname)
         } else {
             sslClient = nil
             let address = hostname.lowercased() == "localhost" ? InternetAddress.localhost(port: port) : InternetAddress(hostname: hostname, port: port)
-            plainClient = try TCPInternetSocket(address, scheme: "mongodb")
-            try plainClient?.connect()
+            plainClient = try TCPClient(address: address)
         }
     }
-
+    
     /// Sends the data to the other side of the connection
     public func send(data binary: [UInt8]) throws {
         if sslEnabled {
-            try sslClient?.socket.write(binary, flushing: true)
+            try sslClient?.send(binary)
         } else {
-            try plainClient?.write(binary, flushing: true)
+            try plainClient?.send(bytes: binary)
         }
     }
-
+    
     /// Receives any available data from the socket
     public func receive(into buffer: Buffer) throws {
         let receivedBytes: Int
@@ -53,11 +61,11 @@ public final class MongoSocket: MongoTCP {
         if sslEnabled {
             guard let sslClient = sslClient else { throw MongoSocketError.clientNotInitialized }
             
-            receivedBytes = libc.recv(sslClient.socket.descriptor.raw, buffer.pointer, Int(UInt16.max), 0)
+            receivedBytes = libc.recv(sslClient.socket.descriptor, buffer.pointer, Int(UInt16.max), 0)
         } else {
             guard let plainClient = plainClient else { throw MongoSocketError.clientNotInitialized }
             
-            receivedBytes = libc.recv(plainClient.descriptor.raw, buffer.pointer, Int(UInt16.max), 0)
+            receivedBytes = libc.recv(plainClient.socket.descriptor, buffer.pointer, Int(UInt16.max), 0)
         }
         
         guard receivedBytes != -1 else {
@@ -68,22 +76,22 @@ public final class MongoSocket: MongoTCP {
                 _ = try self.close()
                 return
             } else {
-                throw SocketsError(.readFailed)
+                throw Error.disconnectedByPeer
             }
         }
         
         buffer.usedCapacity = receivedBytes
     }
-
+    
     /// `true` when connected, `false` otherwise
     public var isConnected: Bool {
         if sslEnabled {
-            return !(sslClient?.socket.isClosed ?? false)
+            return !(sslClient?.socket.closed ?? false)
         } else {
-            return !(plainClient?.isClosed ?? false)
+            return !(plainClient?.socket.closed ?? false)
         }
     }
-
+    
     /// Closes the connection
     public func close() throws {
         if sslEnabled {
