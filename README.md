@@ -12,39 +12,44 @@ Native MongoDB driver for Swift, written in Swift. This library does not wrap ar
 - Our own [MD5, SHA1, SCRAM and PBKDF2 libraries](https://github.com/OpenKitten/CryptoKitten) in 100% Swift (currently included in the package)
 - Optional support for SSL/TLS using LibreSSL
 
+## Requirements
+
+- A MongoDB server (local or online) running MongoDB 2.6 or above. (MongoDB 3.2 or 3.4 is recommmended)
+- Swift 3.1
+
+## Setting up MongoDB
+
+Install MongoDB for [Ubuntu](https://docs.mongodb.com/master/tutorial/install-mongodb-on-ubuntu/), [macOS](https://docs.mongodb.com/master/tutorial/install-mongodb-on-os-x/) or [any other supported Linux Distro](https://docs.mongodb.com/master/administration/install-on-linux/).
+
+Alternatively; make use of a DAAS (Database-as-a-service) like [MLab](https://mlab.com), [Bluemix](https://www.ibm.com/cloud-computing/bluemix/mongodb-hosting) or any other of the many services.
+
 ## Importing
 
-Add this to your `Package.swift` for the MongoKitten 3 stable.
+Add this to your dependencies:
 
-`.Package(url: "https://github.com/OpenKitten/MongoKitten.git", majorVersion: 3)`
-
-Or add this to use the MongoKitten 4 beta.
-
-`.Package(url: "https://github.com/OpenKitten/MongoKitten.git", Version(0,0,22))`
+`.Package(url: "https://github.com/OpenKitten/MongoKitten.git", "4.0.0-vaportls")`
 
 And `import MongoKitten` in your project.
 
 ## Supported Features
 
-- All basic CRUD operations
+- All basic operations
 - [Blazing fast performance](Performance.md)
-- SSL
-- Sharded Clusters
-- Replica Sets
+- SSL, MongoDB-CR and SASL authentication
+- Sharded Clusters and Replica Sets
 - Geospatial queries
-- Read/Write concerns
-- Collation
-- User management
+- Read/Write concerns + Collations
+- User management and other Administrative commands
 - Indexes
-- DBRef
-- GridFS
-- Aggregation pipelines
+- GridFS and DBRef standards support
+- Expressive Aggregation pipelines
+- A simple yet effective QueryBuilder
+- MongoDB Document queries
 - Much more
 
-## Requirements
+## TODO
 
-- A MongoDB server (local or online) running MongoDB 2.6 or above.
-- Swift 3.1
+- X.509 certificate based authentication
 
 ## Learn
 
