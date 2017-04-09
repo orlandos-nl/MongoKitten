@@ -10,10 +10,10 @@ var package = Package(
         ],
     dependencies: [
         // For MongoDB Documents
-        .Package(url: "https://github.com/OpenKitten/BSON.git", Version(5,0,0, prereleaseIdentifiers: ["alpha", "2"])),
+        .Package(url: "https://github.com/OpenKitten/BSON.git", majorVersion: 5),
         
         // For ExtendedJSON support
-        .Package(url: "https://github.com/OpenKitten/Cheetah.git", majorVersion: 0, minor: 3),
+        .Package(url: "https://github.com/OpenKitten/Cheetah.git", majorVersion: 1),
 
         // Authentication
         .Package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", Version(0,6,7)),
@@ -22,6 +22,6 @@ var package = Package(
         .Package(url: "https://github.com/vapor/tls.git", Version(2,0,0, prereleaseIdentifiers: ["beta"])),
         
         // Asynchronous behaviour
-        .Package(url: "https://github.com/OpenKitten/Schrodinger.git", majorVersion: 0, minor: 1),
+        .Package(url: "https://github.com/OpenKitten/Schrodinger.git", majorVersion: 1),
     ]
 )

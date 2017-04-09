@@ -669,7 +669,7 @@ public final class Server {
         let requestId = msg.requestID
         let messageData = try msg.generateData()
         
-        let promise = ManualPromise<ServerReply>(timeout: .seconds(Int(timeout)))
+        let promise = ManualPromise<ServerReply>(timeoutAfter: .seconds(Int(timeout)))
         
         Connection.responseLock.lock()
         connection.waitingForResponses[requestId] = promise
