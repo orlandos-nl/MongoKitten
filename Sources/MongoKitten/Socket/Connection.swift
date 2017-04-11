@@ -43,23 +43,17 @@ class Connection {
     private static let receiveQueue = DispatchQueue(label: "org.mongokitten.server.receiveQueue", qos: DispatchQoS.userInteractive, attributes: .concurrent)
     
     /// Handles mutations the response buffer
-    internal static let responseLock = NSLock()
+    internal static let responseQueue = DispatchQueue(label: "org.mongokitten.server.responseQueue", qos: DispatchQoS.userInteractive)
     
     /// Prevents a crash when the client disconnects while checking for the connection status
-    internal let isConnectedLock = NSLock()
+    internal let isConnectedQueue = DispatchQueue(label: "org.mongokitten.server.isConnected", qos: DispatchQoS.userInteractive)
     
     /// The responses being waited for
     var waitingForResponses = [Int32: ManualPromise<ServerReply>]()
     
-    /// A cache for incoming responses
-    var incomingMutateLock = NSLock()
-    
     /// Whether this client is still connected
     public var isConnected: Bool {
-        isConnectedLock.lock()
-        
-        defer { isConnectedLock.unlock() }
-        return client.isConnected
+        return isConnectedQueue.sync { self.client.isConnected }
     }
     
     /// Simply creates a new connection from existing data
@@ -111,12 +105,10 @@ class Connection {
             try self.receive()
         } catch {
             // A receive failure is to be expected if the socket has been closed
-            incomingMutateLock.lock()
             if self.isConnected {
                 log.fatal("The MongoKitten background loop encountered an error and has stopped: \(error)")
                 log.fatal("Please file a report on https://github.com/openkitten/mongokitten")
             }
-            incomingMutateLock.unlock()
             
             return
         }
@@ -153,19 +145,18 @@ class Connection {
             let reply = try Message.makeReply(from: responseData)
             
             defer {
-                Connection.responseLock.lock()
-                waitingForResponses[responseId] = nil
-                Connection.responseLock.unlock()
+                Connection.responseQueue.sync {
+                    waitingForResponses[responseId] = nil
+                }
             }
             
-            Connection.responseLock.lock()
-            defer { Connection.responseLock.unlock() }
-            
-            if let promise = waitingForResponses[responseId] {
-                _ = try promise.complete(reply)
+            try Connection.responseQueue.sync {
+                if let promise = waitingForResponses[responseId] {
+                    _ = try promise.complete(reply)
+                }
+                
+                buffer.data.removeSubrange(0..<length)
             }
-            
-            buffer.data.removeSubrange(0..<length)
         }
     }
 }

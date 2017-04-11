@@ -8,8 +8,9 @@
 // See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of MongoKitten project authors
 //
 import BSON
+import ExtendedJSON
 
-extension Document {
+extension Document : CustomDebugStringConvertible {
     /// Appends this Document to a collection
     ///
     /// - parameter collection: The collection to append this Document to
@@ -30,5 +31,9 @@ extension Document {
         self["_id"] = id
         
         try collection.update("_id" == id, to: self, upserting: true)
+    }
+    
+    public var debugDescription: String {
+        return self.makeExtendedJSON().serializedString()
     }
 }
