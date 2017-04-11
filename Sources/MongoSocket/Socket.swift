@@ -13,6 +13,7 @@ import Socks
 import SocksCore
 import TLS
 import libc
+import CLibreSSL
 
 public final class MongoSocket: MongoTCP {
     private let plainClient: Socks.TCPClient?
@@ -61,7 +62,7 @@ public final class MongoSocket: MongoTCP {
         if sslEnabled {
             guard let sslClient = sslClient else { throw MongoSocketError.clientNotInitialized }
             
-            receivedBytes = libc.recv(sslClient.socket.descriptor, buffer.pointer, Int(UInt16.max), 0)
+            receivedBytes = tls_read(sslClient.currContext, buffer.pointer, Int(UInt16.max))
         } else {
             guard let plainClient = plainClient else { throw MongoSocketError.clientNotInitialized }
             
