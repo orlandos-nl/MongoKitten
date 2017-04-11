@@ -459,7 +459,8 @@ public final class Server {
     ///
     /// Takes the most efficient connection and prefers connections that are already authenticated to this database
     internal func reserveConnection(writing: Bool = false, authenticatedFor db: Database?, toHost host: (String, UInt16)? = nil) throws -> Connection {
-        logger.verbose("Connection requested for database \(String(describing: db?.description))")
+        logger.verbose("Connection requested for \(db?.description ?? "any database")")
+        
         var bestMatches = [Connection]()
         
         connectionPoolLock.lock()

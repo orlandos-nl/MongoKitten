@@ -19,7 +19,7 @@ var package = Package(
         .Package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", Version(0,6,7)),
 
         // Provides Sockets + SSL
-        .Package(url: "https://github.com/vapor/tls.git", majorVersion: 1),
+        .Package(url: "https://github.com/vapor/tls.git", Version(2,0,0, prereleaseIdentifiers: ["beta"])),
         
         // Asynchronous behaviour
         .Package(url: "https://github.com/OpenKitten/Schrodinger.git", majorVersion: 1),
