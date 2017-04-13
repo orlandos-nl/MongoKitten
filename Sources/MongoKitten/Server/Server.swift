@@ -86,10 +86,10 @@ public final class Server {
     private let connectionPoolLock = NSRecursiveLock()
     
     /// Lock to prevent multiple writes to/from the servers.
-    private let hostPoolLock = NSLock()
+    private let hostPoolQueue = DispatchQueue(label: "org.mongokitten.server.hostPool", qos: DispatchQoS.userInteractive)
     
     /// A lock to prevent multiple mutations of the maintainance tasks array
-    private let maintainanceLoopLock = NSLock()
+    private let maintainanceLoopTasksQueue = DispatchQueue(label: "org.mongokitten.server.maintainanceLoopTasks", qos: DispatchQoS.userInteractive)
     
     /// Keeps track of the connections
     private var currentConnections = 0, maximumConnections = 100, maximumConnectionsPerHost = 100
@@ -232,13 +232,13 @@ public final class Server {
         }
         connectionPoolLock.unlock()
         
-        maintainanceLoopLock.lock()
-        for action in maintainanceLoopCalls {
-            action()
+        maintainanceLoopTasksQueue.sync {
+            for action in maintainanceLoopCalls {
+                action()
+            }
+            
+            maintainanceLoopCalls = []
         }
-        
-        maintainanceLoopCalls = []
-        maintainanceLoopLock.unlock()
         
         Thread.sleep(forTimeInterval: 30)
         
@@ -320,68 +320,64 @@ public final class Server {
     /// - parameter authenticatedFor: The Database that this connection is opened for. Prepares this Connection for authentication to this Database
     private func makeConnection(writing: Bool = true, authenticatedFor: Database?) throws -> Connection {
         logger.verbose("Attempting to create a new connection")
-        self.hostPoolLock.lock()
-        
-        defer {
-            self.hostPoolLock.unlock()
-        }
-        
-        // Procedure to find best matching server
-        
-        // Takes a default server, which is the first primary server that is online
-        guard var lowestOpenConnections = clientSettings.hosts.first(where: { $0.isPrimary && $0.online }) else {
-            logger.verbose("No primary connection source has been found")
-            throw MongoError.noServersAvailable
-        }
-        
-        // If the connection has no need to be writable and slave reading is OK
-        if !writing && slaveOK {
-            // Find the next best match
-            for server in clientSettings.hosts.filter({ !$0.isPrimary && $0.online && $0.openConnections < maximumConnectionsPerHost }) {
-                // If this match is any good
-                if server.openConnections < lowestOpenConnections.openConnections || (lowestOpenConnections.isPrimary && lowestOpenConnections.openConnections < server.openConnections - 2) {
-                    // Make it the new selected server
-                    lowestOpenConnections = server
+        return try self.hostPoolQueue.sync {
+            // Procedure to find best matching server
+            
+            // Takes a default server, which is the first primary server that is online
+            guard var lowestOpenConnections = clientSettings.hosts.first(where: { $0.isPrimary && $0.online }) else {
+                logger.verbose("No primary connection source has been found")
+                throw MongoError.noServersAvailable
+            }
+            
+            // If the connection has no need to be writable and slave reading is OK
+            if !writing && slaveOK {
+                // Find the next best match
+                for server in clientSettings.hosts.filter({ !$0.isPrimary && $0.online && $0.openConnections < maximumConnectionsPerHost }) {
+                    // If this match is any good
+                    if server.openConnections < lowestOpenConnections.openConnections || (lowestOpenConnections.isPrimary && lowestOpenConnections.openConnections < server.openConnections - 2) {
+                        // Make it the new selected server
+                        lowestOpenConnections = server
+                    }
                 }
             }
-        }
-        
-        // The connections mustn't be over the maximum specified connection count
-        if lowestOpenConnections.openConnections >= maximumConnectionsPerHost {
-            logger.verbose("Cannot create a new connection because the limit has been reached")
-            throw MongoError.noServersAvailable
-        }
-        
-        let connection = try Connection(clientSettings: self.clientSettings, writable: lowestOpenConnections.isPrimary, host: lowestOpenConnections) {
-            self.hostPoolLock.lock()
-            for (id, server) in self.servers.enumerated() where server == lowestOpenConnections {
-                var host = server
-                host.openConnections -= 1
-                self.servers[id] = host
+            
+            // The connections mustn't be over the maximum specified connection count
+            if lowestOpenConnections.openConnections >= maximumConnectionsPerHost {
+                logger.verbose("Cannot create a new connection because the limit has been reached")
+                throw MongoError.noServersAvailable
             }
-            self.hostPoolLock.unlock()
+            
+            let connection = try Connection(clientSettings: self.clientSettings, writable: lowestOpenConnections.isPrimary, host: lowestOpenConnections) {
+                self.hostPoolQueue.sync {
+                    for (id, server) in self.servers.enumerated() where server == lowestOpenConnections {
+                        var host = server
+                        host.openConnections -= 1
+                        self.servers[id] = host
+                    }
+                }
+            }
+            
+            // Check if the connection is successful
+            guard connection.isConnected else {
+                logger.info("The found connection source is offline")
+                throw MongoError.notConnected
+            }
+            
+            // Add the count to both the global and server connection pool
+            currentConnections += 1
+            
+            for (id, server) in servers.enumerated() where server == lowestOpenConnections {
+                lowestOpenConnections.openConnections += 1
+                servers[id] = lowestOpenConnections
+                logger.debug("Successfully created a new connection to the server at \(server.hostname):\(server.port)")
+                return connection
+            }
+            
+            // If the server couldn't be updated form some weird reason
+            currentConnections -= 1
+            logger.fatal("Couldn't update the connection pool's metadata")
+            throw MongoError.internalInconsistency
         }
-        
-        // Check if the connection is successful
-        guard connection.isConnected else {
-            logger.info("The found connection source is offline")
-            throw MongoError.notConnected
-        }
-        
-        // Add the count to both the global and server connection pool
-        currentConnections += 1
-        
-        for (id, server) in servers.enumerated() where server == lowestOpenConnections {
-            lowestOpenConnections.openConnections += 1
-            servers[id] = lowestOpenConnections
-            logger.debug("Successfully created a new connection to the server at \(server.hostname):\(server.port)")
-            return connection
-        }
-        
-        // If the server couldn't be updated form some weird reason
-        currentConnections -= 1
-        logger.fatal("Couldn't update the connection pool's metadata")
-        throw MongoError.internalInconsistency
     }
     
     /// Makes a new connection for the connection pool to a predefined host
@@ -389,13 +385,13 @@ public final class Server {
     /// - parameter authenticatedFor: The Database that this connection is opened for. Prepares this Connection for authentication to this Database
     private func makeConnection(toHost host: MongoHost, authenticatedFor: Database?) throws -> Connection {
         let connection = try Connection(clientSettings: self.clientSettings, writable: host.isPrimary, host: host) {
-            self.hostPoolLock.lock()
-            for (id, server) in self.servers.enumerated() where server == host {
-                var host = server
-                host.openConnections -= 1
-                self.servers[id] = host
+            self.hostPoolQueue.sync {
+                for (id, server) in self.servers.enumerated() where server == host {
+                    var host = server
+                    host.openConnections -= 1
+                    self.servers[id] = host
+                }
             }
-            self.hostPoolLock.unlock()
         }
         
         // Check if the connection is successful
@@ -408,24 +404,23 @@ public final class Server {
         
         // Add the count to both the global and server connection pool
         
-        self.hostPoolLock.lock()
-        defer { self.hostPoolLock.unlock() }
-        
-        currentConnections += 1
-        
-        for (id, server) in servers.enumerated() where server == host {
-            var host = host
-            host.openConnections += 1
-            servers[id] = host
-            logger.debug("Successfully created a new connection to the server at \(server.hostname):\(server.port)")
-            return connection
+        return try self.hostPoolQueue.sync {
+            currentConnections += 1
+            
+            for (id, server) in servers.enumerated() where server == host {
+                var host = host
+                host.openConnections += 1
+                servers[id] = host
+                logger.debug("Successfully created a new connection to the server at \(server.hostname):\(server.port)")
+                return connection
+            }
+            
+            // If the server couldn't be updated form some weird reason
+            logger.fatal("Couldn't update the connection pool's metadata")
+            
+            currentConnections -= 1
+            throw MongoError.internalInconsistency
         }
-        
-        // If the server couldn't be updated form some weird reason
-        logger.fatal("Couldn't update the connection pool's metadata")
-        
-        currentConnections -= 1
-        throw MongoError.internalInconsistency
     }
     
     /// Prepares a maintainance task for detected disconnected connections
@@ -437,17 +432,16 @@ public final class Server {
         
         // If this is a replica server, set up a reconnect
         if self.isReplica {
-            self.maintainanceLoopLock.lock()
-            defer { self.maintainanceLoopLock.unlock() }
-            
-            self.logger.error("Disconnected from the replica set. Will attempt to reconnect")
-            
-            // If reinitializing is already happening, don't do it more than once
-            if !self.reinitializeReplica {
-                self.reinitializeReplica = true
-                self.maintainanceLoopCalls.append {
-                    self.logger.info("Attempting to reconnect to the replica set.")
-                    self.initializeReplica()
+            self.maintainanceLoopTasksQueue.sync  {
+                self.logger.error("Disconnected from the replica set. Will attempt to reconnect")
+                
+                // If reinitializing is already happening, don't do it more than once
+                if !self.reinitializeReplica {
+                    self.reinitializeReplica = true
+                    self.maintainanceLoopCalls.append {
+                        self.logger.info("Attempting to reconnect to the replica set.")
+                        self.initializeReplica()
+                    }
                 }
             }
         }
@@ -513,7 +507,7 @@ public final class Server {
             }
             // Otherwise, find any viable connection
         } else {
-            bestMatches = matches.filter{ connection in
+            bestMatches = matches.filter { connection in
                 return ((!writing && slaveOK) || connection.writable)
             }
         }
@@ -643,15 +637,13 @@ public final class Server {
         currentConnections = 0
         
         connectionPoolLock.unlock()
-        hostPoolLock.lock()
-        
-        for (index, server) in self.servers.enumerated() {
-            var server = server
-            server.openConnections = 0
-            self.servers[index] = server
+        hostPoolQueue.sync {
+            for (index, server) in self.servers.enumerated() {
+                var server = server
+                server.openConnections = 0
+                self.servers[index] = server
+            }
         }
-        
-        hostPoolLock.unlock()
     }
     
     
@@ -672,19 +664,19 @@ public final class Server {
         
         let promise = ManualPromise<ServerReply>(timeoutAfter: .seconds(Int(timeout)))
         
-        Connection.responseLock.lock()
-        connection.waitingForResponses[requestId] = promise
-        Connection.responseLock.unlock()
+        Connection.responseQueue.sync {
+            connection.waitingForResponses[requestId] = promise
+        }
         
         do {
             try connection.client.send(data: messageData)
         } catch {
             logger.debug("Could not send data because of the following error: \"\(error)\"")
             connection.close()
-            Connection.responseLock.lock()
-            defer { Connection.responseLock.unlock() }
-            connection.waitingForResponses[requestId] = nil
-            throw error
+            try Connection.responseQueue.sync {
+                connection.waitingForResponses[requestId] = nil
+                throw error
+            }
         }
         
         return try promise.await()
