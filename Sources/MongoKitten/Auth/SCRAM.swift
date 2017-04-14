@@ -79,10 +79,7 @@ final class SCRAMClient {
                 
                 switch first {
                 case "v":
-                    guard let signatureData = Data(base64Encoded: data) else {
-                        throw MongoError.invalidBase64String
-                    }
-                    signature = Array(signatureData)
+                    signature = Array(try Base64.decode(data))
                 default:
                     break
                 }
@@ -106,8 +103,8 @@ final class SCRAMClient {
     /// - returns: A tuple where the proof is to be sent to the server and the signature is to be verified in the server's responses.
     /// - throws: When unable to parse the challenge
     func process(_ challenge: String, with details: (username: String, password: Bytes), usingNonce nonce: String) throws -> (proof: String, serverSignature: Bytes) {
-        func xor(_ lhs: Bytes, _ rhs: Bytes) -> Bytes {
-            var result = Bytes(repeating: 0, count: min(lhs.count, rhs.count))
+        func xor(_ lhs: Bytes, _ rhs: Bytes) -> Data {
+            var result = Data(repeating: 0, count: min(lhs.count, rhs.count))
             
             for i in 0..<result.count {
                 result[i] = lhs[i] ^ rhs[i]
@@ -116,7 +113,7 @@ final class SCRAMClient {
             return result
         }
         
-        let encodedHeader = Data(bytes: Bytes(gs2BindFlag.utf8)).base64EncodedString()
+        let encodedHeader = Base64.encode(Data(bytes: Bytes(gs2BindFlag.utf8)))
         
         let parsedResponse = try parse(challenge: challenge)
 
@@ -128,9 +125,7 @@ final class SCRAMClient {
         
         let noProof = "c=\(encodedHeader),r=\(parsedResponse.nonce)"
         
-        guard let data = Data(base64Encoded: parsedResponse.salt) else {
-            throw MongoError.invalidBase64String
-        }
+        let data = try Base64.decode(parsedResponse.salt)
         
         let salt = Array(data)
         let saltedPassword: Bytes
@@ -159,7 +154,7 @@ final class SCRAMClient {
         let clientProof = xor(clientKey, clientSignature)
         let serverSignature = try HMAC(key: serverKey, variant: .sha1).authenticate(authenticationMessageBytes)
         
-        let proof = Data(bytes: clientProof).base64EncodedString()
+        let proof = Base64.encode(clientProof)
 
         return (proof: "\(noProof),p=\(proof)", serverSignature: serverSignature)
     }
