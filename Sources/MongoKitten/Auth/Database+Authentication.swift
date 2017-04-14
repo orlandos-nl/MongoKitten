@@ -67,7 +67,7 @@ extension Database {
     /// - parameter signature: The server signatue to verify
     ///
     /// - throws: On authentication failure or an incorrect Server Signature
-    private func complete(SASL payload: String, using response: Document, verifying signature: Bytes, usingConnection connection: Connection) throws {
+    private func complete(SASL payload: String, using response: Document, verifying signature: Data, usingConnection connection: Connection) throws {
         // If we failed authentication
         guard Int(response["ok"]) == 1 else {
             log.error("Authentication failed because of the following reason")
@@ -92,7 +92,9 @@ extension Database {
             throw AuthenticationError.responseParseError(response: payload)
         }
         
-        guard let finalResponseData = Data(base64Encoded: stringResponse), let finalResponse = String(bytes: Array(finalResponseData), encoding: String.Encoding.utf8) else {
+        let finalResponseData = try Base64.decode(stringResponse)
+        
+        guard let finalResponse = String(bytes: finalResponseData, encoding: String.Encoding.utf8) else {
             log.error("Authentication to MongoDB with SASL failed because no valid response was received")
             log.debug(response)
             throw MongoError.invalidBase64String
@@ -106,13 +108,7 @@ extension Database {
             throw AuthenticationError.responseParseError(response: payload)
         }
         
-        guard let serverSignatureData = Data(base64Encoded: v) else {
-            log.error("Authentication to MongoDB with SASL failed because no valid Base64 was received")
-            log.debug(response)
-            throw MongoError.invalidBase64String
-        }
-        
-        let serverSignature = Array(serverSignatureData)
+        let serverSignature = try Base64.decode(v)
         
         guard serverSignature == signature else {
             log.error("Authentication to MongoDB with SASL failed because the server signature is invalid")
@@ -129,7 +125,7 @@ extension Database {
         
         let response = try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: 0)
         
-        try self.complete(SASL: payload, using: response.documents.first ?? [:], verifying: serverSignature, usingConnection: connection)
+        try self.complete(SASL: payload, using: response.documents.first ?? [:], verifying: signature, usingConnection: connection)
     }
     
     /// Respond to a challenge
@@ -158,7 +154,9 @@ extension Database {
             throw AuthenticationError.authenticationFailure
         }
         
-        guard let stringResponseData = Data(base64Encoded: stringResponse), let decodedStringResponse = String(bytes: Array(stringResponseData), encoding: String.Encoding.utf8) else {
+        let stringResponseData = try Base64.decode(stringResponse)
+        
+        guard let decodedStringResponse = String(bytes: Array(stringResponseData), encoding: String.Encoding.utf8) else {
             log.error("Authentication for MongoDB user \(details.username) with SASL failed because no valid Base64 has been received")
             throw MongoError.invalidBase64String
         }
@@ -173,7 +171,7 @@ extension Database {
         
         
         // Base64 the payload
-        let payload = Data(bytes: result.proof.cStringBytes).base64EncodedString()
+        let payload = Base64.encode(Data(result.proof.cStringBytes))
         
         // Send the proof
         let cmd = self["$cmd"]
@@ -188,7 +186,7 @@ extension Database {
         // If we don't get a correct reply
         
         // Complete Authentication
-        try self.complete(SASL: payload, using: response.documents.first ?? [:], verifying: result.serverSignature, usingConnection: connection)
+        try self.complete(SASL: payload, using: response.documents.first ?? [:], verifying: Data(result.serverSignature), usingConnection: connection)
     }
     
     /// Authenticates to this database using SASL
@@ -203,7 +201,7 @@ extension Database {
         
         let authPayload = try auth.authenticate(details.username, usingNonce: nonce)
         
-        let payload = Data(bytes: authPayload.cStringBytes).base64EncodedString()
+        let payload = Base64.encode(Data(bytes: authPayload.cStringBytes))
         
         let cmd = self["$cmd"]
         let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: [
