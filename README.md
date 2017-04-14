@@ -53,9 +53,9 @@ And `import MongoKitten` in your project.
 
 ## Learn
 
-[We host all our tutorials here](http://beta.openkitten.org)
+[Many articles on medium are listed here](https://www.reddit.com/r/swift/comments/65bvre/a_rapidly_growing_list_of_mongokittenswift_guides/) [and here](http://beta.openkitten.org).
 
-[And we host the MongoKitten documentation including dash docset here](http://mongokitten.openkitten.org/)
+[We host the MongoKitten documentation including dash docset here](http://mongokitten.openkitten.org/).
 
 ## Support
 
