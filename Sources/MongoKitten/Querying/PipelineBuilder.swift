@@ -262,7 +262,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
                 "$addFields": Document(dictionaryElements: fields.map {
                     ($0.0, $0.1.makeExpression())
                 })
-                ])
+            ])
         }
         
         /// Runs a geospatial query on the inputted Documents
