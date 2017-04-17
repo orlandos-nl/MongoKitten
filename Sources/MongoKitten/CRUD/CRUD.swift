@@ -39,6 +39,61 @@ protocol CollectionQueryable {
 
 /// Internal functions for common interactions with MongoDB (CRUD operations)
 extension CollectionQueryable {
+    /// The read concern to apply by default
+    var readConcern: ReadConcern? {
+        get {
+            return collection.readConcern
+        }
+        set {
+            collection.readConcern = newValue
+        }
+    }
+    
+    /// The write concern to apply by default
+    var writeConcern: WriteConcern? {
+        get {
+            return collection.writeConcern
+        }
+        set {
+            collection.writeConcern = newValue
+        }
+    }
+    
+    /// The collation to apply by default
+    var collation: Collation? {
+        get {
+            return collection.collation
+        }
+        set {
+            collection.collation = newValue
+        }
+    }
+    
+    /// The timeout to apply by default
+    var timeout: DispatchTimeInterval? {
+        get {
+            return collection.timeout
+        }
+        set {
+            collection.timeout = newValue
+        }
+    }
+    
+    /// The collection's full name
+    var fullCollectionName: String {
+        return collection.fullName
+    }
+    
+    /// The collection's "simple" name
+    var collectionName: String {
+        return collection.name
+    }
+    
+    /// The database this Collection resides in
+    var database: Database {
+        return collection.database
+    }
+    
     /// Inserts a set of Documents
     ///
     /// - parameter documents: The documents to insert
