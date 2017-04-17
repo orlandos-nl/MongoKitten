@@ -230,8 +230,11 @@ extension CollectionQueryable {
             }
         }
         
-        let reply: ServerReply
+        if let listener = database.server.whenExplaining {
+            listener(try collection.explained.aggregate(pipeline, readConcern: readConcern, collation: collation, options: options))
+        }
         
+        let reply: ServerReply
         let newConnection: Connection
         
         if let connection = connection {
@@ -280,6 +283,10 @@ extension CollectionQueryable {
         command["readConcern"] = readConcern ?? self.readConcern
         command["collation"] = collation ?? self.collation
         
+        if let listener = database.server.whenExplaining {
+            listener(try collection.explained.count(filter, limiting: limit, skipping: skip, readConcern: readConcern, collation: collation, timeout: timeout))
+        }
+        
         let reply: ServerReply
         
         if let connection = connection {
@@ -325,6 +332,10 @@ extension CollectionQueryable {
                 reply = try self.database.execute(command: command, writing: false, using: connection)
             } else {
                 reply = try self.database.execute(command: command, writing: false)
+            }
+            
+            if let listener = database.server.whenExplaining {
+                listener(try collection.explained.update(updates: updates, writeConcern: writeConcern, ordered: ordered, timeout: timeout))
             }
             
             if let writeErrors = Document(reply.documents.first?["writeErrors"]), (Int(reply.documents.first?["ok"]) != 1 || ordered == true) {
@@ -409,6 +420,10 @@ extension CollectionQueryable {
                 reply = try self.database.execute(command: command, writing: false, using: connection)
             } else {
                 reply = try self.database.execute(command: command, writing: false)
+            }
+            
+            if let listener = database.server.whenExplaining {
+                listener(try collection.explained.remove(removals: removals, writeConcern: writeConcern, ordered: ordered, timeout: timeout))
             }
             
             if let writeErrors = Document(reply.documents.first?["writeErrors"]), (Int(reply.documents.first?["ok"]) != 1 || ordered == true) {
@@ -498,6 +513,10 @@ extension CollectionQueryable {
             
             if let limit = limit {
                 command["limit"] = Int32(limit)
+            }
+            
+            if let listener = database.server.whenExplaining {
+                listener(try collection.explained.find(filter, sortedBy: sort, projecting: projection, readConcern: readConcern, collation: collation, skipping: skip, limitedTo: limit, withBatchSize: batchSize))
             }
             
             let cursorConnection = try connection ?? (try self.database.server.reserveConnection(authenticatedFor: self.collection.database))

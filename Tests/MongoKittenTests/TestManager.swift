@@ -50,6 +50,12 @@ final class TestManager {
             databases.append(codecovDb)
         }
         
+        for db in databases {
+            db.server.whenExplaining = { a in
+                print(a)
+            }
+        }
+        
         return databases
     }
     

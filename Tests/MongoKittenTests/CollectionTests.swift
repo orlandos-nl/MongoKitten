@@ -669,6 +669,45 @@ class CollectionTests: XCTestCase {
             }
         }
     }
+    
+    func testExplain() throws {
+        for db in TestManager.dbs {
+            try db["explain"].drop()
+            
+            var docs = [Document]()
+            var buffer = [Document]()
+            
+            for i in 0..<10_000 {
+                docs.append([
+                        "superKey": i
+                    ])
+            }
+            
+            for _ in 0..<5_000 {
+                buffer.append([
+                        "superKey": ObjectId()
+                    ])
+            }
+            
+            try db["explain"].append(contentsOf: buffer)
+            try db["explain"].append(contentsOf: docs)
+            try db["explain"].append(contentsOf: buffer)
+            
+            print(try db["explain"].explained.find())
+            let explaination = try db["explain"].explained.find("superKey" >= 4_000 && "superKey" <= 6_000)
+            
+            print(explaination)
+            try db["explain"].createIndex(named: "superkey", withParameters: .sort(field: "superKey", order: .ascending))
+            
+            try db.server.fsync()
+            print("")
+            print("FSYNC")
+            print("")
+            
+            print(try db["explain"].explained.find())
+            print(try db["explain"].explained.find("superKey" >= 4_000 && "superKey" <= 6_000))
+        }
+    }
 
     func testUpdateErrors() throws {
         for db in TestManager.dbs {

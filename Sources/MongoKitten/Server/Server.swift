@@ -47,6 +47,10 @@ public final class Server {
         }
     }
     
+    public typealias ExplainListener = ((Explaination)->())
+    
+    public var whenExplaining: ExplainListener? = nil
+    
     /// All servers this library is connecting with
     internal var servers: [MongoHost] {
         get {
