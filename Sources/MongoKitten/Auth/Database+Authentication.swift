@@ -266,3 +266,23 @@ extension Database {
         }
     }
 }
+
+extension Server {
+    internal func authenticateX509(subject: String, usingConnection connection: Connection) throws {
+        let message = Message.Query(requestID: nextMessageID(), flags: [], collection: self["$external"]["$cmd"], numbersToSkip: 0, numbersToReturn: 1, query: [
+            "authenticate": 1,
+            "mechanism": "MONGODB-X509",
+            "user": subject
+        ], returnFields: nil)
+        
+        let successResponse = try self.sendAndAwait(message: message, overConnection: connection, timeout: 0)
+        
+        let successDocument = try firstDocument(in: successResponse)
+        
+        // Check for success
+        guard Int(successDocument["ok"]) == 1 else {
+            log.error("Authentication for MongoDB subject \(subject) with X.509 failed")
+            throw InternalMongoError.incorrectReply(reply: successResponse)
+        }
+    }
+}

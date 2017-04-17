@@ -89,6 +89,8 @@ class Connection {
                     try db.authenticate(SASL: details, usingConnection: self)
                 case .MONGODB_CR:
                     try db.authenticate(mongoCR: details, usingConnection: self)
+                case .MONGODB_X509:
+                    try db.server.authenticateX509(subject: details.username, usingConnection: self)
                 default:
                     throw MongoError.unsupportedFeature("authentication Method \"\(details.authenticationMechanism.rawValue)\"")
                 }
