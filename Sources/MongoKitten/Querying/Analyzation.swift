@@ -26,8 +26,8 @@ public struct Explaination {
                 case multiple([Stage])
             }
             
-            let type: StageType
-            let children: Children?
+            public let type: StageType
+            public let children: Children?
             
             init?(_ primitive: Primitive?) {
                 guard let document = Document(primitive), let stageTypeName = String(document["stage"]), let type = StageType(rawValue: stageTypeName) else {
@@ -56,8 +56,8 @@ public struct Explaination {
             }
         }
         
-        let namespace: String
-        let winningPlan: Stage
+        public let namespace: String
+        public let winningPlan: Stage
         
         init?(_ primitive: Primitive?) {
             guard let document = Document(primitive), let namespace = String(document["namespace"]), let winningPlan = Stage(document["winningPlan"]) else {
@@ -82,8 +82,8 @@ public struct Explaination {
                 case single(Stage)
             }
             
-            let type: StageType
-            let inputStage: Children?
+            public let type: StageType
+            public let inputStage: Children?
             
             init?(_ primitive: Primitive?) {
                 guard let document = Document(primitive), let stageTypeName = String(document["stage"]), let type = StageType(rawValue: stageTypeName) else {
