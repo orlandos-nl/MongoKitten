@@ -71,17 +71,51 @@ public struct Explaination {
     
     public struct ExecutionStats {
         public struct Stage {
+            public enum StageType: String {
+                case collectionScan = "COLLSCAN"
+                case indexScan = "IXSCAN"
+                case fetch = "FETCH"
+                case shardMerge = "SHARD_MERGE"
+            }
             
+            public indirect enum Children {
+                case single(Stage)
+            }
+            
+            let type: StageType
+            let inputStage: Children?
+            
+            init?(_ primitive: Primitive?) {
+                guard let document = Document(primitive), let stageTypeName = String(document["stage"]), let type = StageType(rawValue: stageTypeName) else {
+                    return nil
+                }
+                
+                self.type = type
+                
+                if let stage = Stage(document["inputStage"]) {
+                    inputStage = .single(stage)
+                } else {
+                    self.inputStage = nil
+                }
+            }
         }
         
         let successful: Bool
         let returned: Int
         let executionTimeMS: Int
-        let examnined: (keys: Int, docs: Int)
-        let stages: [Stage]
+        let examined: (keys: Int, docs: Int)
+        let stage: Stage
         
         init?(_ primitive: Primitive?) {
-            return nil
+            guard let document = Document(primitive), let success = Bool(document["executionSuccess"]), let nReturned = Int(document["nReturned"]), let executionTime = Int(document["executionTimeMillis"]), let stage = Stage(document["executionStages"]), let totalKeysExamined = Int(document["totalKeysExamined"]), let totalDocsExamined = Int(document["totalDocsExamined"]) else {
+                return nil
+            }
+            
+            self.successful = success
+            self.returned = nReturned
+            self.executionTimeMS = executionTime
+            self.stage = stage
+            self.examined = (totalKeysExamined, totalDocsExamined)
         }
     }
     
