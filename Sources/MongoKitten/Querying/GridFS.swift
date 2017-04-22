@@ -15,7 +15,7 @@ import CLibreSSL
 /// A GridFS instance similar to a collection
 ///
 /// Conforms to the GridFS standard as specified here: https://docs.mongodb.org/manual/core/gridfs/
-public class GridFS {
+public final class GridFS {
     /// The bucket for file data
     public let files: Collection
     

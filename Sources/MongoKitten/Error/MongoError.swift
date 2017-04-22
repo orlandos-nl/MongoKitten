@@ -192,8 +192,8 @@ internal enum InternalMongoError : Error, CustomDebugStringConvertible {
         switch self {
         case .invalidCString:
             return "The CString contains an invalid character or wasn't null-terminated"
-        case .incorrectReply(_):
-            return "The MongoDB message couldn't be parsed into a MongoDB reply"
+        case .incorrectReply(let reply):
+            return "The MongoDB response wasn't expected. " + reply.documents.makeExtendedJSON().serializedString()
         }
     }
 }

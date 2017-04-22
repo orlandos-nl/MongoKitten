@@ -35,7 +35,15 @@ public final class MongoSocket: MongoTCP {
             let internetSocket = try TCPInternetSocket(address: address)
             let invalidCertificateAllowed = options["invalidCertificateAllowed"] as? Bool ?? false
             let invalidHostNameAllowed = options["invalidHostNameAllowed"] as? Bool ?? false
-            let config = try TLS.Config(mode: .client, certificates: .openbsd, verifyHost: !invalidHostNameAllowed, verifyCertificates: !invalidCertificateAllowed)
+            
+            let config: TLS.Config
+            
+            if let CAFile = options["CAFile"] as? String {
+                config = try TLS.Config(mode: .client, certificates: .certificateAuthority(signature: .signedFile(caCertificateFile: CAFile)), verifyHost: !invalidHostNameAllowed, verifyCertificates: !invalidCertificateAllowed)
+            } else {
+                config = try TLS.Config(mode: .client, certificates: .openbsd, verifyHost: !invalidHostNameAllowed, verifyCertificates: !invalidCertificateAllowed)
+            }
+            
             
             sslClient = try TLS.Socket(config: config, socket: internetSocket)
             try sslClient?.connect(servername: hostname)

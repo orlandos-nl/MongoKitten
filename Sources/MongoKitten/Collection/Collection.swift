@@ -21,7 +21,7 @@ public typealias MongoCollection = Collection
 public final class Collection: CollectionQueryable {
     /// TODO: Fully expose/implement
     var timeout: DispatchTimeInterval?
-
+    
     /// Internally used for CollectionQueryable
     var collection: Collection {
         return self
@@ -285,51 +285,6 @@ public final class Collection: CollectionQueryable {
         return try self.remove(bulk: [(filter: filter ?? [:], limit: limit)], writeConcern: writeConcern, stoppingOnError: ordered)
     }
     
-    /// Removes this collection from the server.
-    ///
-    /// For more information: https://docs.mongodb.com/manual/reference/command/drop/#dbcmd.drop
-    ///
-    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
-    public func drop() throws {
-        _ = try self.database.execute(command: ["drop": self.name])
-    }
-    
-    /// Changes the name of an existing collection. To move the collection to a different database, use `move` instead.
-    ///
-    /// For more information: https://docs.mongodb.com/manual/reference/command/renameCollection/#dbcmd.renameCollection
-    ///
-    /// - parameter to: The new name for this collection
-    ///
-    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
-    public func rename(to newName: String) throws {
-        try self.move(to: database, named: newName)
-    }
-    
-    /// Move this collection to another database. Can also rename the collection in one go.
-    ///
-    /// **Users must have access to the admin database to run this command.**
-    ///
-    /// For more information: https://docs.mongodb.com/manual/reference/command/renameCollection/#dbcmd.renameCollection
-    ///
-    /// - parameter to: The database to move this collection to
-    /// - parameter named: The new name for this collection
-    ///
-    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
-    public func move(to database: Database, named collectionName: String? = nil, overwritingExistingCollection dropOldTarget: Bool? = nil) throws {
-        // TODO: Fail if the target database exists.
-        var command: Document = [
-            "renameCollection": self.fullName,
-            "to": "\(database.name).\(collectionName ?? self.name)"
-        ]
-        
-        if let dropOldTarget = dropOldTarget { command["dropTarget"] = dropOldTarget }
-        
-        _ = try self.database.server["admin"].execute(command: command)
-        
-        self.database = database
-        self.name = collectionName ?? name
-    }
-    
     /// Counts the amount of `Document`s matching the `filter`. Stops counting when the `limit` it reached
     ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/count/#dbcmd.count
@@ -470,6 +425,51 @@ public final class Collection: CollectionQueryable {
         return [Primitive](try firstDocument(in: try self.database.execute(command: command, writing: false))["values"])
     }
     
+    /// Removes this collection from the server.
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/drop/#dbcmd.drop
+    ///
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
+    public func drop() throws {
+        _ = try self.database.execute(command: ["drop": self.name])
+    }
+    
+    /// Changes the name of an existing collection. To move the collection to a different database, use `move` instead.
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/renameCollection/#dbcmd.renameCollection
+    ///
+    /// - parameter to: The new name for this collection
+    ///
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
+    public func rename(to newName: String) throws {
+        try self.move(to: database, named: newName)
+    }
+    
+    /// Move this collection to another database. Can also rename the collection in one go.
+    ///
+    /// **Users must have access to the admin database to run this command.**
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/renameCollection/#dbcmd.renameCollection
+    ///
+    /// - parameter to: The database to move this collection to
+    /// - parameter named: The new name for this collection
+    ///
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
+    public func move(to database: Database, named collectionName: String? = nil, overwritingExistingCollection dropOldTarget: Bool? = nil) throws {
+        // TODO: Fail if the target database exists.
+        var command: Document = [
+            "renameCollection": self.fullName,
+            "to": "\(database.name).\(collectionName ?? self.name)"
+        ]
+        
+        if let dropOldTarget = dropOldTarget { command["dropTarget"] = dropOldTarget }
+        
+        _ = try self.database.server["admin"].execute(command: command)
+        
+        self.database = database
+        self.name = collectionName ?? name
+    }
+    
     /// Creates an `Index` in this `Collection` on the specified keys.
     ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/createIndexes/#dbcmd.createIndexes
@@ -569,15 +569,16 @@ public final class Collection: CollectionQueryable {
     /// - throws: When MongoDB doesn't return a document indicating success, we'll throw a `MongoError.commandFailure()` containing the error document sent by the server
     /// - throws: When the `flags` document contains the key `collMod`, which is prohibited.
     public func set(flags: Document) throws {
-        guard flags["collMod"] == nil else {
-            throw MongoError.commandError(error: "Cannot execute modify() on \(self.description): document `flags` contains prohibited key `collMod`.")
-        }
+        let command = flags + ["collMod": self.name]
         
-        let command = ["collMod": self.name] as Document
+        log.verbose("Modifying \(self) with \(flags.count) flags")
+        log.debug(flags)
         
         let result = try firstDocument(in: database.execute(command: command + flags))
         
         guard Int(result["ok"]) == 1 else {
+            log.error("Collection modification for \(self) failed")
+            log.error(result)
             throw MongoError.commandFailure(error: result)
         }
     }

@@ -20,6 +20,12 @@ internal let isoDateFormatter: DateFormatter = {
     return fmt
 }()
 
+extension Array where Element == Document {
+    public func makeExtendedJSON(typeSafe: Bool = false) -> Cheetah.Value {
+        return self.makeDocument().makeExtendedJSON()
+    }
+}
+
 extension JSONObject {
     internal func parseExtendedJSON() -> Primitive {
         if keys.count == 1, let key = keys.first {

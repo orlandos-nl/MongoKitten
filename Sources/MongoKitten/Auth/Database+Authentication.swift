@@ -169,9 +169,10 @@ extension Database {
         
         let result = try previousInformation.scram.process(decodedStringResponse, with: (username: details.username, password: passwordBytes), usingNonce: previousInformation.nonce)
         
-        
         // Base64 the payload
         let payload = Base64.encode(Data(result.proof.cStringBytes))
+        
+        log.debug("Responding to the SASL challenge using payload \"\(payload)\"")
         
         // Send the proof
         let cmd = self["$cmd"]
@@ -204,6 +205,9 @@ extension Database {
         let payload = Base64.encode(Data(bytes: authPayload.cStringBytes))
         
         let cmd = self["$cmd"]
+        
+        log.verbose("Starting SASL authentication for \(details.username) against \(details.database ?? "no database")")
+        
         let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: [
             "saslStart": Int32(1),
             "mechanism": "SCRAM-SHA-1",
@@ -262,6 +266,28 @@ extension Database {
         guard Int(successDocument["ok"]) == 1 else {
             log.error("Authentication for MongoDB user \(details.username) with MongoCR failed against \(String(describing: details.database)) for the following reason")
             log.error(document)
+            throw InternalMongoError.incorrectReply(reply: successResponse)
+        }
+    }
+}
+
+extension Server {
+    internal func authenticateX509(subject: String, usingConnection connection: Connection) throws {
+        log.debug("Starting MONGODB-X509 authentication for subject \"\(subject)\"")
+        
+        let message = Message.Query(requestID: nextMessageID(), flags: [], collection: self["$external"]["$cmd"], numbersToSkip: 0, numbersToReturn: 1, query: [
+            "authenticate": 1,
+            "mechanism": "MONGODB-X509",
+            "user": subject
+        ], returnFields: nil)
+        
+        let successResponse = try self.sendAndAwait(message: message, overConnection: connection, timeout: 0)
+        
+        let successDocument = try firstDocument(in: successResponse)
+        
+        // Check for success
+        guard Int(successDocument["ok"]) == 1 else {
+            log.error("Authentication for MongoDB subject \(subject) with X.509 failed")
             throw InternalMongoError.incorrectReply(reply: successResponse)
         }
     }

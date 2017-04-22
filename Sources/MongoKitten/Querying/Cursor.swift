@@ -167,6 +167,7 @@ extension Cursor : Sequence, IteratorProtocol {
         return self
     }
     
+    /// Fetches the next entity in the Cursor
     public func next() -> T? {
         defer { position += 1 }
         

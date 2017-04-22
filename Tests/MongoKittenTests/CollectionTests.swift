@@ -58,23 +58,21 @@ class CollectionTests: XCTestCase {
         try! TestManager.disconnect()
     }
     
-//    func testAgressiveZipFetching() throws {
-//        for db in TestManager.dbs {
-//            var counter = 0
-//            
-//            db.server.cursorStrategy = .aggressive
-//            
-//            defer {
-//                db.server.cursorStrategy = .lazy
-//            }
-//            
-//            for _ in try db["zips"].find() {
-//                counter += 1
-//            }
-//
-//            XCTAssertEqual(counter, 29353)
-//        }
-//    }
+    func testCollectionSlice() throws {
+        for db in TestManager.dbs {
+            var counter = 0
+            
+            let zips = try db["zips"].find(withBatchSize: 300)
+            
+            XCTAssertEqual(try zips.count(), 29353)
+            
+            for _ in zips {
+                counter += 1
+            }
+
+            XCTAssertEqual(counter, 29353)
+        }
+    }
     
     func testEverything() throws {
         let everything: [() throws -> Void] = [

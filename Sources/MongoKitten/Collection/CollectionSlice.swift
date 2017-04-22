@@ -21,21 +21,6 @@ public class CollectionSlice<Element> : CollectionQueryable, Sequence, IteratorP
         return cursor.collection
     }
     
-    /// The collection's full name
-    var fullCollectionName: String {
-        return collection.fullName
-    }
-    
-    /// The collection's "simple" name
-    var collectionName: String {
-        return collection.name
-    }
-    
-    /// The database this Collection resides in
-    var database: Database {
-        return collection.database
-    }
-    
     /// The `ReadConcern` to apply on operations in here
     var readConcern: ReadConcern? {
         get {

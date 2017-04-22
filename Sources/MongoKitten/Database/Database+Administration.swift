@@ -38,15 +38,20 @@ extension Database {
             }
         }
         
-        command["validator"] = validator
+        log.verbose("Creating a collection named \"\(name)\" in \(self)\(validator != nil ? " with the provided validator" : "")")
+        
+        if let validator = validator {
+            command["validator"] = validator
+            log.debug("Validator:" + validator.makeDocument().makeExtendedJSON().serializedString())
+        }
 
         let document = try firstDocument(in: try execute(command: command))
 
         guard Int(document["ok"]) == 1 else {
             log.error("createCollection for collection \"\(name)\" was not successful because of the following error")
             log.error(document)
-            log.error("createCollection failed with the following options:")
-            log.error(options ?? [:])
+            log.debug("createCollection failed with the following options:")
+            log.debug(options ?? [:])
             throw MongoError.commandFailure(error: document)
         }
         
@@ -64,7 +69,11 @@ extension Database {
     /// - returns: A cursor to the resulting documents with collection info
     internal func getCollectionInfos(matching filter: Document? = nil) throws -> Cursor<Document> {
         var request: Document = ["listCollections": 1]
+        
+        log.verbose("Listing all collections\(filter != nil ? " using the provided filter" : "")")
+        
         if let filter = filter {
+            log.debug("The collections are matches against the following filter: " + filter.makeExtendedJSON().serializedString())
             request["filter"] = filter
         }
 
@@ -77,8 +86,8 @@ extension Database {
         guard let cursor = Document(result["cursor"]), Int(result["ok"]) == 1 else {
             log.error("The collection infos could not be fetched because of the following error")
             log.error(result)
-            log.error("The collection infos were being found using the following filter")
-            log.error(filter ?? [:])
+            log.debug("The collection infos were being filtered using the following query")
+            log.debug(filter ?? [:])
             self.server.returnConnection(connection)
             throw MongoError.commandFailure(error: result)
         }
@@ -190,6 +199,8 @@ extension Database {
         if let filter = filter {
             command["query"] = filter
         }
+        
+        log.verbose("Cloning \(self) to namespace \(ns)")
 
         let document = try firstDocument(in: try execute(command: command))
 
@@ -221,6 +232,8 @@ extension Database {
             "size": Int32(capped)
         ]
 
+        log.verbose("Cloning \(instance) to be named \"\(otherCollection)\" capped to \(capped) bytes")
+        
         let document = try firstDocument(in: try execute(command: command))
 
         guard Int(document["ok"]) == 1 else {

@@ -65,6 +65,7 @@ public final class Server {
         print(doc)
     }
     
+    /// The default cursor strategy to use server-wide
     public var cursorStrategy: CursorStrategy = .intelligent(bufferChunks: 3)
     
     /// The ClientSettings used to connect to server(s)
@@ -145,8 +146,11 @@ public final class Server {
             initializeReplica()
         } else {
             guard clientSettings.hosts.count == 1 else {
+                log.error("No hosts were provided for connection")
                 throw MongoError.noServersAvailable
             }
+            
+            log.info("Connecting to replica set")
             
             self.clientSettings.hosts[0].isPrimary = true
             self.clientSettings.hosts[0].online = true
@@ -165,6 +169,8 @@ public final class Server {
             var document: Document = [
                 "isMaster": Int32(1)
             ]
+            
+            log.debug("Sending `isMaster` to \(authDB)")
             
             document.append(self.driverInformation, forKey: "client")
             
@@ -195,7 +201,7 @@ public final class Server {
     ///
     /// - parameter automatically: Whether to connect automatically
     convenience public init(_ url: String, maxConnectionsPerServer maxConnections: Int = 100, defaultTimeout: TimeInterval = 30) throws {
-        let clientSettings = try ClientSettings(mongoURL: url)
+        let clientSettings = try ClientSettings(url)
         try self.init(clientSettings)
     }
     
@@ -305,7 +311,7 @@ public final class Server {
                 
                 host.online = true
             } catch {
-                logger.debug("Couldn't open a connection to MongoDB at \(host.hostname):\(host.port)")
+                logger.info("Couldn't open a connection to MongoDB at \(host.hostname):\(host.port)")
                 host.online = false
             }
             
@@ -325,7 +331,7 @@ public final class Server {
             
             // Takes a default server, which is the first primary server that is online
             guard var lowestOpenConnections = clientSettings.hosts.first(where: { $0.isPrimary && $0.online }) else {
-                logger.verbose("No primary connection source has been found")
+                logger.warning("No primary connection source has been found")
                 throw MongoError.noServersAvailable
             }
             
@@ -343,7 +349,7 @@ public final class Server {
             
             // The connections mustn't be over the maximum specified connection count
             if lowestOpenConnections.openConnections >= maximumConnectionsPerHost {
-                logger.verbose("Cannot create a new connection because the limit has been reached")
+                logger.debug("Cannot create a new connection because the limit has been reached")
                 throw MongoError.noServersAvailable
             }
             
@@ -359,7 +365,7 @@ public final class Server {
             
             // Check if the connection is successful
             guard connection.isConnected else {
-                logger.info("The found connection source is offline")
+                logger.warning("The found connection source is offline")
                 throw MongoError.notConnected
             }
             
@@ -396,7 +402,7 @@ public final class Server {
         
         // Check if the connection is successful
         guard connection.isConnected else {
-            logger.info("The found connection source is offline")
+            logger.warning("The found connection source is offline")
             throw MongoError.notConnected
         }
         
@@ -521,6 +527,7 @@ public final class Server {
                 let timeout = DispatchTime(uptimeNanoseconds: DispatchTime.now().uptimeNanoseconds + 10_000_000_000)
                 
                 guard case .success = self.connectionPoolSemaphore.wait(timeout: timeout) else {
+                    log.info("The MongoDB command has timed out because there were no available connections")
                     throw MongoError.timeout
                 }
                 
@@ -547,7 +554,7 @@ public final class Server {
         // If the connection isn't already authenticated to this DB
         if let db = db, !connection.authenticatedDBs.contains(db.name) {
             // Authenticate
-            logger.info("Authenticating the connection to \(db)")
+            logger.debug("Authenticating the connection to \(db)")
             try connection.authenticate(to: db)
             connection.authenticatedDBs.append(db.name)
         }

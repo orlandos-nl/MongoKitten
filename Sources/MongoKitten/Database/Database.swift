@@ -203,6 +203,9 @@ public final class Database {
     
     @discardableResult
     internal func execute(command document: Document, until timeout: TimeInterval = 0, writing: Bool = true, using connection: Connection) throws -> ServerReply {
+        log.debug("Executing the following command:")
+        log.debug(document)
+        
         let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
         return try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: timeout)
     }

@@ -35,6 +35,9 @@ extension Database {
         if let data = customData {
             command["customData"] = data
         }
+        
+        log.verbose("Creating user \(user)")
+        log.debug(roles)
 
         command["roles"] = roles
 

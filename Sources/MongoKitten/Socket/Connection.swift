@@ -64,6 +64,7 @@ class Connection {
             options["sslEnabled"]  = sslSettings.enabled
             options["invalidCertificateAllowed"]  = sslSettings.invalidCertificateAllowed
             options["invalidHostNameAllowed"] = sslSettings.invalidHostNameAllowed
+            options["CAFile"] = sslSettings.CAFilePath
         } else {
             options["sslEnabled"]  = false
         }
@@ -89,6 +90,8 @@ class Connection {
                     try db.authenticate(SASL: details, usingConnection: self)
                 case .MONGODB_CR:
                     try db.authenticate(mongoCR: details, usingConnection: self)
+                case .MONGODB_X509:
+                    try db.server.authenticateX509(subject: details.username, usingConnection: self)
                 default:
                     throw MongoError.unsupportedFeature("authentication Method \"\(details.authenticationMechanism.rawValue)\"")
                 }
