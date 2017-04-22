@@ -64,7 +64,6 @@ public struct Projection: ValueConvertible {
             self = value ? .included : .excluded
         }
         
-
         /// A dictionary literal that makes this a custom ProjectionExpression
         public init(dictionaryLiteral elements: (String, BSON.Primitive?)...) {
             self = .custom(Document(dictionaryElements: elements))

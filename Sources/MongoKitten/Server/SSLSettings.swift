@@ -17,6 +17,7 @@ public struct SSLSettings: ExpressibleByBooleanLiteral {
         self.enabled = value
         self.invalidHostNameAllowed = false
         self.invalidCertificateAllowed = false
+        self.CAFilePath = false
     }
 
     /// Enable SSL
@@ -27,11 +28,15 @@ public struct SSLSettings: ExpressibleByBooleanLiteral {
 
     /// Invalis certificate should be allowed. Defaults to false. Take care before setting this to true, as it makes the application susceptible to man-in-the-middle attacks.
     public let invalidCertificateAllowed: Bool
+    
+    /// The path to the CA File that can be used to recognize the server
+    public let CAFilePath: String?
 
     /// Creates an SSLSettings specification
-    public init(enabled: Bool, invalidHostNameAllowed: Bool = false, invalidCertificateAllowed: Bool = false) {
+    public init(enabled: Bool, invalidHostNameAllowed: Bool = false, invalidCertificateAllowed: Bool = false, CAFilePath: String? = nil) {
         self.enabled = enabled
         self.invalidHostNameAllowed = invalidHostNameAllowed
         self.invalidCertificateAllowed = invalidCertificateAllowed
+        self.CAFilePath = CAFilePath
     }
 }

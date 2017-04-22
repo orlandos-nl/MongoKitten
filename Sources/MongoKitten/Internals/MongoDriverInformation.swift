@@ -20,15 +20,15 @@ struct MongoDriverInformation: ValueConvertible {
 
     /// Converts this to an embeddable BSON.Primitive
     public func makePrimitive() -> BSON.Primitive {
-        let driver: Document = ["name":"MongoKitten","version":"4.0.0"]
+        let driver: Document = ["name": "MongoKitten", "version": "4.0.0"]
 
         var client: Document = ["driver": driver]
 
         if client.byteCount < 512 {
             #if os(Linux)
-                var os: Document = ["type":"Linux"]
+                var os: Document = ["type": "Linux"]
             #else
-                var os: Document = ["type":"Darwin"]
+                var os: Document = ["type": "Darwin"]
             #endif
 
             if ProcessInfo.processInfo.operatingSystemVersion.majorVersion != -1 {
@@ -39,7 +39,7 @@ struct MongoDriverInformation: ValueConvertible {
         }
 
         if let appName = appName, appName.lengthOfBytes(using: .utf8) < 128 && client.byteCount < 512  {
-            let application: Document = ["name":appName]
+            let application: Document = ["name": appName]
             client.append(application, forKey: "application")
         }
 
