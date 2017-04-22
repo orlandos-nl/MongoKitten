@@ -30,7 +30,7 @@ class ClientSettingsTest: XCTestCase {
         XCTAssertNil(simpleClientSettings.credentials)
         XCTAssertEqual(simpleClientSettings.hosts.first?.hostname, "openkitten.org")
 
-        let clientSettings = try ClientSettings(mongoURL: "mongodb://user:password@localhost:1234?authMechanism=MONGODB_CR")
+        let clientSettings = try ClientSettings("mongodb://user:password@localhost:1234?authMechanism=MONGODB_CR")
         XCTAssertNotNil(clientSettings.credentials)
         XCTAssertEqual(clientSettings.credentials?.authenticationMechanism, AuthenticationMechanism.MONGODB_CR)
         XCTAssertEqual(clientSettings.credentials?.username, "user")
@@ -44,21 +44,21 @@ class ClientSettingsTest: XCTestCase {
             XCTFail("Host not found")
         }
 
-        let clientSettingsLowerCase = try ClientSettings(mongoURL: "mongodb://user:passwor@localhost:27017?authMechanism=mongodb_cr")
+        let clientSettingsLowerCase = try ClientSettings("mongodb://user:passwor@localhost:27017?authMechanism=mongodb_cr")
         XCTAssertNotNil(clientSettingsLowerCase.credentials)
         XCTAssertEqual(clientSettingsLowerCase.credentials?.authenticationMechanism, AuthenticationMechanism.MONGODB_CR)
 
-        let clientSettingFailAuth = try ClientSettings(mongoURL: "mongodb://user:passwor@localhost:27017?authMechanism=mongo")
+        let clientSettingFailAuth = try ClientSettings("mongodb://user:passwor@localhost:27017?authMechanism=mongo")
         XCTAssertNotNil(clientSettingFailAuth.credentials)
         XCTAssertEqual(clientSettingFailAuth.credentials?.authenticationMechanism, AuthenticationMechanism.SCRAM_SHA_1)
 
-        let authSource = try ClientSettings(mongoURL: "mongodb://user:passwor@localhost:27017?authMechanism=SCRAM_SHA_1&authSource=mydbauth")
+        let authSource = try ClientSettings("mongodb://user:passwor@localhost:27017?authMechanism=SCRAM_SHA_1&authSource=mydbauth")
         XCTAssertNotNil(authSource.credentials)
         XCTAssertEqual(authSource.credentials?.authenticationMechanism, AuthenticationMechanism.SCRAM_SHA_1)
         XCTAssertEqual(authSource.credentials?.database, "mydbauth")
 
         do {
-            let clientAuthFailed = try ClientSettings(mongoURL: "mongodb://user@localhost:27017?authMechanism=mongo")
+            let clientAuthFailed = try ClientSettings("mongodb://user@localhost:27017?authMechanism=mongo")
             XCTAssertNil(clientAuthFailed)
         } catch let error {
             XCTAssertNotNil(error)
@@ -66,34 +66,34 @@ class ClientSettingsTest: XCTestCase {
     }
 
     func testInvalidURI() {
-        XCTAssertThrowsError(try ClientSettings(mongoURL: "localhost:27017"))
+        XCTAssertThrowsError(try ClientSettings("localhost:27017"))
         
-        XCTAssertNil(try ClientSettings(mongoURL: "mongodb://localhost:27017/databasename/invalidpath").credentials?.database)
+        XCTAssertNil(try ClientSettings("mongodb://localhost:27017/databasename/invalidpath").credentials?.database)
         
-        XCTAssertEqual(try ClientSettings(mongoURL: "mongodb://localhost:kaas/baas").hosts[0].port, 27017)
+        XCTAssertEqual(try ClientSettings("mongodb://localhost:kaas/baas").hosts[0].port, 27017)
     }
 
     func testSSLSettings() throws {
-        let clientSettings = try ClientSettings(mongoURL:"mongodb://user:passwor@localhost:27017?ssl=false")
+        let clientSettings = try ClientSettings("mongodb://user:passwor@localhost:27017?ssl=false")
         XCTAssertNil(clientSettings.sslSettings)
 
-        let sslClientSettings = try ClientSettings(mongoURL:"mongodb://user:passwor@localhost:27017?ssl=true")
+        let sslClientSettings = try ClientSettings("mongodb://user:passwor@localhost:27017?ssl=true")
         XCTAssertNotNil(sslClientSettings)
         XCTAssertEqual(sslClientSettings.sslSettings?.enabled, true)
         XCTAssertEqual(sslClientSettings.sslSettings?.invalidCertificateAllowed, false)
 
-        let sslInvalidCertSettings = try ClientSettings(mongoURL:"mongodb://user:passwor@localhost:27017?ssl=true&sslVerify=false")
+        let sslInvalidCertSettings = try ClientSettings("mongodb://user:passwor@localhost:27017?ssl=true&sslVerify=false")
         XCTAssertNotNil(sslInvalidCertSettings)
         XCTAssertEqual(sslInvalidCertSettings.sslSettings?.enabled, true)
         XCTAssertEqual(sslInvalidCertSettings.sslSettings?.invalidCertificateAllowed, true)
 
 
-        let sslValidCertSettings = try ClientSettings(mongoURL:"mongodb://user:passwor@localhost:27017?ssl=true&sslVerify=true")
+        let sslValidCertSettings = try ClientSettings("mongodb://user:passwor@localhost:27017?ssl=true&sslVerify=true")
         XCTAssertNotNil(sslValidCertSettings)
         XCTAssertEqual(sslValidCertSettings.sslSettings?.enabled, true)
         XCTAssertEqual(sslValidCertSettings.sslSettings?.invalidCertificateAllowed, false)
 
-        let invalidValueSettings = try ClientSettings(mongoURL:"mongodb://user:passwor@localhost:27017?ssl=test")
+        let invalidValueSettings = try ClientSettings("mongodb://user:passwor@localhost:27017?ssl=test")
         XCTAssertNil(invalidValueSettings.sslSettings)
         
         let SSLsettings: SSLSettings = true
@@ -127,7 +127,7 @@ class ClientSettingsTest: XCTestCase {
     }
 
     func testMultiHost() throws {
-        let clientSettings = try ClientSettings(mongoURL:"mongodb://user:passwor@host1:27018,host2,host3:1234")
+        let clientSettings = try ClientSettings("mongodb://user:passwor@host1:27018,host2,host3:1234")
         XCTAssertEqual(clientSettings.hosts.count, 3)
 
         if clientSettings.hosts.count == 3 {

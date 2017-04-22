@@ -129,10 +129,10 @@ public struct ClientSettings {
     public internal(set) var hosts: [MongoHost]
 
     /// The SSL Settings
-    public let sslSettings: SSLSettings?
+    public var sslSettings: SSLSettings?
 
     /// The credentials to authenticate to a mongo server
-    public let credentials: MongoCredentials?
+    public var credentials: MongoCredentials?
 
     /// Specified how many connections can be open per server
     public internal(set) var maxConnectionsPerServer: Int
@@ -141,10 +141,10 @@ public struct ClientSettings {
     public let defaultTimeout: TimeInterval
 
     /// The application's identifier
-    public let applicationName: String?
+    public var applicationName: String?
 
     /// Initializes the settings with a group of hosts, SSLsettings (if applicable) amonst other settings
-    public init(hosts:[MongoHost], sslSettings: SSLSettings?, credentials: MongoCredentials?, maxConnectionsPerServer: Int = 100, defaultTimeout: TimeInterval = 30, applicationName: String? = nil) {
+    public init(hosts: [MongoHost], sslSettings: SSLSettings?, credentials: MongoCredentials?, maxConnectionsPerServer: Int = 100, defaultTimeout: TimeInterval = 30, applicationName: String? = nil) {
 
         self.hosts = hosts
         self.sslSettings = sslSettings
@@ -156,7 +156,6 @@ public struct ClientSettings {
 
     /// Initializes the settings with a single host, SSLsettings (if applicable) amonst other settings
     public init(host: MongoHost, sslSettings: SSLSettings?, credentials: MongoCredentials?, maxConnectionsPerServer: Int = 100, defaultTimeout: TimeInterval = 30, applicationName: String? = nil) {
-        
         self.hosts = [host]
         self.credentials = credentials
         self.sslSettings = sslSettings
