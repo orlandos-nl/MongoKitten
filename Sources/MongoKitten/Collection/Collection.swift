@@ -574,15 +574,16 @@ public final class Collection: CollectionQueryable {
     /// - throws: When MongoDB doesn't return a document indicating success, we'll throw a `MongoError.commandFailure()` containing the error document sent by the server
     /// - throws: When the `flags` document contains the key `collMod`, which is prohibited.
     public func set(flags: Document) throws {
-        guard flags["collMod"] == nil else {
-            throw MongoError.commandError(error: "Cannot execute modify() on \(self.description): document `flags` contains prohibited key `collMod`.")
-        }
+        let command = flags + ["collMod": self.name]
         
-        let command = ["collMod": self.name] as Document
+        log.verbose("Modifying \(self) with \(flags.count) flags")
+        log.debug(flags)
         
         let result = try firstDocument(in: database.execute(command: command + flags))
         
         guard Int(result["ok"]) == 1 else {
+            log.error("Collection modification for \(self) failed")
+            log.error(result)
             throw MongoError.commandFailure(error: result)
         }
     }

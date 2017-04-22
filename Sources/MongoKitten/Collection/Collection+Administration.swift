@@ -28,9 +28,12 @@ extension Collection {
             "index": touchIndexes
         ]
         
+        log.verbose("Pre-caching \(touchData ? "data" : "")\(touchData && touchIndexes ? "and" : "")\(touchIndexes ? "indexes" : "") on \(self)")
+        
         let document = try firstDocument(in: try database.execute(command: command))
         
         guard Int(document["ok"]) == 1 else {
+            log.error(document)
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -52,9 +55,12 @@ extension Collection {
             "size": Int32(cap)
         ]
         
+        log.verbose("Converting \(self) to a collection capped to \(cap) bytes")
+        
         let document = try firstDocument(in: try database.execute(command: command))
         
         guard Int(document["ok"]) == 1 else {
+            log.error(document)
             throw MongoError.commandFailure(error: document)
         }
     }
@@ -70,6 +76,8 @@ extension Collection {
         let command: Document = [
             "reIndex": self.name
         ]
+        
+        log.verbose("Rebuilding indexes for \(self)")
         
         let document = try firstDocument(in: try database.execute(command: command))
         
@@ -95,6 +103,8 @@ extension Collection {
         if let force = force {
             command["force"] = force
         }
+        
+        log.verbose("Optimizing disk storage space \(force == true ? "forcefully " : "") for \(self)")
         
         let document = try firstDocument(in: try database.execute(command: command))
         

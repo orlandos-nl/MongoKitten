@@ -27,6 +27,9 @@ extension Database {
             "grantRolesToUser": user,
             "roles": roleList
         ]
+        
+        log.verbose("Granting roles to user \"\(user)\"")
+        log.debug(roleList)
 
         let document = try firstDocument(in: try execute(command: command))
 

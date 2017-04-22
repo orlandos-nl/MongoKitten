@@ -37,6 +37,8 @@ extension Collection {
         let reply = try database.execute(command: command, writing: false)
 
         guard let responseDoc = reply.documents.first, Int(responseDoc["ok"]) == 1 else {
+            log.error("The geographical 'geoNear' query failed")
+            log.error(reply.documents.first ?? [:])
             throw MongoError.invalidResponse(documents: reply.documents)
         }
 
