@@ -17,7 +17,7 @@ public struct SSLSettings: ExpressibleByBooleanLiteral {
         self.enabled = value
         self.invalidHostNameAllowed = false
         self.invalidCertificateAllowed = false
-        self.CAFilePath = false
+        self.CAFilePath = nil
     }
 
     /// Enable SSL
