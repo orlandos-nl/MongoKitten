@@ -25,11 +25,17 @@ Alternatively; make use of a DAAS (Database-as-a-service) like [MLab](https://ml
 
 ## Importing
 
-Add this to your dependencies:
+Add this to your Package.swift file:
+
+`.Package(url: "https://github.com/OpenKitten/MongoKitten.git", majorVersion: 3, minor: 0)`
+
+And `import MongoKitten` in your project.
+
+Note: MongoKitten 4 is ready for release, but depends on features coming in the next version of Vapor. If you'd like to take a peek, use this package URL instead.
 
 `.Package(url: "https://github.com/OpenKitten/MongoKitten.git", "4.0.0-vaportls")`
 
-And `import MongoKitten` in your project.
+If you're adding MongoKitten to an existing Xcode project, make sure to rebuild your Xcode project.
 
 ## Supported Features
 
