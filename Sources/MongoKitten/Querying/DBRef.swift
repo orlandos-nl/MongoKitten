@@ -23,13 +23,35 @@ public struct DBRef: ValueConvertible {
         return self.documentValue
     }
     
-    /// Created a DBRef
+    /// Creates a DBRef
     ///
     /// - parameter reference: The _id of the referenced object
     /// - parameter collection: The collection where this references object resides
     public init(referencing reference: BSON.Primitive, inCollection collection: Collection) {
         self.id = reference
         self.collection = collection
+    }
+    
+    /// Initializes this DBRef with a Primitive.
+    ///
+    /// This initializer fails when the Primitive isn't a valid DBRef Document
+    public init?(_ primitive: Primitive?, inServer server: Server) {
+        guard let document = Document(primitive) else {
+            return nil
+        }
+        
+        self.init(document, inServer: server)
+    }
+    
+    /// Initializes this DBRef with a Primitive.
+    ///
+    /// This initializer fails when the Primitive isn't a valid DBRef Document
+    public init?(_ primitive: Primitive?, inDatabase database: Database) {
+        guard let document = Document(primitive) else {
+            return nil
+        }
+        
+        self.init(document, inDatabase: database)
     }
     
     /// Initializes this DBRef with a Document.

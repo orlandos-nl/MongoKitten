@@ -16,9 +16,11 @@ extension Document : CustomDebugStringConvertible {
     /// - parameter collection: The collection to append this Document to
     ///
     /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
-    public mutating func append(to collection: Collection) throws {
+    public mutating func append(to collection: Collection) throws -> DBRef {
         let id = try collection.insert(self)
         self["_id"] = id
+        
+        return DBRef(referencing: id, inCollection: collection)
     }
     
     /// Upserts this Document into a collection.
@@ -26,13 +28,16 @@ extension Document : CustomDebugStringConvertible {
     /// - parameter collection: The collection to upsert this Doucment into
     ///
     /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
-    public mutating func upsert(into collection: Collection) throws {
+    public mutating func upsert(into collection: Collection) throws -> DBRef {
         let id = self["_id"] ?? ObjectId()
         self["_id"] = id
         
         try collection.update("_id" == id, to: self, upserting: true)
+        
+        return DBRef(referencing: id, inCollection: collection)
     }
     
+    /// Prints the Document as ExtendedJSON
     public var debugDescription: String {
         return self.makeExtendedJSON().serializedString()
     }

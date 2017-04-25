@@ -22,7 +22,7 @@ internal let isoDateFormatter: DateFormatter = {
 
 extension Array where Element == Document {
     public func makeExtendedJSON(typeSafe: Bool = false) -> Cheetah.Value {
-        return self.makeDocument().makeExtendedJSON()
+        return self.makeDocument().makeExtendedJSON(typeSafe: typeSafe)
     }
 }
 

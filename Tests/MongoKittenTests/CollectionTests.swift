@@ -343,6 +343,19 @@ class CollectionTests: XCTestCase {
             }
             
             XCTAssertEqual(String(originalDocument["name"]), "Harrie Bob")
+            
+            var doc: Document = [
+                "super": "banana"
+            ]
+            
+            let newReference = try doc.append(to: colA)
+            
+            guard let newReferred = try newReference.resolve() else {
+                XCTFail()
+                return
+            }
+            
+            XCTAssertEqual(String(newReferred["super"]), "banana")
         }
     }
 
