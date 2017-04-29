@@ -31,6 +31,17 @@ Add this to your dependencies:
 
 And `import MongoKitten` in your project.
 
+## Building
+
+Install OpenSSL
+- `brew install openssl`
+
+Build from command line :
+- `swift build -Xswiftc -I/usr/local/opt/openssl/include -Xlinker -L/usr/local/opt/openssl/lib`
+
+Generate Xcode project
+- `swift package -Xswiftc -I/usr/local/opt/openssl/include -Xlinker -L/usr/local/opt/openssl/lib generate-xcodeproj`
+
 ## Supported Features
 
 - All basic operations
