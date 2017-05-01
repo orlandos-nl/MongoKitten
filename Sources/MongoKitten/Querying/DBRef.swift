@@ -13,10 +13,10 @@ import BSON
 /// DBRef is a structure made to keep references to other MongoDB objects and resolve them easily
 public struct DBRef: ValueConvertible {
     /// The collection this referenced Document resides in
-    var collection: Collection
+    public var collection: Collection
     
     /// The referenced Document's _id
-    var id: BSON.Primitive
+    public var id: BSON.Primitive
     
     /// Converts this DBRef to a BSON.Primitive for easy embedding
     public func makePrimitive() -> BSON.Primitive {
