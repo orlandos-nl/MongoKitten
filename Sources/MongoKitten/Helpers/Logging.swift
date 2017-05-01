@@ -12,31 +12,37 @@ public protocol Logger {
 extension Logger {
     /// Logs a Document as verbose
     public func verbose(_ message: Document) {
+        guard !(self is NotLogger) else { return }
         self.verbose(String(bytes: message.makeExtendedJSON().serialize(), encoding: .utf8) ?? "")
     }
     
     /// Logs a Document as debug
     public func debug(_ message: Document) {
+        guard !(self is NotLogger) else { return }
         self.debug(String(bytes: message.makeExtendedJSON().serialize(), encoding: .utf8) ?? "")
     }
     
     /// Logs a Document as info
     public func info(_ message: Document) {
+        guard !(self is NotLogger) else { return }
         self.info(String(bytes: message.makeExtendedJSON().serialize(), encoding: .utf8) ?? "")
     }
     
     /// Logs a Document as warning
     public func warning(_ message: Document) {
+        guard !(self is NotLogger) else { return }
         self.warning(String(bytes: message.makeExtendedJSON().serialize(), encoding: .utf8) ?? "")
     }
     
     /// Logs a Document as error
     public func error(_ message: Document) {
+        guard !(self is NotLogger) else { return }
         self.error(String(bytes: message.makeExtendedJSON().serialize(), encoding: .utf8) ?? "")
     }
     
     /// Logs a Document as fatal
     public func fatal(_ message: Document) {
+        guard !(self is NotLogger) else { return }
         self.fatal(String(bytes: message.makeExtendedJSON().serialize(), encoding: .utf8) ?? "")
     }
 }

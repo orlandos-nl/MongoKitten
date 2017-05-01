@@ -7,7 +7,7 @@
 // See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/LICENSE.md for license information
 // See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of MongoKitten project authors
 //
-import Cheetah
+@_exported import Cheetah
 import BSON
 import Foundation
 import CryptoSwift
@@ -22,7 +22,7 @@ internal let isoDateFormatter: DateFormatter = {
 
 extension Array where Element == Document {
     public func makeExtendedJSON(typeSafe: Bool = false) -> Cheetah.Value {
-        return self.makeDocument().makeExtendedJSON()
+        return self.makeDocument().makeExtendedJSON(typeSafe: typeSafe)
     }
 }
 
