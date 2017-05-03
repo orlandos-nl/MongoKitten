@@ -29,6 +29,8 @@ public final class Buffer {
     }
 }
 
+public typealias ReadCallback = ((UnsafeMutablePointer<UInt8>, Int)->())
+public typealias ErrorCallback = ((Error)->())
 
 /// A class buffer that stores all received bytes without Copy-on-Write for efficiency
 public class TCPBuffer {
@@ -42,16 +44,13 @@ public class TCPBuffer {
 public protocol MongoTCP : class {
 
     /// Opens a socket to the given address at the given port with the given settings
-    init(address hostname: String, port: UInt16, options: [String: Any]) throws
+    init(address hostname: String, port: UInt16, options: [String: Any], onRead: @escaping ReadCallback, onError: @escaping ErrorCallback) throws
 
     /// Closes the connection
     func close() throws
 
     /// Sends the data to the other side of the connection
-    func send(data binary: [UInt8]) throws
-
-    /// Receives any available data from the socket
-    func receive(into buffer: Buffer) throws
+    func send(data pointer: UnsafePointer<UInt8>, withLengthOf length: Int)
 
     /// `true` when connected, `false` otherwise
     var isConnected: Bool { get }

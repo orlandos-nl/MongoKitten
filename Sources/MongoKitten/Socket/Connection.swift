@@ -16,7 +16,7 @@ import MongoSocket
 /// A connection to MongoDB
 class Connection {
     /// The TCP socket
-    let client: MongoTCP
+    fileprivate var client: MongoTCP!
     
     /// The received data TCP buffer
     let buffer = TCPBuffer()
@@ -36,24 +36,15 @@ class Connection {
     /// The amount of current users
     var users: Int = 0
     
-    /// The incoming temporary buffer
-    var incomingBuffer = Buffer()
-
-    /// The dispatch queue that this connection listens on
-    private static let receiveQueue = DispatchQueue(label: "org.mongokitten.server.receiveQueue", qos: DispatchQoS.userInteractive, attributes: .concurrent)
-    
     /// Handles mutations the response buffer
-    internal static let responseQueue = DispatchQueue(label: "org.mongokitten.server.responseQueue", qos: DispatchQoS.userInteractive)
-    
-    /// Prevents a crash when the client disconnects while checking for the connection status
-    internal let isConnectedQueue = DispatchQueue(label: "org.mongokitten.server.isConnected", qos: DispatchQoS.userInteractive)
+    internal static let mutationsQueue = DispatchQueue(label: "org.mongokitten.server.responseQueue", qos: DispatchQoS.userInteractive)
     
     /// The responses being waited for
     var waitingForResponses = [Int32: ManualPromise<ServerReply>]()
     
     /// Whether this client is still connected
     public var isConnected: Bool {
-        return isConnectedQueue.sync { self.client.isConnected }
+        return Connection.mutationsQueue.sync { self.client.isConnected }
     }
     
     /// Simply creates a new connection from existing data
@@ -68,13 +59,14 @@ class Connection {
         } else {
             options["sslEnabled"]  = false
         }
-
-        self.client = try MongoSocket(address: host.hostname, port: host.port, options: options)
+        
         self.writable = writable
         self.onClose = onClose
         self.host = host
-        
-        Connection.receiveQueue.async(execute: backgroundLoop)
+
+        self.client = try MongoSocket(address: host.hostname, port: host.port, options: options, onRead: self.onRead, onError: { _ in
+            self.close()
+        })
     }
     
     /// Authenticates this connection to a database
@@ -101,40 +93,32 @@ class Connection {
         }
     }
     
-    /// Receives response messages from the server and gives them to the callback closure
-    /// After handling the response with the closure it removes the closure
-    fileprivate func backgroundLoop() {
-        do {
-            try self.receive()
-        } catch {
-            // A receive failure is to be expected if the socket has been closed
-            if self.isConnected {
-                log.fatal("The MongoKitten background loop encountered an error and has stopped: \(error)")
-                log.fatal("Please file a report on https://github.com/openkitten/mongokitten")
-            }
-            
-            return
-        }
-        
-        Connection.receiveQueue.async(execute: backgroundLoop)
-    }
-    
     /// Closes this connection
     func close() {
         _ = try? client.close()
         onClose()
+        
+        Connection.mutationsQueue.sync {
+            for (_, callback) in self.waitingForResponses {
+                _ = try? callback.fail(MongoError.notConnected)
+            }
+            
+            self.waitingForResponses = [:]
+        }
     }
     
-    /// Called by the server thread to handle MongoDB Wire messages
-    ///
-    /// - parameter bufferSize: The amount of bytes to fetch at a time
-    ///
-    /// - throws: Unable to receive or parse the reply
-    private func receive(bufferSize: Int = 1024) throws {
-        try client.receive(into: incomingBuffer)
-        let b = UnsafeBufferPointer<Byte>(start: incomingBuffer.pointer, count: incomingBuffer.usedCapacity)
+    private func onRead(at pointer: UnsafeMutablePointer<UInt8>, withLengthOf length: Int) {
+        let b = UnsafeBufferPointer<Byte>(start: pointer, count: length)
         buffer.data += [UInt8](b)
         
+        _ = try? parseBuffer()
+    }
+    
+    func send(data: [UInt8]) {
+        client.send(data: data, withLengthOf: data.count)
+    }
+    
+    private func parseBuffer() throws {
         while buffer.data.count >= 36 {
             let length = Int(buffer.data[0...3].makeInt32())
             
@@ -148,12 +132,12 @@ class Connection {
             let reply = try Message.makeReply(from: responseData)
             
             defer {
-                Connection.responseQueue.sync {
+                Connection.mutationsQueue.sync {
                     waitingForResponses[responseId] = nil
                 }
             }
             
-            try Connection.responseQueue.sync {
+            try Connection.mutationsQueue.sync {
                 if let promise = waitingForResponses[responseId] {
                     _ = try promise.complete(reply)
                 }

@@ -675,20 +675,11 @@ public final class Server {
         
         let promise = ManualPromise<ServerReply>(timeoutAfter: .seconds(Int(timeout)))
         
-        Connection.responseQueue.sync {
+        Connection.mutationsQueue.sync {
             connection.waitingForResponses[requestId] = promise
         }
         
-        do {
-            try connection.client.send(data: messageData)
-        } catch {
-            logger.debug("Could not send data because of the following error: \"\(error)\"")
-            connection.close()
-            try Connection.responseQueue.sync {
-                connection.waitingForResponses[requestId] = nil
-                throw error
-            }
-        }
+        connection.send(data: messageData)
         
         return try promise.await()
     }
@@ -704,7 +695,7 @@ public final class Server {
     internal func send(message msg: Message, overConnection connection: Connection) throws -> Int32 {
         let messageData = try msg.generateData()
         
-        try connection.client.send(data: messageData)
+        connection.send(data: messageData)
         
         return msg.requestID
     }

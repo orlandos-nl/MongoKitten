@@ -12,15 +12,29 @@ import Foundation
 import Sockets
 import libc
 import CTLS
+import Dispatch
 import TLS
 
 public final class MongoSocket: MongoTCP {
     private let plainClient: TCPInternetSocket?
     private let sslClient: ClientSocket?
     private var sslEnabled = false
+    
+    private static let socketQueue = DispatchQueue(label: "org.mongokitten.socketQueue", qos: DispatchQoS.userInteractive)
+    
+    public var onRead: ReadCallback
+    public var onError: ErrorCallback
+    
+    private var operations = [(UnsafePointer<UInt8>, Int)]()
+    private let operationLock = NSLock()
+    
+    private let readSource: DispatchSourceRead
+    private let writeSource: DispatchSourceWrite
 
-    public init(address hostname: String, port: UInt16, options: [String: Any]) throws {
+    public init(address hostname: String, port: UInt16, options: [String: Any], onRead: @escaping ReadCallback, onError: @escaping ErrorCallback) throws {
         self.sslEnabled = options["sslEnabled"] as? Bool ?? false
+        self.onRead = onRead
+        self.onError = onError
 
         if sslEnabled {
             plainClient = nil
@@ -41,12 +55,55 @@ public final class MongoSocket: MongoTCP {
             
             sslClient = TLS.InternetSocket(internetSocket, context)
             try sslClient!.connect(servername: hostname)
+            
+            self.readSource = DispatchSource.makeReadSource(fileDescriptor: sslClient!.socket.descriptor.raw, queue: MongoSocket.socketQueue)
+            self.writeSource = DispatchSource.makeWriteSource(fileDescriptor: sslClient!.socket.descriptor.raw, queue: MongoSocket.socketQueue)
         } else {
             sslClient = nil
             let address = hostname.lowercased() == "localhost" ? InternetAddress.localhost(port: port) : InternetAddress(hostname: hostname, port: port)
             plainClient = try TCPInternetSocket(address, scheme: "mongodb")
             try plainClient?.connect()
+            
+            self.readSource = DispatchSource.makeReadSource(fileDescriptor: plainClient!.descriptor.raw, queue: MongoSocket.socketQueue)
+            self.writeSource = DispatchSource.makeWriteSource(fileDescriptor: plainClient!.descriptor.raw, queue: MongoSocket.socketQueue)
         }
+        
+        let incomingBuffer = Buffer()
+        
+        self.readSource.setEventHandler(qos: .userInteractive) {
+            do {
+                try self.receive(into: incomingBuffer)
+                self.onRead(incomingBuffer.pointer, incomingBuffer.usedCapacity)
+            } catch {
+                self.onError(error)
+            }
+        }
+        
+        self.writeSource.setEventHandler(qos: .userInteractive) {
+            do {
+                self.operationLock.lock()
+                defer { self.operationLock.unlock() }
+                
+                guard self.operations.count > 0 else {
+                    return
+                }
+                
+                let (pointer, length) = self.operations.removeFirst()
+                
+                let binary = Array(UnsafeBufferPointer<Byte>(start: pointer, count: length))
+                
+                if self.sslEnabled {
+                    try self.sslClient!.write(binary, flushing: true)
+                } else {
+                    try self.plainClient!.write(binary, flushing: true)
+                }
+            } catch {
+                self.onError(error)
+            }
+        }
+        
+        self.readSource.resume()
+        self.writeSource.resume()
     }
     
     enum Error : Swift.Error {
@@ -54,16 +111,15 @@ public final class MongoSocket: MongoTCP {
     }
 
     /// Sends the data to the other side of the connection
-    public func send(data binary: [UInt8]) throws {
-        if sslEnabled {
-            try sslClient?.write(binary, flushing: true)
-        } else {
-            try plainClient?.write(binary, flushing: true)
-        }
+    public func send(data pointer: UnsafePointer<UInt8>, withLengthOf length: Int) {
+        self.operationLock.lock()
+        defer { self.operationLock.unlock() }
+        
+        self.operations.append((pointer, length))
     }
 
     /// Receives any available data from the socket
-    public func receive(into buffer: Buffer) throws {
+    private func receive(into buffer: Buffer) throws {
         let receivedBytes: Int
         
         if sslEnabled {
