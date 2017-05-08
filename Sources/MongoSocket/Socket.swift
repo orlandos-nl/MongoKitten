@@ -93,9 +93,9 @@ public final class MongoSocket: MongoTCP {
                 let binary = Array(UnsafeBufferPointer<Byte>(start: pointer, count: length))
                 
                 if self.sslEnabled {
-                    try self.sslClient!.write(binary, flushing: true)
+                    _ = try self.sslClient!.write(binary)
                 } else {
-                    try self.plainClient!.write(binary, flushing: true)
+                    _ = try self.plainClient!.write(binary)
                 }
             } catch {
                 self.onError(error)
