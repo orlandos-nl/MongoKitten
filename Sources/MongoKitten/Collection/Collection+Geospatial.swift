@@ -19,7 +19,7 @@ extension Collection {
     /// - parameter readConcern: Specifies the read concern.
     /// - returns: a Document with the results
     /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
-    func geoNear(options: GeoNearOptions, readConcern: ReadConcern? = nil) throws -> Document {
+    public func geoNear(options: GeoNearOptions, readConcern: ReadConcern? = nil) throws -> Document {
         var command: Document = ["geoNear": self.name,
          "near": options.near,
          "spherical": options.spherical,

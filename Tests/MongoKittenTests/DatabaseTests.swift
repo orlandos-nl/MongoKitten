@@ -9,7 +9,7 @@
 //
 
 import XCTest
-@testable import MongoKitten
+import MongoKitten
 
 class DatabaseTests: XCTestCase {
     static var allTests: [(String, (DatabaseTests) -> () throws -> Void)] {

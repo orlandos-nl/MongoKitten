@@ -10,7 +10,7 @@
 
 import Foundation
 import XCTest
-@testable import MongoKitten
+import MongoKitten
 
 class ClientSettingsTest: XCTestCase {
     static var allTests: [(String, (ClientSettingsTest) -> () throws -> Void)] {

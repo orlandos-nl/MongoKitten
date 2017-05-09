@@ -11,7 +11,7 @@
 import BSON
 import Foundation
 
-#if os(macOS) || os(iOS)
+#if (os(macOS) || os(iOS)) && !OPENSSL
     import CryptoSwift
 #else
     import KittenCTLS
@@ -101,7 +101,7 @@ public final class GridFS {
         let id = ObjectId()
         let dataSize = data.count
         
-        #if os(macOS) || os(iOS)
+        #if (os(macOS) || os(iOS)) && !OPENSSL
             var context = MD5()
             let lastChunkSize = (data.count % 255_000)
             let endStart = data.count - lastChunkSize
@@ -141,7 +141,7 @@ public final class GridFS {
                 
                 let chunk = Array(data[0..<smallestMax])
                 
-                #if os(macOS) || os(iOS)
+                #if (os(macOS) || os(iOS)) && !OPENSSL
                     _ = try context.update(withBytes: chunk)
                 #else
                     guard MD5_Update(&context, chunk, chunk.count) == 1 else {
@@ -158,7 +158,7 @@ public final class GridFS {
                 data.removeFirst(smallestMax)
             }
             
-            #if os(macOS) || os(iOS)
+            #if (os(macOS) || os(iOS)) && !OPENSSL
                 let digest = try context.update(withBytes: lastChunk, isLast: true)
                 
                 _ = try chunks.insert(["files_id": id,

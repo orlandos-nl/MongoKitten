@@ -8,8 +8,8 @@
 // See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of MongoKitten project authors
 //
 import XCTest
-@testable import MongoKitten
-@testable import GeoJSON
+import MongoKitten
+import GeoJSON
 
 class GeospatialQueryingTest: XCTestCase {
     static var allTests: [(String, (GeospatialQueryingTest) -> () throws -> Void)] {

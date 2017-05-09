@@ -9,7 +9,7 @@
 //
 
 import XCTest
-@testable import MongoKitten
+import MongoKitten
 import BSON
 
 class AdministrationCommandsTests: XCTestCase {
@@ -34,8 +34,6 @@ class AdministrationCommandsTests: XCTestCase {
     func testServer() throws {
         for db in TestManager.dbs {
             XCTAssert(db.server.isConnected)
-            
-            try db.server.fsync()
             
             var dbExists = false
             

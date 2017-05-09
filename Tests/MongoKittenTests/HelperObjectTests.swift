@@ -10,7 +10,7 @@
 
 import Foundation
 import XCTest
-@testable import MongoKitten
+import MongoKitten
 
 class HelperObjectTests: XCTestCase {
     static var allTests: [(String, (HelperObjectTests) -> () throws -> Void)] {
@@ -20,7 +20,6 @@ class HelperObjectTests: XCTestCase {
             ("testWriteConcern", testWriteConcern),
             ("testReadConcern", testReadConcern),
             ("testCollation", testCollation),
-            ("testCustomValueConvertible", testCustomValueConvertible)
         ]
     }
     
@@ -29,30 +28,10 @@ class HelperObjectTests: XCTestCase {
         XCTAssertEqual(Int32(IndexParameter.TextIndexVersion.two.makePrimitive()), Int32(2))
     }
     
-    func testCustomValueConvertible() {
-        let specialData = SpecialData("goudvis", withInt: 10)
-        let doc: Document = [
-            "embedded": [
-                "document": [
-                    "value": specialData
-                ]
-            ]
-        ]
-        
-        guard let newSpecialData = SpecialData(doc["embedded"]["document"]["value"]) else {
-            XCTFail()
-            return
-        }
-        
-        XCTAssertEqual(specialData, newSpecialData)
-    }
-    
     func testProjection() throws {
         let projection: Projection = [
             "field", "name", "age", "gender"
         ]
-        
-        XCTAssertEqual(projection.makeDocument(), projection.document)
         
         XCTAssertEqual(projection.makePrimitive() as? Document, [
                 "field": true,
@@ -80,39 +59,5 @@ class HelperObjectTests: XCTestCase {
     
     func testCollation() {
         
-    }
-}
-
-struct SpecialData : ValueConvertible, Equatable {
-    public static func ==(lhs: SpecialData, rhs: SpecialData) -> Bool {
-        return lhs.stringData == rhs.stringData && lhs.intData == rhs.intData
-    }
-    
-    var stringData: String
-    var intData: Int
-    
-    init(_ string: String, withInt int: Int) {
-        self.stringData = string
-        self.intData = int
-    }
-    
-    init?(_ value: BSON.Primitive?) {
-        guard let value = value as? Document else {
-            return nil
-        }
-        
-        guard let s = value["string"] as? String, let i = Int(value["int"]) else {
-            return nil
-        }
-        
-        self.stringData = s
-        self.intData = i
-    }
-    
-    func makePrimitive() -> BSON.Primitive {
-        return [
-            "string": self.stringData,
-            "int": self.intData
-        ]
     }
 }

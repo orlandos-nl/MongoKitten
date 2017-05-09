@@ -9,8 +9,6 @@
 //
 
 import Foundation
-import Sockets
-import libc
 import Dispatch
 
 #if os(macOS) || os(iOS)
@@ -254,7 +252,7 @@ public final class MongoSocket: MongoTCP {
                 
                 let (pointer, length) = self.operations.removeFirst()
                 
-                let binary = Array(UnsafeBufferPointer<Byte>(start: pointer, count: length))
+                let binary = Array(UnsafeBufferPointer<UInt8>(start: pointer, count: length))
                 
                 if self.sslEnabled {
                     #if os(macOS) || os(iOS)
@@ -266,7 +264,7 @@ public final class MongoSocket: MongoTCP {
                         }
                     #else
                         var total = 0
-                        guard let baseAddress = UnsafeBufferPointer<Byte>(start: binary, count: binary.count).baseAddress else {
+                        guard let baseAddress = UnsafeBufferPointer<UInt8>(start: binary, count: binary.count).baseAddress else {
                             throw Error.cannotSendData
                         }
                         
