@@ -317,12 +317,17 @@ public final class MongoSocket: MongoTCP {
     public func close() throws {
         if sslEnabled {
             #if os(macOS) || os(iOS)
+                SSLClose(sslClient!)
                 _ = Darwin.close(plainClient)
             #else
-                try sslClient.close()
+                _ = Glibc.close(plainClient)
             #endif
         } else {
-            _ = Darwin.close(plainClient)
+            #if os(macOS) || os(iOS)
+                _ = Darwin.close(plainClient)
+            #else
+                _ = Glibc.close(plainClient)
+            #endif
         }
     }
     
