@@ -18,10 +18,12 @@ var package = Package(
         // Authentication
         .Package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", Version(0,6,7)),
 
-        // Provides Sockets + SSL
-        .Package(url: "https://github.com/vapor/tls.git", Version(2,0,0, prereleaseIdentifiers: ["beta"])),
-        
         // Asynchronous behaviour
         .Package(url: "https://github.com/OpenKitten/Schrodinger.git", majorVersion: 1),
     ]
 )
+
+// Provides Sockets + SSL
+#if !os(macOS) && !os(iOS)
+package.dependencies.append(.Package(url: "https://github.com/vapor/tls.git", Version(2,0,0, prereleaseIdentifiers: ["beta"])))
+#endif
