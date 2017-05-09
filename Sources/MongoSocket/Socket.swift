@@ -60,7 +60,7 @@ public final class MongoSocket: MongoTCP {
         #if os(macOS) || os(iOS)
         criteria.ai_socktype = Int32(SOCK_STREAM)
         #else
-        criteria.ai_socktype = SOCK_STREAM
+        criteria.ai_socktype = Int32(SOCK_STREAM.rawValue)
         #endif
         
         criteria.ai_family = Int32(AF_UNSPEC)
