@@ -25,5 +25,5 @@ var package = Package(
 
 // Provides Sockets + SSL
 #if !os(macOS) && !os(iOS)
-package.dependencies.append(.Package(url: "https://github.com/vapor/tls.git", Version(2,0,0, prereleaseIdentifiers: ["beta"])))
+package.dependencies.append(.Package(url: "https://github.com/OpenKitten/KittenCTLS.git", majorVersion: 1))
 #endif
