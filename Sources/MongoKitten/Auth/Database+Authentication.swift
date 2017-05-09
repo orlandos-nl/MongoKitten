@@ -27,10 +27,10 @@ extension Database {
         for _ in 0..<24 {
             let randomNumber: Int
             
-            #if os(Linux)
-                randomNumber = Int(random() % allowedCharacters.characters.count)
-            #else
+            #if os(macOS) || os(iOS)
                 randomNumber = Int(arc4random_uniform(UInt32(allowedCharacters.characters.count)))
+            #else
+                randomNumber = Int(random() % allowedCharacters.characters.count)
             #endif
             
             let letter = allowedCharacters[allowedCharacters.index(allowedCharacters.startIndex, offsetBy: randomNumber)]
