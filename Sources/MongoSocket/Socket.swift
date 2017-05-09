@@ -224,7 +224,11 @@ public final class MongoSocket: MongoTCP {
                         read = Int(SSL_read(self.sslClient!, incomingBuffer.pointer, Int32(UInt16.max)))
                     #endif
                 } else {
+                    #if os(macOS) || os(iOS)
                     read = Darwin.recv(self.plainClient, incomingBuffer.pointer, Int(UInt16.max), 0)
+                    #else
+                    read = Glibc.recv(self.plainClient, incomingBuffer.pointer, Int(UInt16.max), 0)
+                    #endif
                 }
                 
                 incomingBuffer.usedCapacity = read
