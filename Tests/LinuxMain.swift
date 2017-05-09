@@ -9,7 +9,7 @@
 //
 
 import XCTest
-@testable import MongoKittenTests
+import MongoKittenTests
 
 XCTMain([
     testCase(AdministrationCommandsTests.allTests),

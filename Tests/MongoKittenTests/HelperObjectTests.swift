@@ -12,8 +12,8 @@ import Foundation
 import XCTest
 import MongoKitten
 
-class HelperObjectTests: XCTestCase {
-    static var allTests: [(String, (HelperObjectTests) -> () throws -> Void)] {
+public class HelperObjectTests: XCTestCase {
+    public static var allTests: [(String, (HelperObjectTests) -> () throws -> Void)] {
         return [
             ("testIndex", testIndex),
             ("testProjection", testProjection),

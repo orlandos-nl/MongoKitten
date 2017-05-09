@@ -12,20 +12,20 @@ import MongoKitten
 import Foundation
 import Dispatch
 
-class SetupTests: XCTestCase {
-    static var allTests: [(String, (SetupTests) -> () throws -> Void)] {
+public class SetupTests: XCTestCase {
+    public static var allTests: [(String, (SetupTests) -> () throws -> Void)] {
         return [
 //            ("testSetup", testSetup),
         ]
     }
     
-    override func setUp() {
+    public override func setUp() {
         super.setUp()
         
         try! TestManager.clean()
     }
     
-    override func tearDown() {
+    public override func tearDown() {
         try! TestManager.disconnect()
     }
     

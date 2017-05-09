@@ -12,8 +12,8 @@ import XCTest
 import MongoKitten
 import BSON
 
-class AdministrationCommandsTests: XCTestCase {
-    static var allTests: [(String, (AdministrationCommandsTests) -> () throws -> Void)] {
+public class AdministrationCommandsTests: XCTestCase {
+    public static var allTests: [(String, (AdministrationCommandsTests) -> () throws -> Void)] {
         return [
                    ("testServer", testServer),
                    ("testDatabase", testDatabase),
@@ -21,13 +21,13 @@ class AdministrationCommandsTests: XCTestCase {
         ]
     }
     
-    override func setUp() {
+    public override func setUp() {
         super.setUp()
         
         try! TestManager.clean()
     }  
     
-    override func tearDown() {
+    public override func tearDown() {
         try! TestManager.disconnect()
     }
     

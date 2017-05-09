@@ -11,8 +11,8 @@ import Foundation
 import BSON
 import Cheetah
 
-class Types: XCTestCase {
-    static var allTests: [(String, (Types) -> () throws -> Void)] {
+public class Types: XCTestCase {
+    public static var allTests: [(String, (Types) -> () throws -> Void)] {
         return [
             ("testKittenCoreConversion", testKittenCoreConversion),
         ]

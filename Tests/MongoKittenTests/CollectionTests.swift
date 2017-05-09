@@ -12,8 +12,8 @@ import MongoKitten
 import Dispatch
 import Schrodinger
 
-class CollectionTests: XCTestCase {
-    static var allTests: [(String, (CollectionTests) -> () throws -> Void)] {
+public class CollectionTests: XCTestCase {
+    public static var allTests: [(String, (CollectionTests) -> () throws -> Void)] {
         return [
             ("testEverything", testEverything),
             ("testUniqueIndex", testUniqueIndex),
@@ -43,7 +43,7 @@ class CollectionTests: XCTestCase {
         return q && q2
     }
     
-    override func setUp() {
+    public override func setUp() {
         super.setUp()
         
         do {
@@ -53,7 +53,7 @@ class CollectionTests: XCTestCase {
         }
     }
     
-    override func tearDown() {
+    public override func tearDown() {
         // Cleaning
         try! TestManager.disconnect()
     }

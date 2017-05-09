@@ -13,20 +13,20 @@ import XCTest
 import MongoKitten
 import Foundation
 
-class AuthenticationTests: XCTestCase {
-    static var allTests: [(String, (AuthenticationTests) -> () throws -> Void)] {
+public class AuthenticationTests: XCTestCase {
+    public static var allTests: [(String, (AuthenticationTests) -> () throws -> Void)] {
         return [
             ("testMLabConnection", testMLabConnection),
         ]
     }
 
-    override func setUp() {
+    public override func setUp() {
         super.setUp()
 
 
     }
 
-    override func tearDown() {
+    public override func tearDown() {
 
     }
 

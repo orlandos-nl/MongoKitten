@@ -11,8 +11,8 @@ import Foundation
 import XCTest
 import MongoKitten
 
-class GridFSTest: XCTestCase {
-    static var allTests: [(String, (GridFSTest) -> () throws -> Void)] {
+public class GridFSTest: XCTestCase {
+    public static var allTests: [(String, (GridFSTest) -> () throws -> Void)] {
         return [
             ("testExample", testExample),
         ]

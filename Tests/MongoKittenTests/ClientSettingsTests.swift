@@ -12,8 +12,8 @@ import Foundation
 import XCTest
 import MongoKitten
 
-class ClientSettingsTest: XCTestCase {
-    static var allTests: [(String, (ClientSettingsTest) -> () throws -> Void)] {
+public class ClientSettingsTest: XCTestCase {
+    public static var allTests: [(String, (ClientSettingsTest) -> () throws -> Void)] {
         return [
                 ("testAuthentication", testAuthentication),
                 ("testSSLSettings", testSSLSettings),

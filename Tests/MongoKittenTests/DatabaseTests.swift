@@ -11,8 +11,8 @@
 import XCTest
 import MongoKitten
 
-class DatabaseTests: XCTestCase {
-    static var allTests: [(String, (DatabaseTests) -> () throws -> Void)] {
+public class DatabaseTests: XCTestCase {
+    public static var allTests: [(String, (DatabaseTests) -> () throws -> Void)] {
         return [
             ("testUsers", testUsers),
             ("testMakeGridFS", testMakeGridFS),
@@ -20,13 +20,13 @@ class DatabaseTests: XCTestCase {
         ]
     }
     
-    override func setUp() {
+    public override func setUp() {
         super.setUp()
         
         try! TestManager.clean()
     }
     
-    override func tearDown() {
+    public override func tearDown() {
        try! TestManager.disconnect()
     }
     

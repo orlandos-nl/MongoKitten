@@ -11,8 +11,8 @@ import XCTest
 import MongoKitten
 import GeoJSON
 
-class GeospatialQueryingTest: XCTestCase {
-    static var allTests: [(String, (GeospatialQueryingTest) -> () throws -> Void)] {
+public class GeospatialQueryingTest: XCTestCase {
+    public static var allTests: [(String, (GeospatialQueryingTest) -> () throws -> Void)] {
         return [
             ("testGeo2SphereIndex", testGeo2SphereIndex),
             ("testGeoNear", testGeoNear),
@@ -25,7 +25,7 @@ class GeospatialQueryingTest: XCTestCase {
     }
 
 
-    override func setUp() {
+    public override func setUp() {
         super.setUp()
 
         do {
@@ -35,7 +35,7 @@ class GeospatialQueryingTest: XCTestCase {
         }
     }
 
-    override func tearDown() {
+    public override func tearDown() {
 
         // Cleaning
         do {
