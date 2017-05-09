@@ -17,7 +17,7 @@ import Dispatch
 import Security
 import Darwin
 #else
-import CTLS
+import KittenCTLS
 import Glibc
 #endif
 
