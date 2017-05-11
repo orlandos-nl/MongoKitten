@@ -2,20 +2,18 @@ Please leave a star to show your support for the project.
 
 # MongoKitten
 
-[![Swift 3.0.1](https://img.shields.io/badge/swift-3.0.1-orange.svg)](https://swift.org)
+[![Swift 3.1.0](https://img.shields.io/badge/swift-3.1.0-green.svg)](https://swift.org)
 ![License](https://img.shields.io/github/license/openkitten/mongokitten.svg)
 [![Build Status](https://travis-ci.org/OpenKitten/MongoKitten.svg?branch=mongokitten31)](https://travis-ci.org/OpenKitten/MongoKitten)
 
-Native MongoDB driver for Swift, written in Swift. This library does not wrap around the mongoc driver. It uses:
-
-- Our own [BSON](https://github.com/OpenKitten/BSON) library, which is also 100% native Swift
-- Our own [MD5, SHA1, SCRAM and PBKDF2 libraries](https://github.com/OpenKitten/CryptoKitten) in 100% Swift (currently included in the package)
-- Optional support for SSL/TLS using LibreSSL
+Native MongoDB driver for Swift, written in Swift. This library does not wrap around the mongoc driver.
 
 ## Requirements
 
 - A MongoDB server (local or online) running MongoDB 2.6 or above. (MongoDB 3.2 or 3.4 is recommmended)
 - Swift 3.1
+
+Linux requries the OpenSSL library to be installed.
 
 ## Setting up MongoDB
 
@@ -33,14 +31,7 @@ And `import MongoKitten` in your project.
 
 ## Building
 
-Install OpenSSL
-- `brew install openssl`
-
-Build from command line :
-- `swift build -Xswiftc -I/usr/local/opt/openssl/include -Xlinker -L/usr/local/opt/openssl/lib`
-
-Generate Xcode project
-- `swift package -Xswiftc -I/usr/local/opt/openssl/include -Xlinker -L/usr/local/opt/openssl/lib generate-xcodeproj`
+`swift build -c release`
 
 ## Supported Features
 
