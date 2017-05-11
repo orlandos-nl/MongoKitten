@@ -25,7 +25,7 @@ Alternatively; make use of a DAAS (Database-as-a-service) like [MLab](https://ml
 
 Add this to your dependencies:
 
-`.Package(url: "https://github.com/OpenKitten/MongoKitten.git", "4.0.0-vaportls")`
+`.Package(url: "https://github.com/OpenKitten/MongoKitten.git", majorVersion: 4)`
 
 And `import MongoKitten` in your project.
 
