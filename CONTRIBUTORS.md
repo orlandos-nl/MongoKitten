@@ -4,7 +4,8 @@ organizations who have contributed source code to MongoKitten.
 
 ## COPYRIGHT HOLDERS
 
-- OpenKitten
+- Joannis Orlandos <joannis@orlandos.nl>
+- Robbert Brandsma <i@robbertbrandsma.nl>
 
 ### Contributors List
 - Joannis Orlandos <joannis@orlandos.nl>
