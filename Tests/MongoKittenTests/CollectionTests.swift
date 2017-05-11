@@ -565,7 +565,7 @@ public class CollectionTests: XCTestCase {
             
             try db.server.fsync()
             
-            XCTAssertEqual(try db["removeOneTest"].remove(superQuery, limiting: 1), 1)
+            XCTAssertEqual(try db["removeOneTest"].remove(superQuery, limitedTo: 1), 1)
             try db.server.fsync()
             
             let response = Array(try db["removeOneTest"].find(superQuery))
