@@ -107,7 +107,7 @@ public class CollectionSlice<Element> : CollectionQueryable, Sequence, IteratorP
     /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     ///
     /// - returns: The amount of matching `Element`s (without consideration of initialization success)
-    public func count(limiting limit: Int? = nil, skipping skip: Int? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil, timingOut afterTimeout: DispatchTimeInterval? = nil) throws -> Int {
+    public func count(limitedTo limit: Int? = nil, skipping skip: Int? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil, timingOut afterTimeout: DispatchTimeInterval? = nil) throws -> Int {
         return try self.count(filter: filter, limit: limit, skip: skip, readConcern: readConcern, collation: collation, connection: nil, timeout: afterTimeout)
     }
     
@@ -189,8 +189,8 @@ public class CollectionSlice<Element> : CollectionQueryable, Sequence, IteratorP
     ///
     /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     @discardableResult
-    public func remove(limiting limit: Int = 0, writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
-        return try collection.remove(filter ?? [:], limiting: limit, writeConcern: writeConcern, stoppingOnError: ordered)
+    public func remove(limitedTo limit: Int = 0, writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
+        return try collection.remove(filter ?? [:], limitedTo: limit, writeConcern: writeConcern, stoppingOnError: ordered)
     }
     
     /// Flatmaps the containing type of this CollectionSlice lazily to another type
