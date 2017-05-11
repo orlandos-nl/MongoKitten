@@ -13,8 +13,8 @@ import XCTest
 import MongoKitten
 import Dispatch
 
-class AggregationTests: XCTestCase {
-    static var allTests: [(String, (AggregationTests) -> () throws -> Void)] {
+public class AggregationTests: XCTestCase {
+    public static var allTests: [(String, (AggregationTests) -> () throws -> Void)] {
         return [
             ("testAggregate", testAggregate),
             ("testFacetAggregate", testFacetAggregate),
@@ -22,7 +22,7 @@ class AggregationTests: XCTestCase {
         ]
     }
     
-    override func setUp() {
+    public override func setUp() {
         super.setUp()
         do {
             try TestManager.clean()
@@ -31,7 +31,7 @@ class AggregationTests: XCTestCase {
         }
     }
     
-    override func tearDown() {
+    public override func tearDown() {
         
         try! TestManager.disconnect()
     }

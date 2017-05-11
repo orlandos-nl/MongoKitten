@@ -9,7 +9,7 @@
 //
 
 import XCTest
-@testable import MongoKittenTests
+import MongoKittenTests
 
 XCTMain([
     testCase(AdministrationCommandsTests.allTests),
@@ -22,6 +22,5 @@ XCTMain([
     testCase(GeospatialQueryingTest.allTests),
     testCase(GridFSTest.allTests),  
     testCase(HelperObjectTests.allTests),    
-    testCase(InternalTests.allTests),
     testCase(SetupTests.allTests)    
 ])

@@ -9,15 +9,13 @@
 //
 
 import Foundation
-import Sockets
-import libc
 import Dispatch
 
 #if os(macOS) || os(iOS)
 import Security
 import Darwin
 #else
-import CTLS
+import KittenCTLS
 import Glibc
 #endif
 
@@ -60,7 +58,7 @@ public final class MongoSocket: MongoTCP {
         #if os(macOS) || os(iOS)
         criteria.ai_socktype = Int32(SOCK_STREAM)
         #else
-        criteria.ai_socktype = SOCK_STREAM
+        criteria.ai_socktype = Int32(SOCK_STREAM.rawValue)
         #endif
         
         criteria.ai_family = Int32(AF_UNSPEC)
@@ -224,7 +222,11 @@ public final class MongoSocket: MongoTCP {
                         read = Int(SSL_read(self.sslClient!, incomingBuffer.pointer, Int32(UInt16.max)))
                     #endif
                 } else {
+                    #if os(macOS) || os(iOS)
                     read = Darwin.recv(self.plainClient, incomingBuffer.pointer, Int(UInt16.max), 0)
+                    #else
+                    read = Glibc.recv(self.plainClient, incomingBuffer.pointer, Int(UInt16.max), 0)
+                    #endif
                 }
                 
                 incomingBuffer.usedCapacity = read
@@ -250,7 +252,7 @@ public final class MongoSocket: MongoTCP {
                 
                 let (pointer, length) = self.operations.removeFirst()
                 
-                let binary = Array(UnsafeBufferPointer<Byte>(start: pointer, count: length))
+                let binary = Array(UnsafeBufferPointer<UInt8>(start: pointer, count: length))
                 
                 if self.sslEnabled {
                     #if os(macOS) || os(iOS)
@@ -262,7 +264,7 @@ public final class MongoSocket: MongoTCP {
                         }
                     #else
                         var total = 0
-                        guard let baseAddress = UnsafeBufferPointer<Byte>(start: binary, count: binary.count).baseAddress else {
+                        guard let baseAddress = UnsafeBufferPointer<UInt8>(start: binary, count: binary.count).baseAddress else {
                             throw Error.cannotSendData
                         }
                         
@@ -317,12 +319,17 @@ public final class MongoSocket: MongoTCP {
     public func close() throws {
         if sslEnabled {
             #if os(macOS) || os(iOS)
+                SSLClose(sslClient!)
                 _ = Darwin.close(plainClient)
             #else
-                try sslClient.close()
+                _ = Glibc.close(plainClient)
             #endif
         } else {
-            _ = Darwin.close(plainClient)
+            #if os(macOS) || os(iOS)
+                _ = Darwin.close(plainClient)
+            #else
+                _ = Glibc.close(plainClient)
+            #endif
         }
     }
     

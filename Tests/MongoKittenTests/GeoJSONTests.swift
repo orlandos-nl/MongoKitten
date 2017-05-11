@@ -10,12 +10,12 @@
 
 
 import XCTest
-@testable import MongoKitten
-@testable import GeoJSON
+import MongoKitten
+import GeoJSON
 
 
-class GeoJSONTests: XCTestCase {
-    static var allTests: [(String, (GeoJSONTests) -> () throws -> Void)] {
+public class GeoJSONTests: XCTestCase {
+    public static var allTests: [(String, (GeoJSONTests) -> () throws -> Void)] {
         return [
             ("testPositionHashable", testPositionHashable),
             ("testPositionInit", testPositionInit),
