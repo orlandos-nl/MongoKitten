@@ -614,3 +614,15 @@ public enum AccumulatedGroupExpression {
         }
     }
 }
+
+extension AggregationPipeline : CustomDebugStringConvertible {
+    public var debugDescription: String {
+        return self.pipelineDocument.makeExtendedJSON().serializedString()
+    }
+}
+
+extension AggregationPipeline.Stage : CustomDebugStringConvertible {
+    public var debugDescription: String {
+        return self.makeDocument().makeExtendedJSON().serializedString()
+    }
+}
