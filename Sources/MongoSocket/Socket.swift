@@ -148,7 +148,7 @@ public final class MongoSocket: MongoTCP {
         #else
             if sslEnabled {
                 let verifyCertificate = !(options["invalidCertificateAllowed"] as? Bool ?? false)
-                let verifyHost = !(options["invalidHostNameAllowed"] as? Bool ?? false)
+//                let verifyHost = !(options["invalidHostNameAllowed"] as? Bool ?? false)
                 
                 if !MongoSocket.initialized {
                     SSL_library_init()
