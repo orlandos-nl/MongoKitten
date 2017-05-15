@@ -12,11 +12,11 @@ import Foundation
 import Dispatch
 
 #if os(macOS) || os(iOS)
-import Security
-import Darwin
+    import Security
+    import Darwin
 #else
-import KittenCTLS
-import Glibc
+    import KittenCTLS
+    import Glibc
 #endif
 
 public final class MongoSocket: MongoTCP {
@@ -40,12 +40,10 @@ public final class MongoSocket: MongoTCP {
     public var onRead: ReadCallback
     public var onError: ErrorCallback
     
-    private var operations = [(UnsafePointer<UInt8>, Int)]()
     private let operationLock = NSLock()
     
     private let readSource: DispatchSourceRead
-    private let writeSource: DispatchSourceWrite
-
+    
     public init(address hostname: String, port: UInt16, options: [String: Any], onRead: @escaping ReadCallback, onError: @escaping ErrorCallback) throws {
         self.sslEnabled = options["sslEnabled"] as? Bool ?? false
         self.onRead = onRead
@@ -56,9 +54,9 @@ public final class MongoSocket: MongoTCP {
         let hostname = hostname == "localhost" ? "127.0.0.1" : hostname
         
         #if os(macOS) || os(iOS)
-        criteria.ai_socktype = Int32(SOCK_STREAM)
+            criteria.ai_socktype = Int32(SOCK_STREAM)
         #else
-        criteria.ai_socktype = Int32(SOCK_STREAM.rawValue)
+            criteria.ai_socktype = Int32(SOCK_STREAM.rawValue)
         #endif
         
         criteria.ai_family = Int32(AF_UNSPEC)
@@ -141,73 +139,72 @@ public final class MongoSocket: MongoTCP {
                     }
                 }
                 
-                let status = SSLHandshake(context)
+                _ = SSLHandshake(context)
                 
                 self.sslClient = context
             } else {
                 self.sslClient = nil
             }
         #else
-        if sslEnabled {
-            let verifyCertificate = !(options["invalidCertificateAllowed"] as? Bool ?? false)
-            let verifyHost = !(options["invalidHostNameAllowed"] as? Bool ?? false)
-            
-            if !MongoSocket.initialized {
-                SSL_library_init()
-                SSL_load_error_strings()
-                OPENSSL_config(nil)
-                OPENSSL_add_all_algorithms_conf()
-                MongoSocket.initialized = true
+            if sslEnabled {
+                let verifyCertificate = !(options["invalidCertificateAllowed"] as? Bool ?? false)
+                let verifyHost = !(options["invalidHostNameAllowed"] as? Bool ?? false)
+                
+                if !MongoSocket.initialized {
+                    SSL_library_init()
+                    SSL_load_error_strings()
+                    OPENSSL_config(nil)
+                    OPENSSL_add_all_algorithms_conf()
+                    MongoSocket.initialized = true
+                }
+                
+                let method = SSLv23_client_method()
+                
+                guard let ctx = SSL_CTX_new(method) else {
+                    throw Error.cannotCreateContext
+                }
+                
+                self.sslContext = ctx
+                self.sslMethod = method
+                
+                SSL_CTX_ctrl(ctx, SSL_CTRL_MODE, SSL_MODE_AUTO_RETRY, nil)
+                SSL_CTX_ctrl(ctx, SSL_CTRL_OPTIONS, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_COMPRESSION, nil)
+                
+                if !verifyCertificate {
+                    SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, nil)
+                }
+                
+                guard  SSL_CTX_set_cipher_list(ctx, "DEFAULT") == 1 else {
+                    throw Error.cannotCreateContext
+                }
+                
+                if let CAFile = options["CAFile"] as? String {
+                    SSL_CTX_load_verify_locations(ctx, CAFile, nil)
+                }
+                
+                guard let ssl = SSL_new(ctx) else {
+                    throw Error.cannotConnect
+                }
+                
+                self.sslClient = ssl
+                
+                guard SSL_set_fd(ssl, plainClient) == 1 else {
+                    throw Error.cannotConnect
+                }
+                
+                // TODO: Hostname verification
+                
+                guard SSL_connect(ssl) == 1, SSL_do_handshake(ssl) == 1 else {
+                    throw Error.cannotConnect
+                }
+            } else {
+                sslClient = nil
+                sslMethod = nil
+                sslContext = nil
             }
-            
-            let method = SSLv23_client_method()
-            
-            guard let ctx = SSL_CTX_new(method) else {
-                throw Error.cannotCreateContext
-            }
-            
-            self.sslContext = ctx
-            self.sslMethod = method
-            
-            SSL_CTX_ctrl(ctx, SSL_CTRL_MODE, SSL_MODE_AUTO_RETRY, nil)
-            SSL_CTX_ctrl(ctx, SSL_CTRL_OPTIONS, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_COMPRESSION, nil)
-            
-            if !verifyCertificate {
-                SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, nil)
-            }
-            
-            guard  SSL_CTX_set_cipher_list(ctx, "DEFAULT") == 1 else {
-                throw Error.cannotCreateContext
-            }
-            
-            if let CAFile = options["CAFile"] as? String {
-                SSL_CTX_load_verify_locations(ctx, CAFile, nil)
-            }
-            
-            guard let ssl = SSL_new(ctx) else {
-                throw Error.cannotConnect
-            }
-            
-            self.sslClient = ssl
-            
-            guard SSL_set_fd(ssl, plainClient) == 1 else {
-                throw Error.cannotConnect
-            }
-            
-            // TODO: Hostname verification
-            
-            guard SSL_connect(ssl) == 1, SSL_do_handshake(ssl) == 1 else {
-                throw Error.cannotConnect
-            }
-        } else {
-            sslClient = nil
-            sslMethod = nil
-            sslContext = nil
-        }
         #endif
         
         self.readSource = DispatchSource.makeReadSource(fileDescriptor: self.plainClient, queue: MongoSocket.socketQueue)
-        self.writeSource = DispatchSource.makeWriteSource(fileDescriptor: self.plainClient, queue: MongoSocket.socketQueue)
         
         let incomingBuffer = Buffer()
         
@@ -223,9 +220,9 @@ public final class MongoSocket: MongoTCP {
                     #endif
                 } else {
                     #if os(macOS) || os(iOS)
-                    read = Darwin.recv(self.plainClient, incomingBuffer.pointer, Int(UInt16.max), 0)
+                        read = Darwin.recv(self.plainClient, incomingBuffer.pointer, Int(UInt16.max), 0)
                     #else
-                    read = Glibc.recv(self.plainClient, incomingBuffer.pointer, Int(UInt16.max), 0)
+                        read = Glibc.recv(self.plainClient, incomingBuffer.pointer, Int(UInt16.max), 0)
                     #endif
                 }
                 
@@ -241,61 +238,7 @@ public final class MongoSocket: MongoTCP {
             }
         }
         
-        self.writeSource.setEventHandler(qos: .userInteractive) {
-            do {
-                self.operationLock.lock()
-                defer { self.operationLock.unlock() }
-                
-                guard self.operations.count > 0 else {
-                    return
-                }
-                
-                let (pointer, length) = self.operations.removeFirst()
-                
-                let binary = Array(UnsafeBufferPointer<UInt8>(start: pointer, count: length))
-                
-                if self.sslEnabled {
-                    #if os(macOS) || os(iOS)
-                        var ditched = binary.count
-                        SSLWrite(self.sslClient!, binary, binary.count, &ditched)
-                        
-                        guard ditched == binary.count else {
-                            throw Error.cannotSendData
-                        }
-                    #else
-                        var total = 0
-                        guard let baseAddress = UnsafeBufferPointer<UInt8>(start: binary, count: binary.count).baseAddress else {
-                            throw Error.cannotSendData
-                        }
-                        
-                        while total < binary.count {
-                            let sent = SSL_write(self.sslClient!, baseAddress.advanced(by: total), Int32(binary.count))
-                            
-                            total = total &+ numericCast(sent)
-                            
-                            guard sent > 0 else {
-                                throw Error.cannotSendData
-                            }
-                        }
-                    #endif
-                } else {
-                    #if os(macOS) || os(iOS)
-                        guard Darwin.send(self.plainClient, binary, binary.count, 0) == binary.count else {
-                            throw Error.cannotSendData
-                        }
-                    #else
-                        guard Glibc.send(self.plainClient, binary, binary.count, 0) == binary.count else {
-                            throw Error.cannotSendData
-                        }
-                    #endif
-                }
-            } catch {
-                self.onError(error)
-            }
-        }
-        
         self.readSource.resume()
-        self.writeSource.resume()
     }
     
     enum Error : Swift.Error {
@@ -306,13 +249,49 @@ public final class MongoSocket: MongoTCP {
         case cannotConnect
         case ipAddressResolutionFailed
     }
-
+    
     /// Sends the data to the other side of the connection
-    public func send(data pointer: UnsafePointer<UInt8>, withLengthOf length: Int) {
+    public func send(data pointer: UnsafePointer<UInt8>, withLengthOf length: Int) throws {
         self.operationLock.lock()
         defer { self.operationLock.unlock() }
         
-        self.operations.append((pointer, length))
+        let binary = Array(UnsafeBufferPointer<UInt8>(start: pointer, count: length))
+        
+        if self.sslEnabled {
+            #if os(macOS) || os(iOS)
+                var ditched = binary.count
+                SSLWrite(self.sslClient!, binary, binary.count, &ditched)
+                
+                guard ditched == binary.count else {
+                    throw Error.cannotSendData
+                }
+            #else
+                var total = 0
+                guard let baseAddress = UnsafeBufferPointer<UInt8>(start: binary, count: binary.count).baseAddress else {
+                    throw Error.cannotSendData
+                }
+                
+                while total < binary.count {
+                    let sent = SSL_write(self.sslClient!, baseAddress.advanced(by: total), Int32(binary.count))
+                    
+                    total = total &+ numericCast(sent)
+                    
+                    guard sent > 0 else {
+                        throw Error.cannotSendData
+                    }
+                }
+            #endif
+        } else {
+            #if os(macOS) || os(iOS)
+                guard Darwin.send(self.plainClient, binary, binary.count, 0) == binary.count else {
+                    throw Error.cannotSendData
+                }
+            #else
+                guard Glibc.send(self.plainClient, binary, binary.count, 0) == binary.count else {
+                    throw Error.cannotSendData
+                }
+            #endif
+        }
     }
     
     /// Closes the connection

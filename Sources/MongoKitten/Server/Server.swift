@@ -435,7 +435,7 @@ public final class Server {
     
     /// Prepares a maintainance task for detected disconnected connections
     internal func handleDisconnect(for disconnectionPool: [Connection]) {
-    // Close them for security sake
+        // Close them for security sake
         disconnectionPool.forEach({
             $0.close()
         })
@@ -496,9 +496,9 @@ public final class Server {
         // Find all possible matches to create a connection to
         let matches = self.connections.filter {
             $0.users < self.maxActionsPerConnection && ((!writing && slaveOK) || $0.writable) && $0.isConnected
-        }.sorted(by: { (lhs, rhs) -> Bool in
-            return lhs.users < rhs.users
-        })
+            }.sorted(by: { (lhs, rhs) -> Bool in
+                return lhs.users < rhs.users
+            })
         
         connectionPoolLock.unlock()
         
@@ -679,7 +679,7 @@ public final class Server {
             connection.waitingForResponses[requestId] = promise
         }
         
-        connection.send(data: messageData)
+        try connection.send(data: messageData)
         
         return try promise.await()
     }
@@ -695,7 +695,7 @@ public final class Server {
     internal func send(message msg: Message, overConnection connection: Connection) throws -> Int32 {
         let messageData = try msg.generateData()
         
-        connection.send(data: messageData)
+        try connection.send(data: messageData)
         
         return msg.requestID
     }

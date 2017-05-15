@@ -36,22 +36,22 @@ public typealias ErrorCallback = ((Error)->())
 public class TCPBuffer {
     /// The buffer data
     public var data: [UInt8] = []
-
+    
     public init() { }
 }
 
 /// Any socket conforming to this protocol can be used to connect to a server.
 public protocol MongoTCP : class {
-
+    
     /// Opens a socket to the given address at the given port with the given settings
     init(address hostname: String, port: UInt16, options: [String: Any], onRead: @escaping ReadCallback, onError: @escaping ErrorCallback) throws
-
+    
     /// Closes the connection
     func close() throws
-
+    
     /// Sends the data to the other side of the connection
-    func send(data pointer: UnsafePointer<UInt8>, withLengthOf length: Int)
-
+    func send(data pointer: UnsafePointer<UInt8>, withLengthOf length: Int) throws
+    
     /// `true` when connected, `false` otherwise
     var isConnected: Bool { get }
 }

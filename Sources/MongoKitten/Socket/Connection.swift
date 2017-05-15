@@ -114,8 +114,8 @@ class Connection {
         _ = try? parseBuffer()
     }
     
-    func send(data: [UInt8]) {
-        client.send(data: data, withLengthOf: data.count)
+    func send(data: [UInt8]) throws {
+        try client.send(data: data, withLengthOf: data.count)
     }
     
     private func parseBuffer() throws {
