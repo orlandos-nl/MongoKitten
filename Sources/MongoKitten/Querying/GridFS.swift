@@ -194,7 +194,7 @@ public final class GridFS {
     }
     
     /// A file in GridFS
-    public class File: Sequence {
+    public final class File: Sequence {
         /// The ObjectID for this file
         public let id: ObjectId
         
