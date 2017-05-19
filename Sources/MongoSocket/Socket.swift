@@ -324,4 +324,8 @@ public final class MongoSocket: MongoTCP {
         
         return true
     }
+    
+    deinit {
+        _ = try? close()
+    }
 }

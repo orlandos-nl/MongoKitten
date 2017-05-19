@@ -240,6 +240,7 @@ public final class Server {
         if disconnectionPool.count > 0 {
             handleDisconnect(for: disconnectionPool)
         }
+        
         connectionPoolLock.unlock()
         
         maintainanceLoopTasksQueue.sync {
