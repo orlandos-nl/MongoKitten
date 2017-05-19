@@ -74,6 +74,9 @@ final class TestManager {
     }
     
     static func disconnect() throws {
+        // TODO: Fix Linux constant disconnects
+        #if !os(Linux)
         try db.server.disconnect()
+        #endif
     }
 }
