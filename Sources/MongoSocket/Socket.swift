@@ -29,8 +29,6 @@ public final class MongoSocket: MongoTCP {
     private let sslClient: UnsafeMutablePointer<SSL>?
     private let sslMethod: UnsafePointer<SSL_METHOD>?
     private let sslContext: UnsafeMutablePointer<SSL_CTX>?
-    
-    deinit { SSL_CTX_free(sslContext) }
     #endif
     
     private var sslEnabled = false
@@ -327,5 +325,9 @@ public final class MongoSocket: MongoTCP {
     
     deinit {
         _ = try? close()
+        
+        #if os(Linux)
+            SSL_CTX_free(sslContext)
+        #endif
     }
 }
