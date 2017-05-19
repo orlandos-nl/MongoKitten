@@ -313,6 +313,15 @@ public final class MongoSocket: MongoTCP {
     }
     
     public var isConnected: Bool {
+        var error = 0
+        var len: socklen_t = 4
+        
+        getsockopt(self.plainClient, SOL_SOCKET, SO_ERROR, &error, &len)
+        
+        guard error == 0 else {
+            return false
+        }
+        
         return true
     }
 }
