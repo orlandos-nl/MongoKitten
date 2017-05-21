@@ -483,7 +483,7 @@ public final class Collection: CollectionQueryable {
     /// - parameter parameters: All `IndexParameter` options applied to the index
     ///
     /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
-    public func createIndex(named name: String? = nil, withParameters parameters: IndexParameter...) throws {
+    public func createIndex(named name: String, withParameters parameters: IndexParameter...) throws {
         try self.createIndexes([(name: name, parameters: parameters)])
     }
     
@@ -494,7 +494,7 @@ public final class Collection: CollectionQueryable {
     /// - parameter indexes: The indexes to create. Accepts an array of tuples (each tuple representing an Index) which an contain a name and always contains an array of `IndexParameter`.
     ///
     /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
-    public func createIndexes(_ indexes: [(name: String?, parameters: [IndexParameter])]) throws {
+    public func createIndexes(_ indexes: [(name: String, parameters: [IndexParameter])]) throws {
         guard let wireVersion = database.server.serverData?.maxWireVersion , wireVersion >= 2 else {
             throw MongoError.unsupportedOperations
         }
