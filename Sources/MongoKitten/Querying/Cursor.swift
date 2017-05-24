@@ -19,6 +19,8 @@ public enum CursorStrategy {
     case intelligent(bufferChunks: Int)
 }
 
+fileprivate let cursorMutationsQueue = DispatchQueue(label: "org.mongokitten.server.cursorDataFetchQueue", qos: DispatchQoS.userInteractive)
+
 /// A Cursor is a pointer to a sequence/collection of Documents on the MongoDB server.
 ///
 /// It can be looped over using a `for let document in cursor` loop like any other sequence.
@@ -115,9 +117,12 @@ public final class Cursor<T> {
                         ], using: self.connection)
                     
                     let documents = [Primitive](reply.documents.first?["cursor"]["nextBatch"]) ?? []
-                    for value in documents {
-                        if let doc = try self.transform(Document(value) ?? [:]) {
-                            self.data.append(doc)
+                    
+                    try cursorMutationsQueue.sync {
+                        for value in documents {
+                            if let doc = try self.transform(Document(value) ?? [:]) {
+                                self.data.append(doc)
+                            }
                         }
                     }
                     
@@ -225,10 +230,19 @@ extension Cursor : Sequence, IteratorProtocol {
         
         if position > Int(self.chunkSize) {
             position -= Int(self.chunkSize)
-            self.data.removeFirst(Int(self.chunkSize))
+            
+            cursorMutationsQueue.sync {
+                self.data.removeFirst(Int(self.chunkSize))
+            }
         }
         
-        return position < self.data.count ? self.data[position] : nil
+        return cursorMutationsQueue.sync {
+            if position < self.data.count {
+                return self.data[position]
+            }
+            
+            return nil
+        }
     }
 }
 
