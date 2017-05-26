@@ -685,6 +685,10 @@ public class CollectionTests: XCTestCase {
     
     func testExplain() throws {
         for db in TestManager.dbs {
+            guard self.server.buildInfo.version >= Version(3, 0, 0) else {
+                continue
+            }
+            
             try db["explain"].drop()
             
             var docs = [Document]()

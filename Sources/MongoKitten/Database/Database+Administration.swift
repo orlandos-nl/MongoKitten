@@ -68,6 +68,10 @@ extension Database {
     ///
     /// - returns: A cursor to the resulting documents with collection info
     internal func getCollectionInfos(matching filter: Document? = nil) throws -> Cursor<Document> {
+        guard server.buildInfo.version >= Version(3, 0, 0) else {
+            return try self["system.namespaces"].find().cursor
+        }
+        
         var request: Document = ["listCollections": 1]
         
         log.verbose("Listing all collections\(filter != nil ? " using the provided filter" : "")")
@@ -114,11 +118,29 @@ extension Database {
     public func listCollections(matching filter: Document? = nil) throws -> Cursor<Collection> {
         let infoCursor = try self.getCollectionInfos(matching: filter) as Cursor<Document>
         return try Cursor(base: infoCursor) { collectionInfo in
-            guard let name = String(collectionInfo["name"]) else {
-                return nil
+            if self.server.buildInfo.version >= Version(3, 0, 0) {
+                guard let name = String(collectionInfo["name"]) else {
+                    return nil
+                }
+                
+                return self[name]
+            } else {
+                guard var name = String(collectionInfo["name"]), name.hasPrefix(self.name + ".") else {
+                    return nil
+                }
+                
+                name.characters.removeFirst(self.name.characters.count + 1)
+                let split = name.characters.split(separator: ".")
+                
+                if split.count > 1, let last = split.last {
+                    // is index
+                    if String(last).hasPrefix("$") {
+                        return nil
+                    }
+                }
+                
+                return self[name]
             }
-            
-            return self[name]
         }
     }
 
