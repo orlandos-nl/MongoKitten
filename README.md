@@ -59,6 +59,10 @@ And `import MongoKitten` in your project.
 
 [We host the MongoKitten documentation including dash docset here](http://mongokitten.openkitten.org/).
 
+## Questions and ideas
+
+[Join our slack here](https://slackpass.io/openkitten) or create an issue here on Github.
+
 ## Support
 
 [We're accepting donations for our project here](https://opencollective.com/mongokitten)
