@@ -30,24 +30,24 @@ public class AuthenticationTests: XCTestCase {
 
     }
 
-//    func testMLabConnection() throws {
-//        let clientSettings = ClientSettings(host: MongoHost(hostname:"ds015730.mlab.com", port: 15730),sslSettings: nil,credentials: MongoCredentials(username:"kitten",password:"kitten1234"), maxConnectionsPerServer: 20)
-//
-//        let server = try Server(clientSettings)
-//        XCTAssertTrue(server.isConnected)
-//
-//        let database = server["CloudFoundry_2b5vuc3r_oi9j4527"]
-//
-//        XCTAssertNotNil(database)
-//
-//        let collection = database["probe"]
-//        XCTAssertNotNil(collection)
-//
-//        let document = try collection.findOne()
-//        XCTAssertNotNil(document)
-//
-//        XCTAssertEqual(String(document?["hello"]), "world")
-//    }
+    func testMLabConnection() throws {
+        let clientSettings = ClientSettings(host: MongoHost(hostname:"ds047124.mlab.com", port: 47124),sslSettings: nil,credentials: MongoCredentials(username:"openkitten",password:"test123"), maxConnectionsPerServer: 20)
+
+        let server = try Server(clientSettings)
+        XCTAssertTrue(server.isConnected)
+
+        let database = server["plan-t"]
+
+        XCTAssertNotNil(database)
+
+        let collection = database["probe"]
+        XCTAssertNotNil(collection)
+
+        let document = try collection.findOne()
+        XCTAssertNotNil(document)
+
+        XCTAssertEqual(String(document?["hello"]), "world")
+    }
 
 
 
