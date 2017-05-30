@@ -77,6 +77,8 @@ class Connection {
     func authenticate(to db: Database) throws {
         if let details = db.server.clientSettings.credentials {
             do {
+                let db = db.server[details.database ?? db.name]
+                
                 switch details.authenticationMechanism {
                 case .SCRAM_SHA_1:
                     try db.authenticate(SASL: details, usingConnection: self)

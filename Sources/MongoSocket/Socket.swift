@@ -129,6 +129,12 @@ public final class MongoSocket: MongoTCP {
                 
                 SSLSetConnection(context, &self.plainClient)
                 
+                var string = Array(hostname.utf8).map {
+                    Int8($0)
+                }
+                
+                SSLSetPeerDomainName(context, &string, string.count)
+                
                 if let path = options["CAFile"] as? String, let data = FileManager.default.contents(atPath: path) {
                     let bytes = [UInt8](data)
                     
@@ -175,6 +181,9 @@ public final class MongoSocket: MongoTCP {
                 guard  SSL_CTX_set_cipher_list(ctx, "DEFAULT") == 1 else {
                     throw Error.cannotCreateContext
                 }
+                
+//SSL_set_tlsext_host_name
+//                guard SSL_set_tlsext_host_name
                 
                 if let CAFile = options["CAFile"] as? String {
                     SSL_CTX_load_verify_locations(ctx, CAFile, nil)

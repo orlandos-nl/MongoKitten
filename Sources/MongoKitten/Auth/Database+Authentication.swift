@@ -170,7 +170,7 @@ extension Database {
         let result = try previousInformation.scram.process(decodedStringResponse, with: (username: details.username, password: passwordBytes), usingNonce: previousInformation.nonce)
         
         // Base64 the payload
-        let payload = Base64.encode(Data(result.proof.cStringBytes))
+        let payload = Base64.encode(Data(result.proof.utf8))
         
         log.debug("Responding to the SASL challenge using payload \"\(payload)\"")
         
@@ -202,7 +202,7 @@ extension Database {
         
         let authPayload = try auth.authenticate(details.username, usingNonce: nonce)
         
-        let payload = Base64.encode(Data(bytes: authPayload.cStringBytes))
+        let payload = Base64.encode(Data(bytes: Array(authPayload.utf8)))
         
         let cmd = self["$cmd"]
         

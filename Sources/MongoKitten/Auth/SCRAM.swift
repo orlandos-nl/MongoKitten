@@ -122,8 +122,9 @@ final class SCRAMClient {
         let parsedResponse = try parse(challenge: challenge)
 
         let remoteNonce = parsedResponse.nonce
+        let endIndex = remoteNonce.index(remoteNonce.startIndex, offsetBy: 24)
         
-        guard String(remoteNonce[remoteNonce.startIndex..<remoteNonce.index(remoteNonce.startIndex, offsetBy: 24)]) == nonce else {
+        guard remoteNonce.endIndex >= endIndex, String(remoteNonce[remoteNonce.startIndex..<endIndex]) == nonce else {
             log.error("Invalid nonce recevied")
             log.debug("Nonce: \(remoteNonce)")
             throw AuthenticationError.invalidNonce(nonce: parsedResponse.nonce)
@@ -135,20 +136,25 @@ final class SCRAMClient {
         
         let salt = Array(data)
         let saltedPassword: Bytes
+        let clientKey: Bytes
+        let serverKey: Bytes
         
-        if let hashedPassword = server.hashedPassword {
-            saltedPassword = hashedPassword
+        if let cachedLoginData = server.cachedLoginData {
+            saltedPassword = cachedLoginData.password
+            clientKey = cachedLoginData.clientKey
+            serverKey = cachedLoginData.serverKey
         } else {
             saltedPassword = try PKCS5.PBKDF2(password: details.password, salt: salt, iterations: parsedResponse.iterations, variant: .sha1).calculate()
-            server.hashedPassword = saltedPassword
+            
+            let ck = Bytes("Client Key".utf8)
+            let sk = Bytes("Server Key".utf8)
+                
+            clientKey = try HMAC(key: saltedPassword, variant: .sha1).authenticate(ck)
+            serverKey = try HMAC(key: saltedPassword, variant: .sha1).authenticate(sk)
+            
+            server.cachedLoginData = (saltedPassword, clientKey, serverKey)
         }
         
-        let ck = Bytes("Client Key".utf8)
-        let sk = Bytes("Server Key".utf8)
-        
-        let clientKey = try HMAC(key: saltedPassword, variant: .sha1).authenticate(ck)
-        let serverKey = try HMAC(key: saltedPassword, variant: .sha1).authenticate(sk)
-
         let storedKey = Digest.sha1(clientKey)
 
         let authenticationMessage = "n=\(fixUsername(username: details.username)),r=\(nonce),\(challenge),\(noProof)"
