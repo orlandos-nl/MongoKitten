@@ -80,16 +80,16 @@ public func &&(lhs: Query, rhs: Query) -> Query {
     let lhs = lhs.aqt
     let rhs = rhs.aqt
     
-    if case .and(var  a) = lhs, case .and(let b) = rhs {
+    switch (lhs, rhs) {
+    case (.and(var a), .and(let b)):
         a.append(contentsOf: b)
         return Query(aqt: .and(a))
-    } else if case .and(var a) = lhs {
-        a.append(rhs)
+    case (.nothing, let query), (let query, .nothing):
+        return Query(aqt: query)
+    case (.and(var a), let other), (let other, .and(var a)):
+        a.append(other)
         return Query(aqt: .and(a))
-    } else if case .and(var b) = rhs {
-        b.append(lhs)
-        return Query(aqt: .and(b))
-    } else {
+    default:
         return Query(aqt: .and([lhs, rhs]))
     }
 }
@@ -411,10 +411,18 @@ public struct Query: ExpressibleByDictionaryLiteral, ValueConvertible, Expressib
         return self.queryDocument
     }
 
+    /// Initializes an empty query, matching nothing
+    public init() {
+        self.aqt = .nothing
+    }
 
     /// Creates a Query from a Dictionary Literal
     public init(dictionaryLiteral elements: (String, BSON.Primitive?)...) {
-        self.aqt = .exactly(Document(dictionaryElements: elements))
+        if elements.count == 0 {
+            self.aqt = .nothing
+        } else {
+            self.aqt = .exactly(Document(dictionaryElements: elements))
+        }
     }
     
     /// The `Document` that can be sent to the MongoDB Server as a query/filter
@@ -432,7 +440,11 @@ public struct Query: ExpressibleByDictionaryLiteral, ValueConvertible, Expressib
     
     /// Initializes a Query from a Document and uses this Document as the Query
     public init(_ document: Document) {
-        self.aqt = .exactly(document)
+        if document.count == 0 {
+            self.aqt = .nothing
+        } else {
+            self.aqt = .exactly(document)
+        }
     }
     
     /// Creates a textSearch for a specified string
