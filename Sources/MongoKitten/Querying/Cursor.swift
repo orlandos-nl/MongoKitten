@@ -108,7 +108,7 @@ public final class Cursor<T> {
     /// Gets more information and puts it in the buffer
     @discardableResult
     fileprivate func getMore() throws -> Promise<Void> {
-        return async {
+        return async(timeoutAfter: .seconds(30)) {
             do {
                 if self.collection.database.server.serverData?.maxWireVersion ?? 0 >= 4 {
                     let reply = try self.collection.database.execute(command: [
@@ -143,6 +143,72 @@ public final class Cursor<T> {
         }
     }
     
+    fileprivate func nextEntity() throws -> T? {
+        defer { position += 1 }
+        
+        strategy: switch strategy ?? collection.database.server.cursorStrategy {
+        case .lazy:
+            if position >= self.data.count && self.cursorID != 0 {
+                position = 0
+                self.data = []
+                // Get more data!
+                _ = try self.getMore().await()
+            }
+        case .intelligent(let dataSets):
+            guard self.data.count - position < dataSets * Int(self.chunkSize) else {
+                break strategy
+            }
+            
+            fallthrough
+        case .aggressive:
+            if let currentFetch = currentFetch {
+                if position == self.data.count {
+                    guard !currentFetch.isCompleted else {
+                        break strategy
+                    }
+                } else if !currentFetch.isCompleted {
+                    break strategy
+                }
+                
+                defer {
+                    self.currentFetch = nil
+                }
+                
+                _ = try currentFetch.await()
+            } else if position == self.data.count && self.cursorID != 0 {
+                _ = try self.getMore().await()
+            } else if self.cursorID != 0 {
+                self.currentFetch = try self.getMore()
+            }
+        }
+        
+        if position > Int(self.chunkSize) {
+            position -= Int(self.chunkSize)
+            
+            cursorMutationsQueue.sync {
+                self.data.removeFirst(Int(self.chunkSize))
+            }
+        }
+        
+        return cursorMutationsQueue.sync {
+            if position < self.data.count {
+                return self.data[position]
+            }
+            
+            return nil
+        }
+    }
+    
+    /// An efficient and lazy forEach operation specialized for MongoDB.
+    ///
+    /// Designed to throw errors in the case of a cursor failure, unline normal `for .. in cursor` operations
+    public func forEach(_ body: (T) throws -> Void) throws {
+        while let entity = try nextEntity() {
+            try body(entity)
+        }
+    }
+    
+    /// An efficient and lazy flatmap operation specialized for MongoDB
     public func flatMap<B>(transform: @escaping (T) throws -> (B?)) throws -> Cursor<B> {
         return try Cursor<B>(base: self, transform: transform)
     }
@@ -175,73 +241,11 @@ extension Cursor : Sequence, IteratorProtocol {
     
     /// Fetches the next entity in the Cursor
     public func next() -> T? {
-        defer { position += 1 }
-        
-        strategy: switch strategy ?? collection.database.server.cursorStrategy {
-        case .lazy:
-            if position >= self.data.count && self.cursorID != 0 {
-                position = 0
-                self.data = []
-                // Get more data!
-                do {
-                    _ = try self.getMore().await()
-                } catch {
-                    return nil
-                }
-            }
-        case .intelligent(let dataSets):
-            guard self.data.count - position < dataSets * Int(self.chunkSize) else {
-                break strategy
-            }
-            
-            fallthrough
-        case .aggressive:
-            if let currentFetch = currentFetch {
-                if position == self.data.count {
-                    guard !currentFetch.isCompleted else {
-                        break strategy
-                    }
-                } else if !currentFetch.isCompleted {
-                    break strategy
-                }
-                
-                do {
-                    defer {
-                        self.currentFetch = nil
-                    }
-                    
-                    _ = try currentFetch.await()
-                } catch {
-                    return nil
-                }
-            } else if position == self.data.count && self.cursorID != 0 {
-                do {
-                    _ = try self.getMore().await()
-                } catch {
-                    return nil
-                }
-            } else if self.cursorID != 0 {
-                do {
-                    self.currentFetch = try self.getMore()
-                } catch {
-                    return nil
-                }
-            }
-        }
-        
-        if position > Int(self.chunkSize) {
-            position -= Int(self.chunkSize)
-            
-            cursorMutationsQueue.sync {
-                self.data.removeFirst(Int(self.chunkSize))
-            }
-        }
-        
-        return cursorMutationsQueue.sync {
-            if position < self.data.count {
-                return self.data[position]
-            }
-            
+        do {
+            return try nextEntity()
+        } catch {
+            log.fatal("The cursor broke due to the error: \"\(error)\". The executed operation did not return all results.")
+            assertionFailure()
             return nil
         }
     }

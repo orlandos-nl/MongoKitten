@@ -85,6 +85,13 @@ public class CollectionSlice<Element> : CollectionQueryable, Sequence, IteratorP
         }
     }
     
+    /// An efficient and lazy forEach operation specialized for MongoDB.
+    ///
+    /// Designed to throw errors in the case of a cursor failure, unline normal `for .. in cursor` operations
+    public func forEach(_ body: (Element) throws -> Void) throws {
+        try cursor.forEach(body)
+    }
+    
     /// Resets the cursor's position to the beginning
     ///
     /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
