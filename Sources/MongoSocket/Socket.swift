@@ -11,9 +11,12 @@
 import Foundation
 import Dispatch
 
-#if os(macOS) || os(iOS)
+#if (os(macOS) || os(iOS))
     import Security
     import Darwin
+    #if OPENSSL
+    import KittenCTLS
+    #endif
 #else
     import KittenCTLS
     import Glibc
@@ -22,7 +25,7 @@ import Dispatch
 public final class MongoSocket: MongoTCP {
     public private(set) var plainClient: Int32
     
-    #if os(macOS) || os(iOS)
+    #if (os(macOS) || os(iOS)) && !OPENSSL
     private let sslClient: SSLContext?
     #else
     fileprivate static var initialized: Bool = false
@@ -104,7 +107,7 @@ public final class MongoSocket: MongoTCP {
         }
         
         
-        #if os(macOS) || os(iOS)
+        #if (os(macOS) || os(iOS)) && !OPENSSL
             var val = 1
             setsockopt(self.plainClient, SOL_SOCKET, SO_NOSIGPIPE, &val, socklen_t(MemoryLayout<Int>.stride))
             
@@ -220,13 +223,13 @@ public final class MongoSocket: MongoTCP {
                 var read = 0
                 
                 if self.sslEnabled {
-                    #if os(macOS) || os(iOS)
+                    #if (os(macOS) || os(iOS)) && !OPENSSL
                         SSLRead(self.sslClient!, incomingBuffer.pointer, Int(UInt16.max), &read)
                     #else
                         read = Int(SSL_read(self.sslClient!, incomingBuffer.pointer, Int32(UInt16.max)))
                     #endif
                 } else {
-                    #if os(macOS) || os(iOS)
+                    #if (os(macOS) || os(iOS))
                         read = Darwin.recv(self.plainClient, incomingBuffer.pointer, Int(UInt16.max), 0)
                     #else
                         read = Glibc.recv(self.plainClient, incomingBuffer.pointer, Int(UInt16.max), 0)
@@ -265,7 +268,7 @@ public final class MongoSocket: MongoTCP {
         let binary = Array(UnsafeBufferPointer<UInt8>(start: pointer, count: length))
         
         if self.sslEnabled {
-            #if os(macOS) || os(iOS)
+            #if (os(macOS) || os(iOS)) && !OPENSSL
                 var ditched = binary.count
                 SSLWrite(self.sslClient!, binary, binary.count, &ditched)
                 
@@ -289,7 +292,7 @@ public final class MongoSocket: MongoTCP {
                 }
             #endif
         } else {
-            #if os(macOS) || os(iOS)
+            #if (os(macOS) || os(iOS))
                 guard Darwin.send(self.plainClient, binary, binary.count, 0) == binary.count else {
                     throw Error.cannotSendData
                 }
@@ -304,14 +307,16 @@ public final class MongoSocket: MongoTCP {
     /// Closes the connection
     public func close() throws {
         if sslEnabled {
-            #if os(macOS) || os(iOS)
-                SSLClose(sslClient!)
+            #if (os(macOS) || os(iOS))
+                #if !OPENSSL
+                    SSLClose(sslClient!)
+                #endif
                 _ = Darwin.close(plainClient)
             #else
                 _ = Glibc.close(plainClient)
             #endif
         } else {
-            #if os(macOS) || os(iOS)
+            #if (os(macOS) || os(iOS))
                 _ = Darwin.close(plainClient)
             #else
                 _ = Glibc.close(plainClient)
