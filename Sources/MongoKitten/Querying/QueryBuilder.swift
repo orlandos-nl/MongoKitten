@@ -280,7 +280,7 @@ public indirect enum AQT {
         case .endsWith(let key, let val):
             return [key: RegularExpression(pattern: val + "$", options: .anchorsMatchLines)]
         case .nothing:
-            return []
+            return [:]
         case .in(let key, let array):
             return [key: ["$in": Document(array: array)] as Document]
         case .near(let key, let point, let maxDistance, let minDistance):
