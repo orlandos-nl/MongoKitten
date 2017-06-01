@@ -411,18 +411,9 @@ public struct Query: ExpressibleByDictionaryLiteral, ValueConvertible, Expressib
         return self.queryDocument
     }
 
-    /// Initializes an empty query, matching nothing
-    public init() {
-        self.aqt = .nothing
-    }
-
     /// Creates a Query from a Dictionary Literal
     public init(dictionaryLiteral elements: (String, BSON.Primitive?)...) {
-        if elements.count == 0 {
-            self.aqt = .nothing
-        } else {
-            self.aqt = .exactly(Document(dictionaryElements: elements))
-        }
+        self.aqt = .exactly(Document(dictionaryElements: elements))
     }
     
     /// The `Document` that can be sent to the MongoDB Server as a query/filter
@@ -440,11 +431,7 @@ public struct Query: ExpressibleByDictionaryLiteral, ValueConvertible, Expressib
     
     /// Initializes a Query from a Document and uses this Document as the Query
     public init(_ document: Document) {
-        if document.count == 0 {
-            self.aqt = .nothing
-        } else {
-            self.aqt = .exactly(document)
-        }
+        self.aqt = .exactly(document)
     }
     
     /// Creates a textSearch for a specified string
