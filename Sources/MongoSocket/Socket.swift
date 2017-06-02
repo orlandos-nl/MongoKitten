@@ -132,12 +132,6 @@ public final class MongoSocket: MongoTCP {
                 
                 SSLSetConnection(context, &self.plainClient)
                 
-                var string = Array(hostname.utf8).map {
-                    Int8($0)
-                }
-                
-                SSLSetPeerDomainName(context, &string, string.count)
-                
                 if let path = options["CAFile"] as? String, let data = FileManager.default.contents(atPath: path) {
                     let bytes = [UInt8](data)
                     
