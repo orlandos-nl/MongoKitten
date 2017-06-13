@@ -52,7 +52,7 @@ extension Collection {
     public func convertToCapped(cappingAt cap: Int) throws {
         let command: Document = [
             "convertToCapped": self.name,
-            "size": Int32(cap)
+            "size": Int32(cap) as Int32
         ]
         
         log.verbose("Converting \(self) to a collection capped to \(cap) bytes")

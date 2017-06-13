@@ -117,7 +117,7 @@ public final class GridFS {
         var insertData: Document = [
             "_id": id,
             "length": dataSize,
-            "chunkSize": Int32(chunkSize),
+            "chunkSize": Int32(chunkSize) as Int32,
             "uploadDate": Date(timeIntervalSinceNow: 0),
         ]
         

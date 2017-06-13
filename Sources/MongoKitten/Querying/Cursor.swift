@@ -112,7 +112,7 @@ public final class Cursor<T> {
             do {
                 if self.collection.database.server.serverData?.maxWireVersion ?? 0 >= 4 {
                     let reply = try self.collection.database.execute(command: [
-                        "getMore": Int(self.cursorID),
+                        "getMore": Int(self.cursorID) as Int,
                         "collection": self.collection.name,
                         "batchSize": Int32(self.chunkSize)
                         ], using: self.connection)

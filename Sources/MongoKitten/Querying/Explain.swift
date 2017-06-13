@@ -241,11 +241,11 @@ public class ExplainedCollection {
         }
         
         if let skip = skip {
-            command["skip"] = Int32(skip)
+            command["skip"] = Int32(skip) as Int32
         }
         
         if let limit = limit {
-            command["limit"] = Int32(limit)
+            command["limit"] = Int32(limit) as Int32
         }
         
         command["readConcern"] = readConcern ?? self.readConcern
@@ -357,11 +357,11 @@ public class ExplainedCollection {
         }
         
         if let skip = skip {
-            command["skip"] = Int32(skip)
+            command["skip"] = Int32(skip) as Int32
         }
         
         if let limit = limit {
-            command["limit"] = Int32(limit)
+            command["limit"] = Int32(limit) as Int32
         }
         
         command = ["explain": command]

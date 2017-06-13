@@ -251,7 +251,7 @@ extension Database {
         let command: Document = [
             "cloneCollectionAsCapped": instance.name,
             "toCollection": otherCollection,
-            "size": Int32(capped)
+            "size": Int32(capped) as Int32
         ]
 
         log.verbose("Cloning \(instance) to be named \"\(otherCollection)\" capped to \(capped) bytes")
