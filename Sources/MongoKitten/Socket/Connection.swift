@@ -18,9 +18,6 @@ class Connection {
     /// The TCP socket
     fileprivate var client: MongoTCP!
     
-    /// The received data TCP buffer
-    let buffer = TCPBuffer()
-    
     /// Whether this server supports write operations
     var writable = false
     
@@ -35,6 +32,9 @@ class Connection {
     
     /// The amount of current users
     var users: Int = 0
+    
+    /// The currently constructing reply
+    var nextReply = ServerReplyPlaceholder()
     
     /// Handles mutations the response buffer
     internal static let mutationsQueue = DispatchQueue(label: "org.mongokitten.server.responseQueue", qos: DispatchQoS.userInteractive)
@@ -110,42 +110,32 @@ class Connection {
     }
     
     private func onRead(at pointer: UnsafeMutablePointer<UInt8>, withLengthOf length: Int) {
-        let b = UnsafeBufferPointer<Byte>(start: pointer, count: length)
-        buffer.data += [UInt8](b)
+        let consumed = nextReply.process(consuming: pointer, withLengthOf: length)
         
-        _ = try? parseBuffer()
+        if nextReply.isComplete {
+            defer { nextReply = ServerReplyPlaceholder() }
+            
+            guard let reply = nextReply.construct() else {
+                return
+            }
+            
+            _ = try? Connection.mutationsQueue.sync {
+                if let promise = waitingForResponses[reply.responseTo] {
+                    _ = try promise.complete(reply)
+                }
+            }
+            
+            return
+        }
+        
+        guard consumed < length else {
+            return
+        }
+        
+        onRead(at: pointer.advanced(by: consumed), withLengthOf: length - consumed)
     }
     
     func send(data: [UInt8]) throws {
         try client.send(data: data, withLengthOf: data.count)
-    }
-    
-    private func parseBuffer() throws {
-        while buffer.data.count >= 36 {
-            let length = Int(buffer.data[0...3].makeInt32())
-            
-            guard length <= buffer.data.count else {
-                // Ignore: Wait for more data
-                return
-            }
-            
-            let responseData = buffer.data[0..<length]*
-            let responseId = buffer.data[8...11].makeInt32()
-            let reply = try Message.makeReply(from: responseData)
-            
-            defer {
-                Connection.mutationsQueue.sync {
-                    waitingForResponses[responseId] = nil
-                }
-            }
-            
-            try Connection.mutationsQueue.sync {
-                if let promise = waitingForResponses[responseId] {
-                    _ = try promise.complete(reply)
-                }
-                
-                buffer.data.removeSubrange(0..<length)
-            }
-        }
     }
 }

@@ -222,6 +222,249 @@ enum Message {
     case KillCursors(requestID: Int32, cursorIDs: [Int])
 }
 
+struct ServerReplyPlaceholder {
+    var totalLength: Int32?
+    var requestId: Int32?
+    var responseTo: Int32?
+    var opCode: Int32?
+    var flags: ReplyFlags?
+    var cursorID: Int?
+    var startingFrom: Int32?
+    var numbersReturned: Int32?
+    var documentsData = [UInt8]()
+    var unconsumed = [UInt8]()
+    var documentsComplete = false
+    
+    var isComplete: Bool {
+        return requestId != nil && responseTo != nil && flags != nil && cursorID != nil && startingFrom != nil && numbersReturned != nil && documentsComplete
+    }
+    
+    init() {
+        // largest data (cursorID Int64) - 1 byte for not complete
+        unconsumed.reserveCapacity(7)
+    }
+    
+    mutating func process(consuming: UnsafeMutablePointer<UInt8>, withLengthOf length: Int) -> Int {
+        var advanced = 0
+        
+        func require(_ n: Int) -> Bool {
+            guard unconsumed.count + length >= n - unconsumed.count else {
+                var data = [UInt8](repeating: 0, count: length)
+                
+                memcpy(&data, consuming, n)
+                
+                self.unconsumed.append(contentsOf: data)
+                
+                return false
+            }
+            
+            return true
+        }
+        
+        func makeInt32() -> Int32? {
+            guard require(4) else {
+                return nil
+            }
+            
+            if unconsumed.count > 0 {
+                var data = [UInt8](repeating: 0, count: 4)
+                memcpy(&data, consuming, 4 - unconsumed.count)
+                data = unconsumed + data
+                
+                advanced = 4 - unconsumed.count
+                
+                return data.makeInt32()
+            } else {
+                advanced = 4
+                return consuming.withMemoryRebound(to: Int32.self, capacity: 1, { $0.pointee })
+            }
+        }
+        
+        func makeInt64() -> Int64? {
+            guard require(8) else {
+                return nil
+            }
+            
+            if unconsumed.count > 0 {
+                var data = [UInt8](repeating: 0, count: 8)
+                memcpy(&data, consuming, 8 - unconsumed.count)
+                data = unconsumed + data
+                
+                advanced = 8 - unconsumed.count
+                
+                return data.makeInt64()
+            } else {
+                advanced = 8
+                return consuming.withMemoryRebound(to: Int64.self, capacity: 1, { $0.pointee })
+            }
+        }
+        
+        if totalLength == nil {
+            guard let totalLength = makeInt32() else {
+                return length
+            }
+            
+            self.totalLength = totalLength
+            
+            return length - advanced - self.process(consuming: consuming.advanced(by: advanced), withLengthOf: length - advanced)
+        }
+        
+        if requestId == nil {
+            guard let requestId = makeInt32() else {
+                return length
+            }
+            
+            self.requestId = requestId
+            
+            return length - advanced - self.process(consuming: consuming.advanced(by: advanced), withLengthOf: length - advanced)
+        }
+        
+        if responseTo == nil {
+            guard let responseTo = makeInt32() else {
+                return length
+            }
+            
+            self.responseTo = responseTo
+            
+            return length - advanced - self.process(consuming: consuming.advanced(by: advanced), withLengthOf: length - advanced)
+        }
+        
+        if opCode == nil {
+            guard let opCode = makeInt32() else {
+                return length
+            }
+            
+            self.opCode = opCode
+            
+            return length - advanced - self.process(consuming: consuming.advanced(by: advanced), withLengthOf: length - advanced)
+        }
+        
+        if flags == nil {
+            guard let flag = makeInt32() else {
+                return length
+            }
+            
+            self.flags = ReplyFlags(rawValue: flag)
+            
+            return length - advanced - self.process(consuming: consuming.advanced(by: advanced), withLengthOf: length - advanced)
+        }
+        
+        if cursorID == nil {
+            guard let cursorID = makeInt64() else {
+                return length
+            }
+            
+            self.cursorID = Int(cursorID)
+            
+            return length - advanced - self.process(consuming: consuming.advanced(by: advanced), withLengthOf: length - advanced)
+        }
+        
+        if startingFrom == nil {
+            guard let startingFrom = makeInt32() else {
+                return length
+            }
+            
+            self.startingFrom = startingFrom
+            
+            return length - advanced - self.process(consuming: consuming.advanced(by: advanced), withLengthOf: length - advanced)
+        }
+        
+        if numbersReturned == nil {
+            guard let numbersReturned = makeInt32() else {
+                return length
+            }
+            
+            self.numbersReturned = numbersReturned
+            
+            return length - advanced - self.process(consuming: consuming.advanced(by: advanced), withLengthOf: length - advanced)
+        }
+        
+        func checkDocuments() -> (count: Int, half: Int) {
+            guard documentsData.count > 3 else {
+                return (0, documentsData.count)
+            }
+            
+            var count = 0
+            var pos = 0
+            
+            while pos < documentsData.count {
+                guard pos + 4 < documentsData.count else {
+                    return (count, documentsData.count - pos)
+                }
+                
+                let length = Int(documentsData[pos..<pos + 4].makeInt32())
+                
+                guard pos + length <= documentsData.count else {
+                    return (count, documentsData.count - pos)
+                }
+                
+                pos += length
+                count += 1
+            }
+            
+            return (count, documentsData.count - pos)
+        }
+        
+        guard let numbersReturned = numbersReturned else {
+            return length
+        }
+        
+        let (documentCount, halfComplete) = checkDocuments()
+        
+        guard numbersReturned > documentCount else {
+            self.documentsComplete = true
+            return length
+        }
+        
+        if halfComplete > 0 {
+            let startOfDocument = documentsData.endIndex.advanced(by: -halfComplete)
+            
+            let documentLength = Int(documentsData[startOfDocument..<startOfDocument.advanced(by: 4)].makeInt32())
+            let neededLength = documentLength - halfComplete
+            
+            advanced = min(length, neededLength)
+            
+            documentsData.append(contentsOf: UnsafeBufferPointer<Byte>(start: consuming, count: advanced))
+            
+            guard length > neededLength else {
+                return length
+            }
+        } else {
+            guard require(4) else {
+                return length
+            }
+            
+            let documentLength = Int(UnsafeBufferPointer<Byte>(start: consuming, count: 4).makeInt32())
+            
+            advanced = min(length, documentLength)
+            documentsData.append(contentsOf: UnsafeBufferPointer<Byte>(start: consuming, count: advanced))
+            
+            guard length > documentLength else {
+                return length
+            }
+        }
+        
+        return length - advanced - self.process(consuming: consuming.advanced(by: advanced), withLengthOf: length - advanced)
+    }
+    
+    func construct() -> ServerReply? {
+        guard
+            let requestId = requestId,
+            let responseTo = responseTo,
+            let flags = flags,
+            let cursorID = cursorID,
+            let startingFrom = startingFrom,
+            let numbersReturned = numbersReturned,
+            documentsComplete else {
+                return nil
+        }
+        
+        let docs = [Document](bsonBytes: documentsData)
+        
+        return ServerReply(requestID: requestId, responseTo: responseTo, flags: flags, cursorID: cursorID, startingFrom: startingFrom, numbersReturned: numbersReturned, documents: docs)
+    }
+}
+
 struct ServerReply {
     let requestID: Int32
     let responseTo: Int32
