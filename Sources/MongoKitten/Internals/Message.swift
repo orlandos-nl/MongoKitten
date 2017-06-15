@@ -411,7 +411,7 @@ struct ServerReplyPlaceholder {
         
         let (documentCount, halfComplete) = checkDocuments()
         
-        guard numbersReturned > documentCount else {
+        guard Int(numbersReturned) > documentCount else {
             self.documentsComplete = true
             return length
         }
