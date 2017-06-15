@@ -150,28 +150,34 @@ public struct BuildInfo: ValueConvertible {
     /// Creates this from a Document, but throwable
     public init(fromDocument document: Document) throws {
         guard let gitVersion = String(document["gitVersion"]) else {
+            print("gitVersion")
             throw MongoError.invalidBuildInfoDocument
         }
         
         guard let versionArray = Document(document["versionArray"]) else {
+            print("versionArray")
             throw MongoError.invalidBuildInfoDocument
         }
         
         guard let version = Version(document["version"]) else {
+            print("version")
             throw MongoError.invalidBuildInfoDocument
         }
         
         let storageEngines = Document(document["storageEngines"])
         
         guard let bits = Int(document["bits"]) else {
+            print("bits")
             throw MongoError.invalidBuildInfoDocument
         }
         
         guard let debug = Bool(document["debug"]) else {
+            print("debug")
             throw MongoError.invalidBuildInfoDocument
         }
         
         guard let maxBsonObjectSize = Int(document["maxBsonObjectSize"]) else {
+            print("maxBsonObjectSize")
             throw MongoError.invalidBuildInfoDocument
         }
         
