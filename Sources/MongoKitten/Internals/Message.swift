@@ -236,7 +236,11 @@ struct ServerReplyPlaceholder {
     var documentsComplete = false
     
     var isComplete: Bool {
-        return requestId != nil && responseTo != nil && flags != nil && cursorID != nil && startingFrom != nil && numbersReturned != nil && documentsComplete
+        guard let totalLength = totalLength else {
+            return false
+        }
+        
+        return requestId != nil && responseTo != nil && flags != nil && cursorID != nil && startingFrom != nil && numbersReturned != nil && documentsComplete && totalLength - 36 == documentsData.count
     }
     
     init() {
@@ -306,7 +310,7 @@ struct ServerReplyPlaceholder {
             
             self.totalLength = totalLength
             
-            return length - advanced - self.process(consuming: consuming.advanced(by: advanced), withLengthOf: length - advanced)
+            return advanced + self.process(consuming: consuming.advanced(by: advanced), withLengthOf: length - advanced)
         }
         
         if requestId == nil {
@@ -316,7 +320,7 @@ struct ServerReplyPlaceholder {
             
             self.requestId = requestId
             
-            return length - advanced - self.process(consuming: consuming.advanced(by: advanced), withLengthOf: length - advanced)
+            return advanced + self.process(consuming: consuming.advanced(by: advanced), withLengthOf: length - advanced)
         }
         
         if responseTo == nil {
@@ -326,7 +330,7 @@ struct ServerReplyPlaceholder {
             
             self.responseTo = responseTo
             
-            return length - advanced - self.process(consuming: consuming.advanced(by: advanced), withLengthOf: length - advanced)
+            return advanced + self.process(consuming: consuming.advanced(by: advanced), withLengthOf: length - advanced)
         }
         
         if opCode == nil {
@@ -336,7 +340,7 @@ struct ServerReplyPlaceholder {
             
             self.opCode = opCode
             
-            return length - advanced - self.process(consuming: consuming.advanced(by: advanced), withLengthOf: length - advanced)
+            return advanced + self.process(consuming: consuming.advanced(by: advanced), withLengthOf: length - advanced)
         }
         
         if flags == nil {
@@ -346,7 +350,7 @@ struct ServerReplyPlaceholder {
             
             self.flags = ReplyFlags(rawValue: flag)
             
-            return length - advanced - self.process(consuming: consuming.advanced(by: advanced), withLengthOf: length - advanced)
+            return advanced + self.process(consuming: consuming.advanced(by: advanced), withLengthOf: length - advanced)
         }
         
         if cursorID == nil {
@@ -356,7 +360,7 @@ struct ServerReplyPlaceholder {
             
             self.cursorID = Int(cursorID)
             
-            return length - advanced - self.process(consuming: consuming.advanced(by: advanced), withLengthOf: length - advanced)
+            return advanced + self.process(consuming: consuming.advanced(by: advanced), withLengthOf: length - advanced)
         }
         
         if startingFrom == nil {
@@ -366,7 +370,7 @@ struct ServerReplyPlaceholder {
             
             self.startingFrom = startingFrom
             
-            return length - advanced - self.process(consuming: consuming.advanced(by: advanced), withLengthOf: length - advanced)
+            return advanced + self.process(consuming: consuming.advanced(by: advanced), withLengthOf: length - advanced)
         }
         
         if numbersReturned == nil {
@@ -376,7 +380,11 @@ struct ServerReplyPlaceholder {
             
             self.numbersReturned = numbersReturned
             
-            return length - advanced - self.process(consuming: consuming.advanced(by: advanced), withLengthOf: length - advanced)
+            return advanced + self.process(consuming: consuming.advanced(by: advanced), withLengthOf: length - advanced)
+        }
+        
+        guard let totalLength = totalLength, let numbersReturned = numbersReturned else {
+            return length
         }
         
         func checkDocuments() -> (count: Int, half: Int) {
@@ -405,15 +413,30 @@ struct ServerReplyPlaceholder {
             return (count, documentsData.count - pos)
         }
         
-        guard let numbersReturned = numbersReturned else {
-            return length
+        @discardableResult
+        func checkComplete(documentCount count: Int? = nil) -> Bool {
+            let documentCount: Int
+            
+            if let count = count {
+                documentCount = count
+            } else {
+                let (count, _) = checkDocuments()
+                
+                documentCount = count
+            }
+            
+            if totalLength - 36 == documentsData.count, Int(numbersReturned) == documentCount {
+                self.documentsComplete = true
+                return true
+            }
+            
+            return false
         }
         
         let (documentCount, halfComplete) = checkDocuments()
         
-        guard Int(numbersReturned) > documentCount else {
-            self.documentsComplete = true
-            return length
+        if checkComplete(documentCount: documentCount) {
+            return 0
         }
         
         if halfComplete > 0 {
@@ -427,7 +450,9 @@ struct ServerReplyPlaceholder {
             documentsData.append(contentsOf: UnsafeBufferPointer<Byte>(start: consuming, count: advanced))
             
             guard length > neededLength else {
-                return length
+                checkComplete()
+                
+                return advanced
             }
         } else {
             guard require(4) else {
@@ -440,7 +465,9 @@ struct ServerReplyPlaceholder {
             documentsData.append(contentsOf: UnsafeBufferPointer<Byte>(start: consuming, count: advanced))
             
             guard length > documentLength else {
-                return length
+                checkComplete()
+                
+                return advanced
             }
         }
         
