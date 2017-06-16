@@ -674,7 +674,7 @@ public final class Server {
         let requestId = msg.requestID
         let messageData = try msg.generateData()
         
-        let promise = ManualPromise<ServerReply>(timeoutAfter: .seconds(Int(600000)))
+        let promise = ManualPromise<ServerReply>(timeoutAfter: .seconds(Int(timeout)))
         
         Connection.mutationsQueue.sync {
             connection.waitingForResponses[requestId] = promise

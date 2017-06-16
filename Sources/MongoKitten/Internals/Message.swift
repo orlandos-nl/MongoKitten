@@ -223,7 +223,7 @@ enum Message {
 }
 
 struct ServerReplyPlaceholder {
-    var totalLength: Int32?
+    var totalLength: Int?
     var requestId: Int32?
     var responseTo: Int32?
     var opCode: Int32?
@@ -308,7 +308,7 @@ struct ServerReplyPlaceholder {
                 return length
             }
             
-            self.totalLength = totalLength
+            self.totalLength = Int(totalLength)
             
             return advanced + self.process(consuming: consuming.advanced(by: advanced), withLengthOf: length - advanced)
         }
