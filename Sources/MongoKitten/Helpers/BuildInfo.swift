@@ -157,10 +157,6 @@ public struct BuildInfo: ValueConvertible {
             throw MongoError.invalidBuildInfoDocument
         }
         
-        guard let version = Version(document["version"]) else {
-            throw MongoError.invalidBuildInfoDocument
-        }
-        
         let storageEngines = Document(document["storageEngines"])
         
         guard let bits = Int(document["bits"]) else {
@@ -179,9 +175,9 @@ public struct BuildInfo: ValueConvertible {
         
         let modules = Document(document["modules"]) ?? []
         
+        self.version = Version(document["version"]) ?? Version(3, 4, 0)
         self.gitVersion = gitVersion
         self.versionArray = versionArray
-        self.version = version
         self.storageEngines = storageEngines
         self.bits = bits
         self.debug = debug

@@ -73,6 +73,7 @@ public final class MongoSocket: MongoTCP {
         guard let addrInfo = addrList.pointee.ai_addr else { throw Error.ipAddressResolutionFailed }
         
         let ptr = UnsafeMutablePointer<sockaddr_storage>.allocate(capacity: 1)
+        defer { free(ptr) }
         ptr.initialize(to: sockaddr_storage())
         
         switch Int32(addrInfo.pointee.sa_family) {

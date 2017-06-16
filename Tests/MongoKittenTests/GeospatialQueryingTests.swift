@@ -63,7 +63,6 @@ public class GeospatialQueryingTest: XCTestCase {
 
             for index in try airports.listIndexes() where String(index["name"]) == "loc_index" {
                 if let _ = Int(index["2dsphereIndexVersion"])  {
-                    print(index.dictionaryValue)
                     continue loop
                 }
             }

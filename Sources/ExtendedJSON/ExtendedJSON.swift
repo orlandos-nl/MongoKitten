@@ -247,9 +247,15 @@ extension Document {
         }
         
         if self.validatesAsArray() {
-            return JSONArray(self.map { makeJSONValue($0.1) })
+            return JSONArray(self.arrayValue.map(makeJSONValue))
         } else {
-            return JSONObject(sequence: self.map { ($0.0, makeJSONValue($0.1)) })
+            var object = JSONObject()
+            
+            for (key, value) in self {
+                object[key] = makeJSONValue(value)
+            }
+            
+            return object
         }
     }
 }

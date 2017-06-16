@@ -16,8 +16,8 @@
 
 @_exported import BSON
 
-import Schrodinger
 import CryptoSwift
+import Schrodinger
 import Foundation
 import Dispatch
 
@@ -674,7 +674,7 @@ public final class Server {
         let requestId = msg.requestID
         let messageData = try msg.generateData()
         
-        let promise = ManualPromise<ServerReply>(timeoutAfter: .seconds(Int(timeout)))
+        let promise = ManualPromise<ServerReply>(timeoutAfter: .seconds(Int(600000)))
         
         Connection.mutationsQueue.sync {
             connection.waitingForResponses[requestId] = promise
