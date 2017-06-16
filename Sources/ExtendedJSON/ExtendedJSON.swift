@@ -264,7 +264,7 @@ extension Document {
         }
         
         if self.validatesAsArray() {
-            return JSONArray(self.arrayValue.map(makeJSONValue))
+            return JSONArray(self.arrayRepresentation.map(makeJSONValue))
         } else {
             var object = JSONObject()
             

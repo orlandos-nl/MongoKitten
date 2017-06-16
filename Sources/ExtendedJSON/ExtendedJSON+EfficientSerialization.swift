@@ -229,7 +229,7 @@ extension Document {
         if self.validatesAsArray() {
             buffer.append(arrayOpen)
             
-            for value in self.arrayValue {
+            for value in self.arrayRepresentation {
                 append(value)
                 buffer.append(comma)
             }

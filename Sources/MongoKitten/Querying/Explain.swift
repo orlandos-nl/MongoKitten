@@ -41,7 +41,7 @@ public struct Explaination {
                 } else if let inputStages = Document(document["inputStages"]) {
                     var stages = [Stage]()
                     
-                    for inputStage in inputStages.arrayValue {
+                    for inputStage in inputStages.arrayRepresentation {
                         guard let stage = Stage(inputStage) else {
                             return nil
                         }

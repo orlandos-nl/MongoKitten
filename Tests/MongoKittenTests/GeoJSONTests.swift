@@ -97,7 +97,7 @@ public class GeoJSONTests: XCTestCase {
 
         let polyDoc = polygon.makePrimitive()
         guard let polyDico = [String: Primitive](polyDoc) else { XCTFail(); return }
-        guard let exter = (polyDico["coordinates"] as? Document)?.arrayValue else { XCTFail(); return }
+        guard let exter = (polyDico["coordinates"] as? Document)?.arrayRepresentation else { XCTFail(); return }
         XCTAssertEqual(exter.count, 1) // One Exterior ring 
 
         let exterior  = try [Position(values: [100.0, 0.0]), Position(values: [101.0, 0.0]),Position(values: [101.0, 1.0]), Position(values: [100.0, 1.0]), Position(values: [100.0, 0.0])]
@@ -108,7 +108,7 @@ public class GeoJSONTests: XCTestCase {
   
         let polygonHoleDoc = polygonWithHole.makePrimitive()
         guard let dic = (polygonHoleDoc as? Document)?.dictionaryValue else { XCTFail(); return }
-        guard let coordinates = (dic["coordinates"] as? Document)?.arrayValue else { XCTFail(); return }
+        guard let coordinates = (dic["coordinates"] as? Document)?.arrayRepresentation else { XCTFail(); return }
         XCTAssertEqual(coordinates.count, 2) // One Exterior ring and One Hole ring
     }
 

@@ -52,7 +52,7 @@ public class ExtendedJSONTest: XCTestCase {
             
             for document in documents {
                 
-                print("DOC: " + document.makeExtendedJSON().serializedString())
+                print("DOC: " + document.makeExtendedJSONString())
             }
         }
     }

@@ -174,7 +174,7 @@ extension CollectionQueryable {
                         throw MongoError.invalidReply
                     }
                     
-                    let writeErrors = try writeErrors.arrayValue.flatMap { value -> InsertErrors.InsertError.WriteError in
+                    let writeErrors = try writeErrors.arrayRepresentation.flatMap { value -> InsertErrors.InsertError.WriteError in
                         guard let document = Document(value),
                             let index = Int(document["index"]),
                             let code = Int(document["code"]),
@@ -339,7 +339,7 @@ extension CollectionQueryable {
             }
             
             if let writeErrors = Document(reply.documents.first?["writeErrors"]), (Int(reply.documents.first?["ok"]) != 1 || ordered == true) {
-                let writeErrors = try writeErrors.arrayValue.flatMap { value -> UpdateError.WriteError in
+                let writeErrors = try writeErrors.arrayRepresentation.flatMap { value -> UpdateError.WriteError in
                     guard let document = Document(value),
                         let index = Int(document["index"]),
                         let code = Int(document["code"]),
@@ -427,7 +427,7 @@ extension CollectionQueryable {
             }
             
             if let writeErrors = Document(reply.documents.first?["writeErrors"]), (Int(reply.documents.first?["ok"]) != 1 || ordered == true) {
-                let writeErrors = try writeErrors.arrayValue.flatMap { value -> RemoveError.WriteError in
+                let writeErrors = try writeErrors.arrayRepresentation.flatMap { value -> RemoveError.WriteError in
                     guard let document = Document(value),
                         let index = Int(document["index"]),
                         let code = Int(document["code"]),
