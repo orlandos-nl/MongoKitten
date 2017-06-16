@@ -48,26 +48,39 @@ extension JSONObject {
                 }
                 
                 return MaxKey()
+            case ("$numberLong", let int as Int):
+                return int
+            case ("$numberInt", let int as Int):
+                if int >= Int32.min && int <= Int32.max {
+                    return Int32(int)
+                } else {
+                    return int
+                }
+            case ("$timestamp", let object as JSONObject):
+                guard object.count == 2, let t = Int(object["t"]), let i = Int(object["i"]) else {
+                    return Document(self)
+                }
+                
+                return Timestamp(increment: Int32(i), timestamp: Int32(t))
             default:
                 return Document(self)
             }
-        } else if keys.count == 2, let firstKey = keys.first, let lastKey = keys.last {
-            switch (firstKey, lastKey, self[firstKey], self[lastKey]) {
-            case ("$regex", "$options", let regex as String, let options as String):
+        } else if keys.count == 2 {
+            if let regex = String(self["$regex"]), let options = String(self["$options"]) {
                 return RegularExpression(pattern: regex, options: regexOptions(fromString: options))
-            case ("$code", "$scope", let code as String, let scope as JSONObject):
+            } else if let code = String(self["$code"]), let scope = JSONObject(self["$scope"]) {
                 return JavascriptCode(code: code, withScope: Document(scope))
-            case ("$binary", "$type", let base64 as String, let subType as String):
+            } else if let base64 = String(self["$binary"]), let subType = String(self["$type"]) {
                 guard subType.characters.count == 2 else {
                     return Document(self)
                 }
                 
-                guard let data = Data(base64Encoded: base64), let subtype = UInt8(subType[subType.index(subType.startIndex, offsetBy: 2)..<subType.endIndex], radix: 16) else {
+                guard let data = Data(base64Encoded: base64), let subtype = UInt8(subType, radix: 16) else {
                     return Document(self)
                 }
                 
                 return Binary(data: data, withSubtype: Binary.Subtype(rawValue: subtype))
-            default:
+            } else {
                 return Document(self)
             }
         } else {
@@ -213,7 +226,11 @@ extension Document {
                     return int
                 }
             case let int as Int32:
-                return Int(int)
+                if typeSafe {
+                    return ["$numberInt": "\(int)"] as JSONObject
+                } else {
+                    return Int(int)
+                }
             case let double as Double:
                 return double
             case let string as String:
