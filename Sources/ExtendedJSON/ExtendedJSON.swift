@@ -51,7 +51,7 @@ extension JSONObject {
             case ("$numberLong", let int as Int):
                 return int
             case ("$numberInt", let int as Int):
-                if int >= Int32.min && int <= Int32.max {
+                if int >= Int(Int32.min) && int <= Int(Int32.max) {
                     return Int32(int)
                 } else {
                     return int
