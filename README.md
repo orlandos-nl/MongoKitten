@@ -69,6 +69,14 @@ And `import MongoKitten` in your project.
 
 The donations are used for creating and hosting tutorials, documentation and example projects.
 
+## Performance
+
+MongoKitten is the fastest driver in the world according to independent benchmarks. We've set up a commonground for all applications and had experienced developers from respective ecosystems write a counter-implementation for that ecosystem.
+
+MongoKitten not only outperforms Ruby, PHP and Python, it also beats C and even Java's MongoDB drivers. We're still tweaking out performance slightly, but even when Java's JIT compiler optimizations have kicked in, we're on an equal performance per test run.
+
+This is to be taken with a grain of salt, however all of our tests are successful, not all official MongoDB tests have been implemented yet. This is a currently ongoing process.
+
 ## License
 
 MongoKitten is licensed under the MIT license.
