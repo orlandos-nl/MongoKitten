@@ -252,7 +252,7 @@ struct ServerReplyPlaceholder {
         var advanced = 0
         
         func require(_ n: Int) -> Bool {
-            guard unconsumed.count + length >= n - unconsumed.count else {
+            guard unconsumed.count + length >= n else {
                 var data = [UInt8](repeating: 0, count: length)
                 
                 memcpy(&data, consuming, n)
@@ -271,11 +271,13 @@ struct ServerReplyPlaceholder {
             }
             
             if unconsumed.count > 0 {
-                var data = [UInt8](repeating: 0, count: 4)
+                var data = [UInt8](repeating: 0, count: 4 - unconsumed.count)
                 memcpy(&data, consuming, 4 - unconsumed.count)
                 data = unconsumed + data
                 
                 advanced = 4 - unconsumed.count
+                
+                unconsumed = []
                 
                 return data.makeInt32()
             } else {
@@ -290,11 +292,13 @@ struct ServerReplyPlaceholder {
             }
             
             if unconsumed.count > 0 {
-                var data = [UInt8](repeating: 0, count: 8)
+                var data = [UInt8](repeating: 0, count: 8 - unconsumed.count)
                 memcpy(&data, consuming, 8 - unconsumed.count)
                 data = unconsumed + data
                 
                 advanced = 8 - unconsumed.count
+                
+                unconsumed = []
                 
                 return data.makeInt64()
             } else {
@@ -308,7 +312,7 @@ struct ServerReplyPlaceholder {
                 return length
             }
             
-            self.totalLength = Int(totalLength)
+            self.totalLength = Int(totalLength) as Int
             
             return advanced + self.process(consuming: consuming.advanced(by: advanced), withLengthOf: length - advanced)
         }
@@ -455,13 +459,15 @@ struct ServerReplyPlaceholder {
                 return advanced
             }
         } else {
-            guard require(4) else {
+            let unconsumedCopy = unconsumed
+            
+            guard let documentLength = Int(makeInt32()) else {
                 return length
             }
             
-            let documentLength = Int(UnsafeBufferPointer<Byte>(start: consuming, count: 4).makeInt32())
-            
             advanced = min(length, documentLength)
+            advanced -= unconsumedCopy.count
+            documentsData.append(contentsOf: unconsumedCopy)
             documentsData.append(contentsOf: UnsafeBufferPointer<Byte>(start: consuming, count: advanced))
             
             guard length > documentLength else {
@@ -471,7 +477,7 @@ struct ServerReplyPlaceholder {
             }
         }
         
-        return length - advanced - self.process(consuming: consuming.advanced(by: advanced), withLengthOf: length - advanced)
+        return advanced + self.process(consuming: consuming.advanced(by: advanced), withLengthOf: length - advanced)
     }
     
     func construct() -> ServerReply? {

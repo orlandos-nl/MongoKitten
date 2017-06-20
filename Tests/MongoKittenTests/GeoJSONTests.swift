@@ -107,7 +107,7 @@ public class GeoJSONTests: XCTestCase {
         XCTAssertNotNil(polygonWithHole)
   
         let polygonHoleDoc = polygonWithHole.makePrimitive()
-        guard let dic = (polygonHoleDoc as? Document)?.dictionaryValue else { XCTFail(); return }
+        guard let dic = (polygonHoleDoc as? Document)?.dictionaryRepresentation else { XCTFail(); return }
         guard let coordinates = (dic["coordinates"] as? Document)?.arrayRepresentation else { XCTFail(); return }
         XCTAssertEqual(coordinates.count, 2) // One Exterior ring and One Hole ring
     }
@@ -167,7 +167,7 @@ public class GeoJSONTests: XCTestCase {
 
         let crsDocument = strict.rawValue.makePrimitive()
         guard let dic = [String: Primitive](crsDocument) else { XCTFail(); return }
-        guard let properties = (dic["properties"] as? Document)?.dictionaryValue else { XCTFail(); return }
+        guard let properties = (dic["properties"] as? Document)?.dictionaryRepresentation else { XCTFail(); return }
         guard let typeName = properties["name"] as? String else { XCTFail(); return }
         XCTAssertEqual(typeName, "urn:x-mongodb:crs:strictwinding:EPSG:4326")
 
