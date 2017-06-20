@@ -308,7 +308,7 @@ struct ServerReplyPlaceholder {
                 return length
             }
             
-            self.totalLength = Int(totalLength)
+            self.totalLength = Int(totalLength) as Int
             
             return advanced + self.process(consuming: consuming.advanced(by: advanced), withLengthOf: length - advanced)
         }
