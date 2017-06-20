@@ -123,7 +123,7 @@ public class CollectionTests: XCTestCase {
         var futures = [Promise<Void>]()
         
         for test in everything {
-            let future = async {
+            let future = async(timeoutAfter: DispatchTimeInterval.seconds(60)) {
                 try test()
             }
 
