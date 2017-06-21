@@ -109,29 +109,52 @@ class Connection {
         }
     }
     
+    var pastReplies = [ServerReply]()
+    var pastReplyLeftovers = [UInt8]()
+    
     private func onRead(at pointer: UnsafeMutablePointer<UInt8>, withLengthOf length: Int) {
-        let consumed = nextReply.process(consuming: pointer, withLengthOf: length)
-        
-        if nextReply.isComplete {
-            defer { nextReply = ServerReplyPlaceholder() }
-            
-            guard let reply = nextReply.construct() else {
-                return
-            }
-            
-            _ = try? Connection.mutationsQueue.sync {
-                if let promise = waitingForResponses[reply.responseTo] {
-                    _ = try promise.complete(reply)
+        func checkComplete() {
+            if nextReply.isComplete {
+                defer { nextReply = ServerReplyPlaceholder() }
+                
+                guard let reply = nextReply.construct() else {
+                    return
                 }
+                
+                _ = try? Connection.mutationsQueue.sync {
+                    if let promise = waitingForResponses[reply.responseTo] {
+                        _ = try promise.complete(reply)
+                        pastReplies.append(reply)
+                        waitingForResponses[reply.responseTo] = nil
+                    }
+                }
+                
+                if nextReply.unconsumed.count > 0 {
+                    pastReplyLeftovers.append(contentsOf: nextReply.unconsumed)
+                }
+                
+                return
             }
             
             return
         }
+        
+        while pastReplyLeftovers.count > 0 {
+            let consumed = nextReply.process(consuming: &pastReplyLeftovers, withLengthOf: pastReplyLeftovers.count)
+            
+            pastReplyLeftovers.removeFirst(consumed)
+            
+            checkComplete()
+        }
+        
+        let consumed = nextReply.process(consuming: pointer, withLengthOf: length)
+        
+        checkComplete()
         
         guard consumed < length else {
             return
         }
-        
+            
         onRead(at: pointer.advanced(by: consumed), withLengthOf: length - consumed)
     }
     

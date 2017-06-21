@@ -108,7 +108,7 @@ public final class Cursor<T> {
     /// Gets more information and puts it in the buffer
     @discardableResult
     fileprivate func getMore() throws -> Promise<Void> {
-        return async(timeoutAfter: .seconds(30)) {
+        return async(timeoutAfter: .seconds(60)) {
             do {
                 if self.collection.database.server.serverData?.maxWireVersion ?? 0 >= 4 {
                     let reply = try self.collection.database.execute(command: [

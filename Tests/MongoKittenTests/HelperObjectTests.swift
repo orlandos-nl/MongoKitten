@@ -47,7 +47,7 @@ public class HelperObjectTests: XCTestCase {
         
         var block = [UInt8]()
         
-        for _ in 0..<message.count {
+        for _ in 0..<message.count * 2 {
             block.append(contentsOf: message)
         }
         
@@ -100,7 +100,7 @@ public class HelperObjectTests: XCTestCase {
             }
         }
         
-        XCTAssertEqual(iterations, 205)
+        XCTAssertEqual(iterations, 410)
     }
     
     func testIndex() throws {

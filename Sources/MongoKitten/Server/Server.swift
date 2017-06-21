@@ -118,7 +118,7 @@ public final class Server {
     public var collation: Collation? = nil
     
     /// The default timeout used for connections/queries
-    internal var defaultTimeout: TimeInterval = 60
+    internal var defaultTimeout: TimeInterval = 30
     
     /// Whether to verify the remote host or not, that is the question
     internal var sslVerify = true
@@ -682,7 +682,11 @@ public final class Server {
         
         try connection.send(data: messageData)
         
-        return try promise.await()
+        do {
+            return try promise.await()
+        } catch {
+            throw error
+        }
     }
     
     /// Sends a message to the server

@@ -253,10 +253,7 @@ struct ServerReplyPlaceholder {
         
         func require(_ n: Int) -> Bool {
             guard unconsumed.count + length >= n else {
-                var data = [UInt8](repeating: 0, count: length)
-                
-                memcpy(&data, consuming, n)
-                
+                let data = Array(UnsafeBufferPointer(start: consuming, count: length))
                 self.unconsumed.append(contentsOf: data)
                 
                 return false
@@ -277,7 +274,7 @@ struct ServerReplyPlaceholder {
                 
                 advanced = 4 - unconsumed.count
                 
-                unconsumed = []
+                unconsumed.removeFirst(min(4, unconsumed.count))
                 
                 return data.makeInt32()
             } else {
@@ -298,7 +295,7 @@ struct ServerReplyPlaceholder {
                 
                 advanced = 8 - unconsumed.count
                 
-                unconsumed = []
+                unconsumed.removeFirst(min(8, unconsumed.count))
                 
                 return data.makeInt64()
             } else {
@@ -440,7 +437,7 @@ struct ServerReplyPlaceholder {
         let (documentCount, halfComplete) = checkDocuments()
         
         if checkComplete(documentCount: documentCount) {
-            return 0
+            return advanced
         }
         
         if halfComplete > 0 {
@@ -465,8 +462,7 @@ struct ServerReplyPlaceholder {
                 return length
             }
             
-            advanced = min(length, documentLength)
-            advanced -= unconsumedCopy.count
+            advanced = min(length, documentLength - unconsumedCopy.count)
             documentsData.append(contentsOf: unconsumedCopy)
             documentsData.append(contentsOf: UnsafeBufferPointer<Byte>(start: consuming, count: advanced))
             
