@@ -73,7 +73,6 @@ public final class MongoSocket: MongoTCP {
         guard let addrInfo = addrList.pointee.ai_addr else { throw Error.ipAddressResolutionFailed }
         
         let ptr = UnsafeMutablePointer<sockaddr_storage>.allocate(capacity: 1)
-        defer { free(ptr) }
         ptr.initialize(to: sockaddr_storage())
         
         switch Int32(addrInfo.pointee.sa_family) {
@@ -243,6 +242,26 @@ public final class MongoSocket: MongoTCP {
             }
         }
         
+        self.readSource.setCancelHandler {
+            if self.sslEnabled {
+                #if (os(macOS) || os(iOS))
+                    #if !OPENSSL
+                        SSLClose(self.sslClient!)
+                    #endif
+                    _ = Darwin.close(self.plainClient)
+                #else
+                    SSL_CTX_free(self.sslContext)
+                    _ = Glibc.close(self.plainClient)
+                #endif
+            } else {
+                #if (os(macOS) || os(iOS))
+                    _ = Darwin.close(self.plainClient)
+                #else
+                    _ = Glibc.close(self.plainClient)
+                #endif
+            }
+        }
+        
         self.readSource.resume()
     }
     
@@ -301,22 +320,7 @@ public final class MongoSocket: MongoTCP {
     
     /// Closes the connection
     public func close() throws {
-        if sslEnabled {
-            #if (os(macOS) || os(iOS))
-                #if !OPENSSL
-                    SSLClose(sslClient!)
-                #endif
-                _ = Darwin.close(plainClient)
-            #else
-                _ = Glibc.close(plainClient)
-            #endif
-        } else {
-            #if (os(macOS) || os(iOS))
-                _ = Darwin.close(plainClient)
-            #else
-                _ = Glibc.close(plainClient)
-            #endif
-        }
+        readSource.cancel()
     }
     
     public var isConnected: Bool {
@@ -334,9 +338,5 @@ public final class MongoSocket: MongoTCP {
     
     deinit {
         _ = try? close()
-        
-        #if os(Linux)
-            SSL_CTX_free(sslContext)
-        #endif
     }
 }

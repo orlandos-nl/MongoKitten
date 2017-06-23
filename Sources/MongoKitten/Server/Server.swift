@@ -75,8 +75,8 @@ public final class Server {
     /// The ClientSettings used to connect to server(s)
     internal var clientSettings: ClientSettings
     
-    /// The last Request we sent.. -1 if no request was sent
-    internal var lastRequestID: Int32 = -1
+    /// The next Request we sent starting at 0
+    internal var nextRequestID: Int32 = 0
     
     /// `MongoTCP` Socket bound to the MongoDB Server
     private var connections = [Connection]()
@@ -617,12 +617,10 @@ public final class Server {
     ///
     /// - returns: The newly created ID for your message
     internal func nextMessageID() -> Int32 {
-        var id: Int32 = 0
-        messageMutationQueue.sync {
-            lastRequestID += 1
-            id = lastRequestID
+        return messageMutationQueue.sync {
+            defer { nextRequestID = nextRequestID &+ 1 }
+            return nextRequestID
         }
-        return id
     }
     
     /// Are we currently connected?
@@ -682,11 +680,7 @@ public final class Server {
         
         try connection.send(data: messageData)
         
-        do {
-            return try promise.await()
-        } catch {
-            throw error
-        }
+        return try promise.await()
     }
     
     /// Sends a message to the server
@@ -927,6 +921,10 @@ public final class Server {
         let successDocument = try firstDocument(in: successResponse)
         
         return try BuildInfo(fromDocument: successDocument)
+    }
+    
+    deinit {
+        _ = try? self.disconnect()
     }
 }
 
