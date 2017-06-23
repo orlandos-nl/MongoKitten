@@ -245,16 +245,14 @@ public final class MongoSocket: MongoTCP {
                     throw Error.cannotConnect
                 }
                 
-                var hostname = [UInt8](hostname.utf8)
-                SSL_ctrl(ssl, SSL_CTRL_SET_TLSEXT_HOSTNAME, Int(TLSEXT_NAMETYPE_host_name), &hostname)
-                
                 self.sslClient = ssl
                 
                 guard SSL_set_fd(ssl, plainClient) == 1 else {
                     throw Error.cannotConnect
                 }
                 
-                // TODO: Hostname verification
+                var hostname = [UInt8](hostname.utf8)
+                SSL_ctrl(ssl, SSL_CTRL_SET_TLSEXT_HOSTNAME, Int(TLSEXT_NAMETYPE_host_name), &hostname)
                 
                 guard SSL_connect(ssl) == 1, SSL_do_handshake(ssl) == 1 else {
                     throw Error.cannotConnect
