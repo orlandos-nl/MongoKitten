@@ -237,11 +237,6 @@ public final class MongoSocket: MongoTCP {
                     throw Error.cannotCreateContext
                 }
                 
-//SSL_set_tlsext_host_name
-                guard SSL_set_tlsext_host_name(ctx, hostname) else {
-                    throw Error.cannotConnect
-                }
-                
                 if let CAFile = options["CAFile"] as? String {
                     SSL_CTX_load_verify_locations(ctx, CAFile, nil)
                 }
@@ -249,6 +244,9 @@ public final class MongoSocket: MongoTCP {
                 guard let ssl = SSL_new(ctx) else {
                     throw Error.cannotConnect
                 }
+                
+                var hostname = [UInt8](hostname.utf8)
+                SSL_ctrl(ssl, SSL_CTRL_SET_TLSEXT_HOSTNAME, Int(TLSEXT_NAMETYPE_host_name), &hostname)
                 
                 self.sslClient = ssl
                 
