@@ -116,31 +116,89 @@ public final class MongoSocket: MongoTCP {
                     throw Error.cannotCreateContext
                 }
                 
-                SSLSetIOFuncs(context, { context, data, length in
-                    let context = context.bindMemory(to: Int32.self, capacity: 1).pointee
-                    var read = Darwin.recv(context, data, length.pointee, 0)
+                let i = SSLSetIOFuncs(context, { context, data, length in
+                    let context = context.assumingMemoryBound(to: Int32.self).pointee
+                    let lengthRequested = length.pointee
                     
-                    length.assign(from: &read, count: 1)
-                    return 0
+                    var readCount = Darwin.recv(context, data, lengthRequested, 0)
+                    
+                    defer { length.initialize(to: readCount) }
+                    if readCount == 0 {
+                        return OSStatus(errSSLClosedGraceful)
+                    } else if readCount < 0 {
+                        readCount = 0
+                        
+                        switch errno {
+                        case ENOENT:
+                            return OSStatus(errSSLClosedGraceful)
+                        case EAGAIN:
+                            return OSStatus(errSSLWouldBlock)
+                        case ECONNRESET:
+                            return OSStatus(errSSLClosedAbort)
+                        default:
+                            return OSStatus(errSecIO)
+                        }
+                    }
+                    
+                    guard lengthRequested <= readCount else {
+                        return OSStatus(errSSLWouldBlock)
+                    }
+                    
+                    return noErr
                 }, { context, data, length in
                     let context = context.bindMemory(to: Int32.self, capacity: 1).pointee
-                    var written = Darwin.send(context, data, length.pointee, 0)
+                    let toWrite = length.pointee
                     
-                    length.assign(from: &written, count: 1)
-                    return 0
+                    var writeCount = Darwin.send(context, data, toWrite, 0)
+                    
+                    defer { length.initialize(to: writeCount) }
+                    if writeCount == 0 {
+                        return OSStatus(errSSLClosedGraceful)
+                    } else if writeCount < 0 {
+                        writeCount = 0
+                        
+                        guard errno == EAGAIN else {
+                            return OSStatus(errSecIO)
+                        }
+                        
+                        return OSStatus(errSSLWouldBlock)
+                    }
+                    
+                    guard toWrite <= writeCount else {
+                        return Int32(errSSLWouldBlock)
+                    }
+                    
+                    return noErr
                 })
                 
-                SSLSetConnection(context, &self.plainClient)
+                guard SSLSetConnection(context, &self.plainClient) == 0 else {
+                    throw Error.cannotConnect
+                }
+                
+                var hostname = [Int8](hostname.utf8.map { Int8($0) })
+                guard SSLSetPeerDomainName(context, &hostname, hostname.count) == 0 else {
+                    throw Error.cannotConnect
+                }
                 
                 if let path = options["CAFile"] as? String, let data = FileManager.default.contents(atPath: path) {
                     let bytes = [UInt8](data)
                     
                     if let certBytes = CFDataCreate(kCFAllocatorDefault, bytes, data.count), let cert = SecCertificateCreateWithData(kCFAllocatorDefault, certBytes) {
-                        SSLSetCertificateAuthorities(context, cert, true)
+                        guard SSLSetCertificateAuthorities(context, cert, true) == 0 else {
+                            throw Error.cannotConnect
+                        }
                     }
                 }
                 
-                _ = SSLHandshake(context)
+                var result: Int32
+                
+                repeat {
+                    result = SSLHandshake(context)
+                } while result == errSSLWouldBlock
+                
+                guard result == errSecSuccess || result == errSSLPeerAuthCompleted else {
+                    throw Error.cannotConnect
+                }
                 
                 self.sslClient = context
             } else {
