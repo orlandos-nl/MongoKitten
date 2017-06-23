@@ -238,7 +238,9 @@ public final class MongoSocket: MongoTCP {
                 }
                 
 //SSL_set_tlsext_host_name
-//                guard SSL_set_tlsext_host_name
+                guard SSL_set_tlsext_host_name(ctx, hostname) else {
+                    throw Error.cannotConnect
+                }
                 
                 if let CAFile = options["CAFile"] as? String {
                     SSL_CTX_load_verify_locations(ctx, CAFile, nil)
