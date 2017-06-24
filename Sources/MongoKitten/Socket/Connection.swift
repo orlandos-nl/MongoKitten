@@ -109,7 +109,6 @@ class Connection {
         }
     }
     
-    var pastReplies = [ServerReply]()
     var pastReplyLeftovers = [UInt8]()
     
     private func onRead(at pointer: UnsafeMutablePointer<UInt8>, withLengthOf length: Int) {
@@ -124,7 +123,6 @@ class Connection {
                 _ = try? Connection.mutationsQueue.sync {
                     if let promise = waitingForResponses[reply.responseTo] {
                         _ = try promise.complete(reply)
-                        pastReplies.append(reply)
                         waitingForResponses[reply.responseTo] = nil
                     }
                 }

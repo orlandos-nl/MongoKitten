@@ -902,12 +902,20 @@ public final class Server {
         return users
     }
     
+    public func ping() throws {
+        let commandMessage = Message.Query(requestID: self.nextMessageID(), flags: [], collection: self["admin"]["$cmd"], numbersToSkip: 0, numbersToReturn: 1, query: [
+            "ping": Int32(1)
+        ], returnFields: nil)
+        
+        let connection = try self.reserveConnection(authenticatedFor: nil)
+        
+        defer { returnConnection(connection) }
+        
+        try self.sendAndAwait(message: commandMessage, overConnection: connection)
+    }
+    
     /// Returns the MongoDB Build Information
     internal func getBuildInfo() throws -> BuildInfo {
-        var command: Document = [
-            "buildInfo": Int32(1)
-        ]
-        
         let commandMessage = Message.Query(requestID: self.nextMessageID(), flags: [], collection: self["admin"]["$cmd"], numbersToSkip: 0, numbersToReturn: 1, query: [
             "buildInfo": Int32(1)
             ], returnFields: nil)

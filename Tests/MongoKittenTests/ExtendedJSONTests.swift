@@ -45,13 +45,11 @@ public class ExtendedJSONTest: XCTestCase {
         XCTAssert(copyKittenDocument == kittenDocument)
     }
     
-    func testA() {
+    func testA() throws {
         for db in TestManager.dbs {
             let collection = db["zips"]
-            let documents: MongoKitten.CollectionSlice<BSON.Document> = try! collection.find()
             
-            for document in documents {
-                
+            for document in try collection.find() {
                 print("DOC: " + document.makeExtendedJSONString())
             }
         }
