@@ -8,7 +8,7 @@
 
 import Dispatch
 import BSON
-import Dispatch
+import Schrodinger
 
 /// Makes it internally queryable
 protocol CollectionQueryable {
@@ -103,7 +103,7 @@ extension CollectionQueryable {
     /// - parameter connection: The connection to use
     ///
     /// - throws: An `InsertError` when a write error occurs
-    func insert(documents: [Document], ordered: Bool?, writeConcern: WriteConcern?, timeout: DispatchTimeInterval?, connection: Connection?) throws -> [BSON.Primitive] {
+    func insert(documents: [Document], ordered: Bool?, writeConcern: WriteConcern?, timeout: DispatchTimeInterval?, connection: Connection?) throws -> Promise<[BSON.Primitive]> {
         let timeout: DispatchTimeInterval = timeout ?? .seconds(Int(database.server.defaultTimeout + (Double(documents.count) / 50)))
         
         var newIds = [Primitive]()
@@ -153,6 +153,8 @@ extension CollectionQueryable {
             }
         }
         
+        var promises = [Promise<Void>]()
+        
         while position < documents.count {
             defer { position += 1000 }
             
@@ -169,44 +171,54 @@ extension CollectionQueryable {
                 
                 let reply = try self.database.execute(command: command, using: newConnection)
                 
-                if let writeErrors = Document(reply.documents.first?["writeErrors"]) {
-                    guard let documents = Document(command["documents"]) else {
-                        throw MongoError.invalidReply
-                    }
-                    
-                    let writeErrors = try writeErrors.arrayRepresentation.flatMap { value -> InsertErrors.InsertError.WriteError in
-                        guard let document = Document(value),
-                            let index = Int(document["index"]),
-                            let code = Int(document["code"]),
-                            let message = String(document["errmsg"]),
-                            index < documents.count,
-                            let affectedDocument = Document(documents[index]) else {
-                                throw MongoError.invalidReply
+                promises.append(Promise(timeoutAfter: timeout) {
+                    let reply = try reply.await()
+                    if let writeErrors = Document(reply.documents.first?["writeErrors"]) {
+                        guard let documents = Document(command["documents"]) else {
+                            throw MongoError.invalidReply
                         }
                         
-                        return InsertErrors.InsertError.WriteError(index: index, code: code, message: message, affectedDocument: affectedDocument)
+                        let writeErrors = try writeErrors.arrayRepresentation.flatMap { value -> InsertErrors.InsertError.WriteError in
+                            guard let document = Document(value),
+                                let index = Int(document["index"]),
+                                let code = Int(document["code"]),
+                                let message = String(document["errmsg"]),
+                                index < documents.count,
+                                let affectedDocument = Document(documents[index]) else {
+                                    throw MongoError.invalidReply
+                            }
+                            
+                            return InsertErrors.InsertError.WriteError(index: index, code: code, message: message, affectedDocument: affectedDocument)
+                        }
+                        
+                        errors.append(InsertErrors.InsertError(writeErrors: writeErrors))
                     }
                     
-                    errors.append(InsertErrors.InsertError(writeErrors: writeErrors))
-                }
-                
-                guard Int(reply.documents.first?["ok"]) == 1 else {
-                    throw throwErrors()
-                }
+                    guard Int(reply.documents.first?["ok"]) == 1 else {
+                        throw throwErrors()
+                    }
+                })
             } else {
-                
-                let commandDocuments = Array(documents[position..<Swift.min(position + 1000, documents.count)])
-                
-                let insertMsg = Message.Insert(requestID: self.database.server.nextMessageID(), flags: [], collection: self.collection, documents: commandDocuments)
-                _ = try self.database.server.send(message: insertMsg, overConnection: newConnection)
+                promises.append(Promise(timeoutAfter: timeout) {
+                    let commandDocuments = Array(documents[position..<Swift.min(position + 1000, documents.count)])
+                    
+                    let insertMsg = Message.Insert(requestID: self.database.server.nextMessageID(), flags: [], collection: self.collection, documents: commandDocuments)
+                    _ = try self.database.server.send(message: insertMsg, overConnection: newConnection)
+                })
             }
         }
         
-        guard errors.count == 0 else {
-            throw throwErrors()
+        return Promise(timeoutAfter: timeout) {
+            for promise in promises {
+                try promise.await()
+            }
+            
+            guard errors.count == 0 else {
+                throw throwErrors()
+            }
+            
+            return newIds
         }
-        
-        return newIds
     }
     
     /// Applies a pipeline over a collection's contentrs
@@ -217,7 +229,9 @@ extension CollectionQueryable {
     /// - parameter options: The aggregation options to use
     /// - parameter connection: The connection to use
     /// - parameter timeout: The timeout to wait for
-    func aggregate(_ pipeline: AggregationPipeline, readConcern: ReadConcern?, collation: Collation?, options: [AggregationOptions], connection: Connection?, timeout: DispatchTimeInterval?) throws -> Cursor<Document> {
+    func aggregate(_ pipeline: AggregationPipeline, readConcern: ReadConcern?, collation: Collation?, options: [AggregationOptions], connection: Connection?, timeout: DispatchTimeInterval?) throws -> Promise<Cursor<Document>> {
+        let timeout: DispatchTimeInterval = timeout ?? .seconds(Int(database.server.defaultTimeout))
+        
         // construct command. we always use cursors in MongoKitten, so that's why the default value for cursorOptions is an empty document.
         var command: Document = ["aggregate": self.collectionName, "pipeline": pipeline.pipelineDocument, "cursor": ["batchSize": 100]]
         
@@ -234,7 +248,7 @@ extension CollectionQueryable {
             listener(try collection.explained.aggregate(pipeline, readConcern: readConcern, collation: collation, options: options))
         }
         
-        let reply: ServerReply
+        let reply: ManualPromise<ServerReply>
         let newConnection: Connection
         
         if let connection = connection {
@@ -246,26 +260,32 @@ extension CollectionQueryable {
         // execute and construct cursor
         reply = try self.database.execute(command: command, using: newConnection)
         
-        guard let cursorDoc = Document(reply.documents.first?["cursor"]) else {
-            if connection == nil {
-                self.database.server.returnConnection(newConnection)
+        return Promise(timeoutAfter: timeout) {
+            let reply = try reply.await()
+            
+            guard let cursorDoc = Document(reply.documents.first?["cursor"]) else {
+                if connection == nil {
+                    self.database.server.returnConnection(newConnection)
+                }
+                
+                throw MongoError.invalidResponse(documents: reply.documents)
             }
             
-            throw MongoError.invalidResponse(documents: reply.documents)
-        }
-        
-        do {
-            return try Cursor(cursorDocument: cursorDoc, collection: self.collection, connection: newConnection, chunkSize: Int32(command["cursor"]["batchSize"]) ?? 100, transform: { $0 })
-        } catch {
-            if connection == nil {
-                self.database.server.returnConnection(newConnection)
+            do {
+                return try Cursor(cursorDocument: cursorDoc, collection: self.collection, connection: newConnection, chunkSize: Int32(command["cursor"]["batchSize"]) ?? 100, transform: { $0 })
+            } catch {
+                if connection == nil {
+                    self.database.server.returnConnection(newConnection)
+                }
+                
+                throw error
             }
-            
-            throw error
         }
     }
     
-    func count(filter: Query?, limit: Int?, skip: Int?, readConcern: ReadConcern?, collation: Collation?, connection: Connection?, timeout: DispatchTimeInterval?) throws -> Int {
+    func count(filter: Query?, limit: Int?, skip: Int?, readConcern: ReadConcern?, collation: Collation?, connection: Connection?, timeout: DispatchTimeInterval?) throws -> Promise<Int> {
+        let timeout: DispatchTimeInterval = timeout ?? .seconds(Int(database.server.defaultTimeout))
+        
         var command: Document = ["count": self.collectionName]
         
         if let filter = filter {
@@ -287,7 +307,7 @@ extension CollectionQueryable {
             listener(try collection.explained.count(filter, limiting: limit, skipping: skip, readConcern: readConcern, collation: collation, timeout: timeout))
         }
         
-        let reply: ServerReply
+        let reply: ManualPromise<ServerReply>
         
         if let connection = connection {
             reply = try self.database.execute(command: command, writing: false, using: connection)
@@ -295,14 +315,20 @@ extension CollectionQueryable {
             reply = try self.database.execute(command: command, writing: false)
         }
         
-        guard let n = Int(reply.documents.first?["n"]), Int(reply.documents.first?["ok"]) == 1 else {
-            throw InternalMongoError.incorrectReply(reply: reply)
+        return Promise(timeoutAfter: timeout) {
+            let reply = try reply.await()
+            
+            guard let n = Int(reply.documents.first?["n"]), Int(reply.documents.first?["ok"]) == 1 else {
+                throw InternalMongoError.incorrectReply(reply: reply)
+            }
+            
+            return n
         }
-        
-        return n
     }
     
-    func update(updates: [(filter: Query, to: Document, upserting: Bool, multiple: Bool)], writeConcern: WriteConcern?, ordered: Bool?, connection: Connection?, timeout: DispatchTimeInterval?) throws -> Int {
+    func update(updates: [(filter: Query, to: Document, upserting: Bool, multiple: Bool)], writeConcern: WriteConcern?, ordered: Bool?, connection: Connection?, timeout: DispatchTimeInterval?) throws -> Promise<Int> {
+        let timeout: DispatchTimeInterval = timeout ?? .seconds(Int(database.server.defaultTimeout))
+        
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
         if protocolVersion >= 2 {
@@ -326,7 +352,7 @@ extension CollectionQueryable {
             
             command["writeConcern"] = writeConcern ??  self.writeConcern
             
-            let reply: ServerReply
+            let reply: ManualPromise<ServerReply>
             
             if let connection = connection {
                 reply = try self.database.execute(command: command, writing: false, using: connection)
@@ -338,25 +364,29 @@ extension CollectionQueryable {
                 listener(try collection.explained.update(updates: updates, writeConcern: writeConcern, ordered: ordered, timeout: timeout))
             }
             
-            if let writeErrors = Document(reply.documents.first?["writeErrors"]), (Int(reply.documents.first?["ok"]) != 1 || ordered == true) {
-                let writeErrors = try writeErrors.arrayRepresentation.flatMap { value -> UpdateError.WriteError in
-                    guard let document = Document(value),
-                        let index = Int(document["index"]),
-                        let code = Int(document["code"]),
-                        let message = String(document["errmsg"]),
-                        index < updates.count else {
-                            throw MongoError.invalidReply
+            return Promise(timeoutAfter: timeout) {
+                let reply = try reply.await()
+                
+                if let writeErrors = Document(reply.documents.first?["writeErrors"]), (Int(reply.documents.first?["ok"]) != 1 || ordered == true) {
+                    let writeErrors = try writeErrors.arrayRepresentation.flatMap { value -> UpdateError.WriteError in
+                        guard let document = Document(value),
+                            let index = Int(document["index"]),
+                            let code = Int(document["code"]),
+                            let message = String(document["errmsg"]),
+                            index < updates.count else {
+                                throw MongoError.invalidReply
+                        }
+                        
+                        let affectedUpdate = updates[index]
+                        
+                        return UpdateError.WriteError(index: index, code: code, message: message, affectedQuery: affectedUpdate.filter, affectedUpdate: affectedUpdate.to, upserting: affectedUpdate.upserting, multiple: affectedUpdate.multiple)
                     }
                     
-                    let affectedUpdate = updates[index]
-                    
-                    return UpdateError.WriteError(index: index, code: code, message: message, affectedQuery: affectedUpdate.filter, affectedUpdate: affectedUpdate.to, upserting: affectedUpdate.upserting, multiple: affectedUpdate.multiple)
+                    throw UpdateError(writeErrors: writeErrors)
                 }
-                
-                throw UpdateError(writeErrors: writeErrors)
+                    
+                return Int(reply.documents.first?["nModified"]) ?? 0
             }
-            
-            return Int(reply.documents.first?["nModified"]) ?? 0
         } else {
             var newConnection: Connection
             
@@ -372,27 +402,31 @@ extension CollectionQueryable {
                 }
             }
             
-            for update in updates {
-                var flags: UpdateFlags = []
-                
-                if update.multiple {
-                    flags.insert(UpdateFlags.MultiUpdate)
+            return Promise(timeoutAfter: timeout) {
+                for update in updates {
+                    var flags: UpdateFlags = []
+                    
+                    if update.multiple {
+                        flags.insert(UpdateFlags.MultiUpdate)
+                    }
+                    
+                    if update.upserting {
+                        flags.insert(UpdateFlags.Upsert)
+                    }
+                    
+                    let message = Message.Update(requestID: self.database.server.nextMessageID(), collection: self.collection, flags: flags, findDocument: update.filter.queryDocument, replaceDocument: update.to)
+                    try self.database.server.send(message: message, overConnection: newConnection)
+                    // TODO: Check for errors
                 }
                 
-                if update.upserting {
-                    flags.insert(UpdateFlags.Upsert)
-                }
-                
-                let message = Message.Update(requestID: self.database.server.nextMessageID(), collection: self.collection, flags: flags, findDocument: update.filter.queryDocument, replaceDocument: update.to)
-                try self.database.server.send(message: message, overConnection: newConnection)
-                // TODO: Check for errors
+                return updates.count
             }
-            
-            return updates.count
         }
     }
     
-    func remove(removals: [(filter: Query, limit: Int)], writeConcern: WriteConcern?, ordered: Bool?, connection: Connection?, timeout: DispatchTimeInterval?) throws -> Int {
+    func remove(removals: [(filter: Query, limit: Int)], writeConcern: WriteConcern?, ordered: Bool?, connection: Connection?, timeout: DispatchTimeInterval?) throws -> Promise<Int> {
+        let timeout: DispatchTimeInterval = timeout ?? .seconds(Int(database.server.defaultTimeout))
+        
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
         if protocolVersion >= 2 {
@@ -414,7 +448,7 @@ extension CollectionQueryable {
             
             command["writeConcern"] = writeConcern ?? self.writeConcern
             
-            let reply: ServerReply
+            let reply: ManualPromise<ServerReply>
             
             if let connection = connection {
                 reply = try self.database.execute(command: command, writing: false, using: connection)
@@ -426,25 +460,29 @@ extension CollectionQueryable {
                 listener(try collection.explained.remove(removals: removals, writeConcern: writeConcern, ordered: ordered, timeout: timeout))
             }
             
-            if let writeErrors = Document(reply.documents.first?["writeErrors"]), (Int(reply.documents.first?["ok"]) != 1 || ordered == true) {
-                let writeErrors = try writeErrors.arrayRepresentation.flatMap { value -> RemoveError.WriteError in
-                    guard let document = Document(value),
-                        let index = Int(document["index"]),
-                        let code = Int(document["code"]),
-                        let message = String(document["errmsg"]),
-                        index < removals.count else {
-                            throw MongoError.invalidReply
+            return Promise(timeoutAfter: timeout) {
+                let reply = try reply.await()
+                
+                if let writeErrors = Document(reply.documents.first?["writeErrors"]), (Int(reply.documents.first?["ok"]) != 1 || ordered == true) {
+                    let writeErrors = try writeErrors.arrayRepresentation.flatMap { value -> RemoveError.WriteError in
+                        guard let document = Document(value),
+                            let index = Int(document["index"]),
+                            let code = Int(document["code"]),
+                            let message = String(document["errmsg"]),
+                            index < removals.count else {
+                                throw MongoError.invalidReply
+                        }
+                        
+                        let affectedRemove = removals[index]
+                        
+                        return RemoveError.WriteError(index: index, code: code, message: message, affectedQuery: affectedRemove.filter, limit: affectedRemove.limit)
                     }
                     
-                    let affectedRemove = removals[index]
-                    
-                    return RemoveError.WriteError(index: index, code: code, message: message, affectedQuery: affectedRemove.filter, limit: affectedRemove.limit)
+                    throw RemoveError(writeErrors: writeErrors)
                 }
-                
-                throw RemoveError(writeErrors: writeErrors)
+                    
+                return Int(reply.documents.first?["n"]) ?? 0
             }
-            
-            return Int(reply.documents.first?["n"]) ?? 0
             
             // If we're communicating with an older MongoDB server
         } else {
@@ -462,31 +500,35 @@ extension CollectionQueryable {
                 }
             }
             
-            for removal in removals {
-                var flags: DeleteFlags = []
-                
-                // If the limit is 0, make the for loop run exactly once so the message sends
-                // If the limit is not 0, set the limit properly
-                let limit = removal.limit == 0 ? 1 : removal.limit
-                
-                // If the limit is not '0' and thus removes a set amount of documents. Set it to RemoveOne so we'll remove one document at a time using the older method
-                if removal.limit != 0 {
-                    // TODO: Remove this assignment when the standard library is updated.
-                    let _ = flags.insert(DeleteFlags.RemoveOne)
+            return Promise(timeoutAfter: timeout) {
+                for removal in removals {
+                    var flags: DeleteFlags = []
+                    
+                    // If the limit is 0, make the for loop run exactly once so the message sends
+                    // If the limit is not 0, set the limit properly
+                    let limit = removal.limit == 0 ? 1 : removal.limit
+                    
+                    // If the limit is not '0' and thus removes a set amount of documents. Set it to RemoveOne so we'll remove one document at a time using the older method
+                    if removal.limit != 0 {
+                        // TODO: Remove this assignment when the standard library is updated.
+                        let _ = flags.insert(DeleteFlags.RemoveOne)
+                    }
+                    
+                    let message = Message.Delete(requestID: self.database.server.nextMessageID(), collection: self.collection, flags: flags, removeDocument: removal.filter.queryDocument)
+                    
+                    for _ in 0..<limit {
+                        try self.database.server.send(message: message, overConnection: newConnection)
+                    }
                 }
                 
-                let message = Message.Delete(requestID: self.database.server.nextMessageID(), collection: self.collection, flags: flags, removeDocument: removal.filter.queryDocument)
-                
-                for _ in 0..<limit {
-                    try self.database.server.send(message: message, overConnection: newConnection)
-                }
+                return removals.count
             }
-            
-            return removals.count
         }
     }
     
-    func find(filter: Query?, sort: Sort?, projection: Projection?, readConcern: ReadConcern?, collation: Collation?, skip: Int?, limit: Int?, batchSize: Int = 100, connection: Connection?) throws -> CollectionSlice<Document> {
+    func find(filter: Query?, sort: Sort?, projection: Projection?, readConcern: ReadConcern?, collation: Collation?, skip: Int?, limit: Int?, batchSize: Int = 100, timeout: DispatchTimeInterval?, connection: Connection?) throws -> Promise<CollectionSlice<Document>> {
+        let timeout: DispatchTimeInterval = timeout ?? .seconds(Int(database.server.defaultTimeout))
+        
         if self.collection.database.server.buildInfo.version >= Version(3,2,0) {
             var command: Document = [
                 "find": collection.name,
@@ -523,46 +565,54 @@ extension CollectionQueryable {
             
             let reply = try self.database.execute(command: command, until: 30, writing: false, using: cursorConnection)
             
-            guard let responseDoc = reply.documents.first, let cursorDoc = Document(responseDoc["cursor"]) else {
-                if connection == nil {
-                    self.database.server.returnConnection(cursorConnection)
+            return Promise(timeoutAfter: timeout) {
+                let reply = try reply.await()
+                
+                guard let responseDoc = reply.documents.first, let cursorDoc = Document(responseDoc["cursor"]) else {
+                    if connection == nil {
+                        self.database.server.returnConnection(cursorConnection)
+                    }
+                    
+                    throw MongoError.invalidResponse(documents: reply.documents)
                 }
                 
-                throw MongoError.invalidResponse(documents: reply.documents)
+                let cursor = try Cursor(cursorDocument: cursorDoc, collection: self.collection, connection: cursorConnection, chunkSize: Int32(batchSize), transform: { doc in
+                    return doc
+                })
+                
+                return CollectionSlice(cursor: cursor, filter: filter, sort: sort, projection: projection, skip: skip, limit: limit)
             }
-            
-            let cursor = try Cursor(cursorDocument: cursorDoc, collection: self.collection, connection: cursorConnection, chunkSize: Int32(batchSize), transform: { doc in
-                return doc
-            })
-            
-            return CollectionSlice(cursor: cursor, filter: filter, sort: sort, projection: projection, skip: skip, limit: limit)
         } else {
             let queryMsg = Message.Query(requestID: collection.database.server.nextMessageID(), flags: [], collection: collection, numbersToSkip: Int32(skip) ?? 0, numbersToReturn: Int32(batchSize), query: filter?.queryDocument ?? [], returnFields: projection?.document)
             
             let cursorConnection = try connection ?? (try self.database.server.reserveConnection(authenticatedFor: self.collection.database))
             
-            var reply = try self.database.server.sendAndAwait(message: queryMsg, overConnection: cursorConnection)
+            let reply = try self.database.server.sendAsync(message: queryMsg, overConnection: cursorConnection)
             
-            if let limit = limit {
-                if reply.documents.count > Int(limit) {
-                    reply.documents.removeLast(reply.documents.count - Int(limit))
-                }
-            }
-            
-            var returned: Int = 0
-            
-            let cursor = Cursor(namespace: self.fullCollectionName, collection: self.collection, connection: cursorConnection, cursorID: reply.cursorID, initialData: reply.documents, chunkSize: Int32(batchSize), transform: { doc in
+            return Promise(timeoutAfter: timeout) {
+                var reply = try reply.await()
+                
                 if let limit = limit {
-                    guard returned < limit else {
-                        return nil
+                    if reply.documents.count > Int(limit) {
+                        reply.documents.removeLast(reply.documents.count - Int(limit))
                     }
-                    
-                    returned += 1
                 }
-                return doc
-            })
-            
-            return CollectionSlice(cursor: cursor, filter: filter, sort: sort, projection: projection, skip: skip, limit: limit)
+                
+                var returned: Int = 0
+                
+                let cursor = Cursor(namespace: self.fullCollectionName, collection: self.collection, connection: cursorConnection, cursorID: reply.cursorID, initialData: reply.documents, chunkSize: Int32(batchSize), transform: { doc in
+                    if let limit = limit {
+                        guard returned < limit else {
+                            return nil
+                        }
+                        
+                        returned += 1
+                    }
+                    return doc
+                })
+                
+                return CollectionSlice(cursor: cursor, filter: filter, sort: sort, projection: projection, skip: skip, limit: limit)
+            }
         }
     }
 }

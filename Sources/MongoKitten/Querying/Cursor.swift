@@ -115,7 +115,7 @@ public final class Cursor<T> {
                         "getMore": Int(self.cursorID) as Int,
                         "collection": self.collection.name,
                         "batchSize": Int32(self.chunkSize)
-                        ], using: self.connection)
+                        ], using: self.connection).await()
                     
                     let documents = [Primitive](reply.documents.first?["cursor"]["nextBatch"]) ?? []
                     
@@ -131,7 +131,7 @@ public final class Cursor<T> {
                 } else {
                     let request = Message.GetMore(requestID: self.collection.database.server.nextMessageID(), namespace: self.namespace, numberToReturn: self.chunkSize, cursor: self.cursorID)
                     
-                    let reply = try self.collection.database.server.sendAndAwait(message: request, overConnection: self.connection)
+                    let reply = try self.collection.database.server.sendAsync(message: request, overConnection: self.connection).await()
                     
                     self.data += try reply.documents.flatMap(self.transform)
                     self.cursorID = reply.cursorID
@@ -205,6 +205,17 @@ public final class Cursor<T> {
     public func forEach(_ body: (T) throws -> Void) throws {
         while let entity = try nextEntity() {
             try body(entity)
+        }
+    }
+    
+    /// An efficient and lazy asynchronous forEach operation specialized for MongoDB.
+    ///
+    /// Designed to throw errors in the case of a cursor failure, unline normal `for .. in cursor` operations
+    public func forEachAsync(_ body: @escaping (T) throws -> Void) throws -> Promise<Void> {
+        return Promise<Void>(timeoutAfter: .seconds(3600*24*365)) {
+            while let entity = try self.nextEntity() {
+                try body(entity)
+            }
         }
     }
     

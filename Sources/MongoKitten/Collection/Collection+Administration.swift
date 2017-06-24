@@ -30,7 +30,7 @@ extension Collection {
         
         log.verbose("Pre-caching \(touchData ? "data" : "")\(touchData && touchIndexes ? "and" : "")\(touchIndexes ? "indexes" : "") on \(self)")
         
-        let document = try firstDocument(in: try database.execute(command: command))
+        let document = try firstDocument(in: try database.execute(command: command).await())
         
         guard Int(document["ok"]) == 1 else {
             log.error(document)
@@ -57,7 +57,7 @@ extension Collection {
         
         log.verbose("Converting \(self) to a collection capped to \(cap) bytes")
         
-        let document = try firstDocument(in: try database.execute(command: command))
+        let document = try firstDocument(in: try database.execute(command: command).await())
         
         guard Int(document["ok"]) == 1 else {
             log.error(document)
@@ -79,7 +79,7 @@ extension Collection {
         
         log.verbose("Rebuilding indexes for \(self)")
         
-        let document = try firstDocument(in: try database.execute(command: command))
+        let document = try firstDocument(in: try database.execute(command: command).await())
         
         guard Int(document["ok"]) == 1 else {
             throw MongoError.commandFailure(error: document)
@@ -106,7 +106,7 @@ extension Collection {
         
         log.verbose("Optimizing disk storage space \(force == true ? "forcefully " : "") for \(self)")
         
-        let document = try firstDocument(in: try database.execute(command: command))
+        let document = try firstDocument(in: try database.execute(command: command).await())
         
         guard Int(document["ok"]) == 1 else {
             throw MongoError.commandFailure(error: document)

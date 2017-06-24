@@ -25,7 +25,7 @@ public final class Buffer {
     }
     
     deinit {
-        free(pointer)
+        pointer.deallocate(capacity: capacity)
     }
 }
 

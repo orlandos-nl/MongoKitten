@@ -45,7 +45,7 @@ extension Database {
             log.debug("Validator:" + validator.makeDocument().makeExtendedJSON().serializedString())
         }
 
-        let document = try firstDocument(in: try execute(command: command))
+        let document = try firstDocument(in: try execute(command: command).await())
 
         guard Int(document["ok"]) == 1 else {
             log.error("createCollection for collection \"\(name)\" was not successful because of the following error")
@@ -83,7 +83,7 @@ extension Database {
 
         let connection = try server.reserveConnection(authenticatedFor: self)
         
-        let reply = try execute(command: request, using: connection)
+        let reply = try execute(command: request, using: connection).await()
 
         let result = try firstDocument(in: reply)
 
@@ -154,7 +154,7 @@ extension Database {
             "dropDatabase": Int32(1)
         ]
 
-        let document = try firstDocument(in: try execute(command: command))
+        let document = try firstDocument(in: try execute(command: command).await())
 
         guard Int(document["ok"]) == 1 else {
             log.error("dropDatabase was not successful for \"\(self.name)\" because of the following error")
@@ -193,7 +193,7 @@ extension Database {
             command["query"] = filter.queryDocument
         }
 
-        let document = try firstDocument(in: try execute(command: command))
+        let document = try firstDocument(in: try execute(command: command).await())
 
         guard Int(document["ok"]) == 1 else {
             log.error("cloneCollection was not successful because of the following error")
@@ -224,7 +224,7 @@ extension Database {
         
         log.verbose("Cloning \(self) to namespace \(ns)")
 
-        let document = try firstDocument(in: try execute(command: command))
+        let document = try firstDocument(in: try execute(command: command).await())
 
         // If we're done
         if Bool(document["done"]) == true {
@@ -256,7 +256,7 @@ extension Database {
 
         log.verbose("Cloning \(instance) to be named \"\(otherCollection)\" capped to \(capped) bytes")
         
-        let document = try firstDocument(in: try execute(command: command))
+        let document = try firstDocument(in: try execute(command: command).await())
 
         guard Int(document["ok"]) == 1 else {
             log.error("cloneCollectionAsCapped was not successful because of the following error")

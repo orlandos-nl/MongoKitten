@@ -123,7 +123,7 @@ extension Database {
             "payload": ""
             ], returnFields: nil)
         
-        let response = try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: 0)
+        let response = try server.sendAsync(message: commandMessage, overConnection: connection, timeout: 0).await()
         
         try self.complete(SASL: payload, using: response.documents.first ?? [:], verifying: signature, usingConnection: connection)
     }
@@ -182,7 +182,7 @@ extension Database {
             "payload": payload
             ], returnFields: nil)
         
-        let response = try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: 0)
+        let response = try server.sendAsync(message: commandMessage, overConnection: connection, timeout: 0).await()
         
         // If we don't get a correct reply
         
@@ -214,7 +214,7 @@ extension Database {
             "payload": payload
             ], returnFields: nil)
         
-        let response = try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: 0)
+        let response = try server.sendAsync(message: commandMessage, overConnection: connection, timeout: 0).await()
         
         let responseDocument = try firstDocument(in: response)
         
@@ -234,7 +234,7 @@ extension Database {
             "getnonce": Int32(1)
             ], returnFields: nil)
         
-        let response = try server.sendAndAwait(message: nonceMessage, overConnection: connection, timeout: 0)
+        let response = try server.sendAsync(message: nonceMessage, overConnection: connection, timeout: 0).await()
         
         // Get the server's challenge
         let document = try firstDocument(in: response)
@@ -258,7 +258,7 @@ extension Database {
             "user": details.username,
             "key": key
             ], returnFields: nil)
-        let successResponse = try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: 0)
+        let successResponse = try server.sendAsync(message: commandMessage, overConnection: connection, timeout: 0).await()
         
         let successDocument = try firstDocument(in: successResponse)
         
@@ -281,7 +281,7 @@ extension Server {
             "user": subject
         ], returnFields: nil)
         
-        let successResponse = try self.sendAndAwait(message: message, overConnection: connection, timeout: 0)
+        let successResponse = try self.sendAsync(message: message, overConnection: connection, timeout: 0).await()
         
         let successDocument = try firstDocument(in: successResponse)
         

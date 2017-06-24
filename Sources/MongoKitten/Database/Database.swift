@@ -11,6 +11,7 @@
 import Foundation
 import BSON
 import Dispatch
+import Schrodinger
 
 /// A Mongo Database. Cannot be publically initialized.
 /// But you can get a database object by subscripting `Server` with a `String` as the database name
@@ -179,7 +180,7 @@ public final class Database {
         }
         
         let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
-        return try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: timeout).documents
+        return try server.sendAsync(message: commandMessage, overConnection: connection, timeout: timeout).await().documents
     }
     
     /// Executes a command `Document` on this database using a query message
@@ -189,7 +190,7 @@ public final class Database {
     ///
     /// - returns: A `Message` containing the response
     @discardableResult
-    internal func execute(command document: Document, until timeout: TimeInterval = 0, writing: Bool = true) throws -> ServerReply {
+    internal func execute(command document: Document, until timeout: TimeInterval = 0, writing: Bool = true) throws -> ManualPromise<ServerReply> {
         let timeout = timeout > 0 ? timeout : server.defaultTimeout
         
         let connection = try server.reserveConnection(writing: writing, authenticatedFor: self)
@@ -202,12 +203,12 @@ public final class Database {
     }
     
     @discardableResult
-    internal func execute(command document: Document, until timeout: TimeInterval = 0, writing: Bool = true, using connection: Connection) throws -> ServerReply {
+    internal func execute(command document: Document, until timeout: TimeInterval = 0, writing: Bool = true, using connection: Connection) throws -> ManualPromise<ServerReply> {
         log.debug("Executing the following command:")
         log.debug(document)
         
         let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
-        return try server.sendAndAwait(message: commandMessage, overConnection: connection, timeout: timeout)
+        return try server.sendAsync(message: commandMessage, overConnection: connection, timeout: timeout)
     }
 }
 

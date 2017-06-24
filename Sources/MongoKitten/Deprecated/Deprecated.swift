@@ -39,8 +39,7 @@ extension Collection {
             indexDocs.append(indexDocument)
         }
         
-        
-        let document = try firstDocument(in: try database.execute(command: ["createIndexes": self.name, "indexes": Document(array: indexDocs)]))
+        let document = try firstDocument(in: try database.execute(command: ["createIndexes": self.name, "indexes": Document(array: indexDocs)]).await())
         
         guard Int(document["ok"]) == 1 else {
             throw MongoError.commandFailure(error: document)

@@ -137,7 +137,7 @@ public final class Collection: CollectionQueryable {
     /// - returns: The inserted document's id
     @discardableResult
     public func insert(_ document: Document, stoppingOnError ordered: Bool? = nil, writeConcern: WriteConcern? = nil, timingOut afterTimeout: DispatchTimeInterval? = nil) throws -> BSON.Primitive {
-        let result = try self.insert(documents: [document], ordered: ordered, writeConcern: writeConcern, timeout: afterTimeout, connection: nil)
+        let result = try self.insert(documents: [document], ordered: ordered, writeConcern: writeConcern, timeout: afterTimeout, connection: nil).await()
         
         guard let newId = result.first else {
             log.error("No identifier could be generated")
@@ -163,7 +163,7 @@ public final class Collection: CollectionQueryable {
     /// - returns: The documents' ids
     @discardableResult
     public func insert(contentsOf documents: [Document], stoppingOnError ordered: Bool? = nil, writeConcern: WriteConcern? = nil, timingOut afterTimeout: DispatchTimeInterval? = nil) throws -> [BSON.Primitive] {
-        return try self.insert(documents: documents, ordered: ordered, writeConcern: writeConcern, timeout: afterTimeout, connection: nil)
+        return try self.insert(documents: documents, ordered: ordered, writeConcern: writeConcern, timeout: afterTimeout, connection: nil).await()
     }
     
     // Read
@@ -191,7 +191,7 @@ public final class Collection: CollectionQueryable {
         precondition(skip ?? 0 < Int(Int32.max))
         precondition(limit ?? 0 < Int(Int32.max))
         
-        return try self.find(filter: filter, sort: sort, projection: projection, readConcern: readConcern, collation: collation, skip: skip, limit: limit, batchSize: batchSize, connection: nil)
+        return try self.find(filter: filter, sort: sort, projection: projection, readConcern: readConcern, collation: collation, skip: skip, limit: limit, batchSize: batchSize, timeout: nil, connection: nil).await()
     }
     
     /// Finds Documents in this collection
@@ -237,7 +237,7 @@ public final class Collection: CollectionQueryable {
     /// - returns: The amount of updated documents
     @discardableResult
     public func update(bulk updates: [(filter: Query, to: Document, upserting: Bool, multiple: Bool)], writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
-        return try update(updates: updates, writeConcern: writeConcern, ordered: ordered, connection: nil, timeout: nil)
+        return try update(updates: updates, writeConcern: writeConcern, ordered: ordered, connection: nil, timeout: nil).await()
     }
     
     /// Updates a `Document` using a counterpart `Document`.
@@ -273,7 +273,7 @@ public final class Collection: CollectionQueryable {
     /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     @discardableResult
     public func remove(bulk removals: [(filter: Query, limit: Int)], writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
-        return try self.remove(removals: removals, writeConcern: writeConcern, ordered: ordered, connection: nil, timeout: nil)
+        return try self.remove(removals: removals, writeConcern: writeConcern, ordered: ordered, connection: nil, timeout: nil).await()
     }
     
     /// Removes `Document`s matching the `filter` until the `limit` is reached
@@ -304,7 +304,7 @@ public final class Collection: CollectionQueryable {
     ///
     /// - returns: The amount of matching `Document`s
     public func count(_ filter: Query? = nil, limitedTo limit: Int? = nil, skipping skip: Int? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil) throws -> Int {
-        return try self.count(filter: filter, limit: limit, skip: skip, readConcern: readConcern, collation: collation, connection: nil, timeout: nil)
+        return try self.count(filter: filter, limit: limit, skip: skip, readConcern: readConcern, collation: collation, connection: nil, timeout: nil).await()
     }
     
     /// Finds and removes the all `Document`s in this `Collection` that match the provided `Query`.
@@ -335,7 +335,7 @@ public final class Collection: CollectionQueryable {
             command["fields"] = projection
         }
         
-        let document = try firstDocument(in: try database.execute(command: command))
+        let document = try firstDocument(in: try database.execute(command: command).await())
         
         guard Int(document["ok"]) == 1 && (Document(document["writeErrors"]) ?? [:]).count == 0, let value = Document(document["value"]) else {
             throw MongoError.commandFailure(error: document)
@@ -396,7 +396,7 @@ public final class Collection: CollectionQueryable {
             command["fields"] = projection
         }
         
-        let document = try firstDocument(in: try database.execute(command: command))
+        let document = try firstDocument(in: try database.execute(command: command).await())
         
         guard Int(document["ok"]) == 1 && (Document(document["writeErrors"]) ?? [:]).count == 0, let value = Document(document["value"]) else {
             throw MongoError.commandFailure(error: document)
@@ -427,7 +427,7 @@ public final class Collection: CollectionQueryable {
         command["readConcern"] = readConcern ?? self.readConcern
         command["collation"] = collation ?? self.collation
         
-        return [Primitive](try firstDocument(in: try self.database.execute(command: command, writing: false))["values"])
+        return [Primitive](try firstDocument(in: try self.database.execute(command: command, writing: false).await())["values"])
     }
     
     /// Removes this collection from the server.
@@ -514,7 +514,7 @@ public final class Collection: CollectionQueryable {
         }
         
         
-        let document = try firstDocument(in: try database.execute(command: ["createIndexes": self.name, "indexes": Document(array: indexDocs)]))
+        let document = try firstDocument(in: try database.execute(command: ["createIndexes": self.name, "indexes": Document(array: indexDocs)]).await())
         
         guard Int(document["ok"]) == 1 else {
             throw MongoError.commandFailure(error: document)
@@ -530,7 +530,7 @@ public final class Collection: CollectionQueryable {
     ///
     /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     public func dropIndex(named index: String) throws {
-        let reply = try database.execute(command: ["dropIndexes": self.name, "index": index])
+        let reply = try database.execute(command: ["dropIndexes": self.name, "index": index]).await()
         
         let dropIndexResponse = try firstDocument(in: reply)
         guard Int(dropIndexResponse["ok"]) == 1 else {
@@ -550,7 +550,7 @@ public final class Collection: CollectionQueryable {
             throw MongoError.unsupportedOperations
         }
         
-        let result = try firstDocument(in: try database.execute(command: ["listIndexes": self.name], writing: false))
+        let result = try firstDocument(in: try database.execute(command: ["listIndexes": self.name], writing: false).await())
         
         guard let cursorDocument = Document(result["cursor"]) else {
             throw MongoError.cursorInitializationError(cursorDocument: result)
@@ -579,7 +579,7 @@ public final class Collection: CollectionQueryable {
         log.verbose("Modifying \(self) with \(flags.count) flags")
         log.debug(flags)
         
-        let result = try firstDocument(in: database.execute(command: command + flags))
+        let result = try firstDocument(in: database.execute(command: command + flags).await())
         
         guard Int(result["ok"]) == 1 else {
             log.error("Collection modification for \(self) failed")
@@ -589,7 +589,7 @@ public final class Collection: CollectionQueryable {
     }
     
     public func aggregate(_ pipeline: AggregationPipeline, readConcern: ReadConcern? = nil, collation: Collation? = nil, options: AggregationOptions...) throws -> Cursor<Document> {
-        return try self.aggregate(pipeline, readConcern: readConcern, collation: collation, options: options, connection: nil, timeout: nil)
+        return try self.aggregate(pipeline, readConcern: readConcern, collation: collation, options: options, connection: nil, timeout: nil).await()
     }
     
     /// Uses the aggregation pipeline to process documents into aggregated results.
@@ -602,7 +602,7 @@ public final class Collection: CollectionQueryable {
     ///
     /// - returns: A `Cursor` pointing to the found `Document`s
     public func aggregate(_ pipeline: AggregationPipeline, readConcern: ReadConcern? = nil, collation: Collation? = nil, options: [AggregationOptions] = []) throws -> Cursor<Document> {
-        return try self.aggregate(pipeline, readConcern: readConcern, collation: collation, options: options, connection: nil, timeout: nil)
+        return try self.aggregate(pipeline, readConcern: readConcern, collation: collation, options: options, connection: nil, timeout: nil).await()
     }
 }
 

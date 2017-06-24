@@ -224,7 +224,7 @@ public class ExplainedCollection {
         }
         
         // execute and construct cursor
-        reply = try self.database.execute(command: command, using: newConnection)
+        reply = try self.database.execute(command: command, using: newConnection).await()
         
         guard let explaination = Explaination(reply.documents.first) else {
             throw MongoError.invalidReply
@@ -253,7 +253,7 @@ public class ExplainedCollection {
         
         command = ["explain": command]
         
-        let reply = try self.database.execute(command: command, writing: false)
+        let reply = try self.database.execute(command: command, writing: false).await()
         
         guard let explaination = Explaination(reply.documents.first) else {
             throw MongoError.invalidReply
@@ -289,7 +289,7 @@ public class ExplainedCollection {
         
         command = ["explain": command]
         
-        let reply = try self.database.execute(command: command, writing: false)
+        let reply = try self.database.execute(command: command, writing: false).await()
         
         guard let explaination = Explaination(reply.documents.first) else {
             throw MongoError.invalidReply
@@ -323,7 +323,7 @@ public class ExplainedCollection {
         
         command = ["explain": command]
         
-        let reply = try self.database.execute(command: command, writing: false)
+        let reply = try self.database.execute(command: command, writing: false).await()
         
         guard let explaination = Explaination(reply.documents.first) else {
             throw MongoError.invalidReply
@@ -370,7 +370,7 @@ public class ExplainedCollection {
         
         defer { self.database.server.returnConnection(cursorConnection) }
         
-        let reply = try self.database.execute(command: command, until: 30, writing: false, using: cursorConnection)
+        let reply = try self.database.execute(command: command, until: 30, writing: false, using: cursorConnection).await()
         
         guard let explaination = Explaination(reply.documents.first) else {
             throw MongoError.invalidReply

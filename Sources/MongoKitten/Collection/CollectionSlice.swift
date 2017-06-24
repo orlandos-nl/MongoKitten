@@ -96,7 +96,7 @@ public class CollectionSlice<Element> : CollectionQueryable, Sequence, IteratorP
     ///
     /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     public func reset() throws {
-        let slice = try self.find(filter: filter, sort: sort, projection: projection, readConcern: readConcern, collation: collation, skip: skip, limit: limit, connection: nil)
+        let slice = try self.find(filter: filter, sort: sort, projection: projection, readConcern: readConcern, collation: collation, skip: skip, limit: limit, timeout: nil, connection: nil).await()
         
         self.cursor = try slice.cursor.flatMap(transform: self.cursor.transform)
     }
@@ -115,7 +115,7 @@ public class CollectionSlice<Element> : CollectionQueryable, Sequence, IteratorP
     ///
     /// - returns: The amount of matching `Element`s (without consideration of initialization success)
     public func count(limitedTo limit: Int? = nil, skipping skip: Int? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil, timingOut afterTimeout: DispatchTimeInterval? = nil) throws -> Int {
-        return try self.count(filter: filter, limit: limit, skip: skip, readConcern: readConcern, collation: collation, connection: nil, timeout: afterTimeout)
+        return try self.count(filter: filter, limit: limit, skip: skip, readConcern: readConcern, collation: collation, connection: nil, timeout: afterTimeout).await()
     }
     
     /// Finds `Element`s in this collection
@@ -166,7 +166,7 @@ public class CollectionSlice<Element> : CollectionQueryable, Sequence, IteratorP
     ///
     /// - returns: A cursor pointing to the found `Element`s
     public func find(sorting sort: Sort? = nil, projecting projection: Projection? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil, skipping skip: Int? = nil, limitedTo limit: Int? = nil, withBatchSize batchSize: Int = 100) throws -> CollectionSlice<Element> {
-        return try self.find(filter: filter, sort: sort, projection: projection, readConcern: readConcern, collation: collation, skip: skip, limit: limit, connection: nil).flatMap(transform: self.cursor.transform)
+        return try self.find(filter: filter, sort: sort, projection: projection, readConcern: readConcern, collation: collation, skip: skip, limit: limit, timeout: nil, connection: nil).await().flatMap(transform: self.cursor.transform)
     }
     
     /// Updates all selected `Element`s using a counterpart update `Document`.
@@ -183,7 +183,7 @@ public class CollectionSlice<Element> : CollectionQueryable, Sequence, IteratorP
     /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     @discardableResult
     public func update(to document: Document, writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
-        return try self.update(updates: [(filter ?? [:], document, false, true)], writeConcern: writeConcern, ordered: ordered, connection: nil, timeout: nil)
+        return try self.update(updates: [(filter ?? [:], document, false, true)], writeConcern: writeConcern, ordered: ordered, connection: nil, timeout: nil).await()
     }
     
     /// Removes all `Document`s matching the `filter` until the `limit` is reached

@@ -34,7 +34,7 @@ extension Collection {
 
         command["readConcern"] = readConcern ?? self.readConcern
 
-        let reply = try database.execute(command: command, writing: false)
+        let reply = try database.execute(command: command, writing: false).await()
 
         guard let responseDoc = reply.documents.first, Int(responseDoc["ok"]) == 1 else {
             log.error("The geographical 'geoNear' query failed")
