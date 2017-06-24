@@ -101,9 +101,13 @@ public final class MongoSocket: MongoTCP {
         }
         
         if Int32(addrInfo.pointee.sa_family) == Int32(AF_INET) {
-            connect(self.plainClient, UnsafeMutablePointer<sockaddr>(OpaquePointer(ptr)), socklen_t(MemoryLayout<sockaddr_in>.size))
+            guard connect(self.plainClient, UnsafeMutablePointer<sockaddr>(OpaquePointer(ptr)), socklen_t(MemoryLayout<sockaddr_in>.size)) == 0 else {
+                throw Error.cannotConnect
+            }
         } else {
-            connect(self.plainClient, UnsafeMutablePointer<sockaddr>(OpaquePointer(ptr)), socklen_t(MemoryLayout<sockaddr_in6>.size))
+            guard connect(self.plainClient, UnsafeMutablePointer<sockaddr>(OpaquePointer(ptr)), socklen_t(MemoryLayout<sockaddr_in6>.size)) == 0 else {
+                throw Error.cannotConnect
+            }
         }
         
         
