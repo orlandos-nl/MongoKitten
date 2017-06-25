@@ -339,39 +339,35 @@ public final class MongoSocket: MongoTCP {
         self.operationLock.lock()
         defer { self.operationLock.unlock() }
         
-        let binary = Array(UnsafeBufferPointer<UInt8>(start: pointer, count: length))
-        
         if self.sslEnabled {
             #if (os(macOS) || os(iOS)) && !OPENSSL
-                var ditched = binary.count
-                SSLWrite(self.sslClient!, binary, binary.count, &ditched)
+                var i = 0
+                SSLWrite(self.sslClient!, pointer, length, &i)
                 
-                guard ditched == binary.count else {
+                guard i == length else {
                     throw Error.cannotSendData
                 }
             #else
                 var total = 0
-                guard let baseAddress = UnsafeBufferPointer<UInt8>(start: binary, count: binary.count).baseAddress else {
-                    throw Error.cannotSendData
-                }
                 
-                while total < binary.count {
-                    let sent = SSL_write(self.sslClient!, baseAddress.advanced(by: total), Int32(binary.count))
-                    
-                    total = total &+ numericCast(sent)
+                while total < length {
+                    let sent = SSL_write(self.sslClient!, pointer.advanced(by: total), 
+                                         Int32(length))
                     
                     guard sent > 0 else {
                         throw Error.cannotSendData
                     }
+                    
+                    total = total &+ numericCast(sent)
                 }
             #endif
         } else {
             #if (os(macOS) || os(iOS))
-                guard Darwin.send(self.plainClient, binary, binary.count, 0) == binary.count else {
+                guard Darwin.send(self.plainClient, pointer, length, 0) == length else {
                     throw Error.cannotSendData
                 }
             #else
-                guard Glibc.send(self.plainClient, binary, binary.count, 0) == binary.count else {
+                guard Glibc.send(self.plainClient, pointer, length, 0) == length else {
                     throw Error.cannotSendData
                 }
             #endif
