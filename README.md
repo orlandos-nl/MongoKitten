@@ -31,6 +31,8 @@ And `import MongoKitten` in your project.
 
 ## Building
 
+Always compile MongoKitten in **release** mode for production and benchmarks. MongoKitten has proven to be 100-200x faster on release mode compared to debug compilation. And debug compilation is what Xcode and SPM use by default.
+
 `swift build -c release`
 
 ## Supported Features
