@@ -13,7 +13,7 @@ import ExtendedJSON
 public class ExtendedJSONTest: XCTestCase {
     let kittenDocument: Document = [
         "doubleTest": 0.04,
-        "stringTest": "foo",
+        "stringTest": "footer",
         "documentTest": [
             "documentSubDoubleTest": 13.37,
             "subArray": ["henk", "fred", "kaas", "goudvis"] as Document
@@ -34,6 +34,23 @@ public class ExtendedJSONTest: XCTestCase {
         "maxKey": MaxKey()
     ]
     
+    func testFormatting() throws {
+        let epoch = 1498911612.912
+        
+        let doc: Document = [
+            "date": Date.init(timeIntervalSince1970: epoch)
+        ]
+        
+        let extJSON = doc.makeExtendedJSONData()
+        
+        guard let doc2 = try Document(extendedJSON: extJSON) else {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(Date(doc2["date"])?.timeIntervalSince1970, epoch)
+    }
+    
     func testBasics() throws {
         let extendedJSON = kittenDocument.makeExtendedJSONString(typeSafe: true)
         
@@ -43,15 +60,5 @@ public class ExtendedJSONTest: XCTestCase {
         }
         
         XCTAssert(copyKittenDocument == kittenDocument)
-    }
-    
-    func testA() throws {
-        for db in TestManager.dbs {
-            let collection = db["zips"]
-            
-            for document in try collection.find() {
-                print("DOC: " + document.makeExtendedJSONString())
-            }
-        }
     }
 }

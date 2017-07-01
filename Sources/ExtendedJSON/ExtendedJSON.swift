@@ -16,7 +16,7 @@ import CryptoSwift
 internal let isoDateFormatter: DateFormatter = {
     let fmt = DateFormatter()
     fmt.locale = Locale(identifier: "en_US_POSIX")
-    fmt.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZZZZZ"
+    fmt.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ"
     return fmt
 }()
 
@@ -33,7 +33,7 @@ extension JSONObject {
             case ("$oid", let string as String):
                 return (try? ObjectId(string)) ?? string
             case ("$date", let string as String):
-                return parseISO8601(from: string) ?? string
+                return isoDateFormatter.date(from: string) ?? string
             case ("$code", let string as String):
                 return JavascriptCode(code: string)
             case ("$minKey", let int as Int):
