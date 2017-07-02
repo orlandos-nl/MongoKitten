@@ -1,0 +1,43 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "BSON",
+        "repositoryURL": "https://github.com/OpenKitten/BSON.git",
+        "state": {
+          "branch": null,
+          "revision": "4efeda0fd802c3bbdaffce264f05a50e12b436c1",
+          "version": "5.1.4"
+        }
+      },
+      {
+        "package": "Cheetah",
+        "repositoryURL": "https://github.com/OpenKitten/Cheetah.git",
+        "state": {
+          "branch": null,
+          "revision": "b7e3bf3de9fe487cd5f07ac67d57d8bf730cb0c7",
+          "version": "1.0.3"
+        }
+      },
+      {
+        "package": "KittenCore",
+        "repositoryURL": "https://github.com/OpenKitten/KittenCore.git",
+        "state": {
+          "branch": null,
+          "revision": "ca1d4d3873a51dc24aba4f52df5a98d4401d2dcb",
+          "version": "0.2.3"
+        }
+      },
+      {
+        "package": "Schrodinger",
+        "repositoryURL": "https://github.com/OpenKitten/Schrodinger.git",
+        "state": {
+          "branch": null,
+          "revision": "d7030fe0a4a6eeddc02044650a8b409a4f57365a",
+          "version": "1.0.1"
+        }
+      }
+    ]
+  },
+  "version": 1
+}
