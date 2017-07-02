@@ -37,26 +37,6 @@ Always compile MongoKitten in **release** mode for production and benchmarks. Mo
 
 `swift build -c release`
 
-## Supported Features
-
-- All basic operations
-- [Blazing fast performance](Performance.md)
-- SSL, MongoDB-CR and SASL authentication
-- Sharded Clusters and Replica Sets
-- Geospatial queries
-- Read/Write concerns + Collations
-- User management and other Administrative commands
-- Indexes
-- GridFS and DBRef standards support
-- Expressive Aggregation pipelines
-- A simple yet effective QueryBuilder
-- MongoDB Document queries
-- Much more
-
-## TODO
-
-- X.509 certificate based authentication
-
 ## Learn
 
 [Many articles on medium are listed here](https://www.reddit.com/r/swift/comments/65bvre/a_rapidly_growing_list_of_mongokittenswift_guides/) [and here](http://beta.openkitten.org).
@@ -80,6 +60,10 @@ The donations are used for creating and hosting tutorials, documentation and exa
 ## Performance
 
 MongoKitten's is faster than other drivers. It is, however, not fully tested with MongoDB's test spec yet.
+
+## TODO
+
+- X.509 certificate based authentication
 
 ## License
 
