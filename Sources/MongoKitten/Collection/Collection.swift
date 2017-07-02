@@ -19,6 +19,8 @@ public typealias MongoCollection = Collection
 ///
 /// A grouping of MongoDB documents. A collection is the equivalent of an RDBMS table. A collection exists within a single database. Collections do not enforce a schema. Documents within a collection can have different fields. Typically, all documents in a collection have a similar or related purpose. See Namespaces.
 public final class Collection: CollectionQueryable {
+    // MARK - Config
+    
     /// TODO: Fully expose/implement
     var timeout: DispatchTimeInterval?
     
@@ -108,12 +110,19 @@ public final class Collection: CollectionQueryable {
         self.name = name
     }
     
-    // MARK: - CRUD Operations
-    
-    // Create
+    // MARK - Create
     
     /// Inserts/appends the provided Document to this collection.
     ///
+    /// Simplified alias for `insert(document)` without return value
+    ///
+    /// Usage:
+    ///
+    /// ```swift
+    /// try collection.append(document)
+    /// ```
+    ///
+    /// - parameter documents: The document to insert
     /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     public func append(_ document: Document) throws {
         try self.insert(document)
@@ -121,6 +130,17 @@ public final class Collection: CollectionQueryable {
     
     /// Inserts/appends the provided Documents to this collection.
     ///
+    /// Simplified alias for `insert(contentsOf: documents` without return value
+    ///
+    /// Usage:
+    ///
+    /// ```swift
+    /// try collection.append(contentsOf: [document0, document1])
+    /// ```
+    ///
+    /// TODO: Accept a sequence instead of an array
+    ///
+    /// - parameter documents: The documents to insert
     /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     public func append(contentsOf documents: [Document]) throws {
         try self.insert(contentsOf: documents)
@@ -128,11 +148,17 @@ public final class Collection: CollectionQueryable {
     
     /// Insert a single document in this collection
     ///
+    /// Usage:
+    ///
+    /// ```swift
+    /// // Insert a single Document, returns the inserted `_id` field
+    /// try collection.insert(document)
+    /// ```
+    ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/insert/#dbcmd.insert
     ///
     /// - parameter document: The BSON Document to be inserted
-    ///
-    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or another error occurred
     ///
     /// - returns: The inserted document's id
     @discardableResult
@@ -151,6 +177,8 @@ public final class Collection: CollectionQueryable {
     ///
     /// Inserts multiple documents in this collection and adds a BSON ObjectId to documents that do not have an "_id" field
     ///
+    /// TODO: Better docs
+    ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/insert/#dbcmd.insert
     ///
     /// - parameter documents: The BSON Documents that should be inserted
@@ -166,11 +194,13 @@ public final class Collection: CollectionQueryable {
         return try self.insert(documents: documents, ordered: ordered, writeConcern: writeConcern, timeout: afterTimeout, connection: nil)
     }
     
-    // Read
+    // MARK - READ
     
     /// Finds `Document`s in this `Collection`
     ///
     /// Can be used to execute DBCommands in MongoDB 2.6 and below. Be careful!
+    ///
+    /// TODO: Better docs
     ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/find/#dbcmd.find
     ///
@@ -198,6 +228,8 @@ public final class Collection: CollectionQueryable {
     ///
     /// Can be used to execute DBCommands in MongoDB 2.6 and below
     ///
+    /// TODO: Better docs
+    ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/find/#dbcmd.find
     ///
     /// - parameter filter: The QueryBuilder filter we're using to match Documents in this collection against
@@ -215,9 +247,11 @@ public final class Collection: CollectionQueryable {
             1).next()
     }
     
-    // Update
+    // MARK - Update
     
     /// Updates a list of `Document`s using a counterpart `Document`.
+    ///
+    /// TODO: Better docs
     ///
     /// In most cases the `$set` operator is useful for updating only parts of a `Document`
     /// As described here: https://docs.mongodb.com/manual/reference/operator/update/set/#up._S_set
@@ -242,6 +276,8 @@ public final class Collection: CollectionQueryable {
     
     /// Updates a `Document` using a counterpart `Document`.
     ///
+    /// TODO: Better docs
+    ///
     /// In most cases the `$set` operator is useful for updating only parts of a `Document`
     /// As described here: https://docs.mongodb.com/manual/reference/operator/update/set/#up._S_set
     ///
@@ -264,6 +300,8 @@ public final class Collection: CollectionQueryable {
     
     /// Removes all `Document`s matching the `filter` until the `limit` is reached
     ///
+    /// TODO: Better docs
+    ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/delete/#dbcmd.delete
     ///
     /// - parameter removals: A list of filters to match documents against. Any given filter can be used infinite amount of removals if `0` or otherwise as often as specified in the limit
@@ -278,6 +316,8 @@ public final class Collection: CollectionQueryable {
     
     /// Removes `Document`s matching the `filter` until the `limit` is reached
     ///
+    /// TODO: Better docs
+    ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/delete/#dbcmd.delete
     ///
     /// - parameter filter: The QueryBuilder filter to use when finding Documents that are going to be removed
@@ -291,6 +331,8 @@ public final class Collection: CollectionQueryable {
     }
     
     /// Counts the amount of `Document`s matching the `filter`. Stops counting when the `limit` it reached
+    ///
+    /// TODO: Better docs
     ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/count/#dbcmd.count
     ///
@@ -308,6 +350,8 @@ public final class Collection: CollectionQueryable {
     }
     
     /// Finds and removes the all `Document`s in this `Collection` that match the provided `Query`.
+    ///
+    /// TODO: Better docs
     ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/findAndModify/#dbcmd.findAndModify
     ///
@@ -345,6 +389,8 @@ public final class Collection: CollectionQueryable {
     }
     
     /// Specifies to `findAndUpdate` what kind of Document to return.
+    ///
+    /// TODO: Better docs
     public enum ReturnedDocument {
         /// The new Document, after updating it
         case new
@@ -364,6 +410,8 @@ public final class Collection: CollectionQueryable {
     }
     
     /// Finds and updates all `Document`s in this `Collection` that match the provided `Query`.
+    ///
+    /// TODO: Better docs
     ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/findAndModify/#dbcmd.findAndModify
     ///
@@ -477,6 +525,13 @@ public final class Collection: CollectionQueryable {
     
     /// Creates an `Index` in this `Collection` on the specified keys.
     ///
+    /// Usage:
+    ///
+    /// ```swift
+    /// // Makes "username" unique and indexed. Sort order doesn't technically matter much
+    /// try collection.createIndex(named: "login", .sort(field: "username", order: .ascending), .unique)
+    /// ```
+    ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/createIndexes/#dbcmd.createIndexes
     ///
     /// - parameter name: The name of this index used to identify it
@@ -540,6 +595,13 @@ public final class Collection: CollectionQueryable {
     
     /// Lists all indexes for this collection as Documents
     ///
+    /// ```swift
+    /// for indexDoucment in try collection.listIndexes() {
+    ///   print(indexDocument)
+    ///   ...
+    /// }
+    /// ```
+    ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/listIndexes/#dbcmd.listIndexes
     ///
     /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
@@ -563,11 +625,13 @@ public final class Collection: CollectionQueryable {
     
     /// Modifies the collection. Requires access to `collMod`
     ///
-    /// For more information: https://docs.mongodb.com/manual/reference/command/collMod/#dbcmd.collMod
-    ///
     /// You can use this method, for example, to change the validator on a collection:
     ///
-    ///     collection.modify(flags: ["validator": ["name": ["$type": "string"]]])
+    /// ```swift
+    /// try collection.modify(flags: ["validator": ["name": ["$type": "string"]]])
+    /// ```
+    ///
+    /// For more information: https://docs.mongodb.com/manual/reference/command/collMod/#dbcmd.collMod
     ///
     /// - parameter flags: The modification you want to perform. See the MongoDB documentation for more information.
     ///
@@ -588,18 +652,55 @@ public final class Collection: CollectionQueryable {
         }
     }
     
+    /// Uses the aggregation pipeline to process documents into aggregated results.
+    ///
+    /// Usage:
+    ///
+    /// ```swift
+    /// try collection.aggregate([
+    ///   .match("age" > 21),
+    ///   .project(["username", "age"]),
+    ///   .sort(["age": .descemding])
+    /// ])
+    /// ```
+    ///
+    /// See [the MongoDB docs on the aggregation pipeline](https://docs.mongodb.org/manual/reference/operator/aggregation-pipeline/) for more information.
+    ///
+    /// - parameter pipeline: An array of aggregation pipeline stages that process and transform the document stream as part of the aggregation pipeline
+    /// - parameter readConcern: The `ReadConcern` to apply for this single query. If `nil`, the  default `ReadConcern` for this `Collection` will be used
+    /// - parameter collation: The `Collation` to use for string comparison
+    /// - parameter options: For any additional options, such as the batchSize
+    ///
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
+    /// - returns: A `Cursor` pointing to the found `Document`s
     public func aggregate(_ pipeline: AggregationPipeline, readConcern: ReadConcern? = nil, collation: Collation? = nil, options: AggregationOptions...) throws -> Cursor<Document> {
         return try self.aggregate(pipeline, readConcern: readConcern, collation: collation, options: options, connection: nil, timeout: nil)
     }
     
     /// Uses the aggregation pipeline to process documents into aggregated results.
     ///
+    /// Usage:
+    ///
+    /// ```swift
+    /// let cursor = try collection.aggregate([
+    ///   .match("age" > 21),
+    ///   .project(["username", "age"]),
+    ///   .sort(["age": .descemding])
+    /// ])
+    ///
+    /// for result in cursor {
+    ///   print(result)
+    /// }
+    /// ```
+    ///
     /// See [the MongoDB docs on the aggregation pipeline](https://docs.mongodb.org/manual/reference/operator/aggregation-pipeline/) for more information.
     ///
-    /// - parameter pipeline: An array of aggregation pipeline stages that process and transform the document stream as part of the aggregation pipeline.
+    /// - parameter pipeline: An array of aggregation pipeline stages that process and transform the document stream as part of the aggregation pipeline
+    /// - parameter readConcern: The `ReadConcern` to apply for this single query. If `nil`, the  default `ReadConcern` for this `Collection` will be used
+    /// - parameter collation: The `Collation` to use for string comparison
+    /// - parameter options: For any additional options, such as the batchSize
     ///
     /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
-    ///
     /// - returns: A `Cursor` pointing to the found `Document`s
     public func aggregate(_ pipeline: AggregationPipeline, readConcern: ReadConcern? = nil, collation: Collation? = nil, options: [AggregationOptions] = []) throws -> Cursor<Document> {
         return try self.aggregate(pipeline, readConcern: readConcern, collation: collation, options: options, connection: nil, timeout: nil)
@@ -607,6 +708,9 @@ public final class Collection: CollectionQueryable {
 }
 
 extension Collection: CustomStringConvertible {
+    /// Used for debugging
+    ///
+    /// Presents you with the location of the collection
     public var description: String {
         return "MongoKitten.Collection<\(database.server.hostname)/\(self.fullName)>"
     }

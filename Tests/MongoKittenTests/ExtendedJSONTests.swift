@@ -42,6 +42,7 @@ public class ExtendedJSONTest: XCTestCase {
         ]
         
         let extJSON = doc.makeExtendedJSONData()
+        print(doc.makeExtendedJSONString())
         
         guard let doc2 = try Document(extendedJSON: extJSON) else {
             XCTFail()

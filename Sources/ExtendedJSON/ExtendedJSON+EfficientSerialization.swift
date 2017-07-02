@@ -19,6 +19,7 @@ fileprivate let escape: UInt8 = 0x5c
 fileprivate let comma: UInt8 = 0x2c
 
 extension String {
+    /// Serializes a Stirng as escaped JSON String
     func makeJSONBinary() -> [UInt8] {
         var buffer = [UInt8]()
         
@@ -52,10 +53,70 @@ extension String {
 }
 
 extension Document {
+    /// Serializes a Document to an ExtendedJSON encoded String.
+    ///
+    /// By default, simplified ExtendedJSON will be used, where Integers are loosely converted (Int32 <-> Int64) as necessary
+    ///
+    /// ```swift
+    /// let document: Document = [
+    ///     "_id": try ObjectId(),
+    ///     "modifyDate": Date(),
+    ///     "age": 21,
+    ///      "pets": Int32(4),
+    /// ]
+    /// document.makeExtendedJSONString()
+    /// // prints "{\"_id\":{\"$oid\":\"abcdefabcdefabcdefabcdef\"},\"modifyDate\":{\"$date\":\"2017-07-02'T'20:12.912+02:00\"},\"age\":21,\"pets\":4}"
+    /// ```
+    ///
+    /// This can be configured more strictly using `typeSafe: true`
+    ///
+    /// ```swift
+    /// let document: Document = [
+    ///     "_id": try ObjectId(),
+    ///     "modifyDate": Date(),
+    ///     "age": 21,
+    ///     "pets": Int32(4),
+    /// ]
+    /// document.makeExtendedJSONString(typeSafe: true)
+    /// // prints "{\"_id\":{\"$oid\":\"abcdefabcdefabcdefabcdef\"},\"modifyDate\":{\"$date\":\"2017-07-02'T'20:12.912+02:00\"},\"age\":{\"$numberLong\":21},\"pets\":{\"$numberInt\":4}}"
+    /// ```
+    ///
+    /// - parameters typeSafe: If true integers will be encoded with `{"$numberLong": 123}` for `Int64(123)` and `{"$numberInt": 123}` for `Int32(123)`
+    /// - returns: An ExtendedJSON String from this Document
     public func makeExtendedJSONString(typeSafe: Bool = false) -> String {
         return String(bytes: makeExtendedJSONData(typeSafe: typeSafe), encoding: .utf8) ?? ""
     }
     
+    /// Serializes a Document to an ExtendedJSON encoded UTF8 String.
+    ///
+    /// By default, simplified ExtendedJSON will be used, where Integers are loosely converted (Int32 <-> Int64) as necessary
+    ///
+    /// ```swift
+    /// let document: Document = [
+    ///     "_id": try ObjectId(),
+    ///     "modifyDate": Date(),
+    ///     "age": 21,
+    ///      "pets": Int32(4),
+    /// ]
+    /// document.makeExtendedJSONData()
+    /// // prints "{\"_id\":{\"$oid\":\"abcdefabcdefabcdefabcdef\"},\"modifyDate\":{\"$date\":\"2017-07-02'T'20:12.912+02:00\"},\"age\":21,\"pets\":4}".utf8
+    /// ```
+    ///
+    /// This can be configured more strictly using `typeSafe: true`
+    ///
+    /// ```swift
+    /// let document: Document = [
+    ///     "_id": try ObjectId(),
+    ///     "modifyDate": Date(),
+    ///     "age": 21,
+    ///     "pets": Int32(4),
+    /// ]
+    /// document.makeExtendedJSONData(typeSafe: true)
+    /// // prints "{\"_id\":{\"$oid\":\"abcdefabcdefabcdefabcdef\"},\"modifyDate\":{\"$date\":\"2017-07-02'T'20:12.912+02:00\"},\"age\":{\"$numberLong\":21},\"pets\":{\"$numberInt\":4}}".utf8
+    /// ```
+    ///
+    /// - parameters typeSafe: If true integers will be encoded with `{"$numberLong": 123}` for `Int64(123)` and `{"$numberInt": 123}` for `Int32(123)`
+    /// - returns: An UTF8 encoded ExtendedJSON `String` from this Document
     public func makeExtendedJSONData(typeSafe: Bool = false) -> [UInt8] {
         var buffer = [UInt8]()
         buffer.reserveCapacity(self.byteCount)

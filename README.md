@@ -15,6 +15,12 @@ Native MongoDB driver for Swift, written in Swift. This library does not wrap ar
 
 Linux requries the OpenSSL library to be installed.
 
+### Swift 4.0
+
+For Swift 4.0 you'll need to put the package "CryptoSwift" in editable mode using:
+`swift package edit CryptoSwift --revision develop`
+
+
 ## Setting up MongoDB
 
 Install MongoDB for [Ubuntu](https://docs.mongodb.com/master/tutorial/install-mongodb-on-ubuntu/), [macOS](https://docs.mongodb.com/master/tutorial/install-mongodb-on-os-x/) or [any other supported Linux Distro](https://docs.mongodb.com/master/administration/install-on-linux/).
@@ -61,23 +67,19 @@ Always compile MongoKitten in **release** mode for production and benchmarks. Mo
 
 [We host the MongoKitten documentation including dash docset here](http://mongokitten.openkitten.org/).
 
-## Questions and ideas
+## Community
 
-[Join our slack here](https://slackpass.io/openkitten) or create an issue here on Github.
+[Join our slack here](https://slackpass.io/openkitten) and become a part of the welcoming community.
+
+Contributors are always welcome. Questions can be discussed on slack or in github issues.
 
 ## Support
 
-[We're accepting donations for our project here](https://opencollective.com/mongokitten)
-
-The donations are used for creating and hosting tutorials, documentation and example projects.
+[We're accepting donations for our project here](https://opencollective.com/mongokitten). We hope to set up a good test environment as well ad many docs, tutorials and examples.
 
 ## Performance
 
-MongoKitten is the fastest driver in the world according to independent benchmarks. We've set up a commonground for all applications and had experienced developers from respective ecosystems write a counter-implementation for that ecosystem.
-
-MongoKitten not only outperforms Ruby, PHP and Python, it also beats C and even Java's MongoDB drivers. We're still tweaking out performance slightly, but even when Java's JIT compiler optimizations have kicked in, we're on an equal performance per test run.
-
-This is to be taken with a grain of salt, however all of our tests are successful, not all official MongoDB tests have been implemented yet. This is a currently ongoing process.
+MongoKitten's is faster than other drivers. It is, however, not fully tested to MongoDB spec yet.
 
 ## License
 

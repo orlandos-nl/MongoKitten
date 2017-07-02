@@ -20,13 +20,19 @@ internal let isoDateFormatter: DateFormatter = {
     return fmt
 }()
 
-extension Array where Element == Document {
+extension Sequence where Element == Document {
+    /// Transforms a sequence of Documents into an ExtendedJSON Array containing all Documents encoded as ExtendedJSON.
+    ///
+    /// By default, simplified ExtendedJSON will be used, where Integers are loosely converted (Int32 <-> Int64) as necessary
+    ///
+    /// Creates
     public func makeExtendedJSON(typeSafe: Bool = false) -> Cheetah.Value {
         return self.makeDocument().makeExtendedJSON(typeSafe: typeSafe)
     }
 }
 
 extension JSONObject {
+    /// Parses a JSON entity into a BSON Primitive using the ExtendedJSON format
     internal func parseExtendedJSON() -> Primitive {
         if keys.count == 1, let key = keys.first {
             switch (key, self[key]) {
@@ -89,6 +95,7 @@ extension JSONObject {
     }
 }
 
+/// Parses a Regex options String from MongoDB into NSRegularExpression.Options
 fileprivate func regexOptions(fromString s: String) -> NSRegularExpression.Options {
     var options: NSRegularExpression.Options = []
     
@@ -111,6 +118,7 @@ fileprivate func regexOptions(fromString s: String) -> NSRegularExpression.Optio
     return options
 }
 
+/// Parses an NSRegularExpression.Options into Regex options String from MongoDB
 extension NSRegularExpression.Options {
     func makeOptionString() -> String {
         var options = ""
@@ -136,6 +144,9 @@ extension NSRegularExpression.Options {
 }
 
 extension Document {
+    /// Creates a new Document from a Cheetah.Value
+    ///
+    /// This initializer will fail if the Cheetah.Value isn't an Object or Array
     public init?(_ value: Cheetah.Value?) {
         switch value {
         case let array as JSONArray:
@@ -147,6 +158,9 @@ extension Document {
         }
     }
     
+    /// Initializes a Dictionary-Document from a `JSONObject`.
+    ///
+    /// It will recursively transform all values using the extendedJSON format
     public init(_ object: JSONObject) {
         var dictionary = [(String, Primitive?)]()
         
@@ -179,6 +193,9 @@ extension Document {
         self.init(dictionaryElements: dictionary)
     }
     
+    /// Initializes an Array-Document from a `JSONArray`.
+    ///
+    /// It will recursively transform all values using the extendedJSON format
     public init(_ array: JSONArray) {
         var bsonArray = [Primitive]()
         bsonArray.reserveCapacity(array.count)
@@ -208,14 +225,27 @@ extension Document {
         self.init(array: bsonArray)
     }
     
+    /// Deserializes an ExtendedJSON String into a Document
+    ///
+    /// This initializer will throw if the JSON is incorrect
+    ///
+    /// This initializer will fail if the JSON isn't an Object or Array
     public init?(extendedJSON string: String) throws {
         self.init(try JSON.parse(from: string))
     }
     
+    /// Deserializes an ExtendedJSON UTF-8 String (as binary) into a Document
+    ///
+    /// This initializer will throw if the JSON is incorrect
+    ///
+    /// This initializer will fail if the JSON isn't an Object or Array
     public init?(extendedJSON bytes: [UInt8]) throws {
         self.init(try JSON.parse(from: bytes))
     }
     
+    /// Serializes this Document into a `JSON.Value`, either a `JSONObject` or `JSONArray`
+    ///
+    /// By default, simplified ExtendedJSON will be used, where Integers are loosely converted (Int32 <-> Int64) as necessary
     public func makeExtendedJSON(typeSafe: Bool = false) -> Cheetah.Value {
         func makeJSONValue(_ original: BSON.Primitive) -> Cheetah.Value {
             switch original {
