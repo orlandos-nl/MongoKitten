@@ -20,7 +20,7 @@ internal let isoDateFormatter: DateFormatter = {
     return fmt
 }()
 
-extension Sequence where Element == Document {
+extension Array where Element == Document {
     /// Transforms a sequence of Documents into an ExtendedJSON Array containing all Documents encoded as ExtendedJSON.
     ///
     /// By default, simplified ExtendedJSON will be used, where Integers are loosely converted (Int32 <-> Int64) as necessary
