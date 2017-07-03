@@ -15,7 +15,7 @@ Native MongoDB driver for Swift, written in Swift. This library does not wrap ar
 - A MongoDB server (local or online) running MongoDB 2.6 or above. (MongoDB 3.2 or 3.4 is recommmended)
 - Swift 3.1 or greater
 
-Linux requries the OpenSSL library to be installed.
+Linux requries the `libssl-dev` library to be installed.
 
 ## Setting up MongoDB
 
