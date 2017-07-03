@@ -65,7 +65,13 @@ Contributors are always welcome. Questions can be discussed on slack or in githu
 
 MongoKitten's is faster than other drivers. It is, however, not fully tested to MongoDB spec yet.
 
-[Learn more here](Performance.md)
+Driver | Execution time
+-------|----------------
+MongoKitten 4 | 525ms
+Java (post JIT optimizations) | 585ms
+C                        | 605ms
+Ruby                     | 1200ms
+Java (pre JIT optimizations) | 1205ms
 
 ## License
 
