@@ -20,7 +20,12 @@ Linux requries the `libssl-dev` library to be installed.
 ### Swift 4.0
 
 For Swift 4.0 you'll need to put the package "CryptoSwift" in editable mode using:
+
 `swift package edit CryptoSwift --revision develop`
+
+After this you'll need to regenerate your Xcode project as with any SPM change on macOS.
+
+`swift package generate-xcodeproj`
 
 
 ## Setting up MongoDB
