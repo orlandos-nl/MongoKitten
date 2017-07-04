@@ -49,7 +49,6 @@ class Connection {
     
     /// Simply creates a new connection from existing data
     init(clientSettings: ClientSettings, writable: Bool, host: MongoHost, onClose: @escaping (()->())) throws {
-
         var options = [String:Any] ()
         if let sslSettings = clientSettings.sslSettings {
             options["sslEnabled"]  = sslSettings.enabled
@@ -64,7 +63,7 @@ class Connection {
         self.onClose = onClose
         self.host = host
 
-        self.client = try MongoSocket(address: host.hostname, port: host.port, options: options, onRead: self.onRead, onError: { _ in
+        self.client = try clientSettings.TCPClient.init(address: host.hostname, port: host.port, options: options, onRead: self.onRead, onError: { _ in
             self.close()
         })
     }
