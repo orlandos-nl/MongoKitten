@@ -177,7 +177,25 @@ public final class Collection: CollectionQueryable {
     ///
     /// Inserts multiple documents in this collection and adds a BSON ObjectId to documents that do not have an "_id" field
     ///
-    /// TODO: Better docs
+    /// Usage:
+    ///
+    /// ```swift
+    /// do {
+    ///     let insertedIds = try insert(contentsOf: [
+    ///         document0,
+    ///         document1,
+    ///         document2,
+    ///         documentN
+    ///     ])
+    ///
+    /// // InsertErrors occurs when when an error occurred when inserting one or more documents
+    /// } catch let insertErrors as InsertErrors {
+    ///     // The successfully inserted `_id`s
+    ///     print(insertErrors.successfulIds)
+    ///
+    /// // Throw the error further up the chain if it's not an `InsertErrors`. The connection is likely at fault
+    /// } catch { throw error }
+    /// ```
     ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/insert/#dbcmd.insert
     ///
