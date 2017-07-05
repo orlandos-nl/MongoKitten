@@ -14,11 +14,18 @@ public enum MongoSocketError:Error {
     case clientNotInitialized
 }
 
+/// A TCP buffer
 public final class Buffer {
+    /// The pointer to the start of the dataset
     public let pointer: UnsafeMutablePointer<UInt8>
+    
+    /// The maximum buffer size
     public let capacity: Int
+    
+    /// The currently used capacity
     public var usedCapacity: Int = 0
     
+    /// Creates a new buffer allocating the set capacity
     public init(capacity: Int = 65_507) {
         pointer = UnsafeMutablePointer<UInt8>.allocate(capacity: capacity)
         self.capacity = capacity

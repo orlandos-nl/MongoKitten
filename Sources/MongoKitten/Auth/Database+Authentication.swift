@@ -272,6 +272,7 @@ extension Database {
 }
 
 extension Server {
+    /// Experimental feature for authenticating with MongoDB-X509
     internal func authenticateX509(subject: String, usingConnection connection: Connection) throws {
         log.debug("Starting MONGODB-X509 authentication for subject \"\(subject)\"")
         

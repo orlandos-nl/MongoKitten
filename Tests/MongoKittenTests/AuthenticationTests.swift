@@ -29,6 +29,13 @@ public class AuthenticationTests: XCTestCase {
     public override func tearDown() {
 
     }
+    
+    func testAtlas() throws {
+        let db = try Database("mongodb://mongokitten:f96R1v80KDQIbtUX@ok0-shard-00-00-xkvc1.mongodb.net:27017,ok0-shard-00-01-xkvc1.mongodb.net:27017,ok0-shard-00-02-xkvc1.mongodb.net:27017/mongokitten-unittest?ssl=true&replicaSet=ok0-shard-0&authSource=admin")
+        
+        XCTAssertEqual(try db["zips"].count(), 29353)
+        XCTAssertThrowsError(try db["zips"].remove())
+    }
 
     func testMLabConnection() throws {
         let clientSettings = ClientSettings(host: MongoHost(hostname:"ds047124.mlab.com", port: 47124),sslSettings: nil,credentials: MongoCredentials(username:"openkitten",password:"test123"), maxConnectionsPerServer: 20)

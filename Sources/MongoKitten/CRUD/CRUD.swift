@@ -384,6 +384,10 @@ extension CollectionQueryable {
                     
                     throw UpdateError(writeErrors: writeErrors)
                 }
+                
+                guard Int(reply.documents.first?["ok"]) == 1 else {
+                    throw MongoError.invalidResponse(documents:reply.documents)
+                }
                     
                 return Int(reply.documents.first?["nModified"]) ?? 0
             }
@@ -480,10 +484,13 @@ extension CollectionQueryable {
                     
                     throw RemoveError(writeErrors: writeErrors)
                 }
+                
+                guard Int(reply.documents.first?["ok"]) == 1 else {
+                    throw MongoError.invalidResponse(documents:reply.documents)
+                }
                     
                 return Int(reply.documents.first?["n"]) ?? 0
             }
-            
             // If we're communicating with an older MongoDB server
         } else {
             var newConnection: Connection

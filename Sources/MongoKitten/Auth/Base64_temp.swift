@@ -1,6 +1,10 @@
 import Foundation
 
+/// A simple Base64 implmeentation to work around the Foundation bug
 struct Base64 {
+    /// Decodes a Base64 encoded String into Data
+    ///
+    /// - throws: If the string isn't base64 encoded
     static func decode(_ string: String) throws -> Data {
         let lookupTable: [UInt8] = [
             64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,

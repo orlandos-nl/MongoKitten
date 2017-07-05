@@ -151,6 +151,7 @@ public final class Cursor<T> {
             if position >= self.data.count && self.cursorID != 0 {
                 position = 0
                 self.data = []
+                self.data.reserveCapacity(Int(self.chunkSize))
                 // Get more data!
                 _ = try self.getMore().await()
             }
@@ -158,6 +159,8 @@ public final class Cursor<T> {
             guard self.data.count - position < dataSets * Int(self.chunkSize) else {
                 break strategy
             }
+            
+            self.data.reserveCapacity(Int(self.chunkSize) * dataSets)
             
             fallthrough
         case .aggressive:

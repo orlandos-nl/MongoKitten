@@ -1,25 +1,38 @@
 Please leave a star to show your support for the project.
 
-# MongoKitten
-
 [![Swift 3.1.0](https://img.shields.io/badge/swift-3.1.0-green.svg)](https://swift.org)
 ![License](https://img.shields.io/github/license/openkitten/mongokitten.svg)
 [![Build Status](https://travis-ci.org/OpenKitten/MongoKitten.svg?branch=mongokitten4)](https://travis-ci.org/OpenKitten/MongoKitten)
+
+# MongoKitten
+
+![OpenKitten](http://openkitten.org/background-openkitten.svg)
 
 Native MongoDB driver for Swift, written in Swift. This library does not wrap around the mongoc driver.
 
 ## Requirements
 
 - A MongoDB server (local or online) running MongoDB 2.6 or above. (MongoDB 3.2 or 3.4 is recommmended)
-- Swift 3.1
+- Swift 3.1 or greater
 
-Linux requries the OpenSSL library to be installed.
+Linux requries the `libssl-dev` library to be installed.
+
+### Swift 4.0
+
+For Swift 4.0 you'll need to put the package "CryptoSwift" in editable mode using:
+
+`swift package edit CryptoSwift --revision develop`
+
+After this you'll need to regenerate your Xcode project as with any SPM change on macOS.
+
+`swift package generate-xcodeproj`
+
 
 ## Setting up MongoDB
 
 Install MongoDB for [Ubuntu](https://docs.mongodb.com/master/tutorial/install-mongodb-on-ubuntu/), [macOS](https://docs.mongodb.com/master/tutorial/install-mongodb-on-os-x/) or [any other supported Linux Distro](https://docs.mongodb.com/master/administration/install-on-linux/).
 
-Alternatively; make use of a DAAS (Database-as-a-service) like [MLab](https://mlab.com), [Bluemix](https://www.ibm.com/cloud-computing/bluemix/mongodb-hosting) or any other of the many services.
+Alternatively; make use of a DAAS (Database-as-a-service) like [Atlas](https://cloud.mongodb.com), [MLab](https://mlab.com), [Bluemix](https://www.ibm.com/cloud-computing/bluemix/mongodb-hosting) or any other of the many services.
 
 ## Importing
 
@@ -31,27 +44,9 @@ And `import MongoKitten` in your project.
 
 ## Building
 
+Always compile MongoKitten in **release** mode for production and benchmarks. MongoKitten has proven to be 100-200x faster on release mode compared to debug compilation. And debug compilation is what Xcode and SPM use by default.
+
 `swift build -c release`
-
-## Supported Features
-
-- All basic operations
-- [Blazing fast performance](Performance.md)
-- SSL, MongoDB-CR and SASL authentication
-- Sharded Clusters and Replica Sets
-- Geospatial queries
-- Read/Write concerns + Collations
-- User management and other Administrative commands
-- Indexes
-- GridFS and DBRef standards support
-- Expressive Aggregation pipelines
-- A simple yet effective QueryBuilder
-- MongoDB Document queries
-- Much more
-
-## TODO
-
-- X.509 certificate based authentication
 
 ## Learn
 
@@ -59,23 +54,29 @@ And `import MongoKitten` in your project.
 
 [We host the MongoKitten documentation including dash docset here](http://mongokitten.openkitten.org/).
 
-## Questions and ideas
+## Community
 
-[Join our slack here](https://slackpass.io/openkitten) or create an issue here on Github.
+[Join our slack here](https://slackpass.io/openkitten) and become a part of the welcoming community.
+
+[Learn more about contributing here.](CONTRIBUTING.md)
+
+Contributors are always welcome. Questions can be discussed on slack or in github issues. We also take part in the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Support
 
-[We're accepting donations for our project here](https://opencollective.com/mongokitten)
-
-The donations are used for creating and hosting tutorials, documentation and example projects.
+[We're accepting donations for our project here](https://opencollective.com/mongokitten). We hope to set up a good test environment as well ad many docs, tutorials and examples.
 
 ## Performance
 
-MongoKitten is the fastest driver in the world according to independent benchmarks. We've set up a commonground for all applications and had experienced developers from respective ecosystems write a counter-implementation for that ecosystem.
+MongoKitten's is faster than other drivers. It is, however, not fully tested to MongoDB spec yet.
 
-MongoKitten not only outperforms Ruby, PHP and Python, it also beats C and even Java's MongoDB drivers. We're still tweaking out performance slightly, but even when Java's JIT compiler optimizations have kicked in, we're on an equal performance per test run.
-
-This is to be taken with a grain of salt, however all of our tests are successful, not all official MongoDB tests have been implemented yet. This is a currently ongoing process.
+Driver | Execution time
+-------|----------------
+MongoKitten 4 | 525ms
+Java (post JIT optimizations) | 585ms
+C                        | 605ms
+Ruby                     | 1200ms
+Java (pre JIT optimizations) | 1205ms
 
 ## License
 
