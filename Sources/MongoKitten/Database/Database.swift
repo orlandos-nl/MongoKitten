@@ -171,7 +171,7 @@ public final class Database {
     /// - returns: A `Message` containing the response
     @discardableResult
     public func execute(dbCommand document: Document, until timeout: TimeInterval = 0, writing: Bool = true) throws -> [Document] {
-        let timeout = timeout > 0 ? timeout : server.defaultTimeout
+        let timeout = DispatchTimeInterval.seconds(Int(timeout > 0 ? timeout : server.defaultTimeout))
         
         let connection = try server.reserveConnection(writing: writing, authenticatedFor: self)
         
@@ -180,7 +180,7 @@ public final class Database {
         }
         
         let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
-        return try server.sendAsync(message: commandMessage, overConnection: connection, timeout: timeout).await().documents
+        return try server.sendAsync(message: commandMessage, overConnection: connection).await(until: timeout).documents
     }
     
     /// Executes a command `Document` on this database using a query message
@@ -190,25 +190,23 @@ public final class Database {
     ///
     /// - returns: A `Message` containing the response
     @discardableResult
-    internal func execute(command document: Document, until timeout: TimeInterval = 0, writing: Bool = true) throws -> ManualPromise<ServerReply> {
-        let timeout = timeout > 0 ? timeout : server.defaultTimeout
-        
+    internal func execute(command document: Document, writing: Bool = true) throws -> Future<ServerReply> {
         let connection = try server.reserveConnection(writing: writing, authenticatedFor: self)
         
         defer {
             server.returnConnection(connection)
         }
         
-        return try self.execute(command: document, until: timeout, writing: writing, using: connection)
+        return try self.execute(command: document, writing: writing, using: connection)
     }
     
     @discardableResult
-    internal func execute(command document: Document, until timeout: TimeInterval = 0, writing: Bool = true, using connection: Connection) throws -> ManualPromise<ServerReply> {
+    internal func execute(command document: Document, writing: Bool = true, using connection: Connection) throws -> Future<ServerReply> {
         log.debug("Executing the following command:")
         log.debug(document)
         
         let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
-        return try server.sendAsync(message: commandMessage, overConnection: connection, timeout: timeout)
+        return try server.sendAsync(message: commandMessage, overConnection: connection)
     }
 }
 

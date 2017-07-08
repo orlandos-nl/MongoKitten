@@ -49,7 +49,7 @@ public final class Cursor<T> {
     
     public var strategy: CursorStrategy? = nil
     
-    fileprivate var currentFetch: ManualPromise<Void>? = nil
+    fileprivate var currentFetch: Future<Void>? = nil
     
     /// A closure that transforms a document to another type if possible, otherwise `nil`
     typealias Transformer = (Document) throws -> (T?)
@@ -107,8 +107,8 @@ public final class Cursor<T> {
     
     /// Gets more information and puts it in the buffer
     @discardableResult
-    fileprivate func getMore() throws -> Promise<Void> {
-        return async(timeoutAfter: .seconds(60)) {
+    fileprivate func getMore() throws -> Future<Void> {
+        return Future {
             do {
                 if self.collection.database.server.serverData?.maxWireVersion ?? 0 >= 4 {
                     let reply = try self.collection.database.execute(command: [
@@ -214,8 +214,8 @@ public final class Cursor<T> {
     /// An efficient and lazy asynchronous forEach operation specialized for MongoDB.
     ///
     /// Designed to throw errors in the case of a cursor failure, unline normal `for .. in cursor` operations
-    public func forEachAsync(_ body: @escaping (T) throws -> Void) throws -> Promise<Void> {
-        return Promise<Void>(timeoutAfter: .seconds(3600*24*365)) {
+    public func forEachAsync(_ body: @escaping (T) throws -> Void) throws -> Future<Void> {
+        return Future<Void> {
             while let entity = try self.nextEntity() {
                 try body(entity)
             }

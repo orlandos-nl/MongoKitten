@@ -179,7 +179,7 @@ public final class Server {
             document.append(self.driverInformation, forKey: "client")
             
             let commandMessage = Message.Query(requestID: self.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
-            let response = try self.sendAsync(message: commandMessage, overConnection: connection, timeout: defaultTimeout).await()
+            let response = try self.sendAsync(message: commandMessage, overConnection: connection).await()
             
             var maxMessageSizeBytes = Int32(response.documents.first?["maxMessageSizeBytes"]) ?? 0
             if maxMessageSizeBytes == 0 {
@@ -291,7 +291,7 @@ public final class Server {
                 document.append(self.driverInformation, forKey: "client")
                 
                 let commandMessage = Message.Query(requestID: self.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
-                let response = try self.sendAsync(message: commandMessage, overConnection: connection, timeout: defaultTimeout).await()
+                let response = try self.sendAsync(message: commandMessage, overConnection: connection).await(until: .seconds(Int(defaultTimeout)))
                 
                 isMasterTest: if let doc = response.documents.first {
                     if Bool(doc["ismaster"]) == true {
@@ -666,13 +666,11 @@ public final class Server {
     ///
     /// - returns: The reply from the server
     @discardableResult @warn_unqualified_access
-    internal func sendAsync(message msg: Message, overConnection connection: Connection, timeout: TimeInterval = 0) throws -> ManualPromise<ServerReply> {
-        let timeout = timeout > 0 ? timeout : defaultTimeout
-        
+    internal func sendAsync(message msg: Message, overConnection connection: Connection) throws -> Future<ServerReply> {
         let requestId = msg.requestID
         let messageData = try msg.generateData()
         
-        let promise = ManualPromise<ServerReply>(timeoutAfter: .seconds(Int(timeout)))
+        let promise = Future<ServerReply>()
         
         Connection.mutationsQueue.sync {
             connection.waitingForResponses[requestId] = promise

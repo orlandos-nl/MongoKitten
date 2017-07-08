@@ -103,7 +103,7 @@ extension CollectionQueryable {
     /// - parameter connection: The connection to use
     ///
     /// - throws: An `InsertError` when a write error occurs
-    func insert(documents: [Document], ordered: Bool?, writeConcern: WriteConcern?, timeout: DispatchTimeInterval?, connection: Connection?) throws -> Promise<[BSON.Primitive]> {
+    func insert(documents: [Document], ordered: Bool?, writeConcern: WriteConcern?, timeout: DispatchTimeInterval?, connection: Connection?) throws -> Future<[BSON.Primitive]> {
         let timeout: DispatchTimeInterval = timeout ?? .seconds(Int(database.server.defaultTimeout + (Double(documents.count) / 50)))
         
         var newIds = [Primitive]()
@@ -120,8 +120,27 @@ extension CollectionQueryable {
             }
         })
         
+        let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
+        var position = 0
+        
+        let newConnection: Connection
+        
+        // Reuse an existing connection if provided
+        if let connection = connection {
+            newConnection = connection
+        } else {
+            newConnection = try self.database.server.reserveConnection(writing: true, authenticatedFor: self.database)
+        }
+        
+        defer {
+            if connection == nil {
+                self.database.server.returnConnection(newConnection)
+            }
+        }
+        
         var errors = Array<InsertErrors.InsertError>()
         
+        // Groups all errors into a struct
         func throwErrors() -> InsertErrors {
             let positions = errors.flatMap { insertError in
                 return insertError.writeErrors.flatMap { writeError in
@@ -136,81 +155,71 @@ extension CollectionQueryable {
             return InsertErrors(errors: errors, successfulIds: newIds)
         }
         
-        let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
-        var position = 0
-        
-        let newConnection: Connection
-        
-        if let connection = connection {
-            newConnection = connection
-        } else {
-            newConnection = try self.database.server.reserveConnection(writing: true, authenticatedFor: self.database)
-        }
-        
-        defer {
-            if connection == nil {
-                self.database.server.returnConnection(newConnection)
-            }
-        }
-        
-        var promises = [Promise<Void>]()
-        
-        while position < documents.count {
-            defer { position += 1000 }
+        // Return the async response, spawn a loose thread for handling
+        let response = Future<[BSON.Primitive]> {
+            var promises = [Future<Void>]()
             
-            if protocolVersion >= 2 {
-                var command: Document = ["insert": self.collectionName]
+            // Insert 1000 documents at a time
+            while position < documents.count {
+                defer { position += 1000 }
                 
-                command["documents"] = Document(array: Array(documents[position..<Swift.min(position + 1000, documents.count)]))
-                
-                if let ordered = ordered {
-                    command["ordered"] = ordered
-                }
-                
-                command["writeConcern"] = writeConcern ?? self.writeConcern
-                
-                let reply = try self.database.execute(command: command, using: newConnection)
-                
-                promises.append(Promise(timeoutAfter: timeout) {
-                    let reply = try reply.await()
-                    if let writeErrors = Document(reply.documents.first?["writeErrors"]) {
-                        guard let documents = Document(command["documents"]) else {
-                            throw MongoError.invalidReply
-                        }
-                        
-                        let writeErrors = try writeErrors.arrayRepresentation.flatMap { value -> InsertErrors.InsertError.WriteError in
-                            guard let document = Document(value),
-                                let index = Int(document["index"]),
-                                let code = Int(document["code"]),
-                                let message = String(document["errmsg"]),
-                                index < documents.count,
-                                let affectedDocument = Document(documents[index]) else {
-                                    throw MongoError.invalidReply
+                // For protocol >= 2, use the DB command
+                if protocolVersion >= 2 {
+                    var command: Document = ["insert": self.collectionName]
+                    
+                    command["documents"] = Document(array: Array(documents[position..<Swift.min(position + 1000, documents.count)]))
+                    
+                    if let ordered = ordered {
+                        command["ordered"] = ordered
+                    }
+                    
+                    command["writeConcern"] = writeConcern ?? self.writeConcern
+                    
+                    // Insert the new entities
+                    let result = try self.database.execute(command: command, using: newConnection).map { reply in
+                        // Checks for errors
+                        if let writeErrors = Document(reply.documents.first?["writeErrors"]) {
+                            // If there are errors
+                            guard let documents = Document(command["documents"]) else {
+                                throw MongoError.invalidReply
                             }
                             
-                            return InsertErrors.InsertError.WriteError(index: index, code: code, message: message, affectedDocument: affectedDocument)
+                            // Deserialize the errors
+                            let writeErrors = try writeErrors.arrayRepresentation.flatMap { value -> InsertErrors.InsertError.WriteError in
+                                guard let document = Document(value),
+                                    let index = Int(document["index"]),
+                                    let code = Int(document["code"]),
+                                    let message = String(document["errmsg"]),
+                                    index < documents.count,
+                                    let affectedDocument = Document(documents[index]) else {
+                                        throw MongoError.invalidReply
+                                }
+                                
+                                // Add them to the array
+                                return InsertErrors.InsertError.WriteError(index: index, code: code, message: message, affectedDocument: affectedDocument)
+                            }
+                            
+                            errors.append(InsertErrors.InsertError(writeErrors: writeErrors))
                         }
                         
-                        errors.append(InsertErrors.InsertError(writeErrors: writeErrors))
+                        guard Int(reply.documents.first?["ok"]) == 1 else {
+                            throw throwErrors()
+                        }
                     }
                     
-                    guard Int(reply.documents.first?["ok"]) == 1 else {
-                        throw throwErrors()
-                    }
-                })
-            } else {
-                promises.append(Promise(timeoutAfter: timeout) {
-                    let commandDocuments = Array(documents[position..<Swift.min(position + 1000, documents.count)])
+                    promises.append(result)
                     
-                    let insertMsg = Message.Insert(requestID: self.database.server.nextMessageID(), flags: [], collection: self.collection, documents: commandDocuments)
-                    _ = try self.database.server.send(message: insertMsg, overConnection: newConnection)
-                })
-            }
-        }
-        
-        return Promise(timeoutAfter: timeout) {
-            for promise in promises {
-                try promise.await()
+                // < protocol version 2, use the separate insert operation
+                } else {
+                    let future = Future<Void> {
+                        let commandDocuments = Array(documents[position..<Swift.min(position + 1000, documents.count)])
+                        
+                        let insertMsg = Message.Insert(requestID: self.database.server.nextMessageID(), flags: [], collection: self.collection, documents: commandDocuments)
+                        _ = try self.database.server.send(message: insertMsg, overConnection: newConnection)
+                    }
+                    
+                    promises.append(future)
+                }
             }
             
             guard errors.count == 0 else {
@@ -219,6 +228,8 @@ extension CollectionQueryable {
             
             return newIds
         }
+        
+        return response
     }
     
     /// Applies a pipeline over a collection's contentrs
@@ -229,7 +240,7 @@ extension CollectionQueryable {
     /// - parameter options: The aggregation options to use
     /// - parameter connection: The connection to use
     /// - parameter timeout: The timeout to wait for
-    func aggregate(_ pipeline: AggregationPipeline, readConcern: ReadConcern?, collation: Collation?, options: [AggregationOptions], connection: Connection?, timeout: DispatchTimeInterval?) throws -> Promise<Cursor<Document>> {
+    func aggregate(_ pipeline: AggregationPipeline, readConcern: ReadConcern?, collation: Collation?, options: [AggregationOptions], connection: Connection?, timeout: DispatchTimeInterval?) throws -> Future<Cursor<Document>> {
         let timeout: DispatchTimeInterval = timeout ?? .seconds(Int(database.server.defaultTimeout))
         
         // construct command. we always use cursors in MongoKitten, so that's why the default value for cursorOptions is an empty document.
@@ -248,7 +259,6 @@ extension CollectionQueryable {
             listener(try collection.explained.aggregate(pipeline, readConcern: readConcern, collation: collation, options: options))
         }
         
-        let reply: ManualPromise<ServerReply>
         let newConnection: Connection
         
         if let connection = connection {
@@ -257,12 +267,14 @@ extension CollectionQueryable {
             newConnection = try self.database.server.reserveConnection(writing: true, authenticatedFor: self.database)
         }
         
-        // execute and construct cursor
-        reply = try self.database.execute(command: command, using: newConnection)
+        defer {
+            if connection == nil {
+                self.database.server.returnConnection(newConnection)
+            }
+        }
         
-        return Promise(timeoutAfter: timeout) {
-            let reply = try reply.await()
-            
+        // execute and construct cursor
+        return try self.database.execute(command: command, using: newConnection).map { reply in
             guard let cursorDoc = Document(reply.documents.first?["cursor"]) else {
                 if connection == nil {
                     self.database.server.returnConnection(newConnection)
@@ -283,7 +295,7 @@ extension CollectionQueryable {
         }
     }
     
-    func count(filter: Query?, limit: Int?, skip: Int?, readConcern: ReadConcern?, collation: Collation?, connection: Connection?, timeout: DispatchTimeInterval?) throws -> Promise<Int> {
+    func count(filter: Query?, limit: Int?, skip: Int?, readConcern: ReadConcern?, collation: Collation?, connection: Connection?, timeout: DispatchTimeInterval?) throws -> Future<Int> {
         let timeout: DispatchTimeInterval = timeout ?? .seconds(Int(database.server.defaultTimeout))
         
         var command: Document = ["count": self.collectionName]
@@ -307,7 +319,7 @@ extension CollectionQueryable {
             listener(try collection.explained.count(filter, limiting: limit, skipping: skip, readConcern: readConcern, collation: collation, timeout: timeout))
         }
         
-        let reply: ManualPromise<ServerReply>
+        let reply: Future<ServerReply>
         
         if let connection = connection {
             reply = try self.database.execute(command: command, writing: false, using: connection)
@@ -315,9 +327,7 @@ extension CollectionQueryable {
             reply = try self.database.execute(command: command, writing: false)
         }
         
-        return Promise(timeoutAfter: timeout) {
-            let reply = try reply.await()
-            
+        return try reply.map { reply in
             guard let n = Int(reply.documents.first?["n"]), Int(reply.documents.first?["ok"]) == 1 else {
                 throw InternalMongoError.incorrectReply(reply: reply)
             }
@@ -326,7 +336,7 @@ extension CollectionQueryable {
         }
     }
     
-    func update(updates: [(filter: Query, to: Document, upserting: Bool, multiple: Bool)], writeConcern: WriteConcern?, ordered: Bool?, connection: Connection?, timeout: DispatchTimeInterval?) throws -> Promise<Int> {
+    func update(updates: [(filter: Query, to: Document, upserting: Bool, multiple: Bool)], writeConcern: WriteConcern?, ordered: Bool?, connection: Connection?, timeout: DispatchTimeInterval?) throws -> Future<Int> {
         let timeout: DispatchTimeInterval = timeout ?? .seconds(Int(database.server.defaultTimeout))
         
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
@@ -352,7 +362,7 @@ extension CollectionQueryable {
             
             command["writeConcern"] = writeConcern ??  self.writeConcern
             
-            let reply: ManualPromise<ServerReply>
+            let reply: Future<ServerReply>
             
             if let connection = connection {
                 reply = try self.database.execute(command: command, writing: false, using: connection)
@@ -364,9 +374,7 @@ extension CollectionQueryable {
                 listener(try collection.explained.update(updates: updates, writeConcern: writeConcern, ordered: ordered, timeout: timeout))
             }
             
-            return Promise(timeoutAfter: timeout) {
-                let reply = try reply.await()
-                
+            return try reply.map { reply in
                 if let writeErrors = Document(reply.documents.first?["writeErrors"]), (Int(reply.documents.first?["ok"]) != 1 || ordered == true) {
                     let writeErrors = try writeErrors.arrayRepresentation.flatMap { value -> UpdateError.WriteError in
                         guard let document = Document(value),
@@ -406,7 +414,7 @@ extension CollectionQueryable {
                 }
             }
             
-            return Promise(timeoutAfter: timeout) {
+            return Future {
                 for update in updates {
                     var flags: UpdateFlags = []
                     
@@ -428,7 +436,7 @@ extension CollectionQueryable {
         }
     }
     
-    func remove(removals: [(filter: Query, limit: Int)], writeConcern: WriteConcern?, ordered: Bool?, connection: Connection?, timeout: DispatchTimeInterval?) throws -> Promise<Int> {
+    func remove(removals: [(filter: Query, limit: Int)], writeConcern: WriteConcern?, ordered: Bool?, connection: Connection?, timeout: DispatchTimeInterval?) throws -> Future<Int> {
         let timeout: DispatchTimeInterval = timeout ?? .seconds(Int(database.server.defaultTimeout))
         
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
@@ -452,7 +460,7 @@ extension CollectionQueryable {
             
             command["writeConcern"] = writeConcern ?? self.writeConcern
             
-            let reply: ManualPromise<ServerReply>
+            let reply: Future<ServerReply>
             
             if let connection = connection {
                 reply = try self.database.execute(command: command, writing: false, using: connection)
@@ -464,9 +472,7 @@ extension CollectionQueryable {
                 listener(try collection.explained.remove(removals: removals, writeConcern: writeConcern, ordered: ordered, timeout: timeout))
             }
             
-            return Promise(timeoutAfter: timeout) {
-                let reply = try reply.await()
-                
+            return try reply.map { reply in
                 if let writeErrors = Document(reply.documents.first?["writeErrors"]), (Int(reply.documents.first?["ok"]) != 1 || ordered == true) {
                     let writeErrors = try writeErrors.arrayRepresentation.flatMap { value -> RemoveError.WriteError in
                         guard let document = Document(value),
@@ -507,7 +513,7 @@ extension CollectionQueryable {
                 }
             }
             
-            return Promise(timeoutAfter: timeout) {
+            return Future {
                 for removal in removals {
                     var flags: DeleteFlags = []
                     
@@ -533,9 +539,7 @@ extension CollectionQueryable {
         }
     }
     
-    func find(filter: Query?, sort: Sort?, projection: Projection?, readConcern: ReadConcern?, collation: Collation?, skip: Int?, limit: Int?, batchSize: Int = 100, timeout: DispatchTimeInterval?, connection: Connection?) throws -> Promise<CollectionSlice<Document>> {
-        let timeout: DispatchTimeInterval = timeout ?? .seconds(Int(database.server.defaultTimeout))
-        
+    func find(filter: Query?, sort: Sort?, projection: Projection?, readConcern: ReadConcern?, collation: Collation?, skip: Int?, limit: Int?, batchSize: Int = 100, timeout: DispatchTimeInterval?, connection: Connection?) throws -> Future<CollectionSlice<Document>> {
         if self.collection.database.server.buildInfo.version >= Version(3,2,0) {
             var command: Document = [
                 "find": collection.name,
@@ -570,11 +574,7 @@ extension CollectionQueryable {
             
             let cursorConnection = try connection ?? (try self.database.server.reserveConnection(authenticatedFor: self.collection.database))
             
-            let reply = try self.database.execute(command: command, until: 30, writing: false, using: cursorConnection)
-            
-            return Promise(timeoutAfter: timeout) {
-                let reply = try reply.await()
-                
+            return try self.database.execute(command: command, writing: false, using: cursorConnection).map { reply in
                 guard let responseDoc = reply.documents.first, let cursorDoc = Document(responseDoc["cursor"]) else {
                     if connection == nil {
                         self.database.server.returnConnection(cursorConnection)
@@ -594,11 +594,8 @@ extension CollectionQueryable {
             
             let cursorConnection = try connection ?? (try self.database.server.reserveConnection(authenticatedFor: self.collection.database))
             
-            let reply = try self.database.server.sendAsync(message: queryMsg, overConnection: cursorConnection)
-            
-            return Promise(timeoutAfter: timeout) {
-                var reply = try reply.await()
-                
+            return try self.database.server.sendAsync(message: queryMsg, overConnection: cursorConnection).map { reply in
+                var reply = reply 
                 if let limit = limit {
                     if reply.documents.count > Int(limit) {
                         reply.documents.removeLast(reply.documents.count - Int(limit))

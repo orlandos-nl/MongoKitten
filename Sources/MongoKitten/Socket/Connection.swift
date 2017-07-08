@@ -40,7 +40,7 @@ class Connection {
     internal static let mutationsQueue = DispatchQueue(label: "org.mongokitten.server.responseQueue", qos: DispatchQoS.userInteractive)
     
     /// The responses being waited for
-    var waitingForResponses = [Int32: ManualPromise<ServerReply>]()
+    var waitingForResponses = [Int32: Future<ServerReply>]()
     
     /// Whether this client is still connected
     public var isConnected: Bool {
@@ -101,7 +101,9 @@ class Connection {
         
         Connection.mutationsQueue.sync {
             for (_, callback) in self.waitingForResponses {
-                _ = try? callback.fail(MongoError.notConnected)
+                _ = try? callback.complete {
+                    throw MongoError.notConnected
+                }
             }
             
             self.waitingForResponses = [:]
@@ -121,7 +123,7 @@ class Connection {
                 
                 _ = try? Connection.mutationsQueue.sync {
                     if let promise = waitingForResponses[reply.responseTo] {
-                        _ = try promise.complete(reply)
+                        _ = try promise.complete { reply }
                         waitingForResponses[reply.responseTo] = nil
                     }
                 }
