@@ -123,7 +123,7 @@ class Connection {
                 
                 _ = try? Connection.mutationsQueue.sync {
                     if let promise = waitingForResponses[reply.responseTo] {
-                        _ = try promise.complete { reply }
+                        try promise.complete { reply }
                         waitingForResponses[reply.responseTo] = nil
                     }
                 }
