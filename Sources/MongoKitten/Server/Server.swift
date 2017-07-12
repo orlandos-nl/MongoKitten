@@ -291,7 +291,7 @@ public final class Server {
                 document.append(self.driverInformation, forKey: "client")
                 
                 let commandMessage = Message.Query(requestID: self.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
-                let response = try self.sendAsync(message: commandMessage, overConnection: connection).await(until: .seconds(Int(defaultTimeout)))
+                let response = try self.sendAsync(message: commandMessage, overConnection: connection).await(for: .seconds(Int(defaultTimeout)))
                 
                 isMasterTest: if let doc = response.documents.first {
                     if Bool(doc["ismaster"]) == true {

@@ -150,15 +150,21 @@ public class CollectionTests: XCTestCase {
                 "username": "henk",
                 "age": 12,
                 "drinks": "beer"
-                ]))
+                ], stoppingOnError: true))
             
             XCTAssertThrowsError(try collection.insert([
                 "username": "henk",
                 "age": 40,
                 "drinks": "coca cola"
-                ]))
+                ], stoppingOnError: true))
             
             XCTAssertThrowsError(try collection.insert([
+                "username": "gerrit",
+                "age": 21,
+                "drinks": "beer"
+                ], stoppingOnError: true))
+            
+            XCTAssertNoThrow(try collection.insert([
                 "username": "gerrit",
                 "age": 21,
                 "drinks": "beer"
@@ -422,9 +428,9 @@ public class CollectionTests: XCTestCase {
             try harriebob.insert(["unique": true])
             try harriebob.insert(["unique": false])
             try harriebob.insert(["unique": Null()])
-            XCTAssertThrowsError(try harriebob.insert(["unique": true]))
-            XCTAssertThrowsError(try harriebob.insert(["unique": false]))
-            XCTAssertThrowsError(try harriebob.insert(["unique": Null()]))
+            XCTAssertThrowsError(try harriebob.insert(["unique": true], stoppingOnError: true))
+            XCTAssertThrowsError(try harriebob.insert(["unique": false], stoppingOnError: true))
+            XCTAssertThrowsError(try harriebob.insert(["unique": Null()], stoppingOnError: true))
             
             for index in try db["indexTest"].listIndexes() where String(index["name"]) == "henkbob" {
                 continue loop
@@ -669,7 +675,7 @@ public class CollectionTests: XCTestCase {
             
             let aBisDocument: Document = ["letter":"A"]
             
-            XCTAssertThrowsError(try alphabetCollection.insert(aBisDocument))
+            XCTAssertThrowsError(try alphabetCollection.insert(aBisDocument, stoppingOnError: true))
             try db["alphabet"].drop()
         }
     }
@@ -695,7 +701,7 @@ public class CollectionTests: XCTestCase {
             ])
 
             do {
-                try db["inserterrors"].append(contentsOf: documents)
+                try db["inserterrors"].insert(contentsOf: documents, stoppingOnError: true)
                 XCTFail()
             } catch let insertErrors as InsertErrors {
                 XCTAssertEqual(insertErrors.successfulIds.count, 2)

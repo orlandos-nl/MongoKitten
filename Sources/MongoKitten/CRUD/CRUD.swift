@@ -138,95 +138,102 @@ extension CollectionQueryable {
             }
         }
         
-        var errors = Array<InsertErrors.InsertError>()
-        
-        // Groups all errors into a struct
-        func throwErrors() -> InsertErrors {
-            let positions = errors.flatMap { insertError in
-                return insertError.writeErrors.flatMap { writeError in
-                    return writeError.index
-                }
-            }.reduce([], +)
-            
-            for position in positions.reversed() {
-                newIds.remove(at: position)
-            }
-            
-            return InsertErrors(errors: errors, successfulIds: newIds)
-        }
-        
         // Return the async response, spawn a loose thread for handling
-        let response = Future<[BSON.Primitive]> {
-            var promises = [Future<Void>]()
+        let response = Future<[BSON.Primitive]>()
+        
+        var promises = [Future<Void>]()
+        
+        // Insert 1000 documents at a time
+        while position < documents.count {
+            defer { position += 1000 }
             
-            // Insert 1000 documents at a time
-            while position < documents.count {
-                defer { position += 1000 }
+            // For protocol >= 2, use the DB command
+            if protocolVersion >= 2 {
+                var command: Document = ["insert": self.collectionName]
                 
-                // For protocol >= 2, use the DB command
-                if protocolVersion >= 2 {
-                    var command: Document = ["insert": self.collectionName]
+                command["documents"] = Document(array: Array(documents[position..<Swift.min(position + 1000, documents.count)]))
+                
+                if let ordered = ordered {
+                    command["ordered"] = ordered
+                }
+                
+                command["writeConcern"] = writeConcern ?? self.writeConcern
+                
+                // Insert the new entities
+                let result = try self.database.execute(command: command, using: newConnection).map { reply in
+                    var errors = Array<InsertErrors.InsertError>()
                     
-                    command["documents"] = Document(array: Array(documents[position..<Swift.min(position + 1000, documents.count)]))
-                    
-                    if let ordered = ordered {
-                        command["ordered"] = ordered
-                    }
-                    
-                    command["writeConcern"] = writeConcern ?? self.writeConcern
-                    
-                    // Insert the new entities
-                    let result = try self.database.execute(command: command, using: newConnection).map { reply in
-                        // Checks for errors
-                        if let writeErrors = Document(reply.documents.first?["writeErrors"]) {
-                            // If there are errors
-                            guard let documents = Document(command["documents"]) else {
-                                throw MongoError.invalidReply
+                    // Groups all errors into a struct
+                    func throwErrors() -> InsertErrors {
+                        let positions = errors.flatMap { insertError in
+                            return insertError.writeErrors.flatMap { writeError in
+                                return writeError.index
                             }
-                            
-                            // Deserialize the errors
-                            let writeErrors = try writeErrors.arrayRepresentation.flatMap { value -> InsertErrors.InsertError.WriteError in
-                                guard let document = Document(value),
-                                    let index = Int(document["index"]),
-                                    let code = Int(document["code"]),
-                                    let message = String(document["errmsg"]),
-                                    index < documents.count,
-                                    let affectedDocument = Document(documents[index]) else {
-                                        throw MongoError.invalidReply
-                                }
-                                
-                                // Add them to the array
-                                return InsertErrors.InsertError.WriteError(index: index, code: code, message: message, affectedDocument: affectedDocument)
-                            }
-                            
-                            errors.append(InsertErrors.InsertError(writeErrors: writeErrors))
+                            }.reduce([], +)
+                        
+                        for position in positions.reversed() {
+                            newIds.remove(at: position)
                         }
                         
-                        guard Int(reply.documents.first?["ok"]) == 1 else {
+                        return InsertErrors(errors: errors, successfulIds: newIds)
+                    }
+                    
+                    // Checks for errors
+                    if let writeErrors = Document(reply.documents.first?["writeErrors"]) {
+                        // If there are errors
+                        guard let documents = Document(command["documents"]) else {
+                            throw MongoError.invalidReply
+                        }
+                        
+                        // Deserialize the errors
+                        let writeErrors = try writeErrors.arrayRepresentation.flatMap { value -> InsertErrors.InsertError.WriteError in
+                            guard let document = Document(value),
+                                let index = Int(document["index"]),
+                                let code = Int(document["code"]),
+                                let message = String(document["errmsg"]),
+                                index < documents.count,
+                                let affectedDocument = Document(documents[index]) else {
+                                    throw MongoError.invalidReply
+                            }
+                            
+                            // Add them to the array
+                            return InsertErrors.InsertError.WriteError(index: index, code: code, message: message, affectedDocument: affectedDocument)
+                        }
+                        
+                        errors.append(InsertErrors.InsertError(writeErrors: writeErrors))
+                    }
+                    
+                    guard Int(reply.documents.first?["ok"]) == 1 else {
+                        throw throwErrors()
+                    }
+                    
+                    if ordered == true {
+                        guard errors.count == 0 else {
                             throw throwErrors()
                         }
                     }
-                    
-                    promises.append(result)
-                    
-                // < protocol version 2, use the separate insert operation
-                } else {
-                    let future = Future<Void> {
-                        let commandDocuments = Array(documents[position..<Swift.min(position + 1000, documents.count)])
-                        
-                        let insertMsg = Message.Insert(requestID: self.database.server.nextMessageID(), flags: [], collection: self.collection, documents: commandDocuments)
-                        _ = try self.database.server.send(message: insertMsg, overConnection: newConnection)
-                    }
-                    
-                    promises.append(future)
                 }
+                
+                promises.append(result)
+                
+            // < protocol version 2, use the separate insert operation
+            } else {
+                let future = Future<Void> {
+                    let commandDocuments = Array(documents[position..<Swift.min(position + 1000, documents.count)])
+                    
+                    let insertMsg = Message.Insert(requestID: self.database.server.nextMessageID(), flags: [], collection: self.collection, documents: commandDocuments)
+                    _ = try self.database.server.send(message: insertMsg, overConnection: newConnection)
+                }
+                
+                promises.append(future)
             }
-            
-            guard errors.count == 0 else {
-                throw throwErrors()
+        }
+        
+        promises.then { results in
+            _ = try? response.complete {
+                try results.assertSuccess()
+                return newIds
             }
-            
-            return newIds
         }
         
         return response
