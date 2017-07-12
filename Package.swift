@@ -1,29 +1,43 @@
+// swift-tools-version:4.0
+// The swift-tools-version declares the minimum version of Swift required to build this package.
+
 import PackageDescription
 
 var package = Package(
     name: "MongoKitten",
-    targets: [
-        Target(name: "GeoJSON"),
-        Target(name: "MongoSocket"),
-        Target(name: "ExtendedJSON"),
-        Target(name: "MongoKitten", dependencies: ["GeoJSON", "MongoSocket", "ExtendedJSON"])
-        ],
     dependencies: [
         // For MongoDB Documents
-        .Package(url: "https://github.com/OpenKitten/BSON.git", versions: Version(5, 1, 2) ..< Version(6, 0, 0)),
+        .package(url: "https://github.com/OpenKitten/BSON.git", .revision("29e51865ce352e83351932fe41c65ddc3254a447")),
         
         // For ExtendedJSON support
-        .Package(url: "https://github.com/OpenKitten/Cheetah.git", majorVersion: 1),
-
+        .package(url: "https://github.com/OpenKitten/Cheetah.git", .revision("swift4")),
+        
         // Authentication
-        .Package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", versions: Version(0, 6, 9) ..< Version(0, 7, 0)),
-
+        .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", .revision("swift4")),
+        
         // Asynchronous behaviour
-        .Package(url: "https://github.com/OpenKitten/Schrodinger.git", majorVersion: 1),
-    ]
+        .package(url: "https://github.com/OpenKitten/Schrodinger.git", .revision("framework")),
+        ],
+    targets: [
+        .target(
+            name: "GeoJSON",
+            dependencies: ["BSON", "Cheetah"]),
+        .target(
+            name: "ExtendedJSON",
+            dependencies: ["BSON", "Cheetah"]),
+        .target(
+            name: "MongoKitten",
+            dependencies: ["BSON", "Cheetah", "GeoJSON", "ExtendedJSON", "CryptoSwift", "Schrodinger"]),
+        .testTarget(
+            name: "MongoKittenTests",
+            dependencies: ["MongoKitten"]),
+        ]
 )
 
 // Provides Sockets + SSL
 #if !os(macOS) && !os(iOS)
-package.dependencies.append(.Package(url: "https://github.com/OpenKitten/KittenCTLS.git", majorVersion: 1))
+    package.dependencies.append(.package(url: "https://github.com/OpenKitten/KittenCTLS.git", majorVersion: 1))
+    package.targets.append(.target(name: "MongoSocket", dependencies: ["KittenCTLS"]))
+#else
+    package.targets.append(.target(name: "MongoSocket", dependencies: []))
 #endif

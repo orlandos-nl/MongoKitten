@@ -298,7 +298,7 @@ public class ExplainedCollection {
         return explaination
     }
     
-    public func remove(removals: [(filter: Query, limit: Int)], writeConcern: WriteConcern?, ordered: Bool?, timeout: DispatchTimeInterval?) throws -> Explaination {
+    public func remove(removals: [(filter: Query, limit: RemoveLimit)], writeConcern: WriteConcern?, ordered: Bool?, timeout: DispatchTimeInterval?) throws -> Explaination {
         guard database.server.buildInfo.version >= Version(3,0,0) else {
             throw MongoError.unsupportedFeature("Explain is not available for MongoDB <= 2.6")
         }
@@ -309,7 +309,7 @@ public class ExplainedCollection {
         for d in removals {
             newDeletes.append([
                 "q": d.filter.queryDocument,
-                "limit": d.limit
+                "limit": d.limit.rawValue
                 ])
         }
         

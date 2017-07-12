@@ -436,7 +436,7 @@ extension CollectionQueryable {
         }
     }
     
-    func remove(removals: [(filter: Query, limit: Int)], writeConcern: WriteConcern?, ordered: Bool?, connection: Connection?, timeout: DispatchTimeInterval?) throws -> Future<Int> {
+    func remove(removals: [(filter: Query, limit: RemoveLimit)], writeConcern: WriteConcern?, ordered: Bool?, connection: Connection?, timeout: DispatchTimeInterval?) throws -> Future<Int> {
         let timeout: DispatchTimeInterval = timeout ?? .seconds(Int(database.server.defaultTimeout))
         
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
@@ -448,7 +448,7 @@ extension CollectionQueryable {
             for d in removals {
                 newDeletes.append([
                     "q": d.filter.queryDocument,
-                    "limit": d.limit
+                    "limit": d.limit.rawValue
                     ])
             }
             
@@ -485,7 +485,7 @@ extension CollectionQueryable {
                         
                         let affectedRemove = removals[index]
                         
-                        return RemoveError.WriteError(index: index, code: code, message: message, affectedQuery: affectedRemove.filter, limit: affectedRemove.limit)
+                        return RemoveError.WriteError(index: index, code: code, message: message, affectedQuery: affectedRemove.filter, limit: affectedRemove.limit.rawValue)
                     }
                     
                     throw RemoveError(writeErrors: writeErrors)
@@ -517,21 +517,14 @@ extension CollectionQueryable {
                 for removal in removals {
                     var flags: DeleteFlags = []
                     
-                    // If the limit is 0, make the for loop run exactly once so the message sends
-                    // If the limit is not 0, set the limit properly
-                    let limit = removal.limit == 0 ? 1 : removal.limit
-                    
                     // If the limit is not '0' and thus removes a set amount of documents. Set it to RemoveOne so we'll remove one document at a time using the older method
-                    if removal.limit != 0 {
-                        // TODO: Remove this assignment when the standard library is updated.
-                        let _ = flags.insert(DeleteFlags.RemoveOne)
+                    if removal.limit == .one {
+                        flags.insert(DeleteFlags.RemoveOne)
                     }
                     
                     let message = Message.Delete(requestID: self.database.server.nextMessageID(), collection: self.collection, flags: flags, removeDocument: removal.filter.queryDocument)
                     
-                    for _ in 0..<limit {
-                        try self.database.server.send(message: message, overConnection: newConnection)
-                    }
+                    try self.database.server.send(message: message, overConnection: newConnection)
                 }
                 
                 return removals.count

@@ -298,35 +298,15 @@ public final class Collection: CollectionQueryable {
     
     // Delete
     
-    /// Removes all `Document`s matching the `filter` until the `limit` is reached
-    ///
-    /// TODO: Better docs
-    ///
-    /// For more information: https://docs.mongodb.com/manual/reference/command/delete/#dbcmd.delete
-    ///
-    /// - parameter removals: A list of filters to match documents against. Any given filter can be used infinite amount of removals if `0` or otherwise as often as specified in the limit
-    /// - parameter writeConcern: The `WriteConcern` used for this operation
-    /// - parameter stoppingOnError: If true, stop removing when one operation fails - defaults to true
-    ///
-    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
+    
     @discardableResult
-    public func remove(bulk removals: [(filter: Query, limit: Int)], writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
+    public func remove(bulk removals: [(filter: Query, limit: RemoveLimit)], writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
         return try self.remove(removals: removals, writeConcern: writeConcern, ordered: ordered, connection: nil, timeout: nil).await()
     }
     
-    /// Removes `Document`s matching the `filter` until the `limit` is reached
-    ///
-    /// TODO: Better docs
-    ///
-    /// For more information: https://docs.mongodb.com/manual/reference/command/delete/#dbcmd.delete
-    ///
-    /// - parameter filter: The QueryBuilder filter to use when finding Documents that are going to be removed
-    /// - parameter limit: The amount of times this filter can be used to find and remove a Document (0 is every document)
-    /// - parameter ordered: If true, stop removing when one operation fails - defaults to true
-    ///
-    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
+    
     @discardableResult
-    public func remove(_ filter: Query? = [:], limitedTo limit: Int = 0, writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
+    public func remove(_ filter: Query? = [:], limitedTo limit: RemoveLimit = .all, writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
         return try self.remove(bulk: [(filter: filter ?? [:], limit: limit)], writeConcern: writeConcern, stoppingOnError: ordered)
     }
     
