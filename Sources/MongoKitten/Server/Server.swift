@@ -231,10 +231,19 @@ public final class Server {
     /// Tihs loop maintains all connections
     fileprivate func backgroundLoop() {
         connectionPoolLock.lock()
+        
+        // I needed to be creative here :P
         var disconnectionPool = [Connection]()
         
-        for connection in connections where !connection.isConnected {
-            disconnectionPool.append(connection)
+        // Filter any offline connections and put them in the disconnection pool
+        // TODO: Move this to a better place?
+        self.connections = self.connections.filter { connection in
+            if !connection.isConnected {
+                disconnectionPool.append(connection)
+                return false
+            }
+            
+            return true
         }
         
         if disconnectionPool.count > 0 {
@@ -251,7 +260,7 @@ public final class Server {
             maintainanceLoopCalls = []
         }
         
-        Thread.sleep(forTimeInterval: 30)
+        Thread.sleep(forTimeInterval: 5)
         
         self.connectionPoolMaintainanceQueue.async(execute: backgroundLoop)
     }
@@ -470,33 +479,9 @@ public final class Server {
         
         connectionPoolLock.lock()
         
-        // I needed to be creative here :P
-        var disconnectionPool = [Connection]()
-        
-        // Filter any offline connections and put them in the disconnection pool
-        // TODO: Move this to a better place?
-        self.connections = self.connections.filter { connection in
-            if !connection.isConnected {
-                disconnectionPool.append(connection)
-            }
-            
-            return connection.isConnected
-        }
-        
-        connectionPoolLock.unlock()
-        
-        // If there are disconnected connections
-        if disconnectionPool.count > 0 {
-            connectionPoolMaintainanceQueue.async {
-                self.handleDisconnect(for: disconnectionPool)
-            }
-        }
-        
-        connectionPoolLock.lock()
-        
         // Find all possible matches to create a connection to
         let matches = self.connections.filter {
-            $0.users < self.maxActionsPerConnection && ((!writing && slaveOK) || $0.writable) && $0.isConnected
+            $0.users < self.maxActionsPerConnection && ((!writing && slaveOK) || $0.writable)
             }.sorted(by: { (lhs, rhs) -> Bool in
                 return lhs.users < rhs.users
             })
