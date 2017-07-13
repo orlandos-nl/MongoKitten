@@ -36,7 +36,7 @@ var package = Package(
 
 // Provides Sockets + SSL
 #if !os(macOS) && !os(iOS)
-    package.dependencies.append(.package(url: "https://github.com/OpenKitten/KittenCTLS.git", majorVersion: 1))
+    package.dependencies.append(.package(url: "https://github.com/OpenKitten/KittenCTLS.git", from: Version(1, 0, 0)))
     package.targets.append(.target(name: "MongoSocket", dependencies: ["KittenCTLS"]))
 #else
     package.targets.append(.target(name: "MongoSocket", dependencies: []))
