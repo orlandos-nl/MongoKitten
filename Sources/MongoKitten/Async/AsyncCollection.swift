@@ -18,6 +18,6 @@ extension Collection {
 
 extension Future {
     func await() throws -> T {
-        return try self.await(until: .seconds(60))
+        return try self.await(for: .seconds(60))
     }
 }

@@ -180,7 +180,7 @@ public final class Database {
         }
         
         let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
-        return try server.sendAsync(message: commandMessage, overConnection: connection).await(until: timeout).documents
+        return try server.sendAsync(message: commandMessage, overConnection: connection).await(for: timeout).documents
     }
     
     /// Executes a command `Document` on this database using a query message

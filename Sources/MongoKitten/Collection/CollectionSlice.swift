@@ -196,7 +196,7 @@ public class CollectionSlice<Element> : CollectionQueryable, Sequence, IteratorP
     ///
     /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     @discardableResult
-    public func remove(limitedTo limit: Int = 0, writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
+    public func remove(limitedTo limit: RemoveLimit = .all, writeConcern: WriteConcern? = nil, stoppingOnError ordered: Bool? = nil) throws -> Int {
         return try collection.remove(filter ?? [:], limitedTo: limit, writeConcern: writeConcern, stoppingOnError: ordered)
     }
     

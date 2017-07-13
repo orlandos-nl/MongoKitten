@@ -53,7 +53,7 @@ extension Database {
             let part = String(part)
             
             if let first = part.characters.first {
-                parsedResponse[String(first)] = part[part.index(part.startIndex, offsetBy: 2)..<part.endIndex]
+                parsedResponse[String(first)] = String(part[part.index(part.startIndex, offsetBy: 2)..<part.endIndex])
             }
         }
         
