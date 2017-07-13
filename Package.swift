@@ -5,6 +5,12 @@ import PackageDescription
 
 var package = Package(
     name: "MongoKitten",
+    products: [
+        // Products define the executables and libraries produced by a package, and make them visible to other packages.
+        .library(
+            name: "MongoKitten",
+            targets: ["MongoKitten", "ExtendedJSON"]),
+    ],
     dependencies: [
         // For MongoDB Documents
         .package(url: "https://github.com/OpenKitten/BSON.git", .revision("29e51865ce352e83351932fe41c65ddc3254a447")),
