@@ -137,23 +137,26 @@ class Connection {
             return
         }
         
-        while pastReplyLeftovers.count > 0 {
-            let consumed = nextReply.process(consuming: &pastReplyLeftovers, withLengthOf: pastReplyLeftovers.count)
+        var pointer = pointer
+        var consumed = 0
+        var length = length
+        
+        while consumed < length {
+            while pastReplyLeftovers.count > 0 {
+                consumed = nextReply.process(consuming: &pastReplyLeftovers, withLengthOf: pastReplyLeftovers.count)
+                
+                pastReplyLeftovers.removeFirst(consumed)
+                
+                checkComplete()
+            }
             
-            pastReplyLeftovers.removeFirst(consumed)
+            consumed = nextReply.process(consuming: pointer, withLengthOf: length)
             
             checkComplete()
-        }
-        
-        let consumed = nextReply.process(consuming: pointer, withLengthOf: length)
-        
-        checkComplete()
-        
-        guard consumed < length else {
-            return
-        }
             
-        onRead(at: pointer.advanced(by: consumed), withLengthOf: length - consumed)
+            pointer = pointer.advanced(by: consumed)
+            length = length - consumed
+        }
     }
     
     func send(data: [UInt8]) throws {
