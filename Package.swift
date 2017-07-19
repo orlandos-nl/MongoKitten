@@ -16,7 +16,7 @@ var package = Package(
         .package(url: "https://github.com/OpenKitten/BSON.git", .revision("framework")),
         
         // For ExtendedJSON support
-        .package(url: "https://github.com/OpenKitten/Cheetah.git", .revision("swift4")),
+        .package(url: "https://github.com/OpenKitten/Cheetah.git", .revision("framework")),
         
         // Authentication
         .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", .revision("swift4")),
