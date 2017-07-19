@@ -329,7 +329,7 @@ extension Binary: ExpressionRepresentable {
 }
 
 /// Converts Null to a literal Expression
-extension Null: ExpressionRepresentable {
+extension NSNull: ExpressionRepresentable {
     /// Converts Null to a literal Expression
     public func makeExpression() -> Expression {
         return .literal(self)
