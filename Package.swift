@@ -33,7 +33,7 @@ var package = Package(
             dependencies: ["BSON", "Cheetah"]),
         .target(
             name: "MongoKitten",
-            dependencies: ["BSON", "Cheetah", "GeoJSON", "ExtendedJSON", "CryptoSwift", "Schrodinger"]),
+            dependencies: ["BSON", "Cheetah", "GeoJSON", "ExtendedJSON", "CryptoSwift", "Schrodinger", "MongoSocket"]),
         .testTarget(
             name: "MongoKittenTests",
             dependencies: ["MongoKitten"]),
