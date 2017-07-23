@@ -125,16 +125,18 @@ public final class Cursor<T> {
                                 self.data.append(doc)
                             }
                         }
+                        
+                        self.cursorID = Int(reply.documents.first?["cursor"]["id"]) ?? -1
                     }
-                    
-                    self.cursorID = Int(reply.documents.first?["cursor"]["id"]) ?? -1
                 } else {
                     let request = Message.GetMore(requestID: self.collection.database.server.nextMessageID(), namespace: self.namespace, numberToReturn: self.chunkSize, cursor: self.cursorID)
                     
                     let reply = try self.collection.database.server.sendAsync(message: request, overConnection: self.connection).await()
                     
-                    self.data += try reply.documents.flatMap(self.transform)
-                    self.cursorID = reply.cursorID
+                    try cursorMutationsQueue.sync {
+                        self.data += try reply.documents.flatMap(self.transform)
+                        self.cursorID = reply.cursorID
+                    }
                 }
             } catch {
                 log.error("Could not fetch extra data from the cursor due to error: \(error)")
@@ -204,7 +206,7 @@ public final class Cursor<T> {
     
     /// An efficient and lazy forEach operation specialized for MongoDB.
     ///
-    /// Designed to throw errors in the case of a cursor failure, unline normal `for .. in cursor` operations
+    /// Designed to throw errors in the case of a cursor failure, unlike normal `for .. in cursor` operations
     public func forEach(_ body: (T) throws -> Void) throws {
         while let entity = try nextEntity() {
             try body(entity)
@@ -213,7 +215,7 @@ public final class Cursor<T> {
     
     /// An efficient and lazy asynchronous forEach operation specialized for MongoDB.
     ///
-    /// Designed to throw errors in the case of a cursor failure, unline normal `for .. in cursor` operations
+    /// Designed to throw errors in the case of a cursor failure, unlike normal `for .. in cursor` operations
     public func forEachAsync(_ body: @escaping (T) throws -> Void) throws -> Future<Void> {
         return Future<Void> {
             while let entity = try self.nextEntity() {

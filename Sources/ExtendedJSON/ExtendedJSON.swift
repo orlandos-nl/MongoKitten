@@ -11,7 +11,6 @@
 import BSON
 import Foundation
 import CryptoSwift
-@_exported import KittenCore
 
 internal let isoDateFormatter: DateFormatter = {
     let fmt = DateFormatter()
