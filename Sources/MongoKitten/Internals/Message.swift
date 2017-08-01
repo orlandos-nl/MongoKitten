@@ -77,7 +77,7 @@ enum Message {
         }
         
         // Get the message length
-        let length = data[0...3].makeInt32()
+        let length = Int32(data[0...3])
         
         // Check the message length
         if length != Int32(data.count) {
@@ -85,13 +85,13 @@ enum Message {
         }
         
         /// Get our variables from the message
-        let requestID = data[4...7].makeInt32()
-        let responseTo = data[8...11].makeInt32()
+        let requestID = Int32(data[4...7])
+        let responseTo = Int32(data[8...11])
         
-        let flags = data[16...19].makeInt32()
-        let cursorID = Int(data[20...27].makeInt64())
-        let startingFrom = data[28...31].makeInt32()
-        let numbersReturned = data[32...35].makeInt32()
+        let flags = Int32(data[16...19])
+        let cursorID = Int(Int64(data[20...27]))
+        let startingFrom = Int32(data[28...31])
+        let numbersReturned = Int32(data[32...35])
         let documents = [Document](bsonBytes: data[36..<data.endIndex]*)
         
         // Return the constructed reply
@@ -276,7 +276,7 @@ struct ServerReplyPlaceholder {
                 
                 unconsumed.removeFirst(min(4, unconsumed.count))
                 
-                return data.makeInt32()
+                return Int32.init(data)
             } else {
                 advanced = 4
                 return consuming.withMemoryRebound(to: Int32.self, capacity: 1, { $0.pointee })
@@ -297,7 +297,7 @@ struct ServerReplyPlaceholder {
                 
                 unconsumed.removeFirst(min(8, unconsumed.count))
                 
-                return data.makeInt64()
+                return Int64(data)
             } else {
                 advanced = 8
                 return consuming.withMemoryRebound(to: Int64.self, capacity: 1, { $0.pointee })
@@ -401,7 +401,7 @@ struct ServerReplyPlaceholder {
                     return (count, documentsData.count - pos)
                 }
                 
-                let length = Int(documentsData[pos..<pos + 4].makeInt32())
+                let length = Int(Int32(documentsData[pos..<pos + 4]))
                 
                 guard pos + length <= documentsData.count else {
                     return (count, documentsData.count - pos)
@@ -443,7 +443,7 @@ struct ServerReplyPlaceholder {
         if halfComplete > 0 {
             let startOfDocument = documentsData.endIndex.advanced(by: -halfComplete)
             
-            let documentLength = Int(documentsData[startOfDocument..<startOfDocument.advanced(by: 4)].makeInt32())
+            let documentLength = Int(Int32(documentsData[startOfDocument..<startOfDocument.advanced(by: 4)]))
             let neededLength = documentLength - halfComplete
             
             advanced = min(length, neededLength)
@@ -504,18 +504,38 @@ struct ServerReply {
     var documents: [Document]
 }
 
-extension Swift.Collection where Self.Iterator.Element == Byte, Self.Index == Int {
-    fileprivate func makeInt64() -> Int64 {
+internal func fromBytes<T, S : Swift.Collection>(_ bytes: S) throws -> T where S.Iterator.Element == Byte, S.IndexDistance == Int {
+    guard bytes.count >= MemoryLayout<T>.size else {
+        throw DeserializationError.invalidElementSize
+    }
+    
+    return UnsafeRawPointer(Bytes(bytes)).assumingMemoryBound(to: T.self).pointee
+}
+
+extension Int64 {
+    internal init<S : Swift.Collection>(_ s: S) where S.Iterator.Element == UInt8, S.Index == Int {
         var number: Int64 = 0
-        number |= self.count > 7 ? Int64(self[startIndex.advanced(by: 7)]) << 56 : 0
-        number |= self.count > 6 ? Int64(self[startIndex.advanced(by: 6)]) << 48 : 0
-        number |= self.count > 5 ? Int64(self[startIndex.advanced(by: 5)]) << 40 : 0
-        number |= self.count > 4 ? Int64(self[startIndex.advanced(by: 4)]) << 32 : 0
-        number |= self.count > 3 ? Int64(self[startIndex.advanced(by: 3)]) << 24 : 0
-        number |= self.count > 2 ? Int64(self[startIndex.advanced(by: 2)]) << 16 : 0
-        number |= self.count > 1 ? Int64(self[startIndex.advanced(by: 1)]) << 8 : 0
-        number |= self.count > 0 ? Int64(self[startIndex.advanced(by: 0)]) << 0 : 0
+        number |= s.count > 7 ? Int64(s[s.startIndex.advanced(by: 7)]) << 56 : 0
+        number |= s.count > 6 ? Int64(s[s.startIndex.advanced(by: 6)]) << 48 : 0
+        number |= s.count > 5 ? Int64(s[s.startIndex.advanced(by: 5)]) << 40 : 0
+        number |= s.count > 4 ? Int64(s[s.startIndex.advanced(by: 4)]) << 32 : 0
+        number |= s.count > 3 ? Int64(s[s.startIndex.advanced(by: 3)]) << 24 : 0
+        number |= s.count > 2 ? Int64(s[s.startIndex.advanced(by: 2)]) << 16 : 0
+        number |= s.count > 1 ? Int64(s[s.startIndex.advanced(by: 1)]) << 8 : 0
+        number |= s.count > 0 ? Int64(s[s.startIndex.advanced(by: 0)]) << 0 : 0
         
-        return number
+        self = number
+    }
+}
+
+extension Int32 {
+    internal init<S : Swift.Collection>(_ s: S) where S.Iterator.Element == UInt8, S.Index == Int {
+        var val: Int32 = 0
+        val |= s.count > 3 ? Int32(s[s.startIndex.advanced(by: 3)]) << 24 : 0
+        val |= s.count > 2 ? Int32(s[s.startIndex.advanced(by: 2)]) << 16 : 0
+        val |= s.count > 1 ? Int32(s[s.startIndex.advanced(by: 1)]) << 8 : 0
+        val |= s.count > 0 ? Int32(s[s.startIndex]) : 0
+        
+        self = val
     }
 }

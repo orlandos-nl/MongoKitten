@@ -110,7 +110,7 @@ public class AggregationTests: XCTestCase {
                         .project(["resultCount": true])
                     ],
                     "totalPop": [
-                        .group(Null(), computed: ["population": .sumOf("$totalPop")])
+                        .group(NSNull(), computed: ["population": .sumOf("$totalPop")])
                     ]
                     ])
             ]
