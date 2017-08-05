@@ -309,7 +309,7 @@ extension CollectionQueryable {
                 reply = try self.database.execute(command: command, writing: false)
             }
             
-            return try reply.map { reply in
+            return reply.map { reply in
                 if let writeErrors = Document(reply.documents.first?["writeErrors"]), (Int(reply.documents.first?["ok"]) != 1 || ordered == true) {
                     let writeErrors = try writeErrors.arrayRepresentation.flatMap { value -> UpdateError.WriteError in
                         guard let document = Document(value),
@@ -403,7 +403,7 @@ extension CollectionQueryable {
                 reply = try self.database.execute(command: command, writing: false)
             }
             
-            return try reply.map { reply in
+            return reply.map { reply in
                 if let writeErrors = Document(reply.documents.first?["writeErrors"]), (Int(reply.documents.first?["ok"]) != 1 || ordered == true) {
                     let writeErrors = try writeErrors.arrayRepresentation.flatMap { value -> RemoveError.WriteError in
                         guard let document = Document(value),
