@@ -206,7 +206,7 @@ extension Server {
     }
     
     public func ping() throws {
-        let commandMessage = Message.Query(requestID: self.nextMessageID(), flags: [], collection: self["admin"]["$cmd"], numbersToSkip: 0, numbersToReturn: 1, query: [
+        let commandMessage = Message.Query(requestID: self.nextMessageID(), flags: [], collection: "admin.$cmd", numbersToSkip: 0, numbersToReturn: 1, query: [
             "ping": Int32(1)
             ], returnFields: nil)
         
@@ -219,7 +219,7 @@ extension Server {
     
     /// Returns the MongoDB Build Information
     internal func getBuildInfo() throws -> BuildInfo {
-        let commandMessage = Message.Query(requestID: self.nextMessageID(), flags: [], collection: self["admin"]["$cmd"], numbersToSkip: 0, numbersToReturn: 1, query: [
+        let commandMessage = Message.Query(requestID: self.nextMessageID(), flags: [], collection: "admin.$cmd", numbersToSkip: 0, numbersToReturn: 1, query: [
             "buildInfo": Int32(1)
             ], returnFields: nil)
         

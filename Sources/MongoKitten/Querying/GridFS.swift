@@ -74,7 +74,7 @@ public final class GridFS {
     public func find(_ filter: Query? = nil) throws -> Cursor<File> {
         return try files.find(filter).flatMap { doc -> File? in
             return File(document: doc, chunksCollection: self.chunks, filesCollection: self.files)
-        }.cursor
+        }
     }
     
     /// Removes a file by it's identifier
@@ -359,7 +359,7 @@ public final class GridFS {
         public func chunked() throws -> Cursor<Chunk> {
             return try chunksCollection.find("files_id" == id).flatMap {
                 Chunk(document: $0, chunksCollection: self.chunksCollection, filesCollection: self.filesCollection)
-            }.cursor
+            }
         }
         
         /// A GridFS Byte Chunk that's part of a file

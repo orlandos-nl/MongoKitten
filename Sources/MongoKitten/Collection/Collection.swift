@@ -34,16 +34,6 @@ public final class Collection: CollectionQueryable {
         return self
     }
     
-    /// Internally used for CollectionQueryable
-    var collectionName: String {
-        return self.name
-    }
-    
-    /// Internally used for CollectionQueryable
-    var fullCollectionName: String {
-        return self.fullName
-    }
-    
     /// The Database this collection is in
     public private(set) var database: Database
     
@@ -51,7 +41,6 @@ public final class Collection: CollectionQueryable {
     public private(set) var name: String
     
     /// The full (computed) collection name. Created by adding the Database's name with the Collection's name with a dot to seperate them
-    /// Will be empty
     public var fullName: String {
         return "\(database.name).\(name)"
     }
@@ -216,7 +205,7 @@ public final class Collection: CollectionQueryable {
     /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     ///
     /// - returns: A cursor pointing to the found Documents
-    public func find(_ filter: Query? = nil, sortedBy sort: Sort? = nil, projecting projection: Projection? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil, skipping skip: Int? = nil, limitedTo limit: Int? = nil, withBatchSize batchSize: Int = 100) throws -> CollectionSlice<Document> {
+    public func find(_ filter: Query? = nil, sortedBy sort: Sort? = nil, projecting projection: Projection? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil, skipping skip: Int? = nil, limitedTo limit: Int? = nil, withBatchSize batchSize: Int = 100) throws -> Cursor<Document> {
         precondition(batchSize < Int(Int32.max))
         precondition(skip ?? 0 < Int(Int32.max))
         precondition(limit ?? 0 < Int(Int32.max))
@@ -600,7 +589,7 @@ public final class Collection: CollectionQueryable {
         
         let connection = try database.server.reserveConnection(authenticatedFor: self.database)
         
-        return try Cursor(cursorDocument: cursorDocument, collection: self, connection: connection, chunkSize: 100, transform: { $0 })
+        return try Cursor(cursorDocument: cursorDocument, collection: self.name, database: self.database, connection: connection, chunkSize: 100, transform: { $0 })
     }
     
     /// Modifies the collection. Requires access to `collMod`

@@ -110,7 +110,7 @@ enum Message {
             throw MongoError.internalInconsistency
         case .Update(let requestIdentifier, let collection, let flags, let findDocument, let replaceDocument):
             body += Int32(0).makeBytes()
-            body += collection.fullName.cStringBytes
+            body += collection.cStringBytes
             body += flags.rawValue.makeBytes()
             body += findDocument.bytes
             body += replaceDocument.bytes
@@ -118,7 +118,7 @@ enum Message {
             requestID = requestIdentifier
         case .Insert(let requestIdentifier, let flags, let collection, let documents):
             body += flags.rawValue.makeBytes()
-            body += collection.fullName.cStringBytes
+            body += collection.cStringBytes
             
             for document in documents {
                 body += document.bytes
@@ -127,7 +127,7 @@ enum Message {
             requestID = requestIdentifier
         case .Query(let requestIdentifier, let flags, let collection, let numbersToSkip, let numbersToReturn, let query, let returnFields):
             body += flags.rawValue.makeBytes()
-            body += collection.fullName.cStringBytes
+            body += collection.cStringBytes
             body += numbersToSkip.makeBytes()
             body += numbersToReturn.makeBytes()
             
@@ -147,7 +147,7 @@ enum Message {
             requestID = requestIdentifier
         case .Delete(let requestIdentifier, let collection, let flags, let removeDocument):
             body += Int32(0).makeBytes()
-            body += collection.fullName.cStringBytes
+            body += collection.cStringBytes
             body += flags.rawValue.makeBytes()
             body += removeDocument.bytes
             
@@ -185,14 +185,14 @@ enum Message {
     /// - parameter flags: The flags to be sent with this message
     /// - parameter findDocument: The filter to use when finding documents to update
     /// - parameter replaceDocument: The Document to replace the results with
-    case Update(requestID: Int32, collection: Collection, flags: UpdateFlags, findDocument: Document, replaceDocument: Document)
+    case Update(requestID: Int32, collection: String, flags: UpdateFlags, findDocument: Document, replaceDocument: Document)
     
     /// Insert data into the server using an older method
     /// - parameter requestID: The Request ID that you can get from the server by calling `server.nextMessageID()`
     /// - parameter flags: The flags to be sent with this message
     /// - parameter collection: The collection to insert information in
     /// - parameter documents: The documents to insert in the collection
-    case Insert(requestID: Int32, flags: InsertFlags, collection: Collection, documents: [Document])
+    case Insert(requestID: Int32, flags: InsertFlags, collection: String, documents: [Document])
     
     /// Used for CRUD operations on the server.
     /// - parameter requestID: The Request ID that you can get from the server by calling `server.nextMessageID()`
@@ -202,7 +202,7 @@ enum Message {
     /// - parameter numberToReturn: The amount of results to return
     /// - parameter query: The query to execute. Can be a DBCommand.
     /// - parameter returnFields: The fields to return or to ignore
-    case Query(requestID: Int32, flags: QueryFlags, collection: Collection, numbersToSkip: Int32, numbersToReturn: Int32, query: Document, returnFields: Document?)
+    case Query(requestID: Int32, flags: QueryFlags, collection: String, numbersToSkip: Int32, numbersToReturn: Int32, query: Document, returnFields: Document?)
     
     /// Get more data from the cursor's selected data
     /// - parameter requestID: The Request ID that you can get from the server by calling `server.nextMessageID()`
@@ -214,7 +214,7 @@ enum Message {
     /// Delete data from the server using an older method
     /// - parameter requestID: The Request ID that you can get from the server by calling `server.nextMessageID()`
     /// - parameter collection: The Collection to delete information from
-    case Delete(requestID: Int32, collection: Collection, flags: DeleteFlags, removeDocument: Document)
+    case Delete(requestID: Int32, collection: String, flags: DeleteFlags, removeDocument: Document)
     
     /// The message we send when we don't need the selected information anymore
     /// - parameter requestID: The Request ID that you can get from the server by calling `server.nextMessageID()`

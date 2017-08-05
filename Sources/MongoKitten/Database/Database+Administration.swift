@@ -69,7 +69,7 @@ extension Database {
     /// - returns: A cursor to the resulting documents with collection info
     internal func getCollectionInfos(matching filter: Document? = nil) throws -> Cursor<Document> {
         guard server.buildInfo.version >= Version(3, 0, 0) else {
-            return try self["system.namespaces"].find().cursor
+            return try self["system.namespaces"].find()
         }
         
         var request: Document = ["listCollections": 1]
@@ -97,7 +97,7 @@ extension Database {
         }
 
         do {
-            return try Cursor(cursorDocument: cursor, collection: self["$cmd"], connection: connection, chunkSize: 100, transform: { $0 })
+            return try Cursor(cursorDocument: cursor, collection: "$cmd", database: self, connection: connection, chunkSize: 100, transform: { $0 })
         } catch {
             self.server.returnConnection(connection)
             throw error

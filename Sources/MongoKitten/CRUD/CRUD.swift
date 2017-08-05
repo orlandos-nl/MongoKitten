@@ -12,14 +12,11 @@ import Schrodinger
 
 /// Makes it internally queryable
 protocol CollectionQueryable {
-    /// The full collection name
-    var fullCollectionName: String { get }
+    /// The full collection name. Created by adding the Database's name with the Collection's name with a dot to seperate them
+    var fullName: String { get }
     
     /// The short collection name
-    var collectionName: String { get }
-    
-    /// The collection object that's being queried
-    var collection: Collection { get }
+    var name: String { get }
     
     /// The database that this collection resides in
     var database: Database { get }
@@ -39,61 +36,6 @@ protocol CollectionQueryable {
 
 /// Internal functions for common interactions with MongoDB (CRUD operations)
 extension CollectionQueryable {
-    /// The read concern to apply by default
-    var readConcern: ReadConcern? {
-        get {
-            return collection.readConcern
-        }
-        set {
-            collection.readConcern = newValue
-        }
-    }
-    
-    /// The write concern to apply by default
-    var writeConcern: WriteConcern? {
-        get {
-            return collection.writeConcern
-        }
-        set {
-            collection.writeConcern = newValue
-        }
-    }
-    
-    /// The collation to apply by default
-    var collation: Collation? {
-        get {
-            return collection.collation
-        }
-        set {
-            collection.collation = newValue
-        }
-    }
-    
-    /// The timeout to apply by default
-    var timeout: DispatchTimeInterval? {
-        get {
-            return collection.timeout
-        }
-        set {
-            collection.timeout = newValue
-        }
-    }
-    
-    /// The collection's full name
-    var fullCollectionName: String {
-        return collection.fullName
-    }
-    
-    /// The collection's "simple" name
-    var collectionName: String {
-        return collection.name
-    }
-    
-    /// The database this Collection resides in
-    var database: Database {
-        return collection.database
-    }
-    
     /// Inserts a set of Documents
     ///
     /// - parameter documents: The documents to insert
@@ -149,7 +91,7 @@ extension CollectionQueryable {
             
             // For protocol >= 2, use the DB command
             if protocolVersion >= 2 {
-                var command: Document = ["insert": self.collectionName]
+                var command: Document = ["insert": self.name]
                 
                 command["documents"] = Document(array: Array(documents[position..<Swift.min(position + 1000, documents.count)]))
                 
@@ -221,7 +163,7 @@ extension CollectionQueryable {
                 let future = Future<Void> {
                     let commandDocuments = Array(documents[position..<Swift.min(position + 1000, documents.count)])
                     
-                    let insertMsg = Message.Insert(requestID: self.database.server.nextMessageID(), flags: [], collection: self.collection, documents: commandDocuments)
+                    let insertMsg = Message.Insert(requestID: self.database.server.nextMessageID(), flags: [], collection: self.fullName, documents: commandDocuments)
                     _ = try self.database.server.send(message: insertMsg, overConnection: newConnection)
                 }
                 
@@ -251,7 +193,7 @@ extension CollectionQueryable {
         let timeout: DispatchTimeInterval = timeout ?? .seconds(Int(database.server.defaultTimeout))
         
         // construct command. we always use cursors in MongoKitten, so that's why the default value for cursorOptions is an empty document.
-        var command: Document = ["aggregate": self.collectionName, "pipeline": pipeline.pipelineDocument, "cursor": ["batchSize": 100]]
+        var command: Document = ["aggregate": self.name, "pipeline": pipeline.pipelineDocument, "cursor": ["batchSize": 100]]
         
         command["readConcern"] = readConcern ?? self.readConcern
         command["collation"] = collation ?? self.collation
@@ -260,10 +202,6 @@ extension CollectionQueryable {
             for (key, value) in option.fields {
                 command[key] = value
             }
-        }
-        
-        if let listener = database.server.whenExplaining {
-            listener(try collection.explained.aggregate(pipeline, readConcern: readConcern, collation: collation, options: options))
         }
         
         let newConnection: Connection
@@ -291,7 +229,7 @@ extension CollectionQueryable {
             }
             
             do {
-                return try Cursor(cursorDocument: cursorDoc, collection: self.collection, connection: newConnection, chunkSize: Int32(command["cursor"]["batchSize"]) ?? 100, transform: { $0 })
+                return try Cursor(cursorDocument: cursorDoc, collection: self.name, database: self.database, connection: newConnection, chunkSize: Int32(command["cursor"]["batchSize"]) ?? 100, transform: { $0 })
             } catch {
                 if connection == nil {
                     self.database.server.returnConnection(newConnection)
@@ -303,9 +241,7 @@ extension CollectionQueryable {
     }
     
     func count(filter: Query?, limit: Int?, skip: Int?, readConcern: ReadConcern?, collation: Collation?, connection: Connection?, timeout: DispatchTimeInterval?) throws -> Future<Int> {
-        let timeout: DispatchTimeInterval = timeout ?? .seconds(Int(database.server.defaultTimeout))
-        
-        var command: Document = ["count": self.collectionName]
+        var command: Document = ["count": self.name]
         
         if let filter = filter {
             command["query"] = filter
@@ -322,10 +258,6 @@ extension CollectionQueryable {
         command["readConcern"] = readConcern ?? self.readConcern
         command["collation"] = collation ?? self.collation
         
-        if let listener = database.server.whenExplaining {
-            listener(try collection.explained.count(filter, limiting: limit, skipping: skip, readConcern: readConcern, collation: collation, timeout: timeout))
-        }
-        
         let reply: Future<ServerReply>
         
         if let connection = connection {
@@ -334,7 +266,7 @@ extension CollectionQueryable {
             reply = try self.database.execute(command: command, writing: false)
         }
         
-        return try reply.map { reply in
+        return reply.map { reply in
             guard let n = Int(reply.documents.first?["n"]), Int(reply.documents.first?["ok"]) == 1 else {
                 throw InternalMongoError.incorrectReply(reply: reply)
             }
@@ -349,7 +281,7 @@ extension CollectionQueryable {
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
         if protocolVersion >= 2 {
-            var command: Document = ["update": self.collectionName]
+            var command: Document = ["update": self.name]
             var newUpdates = [Document]()
             
             for u in updates {
@@ -375,10 +307,6 @@ extension CollectionQueryable {
                 reply = try self.database.execute(command: command, writing: false, using: connection)
             } else {
                 reply = try self.database.execute(command: command, writing: false)
-            }
-            
-            if let listener = database.server.whenExplaining {
-                listener(try collection.explained.update(updates: updates, writeConcern: writeConcern, ordered: ordered, timeout: timeout))
             }
             
             return try reply.map { reply in
@@ -433,7 +361,7 @@ extension CollectionQueryable {
                         flags.insert(UpdateFlags.Upsert)
                     }
                     
-                    let message = Message.Update(requestID: self.database.server.nextMessageID(), collection: self.collection, flags: flags, findDocument: update.filter.queryDocument, replaceDocument: update.to)
+                    let message = Message.Update(requestID: self.database.server.nextMessageID(), collection: self.fullName, flags: flags, findDocument: update.filter.queryDocument, replaceDocument: update.to)
                     try self.database.server.send(message: message, overConnection: newConnection)
                     // TODO: Check for errors
                 }
@@ -449,7 +377,7 @@ extension CollectionQueryable {
         let protocolVersion = database.server.serverData?.maxWireVersion ?? 0
         
         if protocolVersion >= 2 {
-            var command: Document = ["delete": self.collectionName]
+            var command: Document = ["delete": self.name]
             var newDeletes = [Document]()
             
             for d in removals {
@@ -473,10 +401,6 @@ extension CollectionQueryable {
                 reply = try self.database.execute(command: command, writing: false, using: connection)
             } else {
                 reply = try self.database.execute(command: command, writing: false)
-            }
-            
-            if let listener = database.server.whenExplaining {
-                listener(try collection.explained.remove(removals: removals, writeConcern: writeConcern, ordered: ordered, timeout: timeout))
             }
             
             return try reply.map { reply in
@@ -529,7 +453,7 @@ extension CollectionQueryable {
                         flags.insert(DeleteFlags.RemoveOne)
                     }
                     
-                    let message = Message.Delete(requestID: self.database.server.nextMessageID(), collection: self.collection, flags: flags, removeDocument: removal.filter.queryDocument)
+                    let message = Message.Delete(requestID: self.database.server.nextMessageID(), collection: self.fullName, flags: flags, removeDocument: removal.filter.queryDocument)
                     
                     try self.database.server.send(message: message, overConnection: newConnection)
                 }
@@ -539,12 +463,12 @@ extension CollectionQueryable {
         }
     }
     
-    func find(filter: Query?, sort: Sort?, projection: Projection?, readConcern: ReadConcern?, collation: Collation?, skip: Int?, limit: Int?, batchSize: Int = 100, timeout: DispatchTimeInterval?, connection: Connection?) throws -> Future<CollectionSlice<Document>> {
-        if self.collection.database.server.buildInfo.version >= Version(3,2,0) {
+    func find(filter: Query?, sort: Sort?, projection: Projection?, readConcern: ReadConcern?, collation: Collation?, skip: Int?, limit: Int?, batchSize: Int = 100, timeout: DispatchTimeInterval?, connection: Connection?) throws -> Future<Cursor<Document>> {
+        if self.database.server.buildInfo.version >= Version(3,2,0) {
             var command: Document = [
-                "find": collection.name,
-                "readConcern": readConcern ?? collection.readConcern,
-                "collation": collation ?? collection.collation,
+                "find": name,
+                "readConcern": readConcern ?? readConcern,
+                "collation": collation ?? collation,
                 "batchSize": Int32(batchSize)
             ]
             
@@ -568,11 +492,7 @@ extension CollectionQueryable {
                 command["limit"] = Int32(limit) as Int32
             }
             
-            if let listener = database.server.whenExplaining {
-                listener(try collection.explained.find(filter, sortedBy: sort, projecting: projection, readConcern: readConcern, collation: collation, skipping: skip, limitedTo: limit, withBatchSize: batchSize))
-            }
-            
-            let cursorConnection = try connection ?? (try self.database.server.reserveConnection(authenticatedFor: self.collection.database))
+            let cursorConnection = try connection ?? (try self.database.server.reserveConnection(authenticatedFor: self.database))
             
             return try self.database.execute(command: command, writing: false, using: cursorConnection).map { reply in
                 guard let responseDoc = reply.documents.first, let cursorDoc = Document(responseDoc["cursor"]) else {
@@ -583,16 +503,14 @@ extension CollectionQueryable {
                     throw MongoError.invalidResponse(documents: reply.documents)
                 }
                 
-                let cursor = try Cursor(cursorDocument: cursorDoc, collection: self.collection, connection: cursorConnection, chunkSize: Int32(batchSize), transform: { doc in
+                return try Cursor(cursorDocument: cursorDoc, collection: self.name, database: self.database, connection: cursorConnection, chunkSize: Int32(batchSize), transform: { doc in
                     return doc
                 })
-                
-                return CollectionSlice(cursor: cursor, filter: filter, sort: sort, projection: projection, skip: skip, limit: limit)
             }
         } else {
-            let queryMsg = Message.Query(requestID: collection.database.server.nextMessageID(), flags: [], collection: collection, numbersToSkip: Int32(skip) ?? 0, numbersToReturn: Int32(batchSize), query: filter?.queryDocument ?? [], returnFields: projection?.document)
+            let queryMsg = Message.Query(requestID: self.database.server.nextMessageID(), flags: [], collection: self.fullName, numbersToSkip: Int32(skip) ?? 0, numbersToReturn: Int32(batchSize), query: filter?.queryDocument ?? [], returnFields: projection?.document)
             
-            let cursorConnection = try connection ?? (try self.database.server.reserveConnection(authenticatedFor: self.collection.database))
+            let cursorConnection = try connection ?? (try self.database.server.reserveConnection(authenticatedFor: self.database))
             
             return try self.database.server.sendAsync(message: queryMsg, overConnection: cursorConnection).map { reply in
                 var reply = reply 
@@ -604,7 +522,7 @@ extension CollectionQueryable {
                 
                 var returned: Int = 0
                 
-                let cursor = Cursor(namespace: self.fullCollectionName, collection: self.collection, connection: cursorConnection, cursorID: reply.cursorID, initialData: reply.documents, chunkSize: Int32(batchSize), transform: { doc in
+                return Cursor(namespace: self.fullName, collection: self.name, database: self.database, connection: cursorConnection, cursorID: reply.cursorID, initialData: reply.documents, chunkSize: Int32(batchSize), transform: { doc in
                     if let limit = limit {
                         guard returned < limit else {
                             return nil
@@ -614,8 +532,6 @@ extension CollectionQueryable {
                     }
                     return doc
                 })
-                
-                return CollectionSlice(cursor: cursor, filter: filter, sort: sort, projection: projection, skip: skip, limit: limit)
             }
         }
     }

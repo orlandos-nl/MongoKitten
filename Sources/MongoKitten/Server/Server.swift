@@ -169,7 +169,6 @@ public final class Server {
             connections.append(connection)
             
             let authDB = self[self.clientSettings.credentials?.database ?? "admin"]
-            let cmd = authDB.cmd!
             var document: Document = [
                 "isMaster": Int32(1)
             ]
@@ -178,7 +177,7 @@ public final class Server {
             
             document.append(self.driverInformation, forKey: "client")
             
-            let commandMessage = Message.Query(requestID: self.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
+            let commandMessage = Message.Query(requestID: self.nextMessageID(), flags: [], collection: "\(authDB.name).$cmd", numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
             let response = try self.sendAsync(message: commandMessage, overConnection: connection).await()
             
             var maxMessageSizeBytes = Int32(response.documents.first?["maxMessageSizeBytes"]) ?? 0
@@ -293,13 +292,12 @@ public final class Server {
                 
                 connections.append(connection)
                 
-                let cmd = authDB.cmd!
                 var document: Document = [
                     "isMaster": Int32(1)
                 ]
                 document.append(self.driverInformation, forKey: "client")
                 
-                let commandMessage = Message.Query(requestID: self.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
+                let commandMessage = Message.Query(requestID: self.nextMessageID(), flags: [], collection: "\(authDB.name).$cmd", numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
                 let response = try self.sendAsync(message: commandMessage, overConnection: connection).await(for: .seconds(Int(defaultTimeout)))
                 
                 isMasterTest: if let doc = response.documents.first {

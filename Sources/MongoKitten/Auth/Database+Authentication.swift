@@ -116,8 +116,7 @@ extension Database {
             throw AuthenticationError.serverSignatureInvalid
         }
         
-        let cmd = self["$cmd"]
-        let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: [
+        let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: "\(self.name).$cmd", numbersToSkip: 0, numbersToReturn: 1, query: [
             "saslContinue": Int32(1),
             "conversationId": conversationId,
             "payload": ""
@@ -175,8 +174,7 @@ extension Database {
         log.debug("Responding to the SASL challenge using payload \"\(payload)\"")
         
         // Send the proof
-        let cmd = self["$cmd"]
-        let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: [
+        let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: "\(self.name).$cmd", numbersToSkip: 0, numbersToReturn: 1, query: [
             "saslContinue": Int32(1),
             "conversationId": conversationId,
             "payload": payload
@@ -204,11 +202,9 @@ extension Database {
         
         let payload = Base64.encode(Data(bytes: Array(authPayload.utf8)))
         
-        let cmd = self["$cmd"]
-        
         log.verbose("Starting SASL authentication for \(details.username) against \(details.database ?? "no database")")
         
-        let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: [
+        let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: "\(self.name).$cmd", numbersToSkip: 0, numbersToReturn: 1, query: [
             "saslStart": Int32(1),
             "mechanism": "SCRAM-SHA-1",
             "payload": payload
@@ -227,10 +223,8 @@ extension Database {
     ///
     /// - throws: When failing authentication, being unable to base64 encode or failing to send/receive messages
     internal func authenticate(mongoCR details: MongoCredentials, usingConnection connection: Connection) throws {
-        let cmd = self["$cmd"]
-        
         // Get the server's nonce
-        let nonceMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: [
+        let nonceMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: "\(self.name).$cmd", numbersToSkip: 0, numbersToReturn: 1, query: [
             "getnonce": Int32(1)
             ], returnFields: nil)
         
@@ -252,7 +246,7 @@ extension Database {
         let digest = Digest.md5(bytes)
         let key = Digest.md5(Bytes("\(nonce)\(details.username)\(digest.toHexString())".utf8)).toHexString()
         
-        let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: [
+        let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: "\(self.name).$cmd", numbersToSkip: 0, numbersToReturn: 1, query: [
             "authenticate": 1,
             "nonce": nonce,
             "user": details.username,
@@ -276,7 +270,7 @@ extension Server {
     internal func authenticateX509(subject: String, usingConnection connection: Connection) throws {
         log.debug("Starting MONGODB-X509 authentication for subject \"\(subject)\"")
         
-        let message = Message.Query(requestID: nextMessageID(), flags: [], collection: self["$external"]["$cmd"], numbersToSkip: 0, numbersToReturn: 1, query: [
+        let message = Message.Query(requestID: nextMessageID(), flags: [], collection: "$external.$cmd", numbersToSkip: 0, numbersToReturn: 1, query: [
             "authenticate": 1,
             "mechanism": "MONGODB-X509",
             "user": subject
