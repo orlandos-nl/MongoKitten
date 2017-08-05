@@ -77,6 +77,8 @@ public class HelperObjectTests: XCTestCase {
             while nextBlock.count > 0 {
                 let consumed = replyPlaceHolder.process(consuming: &nextBlock, withLengthOf: nextBlock.count)
                 
+                XCTAssertLessThanOrEqual(consumed, 205)
+                
                 nextBlock.removeFirst(consumed)
                 
                 if replyPlaceHolder.isComplete {

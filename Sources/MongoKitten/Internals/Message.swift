@@ -77,7 +77,7 @@ enum Message {
         }
         
         // Get the message length
-        let length = Int32(data[0...3])
+        let length = Int32.make(data[0...3])
         
         // Check the message length
         if length != Int32(data.count) {
@@ -85,13 +85,13 @@ enum Message {
         }
         
         /// Get our variables from the message
-        let requestID = Int32(data[4...7])
-        let responseTo = Int32(data[8...11])
+        let requestID = Int32.make(data[4...7])
+        let responseTo = Int32.make(data[8...11])
         
-        let flags = Int32(data[16...19])
-        let cursorID = Int(Int64(data[20...27]))
-        let startingFrom = Int32(data[28...31])
-        let numbersReturned = Int32(data[32...35])
+        let flags = Int32.make(data[16...19])
+        let cursorID = Int(Int64.make(data[20...27]))
+        let startingFrom = Int32.make(data[28...31])
+        let numbersReturned = Int32.make(data[32...35])
         let documents = [Document](bsonBytes: data[36..<data.endIndex]*)
         
         // Return the constructed reply
@@ -250,11 +250,15 @@ struct ServerReplyPlaceholder {
     
     mutating func process(consuming: UnsafeMutablePointer<UInt8>, withLengthOf length: Int) -> Int {
         var advanced = 0
+        var consuming = consuming
+        var length = length
         
         func require(_ n: Int) -> Bool {
             guard unconsumed.count + length >= n else {
-                let data = Array(UnsafeBufferPointer(start: consuming, count: length))
+                advanced = min(n &- unconsumed.count, length)
+                let data = Array(UnsafeBufferPointer(start: consuming, count: advanced))
                 self.unconsumed.append(contentsOf: data)
+                consuming = consuming.advanced(by: advanced)
                 
                 return false
             }
@@ -276,7 +280,7 @@ struct ServerReplyPlaceholder {
                 
                 unconsumed.removeFirst(min(4, unconsumed.count))
                 
-                return Int32.init(data)
+                return Int32.make(data)
             } else {
                 advanced = 4
                 return consuming.withMemoryRebound(to: Int32.self, capacity: 1, { $0.pointee })
@@ -297,7 +301,7 @@ struct ServerReplyPlaceholder {
                 
                 unconsumed.removeFirst(min(8, unconsumed.count))
                 
-                return Int64(data)
+                return Int64.make(data)
             } else {
                 advanced = 8
                 return consuming.withMemoryRebound(to: Int64.self, capacity: 1, { $0.pointee })
@@ -306,7 +310,7 @@ struct ServerReplyPlaceholder {
         
         if totalLength == nil {
             guard let totalLength = makeInt32() else {
-                return length
+                return advanced
             }
             
             self.totalLength = Int(totalLength) as Int
@@ -316,7 +320,7 @@ struct ServerReplyPlaceholder {
         
         if requestId == nil {
             guard let requestId = makeInt32() else {
-                return length
+                return advanced
             }
             
             self.requestId = requestId
@@ -326,7 +330,7 @@ struct ServerReplyPlaceholder {
         
         if responseTo == nil {
             guard let responseTo = makeInt32() else {
-                return length
+                return advanced
             }
             
             self.responseTo = responseTo
@@ -336,7 +340,7 @@ struct ServerReplyPlaceholder {
         
         if opCode == nil {
             guard let opCode = makeInt32() else {
-                return length
+                return advanced
             }
             
             self.opCode = opCode
@@ -346,7 +350,7 @@ struct ServerReplyPlaceholder {
         
         if flags == nil {
             guard let flag = makeInt32() else {
-                return length
+                return advanced
             }
             
             self.flags = ReplyFlags(rawValue: flag)
@@ -356,7 +360,7 @@ struct ServerReplyPlaceholder {
         
         if cursorID == nil {
             guard let cursorID = makeInt64() else {
-                return length
+                return advanced
             }
             
             self.cursorID = Int(cursorID)
@@ -366,7 +370,7 @@ struct ServerReplyPlaceholder {
         
         if startingFrom == nil {
             guard let startingFrom = makeInt32() else {
-                return length
+                return advanced
             }
             
             self.startingFrom = startingFrom
@@ -376,7 +380,7 @@ struct ServerReplyPlaceholder {
         
         if numbersReturned == nil {
             guard let numbersReturned = makeInt32() else {
-                return length
+                return advanced
             }
             
             self.numbersReturned = numbersReturned
@@ -385,7 +389,7 @@ struct ServerReplyPlaceholder {
         }
         
         guard let totalLength = totalLength, let numbersReturned = numbersReturned else {
-            return length
+            return advanced
         }
         
         func checkDocuments() -> (count: Int, half: Int) {
@@ -401,7 +405,7 @@ struct ServerReplyPlaceholder {
                     return (count, documentsData.count - pos)
                 }
                 
-                let length = Int(Int32(documentsData[pos..<pos + 4]))
+                let length = Int(Int32.make(documentsData[pos..<pos + 4]))
                 
                 guard pos + length <= documentsData.count else {
                     return (count, documentsData.count - pos)
@@ -443,7 +447,7 @@ struct ServerReplyPlaceholder {
         if halfComplete > 0 {
             let startOfDocument = documentsData.endIndex.advanced(by: -halfComplete)
             
-            let documentLength = Int(Int32(documentsData[startOfDocument..<startOfDocument.advanced(by: 4)]))
+            let documentLength = Int(Int32.make(documentsData[startOfDocument..<startOfDocument.advanced(by: 4)]))
             let neededLength = documentLength - halfComplete
             
             advanced = min(length, neededLength)
@@ -513,7 +517,7 @@ internal func fromBytes<T, S : Swift.Collection>(_ bytes: S) throws -> T where S
 }
 
 extension Int64 {
-    internal init<S : Swift.Collection>(_ s: S) where S.Iterator.Element == UInt8, S.Index == Int {
+    internal static func make<S : Swift.Collection>(_ s: S) -> Int64 where S.Iterator.Element == UInt8, S.Index == Int {
         var number: Int64 = 0
         number |= s.count > 7 ? Int64(s[s.startIndex.advanced(by: 7)]) << 56 : 0
         number |= s.count > 6 ? Int64(s[s.startIndex.advanced(by: 6)]) << 48 : 0
@@ -524,18 +528,18 @@ extension Int64 {
         number |= s.count > 1 ? Int64(s[s.startIndex.advanced(by: 1)]) << 8 : 0
         number |= s.count > 0 ? Int64(s[s.startIndex.advanced(by: 0)]) << 0 : 0
         
-        self = number
+        return number
     }
 }
 
 extension Int32 {
-    internal init<S : Swift.Collection>(_ s: S) where S.Iterator.Element == UInt8, S.Index == Int {
+    internal static func make<S : Swift.Collection>(_ s: S) -> Int32 where S.Iterator.Element == UInt8, S.Index == Int {
         var val: Int32 = 0
         val |= s.count > 3 ? Int32(s[s.startIndex.advanced(by: 3)]) << 24 : 0
         val |= s.count > 2 ? Int32(s[s.startIndex.advanced(by: 2)]) << 16 : 0
         val |= s.count > 1 ? Int32(s[s.startIndex.advanced(by: 1)]) << 8 : 0
         val |= s.count > 0 ? Int32(s[s.startIndex]) : 0
         
-        self = val
+        return val
     }
 }
