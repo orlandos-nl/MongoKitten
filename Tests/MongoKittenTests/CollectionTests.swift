@@ -58,47 +58,6 @@ public class CollectionTests: XCTestCase {
         try! TestManager.disconnect()
     }
     
-    func testCollectionSlice() throws {
-        for db in TestManager.dbs {
-            var counter = 0
-            
-            let zips = try db["zips"].find(withBatchSize: 300)
-            
-            XCTAssertEqual(try zips.count(), 29353)
-            
-            for _ in zips {
-                counter += 1
-            }
-
-            XCTAssertEqual(counter, 29353)
-        }
-    }
-    
-    func testCursorForEach() throws {
-        for db in TestManager.dbs {
-            var counter = 0
-            
-            let zips = try db["zips"].find()
-            
-            XCTAssertEqual(try zips.count(), 29353)
-            
-            try zips.cursor.forEach { _ in
-                counter += 1
-            }
-            
-            XCTAssertEqual(counter, 29353)
-            
-            counter = 0
-            try zips.reset()
-            
-            try zips.forEach { _ in
-                counter += 1
-            }
-            
-            XCTAssertEqual(counter, 29353)
-        }
-    }
-    
 //    func testEverything() throws {
 //        let everything: [() throws -> Void] = [
 //            testUniqueIndex,
