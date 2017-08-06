@@ -46,6 +46,10 @@ public final class Cursor<T> {
     // documents already received by the server
     fileprivate var data: [T]
     
+    // Cache of `data.count`
+    // Used to prevent a crash when reading from a cursor that's receiving data
+    fileprivate var dataCount: Int
+    
     fileprivate let connection: Connection
     
     fileprivate var position = 0
@@ -84,6 +88,7 @@ public final class Cursor<T> {
         self.data = initialData
         self.chunkSize = chunkSize
         self.transform = transform
+        self.dataCount = initialData.count
     }
     
     /// Transforms the base cursor to a new cursor of a new type
@@ -106,6 +111,7 @@ public final class Cursor<T> {
             }
         }
         self.data = try base.data.flatMap(transform)
+        self.dataCount = base.dataCount
     }
 
     var fetching: Bool = false
@@ -130,8 +136,9 @@ public final class Cursor<T> {
                                 self.data.append(doc)
                             }
                         }
-                        
+            
                         self.cursorID = Int(reply.documents.first?["cursor"]["id"]) ?? -1
+                        self.dataCount = self.data.count
                     }
                 } else {
                     let request = Message.GetMore(requestID: self.database.server.nextMessageID(), namespace: self.namespace, numberToReturn: self.chunkSize, cursor: self.cursorID)
@@ -155,24 +162,23 @@ public final class Cursor<T> {
         
         strategy: switch strategy ?? self.database.server.cursorStrategy {
         case .lazy:
-            if position >= self.data.count && self.cursorID != 0 {
+            if position >= dataCount && self.cursorID != 0 {
                 position = 0
-                self.data = []
-                self.data.reserveCapacity(Int(self.chunkSize))
+                cursorMutationsQueue.sync {
+                    self.data = []
+                }
                 // Get more data!
                 _ = try self.getMore().await()
             }
         case .intelligent(let dataSets):
-            guard self.data.count - position < dataSets * Int(self.chunkSize) else {
+            guard self.dataCount - position < dataSets * Int(self.chunkSize) else {
                 break strategy
             }
-            
-            self.data.reserveCapacity(Int(self.chunkSize) * dataSets)
             
             fallthrough
         case .aggressive:
             if let currentFetch = currentFetch {
-                if position == self.data.count {
+                if position == self.dataCount {
                     guard !currentFetch.isCompleted else {
                         break strategy
                     }
@@ -185,7 +191,7 @@ public final class Cursor<T> {
                 }
                 
                 _ = try currentFetch.await()
-            } else if position == self.data.count && self.cursorID != 0 {
+            } else if position == self.dataCount && self.cursorID != 0 {
                 _ = try self.getMore().await()
             } else if self.cursorID != 0 {
                 self.currentFetch = try self.getMore()
@@ -197,11 +203,12 @@ public final class Cursor<T> {
             
             cursorMutationsQueue.sync {
                 self.data.removeFirst(Int(self.chunkSize))
+                self.dataCount -= Int(self.chunkSize)
             }
         }
         
         return cursorMutationsQueue.sync {
-            if position < self.data.count {
+            if position < self.dataCount {
                 return self.data[position]
             }
             
