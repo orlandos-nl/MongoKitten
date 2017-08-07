@@ -12,7 +12,7 @@
 import Dispatch
 import Foundation
 import BSON
-import CryptoSwift
+import CryptoKitten
 
 /// Authentication extensions
 extension Database {
@@ -165,7 +165,7 @@ extension Database {
         digestBytes.append(contentsOf: "\(details.username):mongo:\(details.password)".utf8)
         
         var passwordBytes = Bytes()
-        passwordBytes.append(contentsOf: Digest.md5(digestBytes).toHexString().utf8)
+        passwordBytes.append(contentsOf: MD5.hash(digestBytes).hexString.utf8)
         
         let result = try previousInformation.scram.process(decodedStringResponse, with: (username: details.username, password: passwordBytes), usingNonce: previousInformation.nonce)
         
@@ -249,8 +249,8 @@ extension Database {
         var bytes = Bytes()
         bytes.append(contentsOf: "\(details.username):mongo:\(details.password)".utf8)
         
-        let digest = Digest.md5(bytes)
-        let key = Digest.md5(Bytes("\(nonce)\(details.username)\(digest.toHexString())".utf8)).toHexString()
+        let digest = MD5.hash(bytes)
+        let key = MD5.hash(Bytes("\(nonce)\(details.username)\(digest.hexString)".utf8)).hexString
         
         let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: cmd, numbersToSkip: 0, numbersToReturn: 1, query: [
             "authenticate": 1,

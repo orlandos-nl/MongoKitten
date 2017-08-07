@@ -10,12 +10,7 @@
 
 import BSON
 import Foundation
-
-#if (os(macOS) || os(iOS)) && !OPENSSL
-    import CryptoSwift
-#else
-    import KittenCTLS
-#endif
+import CryptoKitten
 
 /// A GridFS instance similar to a collection
 ///
@@ -101,18 +96,11 @@ public final class GridFS {
         let id = ObjectId()
         let dataSize = data.count
         
-        #if (os(macOS) || os(iOS)) && !OPENSSL
-            var context = MD5()
-            let lastChunkSize = (data.count % 255_000)
-            let endStart = data.count - lastChunkSize
-            let lastChunk = Array(data[endStart..<data.count])
-            data.removeLast(lastChunkSize)
-        #else
-            var context = MD5_CTX()
-            guard MD5_Init(&context) == 1 else {
-                throw MongoError.couldNotHashFile
-            }
-        #endif
+        let context = MD5()
+        let lastChunkSize = (data.count % 255_000)
+        let endStart = data.count - lastChunkSize
+        var lastChunk = Array(data[endStart..<data.count])
+        data.removeLast(lastChunkSize)
         
         var insertData: Document = [
             "_id": id,
@@ -139,15 +127,9 @@ public final class GridFS {
             while !data.isEmpty {
                 let smallestMax = min(data.count, chunkSize)
                 
-                let chunk = Array(data[0..<smallestMax])
+                var chunk = Array(data[0..<smallestMax])
                 
-                #if (os(macOS) || os(iOS)) && !OPENSSL
-                    _ = try context.update(withBytes: chunk)
-                #else
-                    guard MD5_Update(&context, chunk, chunk.count) == 1 else {
-                        throw MongoError.couldNotHashFile
-                    }
-                #endif
+                context.update(array: &chunk)
                 
                 _ = try chunks.insert(["files_id": id,
                                        "n": n,
@@ -158,21 +140,13 @@ public final class GridFS {
                 data.removeFirst(smallestMax)
             }
             
-            #if (os(macOS) || os(iOS)) && !OPENSSL
-                let digest = try context.update(withBytes: lastChunk, isLast: true)
-                
-                _ = try chunks.insert(["files_id": id,
-                                       "n": n,
-                                       "data": Binary(data: Array(lastChunk), withSubtype: .generic)])
-            #else
-                var digest = Bytes(repeating: 0, count: Int(MD5_DIGEST_LENGTH))
-                
-                guard MD5_Final(&digest, &context) == 1 else {
-                    throw MongoError.couldNotHashFile
-                }
-            #endif
+            context.finalize(array: &lastChunk)
             
-            insertData["md5"] = digest.toHexString()
+            _ = try chunks.insert(["files_id": id,
+                                   "n": n,
+                                   "data": Binary(data: Array(lastChunk), withSubtype: .generic)])
+            
+            insertData["md5"] = context.hash.hexString
             
             _ = try files.insert(insertData)
         } catch {

@@ -16,7 +16,7 @@ var package = Package(
         .Package(url: "https://github.com/OpenKitten/Cheetah.git", majorVersion: 1),
 
         // Authentication
-        .Package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", versions: Version(0, 6, 9) ..< Version(0, 7, 0)),
+        .Package(url: "https://github.com/OpenKitten/CryptoKitten.git", majorVersion: 0, minor: 2),
 
         // Asynchronous behaviour
         .Package(url: "https://github.com/OpenKitten/Schrodinger.git", majorVersion: 1),

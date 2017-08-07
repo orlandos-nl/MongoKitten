@@ -9,7 +9,7 @@
 //
 
 import Foundation
-import CryptoSwift
+import CryptoKitten
 
 /// Authenticates over SCRAM-SHA-1 to authenticate a user with the provided password
 final class SCRAMClient {
@@ -144,27 +144,27 @@ final class SCRAMClient {
             clientKey = cachedLoginData.clientKey
             serverKey = cachedLoginData.serverKey
         } else {
-            saltedPassword = try PKCS5.PBKDF2(password: details.password, salt: salt, iterations: parsedResponse.iterations, variant: .sha1).calculate()
+            saltedPassword = try PBKDF2_HMAC<SHA1>.derive(fromPassword: details.password, saltedWith: salt, iterating: parsedResponse.iterations)
             
             let ck = Bytes("Client Key".utf8)
             let sk = Bytes("Server Key".utf8)
                 
-            clientKey = try HMAC(key: saltedPassword, variant: .sha1).authenticate(ck)
-            serverKey = try HMAC(key: saltedPassword, variant: .sha1).authenticate(sk)
+            clientKey = HMAC<SHA1>.authenticate(ck, withKey: saltedPassword)
+            serverKey = HMAC<SHA1>.authenticate(sk, withKey: saltedPassword)
             
             server.cachedLoginData = (saltedPassword, clientKey, serverKey)
         }
         
-        let storedKey = Digest.sha1(clientKey)
+        let storedKey = SHA1.hash(clientKey)
 
         let authenticationMessage = "n=\(fixUsername(username: details.username)),r=\(nonce),\(challenge),\(noProof)"
 
         var authenticationMessageBytes = Bytes()
         authenticationMessageBytes.append(contentsOf: authenticationMessage.utf8)
         
-        let clientSignature = try HMAC(key: storedKey, variant: .sha1).authenticate(authenticationMessageBytes)
+        let clientSignature = HMAC<SHA1>.authenticate(authenticationMessageBytes, withKey: storedKey)
         let clientProof = xor(clientKey, clientSignature)
-        let serverSignature = try HMAC(key: serverKey, variant: .sha1).authenticate(authenticationMessageBytes)
+        let serverSignature = HMAC<SHA1>.authenticate(authenticationMessageBytes, withKey: serverKey)
         
         let proof = Base64.encode(clientProof)
         
