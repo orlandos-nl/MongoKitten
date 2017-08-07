@@ -16,7 +16,7 @@
 
 @_exported import BSON
 
-import CryptoSwift
+import CryptoKitten
 import Schrodinger
 import Foundation
 import Dispatch

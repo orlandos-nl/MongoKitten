@@ -1,5 +1,5 @@
 import BSON
-import CryptoSwift
+import CryptoKitten
 
 extension Server {
     /// Provides a list of all existing databases along with basic statistics about them
@@ -70,8 +70,8 @@ extension Server {
             command["username"] = user.user
             command["nonce"] = user.nonce
             
-            let passHash = Digest.md5(Bytes("\(user.user):mongo:\(user.password)".utf8)).toHexString()
-            let key = Digest.md5(Bytes("\(user.nonce)\(user.user)\(passHash))".utf8)).toHexString()
+            let passHash = MD5.hash(Bytes("\(user.user):mongo:\(user.password)".utf8)).hexString
+            let key = MD5.hash(Bytes("\(user.nonce)\(user.user)\(passHash))".utf8)).hexString
             command["key"] = key
         }
         

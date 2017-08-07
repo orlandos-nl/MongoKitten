@@ -243,7 +243,7 @@ extension Document {
                 buffer.append(colon)
                 
                 buffer.append(stringQuotationMark)
-                buffer.append(contentsOf: [binary.subtype.rawValue].toHexString().utf8)
+                buffer.append(contentsOf: [binary.subtype.rawValue].hexString.utf8)
                 buffer.append(stringQuotationMark)
                 
                 buffer.append(objectClose)

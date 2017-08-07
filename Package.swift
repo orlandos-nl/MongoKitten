@@ -19,7 +19,7 @@ var package = Package(
         .package(url: "https://github.com/OpenKitten/Cheetah.git", .revision("framework")),
         
         // Authentication
-        .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", .revision("swift4")),
+        .package(url: "https://github.com/OpenKitten/CryptoKitten.git", .revision("framework")),
         
         // Asynchronous behaviour
         .package(url: "https://github.com/OpenKitten/Schrodinger.git", .revision("framework")),
@@ -30,10 +30,10 @@ var package = Package(
             dependencies: ["BSON", "Cheetah"]),
         .target(
             name: "ExtendedJSON",
-            dependencies: ["BSON", "Cheetah", "CryptoSwift"]),
+            dependencies: ["BSON", "Cheetah", "CryptoKitten"]),
         .target(
             name: "MongoKitten",
-            dependencies: ["BSON", "Cheetah", "GeoJSON", "ExtendedJSON", "CryptoSwift", "Schrodinger", "MongoSocket"]),
+            dependencies: ["BSON", "Cheetah", "GeoJSON", "ExtendedJSON", "CryptoKitten", "Schrodinger", "MongoSocket"]),
         .testTarget(
             name: "MongoKittenTests",
             dependencies: ["MongoKitten"]),

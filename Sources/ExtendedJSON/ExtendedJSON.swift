@@ -10,7 +10,7 @@
 @_exported import Cheetah
 import BSON
 import Foundation
-import CryptoSwift
+import CryptoKitten
 
 internal let isoDateFormatter: DateFormatter = {
     let fmt = DateFormatter()
@@ -280,7 +280,7 @@ extension Document {
             case let code as JavascriptCode:
                 return ["$code": code.code, "$scope": code.scope?.makeExtendedJSON(typeSafe: true) ?? NSNull()] as JSONObject
             case let binary as Binary:
-                return ["$binary": binary.data.base64EncodedString(), "$type": [binary.subtype.rawValue].toHexString()] as JSONObject
+                return ["$binary": binary.data.base64EncodedString(), "$type": [binary.subtype.rawValue].hexString] as JSONObject
             case let timestamp as Timestamp:
                 return ["$timestamp": ["t": Int(timestamp.timestamp), "i": Int(timestamp.increment)] as JSONObject] as JSONObject
             case is MinKey:
