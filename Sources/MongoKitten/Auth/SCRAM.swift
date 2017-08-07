@@ -144,7 +144,7 @@ final class SCRAMClient {
             clientKey = cachedLoginData.clientKey
             serverKey = cachedLoginData.serverKey
         } else {
-            saltedPassword = try PBKDF2_HMAC<SHA1>.derive(fromPassword: details.password, saltedWith: salt, iterating: parsedResponse.iterations)
+            saltedPassword = try PBKDF2_HMAC<SHA1>.derive(fromPassword: details.password, saltedWith: salt, iterating: parsedResponse.iterations, derivedKeyLength: SHA1.digestSize)
             
             let ck = Bytes("Client Key".utf8)
             let sk = Bytes("Server Key".utf8)
