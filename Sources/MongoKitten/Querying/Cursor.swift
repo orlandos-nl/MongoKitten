@@ -154,25 +154,24 @@ public final class Cursor<T> {
     fileprivate func nextEntity() throws -> T? {
         defer { position += 1 }
         
+        let dataCount = cursorMutationsQueue.sync { self.dataCount }
+        
         strategy: switch strategy ?? collection.database.server.cursorStrategy {
         case .lazy:
             if position >= dataCount && self.cursorID != 0 {
                 position = 0
-                cursorMutationsQueue.sync {
-                    self.data = []
-                }
                 // Get more data!
                 _ = try self.getMore().await()
             }
         case .intelligent(let dataSets):
-            guard self.dataCount - position < dataSets * Int(self.chunkSize) else {
+            guard dataCount - position < dataSets * Int(self.chunkSize) else {
                 break strategy
             }
             
             fallthrough
         case .aggressive:
             if let currentFetch = currentFetch {
-                if position == self.dataCount {
+                if position == dataCount {
                     guard !currentFetch.isCompleted else {
                         break strategy
                     }
@@ -185,7 +184,7 @@ public final class Cursor<T> {
                 }
                 
                 _ = try currentFetch.await()
-            } else if position == self.dataCount && self.cursorID != 0 {
+            } else if position == dataCount && self.cursorID != 0 {
                 _ = try self.getMore().await()
             } else if self.cursorID != 0 {
                 self.currentFetch = try self.getMore()

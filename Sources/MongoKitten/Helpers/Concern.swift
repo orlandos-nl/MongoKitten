@@ -65,18 +65,18 @@ public struct Collation: ValueConvertible {
     let locale: String
     
     /// Flag that determines whether to include case comparison at strength level 1 (.primary) or 2 (.secondary)
-    let caseLevel: Bool
+    public let caseLevel: Bool
     
     // TODO: let caseFirst: Bool
     
     /// The ICU comparison level: http://userguide.icu-project.org/collation/concepts#TOC-Comparison-Levels
-    let strength: Strength
+    public let strength: Strength?
     
     /// Determines whether to compare numeric strings as numbers or as strings.
-    let numericOrdering: Bool
+    public let numericOrdering: Bool
     
     /// Determines whether collation should consider whitespace and punctuation as base characters for purposes of comparison.
-    let alternate: Alternate
+    public let alternate: Alternate
     
     /// Determines up to which characters are considered ignorable when alternate: "shifted".
     let maxVariable: IgnorableCharacters?
@@ -86,6 +86,17 @@ public struct Collation: ValueConvertible {
     
     /// Determines whether to check if text require normalization and to perform normalization.
     let normalization: Bool
+    
+    public init(locale: String = "simple", strength: Strength? = nil, caseLevel: Bool = false, numericOrdering: Bool = false, alternate: Alternate = .nonIgnorable, backwards: Bool = false, normalization: Bool = false) {
+        self.locale = locale
+        self.strength = strength
+        self.caseLevel = caseLevel
+        self.numericOrdering = numericOrdering
+        self.alternate = alternate
+        self.maxVariable = nil
+        self.backwards = backwards
+        self.normalization = normalization
+    }
     
     /// Converts this Collation to a BSONPrimtive so it can be embedded
     public func makePrimitive() -> BSON.Primitive {
