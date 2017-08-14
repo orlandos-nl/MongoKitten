@@ -42,6 +42,8 @@ public final class Database {
     }
     
     /// Sets or gets the default read concern at the database level
+    ///
+    /// When no read concern is set on the database level (this property is `nil`), the server level read concern is used.
     public var readConcern: ReadConcern? {
         get {
             return self.defaultReadConcern ?? server.readConcern
@@ -57,6 +59,8 @@ public final class Database {
     private var defaultCollation: Collation? = nil
     
     /// Sets or gets the default collation at the database level
+    ///
+    /// When no collation is set on the database level (this property is `nil`), the server level read concern is used.
     public var collation: Collation? {
         get {
             return self.defaultCollation ?? server.collation
@@ -72,7 +76,7 @@ public final class Database {
     private var collections = [String: Weak<Collection>]()
     
     #if Xcode
-    /// XCode quick look debugging
+    /// Xcode quick look debugging
     func debugQuickLookObject() -> AnyObject {
         var userInfo = ""
         
@@ -108,6 +112,9 @@ public final class Database {
     /// Initializes this Database with a connection String.
     ///
     /// Requires a path with a database name
+    ///
+    /// - parameter url: A MongoDB connection string containing a database name, such as `mongodb://localhost/myDatabase`
+    /// - parameter maxConnections: The maximum number of connections to allow to the server
     public init(_ url: String, maxConnectionsPerServer maxConnections: Int = 100) throws {
         let path = url.characters.split(separator: "/", maxSplits: 2, omittingEmptySubsequences: true)
         
@@ -132,8 +139,11 @@ public final class Database {
     
     /// A queue to prevent subscripting from creating multiple instances of the same database
     private static let subscriptQueue = DispatchQueue(label: "org.mongokitten.database.subscriptqueue", qos: DispatchQoS.userInitiated)
-    
-    /// Creates a GridFS collection in this database
+
+    /// Creates a GridFS bucket in this database
+    ///
+    /// - parameter name: The name of the GridFS bucket to create. Defaults to "fs".
+    /// - returns: The newly created GridFS instance
     public func makeGridFS(named name: String = "fs") throws -> GridFS {
         return try GridFS(in: self, named: name)
     }
@@ -166,6 +176,7 @@ public final class Database {
     ///
     /// - parameter command: The command `Document` to execute
     /// - parameter timeout: The timeout in seconds for listening for a response
+    /// - parameter writing: Whether or not this command writes anything - if `false`, a slave connection may be used to execute the command
     ///
     /// - returns: A `Message` containing the response
     @discardableResult
@@ -186,6 +197,7 @@ public final class Database {
     ///
     /// - parameter command: The command `Document` to execute
     /// - parameter timeout: The timeout in seconds for listening for a response
+    /// - parameter writing: Whether or not this command writes anything - if `false`, a slave connection may be used to execute the command
     ///
     /// - returns: A `Message` containing the response
     @discardableResult
