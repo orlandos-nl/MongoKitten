@@ -8,7 +8,16 @@ Please leave a star to show your support for the project.
 
 ![OpenKitten](http://openkitten.org/background-openkitten.svg)
 
-Native MongoDB driver for Swift, written in Swift. This library does not wrap around the mongoc driver.
+MongoKitten is a native, production-ready MongoDB driver written in pure Swift. It is the **fastest MongoDB driver available** on any platform, while providing a **great Swift API** that is a joy to use.
+
+## Core features	
+
+- Production ready
+- No complex setup procedure, just import and go
+- Extremely performant 🚀
+- Pure Swift
+- Great API
+- Fast with support for new MongoDB and Swift features and versions
 
 ## Requirements
 
@@ -34,41 +43,54 @@ Install MongoDB for [Ubuntu](https://docs.mongodb.com/master/tutorial/install-mo
 
 Alternatively; make use of a DAAS (Database-as-a-service) like [Atlas](https://cloud.mongodb.com), [MLab](https://mlab.com), [Bluemix](https://www.ibm.com/cloud-computing/bluemix/mongodb-hosting) or any other of the many services.
 
-## Importing
+## Getting started
 
-Add this to your dependencies:
+Add MongoKitten to your `Package.swift`:
 
 `.Package(url: "https://github.com/OpenKitten/MongoKitten.git", majorVersion: 4)`
 
-And `import MongoKitten` in your project.
+After a `swift package update`, you can now use MongoKitten:
 
-## Building
+```swift
+import MongoKitten
 
-Always compile MongoKitten in **release** mode for production and benchmarks. MongoKitten has proven to be 100-200x faster on release mode compared to debug compilation. And debug compilation is what Xcode and SPM use by default.
+let myDatabase = try MongoKitten.Database("mongodb://localhost/my_database")
+let myCollection = myDatabase["my_collection"]
+
+for document in try myCollection.find("foo" > 42) {
+    // do something with document
+}
+```
+
+For more information on how to use MongoKitten, [visit the documentation](http://mongokitten.openkitten.org/).
+
+## Building for performance
+
+Always compile MongoKitten in **release** mode for production and benchmarks. MongoKitten has proven to be 100-200x faster on release mode compared to debug compilation. Both Xcode and SPM use debug compilation by default.
 
 `swift build -c release`
 
 ## Learn
 
-[Many articles on medium are listed here](https://www.reddit.com/r/swift/comments/65bvre/a_rapidly_growing_list_of_mongokittenswift_guides/) [and here](http://beta.openkitten.org).
+Many articles on medium are listed [here](https://www.reddit.com/r/swift/comments/65bvre/a_rapidly_growing_list_of_mongokittenswift_guides/) and [here](http://beta.openkitten.org).
 
-[We host the MongoKitten documentation including dash docset here](http://mongokitten.openkitten.org/).
+[We host the MongoKitten **documentation** including dash docset here](http://mongokitten.openkitten.org/).
 
 ## Community
 
 [Join our slack here](https://slackpass.io/openkitten) and become a part of the welcoming community.
 
-[Learn more about contributing here.](CONTRIBUTING.md)
+[Learn more about contributing here](CONTRIBUTING.md).
 
 Contributors are always welcome. Questions can be discussed on slack or in github issues. We also take part in the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Support
 
-[We're accepting donations for our project here](https://opencollective.com/mongokitten). We hope to set up a good test environment as well ad many docs, tutorials and examples.
+[We're accepting donations for our project here](https://opencollective.com/mongokitten). We hope to set up a good test environment as well as many docs, tutorials and examples.
 
 ## Performance
 
-MongoKitten's is faster than other drivers. It is, however, not fully tested to MongoDB spec yet.
+MongoKitten is faster than other MongoDB drivers.
 
 Driver | Execution time
 -------|----------------
