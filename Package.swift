@@ -16,10 +16,10 @@ var package = Package(
         .package(url: "https://github.com/OpenKitten/BSON.git", .revision("framework")),
         
         // For ExtendedJSON support
-        .package(url: "https://github.com/OpenKitten/Cheetah.git", .revision("framework")),
+        .package(url: "https://github.com/OpenKitten/Cheetah.git", from: "2.0.0"),
         
         // Authentication
-        .package(url: "https://github.com/OpenKitten/CryptoKitten.git", .revision("framework")),
+        .package(url: "https://github.com/OpenKitten/CryptoKitten.git", from: "0.2.1"),
         
         // Asynchronous behaviour
         .package(url: "https://github.com/OpenKitten/Schrodinger.git", .revision("framework")),
