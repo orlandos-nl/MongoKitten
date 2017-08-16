@@ -64,10 +64,22 @@ public class SetupTests: XCTestCase {
     }
     
     func testFullPerformance() throws {
-        testInsertPerformance()
-        
         for db in TestManager.dbs {
-            try db.server.fsync()
+            for start in 0..<5 {
+                var documents = [Document]()
+                for id in (start * 10_000)..<(start + 1) * 10_000 {
+                    documents.append([
+                        "_id": "\(id)",
+                        "customerId": "128374",
+                        "flightId": "AA231",
+                        "dateOfBooking": Date(),
+                        ])
+                }
+                
+                try db["rfd"].insert(contentsOf: documents)
+            }
+            
+            try db.server.fsync(blocking: true)
             
             db.server.cursorStrategy = .aggressive
             defer { db.server.cursorStrategy = .lazy }
