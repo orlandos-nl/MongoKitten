@@ -138,21 +138,24 @@ class Connection {
         }
         
         var pointer = pointer
-        var consumed = 0
         var length = length
         
-        while consumed < length {
+        while true {
             while pastReplyLeftovers.count > 0 {
-                consumed = nextReply.process(consuming: &pastReplyLeftovers, withLengthOf: pastReplyLeftovers.count)
-                
+                let consumed = nextReply.process(consuming: &pastReplyLeftovers, withLengthOf: pastReplyLeftovers.count)
+
                 pastReplyLeftovers.removeFirst(consumed)
-                
+
                 checkComplete()
             }
-            
-            consumed = nextReply.process(consuming: pointer, withLengthOf: length)
-            
+
+            let consumed = nextReply.process(consuming: pointer, withLengthOf: length)
+
             checkComplete()
+
+            guard consumed < length else {
+                return
+            }
             
             pointer = pointer.advanced(by: consumed)
             length = length - consumed
