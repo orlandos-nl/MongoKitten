@@ -30,6 +30,14 @@ public class AuthenticationTests: XCTestCase {
 
     }
     
+    func testAtlasFailure() {
+        do {
+            _ = try Server("mongodb://user:WRONG_PASSWORD@cluster0-shard-00-00-cgfjh.mongodb.net:27017,cluster0-shard-00-01-cgfjh.mongodb.net:27017,cluster0-shard-00-02-cgfjh.mongodb.net:27017/admin?ssl=true")
+            
+            XCTFail()
+        } catch {}
+    }
+    
     func testAtlas() throws {
         let db = try Database("mongodb://mongokitten:f96R1v80KDQIbtUX@ok0-shard-00-00-xkvc1.mongodb.net:27017,ok0-shard-00-01-xkvc1.mongodb.net:27017,ok0-shard-00-02-xkvc1.mongodb.net:27017/mongokitten-unittest?ssl=true&replicaSet=ok0-shard-0&authSource=admin")
         

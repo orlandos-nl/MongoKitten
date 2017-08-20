@@ -8,7 +8,7 @@
 
 import Dispatch
 import BSON
-import Dispatch
+import Foundation
 
 /// Makes it internally queryable
 protocol CollectionQueryable {
