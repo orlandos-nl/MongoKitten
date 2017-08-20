@@ -147,7 +147,7 @@ public final class Server {
         
         if clientSettings.hosts.count > 1 {
             self.isReplica = true
-            initializeReplica()
+            try initializeReplica()
         } else {
             guard clientSettings.hosts.count == 1 else {
                 log.error("No hosts were provided for connection")
@@ -268,11 +268,11 @@ public final class Server {
     var reinitializeReplica = false
     
     /// Initializes the replica set connection pool
-    func initializeReplica() {
+    func initializeReplica() throws {
         logger.debug("Disconnecting all connections because we're reconnecting")
         _ = try? disconnect()
         
-        self.servers = self.servers.map { host -> MongoHost in
+        self.servers = try self.servers.map { host -> MongoHost in
             var host = host
             host.isPrimary = false
             self.connectionPoolLock.lock()
@@ -321,9 +321,12 @@ public final class Server {
                 
                 connection.writable = host.isPrimary
                 
+                try connection.authenticate(to: self["admin"])
+                
                 host.online = true
             } catch {
                 logger.info("Couldn't open a connection to MongoDB at \(host.hostname):\(host.port)")
+                throw error
                 host.online = false
             }
             
@@ -458,7 +461,7 @@ public final class Server {
                     self.reinitializeReplica = true
                     self.maintainanceLoopCalls.append {
                         self.logger.info("Attempting to reconnect to the replica set.")
-                        self.initializeReplica()
+                        _ = try? self.initializeReplica()
                     }
                 }
             }
@@ -490,13 +493,13 @@ public final class Server {
         matching: if let db = db {
             if !writing {
                 for match in matches {
-                    if !match.writable && match.authenticatedDBs.contains(db.name) {
+                    if !match.writable && match.authenticated {
                         bestMatches.append(match)
                     }
                 }
             } else {
                 bestMatches = matches.filter { connection in
-                    return connection.authenticatedDBs.contains(db.name)
+                    return connection.authenticated
                 }
             }
             // Otherwise, find any viable connection
@@ -541,11 +544,10 @@ public final class Server {
         }
         
         // If the connection isn't already authenticated to this DB
-        if let db = db, !connection.authenticatedDBs.contains(db.name) {
+        if let db = db, !connection.authenticated {
             // Authenticate
             logger.debug("Authenticating the connection to \(db)")
             try connection.authenticate(to: db)
-            connection.authenticatedDBs.append(db.name)
         }
         
         self.connectionPoolLock.lock()
