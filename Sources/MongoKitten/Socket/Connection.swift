@@ -24,6 +24,9 @@ class Connection {
     /// This connection is authenticated against these DBs
     var authenticated = false
     
+    /// If it's currently trying to authenticate, this promise will be there until completion
+    var authenticating: ManualPromise<Void>?
+    
     /// Ran when closing
     var onClose: (()->())
     
@@ -75,6 +78,18 @@ class Connection {
     ///
     /// - throws: Authentication error
     func authenticate(to db: Database) throws {
+        if let authenticating = self.authenticating {
+            return try authenticating.await()
+        }
+        
+        let authenticating = ManualPromise<Void>()
+        self.authenticating = authenticating
+        
+        defer {
+            _ = try? authenticating.complete(())
+            self.authenticating = nil
+        }
+        
         if let details = db.server.clientSettings.credentials {
             let db = db.server[details.database ?? db.name]
             
