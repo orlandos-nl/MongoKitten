@@ -4,3 +4,4 @@
 *.xcodeproj
 /docs
 Package.pins
+Package.resolved
