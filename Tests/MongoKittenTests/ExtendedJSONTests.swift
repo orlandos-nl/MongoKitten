@@ -24,7 +24,7 @@ public class ExtendedJSONTest: XCTestCase {
         "cool64bitNumber": 21312153,
         "code": JavascriptCode(code: "console.log(\"Hello there\");"),
         "codeWithScope": JavascriptCode(code: "console.log(\"Hello there\");", withScope: ["hey": "hello"]),
-        "nothing": Null(),
+        "nothing": NSNull(),
         "data": Binary(data: [34,34,34,34,34], withSubtype: .generic),
         "boolFalse": false,
         "boolTrue": true,

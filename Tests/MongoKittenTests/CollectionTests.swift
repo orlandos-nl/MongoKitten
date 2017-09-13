@@ -421,10 +421,10 @@ public class CollectionTests: XCTestCase {
             
             try harriebob.insert(["unique": true])
             try harriebob.insert(["unique": false])
-            try harriebob.insert(["unique": Null()])
+            try harriebob.insert(["unique": NSNull()])
             XCTAssertThrowsError(try harriebob.insert(["unique": true]))
             XCTAssertThrowsError(try harriebob.insert(["unique": false]))
-            XCTAssertThrowsError(try harriebob.insert(["unique": Null()]))
+            XCTAssertThrowsError(try harriebob.insert(["unique": NSNull()]))
             
             for index in try db["indexTest"].listIndexes() where String(index["name"]) == "henkbob" {
                 continue loop

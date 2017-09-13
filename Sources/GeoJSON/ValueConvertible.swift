@@ -15,9 +15,6 @@ internal protocol ValueConvertible : BSON.Primitive {
 }
 
 extension ValueConvertible {
-    public func convert<DT>(to type: DT.Type) -> DT.SupportedValue? where DT : DataType {
-        return makePrimitive().convert(to: type)
-    }
     
     public var typeIdentifier: Byte {
         return makePrimitive().typeIdentifier
