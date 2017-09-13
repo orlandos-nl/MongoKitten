@@ -179,8 +179,8 @@ extension Document {
                 primitiveValue = object.parseExtendedJSON()
             case let array as JSONArray:
                 primitiveValue = Document(array)
-            case is KittenCore.Null:
-                primitiveValue = Null()
+            case is NSNull:
+                primitiveValue = NSNull()
             default:
                 assertionFailure("Invalid (custom) JSON element provided")
                 continue
