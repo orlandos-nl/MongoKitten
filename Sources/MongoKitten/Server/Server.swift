@@ -319,8 +319,8 @@ public final class Server {
                 host.online = true
             } catch {
                 logger.info("Couldn't open a connection to MongoDB at \(host.hostname):\(host.port)")
-                throw error
                 host.online = false
+                throw error
             }
             
             return host
