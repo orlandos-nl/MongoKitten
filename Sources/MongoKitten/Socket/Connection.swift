@@ -78,16 +78,22 @@ class Connection {
     ///
     /// - throws: Authentication error
     func authenticate(to db: Database) throws {
-        if let authenticating = self.authenticating {
+        if let authenticating = Connection.mutationsQueue.sync(execute: { self.authenticating }) {
             return try authenticating.await()
         }
         
         let authenticating = ManualPromise<Void>()
-        self.authenticating = authenticating
+        
+        Connection.mutationsQueue.sync {
+            self.authenticating = authenticating
+        }
         
         defer {
             _ = try? authenticating.complete(())
-            self.authenticating = nil
+                
+            Connection.mutationsQueue.sync {
+                    self.authenticating = nil
+            }
         }
         
         if let details = db.server.clientSettings.credentials {
