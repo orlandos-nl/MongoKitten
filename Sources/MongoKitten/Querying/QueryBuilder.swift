@@ -381,7 +381,7 @@ public indirect enum AQT {
     /// - `minDistance` : the minimum distance from the `point`, in meters
     ///
     /// - SeeAlso : https://docs.mongodb.com/manual/reference/operator/query/nearSphere/
-    case nearSphere(key: String, point: Point,maxDistance: Double, minDistance: Double)
+    case nearSphere(key: String, point: Point, maxDistance: Double, minDistance: Double)
 }
 
 /// A `Query` that consists of an `AQT` statement

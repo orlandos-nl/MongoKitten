@@ -92,7 +92,7 @@ class Connection {
             _ = try? authenticating.complete(())
                 
             Connection.mutationsQueue.sync {
-                    self.authenticating = nil
+                self.authenticating = nil
             }
         }
         

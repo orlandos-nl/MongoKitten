@@ -106,7 +106,7 @@ public final class Cursor<T> {
             }
         }
         self.data = try base.data.flatMap(transform)
-        self.dataCount = base.dataCount
+        self.dataCount = self.data.count
     }
 
     var fetching: Bool = false
@@ -129,10 +129,9 @@ public final class Cursor<T> {
                         for value in documents {
                             if let doc = try self.transform(Document(value) ?? [:]) {
                                 self.data.append(doc)
+                                self.dataCount += 1
                             }
                         }
-                        
-                        self.dataCount = self.data.count
                     }
                     
                     self.cursorID = Int(reply.documents.first?["cursor"]["id"]) ?? -1
@@ -140,8 +139,10 @@ public final class Cursor<T> {
                     let request = Message.GetMore(requestID: self.collection.database.server.nextMessageID(), namespace: self.namespace, numberToReturn: self.chunkSize, cursor: self.cursorID)
                     
                     let reply = try self.collection.database.server.sendAndAwait(message: request, overConnection: self.connection)
+                    let results = try reply.documents.flatMap(self.transform)
                     
-                    self.data += try reply.documents.flatMap(self.transform)
+                    self.data += results
+                    self.dataCount += results.count
                     self.cursorID = reply.cursorID
                 }
             } catch {
