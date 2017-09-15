@@ -184,15 +184,15 @@ public final class MongoSocket: MongoTCP {
                     throw Error.cannotConnect
                 }
                 
-                if let path = options["CAFile"] as? String, let data = FileManager.default.contents(atPath: path) {
-                    let bytes = [UInt8](data)
-                    
-                    if let certBytes = CFDataCreate(kCFAllocatorDefault, bytes, data.count), let cert = SecCertificateCreateWithData(kCFAllocatorDefault, certBytes) {
-                        guard SSLSetCertificateAuthorities(context, cert, true) == 0 else {
-                            throw Error.cannotConnect
-                        }
-                    }
-                }
+//                if let path = options["CAFile"] as? String, let data = FileManager.default.contents(atPath: path) {
+//                    let bytes = [UInt8](data)
+//                    
+//                    if let certBytes = CFDataCreate(kCFAllocatorDefault, bytes, data.count), let cert = SecCertificateCreateWithData(kCFAllocatorDefault, certBytes) {
+//                        guard SSLSetCertificateAuthorities(context, cert, true) == 0 else {
+//                            throw Error.cannotConnect
+//                        }
+//                    }
+//                }
                 
                 var result: Int32
                 
