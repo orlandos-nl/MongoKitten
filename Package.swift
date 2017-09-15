@@ -13,7 +13,7 @@ var package = Package(
         .Package(url: "https://github.com/OpenKitten/BSON.git", versions: Version(5, 1, 2) ..< Version(6, 0, 0)),
         
         // For ExtendedJSON support
-        .Package(url: "https://github.com/OpenKitten/Cheetah.git", majorVersion: 1),
+        .Package(url: "https://github.com/OpenKitten/Cheetah.git", majorVersion: 2),
 
         // Authentication
         .Package(url: "https://github.com/OpenKitten/CryptoKitten.git", majorVersion: 0, minor: 2),
