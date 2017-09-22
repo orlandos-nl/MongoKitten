@@ -616,10 +616,54 @@ public final class Collection: CollectionQueryable {
         }
     }
     
-    
-//    public func aggregate(_ pipeline: AggregationPipeline, options: AggregationOptions = [:]) throws -> Cursor<Document> {
-//        return try self.aggregate(pipeline, options: options)
-//    }
+    func aggregate(_ pipeline: AggregationPipeline) throws -> Future<Cursor<Document>> {
+        let aggregate = pipeline.makeOperation(for: self)
+        
+        // construct command. we always use cursors in MongoKitten, so that's why the default value for cursorOptions is an empty document.
+        var command: Document = ["aggregate": self.name, "pipeline": pipeline.pipelineDocument, "cursor": CursorOptions()]
+        
+        command["readConcern"] = readConcern ?? self.readConcern
+        command["collation"] = collation ?? self.collation
+        
+        for (key, value) in option.fields {
+            command[key] = value
+        }
+        
+        let newConnection: Connection
+        
+        if let connection = connection {
+            newConnection = connection
+        } else {
+            newConnection = try self.database.server.reserveConnection(writing: true, authenticatedFor: self.database)
+        }
+        
+        defer {
+            if connection == nil {
+                self.database.server.returnConnection(newConnection)
+            }
+        }
+        
+        // execute and construct cursor
+        return try self.database.execute(command: command, using: newConnection).map { reply in
+            guard let cursorDoc = Document(reply.documents.first?["cursor"]) else {
+                if connection == nil {
+                    self.database.server.returnConnection(newConnection)
+                }
+                
+                throw MongoError.invalidResponse(documents: reply.documents)
+            }
+            
+            do {
+                return try Cursor(cursorDocument: cursorDoc, collection: self.name, database: self.database, connection: newConnection, chunkSize: Int32(command["cursor"]["batchSize"]) ?? 100, transform: { $0 })
+            } catch {
+                if connection == nil {
+                    self.database.server.returnConnection(newConnection)
+                }
+                
+                throw error
+            }
+        }
+    }
 }
 
 extension Collection: CustomStringConvertible {

@@ -8,9 +8,9 @@
 // See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of MongoKitten project authors
 //
 
-public protocol Command: Encodable {}
+public protocol _Command: Encodable {}
 
-extension Command {
+extension _Command {
     func execute(on database: Database) throws -> Future<Void> {
         let response = try database.execute(self, expecting: Document.self)
         
@@ -23,7 +23,7 @@ extension Command {
 }
 
 extension Commands {
-    struct Touch: Command {
+    struct Touch: _Command {
         var touch: String
         var data: Bool
         var index: Bool
@@ -35,7 +35,7 @@ extension Commands {
         }
     }
     
-    struct ConvertToCapped: Command {
+    struct ConvertToCapped: _Command {
         var convertTocapped: String
         
         // TODO: Int32?
@@ -47,7 +47,7 @@ extension Commands {
         }
     }
     
-    struct RebuildIndexes: Command {
+    struct RebuildIndexes: _Command {
         var reIndex: String
         
         init(collection: Collection) {
@@ -55,7 +55,7 @@ extension Commands {
         }
     }
     
-    struct Compact: Command {
+    struct Compact: _Command {
         var compact: String
         var force: Bool?
         
@@ -64,7 +64,7 @@ extension Commands {
         }
     }
     
-    struct CloneCollectionAsCapped: Command {
+    struct CloneCollectionAsCapped: _Command {
         var cloneCollectionAsCapped: String
         var toCollection: String
         var size: Int
@@ -87,7 +87,7 @@ import BSON
 import Schrodinger
 
 extension Database {
-    func execute<E: Encodable, D: Decodable>(_ command: E, expecting type: D.Type) throws -> Future<D> {
+    func execute<E: _Command, D: Decodable>(_ command: E, expecting type: D.Type) throws -> Future<D> {
         let command = try BSONEncoder().encode(command)
         
         return try execute(command: command).map { reply in

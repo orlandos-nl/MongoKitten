@@ -181,65 +181,6 @@ extension CollectionQueryable {
         return response
     }
     
-    /// Applies a pipeline over a collection's contentrs
-    ///
-    /// - parameter pipeline: The pipeline to use
-    /// - parameter readConcern: The read concern to use on the server
-    /// - parameter collation: The collation to use for string comparison
-    /// - parameter options: The aggregation options to use
-    /// - parameter connection: The connection to use
-    /// - parameter timeout: The timeout to wait for
-    func aggregate(_ pipeline: AggregationPipeline) throws -> Future<Cursor<Document>> {
-        let aggregate = Commands.Aggregate(collection: self, pipeline: <#T##Document#>, cursor: <#T##CursorOptions#>)
-        
-        let timeout = DispatchTimeInterval.seconds(Int(database.server.defaultTimeout))
-        
-        // construct command. we always use cursors in MongoKitten, so that's why the default value for cursorOptions is an empty document.
-        var command: Document = ["aggregate": self.name, "pipeline": pipeline.pipelineDocument, "cursor": CursorOptions()]
-        
-        command["readConcern"] = readConcern ?? self.readConcern
-        command["collation"] = collation ?? self.collation
-        
-        for (key, value) in option.fields {
-            command[key] = value
-        }
-        
-        let newConnection: Connection
-        
-        if let connection = connection {
-            newConnection = connection
-        } else {
-            newConnection = try self.database.server.reserveConnection(writing: true, authenticatedFor: self.database)
-        }
-        
-        defer {
-            if connection == nil {
-                self.database.server.returnConnection(newConnection)
-            }
-        }
-        
-        // execute and construct cursor
-        return try self.database.execute(command: command, using: newConnection).map { reply in
-            guard let cursorDoc = Document(reply.documents.first?["cursor"]) else {
-                if connection == nil {
-                    self.database.server.returnConnection(newConnection)
-                }
-                
-                throw MongoError.invalidResponse(documents: reply.documents)
-            }
-            
-            do {
-                return try Cursor(cursorDocument: cursorDoc, collection: self.name, database: self.database, connection: newConnection, chunkSize: Int32(command["cursor"]["batchSize"]) ?? 100, transform: { $0 })
-            } catch {
-                if connection == nil {
-                    self.database.server.returnConnection(newConnection)
-                }
-                
-                throw error
-            }
-        }
-    }
-    
     func count(filter: Query?, limit: Int?, skip: Int?, readConcern: ReadConcern?, collation: Collation?, connection: Connection?, timeout: DispatchTimeInterval?) throws -> Future<Int> {
         var command: Document = ["count": self.name]
         

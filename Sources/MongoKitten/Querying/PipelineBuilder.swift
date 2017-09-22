@@ -12,14 +12,17 @@ import Foundation
 import BSON
 
 /// A Pipeline used for aggregation queries
-public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
-    /// The resulting Document that can be modified by the user.
-    public var pipelineDocument: Document = []
-    
-    /// Allows embedding this pipeline inside another Document
-    public func makePrimitive() -> BSON.Primitive {
-        return self.pipelineDocument
+public struct AggregationPipeline: ExpressibleByArrayLiteral, Codable {
+    public func encode(to encoder: Encoder) throws {
+        try document.encode(to: encoder)
     }
+    
+    public init(from decoder: Decoder) throws {
+        self.init(try Document(from: decoder))
+    }
+    
+    /// The resulting Document that can be modified by the user.
+    public var document: Document = []
     
     /// You can easily and naturally create an aggregate by providing a variadic list of stages.
     public init(arrayLiteral elements: Stage...) {
