@@ -11,102 +11,40 @@
 import Schrodinger
 
 extension Collection {
+    @discardableResult
     public func touch(data: Bool, index: Bool) throws -> Future<Void> {
-        let touch = Commands.Touch(touch: self.name, data: data, index: index)
+        let command = Commands.Touch(collection: self, data: data, index: index)
         
-        let response = try database.execute(touch, expecting: Document.self)
-        
-        return response.map { document in
-            guard Int(document["ok"]) == 1 else {
-                throw MongoError.commandFailure(error: document)
-            }
-        }
+        return try command.execute(on: database)
     }
     
-    /// Makes the collection capped, meaning it can only contain `<cap>` amount of Documents
-    ///
-    /// **Warning: Data loss can and probably will occur**
-    ///
-    /// It will only contain the first data inserted until the cap is reached
-    ///
-    /// For more information: https://docs.mongodb.com/manual/reference/command/convertToCapped/#dbcmd.convertToCapped
-    ///
-    /// - parameter cap: The capacity to enforce on this collection
-    ///
-    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
-    public func convertToCapped(cappingAt cap: Int) throws {
-        let command: Document = [
-            "convertToCapped": self.name,
-            "size": Int32(cap) as Int32
-        ]
+    @discardableResult
+    public func convertToCapped(cappingAt cap: Int) throws -> Future<Void> {
+        let command = Commands.ConvertToCapped(collection: self, toCap: cap)
         
-        log.verbose("Converting \(self) to a collection capped to \(cap) bytes")
-        
-        let document = try firstDocument(in: try database.execute(command: command).await())
-        
-        guard Int(document["ok"]) == 1 else {
-            log.error(document)
-            throw MongoError.commandFailure(error: document)
-        }
+        return try command.execute(on: database)
     }
     
-    /// Tells the MongoDB server to re-index this collection
-    ///
-    /// **Warning: Very heavy**
-    ///
-    /// For more information: https://docs.mongodb.com/manual/reference/command/reIndex/#dbcmd.reIndex
-    ///
-    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
-    public func rebuildIndexes() throws {
-        let command: Document = [
-            "reIndex": self.name
-        ]
+    @discardableResult
+    public func rebuildIndexes() throws -> Future<Void> {
+        let command = Commands.RebuildIndexes(collection: self)
         
-        log.verbose("Rebuilding indexes for \(self)")
-        
-        let document = try firstDocument(in: try database.execute(command: command).await())
-        
-        guard Int(document["ok"]) == 1 else {
-            throw MongoError.commandFailure(error: document)
-        }
+        return try command.execute(on: database)
     }
     
-    /// Tells the MongoDB server to make this collection more compact, optimizing disk storage space
-    ///
-    /// **Warning: Very heavy**
-    ///
-    /// For more information: https://docs.mongodb.com/manual/reference/command/compact/#dbcmd.compact
-    ///
-    /// - parameter force: Force the server to do this on a replica set primary
-    ///
-    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
-    public func compact(forced force: Bool? = nil) throws {
-        var command: Document = [
-            "compact": self.name
-        ]
+    @discardableResult
+    public func compact(forced force: Bool? = nil) throws -> Future<Void> {
+        var command = Commands.Compact(collection: self)
         
-        if let force = force {
-            command["force"] = force
-        }
+        command.force = force
         
-        log.verbose("Optimizing disk storage space \(force == true ? "forcefully " : "") for \(self)")
-        
-        let document = try firstDocument(in: try database.execute(command: command).await())
-        
-        guard Int(document["ok"]) == 1 else {
-            throw MongoError.commandFailure(error: document)
-        }
+        return try command.execute(on: database)
     }
     
-    /// Clones this collection to another place and caps it
-    ///
-    /// For additional information: https://docs.mongodb.com/manual/reference/command/cloneCollectionAsCapped/#dbcmd.cloneCollectionAsCapped
-    ///
-    /// - parameter otherCollection: The new collection name
-    /// - parameter capped: The capacity to enforce
-    ///
-    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
-    public func cloneToCappedCollection(named otherCollection: String, capped: Int) throws {
-        try database.clone(collection: self, toCappedCollectionNamed: otherCollection, cappedTo: capped)
+    @discardableResult
+    public func clone(renameTo otherCollection: String, cappingAt cap: Int) throws -> Future<Void> {
+        let command = Commands.CloneCollectionAsCapped(collection: self, newName: otherCollection, cap: cap)
+        
+        return try command.execute(on: database)
     }
 }

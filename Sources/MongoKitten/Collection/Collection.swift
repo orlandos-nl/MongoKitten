@@ -616,59 +616,10 @@ public final class Collection: CollectionQueryable {
         }
     }
     
-    /// Uses the aggregation pipeline to process documents into aggregated results.
-    ///
-    /// Usage:
-    ///
-    /// ```swift
-    /// try collection.aggregate([
-    ///   .match("age" > 21),
-    ///   .project(["username", "age"]),
-    ///   .sort(["age": .descemding])
-    /// ])
-    /// ```
-    ///
-    /// See [the MongoDB docs on the aggregation pipeline](https://docs.mongodb.org/manual/reference/operator/aggregation-pipeline/) for more information.
-    ///
-    /// - parameter pipeline: An array of aggregation pipeline stages that process and transform the document stream as part of the aggregation pipeline
-    /// - parameter readConcern: The `ReadConcern` to apply for this single query. If `nil`, the  default `ReadConcern` for this `Collection` will be used
-    /// - parameter collation: The `Collation` to use for string comparison
-    /// - parameter options: For any additional options, such as the batchSize
-    ///
-    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
-    /// - returns: A `Cursor` pointing to the found `Document`s
-    public func aggregate(_ pipeline: AggregationPipeline, readConcern: ReadConcern? = nil, collation: Collation? = nil, options: AggregationOptions...) throws -> Cursor<Document> {
-        return try self.aggregate(pipeline, readConcern: readConcern, collation: collation, options: options, connection: nil, timeout: nil).await()
-    }
     
-    /// Uses the aggregation pipeline to process documents into aggregated results.
-    ///
-    /// Usage:
-    ///
-    /// ```swift
-    /// let cursor = try collection.aggregate([
-    ///   .match("age" > 21),
-    ///   .project(["username", "age"]),
-    ///   .sort(["age": .descemding])
-    /// ])
-    ///
-    /// for result in cursor {
-    ///   print(result)
-    /// }
-    /// ```
-    ///
-    /// See [the MongoDB docs on the aggregation pipeline](https://docs.mongodb.org/manual/reference/operator/aggregation-pipeline/) for more information.
-    ///
-    /// - parameter pipeline: An array of aggregation pipeline stages that process and transform the document stream as part of the aggregation pipeline
-    /// - parameter readConcern: The `ReadConcern` to apply for this single query. If `nil`, the  default `ReadConcern` for this `Collection` will be used
-    /// - parameter collation: The `Collation` to use for string comparison
-    /// - parameter options: For any additional options, such as the batchSize
-    ///
-    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
-    /// - returns: A `Cursor` pointing to the found `Document`s
-    public func aggregate(_ pipeline: AggregationPipeline, readConcern: ReadConcern? = nil, collation: Collation? = nil, options: [AggregationOptions] = []) throws -> Cursor<Document> {
-        return try self.aggregate(pipeline, readConcern: readConcern, collation: collation, options: options, connection: nil, timeout: nil).await()
-    }
+//    public func aggregate(_ pipeline: AggregationPipeline, options: AggregationOptions = [:]) throws -> Cursor<Document> {
+//        return try self.aggregate(pipeline, options: options)
+//    }
 }
 
 extension Collection: CustomStringConvertible {

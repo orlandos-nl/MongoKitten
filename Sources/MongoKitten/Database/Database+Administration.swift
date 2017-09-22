@@ -237,31 +237,4 @@ extension Database {
             throw MongoError.commandFailure(error: document)
         }
     }
-
-    /// Clones a collection in this database to another name in this database and caps it
-    ///
-    /// For additional information: https://docs.mongodb.com/manual/reference/command/cloneCollectionAsCapped/#dbcmd.cloneCollectionAsCapped
-    ///
-    /// - parameter instance: The collection to clone
-    /// - parameter otherCollection: The new name to clone it to
-    /// - parameter capped: The new capacity to apply
-    ///
-    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
-    public func clone(collection instance: Collection, toCappedCollectionNamed otherCollection: String, cappedTo capped: Int) throws {
-        let command: Document = [
-            "cloneCollectionAsCapped": instance.name,
-            "toCollection": otherCollection,
-            "size": Int32(capped) as Int32
-        ]
-
-        log.verbose("Cloning \(instance) to be named \"\(otherCollection)\" capped to \(capped) bytes")
-        
-        let document = try firstDocument(in: try execute(command: command).await())
-
-        guard Int(document["ok"]) == 1 else {
-            log.error("cloneCollectionAsCapped was not successful because of the following error")
-            log.error(document)
-            throw MongoError.commandFailure(error: document)
-        }
-    }
 }
