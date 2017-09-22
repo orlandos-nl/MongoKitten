@@ -189,19 +189,19 @@ extension CollectionQueryable {
     /// - parameter options: The aggregation options to use
     /// - parameter connection: The connection to use
     /// - parameter timeout: The timeout to wait for
-    func aggregate(_ pipeline: AggregationPipeline, readConcern: ReadConcern?, collation: Collation?, options: [AggregationOptions], connection: Connection?, timeout: DispatchTimeInterval?) throws -> Future<Cursor<Document>> {
-        let timeout: DispatchTimeInterval = timeout ?? .seconds(Int(database.server.defaultTimeout))
+    func aggregate(_ pipeline: AggregationPipeline) throws -> Future<Cursor<Document>> {
+        let aggregate = Commands.Aggregate(collection: self, pipeline: <#T##Document#>, cursor: <#T##CursorOptions#>)
+        
+        let timeout = DispatchTimeInterval.seconds(Int(database.server.defaultTimeout))
         
         // construct command. we always use cursors in MongoKitten, so that's why the default value for cursorOptions is an empty document.
-        var command: Document = ["aggregate": self.name, "pipeline": pipeline.pipelineDocument, "cursor": ["batchSize": 100]]
+        var command: Document = ["aggregate": self.name, "pipeline": pipeline.pipelineDocument, "cursor": CursorOptions()]
         
         command["readConcern"] = readConcern ?? self.readConcern
         command["collation"] = collation ?? self.collation
         
-        for option in options {
-            for (key, value) in option.fields {
-                command[key] = value
-            }
+        for (key, value) in option.fields {
+            command[key] = value
         }
         
         let newConnection: Connection

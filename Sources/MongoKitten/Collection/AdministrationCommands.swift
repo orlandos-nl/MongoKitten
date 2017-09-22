@@ -22,7 +22,7 @@ extension Command {
     }
 }
 
-enum Commands {
+extension Commands {
     struct Touch: Command {
         var touch: String
         var data: Bool

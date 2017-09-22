@@ -10,37 +10,12 @@
 
 import BSON
 
-/// A WriteConcern describes the requested level of acknowledgement for a Write operation such as `delete`, `update` or `insert`.
-public enum WriteConcern: ValueConvertible {
-    /// Best described here: https://docs.mongodb.com/manual/reference/write-concern/
-    ///
-    /// w: When set to `1` it'll request acknowledgement, `0` will request no acknowledgement for the Write operation
-    /// When set to "majority" this will request acknowledgement of the majority of nodes within a cluster or replica set
-    ///
-    /// j: Acknowledgement for the completion of writing this information to the journal
-    ///
-    /// wTimeout: The time in milliseconds that's being waited for the acknowledgement. An error will be thrown otherwise.
-    case custom(w: BSON.Primitive, j: Bool?, wTimeout: Int)
-    
-    /// Converts this WriteConcern to a BSON.Primitive for embedding
-    public func makePrimitive() -> BSON.Primitive {
-        switch self {
-        case .custom(let w, let j, let timeout):
-            return [
-                "w": w,
-                "j": j,
-                "wtimeout": timeout
-                ] as Document
-        }
-    }
-}
-
 /// Used for sharded clusers and replica sets.
 ///
 /// Determines which data to return from a query
 ///
 /// https://docs.mongodb.com/manual/reference/read-concern/#readconcern.
-public enum ReadConcern: String, ValueConvertible {
+public enum ReadConcern: String, Codable {
     /// The query returns the instance’s most recent data. Provides no guarantee that the data has been written to a majority of the replica set members
     case local
     
@@ -59,7 +34,7 @@ public enum ReadConcern: String, ValueConvertible {
 }
 
 /// https://docs.mongodb.com/manual/reference/collation/#collation-document-fields
-public struct Collation: ValueConvertible {
+public struct Collation: Codable {
     /// The ICU locale
     /// "simple" for binary comparison
     let locale: String
@@ -87,50 +62,26 @@ public struct Collation: ValueConvertible {
     /// Determines whether to check if text require normalization and to perform normalization.
     let normalization: Bool
     
-    /// Converts this Collation to a BSONPrimtive so it can be embedded
-    public func makePrimitive() -> BSON.Primitive {
-        return [
-            "locale": locale,
-            "caseLevel": caseLevel,
-            "strength": strength,
-            "numericOrdering": numericOrdering,
-            "alternate": alternate,
-            "normalization": normalization,
-            "backwards": backwards,
-            "maxVariable": maxVariable
-        ] as Document
-    }
-    
     /// Determines up to which characters are considered ignorable when alternate: "shifted".
-    public enum IgnorableCharacters: String, ValueConvertible {
+    public enum IgnorableCharacters: String, Codable {
         /// Both whitespaces and punctuation are “ignorable”, i.e. not considered base characters.
         case punct = "punct"
         
         /// Whitespace are “ignorable”, i.e. not considered base characters.
         case space = "space"
-        
-        /// Converts this object to a BSON.Primitive
-        public func makePrimitive() -> BSON.Primitive {
-            return self.rawValue
-        }
     }
     
     /// Determines whether collation should consider whitespace and punctuation as base characters for purposes of comparison.
-    public enum Alternate: String, ValueConvertible {
+    public enum Alternate: String, Codable {
         /// Whitespace and punctuation are considered base characters.
         case nonIgnorable = "non-ignorable"
         
         /// Whitespace and punctuation are not considered base characters and are only distinguished at strength levels greater than 3.
         case shifted
-        
-        /// Converts this to a BSON.Primitive
-        public func makePrimitive() -> BSON.Primitive {
-            return self.rawValue
-        }
     }
     
     /// The ICU comparison level: http://userguide.icu-project.org/collation/concepts#TOC-Comparison-Levels
-    public enum Strength: Int32, ValueConvertible {
+    public enum Strength: Int32, Codable {
         /// 1: Performs comparisons of the base characters only, ignoring other differences such as diacritics and case
         case primary = 1
         
@@ -145,10 +96,5 @@ public struct Collation: ValueConvertible {
         
         /// 5: Identical texts
         case identical = 5
-        
-        /// Converts this Strength to a BSON.Primitive
-        public func makePrimitive() -> BSON.Primitive {
-            return self.rawValue
-        }
     }
 }

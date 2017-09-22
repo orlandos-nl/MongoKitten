@@ -10,6 +10,8 @@
 
 import Foundation
 
+enum Commands {}
+
 /// Gets all documents from a reply and throws if it's not a reply
 /// - parameter in: The message in which we'll find the documents
 /// - returns: The first found document
