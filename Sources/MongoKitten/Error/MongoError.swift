@@ -12,7 +12,7 @@ import Foundation
 import struct BSON.Document
 
 /// All MongoDB errors
-public enum MongoError : Error {
+internal enum MongoError : Error {
     /// Can't create database with name
     case invalidDatabase(String?)
     

@@ -8,33 +8,18 @@
 // See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of MongoKitten project authors
 //
 
+import Schrodinger
+
 extension Collection {
-    /// The touch command loads data from the data storage layer into memory.
-    ///
-    /// touch can load the data (i.e. documents), indexes or both documents and indexes.
-    ///
-    /// Using touch to control or tweak what a mongod stores in memory may displace other records data in memory and hinder performance. Use with caution in production systems.
-    ///
-    /// For more information: https://docs.mongodb.com/manual/reference/command/touch/#dbcmd.touch
-    ///
-    /// - parameter touchData: When true, tells mongoDB to load all this collection's data (Documents) in memory
-    /// - parameter touchIndexes: When true, tells mongoDB to load all this collection's indexes
-    ///
-    /// - throws: When we can't send the request/receive the response, you don't have sufficient permissions, the storage engine doesn't support `touch` or an error occurred
-    public func touch(data touchData: Bool, index touchIndexes: Bool) throws {
-        let command: Document = [
-            "touch": self.name,
-            "data": touchData,
-            "index": touchIndexes
-        ]
+    public func touch(data: Bool, index: Bool) throws -> Future<Void> {
+        let touch = Commands.Touch(touch: self.name, data: data, index: index)
         
-        log.verbose("Pre-caching \(touchData ? "data" : "")\(touchData && touchIndexes ? "and" : "")\(touchIndexes ? "indexes" : "") on \(self)")
+        let response = try database.execute(touch, expecting: Document.self)
         
-        let document = try firstDocument(in: try database.execute(command: command).await())
-        
-        guard Int(document["ok"]) == 1 else {
-            log.error(document)
-            throw MongoError.commandFailure(error: document)
+        return response.map { document in
+            guard Int(document["ok"]) == 1 else {
+                throw MongoError.commandFailure(error: document)
+            }
         }
     }
     

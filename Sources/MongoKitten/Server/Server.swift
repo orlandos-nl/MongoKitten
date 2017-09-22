@@ -47,10 +47,6 @@ public final class Server {
         }
     }
     
-    public typealias ExplainListener = ((Explaination)->())
-    
-    public var whenExplaining: ExplainListener? = nil
-    
     /// All servers this library is connecting with
     internal var servers: [MongoHost] {
         get {
@@ -698,7 +694,7 @@ extension Server : CustomStringConvertible {
     internal var hostname: String {
         return "mongodb://" + clientSettings.hosts.map { server in
             return "\(server.hostname):\(server.port)"
-            }.joined(separator: ",")
+        }.joined(separator: ",")
     }
 }
 

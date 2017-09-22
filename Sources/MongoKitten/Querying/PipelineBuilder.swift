@@ -264,13 +264,6 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, ValueConvertible {
                 })
             ])
         }
-        
-        /// Runs a geospatial query on the inputted Documents
-        ///
-        /// Outputs all documents that are near the provided location in the options matching the parameters
-        public static func geoNear(options: GeoNearOptions) -> Stage {
-            return Stage(["$geoNear": options])
-        }
     }
 }
 

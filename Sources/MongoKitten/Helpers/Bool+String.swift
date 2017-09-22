@@ -13,13 +13,6 @@ import Foundation
 extension Bool {
     /// Creates a boolean from a String
     init(string value: String) {
-        switch value.lowercased() {
-        case "true":
-            self = true
-        case "false":
-            self = false
-        default:
-            self = false
-        }
+        self = (value.lowercased() == "true")
     }
 }

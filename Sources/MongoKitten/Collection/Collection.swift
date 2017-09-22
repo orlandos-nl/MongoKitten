@@ -23,11 +23,6 @@ public final class Collection: CollectionQueryable {
     
     /// TODO: Fully expose/implement
     var timeout: DispatchTimeInterval?
-    
-    /// Explains this collection
-    public var explained: ExplainedCollection {
-        return ExplainedCollection(in: self)
-    }
 
     /// Internally used for CollectionQueryable
     var collection: Collection {
