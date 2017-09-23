@@ -16,7 +16,6 @@
 
 @_exported import BSON
 
-import CryptoKitten
 import Schrodinger
 import Foundation
 import Dispatch
@@ -58,7 +57,7 @@ public final class Server {
     }
     
     /// Caches the password hash for this server's authentication details
-    internal var cachedLoginData: (password: Bytes, clientKey: Bytes, serverKey: Bytes)? = nil
+    internal var cachedLoginData: (password: Data, clientKey: Data, serverKey: Data)? = nil
     
     /// Handles errors within cursors
     public var cursorErrorHandler: ((Error)->()) = { doc in

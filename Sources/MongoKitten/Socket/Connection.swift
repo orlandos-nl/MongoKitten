@@ -141,11 +141,13 @@ class Connection {
         
         while true {
             while pastReplyLeftovers.count > 0 {
-                let consumed = nextReply.process(consuming: &pastReplyLeftovers, withLengthOf: pastReplyLeftovers.count)
-
-                pastReplyLeftovers.removeFirst(consumed)
-
-                checkComplete()
+                pastReplyLeftovers.withUnsafeMutableBytes { (pointer: UnsafeMutablePointer<UInt8>) in
+                    let consumed = nextReply.process(consuming: pointer, withLengthOf: pastReplyLeftovers.count)
+                    
+                    pastReplyLeftovers.removeFirst(consumed)
+                    
+                    checkComplete()
+                }
             }
 
             let consumed = nextReply.process(consuming: pointer, withLengthOf: length)
@@ -162,6 +164,8 @@ class Connection {
     }
     
     func send(data: Data) throws {
-        try client.send(data: data, withLengthOf: data.count)
+        try data.withUnsafeBytes { (pointer: UnsafePointer<UInt8>) in
+            try client.send(data: pointer, withLengthOf: data.count)
+        }
     }
 }

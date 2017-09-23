@@ -112,7 +112,7 @@ final class PBKDF2_HMAC_SHA1 {
             response.append(contentsOf: ui)
         }
         
-        return Array(response[0..<keySize])
+        return Data(response[0..<keySize])
     }
     
     public static func validate(_ password: Data, saltedWith salt: Data, against: Data, iterating iterations: Int) throws -> Bool {

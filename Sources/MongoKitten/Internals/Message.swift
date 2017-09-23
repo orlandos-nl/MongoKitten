@@ -100,8 +100,9 @@ enum Message {
     
     /// Generates BSON From a Message
     /// - returns: The data from this message
-    func generateData() throws -> Bytes {
-        var body = Bytes()
+    func generateData() throws -> Data {
+        var body = Data()
+        
         var requestID: Int32
         
         // Generate the body
@@ -109,23 +110,26 @@ enum Message {
         case .Reply:
             throw MongoError.internalInconsistency
         case .Update(let requestIdentifier, let collection, let flags, let findDocument, let replaceDocument):
-            body += Int32(0).makeBytes()
-            body += collection.cStringBytes
-            body += flags.rawValue.makeBytes()
-            body += findDocument.bytes
-            body += replaceDocument.bytes
+            body.reserveCapacity(4 + collection.utf8.count + 1 + 4 + findDocument.count + replaceDocument.count + 4)
+            
+            body.append(contentsOf: Int32(0).makeBytes())
+            body.append(contentsOf: collection.cStringBytes)
+            body.append(contentsOf: flags.rawValue.makeBytes())
+            body.append(contentsOf: findDocument.bytes)
+            body.append(contentsOf: replaceDocument.bytes)
             
             requestID = requestIdentifier
         case .Insert(let requestIdentifier, let flags, let collection, let documents):
-            body += flags.rawValue.makeBytes()
-            body += collection.cStringBytes
+            body.reserveCapacity(4 + collection.utf8.count + 1 + 4 + documents.byteCount + 4)
             
-            for document in documents {
-                body += document.bytes
-            }
+            body.append(contentsOf: flags.rawValue.makeBytes())
+            body.append(contentsOf: collection.cStringBytes)
+            body.append(contentsOf: documents.bytes)
             
             requestID = requestIdentifier
         case .Query(let requestIdentifier, let flags, let collection, let numbersToSkip, let numbersToReturn, let query, let returnFields):
+            body.reserveCapacity(4 + collection.utf8.count + 1 + 4 + 4 + 4 + (returnFields?.byteCount ?? 0) + 4)
+            
             body += flags.rawValue.makeBytes()
             body += collection.cStringBytes
             body += numbersToSkip.makeBytes()

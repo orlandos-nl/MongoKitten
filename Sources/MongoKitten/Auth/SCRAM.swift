@@ -9,7 +9,6 @@
 //
 
 import Foundation
-import CryptoKitten
 
 /// Authenticates over SCRAM-SHA-1 to authenticate a user with the provided password
 final class SCRAMClient {
@@ -106,8 +105,8 @@ final class SCRAMClient {
     ///
     /// - returns: A tuple where the proof is to be sent to the server and the signature is to be verified in the server's responses.
     /// - throws: When unable to parse the challenge
-    func process(_ challenge: String, with details: (username: String, password: Bytes), usingNonce nonce: String) throws -> (proof: String, serverSignature: Bytes) {
-        func xor(_ lhs: Bytes, _ rhs: Bytes) -> Data {
+    func process(_ challenge: String, with details: (username: String, password: Data), usingNonce nonce: String) throws -> (proof: String, serverSignature: Data) {
+        func xor(_ lhs: Data, _ rhs: Data) -> Data {
             var result = Data(repeating: 0, count: min(lhs.count, rhs.count))
             
             for i in 0..<result.count {
@@ -132,12 +131,10 @@ final class SCRAMClient {
         
         let noProof = "c=\(encodedHeader),r=\(parsedResponse.nonce)"
         
-        let data = try Base64.decode(parsedResponse.salt)
-        
-        let salt = Array(data)
-        let saltedPassword: Bytes
-        let clientKey: Bytes
-        let serverKey: Bytes
+        let salt = try Base64.decode(parsedResponse.salt)
+        let saltedPassword: Data
+        let clientKey: Data
+        let serverKey: Data
         
         if let cachedLoginData = server.cachedLoginData {
             saltedPassword = cachedLoginData.password
@@ -159,8 +156,7 @@ final class SCRAMClient {
 
         let authenticationMessage = "n=\(fixUsername(username: details.username)),r=\(nonce),\(challenge),\(noProof)"
 
-        var authenticationMessageBytes = Bytes()
-        authenticationMessageBytes.append(contentsOf: authenticationMessage.utf8)
+        let authenticationMessageBytes = Data(authenticationMessage.utf8)
         
         let clientSignature = HMAC_SHA1.authenticate(authenticationMessageBytes, withKey: storedKey)
         let clientProof = xor(clientKey, clientSignature)
