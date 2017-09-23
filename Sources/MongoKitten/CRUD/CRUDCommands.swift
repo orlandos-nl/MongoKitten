@@ -1,25 +1,27 @@
+import Schrodinger
+
 extension Commands {
     
 }
 
-public struct Operation<O: Command>: Encodable, Command {
-    public var operation: O
-    
-    public init(_ operation: O) {
-        self.operation = operation
-    }
-    
-    public func execute(on database: Database) throws -> Future<O.Result> {
-        
-    }
-}
-
-public protocol Command {
+public protocol OperationType {
     associatedtype Result
+    
+    func execute(on database: Database) throws -> Future<Result>
 }
 
-public struct Aggregate<Result: Codable>: Command, _Command {
-    var aggregate: String
+public struct Operation<OT: OperationType> {
+    public let operation: OT
+    public let collection: Collection
+    
+    init(_ operation: OT, for collection: Collection) {
+        self.operation = operation
+        self.collection = collection
+    }
+}
+
+public struct Aggregate: Command, OperationType {
+    let collection: Collection
     public var pipeline: AggregationPipeline
     public var cursor: CursorOptions
     public var maxTimeMS: UInt32
@@ -28,15 +30,31 @@ public struct Aggregate<Result: Codable>: Command, _Command {
     public var collation: Collation?
     
     init(collection: Collection, pipeline: AggregationPipeline) {
-        self.aggregate = collection.name
+        self.collection = collection
         self.pipeline = pipeline
         self.cursor = CursorOptions()
+    }
+    
+    public func execute(on database: Database) throws -> Future<Cursor<Document>> {
+        let connection = try self.database.server.reserveConnection(authenticatedFor: self.collection.database)
+        
+        return try database.execute(self, on: connection) { reply in
+            return Cursor.init(
+                namespace: collection.fullName,
+                collection: collection.name,
+                database: database,
+                connection: connection,
+                reply: reply,
+                chunkSize: cursor.batchSize,
+                transform: { $0 }
+            )
+        }
     }
 }
 
 extension AggregationPipeline {
-    public func makeOperation(for collection: Collection) -> Operation<Aggregate> {
-        return Aggregate(collection: collectoin, pipeline: self)
+    public func makeOperation(for collection: Collection) -> Aggregate {
+        return Aggregate(collection: collection, pipeline: self)
     }
 }
 
