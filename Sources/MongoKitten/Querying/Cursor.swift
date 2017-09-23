@@ -151,7 +151,6 @@ public final class Cursor<T> {
                     }
                 }
             } catch {
-                log.error("Could not fetch extra data from the cursor due to error: \(error)")
                 self.database.server.cursorErrorHandler(error)
             }
         }

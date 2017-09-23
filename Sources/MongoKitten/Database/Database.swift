@@ -170,9 +170,6 @@ public final class Database {
     
     @discardableResult
     internal func execute(command document: Document, writing: Bool = true, using connection: Connection) throws -> Future<ServerReply> {
-        log.debug("Executing the following command:")
-        log.debug(document)
-        
         let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: "\(self.name).$cmd", numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
         return try server.sendAsync(message: commandMessage, overConnection: connection)
     }

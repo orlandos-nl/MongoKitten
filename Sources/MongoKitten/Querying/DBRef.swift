@@ -60,8 +60,6 @@ public struct DBRef: ValueConvertible {
     /// This initializer fails when the Document isn't a valid DBRef Document
     public init?(_ document: Document, inServer server: Server) {
         guard let database = String(document["$db"]), let collection = String(document["$ref"]) else {
-            log.debug("Provided DBRef document is not valid")
-            log.debug(document)
             return nil
         }
         

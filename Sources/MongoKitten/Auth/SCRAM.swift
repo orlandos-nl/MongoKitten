@@ -60,9 +60,6 @@ final class SCRAMClient {
             return (nonce: nonce, salt: salt, iterations: iterations)
         }
         
-        log.error("Server responses with an invalid challegne")
-        log.debug("Invalid challenge \"\(response)\"")
-        
         throw AuthenticationError.challengeParseError(challenge: response)
     }
     
@@ -92,7 +89,6 @@ final class SCRAMClient {
             return signature
         }
         
-        log.error("Invalid server signature")
         throw AuthenticationError.responseParseError(response: response)
     }
     
@@ -124,8 +120,6 @@ final class SCRAMClient {
         let endIndex = remoteNonce.index(remoteNonce.startIndex, offsetBy: 24)
         
         guard remoteNonce.endIndex >= endIndex, String(remoteNonce[remoteNonce.startIndex..<endIndex]) == nonce else {
-            log.error("Invalid nonce recevied")
-            log.debug("Nonce: \(remoteNonce)")
             throw AuthenticationError.invalidNonce(nonce: parsedResponse.nonce)
         }
         
@@ -164,8 +158,6 @@ final class SCRAMClient {
         
         let proof = Base64.encode(clientProof)
         
-        log.debug("Proving authentication using \"\(proof)\"")
-
         return (proof: "\(noProof),p=\(proof)", serverSignature: serverSignature)
     }
     
@@ -177,7 +169,6 @@ final class SCRAMClient {
         let sig = try parse(finalResponse: response)
 
         if sig != signature {
-            log.error("Invalid server signature")
             throw AuthenticationError.serverSignatureInvalid
         }
         

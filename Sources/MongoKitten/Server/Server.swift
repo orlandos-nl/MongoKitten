@@ -29,23 +29,9 @@ import Dispatch
 /// It's internal because ReplyMessages are an internal struct that is used for direct communication with MongoDB only
 internal typealias ResponseHandler = ((Message) -> Void)
 
-internal var log: Logger = NotLogger()
-
 /// A server object is the core of MongoKitten as it's used to communicate to the server.
 /// You can select a `Database` by subscripting an instance of this Server with a `String`.
 public final class Server {
-    /// The logging instance
-    ///
-    /// Do not reply on this. LogKitten is an alpha product and exclusively used by MongoKitten for exposing debugging information
-    public var logger: Logger {
-        get {
-            return log
-        }
-        set {
-            log = newValue
-        }
-    }
-    
     /// All servers this library is connecting with
     internal var servers: [MongoHost] {
         get {
@@ -145,11 +131,8 @@ public final class Server {
             try initializeReplica()
         } else {
             guard clientSettings.hosts.count == 1 else {
-                log.error("No hosts were provided for connection")
                 throw MongoError.noServersAvailable
             }
-            
-            log.info("Connecting to replica set")
             
             self.clientSettings.hosts[0].isPrimary = true
             self.clientSettings.hosts[0].online = true
@@ -167,8 +150,6 @@ public final class Server {
             var document: Document = [
                 "isMaster": Int32(1)
             ]
-            
-            log.debug("Sending `isMaster` to \(authDB)")
             
             document.append(self.driverInformation, forKey: "client")
             
@@ -264,7 +245,6 @@ public final class Server {
     
     /// Initializes the replica set connection pool
     func initializeReplica() throws {
-        logger.debug("Disconnecting all connections because we're reconnecting")
         _ = try? disconnect()
         
         self.servers = try self.servers.map { host -> MongoHost in
@@ -297,10 +277,8 @@ public final class Server {
                 
                 isMasterTest: if let doc = response.documents.first {
                     if Bool(doc["ismaster"]) == true {
-                        logger.debug("Found a master connection at \(host.hostname):\(host.port)")
                         host.isPrimary = true
                         guard let batchSize = Int32(doc["maxWriteBatchSize"]), let minWireVersion = Int32(doc["minWireVersion"]), let maxWireVersion = Int32(doc["maxWireVersion"]) else {
-                            logger.debug("No usable ismaster response found. Assuming defaults.")
                             serverData = (maxWriteBatchSize: 1000, maxWireVersion: 4, minWireVersion: 0, maxMessageSizeBytes: 48000000)
                             break isMasterTest
                         }
@@ -320,7 +298,6 @@ public final class Server {
                 
                 host.online = true
             } catch {
-                logger.info("Couldn't open a connection to MongoDB at \(host.hostname):\(host.port)")
                 throw error
                 host.online = false
             }
@@ -335,13 +312,11 @@ public final class Server {
     ///
     /// - parameter authenticatedFor: The Database that this connection is opened for. Prepares this Connection for authentication to this Database
     private func makeConnection(writing: Bool = true, authenticatedFor: Database?) throws -> Connection {
-        logger.verbose("Attempting to create a new connection")
         return try self.hostPoolQueue.sync {
             // Procedure to find best matching server
             
             // Takes a default server, which is the first primary server that is online
             guard var lowestOpenConnections = clientSettings.hosts.first(where: { $0.isPrimary && $0.online }) else {
-                logger.warning("No primary connection source has been found")
                 throw MongoError.noServersAvailable
             }
             
@@ -359,7 +334,6 @@ public final class Server {
             
             // The connections mustn't be over the maximum specified connection count
             if lowestOpenConnections.openConnections >= maximumConnectionsPerHost {
-                logger.debug("Cannot create a new connection because the limit has been reached")
                 throw MongoError.noServersAvailable
             }
             
@@ -375,7 +349,6 @@ public final class Server {
             
             // Check if the connection is successful
             guard connection.isConnected else {
-                logger.warning("The found connection source is offline")
                 throw MongoError.notConnected
             }
             
@@ -385,13 +358,11 @@ public final class Server {
             for (id, server) in servers.enumerated() where server == lowestOpenConnections {
                 lowestOpenConnections.openConnections += 1
                 servers[id] = lowestOpenConnections
-                logger.debug("Successfully created a new connection to the server at \(server.hostname):\(server.port)")
                 return connection
             }
             
             // If the server couldn't be updated form some weird reason
             currentConnections -= 1
-            logger.fatal("Couldn't update the connection pool's metadata")
             throw MongoError.internalInconsistency
         }
     }
@@ -412,7 +383,6 @@ public final class Server {
         
         // Check if the connection is successful
         guard connection.isConnected else {
-            logger.warning("The found connection source is offline")
             throw MongoError.notConnected
         }
         
@@ -427,12 +397,10 @@ public final class Server {
                 var host = host
                 host.openConnections += 1
                 servers[id] = host
-                logger.debug("Successfully created a new connection to the server at \(server.hostname):\(server.port)")
                 return connection
             }
             
             // If the server couldn't be updated form some weird reason
-            logger.fatal("Couldn't update the connection pool's metadata")
             
             currentConnections -= 1
             throw MongoError.internalInconsistency
@@ -449,13 +417,11 @@ public final class Server {
         // If this is a replica server, set up a reconnect
         if self.isReplica {
             self.maintainanceLoopTasksQueue.sync  {
-                self.logger.error("Disconnected from the replica set. Will attempt to reconnect")
                 
                 // If reinitializing is already happening, don't do it more than once
                 if !self.reinitializeReplica {
                     self.reinitializeReplica = true
                     self.maintainanceLoopCalls.append {
-                        self.logger.info("Attempting to reconnect to the replica set.")
                         _ = try? self.initializeReplica()
                     }
                 }
@@ -469,7 +435,6 @@ public final class Server {
     ///
     /// Takes the most efficient connection and prefers connections that are already authenticated to this database
     internal func reserveConnection(writing: Bool = false, authenticatedFor db: Database?, toHost host: (String, UInt16)? = nil) throws -> Connection {
-        logger.verbose("Connection requested for \(db?.description ?? "any database")")
         
         var bestMatches = [Connection]()
         
@@ -514,7 +479,6 @@ public final class Server {
                 let timeout = DispatchTime(uptimeNanoseconds: DispatchTime.now().uptimeNanoseconds + 10_000_000_000)
                 
                 guard case .success = self.connectionPoolSemaphore.wait(timeout: timeout) else {
-                    log.info("The MongoDB command has timed out because there were no available connections")
                     throw MongoError.timeout
                 }
                 
@@ -541,7 +505,6 @@ public final class Server {
         // If the connection isn't already authenticated to this DB
         if let db = db, !connection.authenticated {
             // Authenticate
-            logger.debug("Authenticating the connection to \(db)")
 //            try connection.authenticate(to: db)
         }
         
