@@ -117,12 +117,12 @@ extension Database {
         expecting type: D.Type,
         handle result: @escaping ((D, Connection) throws -> (T))
     ) throws -> Future<T> {
-        return try execute(command) { reply, _ in
+        return try execute(command) { reply, connection in
             guard let first = reply.documents.first else {
                 throw InternalMongoError.incorrectReply(reply: reply)
             }
             
-            return try BSONDecoder().decode(D.self, from: first)
+            return (try BSONDecoder().decode(D.self, from: first), connection)
         }.map(result)
     }
     
