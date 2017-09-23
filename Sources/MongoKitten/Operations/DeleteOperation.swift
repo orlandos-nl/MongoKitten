@@ -10,6 +10,12 @@ public struct Delete: Command, Operation {
         public init(matching query: Query) {
             self.q = query
         }
+        
+        public func execute(on collection: Collection) throws -> Future<Reply.Update> {
+            let deletes = Delete(self, from: collection)
+            
+            return try deletes.execute(on: collection.database)
+        }
     }
     
     let delete: String
@@ -21,7 +27,7 @@ public struct Delete: Command, Operation {
     static var writing = true
     static var emitsCursor = false
     
-    public init(_ deletes: [Single], into collection: Collection) {
+    public init(_ deletes: [Single], from collection: Collection) {
         self.delete = collection.name
         self.deletes = Array(deletes)
         
@@ -29,7 +35,7 @@ public struct Delete: Command, Operation {
     }
     
     @discardableResult
-    public func execute(on database: Database) throws -> Future<Reply.Insert> {
+    public func execute(on database: Database) throws -> Future<Reply.Delete> {
         return try database.execute(self, expecting: Reply.Delete.self) { reply, _ in
             guard reply.ok == 1 else {
                 throw reply

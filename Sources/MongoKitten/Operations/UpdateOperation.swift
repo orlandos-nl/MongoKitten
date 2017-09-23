@@ -30,18 +30,18 @@ public struct Update: Command, Operation {
     static var writing = true
     static var emitsCursor = false
     
-    public init(matching query: Query, to document: Document, on collection: Collection) {
+    public init(matching query: Query, to document: Document, in collection: Collection) {
         self.init(
             Single(matching: query, to: document),
-            on: collection
+            in: collection
         )
     }
     
-    public init(_ updates: Single..., on collection: Collection) {
-        self.init(updates, on: collection)
+    public init(_ updates: Single..., in collection: Collection) {
+        self.init(updates, in: collection)
     }
     
-    public init<S: Sequence>(_ updates: S, on collection: Collection) where S.Element == Single {
+    public init<S: Sequence>(_ updates: S, in collection: Collection) where S.Element == Single {
         self.update = collection.name
         self.updates = Array(updates)
         
