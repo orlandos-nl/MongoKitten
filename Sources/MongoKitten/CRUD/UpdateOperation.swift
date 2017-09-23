@@ -1,8 +1,8 @@
 import BSON
 import Schrodinger
 
-public struct Updates: Command, Operation {
-    public struct Update: Codable {
+public struct Update: Command, Operation {
+    public struct Single: Codable {
         public var q: Query
         public var u: Document
         public var collation: Collation?
@@ -14,15 +14,15 @@ public struct Updates: Command, Operation {
             self.u = document
         }
         
-        public func execute(on collection: Collection) throws -> Future<Void> {
-            let updates = Updates(on: collection)
+        public func execute(on collection: Collection) throws -> Future<Reply.Update> {
+            let updates = Update(on: collection)
             
-            try updates.execute(on: database)
+            return try updates.execute(on: collection.database)
         }
     }
     
     let update: String
-    public var updates: [Update]
+    public var updates: [Single]
     public var ordered: Bool?
     public var writeConcern: WriteConcern?
     public var bypassDocumentValidation: Bool?
@@ -32,19 +32,20 @@ public struct Updates: Command, Operation {
     
     public init(matching query: Query, to document: Document, on collection: Collection) {
         self.init(
-            Update(matching: query, to: document),
+            Single(matching: query, to: document),
             on: collection
         )
     }
     
-    public init(_ updates: Update..., on collection: Collection) {
-        self.update = collection.name
-        self.updates = updates
+    public init(_ updates: Single..., on collection: Collection) {
+        self.init(updates, on: collection)
     }
     
-    public init<S: Sequence>(_ updates: S, on collection: Collection) where S.Element == Update {
+    public init<S: Sequence>(_ updates: S, on collection: Collection) where S.Element == Single {
         self.update = collection.name
         self.updates = Array(updates)
+        
+        self.writeConcern = collection.default.writeConcern
     }
     
     public func execute(on database: Database) throws -> Future<Reply.Update> {
@@ -53,7 +54,7 @@ public struct Updates: Command, Operation {
                 throw reply
             }
             
-            return reply.n
+            return reply
         }
     }
 }

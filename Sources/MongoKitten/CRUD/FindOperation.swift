@@ -28,7 +28,7 @@ public struct Find: Command, Operation {
             let collection = database[self.find]
             
             return try Cursor.init(
-                namespace: collection.fullName,
+                namespace: collection.namespace,
                 collection: collection.name,
                 database: database,
                 connection: connection,

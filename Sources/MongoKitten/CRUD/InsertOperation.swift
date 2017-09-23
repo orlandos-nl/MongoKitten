@@ -11,9 +11,11 @@ public struct Insert: Command, Operation {
     static var writing = true
     static var emitsCursor = false
     
-    public init(_ inserts: [Document], into collection: Collection) {
-        self.update = collection.name
-        self.updates = Array(updates)
+    public init(_ documents: [Document], into collection: Collection) {
+        self.insert = collection.name
+        self.documents = Array(documents)
+        
+        self.writeConcern = collection.default.writeConcern
     }
     
     @discardableResult

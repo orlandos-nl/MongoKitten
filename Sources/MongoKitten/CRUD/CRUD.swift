@@ -48,7 +48,7 @@ extension CollectionQueryable {
             
             for d in removals {
                 newDeletes.append([
-                    "q": d.filter.queryDocument,
+                    "q": d.filter.document,
                     "limit": d.limit.rawValue
                     ])
             }
