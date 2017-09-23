@@ -108,7 +108,7 @@ class Connection {
         }
     }
     
-    var pastReplyLeftovers = [UInt8]()
+    var pastReplyLeftovers = Data()
     
     private func onRead(at pointer: UnsafeMutablePointer<UInt8>, withLengthOf length: Int) {
         func checkComplete() {
@@ -161,7 +161,7 @@ class Connection {
         }
     }
     
-    func send(data: [UInt8]) throws {
+    func send(data: Data) throws {
         try client.send(data: data, withLengthOf: data.count)
     }
 }

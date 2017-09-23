@@ -15,9 +15,6 @@ var package = Package(
         // For MongoDB Documents
         .package(url: "https://github.com/OpenKitten/BSON.git", .revision("framework")),
         
-        // For ExtendedJSON support
-        .package(url: "https://github.com/OpenKitten/Cheetah.git", from: "2.0.0"),
-        
         // Authentication
         .package(url: "https://github.com/OpenKitten/CryptoKitten.git", from: "0.2.1"),
         

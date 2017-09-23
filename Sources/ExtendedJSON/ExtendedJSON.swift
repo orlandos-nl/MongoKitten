@@ -238,7 +238,7 @@ extension Document {
     /// This initializer will throw if the JSON is incorrect
     ///
     /// This initializer will fail if the JSON isn't an Object or Array
-    public init?(extendedJSON bytes: [UInt8]) throws {
+    public init?(extendedJSON bytes: Data) throws {
         self.init(try JSON.parse(from: bytes))
     }
     

@@ -44,7 +44,7 @@ public final class Cursor<T> {
     fileprivate let chunkSize: Int32
     
     // documents already received by the server
-    fileprivate var data: [T]
+    var data: [T]
     
     // Cache of `data.count`
     // Used to prevent a crash when reading from a cursor that's receiving data
@@ -216,19 +216,11 @@ public final class Cursor<T> {
         }
     }
     
-    /// An efficient and lazy forEach operation specialized for MongoDB.
-    ///
-    /// Designed to throw errors in the case of a cursor failure, unlike normal `for .. in cursor` operations
-    public func forEach(_ body: (T) throws -> Void) throws {
-        while let entity = try nextEntity() {
-            try body(entity)
-        }
-    }
-    
     /// An efficient and lazy asynchronous forEach operation specialized for MongoDB.
     ///
     /// Designed to throw errors in the case of a cursor failure, unlike normal `for .. in cursor` operations
-    public func forEachAsync(_ body: @escaping (T) throws -> Void) throws -> Future<Void> {
+    @discardableResult
+    public func forEach(_ body: @escaping (T) throws -> Void) throws -> Future<Void> {
         return Future<Void> {
             while let entity = try self.nextEntity() {
                 try body(entity)
@@ -257,25 +249,6 @@ public final class Cursor<T> {
         }
         
         self.database.server.returnConnection(connection)
-    }
-}
-
-extension Cursor : Sequence, IteratorProtocol {
-    /// Makes an iterator to loop over the data this cursor points to from (for example) a loop
-    /// - returns: The iterator
-    public func makeIterator() -> Cursor<T> {
-        return self
-    }
-    
-    /// Fetches the next entity in the Cursor
-    public func next() -> T? {
-        do {
-            return try nextEntity()
-        } catch {
-            log.fatal("The cursor broke due to the error: \"\(error)\". The executed operation did not return all results.")
-            assertionFailure()
-            return nil
-        }
     }
 }
 

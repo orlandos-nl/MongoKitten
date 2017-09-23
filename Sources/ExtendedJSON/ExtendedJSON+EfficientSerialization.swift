@@ -20,8 +20,8 @@ fileprivate let comma: UInt8 = 0x2c
 
 extension String {
     /// Serializes a Stirng as escaped JSON String
-    func makeJSONBinary() -> [UInt8] {
-        var buffer = [UInt8]()
+    func makeJSONBinary() -> Data {
+        var buffer = Data()
         
         for char in self.utf8 {
             switch char {
@@ -117,8 +117,8 @@ extension Document {
     ///
     /// - parameters typeSafe: If true integers will be encoded with `{"$numberLong": 123}` for `Int64(123)` and `{"$numberInt": 123}` for `Int32(123)`
     /// - returns: An UTF8 encoded ExtendedJSON `String` from this Document
-    public func makeExtendedJSONData(typeSafe: Bool = false) -> [UInt8] {
-        var buffer = [UInt8]()
+    public func makeExtendedJSONData(typeSafe: Bool = false) -> Data {
+        var buffer = Data()
         buffer.reserveCapacity(self.byteCount)
         
         func objectWithSingle<S: Sequence>(value: S, forKey key: String) where S.Iterator.Element == UInt8 {
@@ -283,7 +283,7 @@ extension Document {
             case is MaxKey:
                 objectWithSingle(value: 1.description.utf8, forKey: "$maxKey")
             default:
-                buffer.append(contentsOf: [UInt8]("null".utf8))
+                buffer.append(contentsOf: Data("null".utf8))
             }
         }
         

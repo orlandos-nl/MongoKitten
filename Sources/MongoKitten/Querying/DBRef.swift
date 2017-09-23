@@ -8,6 +8,7 @@
 // See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of MongoKitten project authors
 //
 
+import Schrodinger
 import BSON
 
 /// DBRef is a structure made to keep references to other MongoDB objects and resolve them easily
@@ -100,7 +101,22 @@ public struct DBRef: ValueConvertible {
     /// Resolves this reference to a Document
     ///
     /// - returns: The Document or `nil` if the reference is invalid or the Document has been removed.
-//    public func resolve() throws -> Document? {
-//        return try collection.findOne("_id" == self.id)
-//    }
+    public func resolve() throws -> Future<Document> {
+        var find = FindOne(for: self.collection)
+        find.filter = "_id" == self.id
+        
+        return try find.execute(on: self.collection.database).map { result in
+            guard let result = result else {
+                throw Errors.InvalidReference(reference: self)
+            }
+            
+            return result
+        }
+    }
+}
+
+extension Errors {
+    public struct InvalidReference: Error {
+        public var reference: DBRef
+    }
 }

@@ -42,7 +42,7 @@ public typealias ErrorCallback = ((Error)->())
 /// A class buffer that stores all received bytes without Copy-on-Write for efficiency
 public class TCPBuffer {
     /// The buffer data
-    public var data: [UInt8] = []
+    public var data = Data()
     
     public init() { }
 }

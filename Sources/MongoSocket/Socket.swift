@@ -184,16 +184,6 @@ public final class MongoSocket: MongoTCP {
                     throw Error.cannotConnect
                 }
                 
-                if let path = options["CAFile"] as? String, let data = FileManager.default.contents(atPath: path) {
-                    let bytes = [UInt8](data)
-                    
-                    if let certBytes = CFDataCreate(kCFAllocatorDefault, bytes, data.count), let cert = SecCertificateCreateWithData(kCFAllocatorDefault, certBytes) {
-                        guard SSLSetCertificateAuthorities(context, cert, true) == 0 else {
-                            throw Error.cannotConnect
-                        }
-                    }
-                }
-                
                 var result: Int32
                 
                 repeat {
@@ -255,7 +245,7 @@ public final class MongoSocket: MongoTCP {
                     throw Error.cannotConnect
                 }
                 
-                var hostname = [UInt8](hostname.utf8)
+                var hostname = Data(hostname.utf8)
                 SSL_ctrl(ssl, SSL_CTRL_SET_TLSEXT_HOSTNAME, Int(TLSEXT_NAMETYPE_host_name), &hostname)
                 
                 guard SSL_connect(ssl) == 1, SSL_do_handshake(ssl) == 1 else {

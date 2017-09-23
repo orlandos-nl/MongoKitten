@@ -231,8 +231,8 @@ struct ServerReplyPlaceholder {
     var cursorID: Int?
     var startingFrom: Int32?
     var numbersReturned: Int32?
-    var documentsData = [UInt8]()
-    var unconsumed = [UInt8]()
+    var documentsData = Data()
+    var unconsumed = Data()
     var documentsComplete = false
     
     var isComplete: Bool {
@@ -272,7 +272,7 @@ struct ServerReplyPlaceholder {
             }
             
             if unconsumed.count > 0 {
-                var data = [UInt8](repeating: 0, count: 4 - unconsumed.count)
+                var data = Data(repeating: 0, count: 4 - unconsumed.count)
                 memcpy(&data, consuming, 4 - unconsumed.count)
                 data = unconsumed + data
                 
@@ -293,7 +293,7 @@ struct ServerReplyPlaceholder {
             }
             
             if unconsumed.count > 0 {
-                var data = [UInt8](repeating: 0, count: 8 - unconsumed.count)
+                var data = Data(repeating: 0, count: 8 - unconsumed.count)
                 memcpy(&data, consuming, 8 - unconsumed.count)
                 data = unconsumed + data
                 

@@ -144,13 +144,13 @@ final class SCRAMClient {
             clientKey = cachedLoginData.clientKey
             serverKey = cachedLoginData.serverKey
         } else {
-            saltedPassword = try PBKDF2_HMAC<SHA1>.derive(fromPassword: details.password, saltedWith: salt, iterating: parsedResponse.iterations, derivedKeyLength: SHA1.digestSize)
+            saltedPassword = try PBKDF2_HMAC_SHA1.derive(fromPassword: details.password, saltedWith: salt, iterating: parsedResponse.iterations, derivedKeyLength: SHA1.digestSize)
             
-            let ck = Bytes("Client Key".utf8)
-            let sk = Bytes("Server Key".utf8)
+            let ck = Data("Client Key".utf8)
+            let sk = Data("Server Key".utf8)
                 
-            clientKey = HMAC<SHA1>.authenticate(ck, withKey: saltedPassword)
-            serverKey = HMAC<SHA1>.authenticate(sk, withKey: saltedPassword)
+            clientKey = HMAC_SHA1.authenticate(ck, withKey: saltedPassword)
+            serverKey = HMAC_SHA1.authenticate(sk, withKey: saltedPassword)
             
             server.cachedLoginData = (saltedPassword, clientKey, serverKey)
         }
@@ -162,9 +162,9 @@ final class SCRAMClient {
         var authenticationMessageBytes = Bytes()
         authenticationMessageBytes.append(contentsOf: authenticationMessage.utf8)
         
-        let clientSignature = HMAC<SHA1>.authenticate(authenticationMessageBytes, withKey: storedKey)
+        let clientSignature = HMAC_SHA1.authenticate(authenticationMessageBytes, withKey: storedKey)
         let clientProof = xor(clientKey, clientSignature)
-        let serverSignature = HMAC<SHA1>.authenticate(authenticationMessageBytes, withKey: serverKey)
+        let serverSignature = HMAC_SHA1.authenticate(authenticationMessageBytes, withKey: serverKey)
         
         let proof = Base64.encode(clientProof)
         

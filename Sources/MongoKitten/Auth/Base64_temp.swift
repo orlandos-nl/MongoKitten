@@ -6,7 +6,7 @@ struct Base64 {
     ///
     /// - throws: If the string isn't base64 encoded
     static func decode(_ string: String) throws -> Data {
-        let lookupTable: [UInt8] = [
+        let lookupTable: Data = [
             64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
             64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
             64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 62, 64, 62, 64, 63,

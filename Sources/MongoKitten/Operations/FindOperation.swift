@@ -39,3 +39,37 @@ public struct Find: Command, Operation {
         }
     }
 }
+
+public struct FindOne {
+    let collection: Collection
+    public var readConcern: ReadConcern?
+    public var collation: Collation?
+    public var filter: Query?
+    public var sort: Sort?
+    public var skip: Int?
+    public var projection: Projection?
+    
+    public init(for collection: Collection) {
+        self.collection = collection
+        
+        self.readConcern = collection.default.readConcern
+        self.collation = collection.default.collation
+    }
+    
+    public func execute(on database: Database) throws -> Future<Document?> {
+        var find = Find(on: collection)
+        find.batchSize = 1
+        find.limit = 1
+        
+        find.readConcern = readConcern
+        find.collation = collation
+        find.filter = filter
+        find.sort = sort
+        find.skip = skip
+        find.projection = projection
+        
+        return try find.execute(on: database).map { cursor in
+            return cursor.data.first
+        }
+    }
+}

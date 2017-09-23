@@ -161,24 +161,7 @@ public final class Collection {
 //    ///
 //    /// Can be used to execute DBCommands in MongoDB 2.6 and below
 //    ///
-//    /// TODO: Better docs
-//    ///
-//    /// For more information: https://docs.mongodb.com/manual/reference/command/find/#dbcmd.find
-//    ///
-//    /// - parameter filter: The QueryBuilder filter we're using to match Documents in this collection against
-//    /// - parameter sort: The Sort Specification used to sort the found Documents
-//    /// - parameter projection: The Projection Specification used to filter which fields to return
-//    /// - parameter skip: The amount of Documents to skip before returning the matching Documents
-//    /// - parameter readConcern: The read concern to apply to this find operation
-//    /// - parameter collation: The collation to use when comparing strings
-//    ///
-//    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
-//    ///
-//    /// - returns: The found Document
-//    public func findOne(_ filter: Query? = nil, sortedBy sort: Sort? = nil, projecting projection: Projection? = nil, skipping skip: Int? = nil, readConcern: ReadConcern? = nil, collation: Collation? = nil) throws -> Document? {
-//        return try self.find(filter, sortedBy: sort, projecting: projection, readConcern: readConcern, collation: collation, skipping: skip, limitedTo:
-//            1).next()
-//    }
+
 //
 //    // MARK - Update
 //
