@@ -47,19 +47,24 @@ public struct Updates: Command, Operation {
         self.updates = Array(updates)
     }
     
-    public func execute(on database: Database) throws -> Future<Cursor<Document>> {
-        return try database.execute(self) { reply, connection in
-            let collection = database[self.find]
+    public func execute(on database: Database) throws -> Future<Reply.Update> {
+        return try database.execute(self, expecting: Reply.Update.self) { reply, _ in
+            guard reply.ok == 1 else {
+                throw reply
+            }
             
-            return try Cursor.init(
-                namespace: collection.fullName,
-                collection: collection.name,
-                database: database,
-                connection: connection,
-                reply: reply,
-                chunkSize: self.batchSize,
-                transform: { $0 }
-            )
+            return reply.n
         }
+    }
+}
+
+extension Reply {
+    public struct Update: Codable, Error {
+        public var n: Int
+        public var ok: Int
+        public var nModified: Int
+        public var upserted: [Document]? // TODO: type-safe? We cannot (easily) decode the _id
+        public var writeErrors: [Errors.Write]?
+        public var writeConcernError: [Errors.WriteConcern]
     }
 }

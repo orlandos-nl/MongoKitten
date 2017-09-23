@@ -72,11 +72,6 @@ public final class Database {
     /// Mainly used for keeping track of event listeners
     private var collections = [String: Weak<Collection>]()
     
-    /// A cache of all async collections in this Database.
-    ///
-    /// Mainly used for keeping track of event listeners
-    private var asyncCollections = [String: Weak<AsyncCollection>]()
-    
     #if Xcode
     /// XCode quick look debugging
     func debugQuickLookObject() -> AnyObject {
@@ -156,25 +151,6 @@ public final class Database {
             
             let newC = Collection(named: collection, in: self)
             collections[collection] = Weak(newC)
-            return newC
-        }
-    }
-    
-    /// Get an `AsyncCollection` by providing a collection name as a `String`
-    ///
-    /// - parameter collection: The collection/bucket to return
-    ///
-    /// - returns: The requested collection in this database
-    public subscript(async collection: String) -> AsyncCollection {
-        return Database.subscriptQueue.sync {
-            collections.clean()
-            
-            if let col = asyncCollections[collection]?.value {
-                return col
-            }
-            
-            let newC = AsyncCollection(named: collection, in: self)
-            asyncCollections[collection] = Weak(newC)
             return newC
         }
     }

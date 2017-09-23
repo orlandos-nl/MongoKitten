@@ -122,7 +122,7 @@ extension Database {
             "payload": ""
             ], returnFields: nil)
         
-        let response = try server.sendAsync(message: commandMessage, overConnection: connection).await()
+        let response = try server.sendAsync(message: commandMessage, overConnection: connection).await(until: .distantFuture)
         
         try self.complete(SASL: payload, using: response.documents.first ?? [:], verifying: signature, usingConnection: connection)
     }

@@ -11,9 +11,23 @@
 import Foundation
 
 enum Commands {}
-enum Reply {}
+public enum Reply {}
 
 public enum Errors {}
+
+extension Errors {
+    public struct Write: Codable, Error {
+        public var index: Int
+        public var code: Int
+        public var errmsg: String // TODO: errorMessage?
+    }
+    
+    public struct WriteConcern: Codable, Error {
+        public var code: Int
+        public var errmsg: String // TODO: errorMessage?
+    }
+}
+
 
 public protocol DocumentCodable: Codable {
     init(from document: Document)

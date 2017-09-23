@@ -16,7 +16,7 @@ public struct Find: Command, Operation {
     static var emitsCursor = true
     
     public init(on collection: Collection) {
-        self.aggregate = collection.name
+        self.find = collection.name
         
         // Collection defaults
         self.readConcern = collection.default.readConcern
