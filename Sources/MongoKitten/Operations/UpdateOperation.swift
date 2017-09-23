@@ -15,7 +15,7 @@ public struct Update: Command, Operation {
         }
         
         public func execute(on collection: Collection) throws -> Future<Reply.Update> {
-            let updates = Update(on: collection)
+            let updates = Update(in: collection)
             
             return try updates.execute(on: collection.database)
         }

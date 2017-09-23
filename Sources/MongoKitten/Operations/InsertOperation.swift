@@ -25,7 +25,7 @@ public struct Insert: Command, Operation {
                 throw reply
             }
             
-            return reply.n
+            return reply
         }
     }
 }

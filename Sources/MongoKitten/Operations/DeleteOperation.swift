@@ -11,8 +11,8 @@ public struct Delete: Command, Operation {
             self.q = query
         }
         
-        public func execute(on collection: Collection) throws -> Future<Reply.Update> {
-            let deletes = Delete(self, from: collection)
+        public func execute(on collection: Collection) throws -> Future<Reply.Delete> {
+            let deletes = Delete([self], from: collection)
             
             return try deletes.execute(on: collection.database)
         }

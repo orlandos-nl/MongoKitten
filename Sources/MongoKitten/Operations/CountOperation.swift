@@ -12,6 +12,8 @@ public struct Count: Command, Operation {
     static var emitsCursor = false
     
     public init(on collection: Collection) {
+        self.count = collection.name
+        
         // Collection defaults
         self.readConcern = collection.default.readConcern
         self.collation = collection.default.collation

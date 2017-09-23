@@ -184,7 +184,7 @@ public final class Server {
             self.serverData = (maxWriteBatchSize: Int32(response.documents.first?["maxWriteBatchSize"]) ?? 1000, maxWireVersion: Int32(response.documents.first?["maxWireVersion"]) ?? 4, minWireVersion: Int32(response.documents.first?["minWireVersion"]) ?? 0, maxMessageSizeBytes: maxMessageSizeBytes)
         }
         
-        self.buildInfo = try getBuildInfo()
+//        self.buildInfo = try getBuildInfo()
         self.connectionPoolMaintainanceQueue.async(execute: backgroundLoop)
     }
     
@@ -317,7 +317,7 @@ public final class Server {
                 
                 connection.writable = host.isPrimary
                 
-                try connection.authenticate(to: self["admin"])
+//                try connection.authenticate(to: self["admin"])
                 
                 host.online = true
             } catch {
@@ -530,7 +530,7 @@ public final class Server {
             
             if let db = db {
                 // On connection
-                try connection.authenticate(to: db)
+//                try connection.authenticate(to: db)
             }
             
             connections.append(connection)
@@ -543,7 +543,7 @@ public final class Server {
         if let db = db, !connection.authenticated {
             // Authenticate
             logger.debug("Authenticating the connection to \(db)")
-            try connection.authenticate(to: db)
+//            try connection.authenticate(to: db)
         }
         
         self.connectionPoolLock.lock()
@@ -695,19 +695,5 @@ extension Server : CustomStringConvertible {
         return "mongodb://" + clientSettings.hosts.map { server in
             return "\(server.hostname):\(server.port)"
         }.joined(separator: ",")
-    }
-}
-
-/// Iterates over all databases
-extension Server: Sequence {
-    /// Iterates over all databases
-    public func makeIterator() -> AnyIterator<Database> {
-        guard var databases = try? self.getDatabases() else {
-            return AnyIterator { nil }
-        }
-        
-        return AnyIterator {
-            return databases.count > 0 ? databases.removeFirst() : nil
-        }
     }
 }

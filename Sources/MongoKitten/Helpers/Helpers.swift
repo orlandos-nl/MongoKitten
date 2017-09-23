@@ -28,7 +28,6 @@ extension Errors {
     }
 }
 
-
 public protocol DocumentCodable: Codable {
     init(from document: Document)
     
@@ -46,6 +45,15 @@ extension DocumentCodable {
 
     public init(from decoder: Decoder) throws {
         self.init(from: try Document(from: decoder))
+    }
+}
+
+
+import Schrodinger
+
+extension Future {
+    public func await() throws -> T {
+        return try self.await(until: .distantFuture)
     }
 }
 

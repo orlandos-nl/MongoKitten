@@ -21,7 +21,7 @@ public struct WriteConcern: Encodable {
     
     public init(w: Acknowledgement, j: Bool, wtimeout: Int = 0) {
         self.w = w
-        self.j = js
+        self.j = j
         self.wtimeout = wtimeout
     }
 }

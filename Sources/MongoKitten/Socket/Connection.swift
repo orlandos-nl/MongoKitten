@@ -73,25 +73,25 @@ class Connection {
     /// - parameter db: The database to authenticate to
     ///
     /// - throws: Authentication error
-    func authenticate(to db: Database) throws {
-        if let details = db.server.clientSettings.credentials {
-            let db = db.server[details.database ?? db.name]
-            
-            switch details.authenticationMechanism {
-            case .SCRAM_SHA_1:
-                try db.authenticate(SASL: details, usingConnection: self)
-            case .MONGODB_CR:
-                try db.authenticate(mongoCR: details, usingConnection: self)
-            case .MONGODB_X509:
-                try db.server.authenticateX509(subject: details.username, usingConnection: self)
-            default:
-                throw MongoError.unsupportedFeature("authentication Method \"\(details.authenticationMechanism.rawValue)\"")
-            }
-            
-            self.authenticated = true
-        }
-    }
-    
+//    func authenticate(to db: Database) throws {
+//        if let details = db.server.clientSettings.credentials {
+//            let db = db.server[details.database ?? db.name]
+//            
+//            switch details.authenticationMechanism {
+//            case .SCRAM_SHA_1:
+//                try db.authenticate(SASL: details, usingConnection: self)
+//            case .MONGODB_CR:
+//                try db.authenticate(mongoCR: details, usingConnection: self)
+//            case .MONGODB_X509:
+//                try db.server.authenticateX509(subject: details.username, usingConnection: self)
+//            default:
+//                throw MongoError.unsupportedFeature("authentication Method \"\(details.authenticationMechanism.rawValue)\"")
+//            }
+//            
+//            self.authenticated = true
+//        }
+//    }
+//    
     /// Closes this connection
     func close() {
         _ = try? client.close()

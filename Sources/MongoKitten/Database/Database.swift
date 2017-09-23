@@ -72,30 +72,6 @@ public final class Database {
     /// Mainly used for keeping track of event listeners
     private var collections = [String: Weak<Collection>]()
     
-    #if Xcode
-    /// XCode quick look debugging
-    func debugQuickLookObject() -> AnyObject {
-        var userInfo = ""
-        
-        if let username = server.clientSettings.credentials?.username {
-            userInfo = "\(username):*********@"
-        }
-        
-        var databaseData = ""
-        
-        if let collections = try? Array(self.listCollections()) {
-            databaseData = "Collection count: \(collections.count)\n"
-            for collection in collections {
-                databaseData.append("- \(collection.name)\n")
-            }
-        } else {
-            databaseData = "Unable to fetch database data"
-        }
-        
-        return NSString(string: "mongodb://\(userInfo)\(server.hostname)/\(self.name)\n\n\(databaseData)")
-    }
-    #endif
-    
     /// Initialise this database object
     ///
     /// - parameter database: The database to use
@@ -125,16 +101,16 @@ public final class Database {
             server.returnConnection(connection)
         }
         
-        try connection.authenticate(to: self)
+//        try connection.authenticate(to: self)
     }
     
     /// A queue to prevent subscripting from creating multiple instances of the same database
     private static let subscriptQueue = DispatchQueue(label: "org.mongokitten.database.subscriptqueue", qos: DispatchQoS.userInitiated)
     
     /// Creates a GridFS collection in this database
-    public func makeGridFS(named name: String = "fs") throws -> GridFS {
-        return try GridFS(in: self, named: name)
-    }
+//    public func makeGridFS(named name: String = "fs") throws -> GridFS {
+//        return try GridFS(in: self, named: name)
+//    }
     
     /// Get a `Collection` by providing a collection name as a `String`
     ///
@@ -206,16 +182,5 @@ extension Database: CustomStringConvertible {
     /// A debugging string
     public var description: String {
         return "MongoKitten.Database<\(server.hostname)/\(self.name)>"
-    }
-}
-
-extension Database : Sequence {
-    /// Iterates over all collections in this database
-    public func makeIterator() -> AnyIterator<Collection> {
-        let collections = try? self.listCollections().makeIterator()
-        
-        return AnyIterator {
-            return collections?.next()
-        }
     }
 }

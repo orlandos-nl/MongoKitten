@@ -449,6 +449,6 @@ public struct Query: ExpressibleByDictionaryLiteral, DocumentCodable, Expressibl
             textSearch["$language"] = language
         }
         
-        return Query(textSearch)
+        return Query(from: textSearch)
     }
 }

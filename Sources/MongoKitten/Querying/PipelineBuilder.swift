@@ -26,21 +26,21 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, Codable {
     
     /// You can easily and naturally create an aggregate by providing a variadic list of stages.
     public init(arrayLiteral elements: Stage...) {
-        self.pipelineDocument = Document(array: elements.map {
+        self.document = Document(array: elements.map {
             $0.makeDocument()
         })
     }
     
     /// You can easily and naturally create an aggregate by providing an array of stages.
     public init(arrayLiteral elements: [Stage]) {
-        self.pipelineDocument = Document(array: elements.map {
+        self.document = Document(array: elements.map {
             $0.makeDocument()
         })
     }
     
     /// Appends a stage to this pipeline
     public mutating func append(_ stage: Stage) {
-        self.pipelineDocument.append(stage)
+        self.document.append(stage)
     }
     
     /// Creates an empty pipeline
@@ -48,7 +48,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, Codable {
     
     /// Create a pipeline from a Document
     public init(_ document: Document) {
-        self.pipelineDocument = document
+        self.document = document
     }
     
     /// A Pipeline stage. Pipelines pass their data of the collection through every stage. The last stage defines the output.
@@ -78,21 +78,14 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, Codable {
         /// A projection stage passes only the projected fields to the next stage.
         public static func project(_ projection: Projection) -> Stage {
             return Stage([
-                "$project": projection
+                "$project": projection.document
                 ])
         }
         
         /// A match stage only passed the documents that match the query to the next stage
         public static func match(_ query: Query) -> Stage {
             return Stage([
-                "$match": query
-                ])
-        }
-        
-        /// A match stage only passed the documents that match the query to the next stage
-        public static func match(_ query: Document) -> Stage {
-            return Stage([
-                "$match": query
+                "$match": query.document
                 ])
         }
         
@@ -124,7 +117,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, Codable {
         /// Sorts the input Documents by the specified `Sort` object and passed them in the newly sorted order to the next stage.
         public static func sort(_ sort: Sort) -> Stage {
             return Stage([
-                "$sort": sort
+                "$sort": sort.document
                 ])
         }
         
@@ -236,9 +229,9 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, Codable {
         public static func facet(_ facet: [String: AggregationPipeline]) -> Stage {
             return Stage([
                 "$facet": Document(dictionaryElements: facet.map {
-                    ($0.0, $0.1)
+                    ($0.0, $0.1.document)
                 })
-                ])
+            ])
         }
         
         /// Counts the amounts of Documents that have been inputted. Places the result at the provided key.
@@ -613,12 +606,12 @@ public enum AccumulatedGroupExpression {
 
 extension AggregationPipeline : CustomDebugStringConvertible {
     public var debugDescription: String {
-        return self.pipelineDocument.makeExtendedJSON().serializedString()
+        return self.document.makeExtendedJSON().serializedString()
     }
 }
 
 extension AggregationPipeline.Stage : CustomDebugStringConvertible {
     public var debugDescription: String {
-        return self.makeDocument().makeExtendedJSON().serializedString()
+        return self.document.makeExtendedJSON().serializedString()
     }
 }
