@@ -1,27 +1,7 @@
 import Schrodinger
 
-extension Commands {
-    
-}
-
-public protocol OperationType {
-    associatedtype Result
-    
-    func execute(on database: Database) throws -> Future<Result>
-}
-
-public struct Operation<OT: OperationType> {
-    public let operation: OT
-    public let collection: Collection
-    
-    init(_ operation: OT, for collection: Collection) {
-        self.operation = operation
-        self.collection = collection
-    }
-}
-
 public struct Aggregate: Command, OperationType {
-    let collection: Collection
+    let aggregate: String
     public var pipeline: AggregationPipeline
     public var cursor: CursorOptions
     public var maxTimeMS: UInt32
@@ -29,16 +9,25 @@ public struct Aggregate: Command, OperationType {
     public var readConcern: ReadConcern?
     public var collation: Collation?
     
-    init(collection: Collection, pipeline: AggregationPipeline) {
-        self.collection = collection
+    static var writing = true
+    static var emitsCursor = true
+    
+    public init(collection: Collection, pipeline: AggregationPipeline) {
+        self.aggregate = collection.name
         self.pipeline = pipeline
         self.cursor = CursorOptions()
+        
+        // Collection defaults
+        self.readConcern = collection.default.readConcern
+        self.collation = collection.default.collation
     }
     
     public func execute(on database: Database) throws -> Future<Cursor<Document>> {
-        let connection = try self.database.server.reserveConnection(authenticatedFor: self.collection.database)
+        let connection = try self.database.server.reserveConnection(authenticatedFor: self.database)
         
-        return try database.execute(self, on: connection) { reply in
+        return try database.execute(self) { reply, connection in
+            let collection = database[aggregate]
+            
             return Cursor.init(
                 namespace: collection.fullName,
                 collection: collection.name,

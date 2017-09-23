@@ -8,7 +8,7 @@
 // See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of MongoKitten project authors
 //
 
-public protocol Command: Encodable {
+protocol Command: Encodable {
     static var writing: Bool { get }
     static var emitsCursor: Bool { get }
 }
