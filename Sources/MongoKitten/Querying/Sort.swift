@@ -34,23 +34,9 @@ public enum SortOrder: ValueConvertible {
 /// A Sort object specifies to MongoDB in what order certain Documents need to be ordered
 ///
 /// This can be used in normal and aggregate queries
-public struct Sort: ValueConvertible, ExpressibleByDictionaryLiteral {
+public struct Sort: DocumentCodable, ExpressibleByDictionaryLiteral {
     /// The underlying Document
-    var document: Document
-    
-    /// Makes this Sort specification a Document
-    ///
-    /// Technically equal to `makeBSONPrimtive` with the main difference being that the correct type is already available without extraction
-    public func makeDocument() -> Document {
-        return document
-    }
-
-    /// Makes this Sort specification a BSONPrimtive.
-    ///
-    /// Useful for embedding in a Document
-    public func makePrimitive() -> BSON.Primitive {
-        return self.document
-    }
+    public var document: Document
     
     /// Helper to make mutating/reading sort specifications more accessible
     public subscript(key: String) -> SortOrder? {
@@ -92,12 +78,7 @@ public struct Sort: ValueConvertible, ExpressibleByDictionaryLiteral {
     }
     
     /// Initializes a custom Sort object from a Document
-    public init(_ document: Document) {
+    public init(from document: Document) {
         self.document = document
     }
-}
-
-/// Joins two sorts
-public func +(lhs: Sort, rhs: Sort) -> Sort {
-    return Sort(lhs.makeDocument() + rhs.makeDocument())
 }

@@ -181,41 +181,6 @@ extension CollectionQueryable {
         return response
     }
     
-    func count(filter: Query?, limit: Int?, skip: Int?, readConcern: ReadConcern?, collation: Collation?, connection: Connection?, timeout: DispatchTimeInterval?) throws -> Future<Int> {
-        var command: Document = ["count": self.name]
-        
-        if let filter = filter {
-            command["query"] = filter
-        }
-        
-        if let skip = skip {
-            command["skip"] = Int32(skip) as Int32
-        }
-        
-        if let limit = limit {
-            command["limit"] = Int32(limit) as Int32
-        }
-        
-        command["readConcern"] = readConcern ?? self.readConcern
-        command["collation"] = collation ?? self.collation
-        
-        let reply: Future<ServerReply>
-        
-        if let connection = connection {
-            reply = try self.database.execute(command: command, writing: false, using: connection)
-        } else {
-            reply = try self.database.execute(command: command, writing: false)
-        }
-        
-        return reply.map { reply in
-            guard let n = Int(reply.documents.first?["n"]), Int(reply.documents.first?["ok"]) == 1 else {
-                throw InternalMongoError.incorrectReply(reply: reply)
-            }
-            
-            return n
-        }
-    }
-    
     func update(updates: [(filter: Query, to: Document, upserting: Bool, multiple: Bool)], writeConcern: WriteConcern?, ordered: Bool?, connection: Connection?, timeout: DispatchTimeInterval?) throws -> Future<Int> {
         let timeout: DispatchTimeInterval = timeout ?? .seconds(Int(database.server.defaultTimeout))
         
@@ -400,79 +365,6 @@ extension CollectionQueryable {
                 }
                 
                 return removals.count
-            }
-        }
-    }
-    
-    func find(filter: Query?, sort: Sort?, projection: Projection?, readConcern: ReadConcern?, collation: Collation?, skip: Int?, limit: Int?, batchSize: Int = 100, timeout: DispatchTimeInterval?, connection: Connection?) throws -> Future<Cursor<Document>> {
-        if self.database.server.buildInfo.version >= Version(3,2,0) {
-            var command: Document = [
-                "find": name,
-                "readConcern": readConcern ?? readConcern,
-                "collation": collation ?? collation,
-                "batchSize": Int32(batchSize)
-            ]
-            
-            if let filter = filter {
-                command["filter"] = filter
-            }
-            
-            if let sort = sort {
-                command["sort"] = sort
-            }
-            
-            if let projection = projection {
-                command["projection"] = projection
-            }
-            
-            if let skip = skip {
-                command["skip"] = Int32(skip) as Int32
-            }
-            
-            if let limit = limit {
-                command["limit"] = Int32(limit) as Int32
-            }
-            
-            let cursorConnection = try connection ?? (try self.database.server.reserveConnection(authenticatedFor: self.database))
-            
-            return try self.database.execute(command: command, writing: false, using: cursorConnection).map { reply in
-                guard let responseDoc = reply.documents.first, let cursorDoc = Document(responseDoc["cursor"]) else {
-                    if connection == nil {
-                        self.database.server.returnConnection(cursorConnection)
-                    }
-                    
-                    throw MongoError.invalidResponse(documents: reply.documents)
-                }
-                
-                return try Cursor(cursorDocument: cursorDoc, collection: self.name, database: self.database, connection: cursorConnection, chunkSize: Int32(batchSize), transform: { doc in
-                    return doc
-                })
-            }
-        } else {
-            let queryMsg = Message.Query(requestID: self.database.server.nextMessageID(), flags: [], collection: self.fullName, numbersToSkip: Int32(skip) ?? 0, numbersToReturn: Int32(batchSize), query: filter?.queryDocument ?? [], returnFields: projection?.document)
-            
-            let cursorConnection = try connection ?? (try self.database.server.reserveConnection(authenticatedFor: self.database))
-            
-            return try self.database.server.sendAsync(message: queryMsg, overConnection: cursorConnection).map { reply in
-                var reply = reply 
-                if let limit = limit {
-                    if reply.documents.count > Int(limit) {
-                        reply.documents.removeLast(reply.documents.count - Int(limit))
-                    }
-                }
-                
-                var returned: Int = 0
-                
-                return Cursor(namespace: self.fullName, collection: self.name, database: self.database, connection: cursorConnection, cursorID: reply.cursorID, initialData: reply.documents, chunkSize: Int32(batchSize), transform: { doc in
-                    if let limit = limit {
-                        guard returned < limit else {
-                            return nil
-                        }
-                        
-                        returned += 1
-                    }
-                    return doc
-                })
             }
         }
     }

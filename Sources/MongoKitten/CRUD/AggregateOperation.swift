@@ -1,6 +1,6 @@
 import Schrodinger
 
-public struct Aggregate: Command, OperationType {
+public struct Aggregate: Command, Operation {
     let aggregate: String
     public var pipeline: AggregationPipeline
     public var cursor: CursorOptions
@@ -12,7 +12,7 @@ public struct Aggregate: Command, OperationType {
     static var writing = true
     static var emitsCursor = true
     
-    public init(collection: Collection, pipeline: AggregationPipeline) {
+    public init(pipeline: AggregationPipeline, on collection: Collection) {
         self.aggregate = collection.name
         self.pipeline = pipeline
         self.cursor = CursorOptions()
@@ -23,27 +23,9 @@ public struct Aggregate: Command, OperationType {
     }
     
     public func execute(on database: Database) throws -> Future<Cursor<Document>> {
-        let connection = try self.database.server.reserveConnection(authenticatedFor: self.database)
-        
         return try database.execute(self) { reply, connection in
-            let collection = database[aggregate]
             
-            return Cursor.init(
-                namespace: collection.fullName,
-                collection: collection.name,
-                database: database,
-                connection: connection,
-                reply: reply,
-                chunkSize: cursor.batchSize,
-                transform: { $0 }
-            )
         }
-    }
-}
-
-extension AggregationPipeline {
-    public func makeOperation(for collection: Collection) -> Aggregate {
-        return Aggregate(collection: collection, pipeline: self)
     }
 }
 

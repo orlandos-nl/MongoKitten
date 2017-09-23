@@ -1,6 +1,6 @@
 import Schrodinger
 
-public struct Count: Command, OperationType {
+public struct Count: Command, Operation {
     let count: String
     public var query: Query?
     public var skip: Int?
@@ -8,7 +8,7 @@ public struct Count: Command, OperationType {
     public var readConcern: ReadConcern?
     public var collation: Collation?
     
-    public init(collection: Collection, pipeline: AggregationPipeline) {
+    public init(pipeline: AggregationPipeline, on collection: Collection) {
         self.aggregate = collection.name
         self.pipeline = pipeline
         self.cursor = CursorOptions()

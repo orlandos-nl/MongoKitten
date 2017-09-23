@@ -13,16 +13,12 @@ import BSON
 /// A projection removes any keys from it's input Documents that have not been specified to be included except _id.
 ///
 /// If you don't want to include _id you'll have to explicitely not include it.
-public struct Projection: ValueConvertible {
-    /// The raw underlying Document of this Projection
-    var document: Document
-    
-    /// Makes this Projection specification a Document
-    ///
-    /// Technically equal to `makeBSONPrimtive` with the main difference being that the correct type is already available without extraction
-    public func makeDocument() -> Document {
-        return self.document
+public struct Projection: DocumentCodable {
+    public init(from document: Document) {
+        self.document = document
     }
+    
+    public var document: Document
     
     /// An expression that can be specified to either include or exclude a field (or some custom value)
     public enum ProjectionExpression: ValueConvertible, ExpressibleByBooleanLiteral, ExpressibleByStringLiteral, ExpressibleByDictionaryLiteral {
@@ -70,25 +66,10 @@ public struct Projection: ValueConvertible {
         }
     }
     
-    /// Initializes this projection from a Document
-    public init(_ document: Document) {
-        self.document = document
-    }
-    
     /// Supressed the _id key from being included in the projection
     public mutating func suppressIdentifier() {
         document["_id"] = false
     }
-    
-    /// Creates a BSON.Primitive from this Projection for inclusion in a Document
-    public func makePrimitive() -> BSON.Primitive {
-        return self.document
-    }
-}
-
-/// Joins two projections
-public func +(lhs: Projection, rhs: Projection) -> Projection {
-    return Projection(lhs.makeDocument() + rhs.makeDocument())
 }
 
 extension Projection: ExpressibleByArrayLiteral {

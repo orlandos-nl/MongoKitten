@@ -65,7 +65,7 @@ public final class Cursor<T> {
     let transform: Transformer
     
     /// This initializer creates a base cursor from a reply message
-    internal convenience init?(namespace: String, collection: String, database: Database, connection: Connection, reply: ServerReply, chunkSize: Int32, transform: @escaping Transformer) throws {
+    internal convenience init(namespace: String, collection: String, database: Database, connection: Connection, reply: ServerReply, chunkSize: Int32, transform: @escaping Transformer) throws {
         self.init(namespace: namespace, collection: collection, database: database, connection: connection, cursorID: reply.cursorID, initialData: try reply.documents.flatMap(transform), chunkSize: chunkSize, transform: transform)
     }
     

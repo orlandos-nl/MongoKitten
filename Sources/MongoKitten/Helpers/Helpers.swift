@@ -15,15 +15,24 @@ enum Reply {}
 
 public enum Errors {}
 
-/// Gets all documents from a reply and throws if it's not a reply
-/// - parameter in: The message in which we'll find the documents
-/// - returns: The first found document
-internal func firstDocument(in message: ServerReply) throws -> Document {
-    guard let document = message.documents.first else {
-        throw InternalMongoError.incorrectReply(reply: message)
-    }
+public protocol DocumentCodable: Codable {
+    init(from document: Document)
     
-    return document
+    var document: Document { get }
+}
+
+public func +<T: DocumentCodable>(lhs: T, rhs: T) -> T {
+    return T(from: lhs.document + rhs.document)
+}
+
+extension DocumentCodable {
+    public func encode(to encoder: Encoder) throws {
+        try self.document.encode(to: encoder)
+    }
+
+    public init(from decoder: Decoder) throws {
+        self.init(from: try Document(from: decoder))
+    }
 }
 
 postfix operator *

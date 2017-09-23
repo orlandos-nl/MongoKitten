@@ -385,7 +385,11 @@ public indirect enum AQT {
 }
 
 /// A `Query` that consists of an `AQT` statement
-public struct Query: ExpressibleByDictionaryLiteral, ValueConvertible, ExpressibleByStringLiteral {
+public struct Query: ExpressibleByDictionaryLiteral, DocumentCodable, ExpressibleByStringLiteral {
+    public var document: Document {
+        return self.aqt.document
+    }
+    
     /// Initializes this Query with a String literal for a text search
     public init(stringLiteral value: String) {
         self = .textSearch(forString: value)
@@ -399,16 +403,6 @@ public struct Query: ExpressibleByDictionaryLiteral, ValueConvertible, Expressib
     /// Initializes this Query with a String literal for a text search
     public init(extendedGraphemeClusterLiteral value: String) {
         self = .textSearch(forString: value)
-    }
-    
-    /// Returns the Document state of this Query
-    public func makeDocument() -> Document {
-        return self.queryDocument
-    }
-    
-    /// The `Document` that can be sent to the MongoDB Server as a query/filter
-    public func makePrimitive() -> BSON.Primitive {
-        return self.queryDocument
     }
 
     /// Initializes an empty query, matching nothing
@@ -425,11 +419,6 @@ public struct Query: ExpressibleByDictionaryLiteral, ValueConvertible, Expressib
         }
     }
     
-    /// The `Document` that can be sent to the MongoDB Server as a query/filter
-    public var queryDocument: Document {
-        return aqt.document
-    }
-    
     /// The `AQT` statement that's used as a query/filter
     public var aqt: AQT
     
@@ -439,7 +428,7 @@ public struct Query: ExpressibleByDictionaryLiteral, ValueConvertible, Expressib
     }
     
     /// Initializes a Query from a Document and uses this Document as the Query
-    public init(_ document: Document) {
+    public init(from document: Document) {
         if document.count == 0 {
             self.aqt = .nothing
         } else {
