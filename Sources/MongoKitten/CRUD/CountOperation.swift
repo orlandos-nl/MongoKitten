@@ -8,18 +8,17 @@ public struct Count: Command, Operation {
     public var readConcern: ReadConcern?
     public var collation: Collation?
     
-    public init(pipeline: AggregationPipeline, on collection: Collection) {
-        self.aggregate = collection.name
-        self.pipeline = pipeline
-        self.cursor = CursorOptions()
-        
+    static var writing = false
+    static var emitsCursor = false
+    
+    public init(on collection: Collection) {
         // Collection defaults
         self.readConcern = collection.default.readConcern
         self.collation = collection.default.collation
     }
     
     public func execute(on database: Database) throws -> Future<Int> {
-        return try database.execute(self, expecting: Reply.Count.self) { reply in
+        return try database.execute(self, expecting: Reply.Count.self) { reply, _ in
             guard reply.ok == 1 else {
                 throw Errors.Count(from: reply)
             }
@@ -30,14 +29,14 @@ public struct Count: Command, Operation {
 }
 
 extension Reply {
-    struct Count {
+    struct Count: Decodable {
         var n: Int
         var ok: Int
     }
 }
 
 extension Errors {
-    public struct Count {
+    public struct Count: Error {
         // TODO:
         
         init(from reply: Reply.Count) {

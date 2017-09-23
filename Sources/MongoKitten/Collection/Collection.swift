@@ -20,16 +20,6 @@ public typealias MongoCollection = Collection
 ///
 /// A grouping of MongoDB documents. A collection is the equivalent of an RDBMS table. A collection exists within a single database. Collections do not enforce a schema. Documents within a collection can have different fields. Typically, all documents in a collection have a similar or related purpose. See Namespaces.
 public final class Collection: CollectionQueryable {
-    // MARK - Config
-    
-    /// TODO: Fully expose/implement
-    var timeout: DispatchTimeInterval?
-
-    /// Internally used for CollectionQueryable
-    var collection: Collection {
-        return self
-    }
-    
     /// The Database this collection is in
     public private(set) var database: Database
     
@@ -37,54 +27,11 @@ public final class Collection: CollectionQueryable {
     public private(set) var name: String
     
     /// The full (computed) collection name. Created by adding the Database's name with the Collection's name with a dot to seperate them
-    public var fullName: String {
+    public var namespace: String {
         return "\(database.name).\(name)"
     }
     
-    /// The default ReadConcern for this Collection.
-    ///
-    /// When a ReadConcern is provided in the method call it'll still override this
-    private var defaultReadConcern: ReadConcern? = nil
-    
-    /// Sets or gets the default read concern at the collection level
-    public var readConcern: ReadConcern? {
-        get {
-            return self.defaultReadConcern ?? database.readConcern
-        }
-        set {
-            self.defaultReadConcern = newValue
-        }
-    }
-    
-    /// The default WriteConcern for this Collection.
-    ///
-    /// When a WriteConcern is provided in the method call it'll still override this
-    private var defaultWriteConcern: WriteConcern? = nil
-    
-    /// Sets or gets the default write concern at the collection level
-    public var writeConcern: WriteConcern? {
-        get {
-            return self.defaultWriteConcern ?? database.writeConcern
-        }
-        set {
-            self.defaultWriteConcern = newValue
-        }
-    }
-    
-    /// The default Collation for collections in this Server.
-    ///
-    /// When a Collation is provided in the method call it'll still override this
-    private var defaultCollation: Collation? = nil
-    
-    /// Sets or gets the default read concern at the collection level
-    public var collation: Collation? {
-        get {
-            return self.defaultCollation ?? database.collation
-        }
-        set {
-            self.defaultCollation = newValue
-        }
-    }
+    public var `default` = Preferences()
     
     /// Initializes this collection with a database and name
     ///

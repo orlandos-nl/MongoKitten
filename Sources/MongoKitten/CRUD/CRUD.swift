@@ -192,7 +192,7 @@ extension CollectionQueryable {
             
             for u in updates {
                 newUpdates.append([
-                    "q": u.filter.queryDocument,
+                    "q": u.filter.document,
                     "u": u.to,
                     "upsert": u.upserting,
                     "multi": u.multiple

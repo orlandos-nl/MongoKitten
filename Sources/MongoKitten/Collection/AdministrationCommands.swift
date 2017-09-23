@@ -99,7 +99,10 @@ import BSON
 import Schrodinger
 
 extension Database {
-    func execute<E: Command, D: Decodable>(_ command: E, expecting type: D.Type) throws -> Future<D> {
+    func execute<E: Command, D: Decodable>(
+        _ command: E,
+        expecting type: D.Type
+    ) throws -> Future<D> {
         return try execute(command) { reply, _ in
             guard let first = reply.documents.first else {
                 throw InternalMongoError.incorrectReply(reply: reply)
@@ -107,6 +110,20 @@ extension Database {
             
             return try BSONDecoder().decode(D.self, from: first)
         }
+    }
+    
+    func execute<E: Command, D: Decodable, T>(
+        _ command: E,
+        expecting type: D.Type,
+        handle result: @escaping ((D, Connection) throws -> (T))
+    ) throws -> Future<T> {
+        return try execute(command) { reply, _ in
+            guard let first = reply.documents.first else {
+                throw InternalMongoError.incorrectReply(reply: reply)
+            }
+            
+            return try BSONDecoder().decode(D.self, from: first)
+        }.map(result)
     }
     
     func execute<E: Command, T>(

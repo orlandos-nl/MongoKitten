@@ -30,6 +30,13 @@ public struct Updates: Command, Operation {
     static var writing = true
     static var emitsCursor = false
     
+    public init(matching query: Query, to document: Document, on collection: Collection) {
+        self.init(
+            Update(matching: query, to: document),
+            on: collection
+        )
+    }
+    
     public init(_ updates: Update..., on collection: Collection) {
         self.update = collection.name
         self.updates = updates
