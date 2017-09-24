@@ -42,10 +42,16 @@ public class CollectionTests: XCTestCase {
             "_id": ObjectId()
         ]).await()
         
+        _ = try collection.insert([
+            "_id": ObjectId()
+            ]).await()
+        
+        XCTAssertEqual(try collection.count().await(), 3)
+        
+        XCTAssertEqual(try collection.remove().await(), 1)
         XCTAssertEqual(try collection.count().await(), 2)
         
-        XCTAssertEqual(try collection.remove().await(), 2)
-        
+        XCTAssertEqual(try collection.remove(limit: 2).await(), 1)
         XCTAssertEqual(try collection.count().await(), 0)
     }
 }
