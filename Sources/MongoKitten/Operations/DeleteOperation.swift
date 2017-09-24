@@ -4,10 +4,10 @@ import Schrodinger
 public struct Delete: Command, Operation {
     public struct Single: Codable {
         public var q: Query
-        public var limit: Int
+        public var limit: RemoveLimit
         public var collation: Collation?
         
-        public init(matching query: Query, limit: Int) {
+        public init(matching query: Query, limit: RemoveLimit = .one) {
             self.q = query
             self.limit = limit
         }

@@ -1,4 +1,4 @@
-public enum RemoveLimit : Int {
-    case all
-    case one
+public enum RemoveLimit: Int, Codable {
+    case all = 0
+    case one = 1
 }

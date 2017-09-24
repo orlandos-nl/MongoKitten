@@ -51,7 +51,7 @@ public class CollectionTests: XCTestCase {
         XCTAssertEqual(try collection.remove().await(), 1)
         XCTAssertEqual(try collection.count().await(), 2)
         
-        XCTAssertEqual(try collection.remove(limit: 2).await(), 1)
+        XCTAssertEqual(try collection.removeAll().await(), 2)
         XCTAssertEqual(try collection.count().await(), 0)
     }
 }
