@@ -20,14 +20,20 @@ extension Collection {
     }
     
     @discardableResult
-    public func insert(_ documents: [Document]) throws -> Future<Reply.Insert> {
+    public func insert(contentsOf documents: [Document]) throws -> Future<Reply.Insert> {
         let insert = Insert(documents, into: self)
         return try insert.execute(on: database)
     }
     
     @discardableResult
     public func insert(_ document: Document) throws -> Future<Reply.Insert> {
-        let insert = Insert([document], into: self)
-        return try insert.execute(on: database)
+        return try insert(contentsOf: [document])
+    }
+    
+    public func count(_ query: Query? = nil) throws -> Future<Int> {
+        var count = Count(on: self)
+        count.query = query
+        
+        return try count.execute(on: database)
     }
 }

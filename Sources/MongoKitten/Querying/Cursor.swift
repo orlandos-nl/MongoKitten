@@ -64,14 +64,13 @@ public final class Cursor<T> {
     /// The transformer used for this cursor
     let transform: Transformer
     
-    /// This initializer creates a base cursor from a reply message
-    internal convenience init(namespace: String, collection: String, database: Database, connection: Connection, reply: ServerReply, chunkSize: Int32, transform: @escaping Transformer) throws {
-        self.init(namespace: namespace, collection: collection, database: database, connection: connection, cursorID: reply.cursorID, initialData: try reply.documents.flatMap(transform), chunkSize: chunkSize, transform: transform)
-    }
-    
     /// This initializer creates a base cursor from a replied Document
     internal convenience init(cursorDocument cursor: Document, collection: String, database: Database, connection: Connection, chunkSize: Int32, transform: @escaping Transformer) throws {
-        guard let cursorID = Int(cursor["id"]), let namespace = String(cursor["ns"]), let firstBatch = Document(cursor["firstBatch"]) else {
+        guard
+            let cursorID = Int(cursor["id"]),
+            let namespace = String(cursor["ns"]),
+            let firstBatch = Document(cursor["firstBatch"])
+        else {
             throw MongoError.cursorInitializationError(cursorDocument: cursor)
         }
         

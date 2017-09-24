@@ -20,14 +20,11 @@ var package = Package(
         ],
     targets: [
         .target(
-            name: "GeoJSON",
-            dependencies: ["BSON", "Cheetah"]),
-        .target(
             name: "ExtendedJSON",
-            dependencies: ["BSON", "Cheetah", "CryptoKitten"]),
+            dependencies: ["BSON"]),
         .target(
             name: "MongoKitten",
-            dependencies: ["BSON", "Cheetah", "GeoJSON", "ExtendedJSON", "CryptoKitten", "Schrodinger", "MongoSocket"]),
+            dependencies: ["BSON", "ExtendedJSON", "Schrodinger", "MongoSocket"]),
         .testTarget(
             name: "MongoKittenTests",
             dependencies: ["MongoKitten"]),

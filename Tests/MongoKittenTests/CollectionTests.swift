@@ -29,7 +29,7 @@ public class CollectionTests: XCTestCase {
         
         let collection = TestManager.db["test"]
         
-        collection.drop()
+        _ = try? collection.drop().await()
         
         try collection.insert(user).replace { _ in
             try collection.findOne()
@@ -37,6 +37,12 @@ public class CollectionTests: XCTestCase {
             XCTAssertNotNil(result)
             XCTAssertEqual(ObjectId(result?["_id"]), id)
         }.await()
+        
+        _ = try collection.insert([
+            "_id": ObjectId()
+        ]).await()
+        
+        XCTAssertEqual(try collection.count().await(), 2)
     }
 }
 ////            ("testEverything", testEverything),

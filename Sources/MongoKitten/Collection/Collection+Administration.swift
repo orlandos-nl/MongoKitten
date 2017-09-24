@@ -47,4 +47,92 @@ extension Collection {
         
         return try command.execute(on: database)
     }
+    
+    @discardableResult
+    public func drop() throws -> Future<Void> {
+        let command = Commands.Drop(collection: self)
+        
+        return try command.execute(on: database)
+    }
+}
+
+extension Commands {
+    struct Touch: Command {
+        var touch: String
+        var data: Bool
+        var index: Bool
+        
+        static var writing = true
+        static var emitsCursor = false
+        
+        init(collection: Collection, data: Bool, index: Bool) {
+            self.touch = collection.name
+            self.data = data
+            self.index = index
+        }
+    }
+    
+    struct ConvertToCapped: Command {
+        var convertTocapped: String
+        
+        // TODO: Int32?
+        var size: Int
+        
+        static var writing = true
+        static var emitsCursor = false
+        
+        init(collection: Collection, toCap cap: Int) {
+            self.convertTocapped = collection.name
+            self.size = cap
+        }
+    }
+    
+    struct RebuildIndexes: Command {
+        var reIndex: String
+        
+        static var writing = true
+        static var emitsCursor = false
+        
+        init(collection: Collection) {
+            self.reIndex = collection.name
+        }
+    }
+    
+    struct Compact: Command {
+        var compact: String
+        var force: Bool?
+        
+        static var writing = true
+        static var emitsCursor = false
+        
+        init(collection: Collection) {
+            self.compact = collection.name
+        }
+    }
+    
+    struct CloneCollectionAsCapped: Command {
+        var cloneCollectionAsCapped: String
+        var toCollection: String
+        var size: Int
+        
+        static var writing = true
+        static var emitsCursor = false
+        
+        init(collection: Collection, newName: String, cap: Int) {
+            self.cloneCollectionAsCapped = collection.name
+            self.toCollection = newName
+            self.size = cap
+        }
+    }
+    
+    struct Drop: Command {
+        var drop: String
+        
+        static var writing = true
+        static var emitsCursor = false
+        
+        init(collection: Collection) {
+            self.drop = collection.name
+        }
+    }
 }

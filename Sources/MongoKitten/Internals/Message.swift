@@ -120,11 +120,12 @@ enum Message {
             
             requestID = requestIdentifier
         case .Insert(let requestIdentifier, let flags, let collection, let documents):
-            body.reserveCapacity(4 + collection.utf8.count + 1 + 4 + documents.byteCount + 4)
+            let data = documents.bytes
+            body.reserveCapacity(4 + collection.utf8.count + 1 + 4 + data.count + 4)
             
             body.append(contentsOf: flags.rawValue.makeBytes())
             body.append(contentsOf: collection.cStringBytes)
-            body.append(contentsOf: documents.bytes)
+            body.append(contentsOf: data)
             
             requestID = requestIdentifier
         case .Query(let requestIdentifier, let flags, let collection, let numbersToSkip, let numbersToReturn, let query, let returnFields):

@@ -4,7 +4,7 @@ public struct WriteConcern: Encodable {
         case majority
         
         public func encode(to encoder: Encoder) throws {
-            var container = try encoder.singleValueContainer()
+            var container = encoder.singleValueContainer()
             
             switch self {
             case .by(let w):

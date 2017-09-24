@@ -298,8 +298,9 @@ public final class Server {
                 
                 host.online = true
             } catch {
-                throw error
                 host.online = false
+                
+                throw error
             }
             
             return host

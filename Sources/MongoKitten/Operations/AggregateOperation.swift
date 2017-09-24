@@ -24,14 +24,19 @@ public struct Aggregate: Command, Operation {
     
     public func execute(on database: Database) throws -> Future<Cursor<Document>> {
         return try database.execute(self) { reply, connection in
-            let collection = database[self.aggregate]
+            guard
+                let doc = reply.documents.first,
+                Int(doc["ok"]) == 1,
+                let cursor = Document(doc["cursor"])
+                else {
+                    throw MongoError.cursorInitializationError(cursorDocument: reply.documents.first ?? [:])
+            }
             
-            return try Cursor.init(
-                namespace: collection.namespace,
-                collection: collection.name,
+            return try Cursor<Document>(
+                cursorDocument: cursor,
+                collection: self.aggregate,
                 database: database,
                 connection: connection,
-                reply: reply,
                 chunkSize: self.cursor.batchSize,
                 transform: { $0 }
             )

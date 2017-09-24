@@ -35,6 +35,6 @@ extension Reply {
         public var n: Int
         public var ok: Int
         public var writeErrors: [Errors.Write]?
-        public var writeConcernError: [Errors.WriteConcern]
+        public var writeConcernError: [Errors.WriteConcern]?
     }
 }
