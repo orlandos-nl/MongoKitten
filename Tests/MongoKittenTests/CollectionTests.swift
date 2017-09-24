@@ -20,12 +20,23 @@ public class CollectionTests: XCTestCase {
     }
     
     func testExample() throws {
+        let id = ObjectId()
+        
         let user: Document = [
-            "_id": ObjectId(),
+            "_id": id,
             "test": true
         ]
         
-        try TestManager.db["test"].insert(user).await()
+        let collection = TestManager.db["test"]
+        
+        collection.drop()
+        
+        try collection.insert(user).replace { _ in
+            try collection.findOne()
+        }.map { result in
+            XCTAssertNotNil(result)
+            XCTAssertEqual(ObjectId(result?["_id"]), id)
+        }.await()
     }
 }
 ////            ("testEverything", testEverything),
