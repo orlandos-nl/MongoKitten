@@ -15,14 +15,14 @@ import Schrodinger
 public class CollectionTests: XCTestCase {
     public static var allTests: [(String, (CollectionTests) -> () throws -> Void)] {
         return [
-            ("testExample", testExample)
+            ("testCRUD", testCRUD)
         ]
     }
     
-    func testExample() throws {
+    func testCRUD() throws {
         let id = ObjectId()
         
-        let user: Document = [
+        var user: Document = [
             "_id": id,
             "test": true
         ]
@@ -53,6 +53,17 @@ public class CollectionTests: XCTestCase {
         
         XCTAssertEqual(try collection.removeAll().await(), 2)
         XCTAssertEqual(try collection.count().await(), 0)
+        
+        try collection.upsert("_id" == id, to: user).await()
+        XCTAssertEqual(try collection.count().await(), 1)
+        XCTAssertEqual(Bool(try collection.findOne().await()?["test"]), true)
+        
+        user["test"] = false
+        try collection.upsert("_id" == id, to: user).await()
+        XCTAssertEqual(try collection.count().await(), 1)
+        XCTAssertEqual(Bool(try collection.findOne().await()?["test"]), false)
+        
+        
     }
 }
 ////            ("testEverything", testEverything),

@@ -38,18 +38,18 @@ public struct Delete: Command, Operation {
     @discardableResult
     public func execute(on database: Database) throws -> Future<Int> {
         return try database.execute(self, expecting: Reply.Delete.self) { reply, _ in
-            guard reply.ok == 1 else {
+            guard let n = reply.n, reply.ok == 1 else {
                 throw reply
             }
             
-            return reply.n
+            return n
         }
     }
 }
 
 extension Reply {
     public struct Delete: Codable, Error {
-        public var n: Int
+        public var n: Int?
         public var ok: Int
         public var writeErrors: [Errors.Write]?
         public var writeConcernError: [Errors.WriteConcern]?

@@ -33,14 +33,35 @@ extension Collection {
         return try count.execute(on: database)
     }
     
+    @discardableResult
+    public func update(_ query: Query = [:], to document: Document) throws -> Future<Void> {
+        return try Update.Single(matching: query, to: document).execute(on: self).map { _ in }
+    }
+    
+    @discardableResult
+    public func upsert(_ query: Query = [:], to document: Document) throws -> Future<Void> {
+        var update = Update.Single(matching: query, to: document)
+        update.upsert = true
+            
+        return try update.execute(on: self).map { _ in }
+    }
+    
+    @discardableResult
+    public func updateAll(_ query: Query = [:], to document: Document) throws -> Future<Reply.Update> {
+        return try Update.Single(matching: query, to: document).execute(on: self)
+    }
+    
+    @discardableResult
     public func remove(_ query: Query = [:]) throws -> Future<Int> {
         return try Delete.Single(matching: query, limit: .one).execute(on: self)
     }
     
+    @discardableResult
     public func removeAll(_ query: Query = [:]) throws -> Future<Int> {
         return try Delete.Single(matching: query, limit: .all).execute(on: self)
     }
     
+    @discardableResult
     public func aggregate(_ pipeline: AggregationPipeline) throws -> Future<Cursor<Document>> {
         return try Aggregate(pipeline: pipeline, on: self).execute(on: self.database)
     }

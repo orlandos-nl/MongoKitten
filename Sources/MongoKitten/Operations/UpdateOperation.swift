@@ -15,7 +15,7 @@ public struct Update: Command, Operation {
         }
         
         public func execute(on collection: Collection) throws -> Future<Reply.Update> {
-            let updates = Update(in: collection)
+            let updates = Update(self, in: collection)
             
             return try updates.execute(on: collection.database)
         }
@@ -61,7 +61,7 @@ public struct Update: Command, Operation {
 
 extension Reply {
     public struct Update: Codable, Error {
-        public var n: Int
+        public var n: Int?
         public var ok: Int
         public var nModified: Int
         public var upserted: [Document]? // TODO: type-safe? We cannot (easily) decode the _id

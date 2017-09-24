@@ -32,7 +32,7 @@ public struct Insert: Command, Operation {
 
 extension Reply {
     public struct Insert: Codable, Error {
-        public var n: Int
+        public var n: Int?
         public var ok: Int
         public var writeErrors: [Errors.Write]?
         public var writeConcernError: [Errors.WriteConcern]?
