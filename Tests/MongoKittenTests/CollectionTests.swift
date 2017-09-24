@@ -21,10 +21,11 @@ public class CollectionTests: XCTestCase {
     
     func testExample() throws {
         let user: Document = [
+            "_id": ObjectId(),
             "test": true
         ]
         
-        TestManager.db["test"].insert(user)
+        try TestManager.db["test"].insert(user).await()
     }
 }
 ////            ("testEverything", testEverything),
