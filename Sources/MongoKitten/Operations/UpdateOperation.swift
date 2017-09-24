@@ -66,6 +66,6 @@ extension Reply {
         public var nModified: Int
         public var upserted: [Document]? // TODO: type-safe? We cannot (easily) decode the _id
         public var writeErrors: [Errors.Write]?
-        public var writeConcernError: [Errors.WriteConcern]
+        public var writeConcernError: [Errors.WriteConcern]?
     }
 }

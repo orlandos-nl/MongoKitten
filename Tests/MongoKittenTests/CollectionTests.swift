@@ -43,6 +43,10 @@ public class CollectionTests: XCTestCase {
         ]).await()
         
         XCTAssertEqual(try collection.count().await(), 2)
+        
+        XCTAssertEqual(try collection.remove().await(), 2)
+        
+        XCTAssertEqual(try collection.count().await(), 0)
     }
 }
 ////            ("testEverything", testEverything),

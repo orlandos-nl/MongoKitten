@@ -4,14 +4,15 @@ import Schrodinger
 public struct Delete: Command, Operation {
     public struct Single: Codable {
         public var q: Query
-        public var limit: Int?
+        public var limit: Int
         public var collation: Collation?
         
-        public init(matching query: Query) {
+        public init(matching query: Query, limit: Int) {
             self.q = query
+            self.limit = limit
         }
         
-        public func execute(on collection: Collection) throws -> Future<Reply.Delete> {
+        public func execute(on collection: Collection) throws -> Future<Int> {
             let deletes = Delete([self], from: collection)
             
             return try deletes.execute(on: collection.database)
@@ -35,13 +36,13 @@ public struct Delete: Command, Operation {
     }
     
     @discardableResult
-    public func execute(on database: Database) throws -> Future<Reply.Delete> {
+    public func execute(on database: Database) throws -> Future<Int> {
         return try database.execute(self, expecting: Reply.Delete.self) { reply, _ in
             guard reply.ok == 1 else {
                 throw reply
             }
             
-            return reply
+            return reply.n
         }
     }
 }
@@ -51,7 +52,7 @@ extension Reply {
         public var n: Int
         public var ok: Int
         public var writeErrors: [Errors.Write]?
-        public var writeConcernError: [Errors.WriteConcern]
+        public var writeConcernError: [Errors.WriteConcern]?
     }
 }
 
