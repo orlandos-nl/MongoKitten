@@ -7,14 +7,26 @@
 //// See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/LICENSE.md for license information
 //// See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of MongoKitten project authors
 ////
-//import XCTest
-//import MongoKitten
-//import Dispatch
-//import Schrodinger
-//
-//public class CollectionTests: XCTestCase {
-//    public static var allTests: [(String, (CollectionTests) -> () throws -> Void)] {
-//        return [
+import XCTest
+import MongoKitten
+import Dispatch
+import Schrodinger
+
+public class CollectionTests: XCTestCase {
+    public static var allTests: [(String, (CollectionTests) -> () throws -> Void)] {
+        return [
+            ("testExample", testExample)
+        ]
+    }
+    
+    func testExample() throws {
+        let user: Document = [
+            "test": true
+        ]
+        
+        TestManager.db["test"].insert(user)
+    }
+}
 ////            ("testEverything", testEverything),
 //            ("testUniqueIndex", testUniqueIndex),
 //            ("testQuery", testQuery),
