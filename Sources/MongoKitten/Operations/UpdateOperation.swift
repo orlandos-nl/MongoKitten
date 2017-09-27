@@ -21,7 +21,7 @@ public struct Update: Command, Operation {
         }
     }
     
-    let update: String
+    public let update: Collection
     public var updates: [Single]
     public var ordered: Bool?
     public var writeConcern: WriteConcern?
@@ -42,7 +42,7 @@ public struct Update: Command, Operation {
     }
     
     public init<S: Sequence>(_ updates: S, in collection: Collection) where S.Element == Single {
-        self.update = collection.name
+        self.update = collection
         self.updates = Array(updates)
         
         self.writeConcern = collection.default.writeConcern

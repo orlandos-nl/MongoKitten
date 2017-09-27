@@ -2,7 +2,7 @@ import BSON
 import Schrodinger
 
 public struct Insert: Command, Operation {
-    let insert: String
+    public let insert: Collection
     public var documents: [Document]
     public var ordered: Bool?
     public var writeConcern: WriteConcern?
@@ -12,7 +12,7 @@ public struct Insert: Command, Operation {
     static var emitsCursor = false
     
     public init(_ documents: [Document], into collection: Collection) {
-        self.insert = collection.name
+        self.insert = collection
         self.documents = Array(documents)
         
         self.writeConcern = collection.default.writeConcern

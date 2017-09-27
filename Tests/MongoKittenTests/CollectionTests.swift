@@ -44,7 +44,7 @@ public class CollectionTests: XCTestCase {
         
         _ = try collection.insert([
             "_id": ObjectId()
-            ]).await()
+        ]).await()
         
         XCTAssertEqual(try collection.count().await(), 3)
         

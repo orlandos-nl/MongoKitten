@@ -1,7 +1,7 @@
 import Schrodinger
 
 public struct Find: Command, Operation {
-    let find: String
+    public let find: Collection
     public var batchSize: Int32 = 100
     
     public var readConcern: ReadConcern?
@@ -16,7 +16,7 @@ public struct Find: Command, Operation {
     static var emitsCursor = true
     
     public init(on collection: Collection) {
-        self.find = collection.name
+        self.find = collection
         
         // Collection defaults
         self.readConcern = collection.default.readConcern
@@ -35,7 +35,7 @@ public struct Find: Command, Operation {
             
             return try Cursor<Document>(
                 cursorDocument: cursor,
-                collection: self.find,
+                collection: self.find.name,
                 database: database,
                 connection: connection,
                 chunkSize: self.batchSize,

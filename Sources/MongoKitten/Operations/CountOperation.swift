@@ -1,7 +1,7 @@
 import Schrodinger
 
 public struct Count: Command, Operation {
-    let count: String
+    public let count: Collection
     public var query: Query?
     public var skip: Int?
     public var limit: Int?
@@ -12,7 +12,7 @@ public struct Count: Command, Operation {
     static var emitsCursor = false
     
     public init(on collection: Collection) {
-        self.count = collection.name
+        self.count = collection
         
         // Collection defaults
         self.readConcern = collection.default.readConcern

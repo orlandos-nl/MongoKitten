@@ -19,7 +19,12 @@ public typealias MongoCollection = Collection
 /// **### Definition ###**
 ///
 /// A grouping of MongoDB documents. A collection is the equivalent of an RDBMS table. A collection exists within a single database. Collections do not enforce a schema. Documents within a collection can have different fields. Typically, all documents in a collection have a similar or related purpose. See Namespaces.
-public final class Collection {
+public final class Collection: Encodable {
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(self.name)
+    }
+    
     /// The Database this collection is in
     public private(set) var database: Database
     

@@ -13,6 +13,7 @@ extension Collection {
         return try insert.execute(on: database)
     }
     
+    // TODO: skip/limit in range
     public func findOne(
         _ filter: Query? = nil,
         sortedBy sort: Sort? = nil,

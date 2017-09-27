@@ -19,7 +19,7 @@ public struct Delete: Command, Operation {
         }
     }
     
-    let delete: String
+    public let delete: Collection
     public var deletes: [Single]
     public var ordered: Bool?
     public var writeConcern: WriteConcern?
@@ -29,7 +29,7 @@ public struct Delete: Command, Operation {
     static var emitsCursor = false
     
     public init(_ deletes: [Single], from collection: Collection) {
-        self.delete = collection.name
+        self.delete = collection
         self.deletes = Array(deletes)
         
         self.writeConcern = collection.default.writeConcern

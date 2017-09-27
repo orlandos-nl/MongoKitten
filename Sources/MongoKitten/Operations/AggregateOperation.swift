@@ -1,7 +1,7 @@
 import Schrodinger
 
 public struct Aggregate: Command, Operation {
-    let aggregate: String
+    public let aggregate: Collection
     public var pipeline: AggregationPipeline
     public var cursor: CursorOptions
     public var maxTimeMS: UInt32?
@@ -13,7 +13,7 @@ public struct Aggregate: Command, Operation {
     static var emitsCursor = true
     
     public init(pipeline: AggregationPipeline, on collection: Collection) {
-        self.aggregate = collection.name
+        self.aggregate = collection
         self.pipeline = pipeline
         self.cursor = CursorOptions()
         
@@ -28,13 +28,13 @@ public struct Aggregate: Command, Operation {
                 let doc = reply.documents.first,
                 Int(doc["ok"]) == 1,
                 let cursor = Document(doc["cursor"])
-                else {
-                    throw MongoError.cursorInitializationError(cursorDocument: reply.documents.first ?? [:])
+            else {
+                throw MongoError.cursorInitializationError(cursorDocument: reply.documents.first ?? [:])
             }
             
             return try Cursor<Document>(
                 cursorDocument: cursor,
-                collection: self.aggregate,
+                collection: self.aggregate.name,
                 database: database,
                 connection: connection,
                 chunkSize: self.cursor.batchSize,
