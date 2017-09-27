@@ -36,7 +36,9 @@ Alternatively; make use of a DAAS (Database-as-a-service) like [Atlas](https://c
 
 Add MongoKitten to your `Package.swift`:
 
-`.Package(url: "https://github.com/OpenKitten/MongoKitten.git", majorVersion: 4)`
+Swift 3: `.Package(url: "https://github.com/OpenKitten/MongoKitten.git", majorVersion: 4)`
+
+Swift 4: `.package(url: "https://github.com/OpenKitten/MongoKitten.git", from: "4.0.0")`
 
 After a `swift package update`, you can now use MongoKitten:
 
