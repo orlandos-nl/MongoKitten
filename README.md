@@ -26,17 +26,6 @@ MongoKitten is a native, production-ready MongoDB driver written in pure Swift. 
 
 Linux requries the `libssl-dev` library to be installed.
 
-### Swift 4.0
-
-For Swift 4.0 you'll need to put the package "CryptoSwift" in editable mode using:
-
-`swift package edit CryptoSwift --revision develop`
-
-After this you'll need to regenerate your Xcode project as with any SPM change on macOS.
-
-`swift package generate-xcodeproj`
-
-
 ## Setting up MongoDB
 
 Install MongoDB for [Ubuntu](https://docs.mongodb.com/master/tutorial/install-mongodb-on-ubuntu/), [macOS](https://docs.mongodb.com/master/tutorial/install-mongodb-on-os-x/) or [any other supported Linux Distro](https://docs.mongodb.com/master/administration/install-on-linux/).
