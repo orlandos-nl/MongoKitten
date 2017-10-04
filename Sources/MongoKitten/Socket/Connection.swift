@@ -109,9 +109,9 @@ class Connection {
             default:
                 throw MongoError.unsupportedFeature("authentication Method \"\(details.authenticationMechanism.rawValue)\"")
             }
-            
-            self.authenticated = true
         }
+        
+        self.authenticated = true
     }
     
     /// Closes this connection
