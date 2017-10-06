@@ -312,7 +312,7 @@ public final class Server {
     /// Creates a new connection to the best selected instance
     ///
     /// - parameter authenticatedFor: The Database that this connection is opened for. Prepares this Connection for authentication to this Database
-    private func makeConnection(writing: Bool = true, authenticatedFor: Database?) throws -> Connection {
+    private func makeConnection(writing: Bool = true, authenticatedFor: Database?) throws -> DatabaseConnection {
         return try self.hostPoolQueue.sync {
             // Procedure to find best matching server
             
@@ -371,7 +371,7 @@ public final class Server {
     /// Makes a new connection for the connection pool to a predefined host
     ///
     /// - parameter authenticatedFor: The Database that this connection is opened for. Prepares this Connection for authentication to this Database
-    private func makeConnection(toHost host: MongoHost, authenticatedFor: Database?) throws -> Connection {
+    private func makeConnection(toHost host: MongoHost, authenticatedFor: Database?) throws -> DatabaseConnection {
         let connection = try Connection(clientSettings: self.clientSettings, writable: host.isPrimary, host: host) {
             self.hostPoolQueue.sync {
                 for (id, server) in self.servers.enumerated() where server == host {
@@ -409,7 +409,7 @@ public final class Server {
     }
     
     /// Prepares a maintainance task for detected disconnected connections
-    internal func handleDisconnect(for disconnectionPool: [Connection]) {
+    internal func handleDisconnect(for disconnectionPool: [DatabaseConnection]) {
         // Close them for security sake
         disconnectionPool.forEach({
             $0.close()
@@ -435,7 +435,7 @@ public final class Server {
     /// Can take a while when the connection pool is full.
     ///
     /// Takes the most efficient connection and prefers connections that are already authenticated to this database
-    internal func reserveConnection(writing: Bool = false, authenticatedFor db: Database?, toHost host: (String, UInt16)? = nil) throws -> Connection {
+    internal func reserveConnection(writing: Bool = false, authenticatedFor db: Database?, toHost host: (String, UInt16)? = nil) throws -> DatabaseConnection {
         
         var bestMatches = [Connection]()
         
@@ -517,7 +517,7 @@ public final class Server {
     }
     
     /// Returns a connection to the Connection pool
-    internal func returnConnection(_ connection: Connection) {
+    internal func returnConnection(_ connection: DatabaseConnection) {
         self.connectionPoolLock.lock()
         
         defer {
@@ -610,7 +610,7 @@ public final class Server {
     ///
     /// - returns: The reply from the server
     @discardableResult @warn_unqualified_access
-    internal func sendAsync(message msg: Message, overConnection connection: Connection) throws -> Future<ServerReply> {
+    internal func sendAsync(message msg: Message, overConnection connection: DatabaseConnection) throws -> Future<ServerReply> {
         let requestId = msg.requestID
         let messageData = try msg.generateData()
         
@@ -633,7 +633,7 @@ public final class Server {
     ///
     /// - returns: The RequestID for this message that can be used to fetch the response
     @discardableResult @warn_unqualified_access
-    internal func send(message msg: Message, overConnection connection: Connection) throws -> Int32 {
+    internal func send(message msg: Message, overConnection connection: DatabaseConnection) throws -> Int32 {
         let messageData = try msg.generateData()
         
         try connection.send(data: messageData)

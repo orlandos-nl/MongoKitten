@@ -50,7 +50,7 @@ public final class Cursor<T> {
     // Used to prevent a crash when reading from a cursor that's receiving data
     fileprivate var dataCount: Int
     
-    fileprivate let connection: Connection
+    fileprivate let connection: DatabaseConnection
     
     fileprivate var position = 0
     
@@ -65,7 +65,7 @@ public final class Cursor<T> {
     let transform: Transformer
     
     /// This initializer creates a base cursor from a replied Document
-    internal convenience init(cursorDocument cursor: Document, collection: String, database: Database, connection: Connection, chunkSize: Int32, transform: @escaping Transformer) throws {
+    internal convenience init(cursorDocument cursor: Document, collection: String, database: Database, connection: DatabaseConnection, chunkSize: Int32, transform: @escaping Transformer) throws {
         guard
             let cursorID = Int(cursor["id"]),
             let namespace = String(cursor["ns"]),
@@ -78,7 +78,7 @@ public final class Cursor<T> {
     }
     
     /// This initializer creates a base cursor from provided specific data
-    internal init(namespace: String, collection: String, database: Database, connection: Connection, cursorID: Int, initialData: [T], chunkSize: Int32, transform: @escaping Transformer) {
+    internal init(namespace: String, collection: String, database: Database, connection: DatabaseConnection, cursorID: Int, initialData: [T], chunkSize: Int32, transform: @escaping Transformer) {
         self.namespace = namespace
         self.collection = collection
         self.database = database

@@ -177,7 +177,7 @@
 //    /// - parameter details: The authentication details
 //    ///
 //    /// - throws: When failing authentication, being unable to base64 encode or failing to send/receive messages
-//    internal func authenticate(SASL details: MongoCredentials, usingConnection connection: Connection) throws {
+//    internal func authenticate(SASL details: MongoCredentials, usingConnection connection: DatabaseConnection) throws {
 //        let nonce = randomNonce()
 //
 //        let auth = SCRAMClient(server)
@@ -206,7 +206,7 @@
 //    /// - parameter details: The authentication details
 //    ///
 //    /// - throws: When failing authentication, being unable to base64 encode or failing to send/receive messages
-//    internal func authenticate(mongoCR details: MongoCredentials, usingConnection connection: Connection) throws {
+//    internal func authenticate(mongoCR details: MongoCredentials, usingConnection connection: DatabaseConnection) throws {
 //        // Get the server's nonce
 //        let nonceMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: "\(self.name).$cmd", numbersToSkip: 0, numbersToReturn: 1, query: [
 //            "getnonce": Int32(1)
@@ -251,7 +251,7 @@
 //
 //extension Server {
 //    /// Experimental feature for authenticating with MongoDB-X509
-//    internal func authenticateX509(subject: String, usingConnection connection: Connection) throws {
+//    internal func authenticateX509(subject: String, usingConnection connection: DatabaseConnection) throws {
 //        log.debug("Starting MONGODB-X509 authentication for subject \"\(subject)\"")
 //        
 //        let message = Message.Query(requestID: nextMessageID(), flags: [], collection: "$external.$cmd", numbersToSkip: 0, numbersToReturn: 1, query: [

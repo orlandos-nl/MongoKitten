@@ -45,7 +45,7 @@ extension Database {
     func execute<E: Command, D: Decodable, T>(
         _ command: E,
         expecting type: D.Type,
-        handle result: @escaping ((D, Connection) throws -> (T))
+        handle result: @escaping ((D, DatabaseConnection) throws -> (T))
     ) throws -> Future<T> {
         return try execute(command) { reply, connection in
             guard let first = reply.documents.first else {
@@ -58,7 +58,7 @@ extension Database {
     
     func execute<E: Command, T>(
         _ command: E,
-        handle result: @escaping ((ServerReply, Connection) throws -> (T))
+        handle result: @escaping ((ServerReply, DatabaseConnection) throws -> (T))
     ) throws -> Future<T> {
         let command = try BSONEncoder().encode(command)
         
