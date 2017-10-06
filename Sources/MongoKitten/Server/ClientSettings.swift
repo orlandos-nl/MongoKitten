@@ -20,15 +20,6 @@ public struct MongoHost: Equatable, ExpressibleByStringLiteral {
     /// mongod port
     public let port: UInt16
     
-    /// The amount of currently open connection
-    internal var openConnections = 0
-    
-    /// Os this host online
-    public internal(set) var online = false
-    
-    /// Is this host a primary node
-    public internal(set) var isPrimary = false
-
     /// Creates a new Host object that specifies the location of this mongod instance
     public init(hostname: String, port: UInt16 = 27017) {
         self.hostname = hostname
@@ -132,7 +123,7 @@ public struct ClientSettings {
     public internal(set) var hosts: [MongoHost]
 
     /// The SSL Settings
-    public var sslSettings: SSLSettings?
+    public var ssl: SSLSettings?
 
     /// The credentials to authenticate to a mongo server
     public var credentials: MongoCredentials?
@@ -147,21 +138,11 @@ public struct ClientSettings {
     public var applicationName: String?
 
     /// Initializes the settings with a group of hosts, SSLsettings (if applicable) amonst other settings
-    public init(hosts: [MongoHost], sslSettings: SSLSettings?, credentials: MongoCredentials?, maxConnectionsPerServer: Int = 100, defaultTimeout: TimeInterval = 30, applicationName: String? = nil) {
+    public init(hosts: [MongoHost], ssl: SSLSettings = false, credentials: MongoCredentials?, maxConnectionsPerServer: Int = 100, defaultTimeout: TimeInterval = 30, applicationName: String? = nil) {
 
         self.hosts = hosts
-        self.sslSettings = sslSettings
+        self.ssl = ssl
         self.credentials = credentials
-        self.maxConnectionsPerServer = maxConnectionsPerServer
-        self.defaultTimeout = defaultTimeout
-        self.applicationName = applicationName
-    }
-
-    /// Initializes the settings with a single host, SSLsettings (if applicable) amonst other settings
-    public init(host: MongoHost, sslSettings: SSLSettings?, credentials: MongoCredentials?, maxConnectionsPerServer: Int = 100, defaultTimeout: TimeInterval = 30, applicationName: String? = nil) {
-        self.hosts = [host]
-        self.credentials = credentials
-        self.sslSettings = sslSettings
         self.maxConnectionsPerServer = maxConnectionsPerServer
         self.defaultTimeout = defaultTimeout
         self.applicationName = applicationName

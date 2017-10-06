@@ -9,13 +9,14 @@
 ////
 //
 //
+//import Async
 //import Dispatch
 //import Foundation
 //import BSON
 //import CryptoKitten
 //
 ///// Authentication extensions
-//extension Database {
+//extension Connection {
 //    /// Generates a random String
 //    ///
 //    /// - returns: A random nonce
@@ -67,52 +68,40 @@
 //    /// - parameter signature: The server signatue to verify
 //    ///
 //    /// - throws: On authentication failure or an incorrect Server Signature
-//    private func complete(SASL payload: String, using response: Document, verifying signature: Data, usingConnection connection: Connection) throws {
+//    private func complete(SASL payload: String, using response: Document, verifying signature: Data, to database: Database, promise: Promise<Void>) throws {
 //        // If we failed authentication
 //        guard Int(response["ok"]) == 1 else {
-//            log.error("Authentication failed because of the following reason")
-//            log.error(response)
 //            throw AuthenticationError.incorrectCredentials
 //        }
 //
 //        if Bool(response["done"]) == true {
-//            log.verbose("Authentication was successful")
+//            promise.complete(())
 //            return
 //        }
 //
 //        guard let stringResponse = String(response["payload"]) else {
-//            log.error("Authentication to MongoDB with SASL failed because no payload has been received")
-//            log.debug(response)
 //            throw AuthenticationError.responseParseError(response: payload)
 //        }
 //
 //        guard let conversationId = response["conversationId"] else {
-//            log.error("Authentication to MongoDB with SASL failed because no conversationId was kept")
-//            log.debug(response)
 //            throw AuthenticationError.responseParseError(response: payload)
 //        }
 //
 //        let finalResponseData = try Base64.decode(stringResponse)
 //
 //        guard let finalResponse = String(bytes: finalResponseData, encoding: String.Encoding.utf8) else {
-//            log.error("Authentication to MongoDB with SASL failed because no valid response was received")
-//            log.debug(response)
 //            throw MongoError.invalidBase64String
 //        }
 //
 //        let dictionaryResponse = self.parse(response: finalResponse)
 //
 //        guard let v = dictionaryResponse["v"] else {
-//            log.error("Authentication to MongoDB with SASL failed because no valid response was received")
-//            log.debug(response)
 //            throw AuthenticationError.responseParseError(response: payload)
 //        }
 //
 //        let serverSignature = try Base64.decode(v)
 //
 //        guard serverSignature == signature else {
-//            log.error("Authentication to MongoDB with SASL failed because the server signature is invalid")
-//            log.debug(response)
 //            throw AuthenticationError.serverSignatureInvalid
 //        }
 //
@@ -133,30 +122,25 @@
 //    /// - parameter previousInformation: The nonce, response and `SCRAMClient` instance
 //    ///
 //    /// - throws: When the authentication fails, when Base64 fails
-//    private func challenge(with details: MongoCredentials, using previousInformation: (nonce: String, response: Document, scram: SCRAMClient), usingConnection connection: Connection) throws {
+//    private func challenge(with details: MongoCredentials, using previousInformation: (nonce: String, response: Document, scram: SCRAMClient), to database: Database) throws {
 //        // If we failed the authentication
 //        guard Int(previousInformation.response["ok"]) == 1 else {
-//            log.error("Authentication for MongoDB user \(details.username) with SASL failed against \(String(describing: details.database)) because of the following error")
-//            log.error(previousInformation.response)
 //            throw AuthenticationError.incorrectCredentials
 //        }
 //
 //        // Get our ConversationID
 //        guard let conversationId = previousInformation.response["conversationId"] else {
-//            log.error("Authentication for MongoDB user \(details.username) with SASL failed because no conversation has been kept")
 //            throw AuthenticationError.authenticationFailure
 //        }
 //
 //        // Decode the challenge
 //        guard let stringResponse = String(previousInformation.response["payload"]) else {
-//            log.error("Authentication for MongoDB user \(details.username) with SASL failed because no SASL payload has been received")
 //            throw AuthenticationError.authenticationFailure
 //        }
 //
 //        let stringResponseData = try Base64.decode(stringResponse)
 //
 //        guard let decodedStringResponse = String(bytes: Array(stringResponseData), encoding: String.Encoding.utf8) else {
-//            log.error("Authentication for MongoDB user \(details.username) with SASL failed because no valid Base64 has been received")
 //            throw MongoError.invalidBase64String
 //        }
 //
@@ -287,4 +271,4 @@
 //        }
 //    }
 //}
-
+//

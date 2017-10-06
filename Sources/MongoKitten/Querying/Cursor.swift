@@ -214,23 +214,6 @@ public final class Cursor<T> {
         }
     }
     
-    /// An efficient and lazy asynchronous forEach operation specialized for MongoDB.
-    ///
-    /// Designed to throw errors in the case of a cursor failure, unlike normal `for .. in cursor` operations
-    @discardableResult
-    public func forEach(_ body: @escaping (T) throws -> Void) throws -> Future<Void> {
-        return Future<Void> {
-            while let entity = try self.nextEntity() {
-                try body(entity)
-            }
-        }
-    }
-    
-    /// An efficient and lazy flatmap operation specialized for MongoDB
-    public func flatMap<B>(transform: @escaping (T) throws -> (B?)) throws -> Cursor<B> {
-        return try Cursor<B>(base: self, transform: transform)
-    }
-    
     /// When deinitializing we're killing the cursor on the server as well
     deinit {
         if cursorID != 0 {

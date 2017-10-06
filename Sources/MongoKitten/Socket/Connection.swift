@@ -9,23 +9,19 @@
 //
 
 import Async
+import Bits
+import TLS
 import Foundation
 import Dispatch
-import MongoSocket
+import TCP
 
 /// A connection to MongoDB
-class Connection {
-    /// The TCP socket
-    fileprivate var client: MongoTCP!
+public final class DatabaseConnection: Async.Stream, ClosableStream {
+    public typealias Input = ByteBuffer
+    public typealias Output = ByteBuffer
     
-    /// Whether this server supports write operations
-    var writable = false
-    
-    /// This connection is authenticated against these DBs
-    var authenticated = false
-    
-    /// Ran when closing
-    var onClose: (()->())
+    public var errorStream: BaseStream.ErrorHandler?
+    public var outputStream: OutputHandler?
     
     /// The host that's connected to
     let host: MongoHost
@@ -36,21 +32,17 @@ class Connection {
     /// The currently constructing reply
     var nextReply = ServerReplyPlaceholder()
     
-    /// Handles mutations the response buffer
-    internal static let mutationsQueue = DispatchQueue(label: "org.mongokitten.server.responseQueue", qos: DispatchQoS.userInteractive)
-    
     /// The responses being waited for
     var waitingForResponses = [Int32: Promise<ServerReply>]()
     
-    /// Whether this client is still connected
-    public var isConnected: Bool {
-        return Connection.mutationsQueue.sync { self.client.isConnected }
-    }
+    fileprivate let strongSocketReference: Any
     
     /// Simply creates a new connection from existing data
-    init(clientSettings: ClientSettings, writable: Bool, host: MongoHost, onClose: @escaping (()->())) throws {
-        var options = [String:Any] ()
-        if let sslSettings = clientSettings.sslSettings {
+    init(settings: ClientSettings, host: MongoHost, queue: DispatchQueue) throws {
+        if let sslSettings = settings.ssl {
+            let tls = try TLSClient(queue: queue)
+            tls.connect(hostname: host.hostname, port: host.port)
+            
             options["sslEnabled"]  = sslSettings.enabled
             options["invalidCertificateAllowed"]  = sslSettings.invalidCertificateAllowed
             options["invalidHostNameAllowed"] = sslSettings.invalidHostNameAllowed
@@ -59,8 +51,6 @@ class Connection {
             options["sslEnabled"]  = false
         }
         
-        self.writable = writable
-        self.onClose = onClose
         self.host = host
 
         self.client = try clientSettings.TCPClient.init(address: host.hostname, port: host.port, options: options, onRead: self.onRead, onError: { _ in

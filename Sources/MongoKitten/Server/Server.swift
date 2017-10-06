@@ -60,7 +60,7 @@ public final class Server {
     internal var nextRequestID: Int32 = 0
     
     /// `MongoTCP` Socket bound to the MongoDB Server
-    private var connections = [Connection]()
+    private var connections = [DatabaseConnection]()
     
     /// Maximum amount of simultanious operations per connection
     public var maxActionsPerConnection = 10
