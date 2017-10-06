@@ -8,7 +8,7 @@
 // See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of MongoKitten project authors
 //
 
-import Schrodinger
+import Async
 import BSON
 
 /// DBRef is a structure made to keep references to other MongoDB objects and resolve them easily

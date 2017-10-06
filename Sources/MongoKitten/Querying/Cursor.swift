@@ -11,7 +11,7 @@
 import Dispatch
 import Foundation
 import BSON
-import Schrodinger
+import Async
 import ExtendedJSON
 
 public enum CursorStrategy {

@@ -10,7 +10,7 @@
 import Foundation
 import BSON
 import Dispatch
-import Schrodinger
+import Async
 
 public typealias MongoCollection = Collection
 

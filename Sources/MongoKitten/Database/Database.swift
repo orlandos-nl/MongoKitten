@@ -11,7 +11,7 @@
 import Foundation
 import BSON
 import Dispatch
-import Schrodinger
+import Async
 
 /// A Mongo Database. Cannot be publically initialized.
 /// But you can get a database object by subscripting `Server` with a `String` as the database name
@@ -81,10 +81,24 @@ public final class Database {
         self.name = name
     }
     
+    public static func connect(to url: String) throws -> Future<Database> {
+        let db = try Database(url)
+        
+        let connection = try db.server.reserveConnection(writing: false, authenticatedFor: nil)
+        
+        defer {
+            db.server.returnConnection(connection)
+        }
+        
+        return try connection.authenticate(to: db).map { _ in
+            return db
+        }
+    }
+    
     /// Initializes this Database with a connection String.
     ///
     /// Requires a path with a database name
-    public init(_ url: String, maxConnectionsPerServer maxConnections: Int = 100) throws {
+    init(_ url: String, maxConnectionsPerServer maxConnections: Int = 100) throws {
         let path = url.characters.split(separator: "/", maxSplits: 2, omittingEmptySubsequences: true)
         
         guard path.count == 3, let dbname = path.last?.split(separator: "?")[0] else {
@@ -94,14 +108,6 @@ public final class Database {
         self.server = try Server(url, maxConnectionsPerServer: maxConnections)
         
         self.name = String(dbname)
-        
-        let connection = try server.reserveConnection(writing: false, authenticatedFor: nil)
-        
-        defer {
-            server.returnConnection(connection)
-        }
-        
-//        try connection.authenticate(to: self)
     }
     
     /// A queue to prevent subscripting from creating multiple instances of the same database
@@ -129,49 +135,6 @@ public final class Database {
             collections[collection] = Weak(newC)
             return newC
         }
-    }
-    
-    /// Executes a command `Document` on this database using a query message
-    ///
-    /// - parameter command: The command `Document` to execute
-    /// - parameter timeout: The timeout in seconds for listening for a response
-    ///
-    /// - returns: A `Message` containing the response
-    @discardableResult
-    public func execute(dbCommand document: Document, until timeout: TimeInterval = 0, writing: Bool = true) throws -> [Document] {
-        let timeout = DispatchTimeInterval.seconds(Int(timeout > 0 ? timeout : server.defaultTimeout))
-        
-        let connection = try server.reserveConnection(writing: writing, authenticatedFor: self)
-        
-        defer {
-            server.returnConnection(connection)
-        }
-        
-        let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: "\(self.name).$cmd", numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
-        return try server.sendAsync(message: commandMessage, overConnection: connection).await(for: timeout).documents
-    }
-    
-    /// Executes a command `Document` on this database using a query message
-    ///
-    /// - parameter command: The command `Document` to execute
-    /// - parameter timeout: The timeout in seconds for listening for a response
-    ///
-    /// - returns: A `Message` containing the response
-    @discardableResult
-    internal func execute(command document: Document, writing: Bool = true) throws -> Future<ServerReply> {
-        let connection = try server.reserveConnection(writing: writing, authenticatedFor: self)
-        
-        defer {
-            server.returnConnection(connection)
-        }
-        
-        return try self.execute(command: document, writing: writing, using: connection)
-    }
-    
-    @discardableResult
-    internal func execute(command document: Document, writing: Bool = true, using connection: Connection) throws -> Future<ServerReply> {
-        let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: "\(self.name).$cmd", numbersToSkip: 0, numbersToReturn: 1, query: document, returnFields: nil)
-        return try server.sendAsync(message: commandMessage, overConnection: connection)
     }
 }
 

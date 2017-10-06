@@ -8,7 +8,7 @@
 // See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of MongoKitten project authors
 //
 
-import Schrodinger
+import Async
 import Foundation
 import Dispatch
 import MongoSocket
@@ -40,7 +40,7 @@ class Connection {
     internal static let mutationsQueue = DispatchQueue(label: "org.mongokitten.server.responseQueue", qos: DispatchQoS.userInteractive)
     
     /// The responses being waited for
-    var waitingForResponses = [Int32: Future<ServerReply>]()
+    var waitingForResponses = [Int32: Promise<ServerReply>]()
     
     /// Whether this client is still connected
     public var isConnected: Bool {
@@ -73,25 +73,25 @@ class Connection {
     /// - parameter db: The database to authenticate to
     ///
     /// - throws: Authentication error
-//    func authenticate(to db: Database) throws {
-//        if let details = db.server.clientSettings.credentials {
-//            let db = db.server[details.database ?? db.name]
-//            
-//            switch details.authenticationMechanism {
-//            case .SCRAM_SHA_1:
-//                try db.authenticate(SASL: details, usingConnection: self)
-//            case .MONGODB_CR:
-//                try db.authenticate(mongoCR: details, usingConnection: self)
-//            case .MONGODB_X509:
-//                try db.server.authenticateX509(subject: details.username, usingConnection: self)
-//            default:
-//                throw MongoError.unsupportedFeature("authentication Method \"\(details.authenticationMechanism.rawValue)\"")
-//            }
-//            
-//            self.authenticated = true
-//        }
-//    }
-//    
+    func authenticate(to db: Database) throws -> Future<Void> {
+        if let details = db.server.clientSettings.credentials {
+            let db = db.server[details.database ?? db.name]
+            
+            switch details.authenticationMechanism {
+            case .SCRAM_SHA_1:
+                return try self.authenticate(SASL: details, to: db)
+            case .MONGODB_CR:
+                return try self.authenticate(mongoCR: details, to: db)
+            case .MONGODB_X509:
+                return try self.authenticateX509(subject: details.username, to: db)
+            default:
+                throw MongoError.unsupportedFeature("authentication Method \"\(details.authenticationMechanism.rawValue)\"")
+            }
+            
+            self.authenticated = true
+        }
+    }
+    
     /// Closes this connection
     func close() {
         _ = try? client.close()
@@ -99,9 +99,7 @@ class Connection {
         
         Connection.mutationsQueue.sync {
             for (_, callback) in self.waitingForResponses {
-                _ = try? callback.complete {
-                    throw MongoError.notConnected
-                }
+                callback.fail(MongoError.notConnected)
             }
             
             self.waitingForResponses = [:]

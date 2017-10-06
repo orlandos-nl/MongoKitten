@@ -13,10 +13,10 @@ var package = Package(
     ],
     dependencies: [
         // For MongoDB Documents
-        .package(url: "https://github.com/OpenKitten/BSON.git", .revision("framework")),
+        .package(url: "file:///Users/joannisorlandos/Documents/OpenKitten/BSON/", .revision("framework")),
         
         // Asynchronous behaviour
-        .package(url: "https://github.com/OpenKitten/Schrodinger.git", .revision("framework")),
+        .package(url: "file:///Users/joannisorlandos/Documents/Vapor/vapor/", .revision("tls")),
         ],
     targets: [
         .target(
@@ -24,17 +24,9 @@ var package = Package(
             dependencies: ["BSON"]),
         .target(
             name: "MongoKitten",
-            dependencies: ["BSON", "ExtendedJSON", "Schrodinger", "MongoSocket"]),
+            dependencies: ["BSON", "ExtendedJSON", "Async", "TLS", "TCP"]),
         .testTarget(
             name: "MongoKittenTests",
             dependencies: ["MongoKitten"]),
         ]
 )
-
-// Provides Sockets + SSL
-#if !os(macOS) && !os(iOS)
-    package.dependencies.append(.package(url: "https://github.com/OpenKitten/KittenCTLS.git", from: Version(1, 0, 0)))
-    package.targets.append(.target(name: "MongoSocket", dependencies: ["KittenCTLS"]))		
-#else		
-    package.targets.append(.target(name: "MongoSocket", dependencies: []))		
-#endif

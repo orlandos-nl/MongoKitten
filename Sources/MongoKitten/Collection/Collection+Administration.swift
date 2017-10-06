@@ -8,7 +8,7 @@
 // See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of MongoKitten project authors
 //
 
-import Schrodinger
+import Async
 
 extension Collection {
     @discardableResult

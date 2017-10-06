@@ -1,4 +1,4 @@
-import Schrodinger
+import Async
 
 public protocol Operation {
     associatedtype Result

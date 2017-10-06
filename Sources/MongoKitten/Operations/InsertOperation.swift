@@ -1,5 +1,5 @@
 import BSON
-import Schrodinger
+import Async
 
 public struct Insert: Command, Operation {
     public let insert: Collection

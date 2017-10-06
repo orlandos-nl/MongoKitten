@@ -48,15 +48,6 @@ extension DocumentCodable {
     }
 }
 
-
-import Schrodinger
-
-extension Future {
-    public func await() throws -> T {
-        return try self.await(until: .distantFuture)
-    }
-}
-
 postfix operator *
 
 /// Will convert an ArraySlice<Byte> to [Byte]

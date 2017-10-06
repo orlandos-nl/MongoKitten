@@ -26,7 +26,7 @@ extension Command {
 }
 
 import BSON
-import Schrodinger
+import Async
 
 extension Database {
     func execute<E: Command, D: Decodable>(
@@ -53,7 +53,7 @@ extension Database {
             }
             
             return (try BSONDecoder().decode(D.self, from: first), connection)
-        }.map(result)
+        }.map(callback: result)
     }
     
     func execute<E: Command, T>(

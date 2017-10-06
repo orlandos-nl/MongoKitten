@@ -10,7 +10,7 @@
 import XCTest
 import MongoKitten
 import Dispatch
-import Schrodinger
+import Async
 
 public class CollectionTests: XCTestCase {
     public static var allTests: [(String, (CollectionTests) -> () throws -> Void)] {

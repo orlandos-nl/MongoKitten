@@ -1,4 +1,4 @@
-import Schrodinger
+import Async
 
 public struct Aggregate: Command, Operation {
     public let aggregate: Collection
