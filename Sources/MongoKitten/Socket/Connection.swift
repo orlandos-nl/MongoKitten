@@ -16,27 +16,19 @@ import Dispatch
 import TCP
 
 /// A connection to MongoDB
-public final class DatabaseConnection: Async.Stream, ClosableStream {
-    public var onClose: CloseHandler?
-    
-    public typealias Input = ByteBuffer
-    public typealias Output = ServerReply
-    
-    public var errorStream: ErrorHandler?
-    public var outputStream: OutputHandler? {
-        get {
-            return parser.outputStream
-        }
-        set {
-            parser.outputStream = newValue
-        }
-    }
-    
+public final class DatabaseConnection {
     /// The host that's connected to
     let host: MongoHost
     
     /// The currently constructing reply
-    var parser = ServerReplyParser()
+    let parser = ServerReplyParser()
+    
+    var requestID: Int32 = 0
+    
+    var nextRequestId: Int32 {
+        defer { requestID = requestID &+ 1 }
+        return requestID
+    }
     
     /// The responses being waited for
     var waitingForResponses = [Int32: Promise<ServerReply>]()
@@ -145,7 +137,6 @@ public final class DatabaseConnection: Async.Stream, ClosableStream {
     public func close() {
         self.doClose?()
         self.closeResponses()
-        onClose?()
     }
     
     func closeResponses() {
@@ -156,8 +147,16 @@ public final class DatabaseConnection: Async.Stream, ClosableStream {
         self.waitingForResponses = [:]
     }
     
-    public func inputStream(_ input: ByteBuffer) {
+    func send(message: Message) throws -> Future<Reply> {
+        let messageData = try message.generateData()
+        let promise = Promise<Reply>()
+        
+        messageData.withUnsafeBytes { (pointer: BytesPointer) in
+            self.inputStream(ByteBuffer(start: pointer, count: messageData.count))
+        }
         parser.inputStream(input)
+        
+        return promise.future
     }
     
     private func onRead(at pointer: UnsafeMutablePointer<UInt8>, withLengthOf length: Int) {

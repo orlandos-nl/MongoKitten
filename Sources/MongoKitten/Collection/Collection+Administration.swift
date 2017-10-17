@@ -10,49 +10,49 @@
 
 import Async
 
-extension Collection {
+extension DatabaseConnection {
     @discardableResult
-    public func touch(data: Bool, index: Bool) throws -> Future<Void> {
-        let command = Commands.Touch(collection: self, data: data, index: index)
+    public func touch(collection: MongoCollection, data: Bool, index: Bool) throws -> Future<Void> {
+        let command = Commands.Touch(collection: collection, data: data, index: index)
         
-        return try command.execute(on: database)
+        return try command.execute(on: self)
     }
     
     @discardableResult
-    public func convertToCapped(cappingAt cap: Int) throws -> Future<Void> {
-        let command = Commands.ConvertToCapped(collection: self, toCap: cap)
+    public func convert(collection: MongoCollection, toCap cap: Int) throws -> Future<Void> {
+        let command = Commands.ConvertToCapped(collection: collection, toCap: cap)
         
-        return try command.execute(on: database)
+        return try command.execute(on: self)
     }
     
     @discardableResult
-    public func rebuildIndexes() throws -> Future<Void> {
-        let command = Commands.RebuildIndexes(collection: self)
+    public func rebuildIndexes(on collection: MongoCollection) throws -> Future<Void> {
+        let command = Commands.RebuildIndexes(collection: collection)
         
-        return try command.execute(on: database)
+        return try command.execute(on: self)
     }
     
     @discardableResult
-    public func compact(forced force: Bool? = nil) throws -> Future<Void> {
-        var command = Commands.Compact(collection: self)
+    public func compact(_ collection: MongoCollection, forced force: Bool? = nil) throws -> Future<Void> {
+        var command = Commands.Compact(collection: collection)
         
         command.force = force
         
-        return try command.execute(on: database)
+        return try command.execute(on: self)
     }
     
     @discardableResult
-    public func clone(renameTo otherCollection: String, cappingAt cap: Int) throws -> Future<Void> {
-        let command = Commands.CloneCollectionAsCapped(collection: self, newName: otherCollection, cap: cap)
+    public func clone(_ collection: MongoCollection, renameTo otherCollection: String, cappingAt cap: Int) throws -> Future<Void> {
+        let command = Commands.CloneCollectionAsCapped(collection: collection, newName: otherCollection, cap: cap)
         
-        return try command.execute(on: database)
+        return try command.execute(on: self)
     }
     
     @discardableResult
-    public func drop() throws -> Future<Void> {
-        let command = Commands.Drop(collection: self)
+    public func drop(_ collection: MongoCollection) throws -> Future<Void> {
+        let command = Commands.Drop(collection: collection)
         
-        return try command.execute(on: database)
+        return try command.execute(on: self)
     }
 }
 
@@ -62,6 +62,8 @@ extension Commands {
         var data: Bool
         var index: Bool
         
+        let targetCollection: MongoCollection
+        
         static var writing = true
         static var emitsCursor = false
         
@@ -69,6 +71,7 @@ extension Commands {
             self.touch = collection.name
             self.data = data
             self.index = index
+            self.targetCollection = collection
         }
     }
     
@@ -78,23 +81,29 @@ extension Commands {
         // TODO: Int32?
         var size: Int
         
+        let targetCollection: MongoCollection
+        
         static var writing = true
         static var emitsCursor = false
         
         init(collection: Collection, toCap cap: Int) {
             self.convertTocapped = collection.name
             self.size = cap
+            self.targetCollection = collection
         }
     }
     
     struct RebuildIndexes: Command {
         var reIndex: String
         
+        let targetCollection: MongoCollection
+        
         static var writing = true
         static var emitsCursor = false
         
         init(collection: Collection) {
             self.reIndex = collection.name
+            self.targetCollection = collection
         }
     }
     
@@ -102,11 +111,14 @@ extension Commands {
         var compact: String
         var force: Bool?
         
+        let targetCollection: MongoCollection
+        
         static var writing = true
         static var emitsCursor = false
         
         init(collection: Collection) {
             self.compact = collection.name
+            self.targetCollection = collection
         }
     }
     
@@ -115,10 +127,13 @@ extension Commands {
         var toCollection: String
         var size: Int
         
+        let targetCollection: MongoCollection
+        
         static var writing = true
         static var emitsCursor = false
         
         init(collection: Collection, newName: String, cap: Int) {
+            self.targetCollection = collection
             self.cloneCollectionAsCapped = collection.name
             self.toCollection = newName
             self.size = cap
@@ -128,11 +143,14 @@ extension Commands {
     struct Drop: Command {
         var drop: String
         
+        let targetCollection: MongoCollection
+        
         static var writing = true
         static var emitsCursor = false
         
         init(collection: Collection) {
             self.drop = collection.name
+            self.targetCollection = collection
         }
     }
 }

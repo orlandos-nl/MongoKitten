@@ -11,11 +11,13 @@
 protocol Command: Encodable {
     static var writing: Bool { get }
     static var emitsCursor: Bool { get }
+    
+    var targetCollection: MongoCollection { get }
 }
 
 extension Command {
-    func execute(on database: Database) throws -> Future<Void> {
-        let response = try database.execute(self, expecting: Document.self)
+    func execute(on connection: DatabaseConnection) throws -> Future<Void> {
+        let response = try connection.execute(self, expecting: Document.self)
         
         return response.map { document in
             guard Int(document["ok"]) == 1 else {
@@ -27,8 +29,9 @@ extension Command {
 
 import BSON
 import Async
+import Bits
 
-extension Database {
+extension DatabaseConnection {
     func execute<E: Command, D: Decodable>(
         _ command: E,
         expecting type: D.Type
@@ -60,18 +63,13 @@ extension Database {
         _ command: E,
         handle result: @escaping ((ServerReply, DatabaseConnection) throws -> (T))
     ) throws -> Future<T> {
-        let command = try BSONEncoder().encode(command)
+        let query = try BSONEncoder().encode(command)
+        let collection = command.targetCollection.database.name + ".$cmd"
         
-        let connection = try server.reserveConnection(writing: E.writing, authenticatedFor: self)
+        let message = Message.Query(requestID: self.nextRequestId, flags: [], collection: collection, numbersToSkip: 0, numbersToReturn: 1, query: query, returnFields: nil)
         
-        defer {
-            if !E.emitsCursor {
-                server.returnConnection(connection)
-            }
-        }
-        
-        return try execute(command: command, using: connection).map { reply in
-            return try result(reply, connection)
+        return try send(message: message).map { reply in
+            return try result(reply, self)
         }
     }
 }
