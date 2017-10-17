@@ -123,7 +123,7 @@ public struct ClientSettings {
     public internal(set) var hosts: [MongoHost]
 
     /// The SSL Settings
-    public var ssl: SSLSettings?
+    public var ssl: SSLSettings
 
     /// The credentials to authenticate to a mongo server
     public var credentials: MongoCredentials?

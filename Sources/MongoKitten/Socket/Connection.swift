@@ -17,45 +17,105 @@ import TCP
 
 /// A connection to MongoDB
 public final class DatabaseConnection: Async.Stream, ClosableStream {
-    public typealias Input = ByteBuffer
-    public typealias Output = ByteBuffer
+    public var onClose: CloseHandler?
     
-    public var errorStream: BaseStream.ErrorHandler?
-    public var outputStream: OutputHandler?
+    public typealias Input = ByteBuffer
+    public typealias Output = ServerReply
+    
+    public var errorStream: ErrorHandler?
+    public var outputStream: OutputHandler? {
+        get {
+            return parser.outputStream
+        }
+        set {
+            parser.outputStream = newValue
+        }
+    }
     
     /// The host that's connected to
     let host: MongoHost
     
-    /// The amount of current users
-    var users: Int = 0
-    
     /// The currently constructing reply
-    var nextReply = ServerReplyPlaceholder()
+    var parser = ServerReplyParser()
     
     /// The responses being waited for
     var waitingForResponses = [Int32: Promise<ServerReply>]()
     
-    fileprivate let strongSocketReference: Any
+    fileprivate var doClose: (()->())?
+    fileprivate var strongSocketReference: Any?
     
-    /// Simply creates a new connection from existing data
-    init(settings: ClientSettings, host: MongoHost, queue: DispatchQueue) throws {
-        if let sslSettings = settings.ssl {
-            let tls = try TLSClient(queue: queue)
-            tls.connect(hostname: host.hostname, port: host.port)
+    public static func connect(to database: Database, settings: ClientSettings, worker: Worker) throws -> Future<DatabaseConnection> {
+        var hosts = settings.hosts.makeIterator()
+        
+        func attemptConnection(host: MongoHost) throws -> Future<DatabaseConnection> {
+            let connection = DatabaseConnection(host: host, settings: settings, queue: worker.queue)
             
-            options["sslEnabled"]  = sslSettings.enabled
-            options["invalidCertificateAllowed"]  = sslSettings.invalidCertificateAllowed
-            options["invalidHostNameAllowed"] = sslSettings.invalidHostNameAllowed
-            options["CAFile"] = sslSettings.CAFilePath
-        } else {
-            options["sslEnabled"]  = false
+            let promise = Promise<DatabaseConnection>()
+            
+            func retryOnFailure(future: Future<Void>) {
+                future.then {
+                    promise.complete(connection)
+                }.catch { error in
+                    guard let host = hosts.next() else {
+                        promise.fail(error)
+                        return
+                    }
+                    
+                    do {
+                        promise.flatten(try attemptConnection(host: host))
+                    } catch {
+                        promise.fail(error)
+                    }
+                }
+            }
+            
+            if settings.ssl.enabled {
+                let tls = try TLSClient(worker: worker)
+                tls.clientCertificatePath = settings.ssl.clientCertificate
+                
+                let result = try tls.connect(hostname: host.hostname, port: host.port).flatten {
+                    try connection.authenticate(to: database)
+                }.map {
+                    connection.doClose = {
+                        tls.close()
+                    }
+                    
+                    connection.strongSocketReference = tls
+                }
+                
+                retryOnFailure(future: result)
+            } else {
+                let socket = try Socket()
+                let client = TCPClient(socket: socket, worker: worker)
+                
+                try socket.connect(hostname: host.hostname, port: host.port)
+                    
+                let result = socket.writable(queue: worker.queue).flatten {
+                    try connection.authenticate(to: database)
+                }.map {
+                    connection.doClose = {
+                        socket.close()
+                    }
+                    
+                    connection.strongSocketReference = socket
+                }.map {
+                    client.start()
+                }
+                
+                retryOnFailure(future: result)
+            }
         }
         
+        guard let host = hosts.next() else {
+            throw MongoError.internalInconsistency
+        }
+        
+        return try attemptConnection(host: host)
+    }
+    
+    /// Simply creates a new connection from existing data
+    init(host: MongoHost, settings: ClientSettings, queue: DispatchQueue) {
         self.host = host
-
-        self.client = try clientSettings.TCPClient.init(address: host.hostname, port: host.port, options: options, onRead: self.onRead, onError: { _ in
-            self.close()
-        })
     }
     
     /// Authenticates this connection to a database
@@ -65,38 +125,40 @@ public final class DatabaseConnection: Async.Stream, ClosableStream {
     /// - throws: Authentication error
     func authenticate(to db: Database) throws -> Future<Void> {
         if let details = db.server.clientSettings.credentials {
-            let db = db.server[details.database ?? db.name]
-            
-            switch details.authenticationMechanism {
-            case .SCRAM_SHA_1:
-                return try self.authenticate(SASL: details, to: db)
-            case .MONGODB_CR:
-                return try self.authenticate(mongoCR: details, to: db)
-            case .MONGODB_X509:
-                return try self.authenticateX509(subject: details.username, to: db)
-            default:
-                throw MongoError.unsupportedFeature("authentication Method \"\(details.authenticationMechanism.rawValue)\"")
-            }
-            
-            self.authenticated = true
+            fatalError()
+//            let db = db.server[details.database ?? db.name]
+//
+//            switch details.authenticationMechanism {
+//            case .SCRAM_SHA_1:
+//                return try self.authenticate(SASL: details, to: db)
+//            case .MONGODB_CR:
+//                return try self.authenticate(mongoCR: details, to: db)
+//            case .MONGODB_X509:
+//                return try self.authenticateX509(subject: details.username, to: db)
+//            default:
+//                throw MongoError.unsupportedFeature("authentication Method \"\(details.authenticationMechanism.rawValue)\"")
+//            }
         }
     }
     
     /// Closes this connection
-    func close() {
-        _ = try? client.close()
-        onClose()
-        
-        Connection.mutationsQueue.sync {
-            for (_, callback) in self.waitingForResponses {
-                callback.fail(MongoError.notConnected)
-            }
-            
-            self.waitingForResponses = [:]
-        }
+    public func close() {
+        self.doClose?()
+        self.closeResponses()
+        onClose?()
     }
     
-    var pastReplyLeftovers = Data()
+    func closeResponses() {
+        for (_, callback) in self.waitingForResponses {
+            callback.fail(MongoError.notConnected)
+        }
+        
+        self.waitingForResponses = [:]
+    }
+    
+    public func inputStream(_ input: ByteBuffer) {
+        parser.inputStream(input)
+    }
     
     private func onRead(at pointer: UnsafeMutablePointer<UInt8>, withLengthOf length: Int) {
         func checkComplete() {
@@ -107,11 +169,9 @@ public final class DatabaseConnection: Async.Stream, ClosableStream {
                     return
                 }
                 
-                _ = try? Connection.mutationsQueue.sync {
-                    if let promise = waitingForResponses[reply.responseTo] {
-                        try promise.complete { reply }
-                        waitingForResponses[reply.responseTo] = nil
-                    }
+                if let promise = waitingForResponses[reply.responseTo] {
+                    try promise.complete { reply }
+                    waitingForResponses[reply.responseTo] = nil
                 }
                 
                 if nextReply.unconsumed.count > 0 {
@@ -148,12 +208,6 @@ public final class DatabaseConnection: Async.Stream, ClosableStream {
             
             pointer = pointer.advanced(by: consumed)
             length = length - consumed
-        }
-    }
-    
-    func send(data: Data) throws {
-        try data.withUnsafeBytes { (pointer: UnsafePointer<UInt8>) in
-            try client.send(data: pointer, withLengthOf: data.count)
         }
     }
 }

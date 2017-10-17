@@ -31,6 +31,9 @@ public struct SSLSettings: ExpressibleByBooleanLiteral {
     
     /// The path to the CA File that can be used to recognize the server
     public var CAFilePath: String?
+    
+    /// The certificate used to authorize the client
+    public var clientCertificate: String?
 
     /// Creates an SSLSettings specification
     public init(enabled: Bool, invalidHostNameAllowed: Bool = false, invalidCertificateAllowed: Bool = false, CAFilePath: String? = nil) {
