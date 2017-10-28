@@ -40,6 +40,12 @@ Swift 3: `.Package(url: "https://github.com/OpenKitten/MongoKitten.git", majorVe
 
 Swift 4: `.package(url: "https://github.com/OpenKitten/MongoKitten.git", from: "4.0.0")`
 
+For Swift 4 you also need to add `MongoKitten` to your target's dependencies and optionally `ExtendedJSON` for people using that:
+
+```swift
+.target(name: "MyTarget", dependencies: ["MongoKitten"])
+```
+
 After a `swift package update`, you can now use MongoKitten:
 
 ```swift
