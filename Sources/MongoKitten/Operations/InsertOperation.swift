@@ -2,6 +2,10 @@ import BSON
 import Async
 
 public struct Insert: Command, Operation {
+    var targetCollection: MongoCollection {
+        return insert
+    }
+    
     public let insert: Collection
     public var documents: [Document]
     public var ordered: Bool?
@@ -19,8 +23,8 @@ public struct Insert: Command, Operation {
     }
     
     @discardableResult
-    public func execute(on database: Database) throws -> Future<Reply.Insert> {
-        return try database.execute(self, expecting: Reply.Insert.self) { reply, _ in
+    public func execute(on connection: DatabaseConnection) throws -> Future<Reply.Insert> {
+        return try connection.execute(self, expecting: Reply.Insert.self) { reply, _ in
             guard reply.ok == 1 else {
                 throw reply
             }

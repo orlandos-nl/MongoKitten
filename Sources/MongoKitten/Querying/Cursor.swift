@@ -118,39 +118,35 @@ public final class Cursor<T> {
     /// Gets more information and puts it in the buffer
     @discardableResult
     fileprivate func getMore() throws -> Future<Void> {
-        return Future {
-            do {
-                if self.database.server.serverData?.maxWireVersion ?? 0 >= 4 {
-                    let reply = try self.database.execute(command: [
-                        "getMore": Int(self.cursorID) as Int,
-                        "collection": self.collection,
-                        "batchSize": Int32.init(self.chunkSize)
-                        ], using: self.connection).await()
-                    
-                    let documents = [Primitive](reply.documents.first?["cursor"]["nextBatch"]) ?? []
-                    
-                    try cursorMutationsQueue.sync {
-                        for value in documents {
-                            if let doc = try self.transform(Document(value) ?? [:]) {
-                                self.data.append(doc)
-                            }
+        do {
+            if self.database.server.serverData?.maxWireVersion ?? 0 >= 4 {
+                let reply = try self.database.execute(command: [
+                    "getMore": Int(self.cursorID) as Int,
+                    "collection": self.collection,
+                    "batchSize": Int32.init(self.chunkSize)
+                    ], using: self.connection).await()
+                
+                let documents = [Primitive](reply.documents.first?["cursor"]["nextBatch"]) ?? []
+                
+                try cursorMutationsQueue.sync {
+                    for value in documents {
+                        if let doc = try self.transform(Document(value) ?? [:]) {
+                            self.data.append(doc)
                         }
-            
-                        self.cursorID = Int(reply.documents.first?["cursor"]["id"]) ?? -1
-                        self.dataCount = self.data.count
                     }
-                } else {
-                    let request = Message.GetMore(requestID: self.database.server.nextMessageID(), namespace: self.namespace, numberToReturn: self.chunkSize, cursor: self.cursorID)
-                    
-                    let reply = try self.database.server.sendAsync(message: request, overConnection: self.connection).await()
-                    
-                    try cursorMutationsQueue.sync {
-                        self.data += try reply.documents.flatMap(self.transform)
-                        self.cursorID = reply.cursorID
-                    }
+        
+                    self.cursorID = Int(reply.documents.first?["cursor"]["id"]) ?? -1
+                    self.dataCount = self.data.count
                 }
-            } catch {
-                self.database.server.cursorErrorHandler(error)
+            } else {
+                let request = Message.GetMore(requestID: self.database.server.nextMessageID(), namespace: self.namespace, numberToReturn: self.chunkSize, cursor: self.cursorID)
+                
+                let reply = try self.database.server.sendAsync(message: request, overConnection: self.connection).await()
+                
+                try cursorMutationsQueue.sync {
+                    self.data += try reply.documents.flatMap(self.transform)
+                    self.cursorID = reply.cursorID
+                }
             }
         }
     }

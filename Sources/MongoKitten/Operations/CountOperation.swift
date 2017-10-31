@@ -1,6 +1,10 @@
 import Async
 
 public struct Count: Command, Operation {
+    var targetCollection: MongoCollection {
+        return count
+    }
+    
     public let count: Collection
     public var query: Query?
     public var skip: Int?
@@ -19,8 +23,8 @@ public struct Count: Command, Operation {
         self.collation = collection.default.collation
     }
     
-    public func execute(on database: Database) throws -> Future<Int> {
-        return try database.execute(self, expecting: Reply.Count.self) { reply, _ in
+    public func execute(on connection: DatabaseConnection) throws -> Future<Int> {
+        return try connection.execute(self, expecting: Reply.Count.self) { reply, _ in
             guard reply.ok == 1 else {
                 throw Errors.Count(from: reply)
             }

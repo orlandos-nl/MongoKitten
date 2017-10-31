@@ -2,7 +2,7 @@ import BSON
 import Async
 
 public struct Update: Command, Operation {
-    public struct Single: Codable {
+    public struct Single: Encodable {
         public var q: Query
         public var u: Document
         public var collation: Collation?
@@ -14,11 +14,15 @@ public struct Update: Command, Operation {
             self.u = document
         }
         
-        public func execute(on collection: Collection) throws -> Future<Reply.Update> {
+        public func execute(on connection: DatabaseConnection, collection: Collection) throws -> Future<Reply.Update> {
             let updates = Update(self, in: collection)
             
-            return try updates.execute(on: collection.database)
+            return try updates.execute(on: connection)
         }
+    }
+    
+    var targetCollection: MongoCollection {
+        return update
     }
     
     public let update: Collection
@@ -48,8 +52,8 @@ public struct Update: Command, Operation {
         self.writeConcern = collection.default.writeConcern
     }
     
-    public func execute(on database: Database) throws -> Future<Reply.Update> {
-        return try database.execute(self, expecting: Reply.Update.self) { reply, _ in
+    public func execute(on connection: DatabaseConnection) throws -> Future<Reply.Update> {
+        return try connection.execute(self, expecting: Reply.Update.self) { reply, _ in
             guard reply.ok == 1 else {
                 throw reply
             }

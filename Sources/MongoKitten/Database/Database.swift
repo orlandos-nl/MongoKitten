@@ -22,50 +22,9 @@ public final class Database {
     /// The database's name
     public let name: String
     
-    /// The default ReadConcern for collections in this Database.
-    ///
-    /// When a ReadConcern is provided in the method call it'll still override this
-    private var defaultReadConcern: ReadConcern? = nil
+    public let connectionPool: ConnectionPool
     
-    /// The default WriteConcern for collections in this Database.
-    ///
-    /// When a WriteConcern is provided in the method call it'll still override this
-    private var defaultWriteConcern: WriteConcern? = nil
-    
-    /// Sets or gets the default write concern at the database level
-    public var writeConcern: WriteConcern? {
-        get {
-            return self.defaultWriteConcern ?? server.writeConcern
-        }
-        set {
-            self.defaultWriteConcern = newValue
-        }
-    }
-    
-    /// Sets or gets the default read concern at the database level
-    public var readConcern: ReadConcern? {
-        get {
-            return self.defaultReadConcern ?? server.readConcern
-        }
-        set {
-            self.defaultReadConcern = newValue
-        }
-    }
-    
-    /// The default Collation for collections in this Database.
-    ///
-    /// When a Collation is provided in the method call it'll still override this
-    private var defaultCollation: Collation? = nil
-    
-    /// Sets or gets the default collation at the database level
-    public var collation: Collation? {
-        get {
-            return self.defaultCollation ?? server.collation
-        }
-        set {
-            self.defaultCollation = newValue
-        }
-    }
+    public var preferences = Preferences()
     
     /// A cache of all collections in this Database.
     ///
@@ -76,9 +35,10 @@ public final class Database {
     ///
     /// - parameter database: The database to use
     /// - parameter server: The `Server` on which this database exists
-    public init(named name: String, atServer server: Server) {
+    public init(named name: String, atServer server: Server, connectionPool: ConnectionPool) {
         self.server = server
         self.name = name
+        self.connectionPool = connectionPool
     }
     
     public static func connect(to url: String) throws -> Future<Database> {
@@ -105,7 +65,7 @@ public final class Database {
             throw MongoError.invalidDatabase("")
         }
         
-        self.server = try Server(url, maxConnectionsPerServer: maxConnections)
+        self.server = try Server(url)
         
         self.name = String(dbname)
     }

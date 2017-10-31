@@ -4,5 +4,5 @@ public protocol Operation {
     associatedtype Result
     
     // TODO: database -> Pool
-    func execute(on database: Database) throws -> Future<Result>
+    func execute(on database: DatabaseConnection) throws -> Future<Result>
 }

@@ -16,14 +16,24 @@ protocol Command: Encodable {
 }
 
 extension Command {
-    func execute(on connection: DatabaseConnection) throws -> Future<Void> {
-        let response = try connection.execute(self, expecting: Document.self)
+    public func execute(on connection: DatabaseConnection) -> Future<Void> {
+        do {
+            let response = try connection.execute(self, expecting: Document.self)
         
-        return response.map { document in
-            guard Int(document["ok"]) == 1 else {
-                throw MongoError.commandFailure(error: document)
+            return response.map { document in
+                guard Int(document["ok"]) == 1 else {
+                    throw MongoError.commandFailure(error: document)
+                }
             }
+        } catch {
+            return Future(error: error)
         }
+    }
+}
+
+extension Reply {
+    struct Okay: Decodable {
+        var ok: Int
     }
 }
 
@@ -47,7 +57,7 @@ extension DatabaseConnection {
     
     func execute<E: Command, D: Decodable, T>(
         _ command: E,
-        expecting type: D.Type,
+        expecting type: D.Type = D.self,
         handle result: @escaping ((D, DatabaseConnection) throws -> (T))
     ) throws -> Future<T> {
         return try execute(command) { reply, connection in

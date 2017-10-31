@@ -2,20 +2,30 @@ import Async
 
 extension Collection {
     @discardableResult
-    public func update(_ query: Query, to document: Document) throws -> Future<Reply.Update> {
-        return try Update.Single(matching: query, to: document).execute(on: self)
+    public func update(_ query: Query, to document: Document) -> Future<Reply.Update> {
+        let update = Update.Single(matching: query, to: document)
+        
+        return self.connectionPool.retain().flatten { connection in
+            return try update.execute(on: connection, collection: self)
+        }
     }
     
     @discardableResult
-    public func upsert(_ query: Query, to document: Document) throws -> Future<Reply.Update> {
+    public func upsert(_ query: Query, to document: Document) -> Future<Reply.Update> {
         var update = Update.Single(matching: query, to: document)
         update.upsert = true
         
-        return try update.execute(on: self)
+        return self.connectionPool.retain().flatten { connection in
+            return try update.execute(on: connection, collection: self)
+        }
     }
     
     @discardableResult
-    public func updateAll(_ query: Query, to document: Document) throws -> Future<Reply.Update> {
-        return try Update.Single(matching: query, to: document).execute(on: self)
+    public func updateAll(_ query: Query, to document: Document) -> Future<Reply.Update> {
+        let update = Update.Single(matching: query, to: document)
+        
+        return self.connectionPool.retain().flatten { connection in
+            return try update.execute(on: connection, collection: self)
+        }
     }
 }

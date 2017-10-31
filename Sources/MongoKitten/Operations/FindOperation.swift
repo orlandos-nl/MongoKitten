@@ -1,6 +1,10 @@
 import Async
 
 public struct Find: Command, Operation {
+    var targetCollection: MongoCollection {
+        return find
+    }
+    
     public let find: Collection
     public var batchSize: Int32 = 100
     
@@ -23,7 +27,7 @@ public struct Find: Command, Operation {
         self.collation = collection.default.collation
     }
     
-    public func execute(on database: Database) throws -> Future<Cursor<Document>> {
+    public func execute(on database: DatabaseConnection) throws -> Future<Cursor<Document>> {
         return try database.execute(self) { reply, connection in
             guard
                 let doc = reply.documents.first,
@@ -36,7 +40,7 @@ public struct Find: Command, Operation {
             return try Cursor<Document>(
                 cursorDocument: cursor,
                 collection: self.find.name,
-                database: database,
+                database: self.targetCollection.database,
                 connection: connection,
                 chunkSize: self.batchSize,
                 transform: { $0 }
@@ -61,7 +65,7 @@ public struct FindOne {
         self.collation = collection.default.collation
     }
     
-    public func execute(on database: Database) throws -> Future<Document?> {
+    public func execute(on connection: DatabaseConnection) throws -> Future<Document?> {
         var find = Find(on: collection)
         find.batchSize = 1
         find.limit = 1
@@ -73,7 +77,7 @@ public struct FindOne {
         find.skip = skip
         find.projection = projection
         
-        return try find.execute(on: database).map { cursor in
+        return try find.execute(on: connection).map { cursor in
             return cursor.data.first
         }
     }

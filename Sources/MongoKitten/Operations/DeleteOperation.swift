@@ -2,7 +2,7 @@ import BSON
 import Async
 
 public struct Delete: Command, Operation {
-    public struct Single: Codable {
+    public struct Single: Encodable {
         public var q: Query
         public var limit: RemoveLimit
         public var collation: Collation?
@@ -12,11 +12,15 @@ public struct Delete: Command, Operation {
             self.limit = limit
         }
         
-        public func execute(on collection: Collection) throws -> Future<Int> {
+        public func execute(on connection: DatabaseConnection, collection: Collection) throws -> Future<Int> {
             let deletes = Delete([self], from: collection)
             
-            return try deletes.execute(on: collection.database)
+            return try deletes.execute(on: connection)
         }
+    }
+    
+    var targetCollection: MongoCollection {
+        return delete
     }
     
     public let delete: Collection
@@ -36,8 +40,8 @@ public struct Delete: Command, Operation {
     }
     
     @discardableResult
-    public func execute(on database: Database) throws -> Future<Int> {
-        return try database.execute(self, expecting: Reply.Delete.self) { reply, _ in
+    public func execute(on connection: DatabaseConnection) throws -> Future<Int> {
+        return try connection.execute(self, expecting: Reply.Delete.self) { reply, _ in
             guard let n = reply.n, reply.ok == 1 else {
                 throw reply
             }

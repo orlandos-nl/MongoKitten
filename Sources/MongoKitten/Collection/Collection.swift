@@ -28,6 +28,10 @@ public final class Collection: Encodable {
     /// The collection name
     public private(set) var name: String
     
+    public var connectionPool: ConnectionPool {
+        return database.connectionPool
+    }
+    
     /// The full (computed) collection name. Created by adding the Database's name with the Collection's name with a dot to seperate them
     public var namespace: String {
         return "\(database.name).\(name)"

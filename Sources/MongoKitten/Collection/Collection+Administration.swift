@@ -12,47 +12,47 @@ import Async
 
 extension DatabaseConnection {
     @discardableResult
-    public func touch(collection: MongoCollection, data: Bool, index: Bool) throws -> Future<Void> {
+    public func touch(collection: MongoCollection, data: Bool, index: Bool) -> Future<Void> {
         let command = Commands.Touch(collection: collection, data: data, index: index)
         
-        return try command.execute(on: self)
+        return command.execute(on: self)
     }
     
     @discardableResult
-    public func convert(collection: MongoCollection, toCap cap: Int) throws -> Future<Void> {
+    public func convert(collection: MongoCollection, toCap cap: Int) -> Future<Void> {
         let command = Commands.ConvertToCapped(collection: collection, toCap: cap)
         
-        return try command.execute(on: self)
+        return command.execute(on: self)
     }
     
     @discardableResult
-    public func rebuildIndexes(on collection: MongoCollection) throws -> Future<Void> {
+    public func rebuildIndexes(on collection: MongoCollection) -> Future<Void> {
         let command = Commands.RebuildIndexes(collection: collection)
         
-        return try command.execute(on: self)
+        return command.execute(on: self)
     }
     
     @discardableResult
-    public func compact(_ collection: MongoCollection, forced force: Bool? = nil) throws -> Future<Void> {
+    public func compact(_ collection: MongoCollection, forced force: Bool? = nil) -> Future<Void> {
         var command = Commands.Compact(collection: collection)
         
         command.force = force
         
-        return try command.execute(on: self)
+        return command.execute(on: self)
     }
     
     @discardableResult
-    public func clone(_ collection: MongoCollection, renameTo otherCollection: String, cappingAt cap: Int) throws -> Future<Void> {
+    public func clone(_ collection: MongoCollection, renameTo otherCollection: String, cappingAt cap: Int) -> Future<Void> {
         let command = Commands.CloneCollectionAsCapped(collection: collection, newName: otherCollection, cap: cap)
         
-        return try command.execute(on: self)
+        return command.execute(on: self)
     }
     
     @discardableResult
-    public func drop(_ collection: MongoCollection) throws -> Future<Void> {
+    public func drop(_ collection: MongoCollection) -> Future<Void> {
         let command = Commands.Drop(collection: collection)
         
-        return try command.execute(on: self)
+        return command.execute(on: self)
     }
 }
 

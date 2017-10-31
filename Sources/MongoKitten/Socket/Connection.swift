@@ -34,7 +34,7 @@ public final class DatabaseConnection {
     var waitingForResponses = [Int32: Promise<ServerReply>]()
     
     fileprivate var doClose: (()->())?
-    fileprivate var strongSocketReference: Any?
+    fileprivate var strongSocketReference: TCPClient?
     
     public static func connect(to database: Database, settings: ClientSettings, worker: Worker) throws -> Future<DatabaseConnection> {
         var hosts = settings.hosts.makeIterator()
@@ -147,14 +147,13 @@ public final class DatabaseConnection {
         self.waitingForResponses = [:]
     }
     
-    func send(message: Message) throws -> Future<Reply> {
+    func send(message: Message) throws -> Future<ServerReply> {
         let messageData = try message.generateData()
-        let promise = Promise<Reply>()
+        let promise = Promise<ServerReply>()
         
         messageData.withUnsafeBytes { (pointer: BytesPointer) in
-            self.inputStream(ByteBuffer(start: pointer, count: messageData.count))
+            strongSocketReference.inputStream(ByteBuffer(start: pointer, count: messageData.count))
         }
-        parser.inputStream(input)
         
         return promise.future
     }

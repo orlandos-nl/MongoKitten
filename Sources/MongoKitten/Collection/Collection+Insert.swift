@@ -2,13 +2,14 @@ import Async
 
 extension Collection {
     @discardableResult
-    public func insert(_ document: Document) throws -> Future<Reply.Insert> {
-        return try insertAll([document])
+    public func insert(_ document: Document) -> Future<Reply.Insert> {
+        return insertAll([document])
     }
     
     @discardableResult
-    public func insertAll(_ documents: [Document]) throws -> Future<Reply.Insert> {
+    public func insertAll(_ documents: [Document]) -> Future<Reply.Insert> {
         let insert = Insert(documents, into: self)
-        return try insert.execute(on: database)
+        
+        return connectionPool.retain().flatten(insert.execute)
     }
 }
