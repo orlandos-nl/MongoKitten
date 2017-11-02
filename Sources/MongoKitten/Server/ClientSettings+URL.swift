@@ -111,6 +111,6 @@ extension ClientSettings {
             maxConnections = 100
         }
         
-        self.init(hosts: hosts, ssl: ssl ? SSLSettings(enabled: true, invalidHostNameAllowed: !sslVerify, invalidCertificateAllowed: !sslVerify) : nil, credentials: authentication, maxConnectionsPerServer: maxConnections, applicationName: queries["appname"])
+        self.init(hosts: hosts, ssl: ssl ? SSLSettings(enabled: true, invalidHostNameAllowed: !sslVerify, invalidCertificateAllowed: !sslVerify) : false, credentials: authentication, maxConnectionsPerServer: maxConnections, applicationName: queries["appname"])
     }
 }

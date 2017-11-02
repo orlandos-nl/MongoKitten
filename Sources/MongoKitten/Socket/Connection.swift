@@ -16,12 +16,10 @@ import Dispatch
 import TCP
 
 /// A connection to MongoDB
-public final class DatabaseConnection {
-    /// The host that's connected to
-    let host: MongoHost
-    
-    /// The currently constructing reply
-    let parser = ServerReplyParser()
+public final class DatabaseConnection: ConnectionPool {
+    public func retain() -> Future<DatabaseConnection> {
+        return Future(self)
+    }
     
     var requestID: Int32 = 0
     
@@ -34,80 +32,51 @@ public final class DatabaseConnection {
     var waitingForResponses = [Int32: Promise<ServerReply>]()
     
     fileprivate var doClose: (()->())?
-    fileprivate var strongSocketReference: TCPClient?
+    fileprivate var strongSocketReference: Any?
     
-    public static func connect(to database: Database, settings: ClientSettings, worker: Worker) throws -> Future<DatabaseConnection> {
-        var hosts = settings.hosts.makeIterator()
+    let parser = ServerReplyParser()
+    let serializer: PacketSerializer
+    
+    init<DuplexStream: Async.Stream & ClosableStream>(connection: DuplexStream) where DuplexStream.Input == ByteBuffer, DuplexStream.Output == ByteBuffer {
+        self.strongSocketReference = connection
+        self.serializer = PacketSerializer(connection: connection)
         
-        func attemptConnection(host: MongoHost) throws -> Future<DatabaseConnection> {
-            let connection = DatabaseConnection(host: host, settings: settings, queue: worker.queue)
-            
-            let promise = Promise<DatabaseConnection>()
-            
-            func retryOnFailure(future: Future<Void>) {
-                future.then {
-                    promise.complete(connection)
-                }.catch { error in
-                    guard let host = hosts.next() else {
-                        promise.fail(error)
-                        return
-                    }
-                    
-                    do {
-                        promise.flatten(try attemptConnection(host: host))
-                    } catch {
-                        promise.fail(error)
-                    }
-                }
-            }
-            
-            if settings.ssl.enabled {
-                let tls = try TLSClient(worker: worker)
-                tls.clientCertificatePath = settings.ssl.clientCertificate
-                
-                let result = try tls.connect(hostname: host.hostname, port: host.port).flatten {
-                    try connection.authenticate(to: database)
-                }.map {
-                    connection.doClose = {
-                        tls.close()
-                    }
-                    
-                    connection.strongSocketReference = tls
-                }
-                
-                retryOnFailure(future: result)
-            } else {
-                let socket = try Socket()
-                let client = TCPClient(socket: socket, worker: worker)
-                
-                try socket.connect(hostname: host.hostname, port: host.port)
-                    
-                let result = socket.writable(queue: worker.queue).flatten {
-                    try connection.authenticate(to: database)
-                }.map {
-                    connection.doClose = {
-                        socket.close()
-                    }
-                    
-                    connection.strongSocketReference = socket
-                }.map {
-                    client.start()
-                }
-                
-                retryOnFailure(future: result)
-            }
+        connection.stream(to: parser).drain { reply in
+            self.waitingForResponses[reply.responseTo]?.complete(reply)
+            self.waitingForResponses[reply.responseTo] = nil
         }
         
-        guard let host = hosts.next() else {
-            throw MongoError.internalInconsistency
+        self.doClose = {
+            connection.close()
         }
-        
-        return try attemptConnection(host: host)
     }
     
-    /// Simply creates a new connection from existing data
-    init(host: MongoHost, settings: ClientSettings, queue: DispatchQueue) {
-        self.host = host
+    public static func connect(host: MongoHost, ssl: SSLSettings, worker: Worker, authenticatingTo database: String? = nil) throws -> Future<DatabaseConnection> {
+        if ssl.enabled {
+            let tls = try TLSClient(worker: worker)
+            tls.clientCertificatePath = ssl.clientCertificate
+            
+            return try tls.connect(hostname: host.hostname, port: host.port).map {
+                return DatabaseConnection(connection: tls)
+            }.flatten { connection in
+                return try connection.authenticate(to: database).map {
+                    return connection
+                }
+            }
+        } else {
+            let socket = try Socket()
+            let client = TCPClient(socket: socket, worker: worker)
+            
+            try socket.connect(hostname: host.hostname, port: host.port)
+            
+            return socket.writable(queue: worker.queue).map {
+                return DatabaseConnection(connection: client)
+            }.flatten { connection in
+                try connection.authenticate(to: database).map {
+                    return connection
+                }
+            }
+        }
     }
     
     /// Authenticates this connection to a database
@@ -115,8 +84,11 @@ public final class DatabaseConnection {
     /// - parameter db: The database to authenticate to
     ///
     /// - throws: Authentication error
-    func authenticate(to db: Database) throws -> Future<Void> {
-        if let details = db.server.clientSettings.credentials {
+    func authenticate(to db: String?) throws -> Future<Void> {
+        
+        return Future(())
+        
+//        if let details = db.server.clientSettings.credentials {
             fatalError()
 //            let db = db.server[details.database ?? db.name]
 //
@@ -130,7 +102,7 @@ public final class DatabaseConnection {
 //            default:
 //                throw MongoError.unsupportedFeature("authentication Method \"\(details.authenticationMechanism.rawValue)\"")
 //            }
-        }
+//        }
     }
     
     /// Closes this connection
@@ -148,64 +120,12 @@ public final class DatabaseConnection {
     }
     
     func send(message: Message) throws -> Future<ServerReply> {
-        let messageData = try message.generateData()
         let promise = Promise<ServerReply>()
         
-        messageData.withUnsafeBytes { (pointer: BytesPointer) in
-            strongSocketReference.inputStream(ByteBuffer(start: pointer, count: messageData.count))
-        }
+        self.waitingForResponses[message.requestID] = promise
+        
+        serializer.inputStream(message)
         
         return promise.future
-    }
-    
-    private func onRead(at pointer: UnsafeMutablePointer<UInt8>, withLengthOf length: Int) {
-        func checkComplete() {
-            if nextReply.isComplete {
-                defer { nextReply = ServerReplyPlaceholder() }
-                
-                guard let reply = nextReply.construct() else {
-                    return
-                }
-                
-                if let promise = waitingForResponses[reply.responseTo] {
-                    try promise.complete { reply }
-                    waitingForResponses[reply.responseTo] = nil
-                }
-                
-                if nextReply.unconsumed.count > 0 {
-                    pastReplyLeftovers.append(contentsOf: nextReply.unconsumed)
-                }
-                
-                return
-            }
-            
-            return
-        }
-        
-        var pointer = pointer
-        var length = length
-        
-        while true {
-            while pastReplyLeftovers.count > 0 {
-                pastReplyLeftovers.withUnsafeMutableBytes { (pointer: UnsafeMutablePointer<UInt8>) in
-                    let consumed = nextReply.process(consuming: pointer, withLengthOf: pastReplyLeftovers.count)
-                    
-                    pastReplyLeftovers.removeFirst(consumed)
-                    
-                    checkComplete()
-                }
-            }
-
-            let consumed = nextReply.process(consuming: pointer, withLengthOf: length)
-
-            checkComplete()
-
-            guard consumed < length else {
-                return
-            }
-            
-            pointer = pointer.advanced(by: consumed)
-            length = length - consumed
-        }
     }
 }

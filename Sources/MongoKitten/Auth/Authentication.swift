@@ -164,7 +164,7 @@
 //            "payload": payload
 //            ], returnFields: nil)
 //
-//        let response = try server.sendAsync(message: commandMessage, overConnection: connection).await()
+//        let response = try server.sendAsync(message: commandMessage, overConnection: connection).blockingAwait(timeout: .seconds(3))
 //
 //        // If we don't get a correct reply
 //
@@ -194,7 +194,7 @@
 //            "payload": payload
 //            ], returnFields: nil)
 //
-//        let response = try server.sendAsync(message: commandMessage, overConnection: connection).await()
+//        let response = try server.sendAsync(message: commandMessage, overConnection: connection).blockingAwait(timeout: .seconds(3))
 //
 //        let responseDocument = try firstDocument(in: response)
 //
@@ -212,7 +212,7 @@
 //            "getnonce": Int32(1)
 //            ], returnFields: nil)
 //
-//        let response = try server.sendAsync(message: nonceMessage, overConnection: connection).await()
+//        let response = try server.sendAsync(message: nonceMessage, overConnection: connection).blockingAwait(timeout: .seconds(3))
 //
 //        // Get the server's challenge
 //        let document = try firstDocument(in: response)
@@ -236,7 +236,7 @@
 //            "user": details.username,
 //            "key": key
 //            ], returnFields: nil)
-//        let successResponse = try server.sendAsync(message: commandMessage, overConnection: connection).await()
+//        let successResponse = try server.sendAsync(message: commandMessage, overConnection: connection).blockingAwait(timeout: .seconds(3))
 //
 //        let successDocument = try firstDocument(in: successResponse)
 //
@@ -260,7 +260,7 @@
 //            "user": subject
 //        ], returnFields: nil)
 //
-//        let successResponse = try self.sendAsync(message: message, overConnection: connection).await()
+//        let successResponse = try self.sendAsync(message: message, overConnection: connection).blockingAwait(timeout: .seconds(3))
 //
 //        let successDocument = try firstDocument(in: successResponse)
 //

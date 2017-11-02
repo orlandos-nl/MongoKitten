@@ -24,9 +24,9 @@ public class ClientSettingsTest: XCTestCase {
     }
 
     func testAuthentication() throws {
-        let simpleClientSettings = ClientSettings(host: "openkitten.org:12345", sslSettings: false, credentials: nil)
+        let simpleClientSettings = ClientSettings(hosts: ["openkitten.org:12345"], ssl: false, credentials: nil)
         
-        XCTAssertEqual(simpleClientSettings.sslSettings?.enabled, false)
+        XCTAssertEqual(simpleClientSettings.ssl.enabled, false)
         XCTAssertNil(simpleClientSettings.credentials)
         XCTAssertEqual(simpleClientSettings.hosts.first?.hostname, "openkitten.org")
 
@@ -39,7 +39,6 @@ public class ClientSettingsTest: XCTestCase {
         if clientSettings.hosts.count > 0 {
             XCTAssertEqual(clientSettings.hosts[0].hostname, "localhost")
             XCTAssertEqual(clientSettings.hosts[0].port, 1234)
-            XCTAssertNil(clientSettings.sslSettings)
         } else {
             XCTFail("Host not found")
         }
@@ -75,26 +74,23 @@ public class ClientSettingsTest: XCTestCase {
 
     func testSSLSettings() throws {
         let clientSettings = try ClientSettings("mongodb://user:passwor@localhost:27017?ssl=false")
-        XCTAssertNil(clientSettings.sslSettings)
-
         let sslClientSettings = try ClientSettings("mongodb://user:passwor@localhost:27017?ssl=true")
         XCTAssertNotNil(sslClientSettings)
-        XCTAssertEqual(sslClientSettings.sslSettings?.enabled, true)
-        XCTAssertEqual(sslClientSettings.sslSettings?.invalidCertificateAllowed, false)
+        XCTAssertEqual(sslClientSettings.ssl.enabled, true)
+        XCTAssertEqual(sslClientSettings.ssl.invalidCertificateAllowed, false)
 
         let sslInvalidCertSettings = try ClientSettings("mongodb://user:passwor@localhost:27017?ssl=true&sslVerify=false")
         XCTAssertNotNil(sslInvalidCertSettings)
-        XCTAssertEqual(sslInvalidCertSettings.sslSettings?.enabled, true)
-        XCTAssertEqual(sslInvalidCertSettings.sslSettings?.invalidCertificateAllowed, true)
+        XCTAssertEqual(sslInvalidCertSettings.ssl.enabled, true)
+        XCTAssertEqual(sslInvalidCertSettings.ssl.invalidCertificateAllowed, true)
 
 
         let sslValidCertSettings = try ClientSettings("mongodb://user:passwor@localhost:27017?ssl=true&sslVerify=true")
         XCTAssertNotNil(sslValidCertSettings)
-        XCTAssertEqual(sslValidCertSettings.sslSettings?.enabled, true)
-        XCTAssertEqual(sslValidCertSettings.sslSettings?.invalidCertificateAllowed, false)
+        XCTAssertEqual(sslValidCertSettings.ssl.enabled, true)
+        XCTAssertEqual(sslValidCertSettings.ssl.invalidCertificateAllowed, false)
 
         let invalidValueSettings = try ClientSettings("mongodb://user:passwor@localhost:27017?ssl=test")
-        XCTAssertNil(invalidValueSettings.sslSettings)
         
         let SSLsettings: SSLSettings = true
         

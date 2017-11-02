@@ -604,14 +604,3 @@ public enum AccumulatedGroupExpression {
     }
 }
 
-extension AggregationPipeline : CustomDebugStringConvertible {
-    public var debugDescription: String {
-        return self.document.makeExtendedJSONString()
-    }
-}
-
-extension AggregationPipeline.Stage : CustomDebugStringConvertible {
-    public var debugDescription: String {
-        return self.document.makeExtendedJSONString()
-    }
-}

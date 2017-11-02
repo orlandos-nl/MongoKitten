@@ -31,7 +31,7 @@
 //        log.verbose("Granting roles to user \"\(user)\"")
 //        log.debug(roleList)
 //
-//        let document = try firstDocument(in: try execute(command: command).await())
+//        let document = try firstDocument(in: try execute(command: command).blockingAwait(timeout: .seconds(3)))
 //
 //        guard Int(document["ok"]) == 1 else {
 //            log.error("grantRolesToUser for user \"\(user)\" was not successful because of the following error")

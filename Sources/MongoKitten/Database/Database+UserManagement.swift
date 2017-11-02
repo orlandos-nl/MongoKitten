@@ -41,7 +41,7 @@
 //
 //        command["roles"] = roles
 //
-//        let reply = try execute(command: command).await()
+//        let reply = try execute(command: command).blockingAwait(timeout: .seconds(3))
 //        let document = try firstDocument(in: reply)
 //
 //        guard Int(document["ok"]) == 1 else {
@@ -76,7 +76,7 @@
 //
 //        command["roles"] = roles
 //
-//        let document = try firstDocument(in: try execute(command: command).await())
+//        let document = try firstDocument(in: try execute(command: command).blockingAwait(timeout: .seconds(3)))
 //
 //        guard Int(document["ok"]) == 1 else {
 //            log.error("updateUser was not successful for user \(username) because of the following error")
@@ -100,7 +100,7 @@
 //            "dropUser": username
 //        ]
 //
-//        let document = try firstDocument(in: try execute(command: command).await())
+//        let document = try firstDocument(in: try execute(command: command).blockingAwait(timeout: .seconds(3)))
 //
 //        guard Int(document["ok"]) == 1 else {
 //            log.error("dropUser was not successful for user \(username) because of the following error")
@@ -119,7 +119,7 @@
 //            "dropAllUsersFromDatabase": Int32(1)
 //        ]
 //
-//        let document = try firstDocument(in: try execute(command: command).await())
+//        let document = try firstDocument(in: try execute(command: command).blockingAwait(timeout: .seconds(3)))
 //
 //        guard Int(document["ok"]) == 1 else {
 //            log.error("dropAllUsersFromDatabase was not successful because of the following error")

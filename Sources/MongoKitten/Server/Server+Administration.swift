@@ -10,7 +10,7 @@
 //    public func getDatabaseInfos() throws -> Document {
 //        let request: Document = ["listDatabases": 1]
 //        
-//        let reply = try self["admin"].execute(command: request, writing: false).await()
+//        let reply = try self["admin"].execute(command: request, writing: false).blockingAwait(timeout: .seconds(3))
 //        
 //        return try firstDocument(in: reply)
 //    }
@@ -75,7 +75,7 @@
 //            command["key"] = key
 //        }
 //        
-//        let reply = try self["admin"].execute(command: command).await()
+//        let reply = try self["admin"].execute(command: command).blockingAwait(timeout: .seconds(3))
 //        let response = try firstDocument(in: reply)
 //        
 //        guard Int(response["ok"]) == 1 else {
@@ -97,7 +97,7 @@
 //            "clone": url
 //        ]
 //        
-//        let reply = try self["admin"].execute(command: command).await()
+//        let reply = try self["admin"].execute(command: command).blockingAwait(timeout: .seconds(3))
 //        let response = try firstDocument(in: reply)
 //        
 //        guard Int(response["ok"]) == 1 else {
@@ -123,7 +123,7 @@
 //            command["force"] = force
 //        }
 //        
-//        let response = try firstDocument(in: try self["$cmd"].execute(command: command).await())
+//        let response = try firstDocument(in: try self["$cmd"].execute(command: command).blockingAwait(timeout: .seconds(3)))
 //        
 //        guard Int(response["ok"]) == 1 else {
 //            logger.error("shutdown was not successful because of the following error")
@@ -151,7 +151,7 @@
 //            command["block"] = block
 //        }
 //        
-//        let reply = try self[self.clientSettings.credentials?.database ?? "admin"].execute(command: command, writing: true).await()
+//        let reply = try self[self.clientSettings.credentials?.database ?? "admin"].execute(command: command, writing: true).blockingAwait(timeout: .seconds(3))
 //        let response = try firstDocument(in: reply)
 //        
 //        guard Int(response["ok"]) == 1 else {
@@ -188,7 +188,7 @@
 //        
 //        let db = database ?? self["admin"]
 //        
-//        let document = try firstDocument(in: try db.execute(command: command, writing: false).await())
+//        let document = try firstDocument(in: try db.execute(command: command, writing: false).blockingAwait(timeout: .seconds(3)))
 //        
 //        guard Int(document["ok"]) == 1 else {
 //            logger.error("usersInfo was not successful because of the following error")
@@ -227,7 +227,7 @@
 //        
 //        defer { returnConnection(connection) }
 //        
-//        let successResponse = try self.sendAsync(message: commandMessage, overConnection: connection).await()
+//        let successResponse = try self.sendAsync(message: commandMessage, overConnection: connection).blockingAwait(timeout: .seconds(3))
 //        
 //        let successDocument = try firstDocument(in: successResponse)
 //        

@@ -8,8 +8,10 @@
 // See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of MongoKitten project authors
 //
 
+import Async
 import MongoKitten
 import BSON
+import Dispatch
 import Foundation
 
 final class TestManager {
@@ -17,20 +19,13 @@ final class TestManager {
         case TestDataNotPresent
     }
     
-    static var mongoURL: String {
-        let defaultURL = "mongodb://localhost/mongokitten-unittest?appname=xctest"
+    static var mongoURL: (host: String, database: String) {
+        let defaultURL = "mongodb://localhost"
         
-        guard let out = getenv("mongokittentest") else { return defaultURL }
-        return String(validatingUTF8: out) ?? defaultURL
+        guard let out = getenv("mongokittentest") else { return (defaultURL, "mongokitten-unittest") }
+        return (String(validatingUTF8: out) ?? defaultURL, "mongokitten-unittest")
     }
     
-    static var db: Database = try! Database(mongoURL)
-    
-    static func disconnect() throws {
-        // TODO: Fix Linux constant disconnects
-        #if !os(Linux)
-        try db.server.disconnect()
-        #endif
-    }
+    static var db: Database = try! Database.connect(server: ClientSettings(mongoURL.host), database: mongoURL.database, worker: Worker(queue: .global())).blockingAwait(timeout: .seconds(5))
 }
 

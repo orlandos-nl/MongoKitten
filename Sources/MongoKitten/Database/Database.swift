@@ -22,7 +22,9 @@ public final class Database {
     /// The database's name
     public let name: String
     
-    public let connectionPool: ConnectionPool
+    public var connectionPool: ConnectionPool {
+        return server.connectionPool
+    }
     
     public var preferences = Preferences()
     
@@ -35,39 +37,20 @@ public final class Database {
     ///
     /// - parameter database: The database to use
     /// - parameter server: The `Server` on which this database exists
-    public init(named name: String, atServer server: Server, connectionPool: ConnectionPool) {
-        self.server = server
+    public init(named name: String, atServer server: Server) {
         self.name = name
-        self.connectionPool = connectionPool
+        self.server = server
     }
     
-    public static func connect(to url: String) throws -> Future<Database> {
-        let db = try Database(url)
-        
-        let connection = try db.server.reserveConnection(writing: false, authenticatedFor: nil)
-        
-        defer {
-            db.server.returnConnection(connection)
-        }
-        
-        return try connection.authenticate(to: db).map { _ in
-            return db
+    public static func connect(server settings: ClientSettings, database: String, worker: Worker) throws -> Future<Database> {
+        return try DatabaseConnection.connect(host: settings.hosts.first ?? "", ssl: settings.ssl, worker: worker).map { connection in
+            return Database(named: database, atServer: Server(connectionPool: connection, settings: settings))
         }
     }
     
-    /// Initializes this Database with a connection String.
-    ///
-    /// Requires a path with a database name
-    init(_ url: String, maxConnectionsPerServer maxConnections: Int = 100) throws {
-        let path = url.characters.split(separator: "/", maxSplits: 2, omittingEmptySubsequences: true)
-        
-        guard path.count == 3, let dbname = path.last?.split(separator: "?")[0] else {
-            throw MongoError.invalidDatabase("")
-        }
-        
-        self.server = try Server(url)
-        
-        self.name = String(dbname)
+    public init(named name: String, settings: ClientSettings, pool: ConnectionPool) {
+        self.server = Server(connectionPool: pool, settings: settings)
+        self.name = name
     }
     
     /// A queue to prevent subscripting from creating multiple instances of the same database

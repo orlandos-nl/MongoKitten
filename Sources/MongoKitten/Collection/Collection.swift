@@ -79,7 +79,7 @@ public final class Collection: Encodable {
 //            command["fields"] = projection
 //        }
 //
-//        let document = try firstDocument(in: try database.execute(command: command).await())
+//        let document = try firstDocument(in: try database.execute(command: command).blockingAwait(timeout: .seconds(3)))
 //
 //        guard Int(document["ok"]) == 1 && (Document(document["writeErrors"]) ?? [:]).count == 0, let value = Document(document["value"]) else {
 //            throw MongoError.commandFailure(error: document)
@@ -144,7 +144,7 @@ public final class Collection: Encodable {
 //            command["fields"] = projection
 //        }
 //
-//        let document = try firstDocument(in: try database.execute(command: command).await())
+//        let document = try firstDocument(in: try database.execute(command: command).blockingAwait(timeout: .seconds(3)))
 //
 //        guard Int(document["ok"]) == 1 && (Document(document["writeErrors"]) ?? [:]).count == 0, let value = Document(document["value"]) else {
 //            throw MongoError.commandFailure(error: document)
@@ -175,7 +175,7 @@ public final class Collection: Encodable {
 //        command["readConcern"] = readConcern ?? self.readConcern
 //        command["collation"] = collation ?? self.collation
 //
-//        return [Primitive](try firstDocument(in: try self.database.execute(command: command, writing: false).await())["values"])
+//        return [Primitive](try firstDocument(in: try self.database.execute(command: command, writing: false).blockingAwait(timeout: .seconds(3)))["values"])
 //    }
 //
 //    /// Changes the name of an existing collection. To move the collection to a different database, use `move` instead.
@@ -260,7 +260,7 @@ public final class Collection: Encodable {
 //        }
 //
 //
-//        let document = try firstDocument(in: try database.execute(command: ["createIndexes": self.name, "indexes": Document(array: indexDocs)]).await())
+//        let document = try firstDocument(in: try database.execute(command: ["createIndexes": self.name, "indexes": Document(array: indexDocs)]).blockingAwait(timeout: .seconds(3)))
 //
 //        guard Int(document["ok"]) == 1 else {
 //            throw MongoError.commandFailure(error: document)
@@ -276,7 +276,7 @@ public final class Collection: Encodable {
 //    ///
 //    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
 //    public func dropIndex(named index: String) throws {
-//        let reply = try database.execute(command: ["dropIndexes": self.name, "index": index]).await()
+//        let reply = try database.execute(command: ["dropIndexes": self.name, "index": index]).blockingAwait(timeout: .seconds(3))
 //
 //        let dropIndexResponse = try firstDocument(in: reply)
 //        guard Int(dropIndexResponse["ok"]) == 1 else {
@@ -303,7 +303,7 @@ public final class Collection: Encodable {
 //            throw MongoError.unsupportedOperations
 //        }
 //
-//        let result = try firstDocument(in: try database.execute(command: ["listIndexes": self.name], writing: false).await())
+//        let result = try firstDocument(in: try database.execute(command: ["listIndexes": self.name], writing: false).blockingAwait(timeout: .seconds(3)))
 //
 //        guard let cursorDocument = Document(result["cursor"]) else {
 //            throw MongoError.cursorInitializationError(cursorDocument: result)
@@ -334,7 +334,7 @@ public final class Collection: Encodable {
 //        log.verbose("Modifying \(self) with \(flags.count) flags")
 //        log.debug(flags)
 //
-//        let result = try firstDocument(in: database.execute(command: command + flags).await())
+//        let result = try firstDocument(in: database.execute(command: command + flags).blockingAwait(timeout: .seconds(3)))
 //
 //        guard Int(result["ok"]) == 1 else {
 //            log.error("Collection modification for \(self) failed")

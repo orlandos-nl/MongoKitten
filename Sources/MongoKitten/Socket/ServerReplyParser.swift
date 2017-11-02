@@ -1,11 +1,12 @@
 import Async
+import Bits
 import Foundation
 
 final class ServerReplyParser: Async.Stream {
     var outputStream: OutputHandler?
     var errorStream: BaseStream.ErrorHandler?
     
-    typealias Input = UnsafeBufferPointer<UInt8>
+    typealias Input = ByteBuffer
     typealias Output = ServerReply
     
     var totalLength: Int?

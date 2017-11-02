@@ -26,23 +26,14 @@ public struct Aggregate: Command, Operation {
         self.collation = collection.default.collation
     }
     
-    public func execute(on connection: DatabaseConnection) throws -> Future<Cursor<Document>> {
-        return try connection.execute(self) { reply, connection in
-            guard
-                let doc = reply.documents.first,
-                Int(doc["ok"]) == 1,
-                let cursor = Document(doc["cursor"])
-            else {
-                throw MongoError.cursorInitializationError(cursorDocument: reply.documents.first ?? [:])
-            }
-            
-            return try Cursor<Document>(
-                cursorDocument: cursor,
+    public func execute(on connection: DatabaseConnection) throws -> Future<Cursor> {
+        return try connection.execute(self, expecting: Reply.Cursor.self).map { cursor in
+            return try Cursor(
+                cursor: cursor,
                 collection: self.aggregate.name,
                 database: self.targetCollection.database,
                 connection: connection,
-                chunkSize: self.cursor.batchSize,
-                transform: { $0 }
+                chunkSize: self.cursor.batchSize
             )
         }
     }

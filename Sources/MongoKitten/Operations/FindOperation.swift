@@ -27,23 +27,14 @@ public struct Find: Command, Operation {
         self.collation = collection.default.collation
     }
     
-    public func execute(on database: DatabaseConnection) throws -> Future<Cursor<Document>> {
-        return try database.execute(self) { reply, connection in
-            guard
-                let doc = reply.documents.first,
-                Int(doc["ok"]) == 1,
-                let cursor = Document(doc["cursor"])
-            else {
-                throw MongoError.cursorInitializationError(cursorDocument: reply.documents.first ?? [:])
-            }
-            
-            return try Cursor<Document>(
-                cursorDocument: cursor,
+    public func execute(on database: DatabaseConnection) throws -> Future<Cursor> {
+        return try database.execute(self, expecting: Reply.Cursor.self) { cursor, connection in
+            return try Cursor(
+                cursor: cursor,
                 collection: self.find.name,
                 database: self.targetCollection.database,
                 connection: connection,
-                chunkSize: self.batchSize,
-                transform: { $0 }
+                chunkSize: self.batchSize
             )
         }
     }
@@ -77,8 +68,18 @@ public struct FindOne {
         find.skip = skip
         find.projection = projection
         
-        return try find.execute(on: connection).map { cursor in
-            return cursor.data.first
+        return try find.execute(on: connection).flatten { cursor in
+            let promise = Promise<Document?>()
+            
+            cursor.drain { doc in
+                promise.complete(doc)
+            }
+            
+            cursor.onClose = {
+                promise.complete(nil)
+            }
+            
+            return promise.future
         }
     }
 }

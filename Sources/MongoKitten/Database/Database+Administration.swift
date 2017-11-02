@@ -45,7 +45,7 @@
 //            log.debug("Validator:" + validator.makeDocument().makeExtendedJSON().serializedString())
 //        }
 //
-//        let document = try firstDocument(in: try execute(command: command).await())
+//        let document = try firstDocument(in: try execute(command: command).blockingAwait(timeout: .seconds(3)))
 //
 //        guard Int(document["ok"]) == 1 else {
 //            log.error("createCollection for collection \"\(name)\" was not successful because of the following error")
@@ -83,7 +83,7 @@
 //
 //        let connection = try server.reserveConnection(authenticatedFor: self)
 //        
-//        let reply = try execute(command: request, using: connection).await()
+//        let reply = try execute(command: request, using: connection).blockingAwait(timeout: .seconds(3))
 //
 //        let result = try firstDocument(in: reply)
 //
@@ -154,7 +154,7 @@
 //            "dropDatabase": Int32(1)
 //        ]
 //
-//        let document = try firstDocument(in: try execute(command: command).await())
+//        let document = try firstDocument(in: try execute(command: command).blockingAwait(timeout: .seconds(3)))
 //
 //        guard Int(document["ok"]) == 1 else {
 //            log.error("dropDatabase was not successful for \"\(self.name)\" because of the following error")
@@ -193,7 +193,7 @@
 //            command["query"] = filter.queryDocument
 //        }
 //
-//        let document = try firstDocument(in: try execute(command: command).await())
+//        let document = try firstDocument(in: try execute(command: command).blockingAwait(timeout: .seconds(3)))
 //
 //        guard Int(document["ok"]) == 1 else {
 //            log.error("cloneCollection was not successful because of the following error")
@@ -224,7 +224,7 @@
 //        
 //        log.verbose("Cloning \(self) to namespace \(ns)")
 //
-//        let document = try firstDocument(in: try execute(command: command).await())
+//        let document = try firstDocument(in: try execute(command: command).blockingAwait(timeout: .seconds(3)))
 //
 //        // If we're done
 //        if Bool(document["done"]) == true {

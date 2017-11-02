@@ -139,7 +139,6 @@ public struct ClientSettings {
 
     /// Initializes the settings with a group of hosts, SSLsettings (if applicable) amonst other settings
     public init(hosts: [MongoHost], ssl: SSLSettings = false, credentials: MongoCredentials?, maxConnectionsPerServer: Int = 100, defaultTimeout: TimeInterval = 30, applicationName: String? = nil) {
-
         self.hosts = hosts
         self.ssl = ssl
         self.credentials = credentials
