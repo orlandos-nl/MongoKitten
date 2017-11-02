@@ -10,7 +10,6 @@
 
 import Foundation
 import BSON
-import GeoJSON
 
 
 // MARK: Equations
@@ -283,18 +282,10 @@ public indirect enum AQT {
             return [:]
         case .in(let key, let array):
             return [key: ["$in": Document(array: array)] as Document]
-        case .near(let key, let point, let maxDistance, let minDistance):
-            return GeometryOperator(key: key, operatorName: "$near", geometry: point, maxDistance: maxDistance, minDistance: minDistance).makeDocument()
-        case .geoWithin(let key, let polygon):
-            return GeometryOperator(key: key, operatorName: "$geoWithin", geometry: polygon).makeDocument()
         case .exists(let key, let exists):
             return [
                 key: [ "$exists": exists ]
             ]
-        case .geoIntersects(let key, let geometry):
-            return GeometryOperator(key: key, operatorName: "$geoIntersects", geometry: geometry).makeDocument()
-        case .nearSphere(let key, let point, let maxDistance, let minDistance):
-            return GeometryOperator(key: key, operatorName: "$nearSphere", geometry: point, maxDistance: maxDistance, minDistance: minDistance).makeDocument()
         }
     }
     
@@ -351,37 +342,6 @@ public indirect enum AQT {
     
     /// Value is one of the given values
     case `in`(key: String, in: [BSON.Primitive])
-
-    /// Match all documents containing a `key` with geospatial data that is near the specified GeoJSON `Point`.
-    ///
-    /// - `key` the field name
-    /// - `point` the GeoJSON Point
-    /// - `maxDistance` : the maximum distance from the `point`, in meters
-    /// - `minDistance` : the minimum distance from the `point`, in meters
-    ///
-    /// - SeeAlso : https://docs.mongodb.com/manual/reference/operator/query/near/
-    case near(key: String, point: Point, maxDistance: Double, minDistance: Double)
-
-    /// Match all documents containing a `key` with geospatial data that exists entirely within the specified `Polygon`.
-    /// - `key` the field name
-    /// - `polygon` the GeoJSON Polygon
-    /// - SeeAlso : https://docs.mongodb.com/manual/reference/operator/query/geoWithin/
-    case geoWithin(key: String, polygon: GeoJSON.Polygon)
-
-    /// Match all documents containing a `key` with geospatial data that intersects with the specified shape.
-    /// - `key` the field name
-    /// - `geometry` the GeoJSON Geometry
-    /// - SeeAlso : https://docs.mongodb.com/manual/reference/operator/query/geoIntersects/
-    case geoIntersects(key: String, geometry: Geometry)
-
-    /// Match all documents containing a `key` with geospatial data that is near the specified GeoJSON point using spherical geometry.
-    ///
-    /// - `point` the GeoJSON Point
-    /// - `maxDistance` : the maximum distance from the `point`, in meters
-    /// - `minDistance` : the minimum distance from the `point`, in meters
-    ///
-    /// - SeeAlso : https://docs.mongodb.com/manual/reference/operator/query/nearSphere/
-    case nearSphere(key: String, point: Point,maxDistance: Double, minDistance: Double)
 }
 
 /// A `Query` that consists of an `AQT` statement

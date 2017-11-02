@@ -11,7 +11,7 @@
 import BSON
 
 /// A semantic version
-public struct Version: ValueConvertible, Comparable {
+public struct Version: Codable, Comparable {
     /// Major level
     public let major: Int
     
@@ -20,6 +20,21 @@ public struct Version: ValueConvertible, Comparable {
     
     /// Patch level
     public let patch: Int
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(self.string)
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        
+        guard let me = Version(try container.decode(String.self)) else {
+            throw MongoError.invalidBuildInfoDocument
+        }
+        
+        self = me
+    }
 
     /// Initializes using the major, minor, patch
     public init(_ major: Int, _ minor: Int, _ patch: Int) {
@@ -29,11 +44,7 @@ public struct Version: ValueConvertible, Comparable {
     }
     
     /// Converts to this from a String
-    public init?(_ value: BSON.Primitive?) {
-        guard let value = String(value) else {
-            return nil
-        }
-        
+    public init?(_ value: String) {
         let numbers = value.components(separatedBy: ".").flatMap {
             Int($0)
         }
@@ -48,7 +59,7 @@ public struct Version: ValueConvertible, Comparable {
     }
     
     /// Creates an embeddable BSON.Primitive (String)
-    public func makePrimitive() -> BSON.Primitive {
+    public var string: String {
         return "\(major).\(minor).\(patch)"
     }
     
@@ -119,7 +130,7 @@ public struct Version: ValueConvertible, Comparable {
 }
 
 /// MongoDB build information
-public struct BuildInfo: ValueConvertible {
+public struct BuildInfo: Codable {
     /// The git version
     public let gitVersion: String
     
@@ -146,58 +157,4 @@ public struct BuildInfo: ValueConvertible {
     
     /// The add-on modules on the server
     public let modules: Document
-    
-    /// Creates this from a Document, but throwable
-    public init(fromDocument document: Document) throws {
-        guard let gitVersion = String(document["gitVersion"]) else {
-            throw MongoError.invalidBuildInfoDocument
-        }
-        
-        guard let versionArray = Document(document["versionArray"]) else {
-            throw MongoError.invalidBuildInfoDocument
-        }
-        
-        let storageEngines = Document(document["storageEngines"])
-        
-        guard let bits = Int(document["bits"]) else {
-            throw MongoError.invalidBuildInfoDocument
-        }
-        
-        guard let debug = Bool(document["debug"]) else {
-            throw MongoError.invalidBuildInfoDocument
-        }
-        
-        guard let maxBsonObjectSize = Int(document["maxBsonObjectSize"]) else {
-            throw MongoError.invalidBuildInfoDocument
-        }
-        
-        let openSSL = Document(document["openssl"])
-        
-        let modules = Document(document["modules"]) ?? []
-        
-        self.version = Version(document["version"]) ?? Version(3, 4, 0)
-        self.gitVersion = gitVersion
-        self.versionArray = versionArray
-        self.storageEngines = storageEngines
-        self.bits = bits
-        self.debug = debug
-        self.maxBsonObjectSize = maxBsonObjectSize
-        self.openSSL = openSSL
-        self.modules = modules
-    }
-    
-    /// Converts this back to a Document
-    public func makePrimitive() -> BSON.Primitive {
-        return [
-            "gitVersion": gitVersion,
-            "versionArray": versionArray,
-            "version": version,
-            "storageEngines": storageEngines,
-            "bits": bits,
-            "debug": debug,
-            "maxBsonObjectSize": maxBsonObjectSize,
-            "openssl": openSSL,
-            "modules": modules
-        ] as Document
-    }
 }

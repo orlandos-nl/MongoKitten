@@ -13,14 +13,16 @@ import Foundation
 /// MongoDriverInformation allows to add extra information about the driver. This information is then available in the MongoD/MongoS logs.
 ///
 /// - SeeAlso : https://github.com/mongodb/specifications/blob/master/source/mongodb-handshake/handshake.rst
-struct MongoDriverInformation: ValueConvertible {
-
+struct MongoDriverInformation: Encodable {
     /// Application Name
     let appName: String?
-
-    /// Converts this to an embeddable BSON.Primitive
-    public func makePrimitive() -> BSON.Primitive {
-        let driver: Document = ["name": "MongoKitten", "version": "4.0.0"]
+    
+    func encode(to encoder: Encoder) throws {
+        try self.document.encode(to: encoder)
+    }
+    
+    var document: Document {
+        let driver: Document = ["name": "MongoKitten", "version": "5.0.0"]
 
         var client: Document = ["driver": driver]
 

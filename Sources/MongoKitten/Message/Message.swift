@@ -113,7 +113,8 @@ enum Message {
             body.reserveCapacity(4 + collection.utf8.count + 1 + 4 + findDocument.count + replaceDocument.count + 4)
             
             body.append(contentsOf: Int32(0).makeBytes())
-            body.append(contentsOf: collection.cStringBytes)
+            body.append(contentsOf: collection.utf8)
+            body.append(0)
             body.append(contentsOf: flags.rawValue.makeBytes())
             body.append(contentsOf: findDocument.bytes)
             body.append(contentsOf: replaceDocument.bytes)
@@ -124,7 +125,8 @@ enum Message {
             body.reserveCapacity(4 + collection.utf8.count + 1 + 4 + data.count + 4)
             
             body.append(contentsOf: flags.rawValue.makeBytes())
-            body.append(contentsOf: collection.cStringBytes)
+            body.append(contentsOf: collection.utf8)
+            body.append(0)
             body.append(contentsOf: data)
             
             requestID = requestIdentifier
@@ -132,7 +134,8 @@ enum Message {
             body.reserveCapacity(4 + collection.utf8.count + 1 + 4 + 4 + 4 + (returnFields?.byteCount ?? 0) + 4)
             
             body += flags.rawValue.makeBytes()
-            body += collection.cStringBytes
+            body.append(contentsOf: collection.utf8)
+            body.append(0)
             body += numbersToSkip.makeBytes()
             body += numbersToReturn.makeBytes()
             
@@ -145,14 +148,16 @@ enum Message {
             requestID = requestIdentifier
         case .GetMore(let requestIdentifier, let namespace, let numberToReturn, let cursorID):
             body += Int32(0).makeBytes()
-            body += namespace.cStringBytes
+            body.append(contentsOf: namespace.utf8)
+            body.append(0)
             body += numberToReturn.makeBytes()
             body += cursorID.makeBytes()
             
             requestID = requestIdentifier
         case .Delete(let requestIdentifier, let collection, let flags, let removeDocument):
             body += Int32(0).makeBytes()
-            body += collection.cStringBytes
+            body.append(contentsOf: collection.utf8)
+            body.append(0)
             body += flags.rawValue.makeBytes()
             body += removeDocument.bytes
             

@@ -1,6 +1,11 @@
 import BSON
 import Async
 
+public enum RemoveLimit: Int, Codable {
+    case all = 0
+    case one = 1
+}
+
 public struct Delete: Command, Operation {
     public struct Single: Encodable {
         public var q: Query

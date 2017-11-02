@@ -21,7 +21,7 @@ public struct Projection: DocumentCodable {
     public var document: Document
     
     /// An expression that can be specified to either include or exclude a field (or some custom value)
-    public enum ProjectionExpression: ValueConvertible, ExpressibleByBooleanLiteral, ExpressibleByStringLiteral, ExpressibleByDictionaryLiteral {
+    public enum ProjectionExpression: Encodable, ExpressibleByBooleanLiteral, ExpressibleByStringLiteral, ExpressibleByDictionaryLiteral {
         /// Creates a BSON.Primitive of this ProjecitonExpression for easy embedding in Documents
         public func makePrimitive() -> BSON.Primitive {
             switch self {
@@ -54,6 +54,30 @@ public struct Projection: DocumentCodable {
         
         /// Excludes this field from the projection
         case excluded
+        
+        var primitive: Primitive {
+            switch self {
+            case .included:
+                return true
+            case .excluded:
+                return false
+            case .custom(let primitive):
+                return primitive
+            }
+        }
+        
+        public func encode(to encoder: Encoder) throws {
+            switch self {
+            case .included:
+                var container = encoder.singleValueContainer()
+                try container.encode(true)
+            case .excluded:
+                var container = encoder.singleValueContainer()
+                try container.encode(false)
+            case .custom(let primitive):
+                try primitive.encode(to: encoder)
+            }
+        }
         
         /// Includes when `true`, Excludes when `false`
         public init(booleanLiteral value: Bool) {
@@ -90,7 +114,7 @@ extension Projection: ExpressibleByDictionaryLiteral {
     public init(dictionaryLiteral elements: (String, ProjectionExpression)...) {
         self.document = Document(dictionaryElements: elements.map {
             // FIXME: Mapping as a workarond for the compiler being unable to infer the compliance to a protocol
-            ($0.0, $0.1)
+            ($0.0, $0.1.primitive)
         })
     }
 }

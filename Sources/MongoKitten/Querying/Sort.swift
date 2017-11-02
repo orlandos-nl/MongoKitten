@@ -11,24 +11,12 @@
 import BSON
 
 /// Defines the order in which a field has to be sorted
-public enum SortOrder: ValueConvertible {
+public enum SortOrder: Int32 {
     /// Ascending means that we order from "past to future" or from "0 to 10"
-    case ascending
+    case ascending = 1
     
     /// Descending is opposite of ascending
-    case descending
-    
-    /// Custom can be useful for more complex MongoDB behaviour. Generally not used.
-    case custom(BSON.Primitive)
-    
-    /// Converts the SortOrder to a BSON primitive for easy embedding
-    public func makePrimitive() -> BSON.Primitive {
-        switch self {
-        case .ascending: return Int32(1)
-        case .descending: return Int32(-1)
-        case .custom(let value): return value
-        }
-    }
+    case descending = -1
 }
 
 /// A Sort object specifies to MongoDB in what order certain Documents need to be ordered
@@ -55,13 +43,13 @@ public struct Sort: DocumentCodable, ExpressibleByDictionaryLiteral {
                     return .descending
                 }
                 
-                fallthrough
+                return nil
             default:
-                return .custom(value)
+                return nil
             }
         }
         set {
-            self.document[key] = newValue
+            self.document[key] = newValue?.rawValue
         }
     }
     
@@ -73,7 +61,7 @@ public struct Sort: DocumentCodable, ExpressibleByDictionaryLiteral {
     /// (Usually `SortOrder.ascending` or `SortOrder.descending`)
     public init(dictionaryLiteral elements: (String, SortOrder)...) {
         self.document = Document(dictionaryElements: elements.map {
-            ($0.0, $0.1)
+            ($0.0, $0.1.rawValue)
         })
     }
     
