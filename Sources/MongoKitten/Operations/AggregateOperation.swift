@@ -29,7 +29,7 @@ public struct Aggregate: Command, Operation {
     public func execute(on connection: DatabaseConnection) throws -> Future<Cursor> {
         return try connection.execute(self, expecting: Reply.Cursor.self).map { cursor in
             return try Cursor(
-                cursor: cursor,
+                cursor: cursor.cursor,
                 collection: self.aggregate.name,
                 database: self.targetCollection.database,
                 connection: connection,

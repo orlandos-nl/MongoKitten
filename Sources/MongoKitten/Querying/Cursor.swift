@@ -32,9 +32,15 @@ public struct CursorStrategy {
 
 extension Reply {
     struct Cursor: Decodable {
-        var id: Int
-        var ns: String
-        var firstBatch: Document
+        struct CursorSpec: Decodable {
+            var id: Int
+            var ns: String
+            var firstBatch: [Document]
+        }
+        
+        var ok: Int
+        var cursor: CursorSpec
+        
     }
 }
 
@@ -71,14 +77,27 @@ public final class Cursor: OutputStream, ClosableStream {
     fileprivate let connection: DatabaseConnection
 
     public var strategy: CursorStrategy? = nil
+    
+    var currentBatch = [Document]()
+    
+    var draining = false
 
     /// This initializer creates a base cursor from a replied Document
-    internal init(cursor: Reply.Cursor, collection: String, database: Database, connection: DatabaseConnection, chunkSize: Int32) throws {
+    internal init(cursor: Reply.Cursor.CursorSpec, collection: String, database: Database, connection: DatabaseConnection, chunkSize: Int32) throws {
         self.chunkSize = chunkSize
         self.connection = connection
         self.collection = collection
         self.namespace = cursor.ns
         self.cursorID = cursor.id
+        self.currentBatch = cursor.firstBatch
+    }
+    
+    public func start() {
+        draining = true
+        
+        for doc in currentBatch {
+            outputStream?(doc)
+        }
     }
 //
 //    var fetching: Bool = false

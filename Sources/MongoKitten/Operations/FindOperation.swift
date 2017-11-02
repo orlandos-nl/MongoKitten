@@ -30,7 +30,7 @@ public struct Find: Command, Operation {
     public func execute(on database: DatabaseConnection) throws -> Future<Cursor> {
         return try database.execute(self, expecting: Reply.Cursor.self) { cursor, connection in
             return try Cursor(
-                cursor: cursor,
+                cursor: cursor.cursor,
                 collection: self.find.name,
                 database: self.targetCollection.database,
                 connection: connection,
@@ -78,6 +78,10 @@ public struct FindOne {
             cursor.onClose = {
                 promise.complete(nil)
             }
+            
+            cursor.catch(promise.fail)
+            
+            cursor.start()
             
             return promise.future
         }

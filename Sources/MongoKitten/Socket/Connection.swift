@@ -69,7 +69,9 @@ public final class DatabaseConnection: ConnectionPool {
             
             try socket.connect(hostname: host.hostname, port: host.port)
             
-            return socket.writable(queue: worker.queue).map {
+            return socket.writable(queue: worker.queue).map { () -> DatabaseConnection in
+                client.start()
+                
                 return DatabaseConnection(connection: client)
             }.flatten { connection in
                 try connection.authenticate(to: database).map {
