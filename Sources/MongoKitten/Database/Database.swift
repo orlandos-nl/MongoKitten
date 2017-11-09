@@ -67,17 +67,13 @@ public final class Database {
     ///
     /// - returns: The requested collection in this database
     public subscript(collection: String) -> Collection {
-        return Database.subscriptQueue.sync {
-            collections.clean()
-            
-            if let col = collections[collection]?.value {
-                return col
-            }
-            
-            let newC = Collection(named: collection, in: self)
-            collections[collection] = Weak(newC)
-            return newC
+        if let col = collections[collection]?.value {
+            return col
         }
+        
+        let newC = Collection(named: collection, in: self)
+        collections[collection] = Weak(newC)
+        return newC
     }
 }
 

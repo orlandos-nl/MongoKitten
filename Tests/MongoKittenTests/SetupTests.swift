@@ -1,18 +1,19 @@
-////
-//// This source file is part of the MongoKitten open source project
-////
-//// Copyright (c) 2016 - 2017 OpenKitten and the MongoKitten project authors
-//// Licensed under MIT
-////
-//// See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/LICENSE.md for license information
-//// See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of MongoKitten project authors
-////
-//import XCTest
-//import MongoKitten
-//import Foundation
-//import Dispatch
 //
-//public class SetupTests: XCTestCase {
+// This source file is part of the MongoKitten open source project
+//
+// Copyright (c) 2016 - 2017 OpenKitten and the MongoKitten project authors
+// Licensed under MIT
+//
+// See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/LICENSE.md for license information
+// See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of MongoKitten project authors
+//
+import XCTest
+import Async
+import MongoKitten
+import Foundation
+import Dispatch
+
+public class SetupTests: XCTestCase {
 //    public static var allTests: [(String, (SetupTests) -> () throws -> Void)] {
 //        return [
 ////            ("testSetup", testSetup),
@@ -94,43 +95,27 @@
 //        }
 //    }
 //    
-//    let numberOfDocuments = 50_000
-//    
-//    func testInsertPerformance() {
-//        var documents = [Document]()
-//        for id in 0..<numberOfDocuments {
-//            documents.append([
-//                "_id": "\(id)",
-//                "customerId": "128374",
-//                "flightId": "AA231",
-//                "dateOfBooking": Date(),
-//                ])
-//        }
-//        
-//        for db in TestManager.dbs {
-//            let queue = DispatchQueue(label: "insertion", attributes: .concurrent)
-//            let dispatchGroup = DispatchGroup()
-//            
-//            documents.forEach { doc in
-//                queue.async(group: dispatchGroup) {
-//                    do {
-//                        try db["rfd"].insert( doc )
-//                    } catch let error as InsertErrors {
-//                        XCTFail("error: \(error)")
-//                    } catch let error as MongoError {
-//                        XCTFail("error: \(error)")
-//                    } catch let error {
-//                        XCTFail("error: \(error)")
-//                        // returns timeout
-//                    }
-//                    
-//                }
-//            }
-//            
-//            dispatchGroup.wait()
-//            
-//            XCTAssertEqual(try db["rfd"].count(), numberOfDocuments)
-//        }
-//    }
-//}
+    let numberOfDocuments = 50_000
+    
+    func testInsertPerformance() throws {
+        let db = TestManager.db
+        
+        var futures = [Future<Void>]()
+        
+        for id in 0..<numberOfDocuments {
+            let doc: Document = [
+                "_id": "\(id)",
+                "customerId": "128374",
+                "flightId": "AA231",
+                "dateOfBooking": Date(),
+            ]
+            
+            futures.append(db["rfd"].insert(doc).map { _ in })
+        }
+        
+        try futures.flatten().blockingAwait(timeout: .seconds(10))
+        
+        XCTAssertEqual(try db["rfd"].count().blockingAwait(), numberOfDocuments)
+    }
+}
 

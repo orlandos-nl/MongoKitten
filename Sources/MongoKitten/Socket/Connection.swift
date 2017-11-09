@@ -56,28 +56,40 @@ public final class DatabaseConnection: ConnectionPool {
             let tls = try TLSClient(worker: worker)
             tls.clientCertificatePath = ssl.clientCertificate
             
-            return try tls.connect(hostname: host.hostname, port: host.port).map {
+            let promise = Promise<DatabaseConnection>()
+            
+            tls.catch(promise.fail)
+            
+            try tls.connect(hostname: host.hostname, port: host.port).map {
                 return DatabaseConnection(connection: tls)
             }.flatten { connection in
                 return try connection.authenticate(to: database).map {
                     return connection
                 }
-            }
+            }.then(callback: promise.complete).catch(callback: promise.fail)
+            
+            return promise.future
         } else {
             let socket = try Socket()
             let client = TCPClient(socket: socket, worker: worker)
             
+            let promise = Promise<DatabaseConnection>()
+            
+            client.catch(promise.fail)
+            
             try socket.connect(hostname: host.hostname, port: host.port)
             
-            return socket.writable(queue: worker.queue).map { () -> DatabaseConnection in
+            socket.writable(queue: worker.queue).map { () -> DatabaseConnection in
                 client.start()
                 
                 return DatabaseConnection(connection: client)
             }.flatten { connection in
-                try connection.authenticate(to: database).map {
+                return try connection.authenticate(to: database).map {
                     return connection
                 }
-            }
+            }.then(callback: promise.complete).catch(callback: promise.fail)
+            
+            return promise.future
         }
     }
     

@@ -8,7 +8,6 @@
 // See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of MongoKitten project authors
 //
 
-import MongoSocket
 import Foundation
 
 /// The location of a Mongo server - i.e. server name and port number
@@ -116,9 +115,6 @@ public struct MongoCredentials {
 
 /// Various settings to control the behavior of a MongoClient.
 public struct ClientSettings {
-    /// The underlying TCP library
-    public var TCPClient: MongoTCP.Type = MongoSocket.self
-    
     /// The Hosts to connect
     public internal(set) var hosts: [MongoHost]
 

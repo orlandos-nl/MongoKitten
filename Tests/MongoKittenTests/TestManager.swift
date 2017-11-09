@@ -20,7 +20,7 @@ final class TestManager {
     }
     
     static var mongoURL: (host: String, database: String) {
-        let defaultURL = "mongodb://localhost"
+        let defaultURL = "mongodb://localhost:27017/mongokitten-unittest"
         
         guard let out = getenv("mongokittentest") else { return (defaultURL, "mongokitten-unittest") }
         return (String(validatingUTF8: out) ?? defaultURL, "mongokitten-unittest")
