@@ -168,7 +168,7 @@ public indirect enum AQT {
     /// The types we support as raw `Int32` values
     ///
     /// The raw values are defined in https://docs.mongodb.com/manual/reference/operator/query/type/#op._S_type
-    public enum AQTType: Int32 {
+    public enum AQTType: Int32, Equatable {
         /// -
         case precisely
         
@@ -310,6 +310,56 @@ public indirect enum AQT {
         }
     }
     
+    /// Parses the MongoDB query given `Document` into an AQT
+    public init(parse document: Document) {
+        guard document.count > 0 else {
+            // well this one is simple
+            self = .nothing
+            return
+        }
+        
+        guard document.count > 1 else {
+            let pair = document.first!
+            self = .init(parseKey: pair.key, value: pair.value)
+            return
+        }
+        
+        // Must be and then
+        self = .and(document.map(AQT.init))
+        
+        // Fallback
+        self = .exactly(document)
+    }
+    
+    /// Parses a single MongoDB query piece
+    public init(parseKey: String, value: Primitive) {
+        switch (parseKey, value) {
+        case ("$or", let document as Document):
+            self = .or(document.map(AQT.init))
+        case ("$and", let document as Document):
+            self = .and(document.map(AQT.init))
+        case (_, let document as Document) where document.count == 1 && document.keys.first == "$eq":
+            self = .valEquals(key: parseKey, val: document.first!.value)
+        case (_, let document as Document) where document.count == 1 && document.keys.first == "$neq":
+            self = .valNotEquals(key: parseKey, val: document.first!.value)
+        case (_, let document as Document) where document.count == 1 && document.keys.first == "$gt":
+            self = .greaterThan(key: parseKey, val: document.first!.value)
+        case (_, let document as Document) where document.count == 1 && document.keys.first == "$gte":
+            self = .greaterThanOrEqual(key: parseKey, val: document.first!.value)
+        case (_, let document as Document) where document.count == 1 && document.keys.first == "$lt":
+            self = .smallerThan(key: parseKey, val: document.first!.value)
+        case (_, let document as Document) where document.count == 1 && document.keys.first == "$lte":
+            self = .smallerThanOrEqual(key: parseKey, val: document.first!.value)
+        case (_, let document as Document) where document.count == 1 && document.type(at: "$in") == .arrayDocument:
+            self = .in(key: parseKey, in: (document.first!.value as! Document).arrayRepresentation)
+        case (_, let document as Document) where document.count == 1 && document.type(at: "$elemMatch") == .document:
+            self = .containsElement(key: parseKey, match: AQT(parse: document[0] as! Document))
+        default:
+            // fallback
+            self = .exactly([parseKey: value])
+        }
+    }
+    
     /// Whether the type in `key` is equal to the AQTType https://docs.mongodb.com/manual/reference/operator/query/type/#op._S_type
     case typeof(key: String, type: AQTType)
     
@@ -394,6 +444,60 @@ public indirect enum AQT {
     ///
     /// - SeeAlso : https://docs.mongodb.com/manual/reference/operator/query/nearSphere/
     case nearSphere(key: String, point: Point, maxDistance: Double, minDistance: Double)
+}
+
+extension AQT : Equatable {
+    public static func ==(lhs: AQT, rhs: AQT) -> Bool {
+        switch (lhs, rhs) {
+        case (.typeof(let key1, let type1), .typeof(let key2, let type2)):
+            return key1 == key2 && type1 == type2
+            
+        // String [something] Primitive type operators
+        // "Matching a value of a protocol type is not yet supported", so that's why these are separate cases
+        case (.valEquals(let key1, let val1), .valEquals(let key2, let val2)):
+            return key1 == key2 && val1.makeBinary() == val2.makeBinary()
+        case (.valNotEquals(let key1, let val1), .valNotEquals(let key2, let val2)):
+            return key1 == key2 && val1.makeBinary() == val2.makeBinary()
+        case (.greaterThan(let key1, let val1), .greaterThan(let key2, let val2)):
+            return key1 == key2 && val1.makeBinary() == val2.makeBinary()
+        case (.greaterThanOrEqual(let key1, let val1), .greaterThanOrEqual(let key2, let val2)):
+            return key1 == key2 && val1.makeBinary() == val2.makeBinary()
+        case (.smallerThan(let key1, let val1), .smallerThan(let key2, let val2)):
+            return key1 == key2 && val1.makeBinary() == val2.makeBinary()
+        case (.smallerThanOrEqual(let key1, let val1), .smallerThanOrEqual(let key2, let val2)):
+            return key1 == key2 && val1.makeBinary() == val2.makeBinary()
+        case (.containsElement(let key1, let aqt1), .containsElement(let key2, let aqt2)):
+            return key1 == key2 && aqt1 == aqt2
+            
+        case (.and(let aqtArray1), .and(let aqtArray2)),
+             (.or(let aqtArray1), .or(let aqtArray2)):
+            return aqtArray1 == aqtArray2
+        case (.not(let aqt1), .not(let aqt2)):
+            return aqt1 == aqt2
+        case (.nothing, .nothing):
+            return true
+        case (.contains(let key1, let val1, let options1), .contains(let key2, let val2, let options2)):
+            return key1 == key2 && val1 == val2 && options1 == options2
+        case (.startsWith(let key1, let val1), .startsWith(let key2, let val2)),
+             (.endsWith(let key1, let val1), .endsWith(let key2, let val2)):
+            return key1 == key2 && val1 == val2
+        case (.exactly(let doc1), .exactly(let doc2)):
+            return doc1 == doc2
+        case (.exists(let key1, let exists1), .exists(let key2, let exists2)):
+            return key1 == key2 && exists1 == exists2
+        case (.in(let key1, let array1), .in(let key2, let array2)):
+            return key1 == key2 && array1.makeBinary() == array2.makeBinary()
+        case (.near(let key1, let point1, let maxDistance1, let minDistance1), .near(let key2, let point2, let maxDistance2, let minDistance2)),
+             (.nearSphere(let key1, let point1, let maxDistance1, let minDistance1), .nearSphere(let key2, let point2, let maxDistance2, let minDistance2)):
+            return key1 == key2 && point1 == point2 && maxDistance1 == maxDistance2 && minDistance1 == minDistance2
+        case (.geoWithin(let key1, polygon: let polygon1), .geoWithin(let key2, polygon: let polygon2)):
+            return key1 == key2 && polygon1 == polygon2
+        case (.geoIntersects(let key1, let geometry1), .geoIntersects(let key2, let geometry2)):
+            print("MongoKitten: AQT.geoIntersects == AQT.geoIntersects is not fully implemented")
+            return key1 == key2 && geometry1.type == geometry2.type
+        default: return false
+        }
+    }
 }
 
 /// A `Query` that consists of an `AQT` statement
