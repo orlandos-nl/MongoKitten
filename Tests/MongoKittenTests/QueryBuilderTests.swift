@@ -5,6 +5,7 @@ public class QueryBuilderTests: XCTestCase {
     public static var allTests: [(String, (QueryBuilderTests) -> () throws -> Void)] {
         return [
             ("testOrOperator", testOrOperator),
+            ("testAndOperator", testAndOperator),
         ]
     }
     
