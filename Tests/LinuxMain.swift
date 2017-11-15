@@ -22,5 +22,6 @@ XCTMain([
     testCase(GeospatialQueryingTest.allTests),
     testCase(GridFSTest.allTests),  
     testCase(HelperObjectTests.allTests),    
-    testCase(SetupTests.allTests)    
+    testCase(SetupTests.allTests),
+    testCase(QueryBuilderTests.allTests)
 ])
