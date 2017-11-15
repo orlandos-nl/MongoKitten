@@ -25,4 +25,18 @@ public class QueryBuilderTests: XCTestCase {
         expect(expectation, for: foo1 || foo2)
         expect(expectation, for: Query() || foo1 || foo2, "Empty query should match nothing")
     }
+    
+    func testAndOperator() {
+        let foo1: Query = "foo" == 1
+        let foo2: Query = "bar" == 2
+        let expectation: Document = [
+            "$and": [
+                foo1.queryDocument,
+                foo2.queryDocument
+            ]
+        ]
+        
+        expect(expectation, for: foo1 && foo2)
+        expect(expectation, for: Query() && foo1 && foo2, "Empty query should match nothing")
+    }
 }

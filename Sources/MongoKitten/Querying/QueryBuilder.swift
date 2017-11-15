@@ -62,7 +62,7 @@ public func <(key: String, pred: BSON.Primitive) -> Query {
     return Query(aqt: .smallerThan(key: key, val: pred))
 }
 
-/// MongoDB: `$lte`. Used like native swift `<=`
+/// MongoDB: `$lte`. Used like normal Swift `<=`
 ///
 /// Checks whether the `Value` in `key` is smaller than or equal to the `Value` provided
 ///
@@ -71,7 +71,7 @@ public func <=(key: String, pred: BSON.Primitive) -> Query {
     return Query(aqt: .smallerThanOrEqual(key: key, val: pred))
 }
 
-/// MongoDB `$and`. Used like native swift `&&`
+/// MongoDB `$and`. Used like normal Swift `&&`.
 ///
 /// Checks whether both these `Query` statements are true
 ///
@@ -81,11 +81,14 @@ public func &&(lhs: Query, rhs: Query) -> Query {
     let rhs = rhs.aqt
     
     switch (lhs, rhs) {
+    // To allow `(foo && bar) && (kitten && cat)`
     case (.and(var a), .and(let b)):
         a.append(contentsOf: b)
         return Query(aqt: .and(a))
+    // To dynamically construct queries: `Query() && foo && bar` is equal to `foo && bar`
     case (.nothing, let query), (let query, .nothing):
         return Query(aqt: query)
+    // For chaining: `foo && bar && kitten`
     case (.and(var a), let other), (let other, .and(var a)):
         a.append(other)
         return Query(aqt: .and(a))
@@ -94,7 +97,7 @@ public func &&(lhs: Query, rhs: Query) -> Query {
     }
 }
 
-/// MongoDB: `$or`. Used like native swift `||`
+/// MongoDB: `$or`. Used like normal Swift `||`.
 ///
 /// Checks wither either of these `Query` statements is true
 ///
@@ -103,16 +106,19 @@ public func ||(lhs: Query, rhs: Query) -> Query {
     let lhs = lhs.aqt
     let rhs = rhs.aqt
     
-    if case .or(var  a) = lhs, case .or(let b) = rhs {
+    switch (lhs, rhs) {
+    // To allow `(foo || bar) || (kitten || cat)`
+    case (.or(var a), .or(let b)):
         a.append(contentsOf: b)
-        return Query(aqt: .or(a))
-    } else if case .or(var a) = lhs {
-        a.append(rhs)
-        return Query(aqt: .or(a))
-    } else if case .or(var b) = rhs {
-        b.append(lhs)
         return Query(aqt: .or(b))
-    } else {
+    // To dynamically construct queries: `Query() || foo || bar` is equal to `foo || bar`
+    case (.nothing, let query), (let query, .nothing):
+        return Query(aqt: query)
+    // For chaining: `foo || bar || kitten`
+    case (.or(var a), let other), (let other, .or(var a)):
+        a.append(other)
+        return Query(aqt: .or(a))
+    default:
         return Query(aqt: .or([lhs, rhs]))
     }
 }
@@ -123,7 +129,13 @@ public func ||(lhs: Query, rhs: Query) -> Query {
 ///
 /// - returns: A new `Query` that will be inverting the provided `Query`
 public prefix func !(query: Query) -> Query {
-    return Query(aqt: .not(query.aqt))
+    switch query.aqt {
+    // Nothing is no query, so it cannot be inverted
+    case .nothing:
+        return Query(aqt: .nothing)
+    default:
+        return Query(aqt: .not(query.aqt))
+    }
 }
 
 /// MongoDB `$and`. Shorthand for `lhs = lhs && rhs`
