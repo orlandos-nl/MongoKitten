@@ -31,7 +31,7 @@ public class CollectionTests: XCTestCase {
         
         _ = try collection.drop().blockingAwait(timeout: .seconds(6))
         
-        try collection.insert(user).flatten { _ in
+        try collection.insert(user).flatMap { _ in
             return collection.findOne()
         }.map { result in
             XCTAssertNotNil(result)

@@ -15,21 +15,21 @@ extension MongoCollection {
     public func touch(data: Bool, index: Bool) -> Future<Void> {
         let command = Commands.Touch(collection: self, data: data, index: index)
         
-        return self.connectionPool.retain().flatten(command.execute)
+        return self.connectionPool.retain().flatMap(command.execute)
     }
     
     @discardableResult
     public func convert(toCap cap: Int) -> Future<Void> {
         let command = Commands.ConvertToCapped(collection: self, toCap: cap)
         
-        return self.connectionPool.retain().flatten(command.execute)
+        return self.connectionPool.retain().flatMap(command.execute)
     }
     
     @discardableResult
     public func rebuildIndexes() -> Future<Void> {
         let command = Commands.RebuildIndexes(collection: self)
         
-        return self.connectionPool.retain().flatten(command.execute)
+        return self.connectionPool.retain().flatMap(command.execute)
     }
     
     @discardableResult
@@ -38,21 +38,21 @@ extension MongoCollection {
         
         command.force = force
         
-        return self.connectionPool.retain().flatten(command.execute)
+        return self.connectionPool.retain().flatMap(command.execute)
     }
     
     @discardableResult
     public func clone(renameTo otherCollection: String, cappingAt cap: Int) -> Future<Void> {
         let command = Commands.CloneCollectionAsCapped(collection: self, newName: otherCollection, cap: cap)
         
-        return self.connectionPool.retain().flatten(command.execute)
+        return self.connectionPool.retain().flatMap(command.execute)
     }
     
     @discardableResult
     public func drop() -> Future<Void> {
         let command = Commands.Drop(collection: self)
         
-        return self.connectionPool.retain().flatten(command.execute)
+        return self.connectionPool.retain().flatMap(command.execute)
     }
 }
 

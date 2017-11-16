@@ -15,6 +15,10 @@ import Foundation
 import Dispatch
 import TCP
 
+public protocol ConnectionPool {
+    func retain() -> Future<DatabaseConnection>
+}
+
 /// A connection to MongoDB
 public final class DatabaseConnection: ConnectionPool {
     public func retain() -> Future<DatabaseConnection> {
@@ -51,7 +55,7 @@ public final class DatabaseConnection: ConnectionPool {
         }
     }
     
-    public static func connect(host: MongoHost, ssl: SSLSettings, worker: Worker, authenticatingTo database: String? = nil) throws -> Future<DatabaseConnection> {
+    public static func connect(host: MongoHost, credentials: MongoCredentials? = nil, ssl: SSLSettings = false, worker: Worker) throws -> Future<DatabaseConnection> {
         if ssl.enabled {
             let tls = try TLSClient(worker: worker)
             tls.clientCertificatePath = ssl.clientCertificate
@@ -62,11 +66,13 @@ public final class DatabaseConnection: ConnectionPool {
             
             try tls.connect(hostname: host.hostname, port: host.port).map {
                 return DatabaseConnection(connection: tls)
-            }.flatten { connection in
-                return try connection.authenticate(to: database).map {
-                    return connection
+            }.flatMap { connection in
+                if let credentials = credentials {
+                    return try connection.authenticate(with: credentials)
+                } else {
+                    return Future(connection)
                 }
-            }.then(callback: promise.complete).catch(callback: promise.fail)
+            }.do(promise.complete).catch(promise.fail)
             
             return promise.future
         } else {
@@ -79,15 +85,17 @@ public final class DatabaseConnection: ConnectionPool {
             
             try socket.connect(hostname: host.hostname, port: host.port)
             
-            socket.writable(queue: worker.queue).map { () -> DatabaseConnection in
+            socket.writable(queue: worker.eventLoop.queue).map { () -> DatabaseConnection in
                 client.start()
                 
                 return DatabaseConnection(connection: client)
-            }.flatten { connection in
-                return try connection.authenticate(to: database).map {
-                    return connection
+            }.flatMap { connection in
+                if let credentials = credentials {
+                    return try connection.authenticate(with: credentials)
+                } else {
+                    return Future(connection)
                 }
-            }.then(callback: promise.complete).catch(callback: promise.fail)
+            }.do(promise.complete).catch(promise.fail)
             
             return promise.future
         }
@@ -98,25 +106,22 @@ public final class DatabaseConnection: ConnectionPool {
     /// - parameter db: The database to authenticate to
     ///
     /// - throws: Authentication error
-    func authenticate(to db: String?) throws -> Future<Void> {
+    func authenticate(with credentials: MongoCredentials) throws -> Future<DatabaseConnection> {
         
         return Future(())
         
-//        if let details = db.server.clientSettings.credentials {
-            fatalError()
-//            let db = db.server[details.database ?? db.name]
-//
-//            switch details.authenticationMechanism {
-//            case .SCRAM_SHA_1:
-//                return try self.authenticate(SASL: details, to: db)
-//            case .MONGODB_CR:
-//                return try self.authenticate(mongoCR: details, to: db)
-//            case .MONGODB_X509:
-//                return try self.authenticateX509(subject: details.username, to: db)
-//            default:
-//                throw MongoError.unsupportedFeature("authentication Method \"\(details.authenticationMechanism.rawValue)\"")
-//            }
-//        }
+        if let details = db.clientSettings.credentials {
+            switch details.authenticationMechanism {
+            case .SCRAM_SHA_1:
+                return try self.authenticate(SASL: details, to: db)
+            case .MONGODB_CR:
+                return try self.authenticate(mongoCR: details, to: db)
+            case .MONGODB_X509:
+                return try self.authenticateX509(subject: details.username, to: db)
+            default:
+                throw MongoError.unsupportedFeature("authentication Method \"\(details.authenticationMechanism.rawValue)\"")
+            }
+        }
     }
     
     /// Closes this connection

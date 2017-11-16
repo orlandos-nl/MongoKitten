@@ -114,7 +114,7 @@
 //                index[field.field] = field.order
 //            }
 //            
-//            return ["key": (index.flattened())]
+//            return ["key": (index.flatMaped())]
 //        case .compound(let fields):
 //            var index: Document = [:]
 //            
@@ -122,7 +122,7 @@
 //                index[field.field] = field.value
 //            }
 //            
-//            return ["key": (index.flattened())]
+//            return ["key": (index.flatMaped())]
 //        case .expire(let seconds):
 //            return ["expireAfterSeconds": seconds]
 //        case .sparse:

@@ -71,7 +71,7 @@ enum Message {
     /// Builds a `.Reply` object from Binary JSON
     /// - parameter from: The data to create a Reply-message from
     /// - returns: The reply instance
-    static func makeReply(from data: Bytes) throws -> ServerReply {
+    static func makeReply(from data: [UInt8]) throws -> ServerReply {
         guard data.count > 4 else {
             throw DeserializationError.invalidDocumentLength
         }
@@ -92,7 +92,7 @@ enum Message {
         let cursorID = Int(Int64.make(data[20...27]))
         let startingFrom = Int32.make(data[28...31])
         let numbersReturned = Int32.make(data[32...35])
-        let documents = [Document](bsonBytes: data[36..<data.endIndex]*)
+        let documents = [Document](bsonBytes: Data(data[36..<data.endIndex]))
         
         // Return the constructed reply
         return ServerReply(requestID: requestID, responseTo: responseTo, flags: ReplyFlags.init(rawValue: flags), cursorID: cursorID, startingFrom: startingFrom, numbersReturned: numbersReturned, documents: documents)
@@ -170,7 +170,7 @@ enum Message {
         }
         
         // Generate the header using the body
-        var header = Bytes()
+        var header = Data()
         header += Int32(16 + body.count).makeBytes()
         header += requestID.makeBytes()
         header += responseTo.makeBytes()
@@ -232,12 +232,12 @@ enum Message {
     case KillCursors(requestID: Int32, cursorIDs: [Int])
 }
 
-internal func fromBytes<T, S : Swift.Collection>(_ bytes: S) throws -> T where S.Iterator.Element == Byte, S.IndexDistance == Int {
+internal func fromBytes<T, S : Swift.Collection>(_ bytes: S) throws -> T where S.Iterator.Element == UInt8, S.IndexDistance == Int {
     guard bytes.count >= MemoryLayout<T>.size else {
         throw DeserializationError.invalidElementSize
     }
     
-    return UnsafeRawPointer(Bytes(bytes)).assumingMemoryBound(to: T.self).pointee
+    return UnsafeRawPointer([UInt8](bytes)).assumingMemoryBound(to: T.self).pointee
 }
 
 extension Int64 {

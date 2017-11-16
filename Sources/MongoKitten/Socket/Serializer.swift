@@ -9,7 +9,11 @@ final class PacketSerializer: Async.Stream {
             data.withUnsafeBytes { (pointer: BytesPointer) in
                 let buffer = ByteBuffer(start: pointer, count: data.count)
                 
-                outputStream?(buffer)
+                do {
+                    try outputStream?(buffer)
+                } catch {
+                    errorStream?(error)
+                }
             }
         } catch {
             errorStream?(error)

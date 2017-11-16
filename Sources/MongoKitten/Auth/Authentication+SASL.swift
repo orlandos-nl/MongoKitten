@@ -1,0 +1,159 @@
+import Foundation
+import Async
+import BSON
+import Crypto
+
+extension DatabaseConnection {
+    /// Parses a SCRAM response
+    ///
+    /// - parameter response: The SCRAM response to parse
+    ///
+    /// - returns: The Dictionary that's build from the response
+    fileprivate func parse(response r: String) -> [String: String] {
+        var parsedResponse = [String: String]()
+        
+        for part in r.characters.split(separator: ",") where String(part).characters.count >= 3 {
+            let part = String(part)
+            
+            if let first = part.characters.first {
+                parsedResponse[String(first)] = String(part[part.index(part.startIndex, offsetBy: 2)..<part.endIndex])
+            }
+        }
+        
+        return parsedResponse
+    }
+}
+
+struct Complete: Codable {
+    var ok: Int
+    var done: Bool
+    var payload: String
+    var conversationId: Int
+}
+
+extension DatabaseConnection {
+    /// Processes the last step(s) in the SASL process
+    ///
+    /// - parameter payload: The previous payload
+    /// - parameter response: The response we got from the server
+    /// - parameter signature: The server signatue to verify
+    ///
+    /// - throws: On authentication failure or an incorrect Server Signature
+    private func complete(SASL payload: String, response: Document, verifying signature: Data, to database: Database, completing promise: Promise<Void>) throws {
+        // If we failed authentication
+        let response = try BSONDecoder().decode(Complete.self, from: response)
+        
+        let finalResponseData = try Base64Decoder.decode(string: response.payload)
+        
+        guard let finalResponse = String(data: finalResponseData, encoding: .utf8) else {
+            throw MongoError.invalidBase64String
+        }
+        
+        let dictionaryResponse = self.parse(response: finalResponse)
+        
+        guard let v = dictionaryResponse["v"] else {
+            throw AuthenticationError.responseParseError(response: payload)
+        }
+        
+        let serverSignature = try Base64Decoder.decode(v)
+        
+        guard serverSignature == signature else {
+            throw AuthenticationError.serverSignatureInvalid
+        }
+        
+        let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: "\(self.name).$cmd", numbersToSkip: 0, numbersToReturn: 1, query: [
+            "saslContinue": Int32(1),
+            "conversationId": conversationId,
+            "payload": ""
+            ], returnFields: nil)
+        
+        try server.sendAsync(message: commandMessage, overConnection: connection).then { response in
+            try self.complete(SASL: payload, response: response, verifying: signature, usingConnection: connection)
+        }
+    }
+    
+    /// Respond to a challenge
+    ///
+    /// - parameter details: The authentication details
+    /// - parameter previousInformation: The nonce, response and `SCRAMClient` instance
+    ///
+    /// - throws: When the authentication fails, when Base64 fails
+    private func challenge(with details: MongoCredentials, using previousInformation: (nonce: String, response: Document, scram: SCRAMClient), to database: Database) throws {
+        // If we failed the authentication
+        guard Int(previousInformation.response["ok"]) == 1 else {
+            throw AuthenticationError.incorrectCredentials
+        }
+        
+        // Get our ConversationID
+        guard let conversationId = previousInformation.response["conversationId"] else {
+            throw AuthenticationError.authenticationFailure
+        }
+        
+        // Decode the challenge
+        guard let stringResponse = String(previousInformation.response["payload"]) else {
+            throw AuthenticationError.authenticationFailure
+        }
+        
+        let stringResponseData = try Base64.decode(stringResponse)
+        
+        guard let decodedStringResponse = String(bytes: Array(stringResponseData), encoding: String.Encoding.utf8) else {
+            throw MongoError.invalidBase64String
+        }
+        
+        var digestBytes = Bytes()
+        digestBytes.append(contentsOf: "\(details.username):mongo:\(details.password)".utf8)
+        
+        var passwordBytes = Bytes()
+        passwordBytes.append(contentsOf: MD5.hash(digestBytes).hexString.utf8)
+        
+        let result = try previousInformation.scram.process(decodedStringResponse, with: (username: details.username, password: passwordBytes), usingNonce: previousInformation.nonce)
+        
+        // Base64 the payload
+        let payload = Base64.encode(Data(result.proof.utf8))
+        
+        log.debug("Responding to the SASL challenge using payload \"\(payload)\"")
+        
+        // Send the proof
+        let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: "\(self.name).$cmd", numbersToSkip: 0, numbersToReturn: 1, query: [
+            "saslContinue": Int32(1),
+            "conversationId": conversationId,
+            "payload": payload
+            ], returnFields: nil)
+        
+        let response = try server.sendAsync(message: commandMessage, overConnection: connection).blockingAwait(timeout: .seconds(3))
+        
+        // If we don't get a correct reply
+        
+        // Complete Authentication
+        try self.complete(SASL: payload, using: response.documents.first ?? [:], verifying: Data(result.serverSignature), usingConnection: connection)
+    }
+    
+    /// Authenticates to this database using SASL
+    ///
+    /// - parameter details: The authentication details
+    ///
+    /// - throws: When failing authentication, being unable to base64 encode or failing to send/receive messages
+    internal func authenticate(SASL details: MongoCredentials, usingConnection connection: DatabaseConnection) throws {
+        let nonce = randomNonce()
+        
+        let auth = SCRAMClient(server)
+        
+        let authPayload = try auth.authenticate(details.username, usingNonce: nonce)
+        
+        let payload = Base64.encode(Data(bytes: Array(authPayload.utf8)))
+        
+        log.verbose("Starting SASL authentication for \(details.username) against \(details.database ?? "no database")")
+        
+        let commandMessage = Message.Query(requestID: server.nextMessageID(), flags: [], collection: "\(self.name).$cmd", numbersToSkip: 0, numbersToReturn: 1, query: [
+            "saslStart": Int32(1),
+            "mechanism": "SCRAM-SHA-1",
+            "payload": payload
+            ], returnFields: nil)
+        
+        let response = try server.sendAsync(message: commandMessage, overConnection: connection).blockingAwait(timeout: .seconds(3))
+        
+        let responseDocument = try firstDocument(in: response)
+        
+        try self.challenge(with: details, using: (nonce: nonce, response: responseDocument, scram: auth), usingConnection: connection)
+    }
+}

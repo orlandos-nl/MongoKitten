@@ -11,15 +11,15 @@
 /// A protocol that requires conversion to binary
 internal protocol BSONBytesProtocol {
     /// Serialization to binary
-    func makeBytes() -> Bytes
+    func makeBytes() -> [UInt8]
 }
 
 extension Int : BSONBytesProtocol {
     /// Serializes this Int to binary
-    internal func makeBytes() -> Bytes {
+    internal func makeBytes() -> [UInt8] {
         var integer = self.littleEndian
         return withUnsafePointer(to: &integer) {
-            $0.withMemoryRebound(to: Byte.self, capacity: MemoryLayout<Int>.size) {
+            $0.withMemoryRebound(to: UInt8.self, capacity: MemoryLayout<Int>.size) {
                 Array(UnsafeBufferPointer(start: $0, count: MemoryLayout<Int>.size))
             }
         }
@@ -28,61 +28,61 @@ extension Int : BSONBytesProtocol {
 
 extension Int64 : BSONBytesProtocol {
     /// Serializes this Int64 to binary
-    internal func makeBytes() -> Bytes {
+    internal func makeBytes() -> [UInt8] {
         let integer = self.littleEndian
         
         return [
-            Byte(integer & 0xFF),
-            Byte((integer >> 8) & 0xFF),
-            Byte((integer >> 16) & 0xFF),
-            Byte((integer >> 24) & 0xFF),
-            Byte((integer >> 32) & 0xFF),
-            Byte((integer >> 40) & 0xFF),
-            Byte((integer >> 48) & 0xFF),
-            Byte((integer >> 56) & 0xFF),
+            numericCast(integer & 0xFF),
+            numericCast((integer >> 8) & 0xFF),
+            numericCast((integer >> 16) & 0xFF),
+            numericCast((integer >> 24) & 0xFF),
+            numericCast((integer >> 32) & 0xFF),
+            numericCast((integer >> 40) & 0xFF),
+            numericCast((integer >> 48) & 0xFF),
+            numericCast((integer >> 56) & 0xFF),
         ]
     }
 }
 
 extension Int32 : BSONBytesProtocol {
     /// Serializes this Int32 to binary
-    internal func makeBytes() -> Bytes {
+    internal func makeBytes() -> [UInt8] {
         let integer = self.littleEndian
         
         return [
-            Byte(integer & 0xFF),
-            Byte((integer >> 8) & 0xFF),
-            Byte((integer >> 16) & 0xFF),
-            Byte((integer >> 24) & 0xFF),
+            numericCast(integer & 0xFF),
+            numericCast((integer >> 8) & 0xFF),
+            numericCast((integer >> 16) & 0xFF),
+            numericCast((integer >> 24) & 0xFF),
         ]
     }
 }
 
 extension Int16 : BSONBytesProtocol {
     /// Serializes this Int16 to binary
-    internal func makeBytes() -> Bytes {
+    internal func makeBytes() -> [UInt8] {
         let integer = self.littleEndian
         
         return [
-            Byte((integer >> 8) & 0xFF),
-            Byte(integer & 0xFF)
+            numericCast((integer >> 8) & 0xFF),
+            numericCast(integer & 0xFF)
         ]
     }
 }
 
 extension Int8 : BSONBytesProtocol {
     /// Serializes this Int8 to binary
-    internal func makeBytes() -> Bytes {
-        return [Byte(self)]
+    internal func makeBytes() -> [UInt8] {
+        return [numericCast(self)]
     }
 }
 
 extension UInt : BSONBytesProtocol {
     /// Serializes this UInt to binary
-    internal func makeBytes() -> Bytes {
+    internal func makeBytes() -> [UInt8] {
         var integer = self.littleEndian
         return withUnsafePointer(to: &integer) {
-            $0.withMemoryRebound(to: Byte.self, capacity: MemoryLayout<UInt>.size) {
+            $0.withMemoryRebound(to: UInt8.self, capacity: MemoryLayout<UInt>.size) {
                 Array(UnsafeBufferPointer(start: $0, count: MemoryLayout<UInt>.size))
             }
         }
@@ -91,61 +91,54 @@ extension UInt : BSONBytesProtocol {
 
 extension UInt64 : BSONBytesProtocol {
     /// Serializes this UInt64 to binary
-    internal func makeBytes() -> Bytes {
+    internal func makeBytes() -> [UInt8] {
         let integer = self.littleEndian
         
         return [
-            Byte(integer & 0xFF),
-            Byte((integer >> 8) & 0xFF),
-            Byte((integer >> 16) & 0xFF),
-            Byte((integer >> 24) & 0xFF),
-            Byte((integer >> 32) & 0xFF),
-            Byte((integer >> 40) & 0xFF),
-            Byte((integer >> 48) & 0xFF),
-            Byte((integer >> 56) & 0xFF),
+            numericCast(integer & 0xFF),
+            numericCast((integer >> 8) & 0xFF),
+            numericCast((integer >> 16) & 0xFF),
+            numericCast((integer >> 24) & 0xFF),
+            numericCast((integer >> 32) & 0xFF),
+            numericCast((integer >> 40) & 0xFF),
+            numericCast((integer >> 48) & 0xFF),
+            numericCast((integer >> 56) & 0xFF),
         ]
     }
 }
 
 extension UInt32 : BSONBytesProtocol {
     /// Serializes this UInt32 to binary
-    internal func makeBytes() -> Bytes {
+    internal func makeBytes() -> [UInt8] {
         let integer = self.littleEndian
         
         return [
-            Byte(integer & 0xFF),
-            Byte((integer >> 8) & 0xFF),
-            Byte((integer >> 16) & 0xFF),
-            Byte((integer >> 24) & 0xFF),
+            numericCast(integer & 0xFF),
+            numericCast((integer >> 8) & 0xFF),
+            numericCast((integer >> 16) & 0xFF),
+            numericCast((integer >> 24) & 0xFF),
         ]
     }
 }
 
 extension UInt16 : BSONBytesProtocol {
     /// Serializes this UInt16 to binary
-    internal func makeBytes() -> Bytes {
+    internal func makeBytes() -> [UInt8] {
         let integer = self.littleEndian
         
         return [
-            Byte(integer & 0xFF),
-            Byte((integer >> 8) & 0xFF)
+            numericCast(integer & 0xFF),
+            numericCast((integer >> 8) & 0xFF)
         ]
-    }
-}
-
-extension Byte : BSONBytesProtocol {
-    /// Serializes this byte to binary
-    internal func makeBytes() -> Bytes {
-        return [self]
     }
 }
 
 extension Double : BSONBytesProtocol {
     /// Serializes this Double to binary
-    internal func makeBytes() -> Bytes {
+    internal func makeBytes() -> [UInt8] {
         var integer = self
         return withUnsafePointer(to: &integer) {
-            $0.withMemoryRebound(to: Byte.self, capacity: MemoryLayout<Double>.size) {
+            $0.withMemoryRebound(to: UInt8.self, capacity: MemoryLayout<Double>.size) {
                 Array(UnsafeBufferPointer(start: $0, count: MemoryLayout<Double>.size))
             }
         }

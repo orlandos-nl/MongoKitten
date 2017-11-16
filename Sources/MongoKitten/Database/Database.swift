@@ -28,11 +28,6 @@ public final class Database {
     
     public var preferences = Preferences()
     
-    /// A cache of all collections in this Database.
-    ///
-    /// Mainly used for keeping track of event listeners
-    private var collections = [String: Weak<Collection>]()
-    
     /// Initialise this database object
     ///
     /// - parameter database: The database to use
@@ -67,13 +62,7 @@ public final class Database {
     ///
     /// - returns: The requested collection in this database
     public subscript(collection: String) -> Collection {
-        if let col = collections[collection]?.value {
-            return col
-        }
-        
-        let newC = Collection(named: collection, in: self)
-        collections[collection] = Weak(newC)
-        return newC
+        return Collection(named: collection, in: self)
     }
 }
 

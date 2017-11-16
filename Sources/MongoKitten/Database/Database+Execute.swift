@@ -21,7 +21,7 @@ extension Command {
             let response = try connection.execute(self, expecting: Document.self)
         
             return response.map { document in
-                guard Int(document["ok"]) == 1 else {
+                guard Int(lossy: document["ok"]) == 1 else {
                     throw MongoError.commandFailure(error: document)
                 }
             }

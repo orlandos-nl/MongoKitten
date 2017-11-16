@@ -68,7 +68,7 @@ public struct FindOne {
         find.skip = skip
         find.projection = projection
         
-        return try find.execute(on: connection).flatten { cursor in
+        return try find.execute(on: connection).flatMap { cursor in
             let promise = Promise<Document?>()
             
             cursor.drain { doc in

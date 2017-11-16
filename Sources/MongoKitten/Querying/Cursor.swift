@@ -50,7 +50,7 @@ extension Reply {
 /////
 ///// It can be transformed into an array with `Array(cursor)` and allows transformation to another type.
 public final class Cursor: OutputStream, ClosableStream {
-    public var outputStream: ((Document) -> ())?
+    public var outputStream: ((Document) throws -> ())?
     
     public typealias Output = Document
     
@@ -96,7 +96,11 @@ public final class Cursor: OutputStream, ClosableStream {
         draining = true
         
         for doc in currentBatch {
-            outputStream?(doc)
+            do {
+                try outputStream?(doc)
+            } catch {
+                errorStream?(error)
+            }
         }
     }
 //

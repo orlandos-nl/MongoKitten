@@ -68,8 +68,8 @@ final class SCRAMClient {
     ///
     /// - returns: The server signature
     /// - throws: Unable to parse this message to a sever signature
-    private func parse(finalResponse response: String) throws -> Bytes {
-        var signature: Bytes? = nil
+    private func parse(finalResponse response: String) throws -> [UInt8] {
+        var signature: [UInt8]? = nil
         
         for part in response.characters.split(separator: ",") where String(part).characters.count >= 3 {
             let part = String(part)
@@ -113,7 +113,7 @@ final class SCRAMClient {
             return result
         }
         
-        let encodedHeader = Base64Encoder.encode(data: Data(bytes: Bytes(gs2BindFlag.utf8)))
+        let encodedHeader = Base64Encoder.encode(data: Data(gs2BindFlag.utf8))
         
         let parsedResponse = try parse(challenge: challenge)
 
@@ -166,7 +166,7 @@ final class SCRAMClient {
     ///
     /// - returns: An empty string to proceed the process indefinitely until complete as per protocol definition
     /// - throws: When the server's signature is invalid
-    func complete(fromResponse response: String, verifying signature: Bytes) throws -> String {
+    func complete(fromResponse response: String, verifying signature: [UInt8]) throws -> String {
         let sig = try parse(finalResponse: response)
 
         if sig != signature {

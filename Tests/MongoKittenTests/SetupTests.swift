@@ -113,7 +113,7 @@ public class SetupTests: XCTestCase {
             futures.append(db["rfd"].insert(doc).map { _ in })
         }
         
-        try futures.flatten().blockingAwait(timeout: .seconds(10))
+        try futures.flatMap().blockingAwait(timeout: .seconds(10))
         
         XCTAssertEqual(try db["rfd"].count().blockingAwait(), numberOfDocuments)
     }

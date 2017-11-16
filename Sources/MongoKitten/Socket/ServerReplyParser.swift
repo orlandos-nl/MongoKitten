@@ -176,7 +176,11 @@ final class ServerReplyParser: Async.Stream {
         advanced += scanDocuments(from: consuming.advanced(by: advanced), length: length - advanced)
         
         if isComplete, let reply = construct() {
-            outputStream?(reply)
+            do {
+                try outputStream?(reply)
+            } catch {
+                errorStream?(error)
+            }
         }
         
         return advanced
