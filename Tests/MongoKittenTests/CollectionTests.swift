@@ -35,7 +35,7 @@ public class CollectionTests: XCTestCase {
             return collection.findOne()
         }.map { result in
             XCTAssertNotNil(result)
-            XCTAssertEqual(ObjectId(result?["_id"]), id)
+            XCTAssertEqual(ObjectId(lossy: result?["_id"]), id)
         }.blockingAwait(timeout: .seconds(6))
         
         _ = try collection.insert([
@@ -56,12 +56,12 @@ public class CollectionTests: XCTestCase {
         
         _ = try collection.upsert("_id" == id, to: user).blockingAwait(timeout: .seconds(6))
         XCTAssertEqual(try collection.count().blockingAwait(timeout: .seconds(6)), 1)
-        XCTAssertEqual(Bool(try collection.findOne().blockingAwait(timeout: .seconds(6))?["test"]), true)
+        XCTAssertEqual(Bool(lossy: try collection.findOne().blockingAwait(timeout: .seconds(6))?["test"]), true)
         
         user["test"] = false
         _ = try collection.upsert("_id" == id, to: user).blockingAwait(timeout: .seconds(6))
         XCTAssertEqual(try collection.count().blockingAwait(timeout: .seconds(6)), 1)
-        XCTAssertEqual(Bool(try collection.findOne().blockingAwait(timeout: .seconds(6))?["test"]), false)
+        XCTAssertEqual(Bool(lossy: try collection.findOne().blockingAwait(timeout: .seconds(6))?["test"]), false)
         
         
     }

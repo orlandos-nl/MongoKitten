@@ -25,7 +25,9 @@ public final class DatabaseConnection: ConnectionPool {
         return Future(self)
     }
     
-    var requestID: Int32 = 0
+    let scram = SCRAMContext()
+    
+    fileprivate var requestID: Int32 = 0
     
     var nextRequestId: Int32 {
         defer { requestID = requestID &+ 1 }
@@ -68,7 +70,9 @@ public final class DatabaseConnection: ConnectionPool {
                 return DatabaseConnection(connection: tls)
             }.flatMap { connection in
                 if let credentials = credentials {
-                    return try connection.authenticate(with: credentials)
+                    return try connection.authenticate(with: credentials).map { _ in
+                        return connection
+                    }
                 } else {
                     return Future(connection)
                 }
@@ -91,7 +95,9 @@ public final class DatabaseConnection: ConnectionPool {
                 return DatabaseConnection(connection: client)
             }.flatMap { connection in
                 if let credentials = credentials {
-                    return try connection.authenticate(with: credentials)
+                    return try connection.authenticate(with: credentials).map {
+                        return connection
+                    }
                 } else {
                     return Future(connection)
                 }
@@ -106,21 +112,16 @@ public final class DatabaseConnection: ConnectionPool {
     /// - parameter db: The database to authenticate to
     ///
     /// - throws: Authentication error
-    func authenticate(with credentials: MongoCredentials) throws -> Future<DatabaseConnection> {
-        
-        return Future(())
-        
-        if let details = db.clientSettings.credentials {
-            switch details.authenticationMechanism {
-            case .SCRAM_SHA_1:
-                return try self.authenticate(SASL: details, to: db)
-            case .MONGODB_CR:
-                return try self.authenticate(mongoCR: details, to: db)
-            case .MONGODB_X509:
-                return try self.authenticateX509(subject: details.username, to: db)
-            default:
-                throw MongoError.unsupportedFeature("authentication Method \"\(details.authenticationMechanism.rawValue)\"")
-            }
+    func authenticate(with credentials: MongoCredentials) throws -> Future<Void> {
+        switch credentials.authenticationMechanism {
+        case .SCRAM_SHA_1:
+            return try self.authenticateSASL(credentials)
+        case .MONGODB_CR:
+            return try self.authenticateCR(credentials)
+        case .MONGODB_X509:
+            return try self.authenticateX509(credentials: credentials)
+        default:
+            return Future(error: MongoError.unsupportedFeature("authentication Method \"\(credentials.authenticationMechanism.rawValue)\""))
         }
     }
     

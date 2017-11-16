@@ -13,14 +13,14 @@ import Async
 import Dispatch
 import Foundation
 import BSON
-import CryptoKitten
+import Crypto
 
 /// Authentication extensions
 extension DatabaseConnection {
     /// Generates a random String
     ///
     /// - returns: A random nonce
-    private func randomNonce() -> String {
+    func randomNonce() -> String {
         let allowedCharacters = "!\"#'$%&()*+-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_$"
         
         var randomString = ""
@@ -48,12 +48,12 @@ extension DatabaseConnection {
     /// - parameter details: The authentication details
     ///
     /// - throws: When failing authentication, being unable to base64 encode or failing to send/receive messages
-    internal func authenticate(mongoCR details: MongoCredentials, usingConnection connection: DatabaseConnection) -> Future<Void> {
+    internal func authenticateCR(_ credentials: MongoCredentials) throws -> Future<Void> {
         // Get the server's nonce
         let nonceMessage = Message.Query(
             requestID: self.nextRequestId,
             flags: [],
-            collection: details.authDB + ".$cmd",
+            collection: credentials.authDB + ".$cmd",
             numbersToSkip: 0,
             numbersToReturn: 1,
             query: [
@@ -62,28 +62,36 @@ extension DatabaseConnection {
             returnFields: nil
         )
 
-        return self.send(message: nonceMessage).flatMap { document in
-            guard let nonce = String(document["nonce"]) else {
+        return try self.send(message: nonceMessage).flatMap { reply in
+            guard let nonce = reply.documents.first?["nonce"] as? String else {
                 throw AuthenticationError.authenticationFailure
             }
             
             // Digest our password and prepare it for sending
-            var bytes = Array("\(details.username):mongo:\(details.password)".utf8)
+            let data = Data("\(credentials.username):mongo:\(credentials.password)".utf8)
             
-            let digest = MD5.hash(bytes)
-            let key = MD5.hash([UInt8]("\(nonce)\(details.username)\(digest.hexString)".utf8)).hexString
+            let digest = MD5.hash(data)
+            let key = MD5.hash(Data("\(nonce)\(credentials.username)\(digest.hexString)".utf8)).hexString
             
-            let commandMessage = Message.Query(requestID: self.nextRequestId, flags: [], collection: details.authDB + ".$cmd", numbersToSkip: 0, numbersToReturn: 1, query: [
-                "authenticate": 1,
-                "nonce": nonce,
-                "user": details.username,
-                "key": key
-                ], returnFields: nil)
+            let commandMessage = Message.Query(
+                requestID: self.nextRequestId,
+                flags: [],
+                collection: credentials.authDB + ".$cmd",
+                numbersToSkip: 0,
+                numbersToReturn: 1,
+                query: [
+                    "authenticate": 1,
+                    "nonce": nonce,
+                    "user": credentials.username,
+                    "key": key
+                ],
+                returnFields: nil
+            )
             
-            return self.send(message: commandMessage).then { document in
+            return try self.send(message: commandMessage).map { reply in
                 // Check for success
-                guard Int(successDocument["ok"]) == 1 else {
-                    throw InternalMongoError.incorrectReply(reply: successResponse)
+                guard Int(lossy: reply.documents.first?["ok"]) == 1 else {
+                    throw MongoError.invalidCredentials(credentials)
                 }
             }
         }
@@ -92,24 +100,18 @@ extension DatabaseConnection {
 
 extension DatabaseConnection {
     /// Experimental feature for authenticating with MongoDB-X509
-    internal func authenticateX509(subject: String, usingConnection connection: DatabaseConnection) -> Future<Void> {
+    internal func authenticateX509(credentials: MongoCredentials) throws -> Future<Void> {
         let message = Message.Query(requestID: self.nextRequestId, flags: [], collection: "$external.$cmd", numbersToSkip: 0, numbersToReturn: 1, query: [
             "authenticate": 1,
             "mechanism": "MONGODB-X509",
-            "user": subject
+            "user": credentials.username
         ], returnFields: nil)
         
-        do {
-            return try self.send(message: message).then { reply in
-                // Check for success
-                guard Int(reply.documents.first?["ok"]) == 1 else {
-                    throw MongoError.X509AuthenticationFailed
-                }
+        return try self.send(message: message).map { reply in
+            // Check for success
+            guard Int(lossy: reply.documents.first?["ok"]) == 1 else {
+                throw MongoError.X509AuthenticationFailed
             }
-        } catch {
-            return Future(error: error)
         }
     }
 }
-
-

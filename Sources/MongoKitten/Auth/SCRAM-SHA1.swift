@@ -12,15 +12,14 @@ import Foundation
 import Crypto
 
 /// Authenticates over SCRAM-SHA-1 to authenticate a user with the provided password
-final class SCRAMClient {
+final class SCRAMContext {
     /// Constant GS2BindFlag
     let gs2BindFlag = "n,,"
-    var server: Server
     
-    /// Creates a new SCRAM Client instance
-    init(_ server: Server) {
-        self.server = server
-    }
+    /// Caches the password hash for this server's authentication details
+    var cachedLoginData: (password: Data, clientKey: Data, serverKey: Data)? = nil
+    
+    init() {}
     
     /// Fixes the username to not contain variables that are essential to the SCRAM message structure
     ///
@@ -94,7 +93,7 @@ final class SCRAMClient {
     }
     
     /// Generates an initial SCRAM-SHA-1 authentication String
-    func authenticate(_ username: String, usingNonce nonce: String) throws -> String {
+    func authenticate(_ username: String, usingNonce nonce: String) -> String {
         return "\(gs2BindFlag)n=\(fixUsername(username: username)),r=\(nonce)"
     }
     
@@ -102,7 +101,7 @@ final class SCRAMClient {
     ///
     /// - returns: A tuple where the proof is to be sent to the server and the signature is to be verified in the server's responses.
     /// - throws: When unable to parse the challenge
-    func process(_ challenge: String, with details: (username: String, password: Data), usingNonce nonce: String) throws -> (proof: String, serverSignature: Data) {
+    func process(_ challenge: String, username: String, password: Data, usingNonce nonce: String) throws -> (proof: String, serverSignature: Data) {
         func xor(_ lhs: Data, _ rhs: Data) -> Data {
             var result = Data(repeating: 0, count: min(lhs.count, rhs.count))
             
@@ -131,12 +130,12 @@ final class SCRAMClient {
         let clientKey: Data
         let serverKey: Data
         
-        if let cachedLoginData = server.cachedLoginData {
+        if let cachedLoginData = cachedLoginData {
             saltedPassword = cachedLoginData.password
             clientKey = cachedLoginData.clientKey
             serverKey = cachedLoginData.serverKey
         } else {
-            saltedPassword = try PBKDF2<SHA1>.deriveKey(fromPassword: details.password, saltedWith: salt, iterating: parsedResponse.iterations, derivedKeyLength: SHA1.digestSize)
+            saltedPassword = try PBKDF2<SHA1>.deriveKey(fromPassword: password, saltedWith: salt, iterating: parsedResponse.iterations, derivedKeyLength: SHA1.digestSize)
             
             let ck = Data("Client Key".utf8)
             let sk = Data("Server Key".utf8)
@@ -144,12 +143,12 @@ final class SCRAMClient {
             clientKey = HMAC<SHA1>.authenticate(ck, withKey: saltedPassword)
             serverKey = HMAC<SHA1>.authenticate(sk, withKey: saltedPassword)
             
-            server.cachedLoginData = (saltedPassword, clientKey, serverKey)
+            cachedLoginData = (saltedPassword, clientKey, serverKey)
         }
         
         let storedKey = SHA1.hash(clientKey)
 
-        let authenticationMessage = "n=\(fixUsername(username: details.username)),r=\(nonce),\(challenge),\(noProof)"
+        let authenticationMessage = "n=\(fixUsername(username: username)),r=\(nonce),\(challenge),\(noProof)"
 
         let authenticationMessageBytes = Data(authenticationMessage.utf8)
         

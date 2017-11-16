@@ -37,9 +37,6 @@ public final class Server {
         }
     }
     
-    /// Caches the password hash for this server's authentication details
-    internal var cachedLoginData: (password: Data, clientKey: Data, serverKey: Data)? = nil
-    
     public let connectionPool: ConnectionPool
     
     /// The ClientSettings used to connect to server(s)

@@ -18,6 +18,8 @@ internal enum MongoError : Error {
     
     case X509AuthenticationFailed
     
+    case invalidCredentials(MongoCredentials)
+    
     /// Can't deocde base64
     case invalidBase64String
     
@@ -92,6 +94,8 @@ internal enum MongoError : Error {
             return "MongoKitten is disconnected from the MongoDB server"
         case .X509AuthenticationFailed:
             return "X509 authentication was not successful"
+        case .invalidCredentials(_):
+            return "Authentication to MongoDB failed"
         case .timeout:
             return "The action timed out"
         case .commandFailure(_):

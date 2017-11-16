@@ -26,6 +26,6 @@ final class TestManager {
         return (String(validatingUTF8: out) ?? defaultURL, "mongokitten-unittest")
     }
     
-    static var db: Database = try! Database.connect(server: ClientSettings(mongoURL.host), database: mongoURL.database, worker: Worker(queue: DispatchQueue(label: "test"))).blockingAwait(timeout: .seconds(5))
+    static var db: Database = try! Database.connect(server: ClientSettings(mongoURL.host), database: mongoURL.database, worker: DispatchQueue(label: "test")).blockingAwait(timeout: .seconds(5))
 }
 

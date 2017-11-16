@@ -93,7 +93,7 @@ public struct MongoCredentials {
     /// The database where the user is defined
     public let database: String?
     
-    var authDB: {
+    var authDB: String {
         return database ?? "admin"
     }
 
