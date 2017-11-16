@@ -16,6 +16,8 @@ internal enum MongoError : Error {
     /// Can't create database with name
     case invalidDatabase(String?)
     
+    case X509AuthenticationFailed
+    
     /// Can't deocde base64
     case invalidBase64String
     
@@ -88,6 +90,8 @@ internal enum MongoError : Error {
             return "Unable to decode the Base64 string"
         case .notConnected:
             return "MongoKitten is disconnected from the MongoDB server"
+        case .X509AuthenticationFailed:
+            return "X509 authentication was not successful"
         case .timeout:
             return "The action timed out"
         case .commandFailure(_):

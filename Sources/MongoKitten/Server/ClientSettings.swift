@@ -12,7 +12,6 @@ import Foundation
 
 /// The location of a Mongo server - i.e. server name and port number
 public struct MongoHost: Equatable, ExpressibleByStringLiteral {
-
     /// host address
     public let hostname: String
 
@@ -93,6 +92,10 @@ public struct MongoCredentials {
 
     /// The database where the user is defined
     public let database: String?
+    
+    var authDB: {
+        return database ?? "admin"
+    }
 
     /// The Authentication Mechanism
     public let authenticationMechanism: AuthenticationMechanism
