@@ -1,26 +1,25 @@
-////
-//// This source file is part of the MongoKitten open source project
-////
-//// Copyright (c) 2016 - 2017 OpenKitten and the MongoKitten project authors
-//// Licensed under MIT
-////
-//// See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/LICENSE.md for license information
-//// See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of MongoKitten project authors
-////
 //
+// This source file is part of the MongoKitten open source project
 //
-//import XCTest
-//import MongoKitten
-//import Dispatch
+// Copyright (c) 2016 - 2017 OpenKitten and the MongoKitten project authors
+// Licensed under MIT
 //
-//public class AggregationTests: XCTestCase {
-//    public static var allTests: [(String, (AggregationTests) -> () throws -> Void)] {
-//        return [
+// See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/LICENSE.md for license information
+// See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of MongoKitten project authors
+//
+
+import XCTest
+import MongoKitten
+import Dispatch
+
+public class AggregationTests: XCTestCase {
+    public static var allTests: [(String, (AggregationTests) -> () throws -> Void)] {
+        return [
 //            ("testAggregate", testAggregate),
-//            ("testAggregateLookup", testAggregateLookup)
-//        ]
-//    }
-//
+            ("testAggregateLookup", testAggregateLookup)
+        ]
+    }
+
 //    func testAggregate() throws {
 //        let db = TestManager.db
 //        let pipeline: AggregationPipeline = [
@@ -81,12 +80,12 @@
 //
 //    func testFacetAggregate() throws {
 //        let db = TestManager.db
-//        if db.server.buildInfo.version < Version(3, 4, 0) {
+//        if let info = db.server.buildInfo, info.version < Version(3, 4, 0) {
 //            return
 //        }
 //
 //        let pipeline: AggregationPipeline = [
-//            .group("$state", computed: ["totalPop": .sumOf("$pop")]),
+//            .group("$state", computed: ["totalPop": ["$sum": "$pop"])]),
 //            .sort(["totalPop": .ascending]),
 //            .facet([
 //                "count": [
@@ -94,66 +93,80 @@
 //                    .project(["resultCount": true])
 //                ],
 //                "totalPop": [
-//                    .group(NSNull(), computed: ["population": .sumOf("$totalPop")])
+//                    .group(Null(), computed: ["population": .sumOf("$totalPop")])
 //                ]
-//                ])
+//            ])
 //        ]
 //
-//        guard let result = Array(try db["zips"].aggregate(pipeline)).first else {
+//        try db["zips"].aggregate(pipeline).then { cursor in
+//            return cursor.next()
+//        }.do { doc in
+//            XCTAssertEqual(Int(doc["count"][0]["resultCount"]), 51)
+//        }.catch { _ in
 //            XCTFail()
-//            return
 //        }
 //
 //        XCTAssertEqual(Int(result["count"][0]["resultCount"]), 51)
 //        XCTAssertEqual(Int(result["totalPop"][0]["population"]), 248408400)
 //    }
-//
-//    func testAggregateLookup() throws {
-//        let db = TestManager.db
-//        if db.server.buildInfo.version < Version(3, 2, 0) {
-//            return
-//        }
-//
-//        let orders = db["orders"]
-//        let inventory = db["inventory"]
-//
-//        try orders.drop()
-//        try inventory.drop()
-//
-//        let orderDocument: Document = ["_id": 1, "item": "MON1003", "price": 350, "quantity": 2, "specs": [ "27 inch", "Retina display", "1920x1080" ], "type": "Monitor"]
-//        let orderId = try orders.insert(orderDocument)
-//        XCTAssertEqual(Int(orderId), 1)
-//
-//        let inventoryDocument1: Document = ["_id": 1, "sku": "MON1003", "type": "Monitor", "instock": 120, "size": "27 inch", "resolution": "1920x1080"]
-//        let inventoryDocument2: Document = ["_id": 2, "sku": "MON1012", "type": "Monitor", "instock": 85, "size": "23 inch", "resolution": "1280x800"]
-//        let inventoryDocument3: Document = ["_id": 3, "sku": "MON1031", "type": "Monitor", "instock": 60, "size": "23 inch", "display_type": "LED"]
-//
-//        let inventory1 = try inventory.insert(inventoryDocument1)
-//        let inventory2 = try inventory.insert(inventoryDocument2)
-//        let inventory3 = try inventory.insert(inventoryDocument3)
-//
-//        XCTAssertEqual(Int(inventory1), 1)
-//        XCTAssertEqual(Int(inventory2), 2)
-//        XCTAssertEqual(Int(inventory3), 3)
-//
-//        let unwind = AggregationPipeline.Stage.unwind("$specs")
-//        let lookup = AggregationPipeline.Stage.lookup(from: inventory, localField: "specs", foreignField: "size", as: "inventory_docs")
-//        let match = AggregationPipeline.Stage.match(["inventory_docs": ["$ne":[]]] as Document)
-//        let pipe = AggregationPipeline(arrayLiteral: unwind, lookup, match)
-//
-//        do {
-//            let cursor = try orders.aggregate(pipe)
-//            let results = Array(cursor)
-//            XCTAssertEqual(results.count, 1)
-//            if results.count == 1 {
-//                let document = results[0]
-//                XCTAssertEqual(String(document["item"]), "MON1003")
-//                XCTAssertEqual(Int(document["price"]), 350)
-//                XCTAssertEqual([Primitive](document["inventory_docs"])?.count, 1)
-//            }
-//        } catch let error as MongoError {
-//            XCTFail(error.localizedDescription)
-//        }
-//    }
-//}
-//
+
+    func testAggregateLookup() throws {
+        let db = TestManager.db
+        if let info = db.server.buildInfo, info.version < Version(3, 2, 0) {
+            return
+        }
+
+        let orders = db["orders"]
+        let inventory = db["inventory"]
+
+        _ = try? orders.drop().blockingAwait(timeout: .seconds(10))
+        _ = try? inventory.drop().blockingAwait(timeout: .seconds(10))
+
+        let orderDocument: Document = ["_id": 1, "item": "MON1003", "price": 350, "quantity": 2, "specs": [ "27 inch", "Retina display", "1920x1080" ], "type": "Monitor"]
+        let orderId = try orders.insert(orderDocument).blockingAwait(timeout: .seconds(10))
+        XCTAssertEqual(orderId.n, 1)
+
+        let inventoryDocument1: Document = ["_id": 1, "sku": "MON1003", "type": "Monitor", "instock": 120, "size": "27 inch", "resolution": "1920x1080"]
+        let inventoryDocument2: Document = ["_id": 2, "sku": "MON1012", "type": "Monitor", "instock": 85, "size": "23 inch", "resolution": "1280x800"]
+        let inventoryDocument3: Document = ["_id": 3, "sku": "MON1031", "type": "Monitor", "instock": 60, "size": "23 inch", "display_type": "LED"]
+
+        _ = try inventory.insert(inventoryDocument1).blockingAwait(timeout: .seconds(10))
+        _ = try inventory.insert(inventoryDocument2).blockingAwait(timeout: .seconds(10))
+        _ = try inventory.insert(inventoryDocument3).blockingAwait(timeout: .seconds(10))
+
+        let unwind = AggregationPipeline.Stage.unwind("$specs")
+        let lookup = AggregationPipeline.Stage.lookup(from: inventory, localField: "specs", foreignField: "size", as: "inventory_docs")
+        let match = AggregationPipeline.Stage.match(["inventory_docs": ["$ne":[]]])
+        let pipe:  AggregationPipeline = [ unwind, lookup, match ]
+
+        do {
+            let query = orders.aggregate(pipe)
+            
+            _ = try query.then { cursor -> Future<Int> in
+                var count = 0
+                let promise = Promise<Int>()
+                
+                cursor.drain { document in
+                    XCTAssertEqual(String(document["item"]), "MON1003")
+                    XCTAssertEqual(Int(document["price"]), 350)
+                    XCTAssertEqual([Primitive](document["inventory_docs"])?.count, 1)
+                    count += 1
+                }.catch(onError: promise.fail)
+                
+                cursor.finally {
+                    promise.complete(count)
+                }
+                
+                cursor.start()
+                
+                return promise.future
+            }.do { count in
+                XCTAssertEqual(count, 1)
+            }.blockingAwait(timeout: .seconds(10))
+        } catch {
+            XCTFail()
+        }
+    }
+}
+
+

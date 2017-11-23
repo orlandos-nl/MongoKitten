@@ -13,7 +13,7 @@ var package = Package(
     ],
     dependencies: [
         // For MongoDB Documents
-        .package(url: "https://github.com/OpenKitten/BSON.git", .revision("master/6.0")),
+    .package(url: "https://github.com/OpenKitten/BSON.git", from: "5.0.0"),
         
         // Sockets (temporary, during development)
         .package(url: "https://github.com/vapor/vapor.git", .revision("3.0.0-alpha.4")),

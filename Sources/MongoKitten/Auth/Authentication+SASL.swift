@@ -78,7 +78,7 @@ extension DatabaseConnection {
             returnFields: nil
         )
         
-        return try send(message: commandMessage).flatMap { reply in
+        return send(message: commandMessage).flatMap { reply in
             return try self.complete(response: reply.documents.first ?? [:], verifying: signature, database: database)
         }
     }
@@ -126,7 +126,7 @@ extension DatabaseConnection {
             returnFields: nil
         )
         
-        return try send(message: commandMessage).flatMap { reply in
+        return send(message: commandMessage).flatMap { reply in
             return try self.complete(response: reply.documents.first ?? [:], verifying: result.serverSignature, database: credentials.authDB)
         }
     }
@@ -157,7 +157,7 @@ extension DatabaseConnection {
             returnFields: nil
         )
         
-        return try send(message: message).flatMap { reply in
+        return send(message: message).flatMap { reply in
             return try self.challenge(credentials: credentials, nonce: nonce, response: reply.documents.first ?? [:])
         }
     }

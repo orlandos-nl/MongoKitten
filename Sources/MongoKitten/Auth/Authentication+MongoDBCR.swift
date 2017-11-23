@@ -62,7 +62,7 @@ extension DatabaseConnection {
             returnFields: nil
         )
 
-        return try self.send(message: nonceMessage).flatMap { reply in
+        return self.send(message: nonceMessage).flatMap { reply in
             guard let nonce = reply.documents.first?["nonce"] as? String else {
                 throw AuthenticationError.authenticationFailure
             }
@@ -88,9 +88,9 @@ extension DatabaseConnection {
                 returnFields: nil
             )
             
-            return try self.send(message: commandMessage).map { reply in
+            return self.send(message: commandMessage).map { reply in
                 // Check for success
-                guard Int(lossy: reply.documents.first?["ok"]) == 1 else {
+                guard Int(reply.documents.first?["ok"]) == 1 else {
                     throw MongoError.invalidCredentials(credentials)
                 }
             }
@@ -107,9 +107,9 @@ extension DatabaseConnection {
             "user": credentials.username
         ], returnFields: nil)
         
-        return try self.send(message: message).map { reply in
+        return self.send(message: message).map { reply in
             // Check for success
-            guard Int(lossy: reply.documents.first?["ok"]) == 1 else {
+            guard Int(reply.documents.first?["ok"]) == 1 else {
                 throw MongoError.X509AuthenticationFailed
             }
         }

@@ -112,7 +112,7 @@ final class SCRAMContext {
             return result
         }
         
-        let encodedHeader = Base64Encoder.encode(data: Data(gs2BindFlag.utf8))
+        let encodedHeader = Base64Encoder.encode(string: gs2BindFlag)
         
         let parsedResponse = try parse(challenge: challenge)
 
@@ -156,7 +156,7 @@ final class SCRAMContext {
         let clientProof = xor(clientKey, clientSignature)
         let serverSignature = HMAC<SHA1>.authenticate(authenticationMessageBytes, withKey: serverKey)
         
-        let proof = Base64Encoder.encode(data: clientProof)
+        let proof = String(data: Base64Encoder.encode(data: clientProof), encoding: .utf8)!
         
         return (proof: "\(noProof),p=\(proof)", serverSignature: serverSignature)
     }

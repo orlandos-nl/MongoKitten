@@ -37,6 +37,8 @@ public final class DatabaseConnection: ConnectionPool {
     /// The responses being waited for
     var waitingForResponses = [Int32: Promise<ServerReply>]()
     
+    var wireProtocol: Int = 0
+    
     fileprivate var doClose: (()->())?
     fileprivate var strongSocketReference: Any?
     
@@ -144,7 +146,7 @@ public final class DatabaseConnection: ConnectionPool {
         self.waitingForResponses = [:]
     }
     
-    func send(message: Message) throws -> Future<ServerReply> {
+    func send(message: Message) -> Future<ServerReply> {
         let promise = Promise<ServerReply>()
         
         self.waitingForResponses[message.requestID] = promise

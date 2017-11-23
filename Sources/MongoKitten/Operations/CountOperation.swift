@@ -23,8 +23,8 @@ public struct Count: Command, Operation {
         self.collation = collection.default.collation
     }
     
-    public func execute(on connection: DatabaseConnection) throws -> Future<Int> {
-        return try connection.execute(self, expecting: Reply.Count.self) { reply, _ in
+    public func execute(on connection: DatabaseConnection) -> Future<Int> {
+        return connection.execute(self, expecting: Reply.Count.self) { reply, _ in
             guard reply.ok == 1 else {
                 throw Errors.Count(from: reply)
             }

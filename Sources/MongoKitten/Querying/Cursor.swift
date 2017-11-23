@@ -14,22 +14,6 @@ import BSON
 import Async
 //import ExtendedJSON
 
-public struct CursorStrategy {
-    init() {}
-    
-    public static func lazy() -> CursorStrategy {
-        return CursorStrategy()
-    }
-    
-    public static func aggressive() -> CursorStrategy {
-        return CursorStrategy()
-    }
-    
-    public static func intelligent(bufferChunks: Int) -> CursorStrategy {
-        return CursorStrategy()
-    }
-}
-
 extension Reply {
     struct Cursor: Decodable {
         struct CursorSpec: Decodable {
@@ -40,7 +24,6 @@ extension Reply {
         
         var ok: Int
         var cursor: CursorSpec
-        
     }
 }
 
@@ -56,7 +39,7 @@ public final class Cursor: OutputStream, ClosableStream {
     let namespace: String
 
     /// The collection this cursor is pointing to
-    let collection: String
+    let collection: MongoCollection
 
     /// The cursor's identifier that allows us to fetch more data from the server
     fileprivate var cursorID: Int
@@ -65,17 +48,20 @@ public final class Cursor: OutputStream, ClosableStream {
     fileprivate let chunkSize: Int32
 
     fileprivate let connection: DatabaseConnection
-
-    public var strategy: CursorStrategy? = nil
+    
+    var fetching = 0
+    
+    var drained = 0
     
     var currentBatch = [Document]()
     
     var draining = false
+    var fullyDrained = false
     
     let stream = BasicStream<Output>()
 
     /// This initializer creates a base cursor from a replied Document
-    internal init(cursor: Reply.Cursor.CursorSpec, collection: String, database: Database, connection: DatabaseConnection, chunkSize: Int32) throws {
+    internal init(cursor: Reply.Cursor.CursorSpec, collection: MongoCollection, database: Database, connection: DatabaseConnection, chunkSize: Int32) throws {
         self.chunkSize = chunkSize
         self.connection = connection
         self.collection = collection
@@ -87,9 +73,24 @@ public final class Cursor: OutputStream, ClosableStream {
     public func start() {
         draining = true
         
-        for doc in currentBatch {
-            stream.onInput(doc)
+        var i = drained
+        
+        if i >= currentBatch.count {
+            return
         }
+        
+        while i < currentBatch.count {
+            stream.onInput(currentBatch[i])
+            i += 1
+        }
+        
+        self.currentBatch = []
+        
+        if self.cursorID == 0 {
+            self.close()
+        }
+        
+        i = 0
     }
     
     public func onOutput<I>(_ input: I) where I : InputStream, Cursor.Output == I.Input {
@@ -104,120 +105,72 @@ public final class Cursor: OutputStream, ClosableStream {
         stream.onClose(onClose)
     }
     
-//    var fetching: Bool = false
-//
-//    /// Gets more information and puts it in the buffer
-//    @discardableResult
-//    fileprivate func getMore() throws -> Future<Void> {
-//        do {
-//            if self.database.server.serverData?.maxWireVersion ?? 0 >= 4 {
-//                let reply = try self.database.execute(command: [
-//                    "getMore": Int(self.cursorID) as Int,
-//                    "collection": self.collection,
-//                    "batchSize": Int32.init(self.chunkSize)
-//                    ], using: self.connection).blockingAwait(timeout: .seconds(3))
-//
-//                let documents = [Primitive](reply.documents.first?["cursor"]["nextBatch"]) ?? []
-//
-//                try cursorMutationsQueue.sync {
-//                    for value in documents {
-//                        if let doc = try self.transform(Document(value) ?? [:]) {
-//                            self.data.append(doc)
-//                        }
-//                    }
-//
-//                    self.cursorID = Int(reply.documents.first?["cursor"]["id"]) ?? -1
-//                    self.dataCount = self.data.count
-//                }
-//            } else {
-//                let request = Message.GetMore(requestID: self.database.server.nextMessageID(), namespace: self.namespace, numberToReturn: self.chunkSize, cursor: self.cursorID)
-//
-//                let reply = try self.database.server.sendAsync(message: request, overConnection: self.connection).blockingAwait(timeout: .seconds(3))
-//
-//                try cursorMutationsQueue.sync {
-//                    self.data += try reply.documents.flatMap(self.transform)
-//                    self.cursorID = reply.cursorID
-//                }
-//            }
-//        }
-//    }
-//
-//    fileprivate func nextEntity() throws -> T? {
-//        defer { position += 1 }
-//
-//        strategy: switch strategy ?? self.database.server.cursorStrategy {
-//        case .lazy:
-//            if position >= dataCount && self.cursorID != 0 {
-//                position = 0
-//                cursorMutationsQueue.sync {
-//                    self.data = []
-//                }
-//                // Get more data!
-//                _ = try self.getMore().blockingAwait(timeout: .seconds(3))
-//            }
-//        case .intelligent(let dataSets):
-//            guard self.dataCount - position < dataSets * Int(self.chunkSize) else {
-//                break strategy
-//            }
-//
-//            fallthrough
-//        case .aggressive:
-//            if let currentFetch = currentFetch {
-//                if position == self.dataCount {
-//                    guard !currentFetch.isCompleted else {
-//                        break strategy
-//                    }
-//                } else if !currentFetch.isCompleted {
-//                    break strategy
-//                }
-//
-//                defer {
-//                    self.currentFetch = nil
-//                }
-//
-//                _ = try currentFetch.blockingAwait(timeout: .seconds(3))
-//            } else if position == self.dataCount && self.cursorID != 0 {
-//                _ = try self.getMore().blockingAwait(timeout: .seconds(3))
-//            } else if self.cursorID != 0 {
-//                self.currentFetch = try self.getMore()
-//            }
-//        }
-//
-//        if position > Int(self.chunkSize) {
-//            position -= Int(self.chunkSize)
-//
-//            cursorMutationsQueue.sync {
-//                self.data.removeFirst(Int(self.chunkSize))
-//                self.dataCount -= Int(self.chunkSize)
-//            }
-//        }
-//
-//        return cursorMutationsQueue.sync {
-//            if position < self.dataCount {
-//                return self.data[position]
-//            }
-//
-//            return nil
-//        }
-//    }
-//
-//    /// When deinitializing we're killing the cursor on the server as well
-//    deinit {
-//        if cursorID != 0 {
-//            do {
-//                defer {
-//                    self.database.server.returnConnection(connection)
-//                }
-//
-//                let killCursorsMessage = Message.KillCursors(requestID: self.database.server.nextMessageID(), cursorIDs: [self.cursorID])
-//                try self.database.server.send(message: killCursorsMessage, overConnection: connection)
-//            } catch {
-//                self.database.server.cursorErrorHandler(error)
-//            }
-//        }
-//
-//        self.database.server.returnConnection(connection)
-//    }
+    @discardableResult
+    fileprivate func fetchMore() -> Future<Void> {
+        if self.connection.wireProtocol >= 4 {
+            let command = Commands.GetMore(
+                getMore: self.cursorID,
+                collection: self.collection,
+                batchSize: self.chunkSize
+            )
+            
+            return connection.execute(command, expecting: Reply.GetMore.self) { result, connection in
+                defer {
+                    if result.cursor.id <= 0 {
+                        self.close()
+                    }
+                }
+                
+                for doc in result.cursor.nextBatch {
+                    self.stream.onInput(doc)
+                }
+            }
+        } else  {
+            let request = Message.GetMore(requestID: self.connection.nextRequestId, namespace: self.namespace, numberToReturn: self.chunkSize, cursor: self.cursorID)
+            
+            return self.connection.send(message: request).map { reply in
+                for doc in reply.documents {
+                    self.stream.onInput(doc)
+                }
+                
+                self.cursorID = reply.cursorID
+            }
+        }
+    }
+    
+    /// When deinitializing we're killing the cursor on the server as well
+    deinit {
+        if cursorID != 0 {
+            let killCursorsMessage = Message.KillCursors(requestID: self.connection.nextRequestId, cursorIDs: [self.cursorID])
+            _ = self.connection.send(message: killCursorsMessage).catch(self.stream.onError)
+        }
+    }
+}
+
+extension Commands {
+    struct GetMore: Command {
+        var targetCollection: MongoCollection {
+            return collection
+        }
+        
+        static let writing: Bool = false
+        static let emitsCursor: Bool = false
+        
+        var getMore: Int
+        var collection: MongoCollection
+        var batchSize: Int32
+    }
+}
+
+extension Reply {
+    struct GetMore : Decodable {
+        struct CursorData: Decodable {
+            var nextBatch: [Document]
+            var id: Int
+        }
+        
+        var cursor: CursorData
+    }
 }
 
 extension Cursor : CustomStringConvertible {

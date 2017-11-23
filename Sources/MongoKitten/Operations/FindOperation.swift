@@ -27,11 +27,11 @@ public struct Find: Command, Operation {
         self.collation = collection.default.collation
     }
     
-    public func execute(on database: DatabaseConnection) throws -> Future<Cursor> {
-        return try database.execute(self, expecting: Reply.Cursor.self) { cursor, connection in
+    public func execute(on database: DatabaseConnection) -> Future<Cursor> {
+        return database.execute(self, expecting: Reply.Cursor.self) { cursor, connection in
             return try Cursor(
                 cursor: cursor.cursor,
-                collection: self.find.name,
+                collection: self.find,
                 database: self.targetCollection.database,
                 connection: connection,
                 chunkSize: self.batchSize
@@ -56,7 +56,7 @@ public struct FindOne {
         self.collation = collection.default.collation
     }
     
-    public func execute(on connection: DatabaseConnection) throws -> Future<Document?> {
+    public func execute(on connection: DatabaseConnection) -> Future<Document?> {
         var find = Find(on: collection)
         find.batchSize = 1
         find.limit = 1
@@ -68,7 +68,7 @@ public struct FindOne {
         find.skip = skip
         find.projection = projection
         
-        return try find.execute(on: connection).flatMap { cursor in
+        return find.execute(on: connection).flatMap { cursor in
             let promise = Promise<Document?>()
             
             cursor.drain { doc in

@@ -15,8 +15,8 @@
 #endif
 
 @_exported import BSON
+@_exported import Async
 
-import Async
 import Foundation
 import Dispatch
 

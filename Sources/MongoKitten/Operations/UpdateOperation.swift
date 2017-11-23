@@ -14,10 +14,10 @@ public struct Update: Command, Operation {
             self.u = document
         }
         
-        public func execute(on connection: DatabaseConnection, collection: Collection) throws -> Future<Reply.Update> {
+        public func execute(on connection: DatabaseConnection, collection: Collection) -> Future<Reply.Update> {
             let updates = Update(self, in: collection)
             
-            return try updates.execute(on: connection)
+            return updates.execute(on: connection)
         }
     }
     
@@ -52,8 +52,8 @@ public struct Update: Command, Operation {
         self.writeConcern = collection.default.writeConcern
     }
     
-    public func execute(on connection: DatabaseConnection) throws -> Future<Reply.Update> {
-        return try connection.execute(self, expecting: Reply.Update.self) { reply, _ in
+    public func execute(on connection: DatabaseConnection) -> Future<Reply.Update> {
+        return connection.execute(self, expecting: Reply.Update.self) { reply, _ in
             guard reply.ok == 1 else {
                 throw reply
             }

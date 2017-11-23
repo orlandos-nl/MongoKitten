@@ -17,16 +17,12 @@ protocol Command: Encodable {
 
 extension Command {
     public func execute(on connection: DatabaseConnection) -> Future<Void> {
-        do {
-            let response = try connection.execute(self, expecting: Document.self)
-        
-            return response.map { document in
-                guard Int(lossy: document["ok"]) == 1 else {
-                    throw MongoError.commandFailure(error: document)
-                }
+        let response = connection.execute(self, expecting: Document.self)
+    
+        return response.map { document in
+            guard Int(document["ok"]) == 1 else {
+                throw MongoError.commandFailure(error: document)
             }
-        } catch {
-            return Future(error: error)
         }
     }
 }
@@ -45,8 +41,8 @@ extension DatabaseConnection {
     func execute<E: Command, D: Decodable>(
         _ command: E,
         expecting type: D.Type
-    ) throws -> Future<D> {
-        return try execute(command) { reply, _ in
+    ) -> Future<D> {
+        return execute(command) { reply, _ in
             guard let first = reply.documents.first else {
                 throw InternalMongoError.incorrectReply(reply: reply)
             }
@@ -59,8 +55,8 @@ extension DatabaseConnection {
         _ command: E,
         expecting type: D.Type = D.self,
         handle result: @escaping ((D, DatabaseConnection) throws -> (T))
-    ) throws -> Future<T> {
-        return try execute(command) { reply, connection in
+    ) -> Future<T> {
+        return execute(command) { reply, connection in
             guard let first = reply.documents.first else {
                 throw InternalMongoError.incorrectReply(reply: reply)
             }
@@ -72,14 +68,18 @@ extension DatabaseConnection {
     func execute<E: Command, T>(
         _ command: E,
         handle result: @escaping ((ServerReply, DatabaseConnection) throws -> (T))
-    ) throws -> Future<T> {
-        let query = try BSONEncoder().encode(command)
-        let collection = command.targetCollection.database.name + ".$cmd"
-        
-        let message = Message.Query(requestID: self.nextRequestId, flags: [], collection: collection, numbersToSkip: 0, numbersToReturn: 1, query: query, returnFields: nil)
-        
-        return try send(message: message).map { reply in
-            return try result(reply, self)
+    ) -> Future<T> {
+        do {
+            let query = try BSONEncoder().encode(command)
+            let collection = command.targetCollection.database.name + ".$cmd"
+            
+            let message = Message.Query(requestID: self.nextRequestId, flags: [], collection: collection, numbersToSkip: 0, numbersToReturn: 1, query: query, returnFields: nil)
+            
+            return send(message: message).map { reply in
+                return try result(reply, self)
+            }
+        } catch {
+            return Future<T>(error: error)
         }
     }
 }

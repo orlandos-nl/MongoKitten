@@ -73,7 +73,7 @@ public class ClientSettingsTest: XCTestCase {
     }
 
     func testSSLSettings() throws {
-        let clientSettings = try ClientSettings("mongodb://user:passwor@localhost:27017?ssl=false")
+//        let clientSettings = try ClientSettings("mongodb://user:passwor@localhost:27017?ssl=false")
         let sslClientSettings = try ClientSettings("mongodb://user:passwor@localhost:27017?ssl=true")
         XCTAssertNotNil(sslClientSettings)
         XCTAssertEqual(sslClientSettings.ssl.enabled, true)
@@ -90,7 +90,7 @@ public class ClientSettingsTest: XCTestCase {
         XCTAssertEqual(sslValidCertSettings.ssl.enabled, true)
         XCTAssertEqual(sslValidCertSettings.ssl.invalidCertificateAllowed, false)
 
-        let invalidValueSettings = try ClientSettings("mongodb://user:passwor@localhost:27017?ssl=test")
+//        let invalidValueSettings = try ClientSettings("mongodb://user:passwor@localhost:27017?ssl=test")
         
         let SSLsettings: SSLSettings = true
         

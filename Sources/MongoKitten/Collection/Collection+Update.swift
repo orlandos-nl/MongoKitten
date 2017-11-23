@@ -6,7 +6,7 @@ extension Collection {
         let update = Update.Single(matching: query, to: document)
         
         return self.connectionPool.retain().flatMap { connection in
-            return try update.execute(on: connection, collection: self)
+            return update.execute(on: connection, collection: self)
         }
     }
     
@@ -16,7 +16,7 @@ extension Collection {
         update.upsert = true
         
         return self.connectionPool.retain().flatMap { connection in
-            return try update.execute(on: connection, collection: self)
+            return update.execute(on: connection, collection: self)
         }
     }
     
@@ -25,7 +25,7 @@ extension Collection {
         let update = Update.Single(matching: query, to: document)
         
         return self.connectionPool.retain().flatMap { connection in
-            return try update.execute(on: connection, collection: self)
+            return update.execute(on: connection, collection: self)
         }
     }
 }

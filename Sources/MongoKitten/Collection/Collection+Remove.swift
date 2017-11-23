@@ -6,7 +6,7 @@ extension Collection {
         let remove = Delete.Single(matching: query, limit: .one)
         
         return self.connectionPool.retain().flatMap { connection in
-            return try remove.execute(on: connection, collection: self)
+            return remove.execute(on: connection, collection: self)
         }
     }
     
@@ -15,7 +15,7 @@ extension Collection {
         let remove = Delete.Single(matching: query, limit: .all)
         
         return self.connectionPool.retain().flatMap { connection in
-            return try remove.execute(on: connection, collection: self)
+            return remove.execute(on: connection, collection: self)
         }
     }
 }

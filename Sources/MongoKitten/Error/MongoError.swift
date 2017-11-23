@@ -9,7 +9,7 @@
 //
 
 import Foundation
-import struct BSON.Document
+import BSON
 
 /// All MongoDB errors
 internal enum MongoError : Error {
@@ -23,6 +23,8 @@ internal enum MongoError : Error {
     /// Can't deocde base64
     case invalidBase64String
     
+    case unencodablePrimitiveUsed
+    
     /// The body of this message is an invalid length
     case invalidBodyLength
     
@@ -33,9 +35,6 @@ internal enum MongoError : Error {
     case timeout
     
     /// The Database command execution failed
-    case commandFailure(error: Document)
-    
-    /// The Database command execution failed
     case commandError(error: String)
     
     /// Thrown when the initialization of a cursor, on request of the server, failed because of missing data.
@@ -43,9 +42,6 @@ internal enum MongoError : Error {
     
     /// The MongoDB server responded with an invalid reply
     case invalidReply
-    
-    /// The response with the given documents is invalid
-    case invalidResponse(documents: [Document])
     
     /// If you get one of these, it's probably a bug on our side. Sorry. Please file an issue at https://github.com/OpenKitten/MongoKitten/issues/new :)
     case internalInconsistency
@@ -98,16 +94,12 @@ internal enum MongoError : Error {
             return "Authentication to MongoDB failed"
         case .timeout:
             return "The action timed out"
-        case .commandFailure(_):
-            return "The database command failed, possibly because the MongoDB server version is too low."
         case .commandError(let error):
             return "The command execution resulted in the following error: \"\(error)\""
         case .cursorInitializationError(_):
             return "Initialization of the cursor using the provided Document failed"
         case .invalidReply:
             return "The MongoDB reply was invalid"
-        case .invalidResponse(_):
-            return "The MongoDB server response is invalid"
         case .internalInconsistency:
             return "MongoKitten has encountered an internal error. Please file an issue at https://github.com/OpenKitten/MongoKitten/issues/new"
         case .invalidChunkSize(let chunkSize):
@@ -134,6 +126,20 @@ internal enum MongoError : Error {
             return ""
         }
     }
+    
+    static func commandFailure(error document: Document) -> Error {
+        do {
+            let error = try BSONDecoder().decode(MongoServerError.self, from: document)
+            print(error)
+            return error
+        } catch {
+            return DocumentError(document: document)
+        }
+    }
+}
+
+struct DocumentError: Error {
+    var document: Document
 }
 
 /// Authenication failure

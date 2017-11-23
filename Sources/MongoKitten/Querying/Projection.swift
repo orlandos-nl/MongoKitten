@@ -75,6 +75,10 @@ public struct Projection: DocumentCodable {
                 var container = encoder.singleValueContainer()
                 try container.encode(false)
             case .custom(let primitive):
+                guard let primitive = primitive as? Encodable else {
+                    throw MongoError.unencodablePrimitiveUsed
+                }
+                
                 try primitive.encode(to: encoder)
             }
         }

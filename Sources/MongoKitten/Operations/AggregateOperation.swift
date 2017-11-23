@@ -26,11 +26,11 @@ public struct Aggregate: Command, Operation {
         self.collation = collection.default.collation
     }
     
-    public func execute(on connection: DatabaseConnection) throws -> Future<Cursor> {
-        return try connection.execute(self, expecting: Reply.Cursor.self).map { cursor in
+    public func execute(on connection: DatabaseConnection)  -> Future<Cursor> {
+        return connection.execute(self, expecting: Reply.Cursor.self).map { cursor in
             return try Cursor(
                 cursor: cursor.cursor,
-                collection: self.aggregate.name,
+                collection: self.aggregate,
                 database: self.targetCollection.database,
                 connection: connection,
                 chunkSize: self.cursor.batchSize
