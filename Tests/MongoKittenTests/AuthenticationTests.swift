@@ -38,38 +38,43 @@ public class AuthenticationTests: XCTestCase {
     }
     
     func testAtlas() throws {
-        let db = try DatabaseConnection.connect(
+        let connection = try DatabaseConnection.connect(
             host: MongoHost(hostname: "cluster0-shard-00-01-cgfjh.mongodb.net"),
             credentials: MongoCredentials(username: "mongokitten", password: "f96R1v80KDQIbtUX"),
             ssl: true,
             worker: DispatchQueue(label: "test")
         ).blockingAwait(timeout: .seconds(10))
+        
+        let db = Database(named: "mongokitten-unittest", atServer: Server(connectionPool: connection))
 
-        XCTAssertEqual(try db["zips"].count(), 29353)
-        XCTAssertThrowsError(try db["zips"].remove())
+        XCTAssertEqual(try db["zips"].count().blockingAwait(timeout: .seconds(3)), 29353)
+        XCTAssertThrowsError(try db["zips"].remove().blockingAwait(timeout: .seconds(3)))
     }
 
     func testMLabConnection() throws {
-//        let clientSettings = ClientSettings(host: MongoHost(hostname:"ds047124.mlab.com", port: 47124),sslSettings: nil,credentials: MongoCredentials(username:"openkitten",password:"test123"), maxConnectionsPerServer: 20)
-//
-//        let server = try Server(clientSettings)
-//        XCTAssertTrue(server.isConnected)
-//
-//        let database = server["plan-t"]
-//
-//        XCTAssertNotNil(database)
-//
-//        let collection = database["probe"]
-//        XCTAssertNotNil(collection)
-//
-//        let document = try collection.findOne()
-//        XCTAssertNotNil(document)
-//
-//        XCTAssertEqual(String(document?["hello"]), "world")
+        do {
+            let connection = try DatabaseConnection.connect(
+                host: MongoHost(hostname: "ds047124.mlab.com", port: 47124),
+                credentials: MongoCredentials(username: "openkitten", password: "test123"),
+                worker: DispatchQueue(label: "test")
+            ).blockingAwait(timeout: .seconds(10))
+            
+            let server = Server(connectionPool: connection)
+            let database = Database(named: "plan-t", atServer: server)
+
+            XCTAssertNotNil(database)
+
+            let collection = database["probe"]
+            XCTAssertNotNil(collection)
+
+            let document = try collection.findOne().blockingAwait(timeout: .seconds(3))
+            XCTAssertNotNil(document)
+
+            XCTAssertEqual(String(lossy: document?["hello"]), "world")
+        } catch {
+            XCTFail(error.localizedDescription)
+        }
     }
-
-
-
 }
 
 

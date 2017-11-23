@@ -73,13 +73,11 @@ public struct FindOne {
             
             cursor.drain { doc in
                 promise.complete(doc)
-            }
+            }.catch(onError: promise.fail)
             
-            cursor.onClose = {
+            cursor.finally {
                 promise.complete(nil)
             }
-            
-            cursor.catch(promise.fail)
             
             cursor.start()
             

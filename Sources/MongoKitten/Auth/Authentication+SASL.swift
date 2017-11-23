@@ -40,7 +40,11 @@ extension DatabaseConnection {
     ///
     /// - throws: On authentication failure or an incorrect Server Signature
     private func complete(response: Document, verifying signature: Data, database: String) throws -> Future<Void> {
-        let response = try BSONDecoder().decode(Complete.self, from: response)
+        let response = try BSONDecoder.decodeOrError(Complete.self, from: response)
+        
+        if response.ok > 0 && response.done == true {
+            return Future(())
+        }
         
         let finalResponseData = try Base64Decoder.decode(string: response.payload)
         
@@ -86,7 +90,7 @@ extension DatabaseConnection {
     ///
     /// - throws: When the authentication fails, when Base64 fails
     private func challenge(credentials: MongoCredentials, nonce: String, response: Document) throws -> Future<Void> {
-        let response = try BSONDecoder().decode(Complete.self, from: response)
+        let response = try BSONDecoder.decodeOrError(Complete.self, from: response)
         
         // If we failed the authentication
         guard response.ok == 1 else {

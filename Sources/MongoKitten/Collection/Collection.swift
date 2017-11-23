@@ -346,12 +346,3 @@ public final class Collection: Encodable {
 //        }
 //    }
 //}
-
-extension Collection: CustomStringConvertible {
-    /// Used for debugging
-    ///
-    /// Presents you with the location of the collection
-    public var description: String {
-        return "MongoKitten.Collection<\(database.server.hostname)/\(self.namespace)>"
-    }
-}

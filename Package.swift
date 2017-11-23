@@ -15,8 +15,11 @@ var package = Package(
         // For MongoDB Documents
         .package(url: "https://github.com/OpenKitten/BSON.git", .revision("master/6.0")),
         
-        // Asynchronous behaviour and sockets library for during development
-        .package(url: "https://github.com/vapor/vapor.git", .revision("beta")),
+        // Sockets (temporary, during development)
+        .package(url: "https://github.com/vapor/vapor.git", .revision("3.0.0-alpha.4")),
+        
+        // Asynchronous behaviour
+        .package(url: "https://github.com/vapor/async", .revision("1.0.0-alpha.3")),
     ],
     targets: [
         .target(

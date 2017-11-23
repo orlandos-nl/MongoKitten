@@ -2,31 +2,40 @@ import Async
 import Bits
 
 final class PacketSerializer: Async.Stream {
-    func inputStream(_ input: Message) {
+    typealias Output = ByteBuffer
+    
+    let stream = BasicStream<Output>()
+    
+    func onInput(_ input: Message) {
         do {
             let data = try input.generateData()
             
             data.withUnsafeBytes { (pointer: BytesPointer) in
                 let buffer = ByteBuffer(start: pointer, count: data.count)
                 
-                do {
-                    try outputStream?(buffer)
-                } catch {
-                    errorStream?(error)
-                }
+                stream.onInput(buffer)
             }
         } catch {
-            errorStream?(error)
+            stream.onError(error)
         }
     }
     
-    var outputStream: OutputHandler?
-    var errorStream: BaseStream.ErrorHandler?
-    
-    typealias Output = ByteBuffer
-    
-    init<DuplexStream: Async.Stream & ClosableStream>(connection: DuplexStream) where DuplexStream.Input == ByteBuffer, DuplexStream.Output == ByteBuffer {
-        self.drain(into: connection)
+    func onError(_ error: Error) {
+        stream.onError(error)
     }
+    
+    func onOutput<I>(_ input: I) where I : InputStream, PacketSerializer.Output == I.Input {
+        stream.onOutput(input)
+    }
+    
+    func close() {
+        stream.close()
+    }
+    
+    func onClose(_ onClose: ClosableStream) {
+        stream.onClose(onClose)
+    }
+    
+    init() {}
 }
 

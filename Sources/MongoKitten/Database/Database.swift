@@ -39,12 +39,17 @@ public final class Database {
     
     public static func connect(server settings: ClientSettings, database: String, worker: Worker) throws -> Future<Database> {
         return try DatabaseConnection.connect(host: settings.hosts.first ?? "", ssl: settings.ssl, worker: worker).map { connection in
-            return Database(named: database, atServer: Server(connectionPool: connection, settings: settings))
+            return Database(named: database, atServer: Server(connectionPool: connection))
         }
     }
     
     public init(named name: String, settings: ClientSettings, pool: ConnectionPool) {
-        self.server = Server(connectionPool: pool, settings: settings)
+        self.server = Server(connectionPool: pool)
+        self.name = name
+    }
+    
+    public init(named name: String, pool: ConnectionPool) {
+        self.server = Server(connectionPool: pool)
         self.name = name
     }
     
@@ -60,12 +65,5 @@ public final class Database {
     /// - returns: The requested collection in this database
     public subscript(collection: String) -> Collection {
         return Collection(named: collection, in: self)
-    }
-}
-
-extension Database: CustomStringConvertible {
-    /// A debugging string
-    public var description: String {
-        return "MongoKitten.Database<\(server.hostname)/\(self.name)>"
     }
 }

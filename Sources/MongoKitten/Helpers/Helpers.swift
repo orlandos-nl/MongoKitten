@@ -64,3 +64,30 @@ extension DocumentCodable {
         self.init(from: try Document(from: decoder))
     }
 }
+
+extension BSONDecoder {
+    static func decodeOrError<T: Decodable>(_ type: T.Type, from doc: Document) throws -> T {
+        do {
+            return try BSONDecoder().decode(T.self, from: doc)
+        } catch {
+            let error = (try? BSONDecoder().decode(MongoServerError.self, from: doc)) ?? error
+            
+            throw error
+        }
+    }
+}
+
+struct MongoServerError: Error, Decodable {
+    var ok: Double
+    var errmsg: String
+    var code: Int
+    var codeName: String
+    
+    var localizedDescription: String {
+        return """
+        message: \(errmsg)
+        code: \(code)
+        codeName: \(codeName)
+        """
+    }
+}

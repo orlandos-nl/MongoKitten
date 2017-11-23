@@ -3,11 +3,26 @@ import Bits
 import Foundation
 
 final class ServerReplyParser: Async.Stream {
-    var outputStream: OutputHandler?
-    var errorStream: BaseStream.ErrorHandler?
+    func close() {
+        stream.close()
+    }
+    
+    func onClose(_ onClose: ClosableStream) {
+        stream.onClose(onClose)
+    }
     
     typealias Input = ByteBuffer
     typealias Output = ServerReply
+    
+    func onOutput<I>(_ input: I) where I : Async.InputStream, ServerReplyParser.Output == I.Input {
+        stream.onOutput(input)
+    }
+    
+    func onError(_ error: Error) {
+        stream.onError(error)
+    }
+    
+    let stream = BasicStream<Output>()
     
     var totalLength: Int?
     var requestId: Int32?
@@ -31,7 +46,7 @@ final class ServerReplyParser: Async.Stream {
         unconsumed.reserveCapacity(7)
     }
     
-    func inputStream(_ input: UnsafeBufferPointer<UInt8>) {
+    func onInput(_ input: ByteBuffer) {
         guard let base = input.baseAddress else {
             return
         }
@@ -176,11 +191,7 @@ final class ServerReplyParser: Async.Stream {
         advanced += scanDocuments(from: consuming.advanced(by: advanced), length: length - advanced)
         
         if isComplete, let reply = construct() {
-            do {
-                try outputStream?(reply)
-            } catch {
-                errorStream?(error)
-            }
+            stream.onInput(reply)
         }
         
         return advanced

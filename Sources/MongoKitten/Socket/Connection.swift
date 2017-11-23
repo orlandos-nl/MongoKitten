@@ -43,13 +43,22 @@ public final class DatabaseConnection: ConnectionPool {
     let parser = ServerReplyParser()
     let serializer: PacketSerializer
     
-    init<DuplexStream: Async.Stream & ClosableStream>(connection: DuplexStream) where DuplexStream.Input == ByteBuffer, DuplexStream.Output == ByteBuffer {
+    init<DuplexStream: Async.Stream>(connection: DuplexStream) where DuplexStream.Input == ByteBuffer, DuplexStream.Output == ByteBuffer {
         self.strongSocketReference = connection
-        self.serializer = PacketSerializer(connection: connection)
+        self.serializer = PacketSerializer()
+        serializer.drain(onInput: connection.onInput).catch(onError: connection.onError)
         
         connection.stream(to: parser).drain { reply in
             self.waitingForResponses[reply.responseTo]?.complete(reply)
             self.waitingForResponses[reply.responseTo] = nil
+        }.catch { error in
+            for waiter in self.waitingForResponses.values {
+                waiter.fail(error)
+            }
+            
+            self.waitingForResponses = [:]
+            
+            connection.close()
         }
         
         self.doClose = {
@@ -59,12 +68,10 @@ public final class DatabaseConnection: ConnectionPool {
     
     public static func connect(host: MongoHost, credentials: MongoCredentials? = nil, ssl: SSLSettings = false, worker: Worker) throws -> Future<DatabaseConnection> {
         if ssl.enabled {
-            let tls = try TLSClient(worker: worker)
+            let tls = try TLSClient(on: worker)
             tls.clientCertificatePath = ssl.clientCertificate
             
             let promise = Promise<DatabaseConnection>()
-            
-            tls.catch(promise.fail)
             
             try tls.connect(hostname: host.hostname, port: host.port).map {
                 return DatabaseConnection(connection: tls)
@@ -80,12 +87,10 @@ public final class DatabaseConnection: ConnectionPool {
             
             return promise.future
         } else {
-            let socket = try Socket()
+            let socket = try TCPSocket()
             let client = TCPClient(socket: socket, worker: worker)
             
             let promise = Promise<DatabaseConnection>()
-            
-            client.catch(promise.fail)
             
             try socket.connect(hostname: host.hostname, port: host.port)
             
@@ -144,7 +149,7 @@ public final class DatabaseConnection: ConnectionPool {
         
         self.waitingForResponses[message.requestID] = promise
         
-        serializer.inputStream(message)
+        serializer.onInput(message)
         
         return promise.future
     }

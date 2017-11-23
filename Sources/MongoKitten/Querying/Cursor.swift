@@ -50,17 +50,7 @@ extension Reply {
 /////
 ///// It can be transformed into an array with `Array(cursor)` and allows transformation to another type.
 public final class Cursor: OutputStream, ClosableStream {
-    public var outputStream: ((Document) throws -> ())?
-    
     public typealias Output = Document
-    
-    public func close() {
-        self.onClose?()
-    }
-    
-    public var onClose: ClosableStream.CloseHandler?
-    
-    public var errorStream: BaseStream.ErrorHandler?
     
     /// The collection's namespace
     let namespace: String
@@ -81,6 +71,8 @@ public final class Cursor: OutputStream, ClosableStream {
     var currentBatch = [Document]()
     
     var draining = false
+    
+    let stream = BasicStream<Output>()
 
     /// This initializer creates a base cursor from a replied Document
     internal init(cursor: Reply.Cursor.CursorSpec, collection: String, database: Database, connection: DatabaseConnection, chunkSize: Int32) throws {
@@ -96,14 +88,22 @@ public final class Cursor: OutputStream, ClosableStream {
         draining = true
         
         for doc in currentBatch {
-            do {
-                try outputStream?(doc)
-            } catch {
-                errorStream?(error)
-            }
+            stream.onInput(doc)
         }
     }
-//
+    
+    public func onOutput<I>(_ input: I) where I : InputStream, Cursor.Output == I.Input {
+        stream.onOutput(input)
+    }
+    
+    public func close() {
+        stream.close()
+    }
+    
+    public func onClose(_ onClose: ClosableStream) {
+        stream.onClose(onClose)
+    }
+    
 //    var fetching: Bool = false
 //
 //    /// Gets more information and puts it in the buffer

@@ -51,7 +51,7 @@ extension DatabaseConnection {
                 throw InternalMongoError.incorrectReply(reply: reply)
             }
             
-            return try BSONDecoder().decode(D.self, from: first)
+            return try BSONDecoder.decodeOrError(D.self, from: first)
         }
     }
     
@@ -65,8 +65,8 @@ extension DatabaseConnection {
                 throw InternalMongoError.incorrectReply(reply: reply)
             }
             
-            return (try BSONDecoder().decode(D.self, from: first), connection)
-        }.map(callback: result)
+            return (try BSONDecoder.decodeOrError(D.self, from: first), connection)
+        }.map(result)
     }
     
     func execute<E: Command, T>(
