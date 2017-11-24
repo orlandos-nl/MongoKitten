@@ -100,6 +100,8 @@ public class SetupTests: XCTestCase {
     func testInsertPerformance() throws {
         let db = TestManager.db
         
+        _ = try db["rfd"].drop().blockingAwait(timeout: .seconds(3))
+        
         var futures = [Future<Void>]()
         
         for id in 0..<numberOfDocuments {
@@ -115,7 +117,7 @@ public class SetupTests: XCTestCase {
         
         try futures.flatten().blockingAwait(timeout: .seconds(10))
         
-        XCTAssertEqual(try db["rfd"].count().blockingAwait(), numberOfDocuments)
+        XCTAssertEqual(try db["rfd"].count().blockingAwait(timeout: .seconds(3)), numberOfDocuments)
     }
 }
 

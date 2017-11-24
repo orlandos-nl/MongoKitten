@@ -13,7 +13,16 @@ import Foundation
 /// init ClientSettings with MONGO URI
 /// mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]
 /// - SeeAlso : https://github.com/mongodb/specifications/blob/master/source/connection-string/connection-string-spec.rst
-extension ClientSettings {
+extension ClientSettings: ExpressibleByStringLiteral {
+    public init(stringLiteral value: String) {
+        guard let me = try? ClientSettings(value) else {
+            self = .init(hosts: [], credentials: nil)
+            return
+        }
+        
+        self = me
+    }
+    
     /// Parses a MongoDB connection String to a ClientSettings object
     public init(_ url: String) throws {
         var url = url
