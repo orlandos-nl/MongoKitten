@@ -24,7 +24,7 @@ var package = Package(
     targets: [
         .target(
             name: "ExtendedJSON",
-            dependencies: ["BSON"]),
+            dependencies: ["BSON", "Crypto"]),
         .target(
             name: "MongoKitten",
             dependencies: ["BSON", "ExtendedJSON", "Async", "TLS", "TCP", "Crypto"]),
