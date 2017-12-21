@@ -70,6 +70,10 @@ public final class DatabaseConnection: ConnectionPool {
         }
     }
     
+    public subscript(database: String) -> Database {
+        return Database(named: database, pool: self)
+    }
+    
     public static func connect(host: MongoHost, credentials: MongoCredentials? = nil, ssl: SSLSettings = false, worker: Worker) throws -> Future<DatabaseConnection> {
         let socket = try TCPSocket()
         let client = try TCPClient(socket: socket)
