@@ -129,8 +129,8 @@
 //                    return nil
 //                }
 //                
-//                name.characters.removeFirst(self.name.characters.count + 1)
-//                let split = name.characters.split(separator: ".")
+//                name.removeFirst(self.name.count + 1)
+//                let split = name.split(separator: ".")
 //                
 //                if split.count > 1, let last = split.last {
 //                    // is index

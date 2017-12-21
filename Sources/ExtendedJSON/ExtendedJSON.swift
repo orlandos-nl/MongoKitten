@@ -39,7 +39,7 @@ extension String {
             case 0x00...0x1F:
                 buffer.append(contentsOf: "\\u".utf8)
                 let str = String(char, radix: 16, uppercase: true)
-                if str.characters.count == 1 {
+                if str.count == 1 {
                     buffer.append(contentsOf: "000\(str)".utf8)
                 } else {
                     buffer.append(contentsOf: "00\(str)".utf8)

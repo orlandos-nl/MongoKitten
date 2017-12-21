@@ -32,7 +32,7 @@ public class AuthenticationTests: XCTestCase {
                 host: MongoHost(hostname: "cluster0-shard-00-01-cgfjh.mongodb.net"),
                 credentials: MongoCredentials(username: "user", password: "WRONG_PASSWORD"),
                 ssl: true,
-                worker: DispatchQueue(label: "test")
+                worker: TestManager.loop
             ).blockingAwait(timeout: .seconds(10))
         )
     }
@@ -57,8 +57,8 @@ public class AuthenticationTests: XCTestCase {
             let connection = try DatabaseConnection.connect(
                 host: MongoHost(hostname: "ds047124.mlab.com", port: 47124),
                 credentials: MongoCredentials.init(username: "openkitten", password: "test123", database: "plan-t"),
-                worker: DispatchQueue(label: "test")
-            ).blockingAwait()
+                worker: TestManager.loop
+            ).await(on: TestManager.loop)
             
             let server = Server(connectionPool: connection)
             let database = Database(named: "plan-t", atServer: server)

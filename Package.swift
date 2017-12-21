@@ -3,6 +3,12 @@
 
 import PackageDescription
 
+#if os(Linux)
+let ssl: Target.Dependency = "OpenSSL"
+#else
+let ssl: Target.Dependency = "AppleTLS"
+#endif
+
 var package = Package(
     name: "MongoKitten",
     products: [
@@ -15,11 +21,10 @@ var package = Package(
         // For MongoDB Documents
     .package(url: "https://github.com/OpenKitten/BSON.git", from: "5.0.0"),
         
-        // Sockets (temporary, during development)
-        .package(url: "https://github.com/vapor/vapor.git", .revision("3.0.0-alpha.4")),
-        
-        // Asynchronous behaviour
-        .package(url: "https://github.com/vapor/async", .revision("1.0.0-alpha.3")),
+        // Sockets
+        .package(url: "https://github.com/vapor/async.git", .revision("beta")),
+        .package(url: "https://github.com/vapor/engine.git", .revision("beta")),
+        .package(url: "https://github.com/vapor/crypto.git", .revision("beta")),
     ],
     targets: [
         .target(
@@ -27,7 +32,7 @@ var package = Package(
             dependencies: ["BSON", "Crypto"]),
         .target(
             name: "MongoKitten",
-            dependencies: ["BSON", "ExtendedJSON", "Async", "TLS", "TCP", "Crypto"]),
+            dependencies: ["BSON", "ExtendedJSON", "Async", "TLS", "TCP", "Crypto", ssl]),
         .testTarget(
             name: "MongoKittenTests",
             dependencies: ["MongoKitten"]),

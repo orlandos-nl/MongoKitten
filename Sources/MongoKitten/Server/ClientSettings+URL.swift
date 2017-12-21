@@ -26,13 +26,13 @@ extension ClientSettings: ExpressibleByStringLiteral {
     /// Parses a MongoDB connection String to a ClientSettings object
     public init(_ url: String) throws {
         var url = url
-        guard url.characters.starts(with: "mongodb://".characters) else {
+        guard url.starts(with: "mongodb://".characters) else {
             throw MongoError.noMongoDBSchema
         }
 
-        url.characters.removeFirst("mongodb://".characters.count)
+        url.removeFirst("mongodb://".count)
 
-        let parts = url.characters.split(separator: "@")
+        let parts = url.split(separator: "@")
 
         guard parts.count <= 2 else {
             throw MongoError.invalidURI(uri: url)
@@ -40,14 +40,14 @@ extension ClientSettings: ExpressibleByStringLiteral {
 
         url = parts.count == 2 ? String(parts[1]) : String(parts[0])
 
-        let queryParts = url.characters.split(separator: "?")
+        let queryParts = url.split(separator: "?")
 
         url = String(queryParts[0])
 
         var queries = [String: String]()
 
         if queryParts.count == 2 {
-            loop: for keyValue in String(queryParts[1]).characters.split(separator: "&") {
+            loop: for keyValue in String(queryParts[1]).split(separator: "&") {
                 let keyValue = Array(keyValue).split(separator: "=")
 
                 queries[String(keyValue[0])] = keyValue.count == 2 ? String(keyValue[1]) : ""
@@ -70,7 +70,7 @@ extension ClientSettings: ExpressibleByStringLiteral {
             password = String(userParts[1]).removingPercentEncoding
         }
 
-        let urlSplitWithPath = url.characters.split(separator: "/")
+        let urlSplitWithPath = url.split(separator: "/")
 
         url = String(urlSplitWithPath[0])
         path = urlSplitWithPath.count == 2 ? String(urlSplitWithPath[1]) : nil
@@ -86,7 +86,7 @@ extension ClientSettings: ExpressibleByStringLiteral {
             authentication = MongoCredentials(username: user, password: pass, database: authSource ?? path ?? "admin", authenticationMechanism: mechanism)
         }
 
-        let hosts = url.characters.split(separator: ",").map { host -> MongoHost in
+        let hosts = url.split(separator: ",").map { host -> MongoHost in
             let hostSplit = host.split(separator: ":")
             var port: UInt16 = 27017
 

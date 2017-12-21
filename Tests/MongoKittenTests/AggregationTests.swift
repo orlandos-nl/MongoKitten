@@ -142,22 +142,20 @@ public class AggregationTests: XCTestCase {
         do {
             let query = orders.aggregate(pipe)
             
-            _ = try query.then { cursor -> Future<Int> in
+            _ = try query.flatMap(to: Int.self) { cursor in
                 var count = 0
                 let promise = Promise<Int>()
                 
-                cursor.drain { document in
+                cursor.drain { upstream in
+                    upstream.request(count: .max)
+                }.output { document in
                     XCTAssertEqual(String(document["item"]), "MON1003")
                     XCTAssertEqual(Int(document["price"]), 350)
                     XCTAssertEqual([Primitive](document["inventory_docs"])?.count, 1)
                     count += 1
-                }.catch(onError: promise.fail)
-                
-                cursor.finally {
+                }.catch(onError: promise.fail).finally {
                     promise.complete(count)
                 }
-                
-                cursor.start()
                 
                 return promise.future
             }.do { count in

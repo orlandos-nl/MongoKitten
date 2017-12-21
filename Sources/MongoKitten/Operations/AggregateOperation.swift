@@ -27,7 +27,7 @@ public struct Aggregate: Command, Operation {
     }
     
     public func execute(on connection: DatabaseConnection)  -> Future<Cursor> {
-        return connection.execute(self, expecting: Reply.Cursor.self).map { cursor in
+        return connection.execute(self, expecting: Reply.Cursor.self).map(to: Cursor.self) { cursor in
             return try Cursor(
                 cursor: cursor.cursor,
                 collection: self.aggregate,

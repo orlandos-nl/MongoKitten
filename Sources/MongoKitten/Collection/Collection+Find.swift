@@ -12,7 +12,7 @@ extension Collection {
         find.sort = sort
         find.projection = projection
         
-        return self.connectionPool.retain().flatMap(find.execute)
+        return self.connectionPool.retain().flatMap(to: Cursor.self, find.execute)
     }
     
     public func find(
@@ -28,7 +28,7 @@ extension Collection {
         find.limit = range.upperBound - range.lowerBound
         find.projection = projection
         
-        return self.connectionPool.retain().flatMap(find.execute)
+        return self.connectionPool.retain().flatMap(to: Cursor.self, find.execute)
     }
     
     public func find(
@@ -44,7 +44,7 @@ extension Collection {
         find.limit = (range.upperBound + 1) - range.lowerBound
         find.projection = projection
         
-        return self.connectionPool.retain().flatMap(find.execute)
+        return self.connectionPool.retain().flatMap(to: Cursor.self, find.execute)
     }
     
     public func find(
@@ -59,7 +59,7 @@ extension Collection {
         find.skip = range.lowerBound
         find.projection = projection
         
-        return self.connectionPool.retain().flatMap(find.execute)
+        return self.connectionPool.retain().flatMap(to: Cursor.self, find.execute)
     }
     
     public func find(
@@ -74,7 +74,7 @@ extension Collection {
         find.limit = range.upperBound
         find.projection = projection
         
-        return self.connectionPool.retain().flatMap(find.execute)
+        return self.connectionPool.retain().flatMap(to: Cursor.self, find.execute)
     }
     
     public func find(
@@ -89,7 +89,7 @@ extension Collection {
         find.limit = range.upperBound + 1
         find.projection = projection
         
-        return self.connectionPool.retain().flatMap(find.execute)
+        return self.connectionPool.retain().flatMap(to: Cursor.self, find.execute)
     }
     
     public func findOne(
@@ -102,6 +102,6 @@ extension Collection {
         findOne.sort = sort
         findOne.projection = projection
         
-        return self.connectionPool.retain().flatMap(findOne.execute)
+        return self.connectionPool.retain().flatMap(to: Document?.self, findOne.execute)
     }
 }

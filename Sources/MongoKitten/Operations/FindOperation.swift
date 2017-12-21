@@ -68,18 +68,16 @@ public struct FindOne {
         find.skip = skip
         find.projection = projection
         
-        return find.execute(on: connection).flatMap { cursor in
+        return find.execute(on: connection).flatMap(to: Document?.self) { cursor in
             let promise = Promise<Document?>()
             
-            cursor.drain { doc in
+            cursor.drain { cursor in
+                cursor.request()
+            }.output { doc in
                 promise.complete(doc)
-            }.catch(onError: promise.fail)
-            
-            cursor.finally {
+            }.finally {
                 promise.complete(nil)
             }
-            
-            cursor.start()
             
             return promise.future
         }

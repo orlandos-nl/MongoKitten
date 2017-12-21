@@ -31,9 +31,9 @@ public class CollectionTests: XCTestCase {
         
         _ = try? collection.drop().blockingAwait(timeout: .seconds(6))
         
-        try collection.insert(user).flatMap { _ in
+        try collection.insert(user).flatMap(to: Document?.self) { _ in
             return collection.findOne()
-        }.map { result in
+            }.map(to: Void.self) { result in
             XCTAssertNotNil(result)
             XCTAssertEqual(ObjectId(result?["_id"]), id)
         }.blockingAwait(timeout: .seconds(6))

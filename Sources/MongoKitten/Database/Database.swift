@@ -38,7 +38,7 @@ public final class Database {
     }
     
     public static func connect(server settings: ClientSettings, database: String, worker: Worker) throws -> Future<Database> {
-        return try DatabaseConnection.connect(host: settings.hosts.first ?? "", ssl: settings.ssl, worker: worker).map { connection in
+        return try DatabaseConnection.connect(host: settings.hosts.first ?? "", ssl: settings.ssl, worker: worker).map(to: Database.self) { connection in
             return Database(named: database, atServer: Server(connectionPool: connection))
         }
     }

@@ -12,10 +12,10 @@ extension DatabaseConnection {
     fileprivate func parse(response r: String) -> [String: String] {
         var parsedResponse = [String: String]()
         
-        for part in r.characters.split(separator: ",") where String(part).characters.count >= 3 {
+        for part in r.split(separator: ",") where String(part).count >= 3 {
             let part = String(part)
             
-            if let first = part.characters.first {
+            if let first = part.first {
                 parsedResponse[String(first)] = String(part[part.index(part.startIndex, offsetBy: 2)..<part.endIndex])
             }
         }
@@ -46,7 +46,7 @@ extension DatabaseConnection {
             return Future(())
         }
         
-        let finalResponseData = try Base64Decoder.decode(string: response.payload)
+        let finalResponseData = try Base64Decoder().decode(string: response.payload)
         
         guard let finalResponse = String(data: finalResponseData, encoding: .utf8) else {
             throw MongoError.invalidBase64String
@@ -58,7 +58,7 @@ extension DatabaseConnection {
             throw AuthenticationError.responseParseError(response: response.payload)
         }
         
-        let serverSignature = try Base64Decoder.decode(string: v)
+        let serverSignature = try Base64Decoder().decode(string: v)
         
         guard serverSignature == signature else {
             throw AuthenticationError.serverSignatureInvalid
@@ -78,7 +78,7 @@ extension DatabaseConnection {
             returnFields: nil
         )
         
-        return send(message: commandMessage).flatMap { reply in
+        return send(message: commandMessage).flatMap(to: Void.self) { reply in
             return try self.complete(response: reply.documents.first ?? [:], verifying: signature, database: database)
         }
     }
@@ -97,7 +97,7 @@ extension DatabaseConnection {
             throw AuthenticationError.incorrectCredentials
         }
         
-        let stringResponseData = try Base64Decoder.decode(string: response.payload)
+        let stringResponseData = try Base64Decoder().decode(string: response.payload)
         
         guard let decodedStringResponse = String(data: stringResponseData, encoding: .utf8) else {
             throw MongoError.invalidBase64String
@@ -109,7 +109,7 @@ extension DatabaseConnection {
         let result = try self.scram.process(decodedStringResponse, username: credentials.username, password: passwordBytes, usingNonce: nonce)
         
         // Base64 the payload
-        let payload = Base64Encoder.encode(string: result.proof)
+        let payload = Base64Encoder().encode(string: result.proof)
         
         // Send the proof
         let commandMessage = Message.Query(
@@ -126,7 +126,7 @@ extension DatabaseConnection {
             returnFields: nil
         )
         
-        return send(message: commandMessage).flatMap { reply in
+        return send(message: commandMessage).flatMap(to: Void.self) { reply in
             return try self.complete(response: reply.documents.first ?? [:], verifying: result.serverSignature, database: credentials.authDB)
         }
     }
@@ -141,7 +141,7 @@ extension DatabaseConnection {
         
         let authPayload = scram.authenticate(credentials.username, usingNonce: nonce)
         
-        let payload = Base64Encoder.encode(string: authPayload)
+        let payload = Base64Encoder().encode(string: authPayload)
         
         let message = Message.Query(
             requestID: self.nextRequestId,
@@ -157,7 +157,7 @@ extension DatabaseConnection {
             returnFields: nil
         )
         
-        return send(message: message).flatMap { reply in
+        return send(message: message).flatMap(to: Void.self) { reply in
             return try self.challenge(credentials: credentials, nonce: nonce, response: reply.documents.first ?? [:])
         }
     }

@@ -2,27 +2,26 @@ import Async
 import Bits
 import Foundation
 
-final class ServerReplyParser: Async.Stream {
-    func close() {
-        stream.close()
-    }
-    
-    func onClose(_ onClose: ClosableStream) {
-        stream.onClose(onClose)
-    }
-    
+final class ServerReplyParser: Async.Stream, ConnectionContext {
     typealias Input = ByteBuffer
     typealias Output = ServerReply
     
-    func onOutput<I>(_ input: I) where I : Async.InputStream, ServerReplyParser.Output == I.Input {
-        stream.onOutput(input)
+    /// Downstream input stream accepting byte buffers
+    private var downstream: AnyInputStream<ServerReply>?
+    
+    /// Upstream output stream outputting byte buffers
+    private var upstream: ConnectionContext?
+    
+    /// Remaining output requested
+    private var remainingOutputRequested: UInt = 0
+    
+    var upstreamBuffer: ByteBuffer? {
+        didSet {
+            self.upstreamOffset = 0
+        }
     }
     
-    func onError(_ error: Error) {
-        stream.onError(error)
-    }
-    
-    let stream = BasicStream<Output>()
+    var upstreamOffset = 0
     
     var totalLength: Int?
     var requestId: Int32?
@@ -46,21 +45,59 @@ final class ServerReplyParser: Async.Stream {
         unconsumed.reserveCapacity(7)
     }
     
-    func onInput(_ input: ByteBuffer) {
-        guard let base = input.baseAddress else {
-            return
+    func input(_ event: InputEvent<ByteBuffer>) {
+        switch event {
+        case .close: process()
+        case .connect(let upstream):
+            self.upstream = upstream
+        case .error(let error): downstream?.error(error)
+        case .next(let input):
+            self.upstreamBuffer = input
+            process()
         }
-        
-        var advanced = 0
-        
-        repeat {
-            advanced += self.process(consuming: base.advanced(by: advanced), withLengthOf: input.count - advanced)
-        } while advanced < input.count
     }
     
-    func process(consuming: UnsafePointer<UInt8>, withLengthOf length: Int) -> Int {
+    func output<S>(to inputStream: S) where S : Async.InputStream, ServerReplyParser.Output == S.Input {
+        downstream = AnyInputStream(inputStream)
+        inputStream.connect(to: self)
+    }
+    
+    func connection(_ event: ConnectionEvent) {
+        switch event {
+        case .cancel:
+            remainingOutputRequested = 0
+            upstream?.cancel()
+        case .request(let count):
+            remainingOutputRequested += count
+            
+            if self.upstreamBuffer == nil {
+                upstream?.request()
+            }
+            
+            process()
+        }
+    }
+    
+    func process() {
+        while true {
+            guard let buffer = upstreamBuffer else {
+                return
+            }
+            
+            if upstreamOffset >= buffer.count {
+                upstream?.request()
+                return
+            }
+            
+            self.process(
+                consuming: buffer.baseAddress!.advanced(by: upstreamOffset),
+                length: buffer.count - upstreamOffset
+            )
+        }
+    }
+    
+    func process(consuming: BytesPointer, length: Int)  {
         var advanced = 0
-        var length = length
         
         func require(_ n: Int) -> Bool {
             guard unconsumed.count &+ (length &- advanced) >= n else {
@@ -126,7 +163,8 @@ final class ServerReplyParser: Async.Stream {
         
         if totalLength == nil {
             guard let totalLength = makeInt32() else {
-                return advanced
+                upstreamOffset += advanced
+                return
             }
             
             self.totalLength = Int(totalLength) as Int
@@ -134,7 +172,8 @@ final class ServerReplyParser: Async.Stream {
         
         if requestId == nil {
             guard let requestId = makeInt32() else {
-                return advanced
+                upstreamOffset += advanced
+                return
             }
             
             self.requestId = requestId
@@ -142,7 +181,8 @@ final class ServerReplyParser: Async.Stream {
         
         if responseTo == nil {
             guard let responseTo = makeInt32() else {
-                return advanced
+                upstreamOffset += advanced
+                return
             }
             
             self.responseTo = responseTo
@@ -150,7 +190,8 @@ final class ServerReplyParser: Async.Stream {
         
         if opCode == nil {
             guard let opCode = makeInt32() else {
-                return advanced
+                upstreamOffset += advanced
+                return
             }
             
             self.opCode = opCode
@@ -158,7 +199,8 @@ final class ServerReplyParser: Async.Stream {
         
         if flags == nil {
             guard let flag = makeInt32() else {
-                return advanced
+                upstreamOffset += advanced
+                return
             }
             
             self.flags = ReplyFlags(rawValue: flag)
@@ -166,7 +208,8 @@ final class ServerReplyParser: Async.Stream {
         
         if cursorID == nil {
             guard let cursorID = makeInt64() else {
-                return advanced
+                upstreamOffset += advanced
+                return
             }
             
             self.cursorID = Int(cursorID)
@@ -174,7 +217,8 @@ final class ServerReplyParser: Async.Stream {
         
         if startingFrom == nil {
             guard let startingFrom = makeInt32() else {
-                return advanced
+                upstreamOffset += advanced
+                return
             }
             
             self.startingFrom = startingFrom
@@ -182,19 +226,21 @@ final class ServerReplyParser: Async.Stream {
         
         if numbersReturned == nil {
             guard let numbersReturned = makeInt32() else {
-                return advanced
+                upstreamOffset += advanced
+                return
             }
             
             self.numbersReturned = numbersReturned
         }
         
         advanced += scanDocuments(from: consuming.advanced(by: advanced), length: length - advanced)
+        upstreamOffset += advanced
         
         if isComplete, let reply = construct() {
-            stream.onInput(reply)
+            downstream?.next(reply)
         }
         
-        return advanced
+        return
     }
     
     func scanDocuments(from pointer: BytesPointer, length: Int) -> Int {

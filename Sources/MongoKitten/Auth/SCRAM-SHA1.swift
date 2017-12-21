@@ -37,10 +37,10 @@ final class SCRAMContext {
         var iterations: Int? = nil
         var salt: String? = nil
         
-        for part in response.characters.split(separator: ",") where String(part).characters.count >= 3 {
+        for part in response.split(separator: ",") where String(part).count >= 3 {
             let part = String(part)
             
-            if let first = part.characters.first {
+            if let first = part.first {
                 let data = part[part.index(part.startIndex, offsetBy: 2)..<part.endIndex]
                 
                 switch first {
@@ -70,15 +70,15 @@ final class SCRAMContext {
     private func parse(finalResponse response: String) throws -> [UInt8] {
         var signature: [UInt8]? = nil
         
-        for part in response.characters.split(separator: ",") where String(part).characters.count >= 3 {
+        for part in response.split(separator: ",") where String(part).count >= 3 {
             let part = String(part)
             
-            if let first = part.characters.first {
+            if let first = part.first {
                 let data = part[part.index(part.startIndex, offsetBy: 2)..<part.endIndex]
                 
                 switch first {
                 case "v":
-                    signature = Array(try Base64Decoder.decode(string: String(data)))
+                    signature = Array(try Base64Decoder().decode(string: String(data)))
                 default:
                     break
                 }
@@ -112,7 +112,7 @@ final class SCRAMContext {
             return result
         }
         
-        let encodedHeader = Base64Encoder.encode(string: gs2BindFlag)
+        let encodedHeader = Base64Encoder().encode(string: gs2BindFlag)
         
         let parsedResponse = try parse(challenge: challenge)
 
@@ -125,7 +125,7 @@ final class SCRAMContext {
         
         let noProof = "c=\(encodedHeader),r=\(parsedResponse.nonce)"
         
-        let salt = try Base64Decoder.decode(string: parsedResponse.salt)
+        let salt = try Base64Decoder().decode(string: parsedResponse.salt)
         let saltedPassword: Data
         let clientKey: Data
         let serverKey: Data
@@ -156,7 +156,7 @@ final class SCRAMContext {
         let clientProof = xor(clientKey, clientSignature)
         let serverSignature = HMAC<SHA1>.authenticate(authenticationMessageBytes, withKey: serverKey)
         
-        let proof = String(data: Base64Encoder.encode(data: clientProof), encoding: .utf8)!
+        let proof = String(data: Base64Encoder().encode(data: clientProof), encoding: .utf8)!
         
         return (proof: "\(noProof),p=\(proof)", serverSignature: serverSignature)
     }

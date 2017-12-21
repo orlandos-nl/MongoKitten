@@ -27,7 +27,7 @@ public struct MongoHost: Equatable, ExpressibleByStringLiteral {
     /// Creates a new Host object from a string
     public init(stringLiteral value: String) {
         // Split the last ':', specifically for IPv6 addresses
-        let parts = value.characters.reversed().split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
+        let parts = value.reversed().split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
         
         hostname = String(parts[parts.count == 2 ? 1 : 0].reversed())
         port = parts.count == 2 ? UInt16(String(parts[0].reversed())) ?? 27017 : 27017
@@ -36,7 +36,7 @@ public struct MongoHost: Equatable, ExpressibleByStringLiteral {
     /// Creates a new Host object from a string
     public init(unicodeScalarLiteral value: String) {
         // Split the last ':', specifically for IPv6 addresses
-        let parts = value.characters.reversed().split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
+        let parts = value.reversed().split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
         
         hostname = String(parts[parts.count == 2 ? 1 : 0].reversed())
         port = parts.count == 2 ? UInt16(String(parts[0].reversed())) ?? 27017 : 27017
@@ -45,7 +45,7 @@ public struct MongoHost: Equatable, ExpressibleByStringLiteral {
     /// Creates a new Host object from a string
     public init(extendedGraphemeClusterLiteral value: String) {
         // Split the last ':', specifically for IPv6 addresses
-        let parts = value.characters.reversed().split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
+        let parts = value.reversed().split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
         
         hostname = String(parts[parts.count == 2 ? 1 : 0].reversed())
         port = parts.count == 2 ? UInt16(String(parts[0].reversed())) ?? 27017 : 27017

@@ -112,7 +112,7 @@ public class SetupTests: XCTestCase {
                 "dateOfBooking": Date(),
             ]
             
-            futures.append(db["rfd"].insert(doc).map { _ in })
+            futures.append(db["rfd"].insert(doc).map(to: Void.self) { _ in })
         }
         
         try futures.flatten().blockingAwait(timeout: .seconds(10))

@@ -32,7 +32,7 @@ extension Reply {
 ///// It can be looped over using a `for let document in cursor` loop like any other sequence.
 /////
 ///// It can be transformed into an array with `Array(cursor)` and allows transformation to another type.
-public final class Cursor: OutputStream, ClosableStream {
+public final class Cursor: Async.OutputStream, ConnectionContext {
     public typealias Output = Document
     
     /// The collection's namespace
@@ -40,100 +40,100 @@ public final class Cursor: OutputStream, ClosableStream {
 
     /// The collection this cursor is pointing to
     let collection: MongoCollection
+    
+    let databaseConnection: DatabaseConnection
 
     /// The cursor's identifier that allows us to fetch more data from the server
     fileprivate var cursorID: Int
 
     /// The amount of Documents to receive each time from the server
     fileprivate let chunkSize: Int32
-
-    fileprivate let connection: DatabaseConnection
     
-    var fetching = 0
+    /// Downstream client and eventloop input stream
+    private var downstream: AnyInputStream<Document>?
     
-    var drained = 0
+    var backlog = [Document]()
     
-    var currentBatch = [Document]()
+    var consumedBacklog: Int = 0
     
-    var draining = false
-    var fullyDrained = false
-    
-    let stream = BasicStream<Output>()
+    var downstreamRequest: UInt = 0
 
     /// This initializer creates a base cursor from a replied Document
     internal init(cursor: Reply.Cursor.CursorSpec, collection: MongoCollection, database: Database, connection: DatabaseConnection, chunkSize: Int32) throws {
         self.chunkSize = chunkSize
-        self.connection = connection
+        self.databaseConnection = connection
         self.collection = collection
         self.namespace = cursor.ns
         self.cursorID = cursor.id
-        self.currentBatch = cursor.firstBatch
+        self.backlog = cursor.firstBatch
+        
+        fetchMore()
     }
     
-    public func start() {
-        draining = true
-        
-        var i = drained
-        
-        if i >= currentBatch.count {
-            return
+    public func output<S>(to inputStream: S) where S : InputStream, Cursor.Output == S.Input {
+        downstream = AnyInputStream(inputStream)
+        inputStream.connect(to: self)
+    }
+    
+    public func connection(_ event: ConnectionEvent) {
+        switch event {
+        case.request(let count):
+            self.downstreamRequest += count
+            
+            flushBacklog()
+        case .cancel:
+            self.downstreamRequest = 0
+            /// handle downstream canceling output requests
+            downstream?.close()
+        }
+    }
+    
+    fileprivate func flushBacklog() {
+        while backlog.count > consumedBacklog, downstreamRequest > 0 {
+            let doc = self.backlog[self.consumedBacklog]
+            consumedBacklog += 1
+            
+            downstream?.next(doc)
         }
         
-        while i < currentBatch.count {
-            stream.onInput(currentBatch[i])
-            i += 1
+        if consumedBacklog >= backlog.count {
+            fetchMore()
         }
-        
-        self.currentBatch = []
-        
-        if self.cursorID == 0 {
-            self.close()
-        }
-        
-        i = 0
     }
     
-    public func onOutput<I>(_ input: I) where I : InputStream, Cursor.Output == I.Input {
-        stream.onOutput(input)
-    }
-    
-    public func close() {
-        stream.close()
-    }
-    
-    public func onClose(_ onClose: ClosableStream) {
-        stream.onClose(onClose)
-    }
-    
-    @discardableResult
-    fileprivate func fetchMore() -> Future<Void> {
-        if self.connection.wireProtocol >= 4 {
+    fileprivate func fetchMore() {
+        if self.databaseConnection.wireProtocol >= 4 {
             let command = Commands.GetMore(
                 getMore: self.cursorID,
                 collection: self.collection,
                 batchSize: self.chunkSize
             )
             
-            return connection.execute(command, expecting: Reply.GetMore.self) { result, connection in
+            databaseConnection.execute(command, expecting: Reply.GetMore.self) { result, connection in
                 defer {
                     if result.cursor.id <= 0 {
-                        self.close()
+                        self.cancel()
                     }
                 }
                 
-                for doc in result.cursor.nextBatch {
-                    self.stream.onInput(doc)
-                }
+                self.backlog = result.cursor.nextBatch
+                self.cursorID = result.cursor.id
+                self.flushBacklog()
+            }.catch { error in
+                self.downstream?.error(error)
+                self.cancel()
             }
         } else  {
-            let request = Message.GetMore(requestID: self.connection.nextRequestId, namespace: self.namespace, numberToReturn: self.chunkSize, cursor: self.cursorID)
+            let request = Message.GetMore(requestID: self.databaseConnection.nextRequestId, namespace: self.namespace, numberToReturn: self.chunkSize, cursor: self.cursorID)
             
-            return self.connection.send(message: request).map { reply in
-                for doc in reply.documents {
-                    self.stream.onInput(doc)
-                }
-                
+            self.databaseConnection.send(message: request).do { reply in
+                self.backlog = reply.documents
                 self.cursorID = reply.cursorID
+                
+                self.flushBacklog()
+            }.catch { error in
+                self.downstream?.error(error)
+                self.cancel()
             }
         }
     }
@@ -141,8 +141,8 @@ public final class Cursor: OutputStream, ClosableStream {
     /// When deinitializing we're killing the cursor on the server as well
     deinit {
         if cursorID != 0 {
-            let killCursorsMessage = Message.KillCursors(requestID: self.connection.nextRequestId, cursorIDs: [self.cursorID])
-            _ = self.connection.send(message: killCursorsMessage).catch(self.stream.onError)
+            let killCursorsMessage = Message.KillCursors(requestID: self.databaseConnection.nextRequestId, cursorIDs: [self.cursorID])
+            _ = self.databaseConnection.send(message: killCursorsMessage)
         }
     }
 }

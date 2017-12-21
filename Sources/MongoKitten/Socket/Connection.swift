@@ -14,6 +14,7 @@ import TLS
 import Foundation
 import Dispatch
 import TCP
+import AppleTLS
 
 public protocol ConnectionPool {
     func retain() -> Future<DatabaseConnection>
@@ -39,20 +40,23 @@ public final class DatabaseConnection: ConnectionPool {
     
     var wireProtocol: Int = 0
     
-    fileprivate var doClose: (()->())?
-    fileprivate var strongSocketReference: Any?
+    fileprivate var socket: Socket
     
     let parser = ServerReplyParser()
     let serializer: PacketSerializer
     
-    init<DuplexStream: Async.Stream>(connection: DuplexStream) where DuplexStream.Input == ByteBuffer, DuplexStream.Output == ByteBuffer {
-        self.strongSocketReference = connection
+    init<T>(source: SocketSource<T>, sink: SocketSink<T>) {
+        self.socket = sink.socket
         self.serializer = PacketSerializer()
-        serializer.drain(onInput: connection.onInput).catch(onError: connection.onError)
         
-        connection.stream(to: parser).drain { reply in
+        serializer.output(to: sink)
+        
+        source.stream(to: parser).drain { upstream in
+            upstream.request()
+        }.output { reply in
             self.waitingForResponses[reply.responseTo]?.complete(reply)
             self.waitingForResponses[reply.responseTo] = nil
+            self.parser.request()
         }.catch { error in
             for waiter in self.waitingForResponses.values {
                 waiter.fail(error)
@@ -60,57 +64,43 @@ public final class DatabaseConnection: ConnectionPool {
             
             self.waitingForResponses = [:]
             
-            connection.close()
-        }
-        
-        self.doClose = {
-            connection.close()
+            self.socket.close()
+        }.finally {
+            self.socket.close()
         }
     }
     
     public static func connect(host: MongoHost, credentials: MongoCredentials? = nil, ssl: SSLSettings = false, worker: Worker) throws -> Future<DatabaseConnection> {
+        let socket = try TCPSocket()
+        let client = try TCPClient(socket: socket)
+        
         if ssl.enabled {
-            let tls = try TLSClient(on: worker)
-            tls.clientCertificatePath = ssl.clientCertificate
+            let tls = try AppleTLSClient(tcp: client, using: .init())
+            try tls.connect(hostname: host.hostname, port: host.port)
             
-            let promise = Promise<DatabaseConnection>()
+            let sink = tls.socket.sink(on: worker)
+            let source = tls.socket.source(on: worker)
             
-            try tls.connect(hostname: host.hostname, port: host.port).map {
-                return DatabaseConnection(connection: tls)
-            }.flatMap { connection in
-                if let credentials = credentials {
-                    return try connection.authenticate(with: credentials).map { _ in
-                        return connection
-                    }
-                } else {
-                    return Future(connection)
-                }
-            }.do(promise.complete).catch(promise.fail)
+            let connection = DatabaseConnection(source: source, sink: sink)
             
-            return promise.future
+            if let credentials = credentials {
+                return try connection.authenticate(with: credentials).transform(to: connection)
+            } else {
+                return Future(connection)
+            }
         } else {
-            let socket = try TCPSocket()
-            let client = TCPClient(socket: socket, worker: worker)
+            try client.connect(hostname: host.hostname, port: host.port)
             
-            let promise = Promise<DatabaseConnection>()
+            let sink = socket.sink(on: worker)
+            let source = socket.source(on: worker)
             
-            try socket.connect(hostname: host.hostname, port: host.port)
+            let connection = DatabaseConnection(source: source, sink: sink)
             
-            socket.writable(queue: worker.eventLoop.queue).map { () -> DatabaseConnection in
-                client.start()
-                
-                return DatabaseConnection(connection: client)
-            }.flatMap { connection in
-                if let credentials = credentials {
-                    return try connection.authenticate(with: credentials).map {
-                        return connection
-                    }
-                } else {
-                    return Future(connection)
-                }
-            }.do(promise.complete).catch(promise.fail)
-            
-            return promise.future
+            if let credentials = credentials {
+                return try connection.authenticate(with: credentials).transform(to: connection)
+            } else {
+                return Future(connection)
+            }
         }
     }
     
@@ -134,7 +124,7 @@ public final class DatabaseConnection: ConnectionPool {
     
     /// Closes this connection
     public func close() {
-        self.doClose?()
+        self.socket.close()
         self.closeResponses()
     }
     
@@ -151,7 +141,7 @@ public final class DatabaseConnection: ConnectionPool {
         
         self.waitingForResponses[message.requestID] = promise
         
-        serializer.onInput(message)
+        serializer.next(message)
         
         return promise.future
     }
