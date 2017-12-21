@@ -66,8 +66,6 @@ public final class Cursor: Async.OutputStream, ConnectionContext {
         self.namespace = cursor.ns
         self.cursorID = cursor.id
         self.backlog = cursor.firstBatch
-        
-        fetchMore()
     }
     
     public func output<S>(to inputStream: S) where S : InputStream, Cursor.Output == S.Input {
@@ -89,6 +87,10 @@ public final class Cursor: Async.OutputStream, ConnectionContext {
     }
     
     fileprivate func flushBacklog() {
+        defer {
+            self.backlog.removeFirst(consumedBacklog)
+        }
+        
         while backlog.count > consumedBacklog, downstreamRequest > 0 {
             let doc = self.backlog[self.consumedBacklog]
             consumedBacklog += 1
@@ -102,6 +104,11 @@ public final class Cursor: Async.OutputStream, ConnectionContext {
     }
     
     fileprivate func fetchMore() {
+        if cursorID == 0 {
+            self.cancel()
+            return
+        }
+        
         if self.databaseConnection.wireProtocol >= 4 {
             let command = Commands.GetMore(
                 getMore: self.cursorID,

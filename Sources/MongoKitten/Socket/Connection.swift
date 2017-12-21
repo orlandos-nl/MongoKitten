@@ -75,7 +75,7 @@ public final class DatabaseConnection: ConnectionPool {
         let client = try TCPClient(socket: socket)
         
         if ssl.enabled {
-            let tls = try AppleTLSClient(tcp: client, using: .init())
+            let tls = try AppleTLSClient(tcp: client, using: TLSClientSettings(peerDomainName: host.hostname))
             try tls.connect(hostname: host.hostname, port: host.port)
             
             let sink = tls.socket.sink(on: worker)

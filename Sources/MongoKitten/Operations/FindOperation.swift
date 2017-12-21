@@ -71,13 +71,13 @@ public struct FindOne {
         return find.execute(on: connection).flatMap(to: Document?.self) { cursor in
             let promise = Promise<Document?>()
             
-            cursor.drain { cursor in
-                cursor.request()
-            }.output { doc in
+            cursor.drain { _ in }.output { doc in
                 promise.complete(doc)
             }.finally {
                 promise.complete(nil)
             }
+            
+            cursor.request()
             
             return promise.future
         }
