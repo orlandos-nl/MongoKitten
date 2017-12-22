@@ -20,7 +20,7 @@ extension Command {
         let response = connection.execute(self, expecting: Document.self)
     
         return response.map(to: Void.self) { document in
-            guard Int(document["ok"]) == 1 else {
+            guard Int(lossy: document["ok"]) == 1 else {
                 throw MongoError.commandFailure(error: document)
             }
         }
@@ -48,6 +48,20 @@ extension DatabaseConnection {
             }
             
             return try BSONDecoder.decodeOrError(D.self, from: first)
+        }
+    }
+    
+    func execute<D: Decodable>(
+        query: Document,
+        on database: String,
+        expecting type: D.Type
+    ) -> Future<D> {
+        let collection = database + ".$cmd"
+        
+        let message = Message.Query(requestID: self.nextRequestId, flags: [], collection: collection, numbersToSkip: 0, numbersToReturn: 1, query: query, returnFields: nil)
+        
+        return send(message: message).map(to: D.self) { reply in
+            return try BSONDecoder().decode(D.self, from: reply.documents.first ?? [:])
         }
     }
     

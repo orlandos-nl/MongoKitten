@@ -1,16 +1,16 @@
-////
-//// This source file is part of the MongoKitten open source project
-////
-//// Copyright (c) 2016 - 2017 OpenKitten and the MongoKitten project authors
-//// Licensed under MIT
-////
-//// See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/LICENSE.md for license information
-//// See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of MongoKitten project authors
-////
 //
-//import Foundation
+// This source file is part of the MongoKitten open source project
 //
-//extension Database {
+// Copyright (c) 2016 - 2017 OpenKitten and the MongoKitten project authors
+// Licensed under MIT
+//
+// See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/LICENSE.md for license information
+// See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of MongoKitten project authors
+//
+
+import Foundation
+
+extension Database {
 //    /// Creates a new collection explicitly.
 //    ///
 //    /// Because MongoDB creates a collection implicitly when the collection is first referenced in a
@@ -22,7 +22,7 @@
 //    /// For more information and a full list of options: https://docs.mongodb.com/manual/reference/command/create/
 //    ///
 //    /// - parameter name: The name of the collection to create.
-//    /// - parameter validator: The Document validator to apply to all Documents in this collection. All Documents must match this query 
+//    /// - parameter validator: The Document validator to apply to all Documents in this collection. All Documents must match this query
 //    /// - parameter options: Optionally, configuration options for creating this collection.
 //    ///
 //    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
@@ -37,9 +37,9 @@
 //                command[option.key] = option.value
 //            }
 //        }
-//        
+//
 //        log.verbose("Creating a collection named \"\(name)\" in \(self)\(validator != nil ? " with the provided validator" : "")")
-//        
+//
 //        if let validator = validator {
 //            command["validator"] = validator
 //            log.debug("Validator:" + validator.makeDocument().makeExtendedJSON().serializedString())
@@ -54,7 +54,7 @@
 //            log.debug(options ?? [:])
 //            throw MongoError.commandFailure(error: document)
 //        }
-//        
+//
 //        return self[name]
 //    }
 //
@@ -71,18 +71,18 @@
 //        guard server.buildInfo.version >= Version(3, 0, 0) else {
 //            return try self["system.namespaces"].find()
 //        }
-//        
+//
 //        var request: Document = ["listCollections": 1]
-//        
+//
 //        log.verbose("Listing all collections\(filter != nil ? " using the provided filter" : "")")
-//        
+//
 //        if let filter = filter {
 //            log.debug("The collections are matches against the following filter: " + filter.makeExtendedJSON().serializedString())
 //            request["filter"] = filter
 //        }
 //
 //        let connection = try server.reserveConnection(authenticatedFor: self)
-//        
+//
 //        let reply = try execute(command: request, using: connection).blockingAwait(timeout: .seconds(3))
 //
 //        let result = try firstDocument(in: reply)
@@ -103,7 +103,7 @@
 //            throw error
 //        }
 //    }
-//    
+//
 //    public func getCollectionInfos(matching filter: Document? = nil) throws -> AnyIterator<Document> {
 //        return try getCollectionInfos(matching: filter).makeIterator()
 //    }
@@ -122,45 +122,46 @@
 //                guard let name = String(collectionInfo["name"]) else {
 //                    return nil
 //                }
-//                
+//
 //                return self[name]
 //            } else {
 //                guard var name = String(collectionInfo["name"]), name.hasPrefix(self.name + ".") else {
 //                    return nil
 //                }
-//                
+//
 //                name.removeFirst(self.name.count + 1)
 //                let split = name.split(separator: ".")
-//                
+//
 //                if split.count > 1, let last = split.last {
 //                    // is index
 //                    if String(last).hasPrefix("$") {
 //                        return nil
 //                    }
 //                }
-//                
+//
 //                return self[name]
 //            }
 //        }
 //    }
-//
-//    /// Drops this database and it's collections
-//    ///
-//    /// For additional information: https://docs.mongodb.com/manual/reference/command/dropDatabase/#dbcmd.dropDatabase
-//    ///
-//    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
-//    public func drop() throws {
-//        let command: Document = [
-//            "dropDatabase": Int32(1)
-//        ]
-//
-//        let document = try firstDocument(in: try execute(command: command).blockingAwait(timeout: .seconds(3)))
-//
-//        guard Int(document["ok"]) == 1 else {
-//            log.error("dropDatabase was not successful for \"\(self.name)\" because of the following error")
-//            log.error(document)
-//            throw MongoError.commandFailure(error: document)
-//        }
-//    }
-//}
 
+    /// Drops this database and it's collections
+    ///
+    /// For additional information: https://docs.mongodb.com/manual/reference/command/dropDatabase/#dbcmd.dropDatabase
+    ///
+    /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
+    public func drop() throws -> Future<Void> {
+        return self.connectionPool.retain().flatMap(to: Void.self) { conn in
+            return conn.execute(
+                query: [
+                    "dropDatabase": Int32(1)
+                ],
+                on: self.name,
+                expecting: Reply.Okay.self
+            ).map(to: Void.self) { reply in
+                guard reply.ok == 1 else {
+                    throw MongoError.invalidReply
+                }
+            }
+        }
+    }
+}

@@ -90,7 +90,7 @@ extension DatabaseConnection {
             
             return self.send(message: commandMessage).map(to: Void.self) { reply in
                 // Check for success
-                guard Int(reply.documents.first?["ok"]) == 1 else {
+                guard Int(lossy: reply.documents.first?["ok"]) == 1 else {
                     throw MongoError.invalidCredentials(credentials)
                 }
             }
@@ -109,7 +109,7 @@ extension DatabaseConnection {
         
         return self.send(message: message).map(to: Void.self) { reply in
             // Check for success
-            guard Int(reply.documents.first?["ok"]) == 1 else {
+            guard Int(lossy: reply.documents.first?["ok"]) == 1 else {
                 throw MongoError.X509AuthenticationFailed
             }
         }
