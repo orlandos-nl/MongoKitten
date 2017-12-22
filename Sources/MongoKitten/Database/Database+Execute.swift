@@ -29,7 +29,7 @@ extension Command {
 
 extension Reply {
     struct Okay: Decodable {
-        var ok: Int
+        var ok: Bool
     }
 }
 

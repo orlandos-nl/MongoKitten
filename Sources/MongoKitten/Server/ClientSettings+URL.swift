@@ -26,7 +26,7 @@ extension ClientSettings: ExpressibleByStringLiteral {
     /// Parses a MongoDB connection String to a ClientSettings object
     public init(_ url: String) throws {
         var url = url
-        guard url.starts(with: "mongodb://".characters) else {
+        guard url.starts(with: "mongodb://") else {
             throw MongoError.noMongoDBSchema
         }
 

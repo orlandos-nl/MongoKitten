@@ -78,7 +78,7 @@ extension BSONDecoder {
 }
 
 struct MongoServerError: Error, Decodable {
-    var ok: Double
+    var ok: Bool
     var errmsg: String
     var code: Int
     var codeName: String

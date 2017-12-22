@@ -155,10 +155,10 @@ extension Database {
                 query: [
                     "dropDatabase": Int32(1)
                 ],
-                on: self.name,
+                on: self.name + ".$cmd",
                 expecting: Reply.Okay.self
             ).map(to: Void.self) { reply in
-                guard reply.ok == 1 else {
+                guard reply.ok else {
                     throw MongoError.invalidReply
                 }
             }
