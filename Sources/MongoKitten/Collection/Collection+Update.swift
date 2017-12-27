@@ -5,9 +5,7 @@ extension Collection {
     public func update(_ query: Query, to document: Document) -> Future<Reply.Update> {
         let update = Update.Single(matching: query, to: document)
         
-        return self.connectionPool.retain().flatMap(to: Reply.Update.self) { connection in
-            return update.execute(on: connection, collection: self)
-        }
+        return update.execute(on: self.connection, collection: self)
     }
     
     @discardableResult
@@ -15,17 +13,13 @@ extension Collection {
         var update = Update.Single(matching: query, to: document)
         update.upsert = true
         
-        return self.connectionPool.retain().flatMap(to: Reply.Update.self) { connection in
-            return update.execute(on: connection, collection: self)
-        }
+        return update.execute(on: self.connection, collection: self)
     }
     
     @discardableResult
     public func updateAll(_ query: Query, to document: Document) -> Future<Reply.Update> {
         let update = Update.Single(matching: query, to: document)
         
-        return self.connectionPool.retain().flatMap(to: Reply.Update.self) { connection in
-            return update.execute(on: connection, collection: self)
-        }
+        return update.execute(on: self.connection, collection: self)
     }
 }

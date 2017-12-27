@@ -6,13 +6,13 @@ extension Collection {
         _ filter: Query? = nil,
         sortedBy sort: Sort? = nil,
         projecting projection: Projection? = nil
-    ) -> Future<Cursor> {
+    ) -> Cursor {
         var find = Find(on: self)
         find.filter = filter
         find.sort = sort
         find.projection = projection
         
-        return self.connectionPool.retain().flatMap(to: Cursor.self, find.execute)
+        return find.execute(on: self.connection)
     }
     
     public func find(
@@ -20,7 +20,7 @@ extension Collection {
         in range: Range<Int>,
         sortedBy sort: Sort? = nil,
         projecting projection: Projection? = nil
-    ) -> Future<Cursor> {
+    ) -> Cursor {
         var find = Find(on: self)
         find.filter = filter
         find.sort = sort
@@ -28,7 +28,7 @@ extension Collection {
         find.limit = range.upperBound - range.lowerBound
         find.projection = projection
         
-        return self.connectionPool.retain().flatMap(to: Cursor.self, find.execute)
+        return find.execute(on: self.connection)
     }
     
     public func find(
@@ -36,7 +36,7 @@ extension Collection {
         in range: ClosedRange<Int>,
         sortedBy sort: Sort? = nil,
         projecting projection: Projection? = nil
-    ) -> Future<Cursor> {
+    ) -> Cursor {
         var find = Find(on: self)
         find.filter = filter
         find.sort = sort
@@ -44,7 +44,7 @@ extension Collection {
         find.limit = (range.upperBound + 1) - range.lowerBound
         find.projection = projection
         
-        return self.connectionPool.retain().flatMap(to: Cursor.self, find.execute)
+        return find.execute(on: self.connection)
     }
     
     public func find(
@@ -52,14 +52,14 @@ extension Collection {
         in range: PartialRangeFrom<Int>,
         sortedBy sort: Sort? = nil,
         projecting projection: Projection? = nil
-    ) -> Future<Cursor> {
+    ) -> Cursor {
         var find = Find(on: self)
         find.filter = filter
         find.sort = sort
         find.skip = range.lowerBound
         find.projection = projection
         
-        return self.connectionPool.retain().flatMap(to: Cursor.self, find.execute)
+        return find.execute(on: self.connection)
     }
     
     public func find(
@@ -67,14 +67,14 @@ extension Collection {
         in range: PartialRangeUpTo<Int>,
         sortedBy sort: Sort? = nil,
         projecting projection: Projection? = nil
-    ) -> Future<Cursor> {
+    ) -> Cursor {
         var find = Find(on: self)
         find.filter = filter
         find.sort = sort
         find.limit = range.upperBound
         find.projection = projection
         
-        return self.connectionPool.retain().flatMap(to: Cursor.self, find.execute)
+        return find.execute(on: self.connection)
     }
     
     public func find(
@@ -82,14 +82,14 @@ extension Collection {
         in range: PartialRangeThrough<Int>,
         sortedBy sort: Sort? = nil,
         projecting projection: Projection? = nil
-    ) -> Future<Cursor> {
+    ) -> Cursor {
         var find = Find(on: self)
         find.filter = filter
         find.sort = sort
         find.limit = range.upperBound + 1
         find.projection = projection
         
-        return self.connectionPool.retain().flatMap(to: Cursor.self, find.execute)
+        return find.execute(on: self.connection)
     }
     
     public func findOne(
@@ -102,6 +102,6 @@ extension Collection {
         findOne.sort = sort
         findOne.projection = projection
         
-        return self.connectionPool.retain().flatMap(to: Document?.self, findOne.execute)
+        return findOne.execute(on: self.connection)
     }
 }

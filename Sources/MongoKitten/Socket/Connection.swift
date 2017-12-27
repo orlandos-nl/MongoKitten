@@ -71,7 +71,7 @@ public final class DatabaseConnection: ConnectionPool {
     }
     
     public subscript(database: String) -> Database {
-        return Database(named: database, pool: self)
+        return Database(named: database, atServer: Server(connection: self))
     }
     
     public static func connect(host: MongoHost, credentials: MongoCredentials? = nil, ssl: SSLSettings = false, worker: Worker) throws -> Future<DatabaseConnection> {

@@ -27,16 +27,14 @@ public struct Find: Command, Operation {
         self.collation = collection.default.collation
     }
     
-    public func execute(on database: DatabaseConnection) -> Future<Cursor> {
-        return database.execute(self, expecting: Reply.Cursor.self) { cursor, connection in
-            return try Cursor(
-                cursor: cursor.cursor,
-                collection: self.find,
-                database: self.targetCollection.database,
-                connection: connection,
-                chunkSize: self.batchSize
-            )
-        }
+    public func execute(on connection: DatabaseConnection) -> Cursor {
+        let cursor = Cursor(collection: find, connection: connection)
+        
+        connection.execute(self, expecting: Reply.Cursor.self).do { spec in
+            cursor.initialize(to: spec.cursor)
+        }.catch(cursor.error)
+        
+        return cursor
     }
 }
 
@@ -68,18 +66,17 @@ public struct FindOne {
         find.skip = skip
         find.projection = projection
         
-        return find.execute(on: connection).flatMap(to: Document?.self) { cursor in
-            let promise = Promise<Document?>()
-            
-            cursor.drain { _ in }.output { doc in
-                promise.complete(doc)
-            }.finally {
-                promise.complete(nil)
-            }
-            
-            cursor.request()
-            
-            return promise.future
+        let cursor = find.execute(on: connection)
+        let promise = Promise<Document?>()
+        
+        cursor.drain { _ in }.output { doc in
+            promise.complete(doc)
+        }.finally {
+            promise.complete(nil)
         }
+        
+        cursor.request()
+        
+        return promise.future
     }
 }

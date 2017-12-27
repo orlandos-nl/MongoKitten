@@ -22,9 +22,7 @@ public final class Database {
     /// The database's name
     public let name: String
     
-    public var connectionPool: ConnectionPool {
-        return server.connectionPool
-    }
+    public var connection: DatabaseConnection
     
     public var preferences = Preferences()
     
@@ -32,25 +30,16 @@ public final class Database {
     ///
     /// - parameter database: The database to use
     /// - parameter server: The `Server` on which this database exists
-    public init(named name: String, atServer server: Server) {
+    init(named name: String, atServer server: Server) {
         self.name = name
         self.server = server
+        self.connection = server.connection
     }
     
     public static func connect(server settings: ClientSettings, database: String, worker: Worker) throws -> Future<Database> {
         return try DatabaseConnection.connect(host: settings.hosts.first ?? "", ssl: settings.ssl, worker: worker).map(to: Database.self) { connection in
-            return Database(named: database, atServer: Server(connectionPool: connection))
+            return Database(named: database, atServer: Server(connection: connection))
         }
-    }
-    
-    public init(named name: String, settings: ClientSettings, pool: ConnectionPool) {
-        self.server = Server(connectionPool: pool)
-        self.name = name
-    }
-    
-    public init(named name: String, pool: ConnectionPool) {
-        self.server = Server(connectionPool: pool)
-        self.name = name
     }
     
     /// Creates a GridFS collection in this database

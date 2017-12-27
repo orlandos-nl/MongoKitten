@@ -36,7 +36,7 @@ public final class Cursor: Async.OutputStream, ConnectionContext {
     public typealias Output = Document
     
     /// The collection's namespace
-    let namespace: String
+    var spec: Reply.Cursor.CursorSpec?
 
     /// The collection this cursor is pointing to
     let collection: MongoCollection
@@ -44,10 +44,10 @@ public final class Cursor: Async.OutputStream, ConnectionContext {
     let databaseConnection: DatabaseConnection
 
     /// The cursor's identifier that allows us to fetch more data from the server
-    fileprivate var cursorID: Int
+    fileprivate var cursorID: Int = 0
 
     /// The amount of Documents to receive each time from the server
-    fileprivate let chunkSize: Int32
+    fileprivate let chunkSize: Int32 = 100
     
     /// Downstream client and eventloop input stream
     private var downstream: AnyInputStream<Document>?
@@ -59,13 +59,14 @@ public final class Cursor: Async.OutputStream, ConnectionContext {
     var downstreamRequest: UInt = 0
 
     /// This initializer creates a base cursor from a replied Document
-    internal init(cursor: Reply.Cursor.CursorSpec, collection: MongoCollection, database: Database, connection: DatabaseConnection, chunkSize: Int32) throws {
-        self.chunkSize = chunkSize
+    internal init(collection: MongoCollection, connection: DatabaseConnection) {
         self.databaseConnection = connection
         self.collection = collection
-        self.namespace = cursor.ns
-        self.cursorID = cursor.id
-        self.backlog = cursor.firstBatch
+    }
+    
+    func initialize(to spec: Reply.Cursor.CursorSpec) {
+        self.spec = spec
+        self.backlog = spec.firstBatch
     }
     
     public func output<S>(to inputStream: S) where S : InputStream, Cursor.Output == S.Input {
@@ -103,8 +104,13 @@ public final class Cursor: Async.OutputStream, ConnectionContext {
         }
     }
     
+    func error(_ error: Error) {
+        self.downstream?.error(error)
+        self.cancel()
+    }
+    
     fileprivate func fetchMore() {
-        if cursorID == 0 {
+        guard let spec = self.spec, cursorID != 0 else {
             self.cancel()
             return
         }
@@ -131,7 +137,7 @@ public final class Cursor: Async.OutputStream, ConnectionContext {
                 self.cancel()
             }
         } else  {
-            let request = Message.GetMore(requestID: self.databaseConnection.nextRequestId, namespace: self.namespace, numberToReturn: self.chunkSize, cursor: self.cursorID)
+            let request = Message.GetMore(requestID: self.databaseConnection.nextRequestId, namespace: spec.ns, numberToReturn: self.chunkSize, cursor: self.cursorID)
             
             self.databaseConnection.send(message: request).do { reply in
                 self.backlog = reply.documents
@@ -177,12 +183,5 @@ extension Reply {
         }
         
         var cursor: CursorData
-    }
-}
-
-extension Cursor : CustomStringConvertible {
-    /// A description for debugging purposes
-    public var description: String {
-        return "MongoKitten.Cursor<\(namespace)>"
     }
 }

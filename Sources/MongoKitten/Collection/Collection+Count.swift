@@ -7,7 +7,7 @@ extension Collection {
         var count = Count(on: self)
         count.query = filter
         
-        return self.connectionPool.retain().flatMap(to: Int.self, count.execute)
+        return count.execute(on: self.connection)
     }
     
     public func count(
@@ -19,7 +19,7 @@ extension Collection {
         count.skip = range.lowerBound
         count.limit = range.upperBound - range.lowerBound
         
-        return self.connectionPool.retain().flatMap(to: Int.self, count.execute)
+        return count.execute(on: self.connection)
     }
     
     public func count(
@@ -31,7 +31,7 @@ extension Collection {
         count.skip = range.lowerBound
         count.limit = (range.upperBound + 1) - range.lowerBound
         
-        return self.connectionPool.retain().flatMap(to: Int.self, count.execute)
+        return count.execute(on: self.connection)
     }
     
     public func count(
@@ -42,7 +42,7 @@ extension Collection {
         count.query = filter
         count.skip = range.lowerBound
         
-        return self.connectionPool.retain().flatMap(to: Int.self, count.execute)
+        return count.execute(on: self.connection)
     }
     
     public func count(
@@ -53,7 +53,7 @@ extension Collection {
         count.query = filter
         count.limit = range.upperBound
         
-        return self.connectionPool.retain().flatMap(to: Int.self, count.execute)
+        return count.execute(on: self.connection)
     }
     
     public func count(
@@ -64,6 +64,6 @@ extension Collection {
         count.query = filter
         count.limit = range.upperBound + 1
         
-        return self.connectionPool.retain().flatMap(to: Int.self, count.execute)
+        return count.execute(on: self.connection)
     }
 }

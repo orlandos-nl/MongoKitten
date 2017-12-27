@@ -31,9 +31,7 @@ public final class Collection: Encodable {
     /// The collection name
     public private(set) var name: String
     
-    public var connectionPool: ConnectionPool {
-        return database.connectionPool
-    }
+    public var connection: DatabaseConnection
     
     /// The full (computed) collection name. Created by adding the Database's name with the Collection's name with a dot to seperate them
     public var namespace: String {
@@ -49,6 +47,7 @@ public final class Collection: Encodable {
     internal init(named name: String, in database: Database) {
         self.database = database
         self.name = name
+        self.connection = database.connection
     }
 }
 

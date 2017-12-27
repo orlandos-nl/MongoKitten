@@ -27,7 +27,7 @@ internal typealias ResponseHandler = ((Message) -> Void)
 /// A server object is the core of MongoKitten as it's used to communicate to the server.
 /// You can select a `Database` by subscripting an instance of this Server with a `String`.
 public final class Server {
-    public let connectionPool: ConnectionPool
+    public let connection: DatabaseConnection
     
     /// The next Request we sent starting at 0
     internal var nextRequestID: Int32 = 0
@@ -49,8 +49,8 @@ public final class Server {
     /// This driver's information
     fileprivate let driverInformation: MongoDriverInformation
     
-    public init(connectionPool: ConnectionPool) {
-        self.connectionPool = connectionPool
+    init(connection: DatabaseConnection) {
+        self.connection = connection
         self.driverInformation = MongoDriverInformation(appName: "MongoKitten 5")
     }
 }

@@ -150,17 +150,15 @@ extension Database {
     ///
     /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
     public func drop() throws -> Future<Void> {
-        return self.connectionPool.retain().flatMap(to: Void.self) { conn in
-            return conn.execute(
-                query: [
-                    "dropDatabase": Int32(1)
-                ],
-                on: self.name + ".$cmd",
-                expecting: Reply.Okay.self
-            ).map(to: Void.self) { reply in
-                guard reply.ok else {
-                    throw MongoError.invalidReply
-                }
+        return self.connection.execute(
+            query: [
+                "dropDatabase": Int32(1)
+            ],
+            on: self.name + ".$cmd",
+            expecting: Reply.Okay.self
+        ).map(to: Void.self) { reply in
+            guard reply.ok else {
+                throw MongoError.invalidReply
             }
         }
     }

@@ -5,17 +5,13 @@ extension Collection {
     public func remove(_ query: Query = [:]) -> Future<Int> {
         let remove = Delete.Single(matching: query, limit: .one)
         
-        return self.connectionPool.retain().flatMap(to: Int.self) { connection in
-            return remove.execute(on: connection, collection: self)
-        }
+        return remove.execute(on: self.connection, collection: self)
     }
     
     @discardableResult
     public func removeAll(_ query: Query = [:]) -> Future<Int> {
         let remove = Delete.Single(matching: query, limit: .all)
         
-        return self.connectionPool.retain().flatMap(to: Int.self) { connection in
-            return remove.execute(on: connection, collection: self)
-        }
+        return remove.execute(on: self.connection, collection: self)
     }
 }

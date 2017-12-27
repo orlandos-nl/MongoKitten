@@ -26,16 +26,14 @@ public struct Aggregate: Command, Operation {
         self.collation = collection.default.collation
     }
     
-    public func execute(on connection: DatabaseConnection)  -> Future<Cursor> {
-        return connection.execute(self, expecting: Reply.Cursor.self).map(to: Cursor.self) { cursor in
-            return try Cursor(
-                cursor: cursor.cursor,
-                collection: self.aggregate,
-                database: self.targetCollection.database,
-                connection: connection,
-                chunkSize: self.cursor.batchSize
-            )
-        }
+    public func execute(on connection: DatabaseConnection) -> Cursor {
+        let cursor = Cursor(collection: aggregate, connection: connection)
+        
+        connection.execute(self, expecting: Reply.Cursor.self).do { spec in
+            cursor.initialize(to: spec.cursor)
+        }.catch(cursor.error)
+        
+        return cursor
     }
 }
 

@@ -10,6 +10,6 @@ extension Collection {
     public func insertAll(_ documents: [Document]) -> Future<Reply.Insert> {
         let insert = Insert(documents, into: self)
         
-        return connectionPool.retain().flatMap(to: Reply.Insert.self, insert.execute)
+        return insert.execute(on: self.connection)
     }
 }
