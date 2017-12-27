@@ -202,10 +202,6 @@ extension CollectionQueryable {
             }
         }
         
-        guard errors.count == 0 else {
-            throw throwErrors()
-        }
-        
         return newIds
     }
     
