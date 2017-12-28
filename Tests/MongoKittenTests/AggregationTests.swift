@@ -124,7 +124,7 @@ public class AggregationTests: XCTestCase {
 
         let orderDocument: Document = ["_id": 1, "item": "MON1003", "price": 350, "quantity": 2, "specs": [ "27 inch", "Retina display", "1920x1080" ], "type": "Monitor"]
         let orderId = try orders.insert(orderDocument).blockingAwait(timeout: .seconds(10))
-        XCTAssertEqual(orderId.n, 1)
+        XCTAssertEqual(orderId.ok, 1)
 
         let inventoryDocument1: Document = ["_id": 1, "sku": "MON1003", "type": "Monitor", "instock": 120, "size": "27 inch", "resolution": "1920x1080"]
         let inventoryDocument2: Document = ["_id": 2, "sku": "MON1012", "type": "Monitor", "instock": 85, "size": "23 inch", "resolution": "1280x800"]
@@ -139,31 +139,25 @@ public class AggregationTests: XCTestCase {
         let match = AggregationPipeline.Stage.match(["inventory_docs": ["$ne":[]]])
         let pipe:  AggregationPipeline = [ unwind, lookup, match ]
 
-        do {
-            let query = orders.aggregate(pipe)
-            
-            _ = try query.flatMap(to: Int.self) { cursor in
-                var count = 0
-                let promise = Promise<Int>()
-                
-                cursor.drain { _ in }.output { document in
-                    XCTAssertEqual(String(document["item"]), "MON1003")
-                    XCTAssertEqual(Int(document["price"]), 350)
-                    XCTAssertEqual([Primitive](document["inventory_docs"])?.count, 1)
-                    count += 1
-                }.catch(onError: promise.fail).finally {
-                    promise.complete(count)
-                }
-                
-                cursor.request(count: .max)
-                
-                return promise.future
-            }.do { count in
-                XCTAssertEqual(count, 1)
-            }.blockingAwait(timeout: .seconds(10))
-        } catch {
-            XCTFail()
+        let cursor = orders.aggregate(pipe)
+        
+        var count = 0
+        let promise = Promise<Int>()
+        
+        cursor.drain { _ in }.output { document in
+            XCTAssertEqual(String(document["item"]), "MON1003")
+            XCTAssertEqual(Int(document["price"]), 350)
+            XCTAssertEqual([Primitive](document["inventory_docs"])?.count, 1)
+            count += 1
+        }.catch(onError: promise.fail).finally {
+            promise.complete(count)
         }
+        
+        cursor.request(count: .max)
+        
+        let amount = try promise.future.blockingAwait()
+        
+        XCTAssertEqual(amount, 1)
     }
 }
 

@@ -46,7 +46,7 @@ public class AuthenticationTests: XCTestCase {
             worker: TestManager.loop
         ).blockingAwait()
 
-        let db = Database(named: "mongokitten-unittest", atServer: Server(connectionPool: connection))
+        let db = connection["mongokitten-unittest"]
 
         XCTAssertEqual(try db["zips"].count().blockingAwait(timeout: .seconds(3)), 29353)
         XCTAssertThrowsError(try db["zips"].remove().blockingAwait(timeout: .seconds(3)))
@@ -60,8 +60,7 @@ public class AuthenticationTests: XCTestCase {
                 worker: TestManager.loop
             ).blockingAwait()
             
-            let server = Server(connectionPool: connection)
-            let database = Database(named: "plan-t", atServer: server)
+            let database = connection["plan-t"]
 
             XCTAssertNotNil(database)
 

@@ -111,7 +111,11 @@ public final class Cursor: Async.OutputStream, ConnectionContext {
     
     fileprivate func fetchMore() {
         guard let spec = self.spec, cursorID != 0 else {
-            self.cancel()
+            // Prevent cancelling an uninitialized cursor
+            if self.spec != nil {
+                self.cancel()
+            }
+            
             return
         }
         

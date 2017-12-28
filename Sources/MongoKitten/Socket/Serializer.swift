@@ -54,10 +54,9 @@ final class PacketSerializer: Async.Stream, ConnectionContext {
                 self.backlogProcessed = 0
             }
             
-            while backlog.count > backlogProcessed, requestedOutputRemaining > 0 {
+            while backlog.count > backlogProcessed && requestedOutputRemaining > 0 {
                 let entity = try backlog[backlogProcessed].generateData()
                 backlogProcessed += 1
-                requestedOutputRemaining -= 1
                 
                 flush(entity)
             }
@@ -65,7 +64,6 @@ final class PacketSerializer: Async.Stream, ConnectionContext {
             if let input = input {
                 if requestedOutputRemaining > 0 {
                     let entity = try input.generateData()
-                    requestedOutputRemaining -= 1
                     
                     flush(entity)
                 } else {
@@ -78,6 +76,7 @@ final class PacketSerializer: Async.Stream, ConnectionContext {
     }
     
     func flush(_ input: Data) {
+        requestedOutputRemaining -= 1
         self.sending = input
         
         input.withByteBuffer { buffer in

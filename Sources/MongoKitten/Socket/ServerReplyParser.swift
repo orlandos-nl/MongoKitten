@@ -13,7 +13,7 @@ final class ServerReplyParser: Async.Stream, ConnectionContext {
     private var upstream: ConnectionContext?
     
     /// Remaining output requested
-    private var remainingOutputRequested: UInt = 0
+    var remainingOutputRequested: UInt = 0
     
     var upstreamBuffer: ByteBuffer? {
         didSet {
@@ -66,7 +66,7 @@ final class ServerReplyParser: Async.Stream, ConnectionContext {
         switch event {
         case .cancel:
             remainingOutputRequested = 0
-            upstream?.cancel()
+            downstream?.close()
         case .request(let count):
             remainingOutputRequested += count
             

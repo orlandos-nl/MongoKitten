@@ -6,7 +6,7 @@ public struct Aggregate: Command, Operation {
     }
     
     public let aggregate: Collection
-    public var pipeline: AggregationPipeline
+    public var pipeline: [AggregationPipeline.Stage]
     public var cursor: CursorOptions
     public var maxTimeMS: UInt32?
     public var bypassDocumentValidation: Bool?
@@ -18,7 +18,7 @@ public struct Aggregate: Command, Operation {
     
     public init(pipeline: AggregationPipeline, on collection: Collection) {
         self.aggregate = collection
-        self.pipeline = pipeline
+        self.pipeline = pipeline.stages
         self.cursor = CursorOptions()
         
         // Collection defaults

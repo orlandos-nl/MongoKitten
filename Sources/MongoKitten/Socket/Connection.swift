@@ -42,10 +42,14 @@ public final class DatabaseConnection: ConnectionPool {
     
     fileprivate var socket: Socket
     
+    var error: Error?
+    
     let parser = ServerReplyParser()
     let serializer: PacketSerializer
+    let eventloop: EventLoop
     
-    init<T>(source: SocketSource<T>, sink: SocketSink<T>) {
+    init<T>(eventloop: EventLoop, source: SocketSource<T>, sink: SocketSink<T>) {
+        self.eventloop = eventloop
         self.socket = sink.socket
         self.serializer = PacketSerializer()
         
@@ -62,6 +66,7 @@ public final class DatabaseConnection: ConnectionPool {
                 waiter.fail(error)
             }
             
+            self.error = error
             self.waitingForResponses = [:]
             
             self.socket.close()
@@ -85,7 +90,7 @@ public final class DatabaseConnection: ConnectionPool {
             let sink = tls.socket.sink(on: worker)
             let source = tls.socket.source(on: worker)
             
-            let connection = DatabaseConnection(source: source, sink: sink)
+            let connection = DatabaseConnection(eventloop: worker.eventLoop, source: source, sink: sink)
             
             if let credentials = credentials {
                 return try connection.authenticate(with: credentials).transform(to: connection)
@@ -98,7 +103,7 @@ public final class DatabaseConnection: ConnectionPool {
             let sink = socket.sink(on: worker)
             let source = socket.source(on: worker)
             
-            let connection = DatabaseConnection(source: source, sink: sink)
+            let connection = DatabaseConnection(eventloop: worker.eventLoop, source: source, sink: sink)
             
             if let credentials = credentials {
                 return try connection.authenticate(with: credentials).transform(to: connection)
@@ -143,9 +148,14 @@ public final class DatabaseConnection: ConnectionPool {
     func send(message: Message) -> Future<ServerReply> {
         let promise = Promise<ServerReply>()
         
-        self.waitingForResponses[message.requestID] = promise
-        
-        serializer.next(message)
+        self.eventloop.async {
+            if let error = self.error {
+                return promise.fail(error)
+            }
+            
+            self.waitingForResponses[message.requestID] = promise
+            self.serializer.next(message)
+        }
         
         return promise.future
     }
