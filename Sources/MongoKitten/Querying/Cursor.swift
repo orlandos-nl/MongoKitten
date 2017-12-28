@@ -67,6 +67,7 @@ public final class Cursor: Async.OutputStream, ConnectionContext {
     func initialize(to spec: Reply.Cursor.CursorSpec) {
         self.spec = spec
         self.backlog = spec.firstBatch
+        flushBacklog()
     }
     
     public func output<S>(to inputStream: S) where S : InputStream, Cursor.Output == S.Input {
@@ -90,11 +91,13 @@ public final class Cursor: Async.OutputStream, ConnectionContext {
     fileprivate func flushBacklog() {
         defer {
             self.backlog.removeFirst(consumedBacklog)
+            self.consumedBacklog = 0
         }
         
         while backlog.count > consumedBacklog, downstreamRequest > 0 {
             let doc = self.backlog[self.consumedBacklog]
             consumedBacklog += 1
+            downstreamRequest -= 1
             
             downstream?.next(doc)
         }
