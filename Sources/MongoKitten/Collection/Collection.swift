@@ -25,6 +25,10 @@ public final class Collection<C: Codable>: Encodable {
         try container.encode(self.name)
     }
     
+    public func map<Other: Codable>(to type: Other.Type) -> Collection<Other> {
+        return Collection<Other>(named: name, in: database)
+    }
+    
     /// The Database this collection is in
     public private(set) var database: Database
     
