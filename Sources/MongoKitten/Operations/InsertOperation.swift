@@ -1,21 +1,26 @@
 import BSON
 import Async
 
-public struct Insert: Command, Operation {
-    var targetCollection: MongoCollection {
+public struct Insert<C: Codable>: Command, Operation {
+    var targetCollection: MongoCollection<C> {
         return insert
     }
     
-    public let insert: Collection
-    public var documents: [Document]
+    public let insert: Collection<C>
+    public var documents: [C]
     public var ordered: Bool?
     public var writeConcern: WriteConcern?
     public var bypassDocumentValidation: Bool?
     
-    static var writing = true
-    static var emitsCursor = false
+    static var writing: Bool {
+        return true
+    }
     
-    public init(_ documents: [Document], into collection: Collection) {
+    static var emitsCursor: Bool {
+        return false
+    }
+    
+    public init(_ documents: [C], into collection: Collection<C>) {
         self.insert = collection
         self.documents = Array(documents)
         

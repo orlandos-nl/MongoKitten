@@ -1,7 +1,7 @@
 import BSON
 import Async
 
-public struct Update: Command, Operation {
+public struct Update<C: Codable>: Command, Operation {
     public struct Single: Encodable {
         public var q: Query
         public var u: Document
@@ -14,38 +14,38 @@ public struct Update: Command, Operation {
             self.u = document
         }
         
-        public func execute(on connection: DatabaseConnection, collection: Collection) -> Future<Reply.Update> {
+        public func execute(on connection: DatabaseConnection, collection: Collection<C>) -> Future<Reply.Update> {
             let updates = Update(self, in: collection)
             
             return updates.execute(on: connection)
         }
     }
     
-    var targetCollection: MongoCollection {
+    var targetCollection: MongoCollection<C> {
         return update
     }
     
-    public let update: Collection
+    public let update: Collection<C>
     public var updates: [Single]
     public var ordered: Bool?
     public var writeConcern: WriteConcern?
     public var bypassDocumentValidation: Bool?
     
-    static var writing = true
-    static var emitsCursor = false
+    static var writing: Bool { return true }
+    static var emitsCursor: Bool { return false }
     
-    public init(matching query: Query, to document: Document, in collection: Collection) {
+    public init(matching query: Query, to document: Document, in collection: Collection<C>) {
         self.init(
             Single(matching: query, to: document),
             in: collection
         )
     }
     
-    public init(_ updates: Single..., in collection: Collection) {
+    public init(_ updates: Single..., in collection: Collection<C>) {
         self.init(updates, in: collection)
     }
     
-    public init<S: Sequence>(_ updates: S, in collection: Collection) where S.Element == Single {
+    public init<S: Sequence>(_ updates: S, in collection: Collection<C>) where S.Element == Single {
         self.update = collection
         self.updates = Array(updates)
         

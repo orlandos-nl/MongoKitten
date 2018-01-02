@@ -52,7 +52,7 @@ public final class Database {
     /// - parameter collection: The collection/bucket to return
     ///
     /// - returns: The requested collection in this database
-    public subscript(collection: String) -> Collection {
+    public subscript(collection: String) -> Collection<Document> {
         return Collection(named: collection, in: self)
     }
 }

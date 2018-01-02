@@ -1,21 +1,21 @@
 import Async
 
-public struct Count: Command, Operation {
-    var targetCollection: MongoCollection {
+public struct Count<C: Codable>: Command, Operation {
+    var targetCollection: MongoCollection<C> {
         return count
     }
     
-    public let count: Collection
+    public let count: Collection<C>
     public var query: Query?
     public var skip: Int?
     public var limit: Int?
     public var readConcern: ReadConcern?
     public var collation: Collation?
     
-    static var writing = false
-    static var emitsCursor = false
+    static var writing: Bool { return false }
+    static var emitsCursor: Bool { return false }
     
-    public init(on collection: Collection) {
+    public init(on collection: Collection<C>) {
         self.count = collection
         
         // Collection defaults

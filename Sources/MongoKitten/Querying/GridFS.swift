@@ -207,7 +207,7 @@
 //        /// - parameter document: The `File`'s `Document` that has been found in the files `Collection`
 //        /// - parameter chunksCollection: The `Collection` where the `File` `Chunk`s are stored
 //        /// - parameter chunksCollection: The `Collection` where the `File` data is stored
-//        internal init?(document: Document, chunksCollection: Collection, filesCollection: Collection) {
+//        internal init?(document: Document, chunksCollection: Collection, filesCollection: Collection<C>) {
 //            guard let id = ObjectId(document["_id"]),
 //                let length = Int(document["length"]),
 //                let chunkSize = Int32(document["chunkSize"]),
@@ -279,12 +279,12 @@
 //            }
 //            
 //            let chunkCursor = try chunksCollection.find("files_id" == id, sortedBy: ["n": .ascending], skipping: skipChunks, limitedTo: endChunk - skipChunks).flatMap { (doc) -> (Chunk?) in
-//                return Chunk(document: doc, chunksCollection: self.chunksCollection, filesCollection: self.filesCollection)
+//                return Chunk(document: doc, chunksCollection: self.chunksCollection, filesCollection: self.filesCollection<C>)
 //            }
 //            
 //            var allData = Bytes()
 //            
-//            for chunk in chunkCursor {
+//            for chunk in chunkCursor<C> {
 //                // `if skipChunks == 1` then we need the chunk.n to be 1 too,
 //                // start counting at 0
 //                if chunk.n == Int32(skipChunks) {
@@ -332,7 +332,7 @@
 //        /// - throws: Unable to fetch chunks
 //        public func chunked() throws -> Cursor<Chunk> {
 //            return try chunksCollection.find("files_id" == id).flatMap {
-//                Chunk(document: $0, chunksCollection: self.chunksCollection, filesCollection: self.filesCollection)
+//                Chunk(document: $0, chunksCollection: self.chunksCollection, filesCollection: self.filesCollection<C>)
 //            }
 //        }
 //        
@@ -357,7 +357,7 @@
 //            let filesCollection: Collection
 //            
 //            /// Initializes with a `Document` found when looking for chunks
-//            init?(document: Document, chunksCollection: Collection, filesCollection: Collection) {
+//            init?(document: Document, chunksCollection: Collection, filesCollection: Collection<C>) {
 //                guard let id = ObjectId(document["_id"]),
 //                    let filesID = ObjectId(document["files_id"]),
 //                    let binary = Binary(document["data"]),

@@ -57,17 +57,17 @@ extension MongoCollection {
 }
 
 extension Commands {
-    struct Touch: Command {
+    struct Touch<C: Codable>: Command {
         var touch: String
         var data: Bool
         var index: Bool
         
-        let targetCollection: MongoCollection
+        let targetCollection: MongoCollection<C>
         
-        static var writing = true
-        static var emitsCursor = false
+        static var writing: Bool { return true }
+        static var emitsCursor: Bool { return false }
         
-        init(collection: Collection, data: Bool, index: Bool) {
+        init(collection: Collection<C>, data: Bool, index: Bool) {
             self.touch = collection.name
             self.data = data
             self.index = index
@@ -75,64 +75,64 @@ extension Commands {
         }
     }
     
-    struct ConvertToCapped: Command {
+    struct ConvertToCapped<C: Codable>: Command {
         var convertTocapped: String
         
         // TODO: Int32?
         var size: Int
         
-        let targetCollection: MongoCollection
+        let targetCollection: MongoCollection<C>
         
-        static var writing = true
-        static var emitsCursor = false
+        static var writing: Bool { return true }
+        static var emitsCursor: Bool { return false }
         
-        init(collection: Collection, toCap cap: Int) {
+        init(collection: Collection<C>, toCap cap: Int) {
             self.convertTocapped = collection.name
             self.size = cap
             self.targetCollection = collection
         }
     }
     
-    struct RebuildIndexes: Command {
+    struct RebuildIndexes<C: Codable>: Command {
         var reIndex: String
         
-        let targetCollection: MongoCollection
+        let targetCollection: MongoCollection<C>
         
-        static var writing = true
-        static var emitsCursor = false
+        static var writing: Bool { return true }
+        static var emitsCursor: Bool { return false }
         
-        init(collection: Collection) {
+        init(collection: Collection<C>) {
             self.reIndex = collection.name
             self.targetCollection = collection
         }
     }
     
-    struct Compact: Command {
+    struct Compact<C: Codable>: Command {
         var compact: String
         var force: Bool?
         
-        let targetCollection: MongoCollection
+        let targetCollection: MongoCollection<C>
         
-        static var writing = true
-        static var emitsCursor = false
+        static var writing: Bool { return true }
+        static var emitsCursor: Bool { return false }
         
-        init(collection: Collection) {
+        init(collection: Collection<C>) {
             self.compact = collection.name
             self.targetCollection = collection
         }
     }
     
-    struct CloneCollectionAsCapped: Command {
+    struct CloneCollectionAsCapped<C: Codable>: Command {
         var cloneCollectionAsCapped: String
         var toCollection: String
         var size: Int
         
-        let targetCollection: MongoCollection
+        let targetCollection: MongoCollection<C>
         
-        static var writing = true
-        static var emitsCursor = false
+        static var writing: Bool { return true }
+        static var emitsCursor: Bool { return false }
         
-        init(collection: Collection, newName: String, cap: Int) {
+        init(collection: Collection<C>, newName: String, cap: Int) {
             self.targetCollection = collection
             self.cloneCollectionAsCapped = collection.name
             self.toCollection = newName
@@ -140,15 +140,15 @@ extension Commands {
         }
     }
     
-    struct Drop: Command {
+    struct Drop<C: Codable>: Command {
         var drop: String
         
-        let targetCollection: MongoCollection
+        let targetCollection: MongoCollection<C>
         
-        static var writing = true
-        static var emitsCursor = false
+        static var writing: Bool { return true }
+        static var emitsCursor: Bool { return false }
         
-        init(collection: Collection) {
+        init(collection: Collection<C>) {
             self.drop = collection.name
             self.targetCollection = collection
         }

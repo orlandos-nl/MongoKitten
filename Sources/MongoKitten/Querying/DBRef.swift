@@ -28,7 +28,7 @@
 //    ///
 //    /// - parameter reference: The _id of the referenced object
 //    /// - parameter collection: The collection where this references object resides
-//    public init(referencing reference: BSON.Primitive, inCollection collection: Collection) {
+//    public init(referencing reference: BSON.Primitive, inCollection collection: Collection<C>) {
 //        self.id = reference
 //        self.collection = collection
 //    }
@@ -100,7 +100,7 @@
 //    ///
 //    /// - returns: The Document or `nil` if the reference is invalid or the Document has been removed.
 //    public func resolve() throws -> Future<Document> {
-//        var find = FindOne(for: self.collection)
+//        var find = FindOne(for: self.Collection<C>)
 //        find.filter = "_id" == self.id
 //        
 //        return try find.execute(on: self.collection.database).map { result in

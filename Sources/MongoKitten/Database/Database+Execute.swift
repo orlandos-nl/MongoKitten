@@ -9,10 +9,12 @@
 //
 
 protocol Command: Encodable {
+    associatedtype C: Codable
+    
     static var writing: Bool { get }
     static var emitsCursor: Bool { get }
     
-    var targetCollection: MongoCollection { get }
+    var targetCollection: MongoCollection<C> { get }
 }
 
 extension Command {

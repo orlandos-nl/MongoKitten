@@ -1,11 +1,11 @@
 import Async
 
-public struct Find: Command, Operation {
-    var targetCollection: MongoCollection {
+public struct Find<C: Codable>: Command, Operation {
+    var targetCollection: MongoCollection<C> {
         return find
     }
     
-    public let find: Collection
+    public let find: Collection<C>
     public var batchSize: Int32 = 100
     
     public var readConcern: ReadConcern?
@@ -16,10 +16,10 @@ public struct Find: Command, Operation {
     public var limit: Int?
     public var projection: Projection?
     
-    static var writing = false
-    static var emitsCursor = true
+    static var writing: Bool { return false }
+    static var emitsCursor: Bool { return true }
     
-    public init(on collection: Collection) {
+    public init(on collection: Collection<C>) {
         self.find = collection
         
         // Collection defaults
@@ -27,7 +27,7 @@ public struct Find: Command, Operation {
         self.collation = collection.default.collation
     }
     
-    public func execute(on connection: DatabaseConnection) -> Cursor {
+    public func execute(on connection: DatabaseConnection) -> Cursor<C> {
         let cursor = Cursor(collection: find, connection: connection)
         
         connection.execute(self, expecting: Reply.Cursor.self).do { spec in
@@ -38,8 +38,8 @@ public struct Find: Command, Operation {
     }
 }
 
-public struct FindOne {
-    let collection: Collection
+public struct FindOne<C: Codable> {
+    let collection: Collection<C>
     public var readConcern: ReadConcern?
     public var collation: Collation?
     public var filter: Query?
@@ -47,7 +47,7 @@ public struct FindOne {
     public var skip: Int?
     public var projection: Projection?
     
-    public init(for collection: Collection) {
+    public init(for collection: Collection<C>) {
         self.collection = collection
         
         self.readConcern = collection.default.readConcern

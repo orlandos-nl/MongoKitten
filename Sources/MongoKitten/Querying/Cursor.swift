@@ -32,14 +32,14 @@ extension Reply {
 ///// It can be looped over using a `for let document in cursor` loop like any other sequence.
 /////
 ///// It can be transformed into an array with `Array(cursor)` and allows transformation to another type.
-public final class Cursor: Async.OutputStream, ConnectionContext {
+public final class Cursor<C: Codable>: Async.OutputStream, ConnectionContext {
     public typealias Output = Document
     
     /// The collection's namespace
     var spec: Reply.Cursor.CursorSpec?
 
     /// The collection this cursor is pointing to
-    let collection: MongoCollection
+    let collection: MongoCollection<C>
     
     let databaseConnection: DatabaseConnection
 
@@ -59,7 +59,7 @@ public final class Cursor: Async.OutputStream, ConnectionContext {
     var downstreamRequest: UInt = 0
 
     /// This initializer creates a base cursor from a replied Document
-    internal init(collection: MongoCollection, connection: DatabaseConnection) {
+    internal init(collection: MongoCollection<C>, connection: DatabaseConnection) {
         self.databaseConnection = connection
         self.collection = collection
     }
@@ -168,16 +168,16 @@ public final class Cursor: Async.OutputStream, ConnectionContext {
 }
 
 extension Commands {
-    struct GetMore: Command {
-        var targetCollection: MongoCollection {
+    struct GetMore<C: Codable>: Command {
+        var targetCollection: MongoCollection<C> {
             return collection
         }
         
-        static let writing: Bool = false
-        static let emitsCursor: Bool = false
+        static var writing: Bool { return false }
+        static var emitsCursor: Bool { return false }
         
         var getMore: Int
-        var collection: MongoCollection
+        var collection: MongoCollection<C>
         var batchSize: Int32
     }
 }

@@ -6,7 +6,7 @@ extension Collection {
         _ filter: Query? = nil,
         sortedBy sort: Sort? = nil,
         projecting projection: Projection? = nil
-    ) -> Cursor {
+    ) -> Cursor<C> {
         var find = Find(on: self)
         find.filter = filter
         find.sort = sort
@@ -20,7 +20,7 @@ extension Collection {
         in range: Range<Int>,
         sortedBy sort: Sort? = nil,
         projecting projection: Projection? = nil
-    ) -> Cursor {
+    ) -> Cursor<C> {
         var find = Find(on: self)
         find.filter = filter
         find.sort = sort
@@ -36,7 +36,7 @@ extension Collection {
         in range: ClosedRange<Int>,
         sortedBy sort: Sort? = nil,
         projecting projection: Projection? = nil
-    ) -> Cursor {
+    ) -> Cursor<C> {
         var find = Find(on: self)
         find.filter = filter
         find.sort = sort
@@ -52,7 +52,7 @@ extension Collection {
         in range: PartialRangeFrom<Int>,
         sortedBy sort: Sort? = nil,
         projecting projection: Projection? = nil
-    ) -> Cursor {
+    ) -> Cursor<C> {
         var find = Find(on: self)
         find.filter = filter
         find.sort = sort
@@ -67,7 +67,7 @@ extension Collection {
         in range: PartialRangeUpTo<Int>,
         sortedBy sort: Sort? = nil,
         projecting projection: Projection? = nil
-    ) -> Cursor {
+    ) -> Cursor<C> {
         var find = Find(on: self)
         find.filter = filter
         find.sort = sort
@@ -82,7 +82,7 @@ extension Collection {
         in range: PartialRangeThrough<Int>,
         sortedBy sort: Sort? = nil,
         projecting projection: Projection? = nil
-    ) -> Cursor {
+    ) -> Cursor<C> {
         var find = Find(on: self)
         find.filter = filter
         find.sort = sort

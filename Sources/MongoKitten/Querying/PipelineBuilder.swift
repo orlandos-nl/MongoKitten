@@ -196,7 +196,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, Codable {
         }
         
         /// Performs a left outer join to an unsharded collection in the same database
-        public static func lookup(from collection: Collection, localField: String, foreignField: String, as: String) -> Stage {
+        public static func lookup<C>(from collection: Collection<C>, localField: String, foreignField: String, as: String) -> Stage {
             return Stage([
                 "$lookup": [
                     "from": collection.name,
@@ -204,11 +204,11 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, Codable {
                     "foreignField": foreignField,
                     "as": `as`
                 ]
-                ])
+            ])
         }
         
         /// Writes the resulting Documents to the provided Collection
-        public static func out(to collection: Collection) -> Stage {
+        public static func out<C>(to collection: Collection<C>) -> Stage {
             return self.out(to: collection.name)
         }
         

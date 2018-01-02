@@ -6,7 +6,7 @@ public enum RemoveLimit: Int, Codable {
     case one = 1
 }
 
-public struct Delete: Command, Operation {
+public struct Delete<C: Codable>: Command, Operation {
     public struct Single: Encodable {
         public var q: Query
         public var limit: RemoveLimit
@@ -17,27 +17,27 @@ public struct Delete: Command, Operation {
             self.limit = limit
         }
         
-        public func execute(on connection: DatabaseConnection, collection: Collection) -> Future<Int> {
+        public func execute(on connection: DatabaseConnection, collection: Collection<C>) -> Future<Int> {
             let deletes = Delete([self], from: collection)
             
             return deletes.execute(on: connection)
         }
     }
     
-    var targetCollection: MongoCollection {
+    var targetCollection: MongoCollection<C> {
         return delete
     }
     
-    public let delete: Collection
+    public let delete: Collection<C>
     public var deletes: [Single]
     public var ordered: Bool?
     public var writeConcern: WriteConcern?
     public var bypassDocumentValidation: Bool?
     
-    static var writing = true
-    static var emitsCursor = false
+    static var writing: Bool { return true }
+    static var emitsCursor: Bool { return false }
     
-    public init(_ deletes: [Single], from collection: Collection) {
+    public init(_ deletes: [Single], from collection: Collection<C>) {
         self.delete = collection
         self.deletes = Array(deletes)
         
