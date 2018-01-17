@@ -196,7 +196,7 @@ public enum AuthenticationError : Error {
 /// Internal errors
 internal enum InternalMongoError : Error, CustomDebugStringConvertible {
     /// Invalid message, couldn't be parsed to a Reply
-    case incorrectReply(reply: ServerReply)
+    case incorrectReply(reply: Message.Reply)
     
     /// The CString contains an invalid character or wasn't null-terminated.
     case invalidCString

@@ -2,311 +2,218 @@ import Async
 import Bits
 import Foundation
 
-final class ServerReplyParser: Async.Stream, ConnectionContext {
-    typealias Input = ByteBuffer
-    typealias Output = ServerReply
-    
-    /// Downstream input stream accepting byte buffers
-    private var downstream: AnyInputStream<ServerReply>?
-    
-    /// Upstream output stream outputting byte buffers
-    private var upstream: ConnectionContext?
-    
-    /// Remaining output requested
-    var remainingOutputRequested: UInt = 0
-    
-    var upstreamBuffer: ByteBuffer? {
-        didSet {
-            self.upstreamOffset = 0
-        }
-    }
-    
-    var upstreamOffset = 0
-    
-    var totalLength: Int?
-    var requestId: Int32?
-    var responseTo: Int32?
-    var opCode: Int32?
-    var flags: ReplyFlags?
-    var cursorID: Int?
-    var startingFrom: Int32?
-    var numbersReturned: Int32?
-    var documents = [Document]()
-    var documentsData = Data()
-    var documentsScanned: Int32 = 0
-    var unconsumed = Data()
-    
-    var isComplete: Bool {
-        return requestId != nil && responseTo != nil && flags != nil && cursorID != nil && startingFrom != nil && numbersReturned != nil && numericCast(documents.count) == numbersReturned
-    }
-    
-    init() {
-        // largest data (cursorID Int64) - 1 byte for not complete
-        unconsumed.reserveCapacity(7)
-    }
-    
-    func input(_ event: InputEvent<ByteBuffer>) {
-        switch event {
-        case .close: process()
-        case .connect(let upstream):
-            self.upstream = upstream
-        case .error(let error): downstream?.error(error)
-        case .next(let input):
-            self.upstreamBuffer = input
-            process()
-        }
-    }
-    
-    func output<S>(to inputStream: S) where S : Async.InputStream, ServerReplyParser.Output == S.Input {
-        downstream = AnyInputStream(inputStream)
-        inputStream.connect(to: self)
-    }
-    
-    func connection(_ event: ConnectionEvent) {
-        switch event {
-        case .cancel:
-            remainingOutputRequested = 0
-            downstream?.close()
-        case .request(let count):
-            remainingOutputRequested += count
-            
-            if self.upstreamBuffer == nil {
-                upstream?.request()
-            }
-            
-            process()
-        }
-    }
-    
-    func process() {
-        while true {
-            guard let buffer = upstreamBuffer else {
-                return
-            }
-            
-            if upstreamOffset >= buffer.count {
-                upstream?.request()
-                return
-            }
-            
-            self.process(
-                consuming: buffer.baseAddress!.advanced(by: upstreamOffset),
-                length: buffer.count - upstreamOffset
-            )
-        }
-    }
-    
-    func process(consuming: BytesPointer, length: Int)  {
-        var advanced = 0
-        
-        func require(_ n: Int) -> Bool {
-            guard unconsumed.count &+ (length &- advanced) >= n else {
-                advanced += min(n &- unconsumed.count, length)
-                let data = Array(UnsafeBufferPointer(start: consuming.advanced(by: advanced), count: advanced))
-                self.unconsumed.append(contentsOf: data)
-                
-                return false
-            }
-            
-            return true
-        }
-        
-        func makeInt32() -> Int32? {
-            guard require(4) else {
-                return nil
-            }
-            
-            if unconsumed.count > 0 {
-                var data = Data(repeating: 0, count: 4 - unconsumed.count)
-                
-                data.withUnsafeMutableBytes { (pointer: UnsafeMutablePointer<UInt8>) in
-                    _ = memcpy(pointer, consuming.advanced(by: advanced), 4 - unconsumed.count)
-                }
-                
-                data = unconsumed + data
-                
-                advanced += 4 - unconsumed.count
-                
-                unconsumed.removeFirst(min(4, unconsumed.count))
-                
-                return Int32.make(data)
-            } else {
-                defer { advanced += 4 }
-                return consuming.advanced(by: advanced).withMemoryRebound(to: Int32.self, capacity: 1, { $0.pointee })
-            }
-        }
-        
-        func makeInt64() -> Int64? {
-            guard require(8) else {
-                return nil
-            }
-            
-            if unconsumed.count > 0 {
-                var data = Data(repeating: 0, count: 8 - unconsumed.count)
-                
-                data.withUnsafeMutableBytes { (pointer: UnsafeMutablePointer<UInt8>) in
-                    _ = memcpy(pointer, consuming.advanced(by: advanced), 8 - unconsumed.count)
-                }
-                
-                data = unconsumed + data
-                
-                advanced += 8 - unconsumed.count
-                
-                unconsumed.removeFirst(min(8, unconsumed.count))
-                
-                return Int64.make(data)
-            } else {
-                defer { advanced += 8 }
-                return consuming.advanced(by: advanced).withMemoryRebound(to: Int64.self, capacity: 1, { $0.pointee })
-            }
-        }
-        
-        if totalLength == nil {
-            guard let totalLength = makeInt32() else {
-                upstreamOffset += advanced
-                return
-            }
-            
-            self.totalLength = Int(totalLength) as Int
-        }
-        
-        if requestId == nil {
-            guard let requestId = makeInt32() else {
-                upstreamOffset += advanced
-                return
-            }
-            
-            self.requestId = requestId
-        }
-        
-        if responseTo == nil {
-            guard let responseTo = makeInt32() else {
-                upstreamOffset += advanced
-                return
-            }
-            
-            self.responseTo = responseTo
-        }
-        
-        if opCode == nil {
-            guard let opCode = makeInt32() else {
-                upstreamOffset += advanced
-                return
-            }
-            
-            self.opCode = opCode
-        }
-        
-        if flags == nil {
-            guard let flag = makeInt32() else {
-                upstreamOffset += advanced
-                return
-            }
-            
-            self.flags = ReplyFlags(rawValue: flag)
-        }
-        
-        if cursorID == nil {
-            guard let cursorID = makeInt64() else {
-                upstreamOffset += advanced
-                return
-            }
-            
-            self.cursorID = Int(cursorID)
-        }
-        
-        if startingFrom == nil {
-            guard let startingFrom = makeInt32() else {
-                upstreamOffset += advanced
-                return
-            }
-            
-            self.startingFrom = startingFrom
-        }
-        
-        if numbersReturned == nil {
-            guard let numbersReturned = makeInt32() else {
-                upstreamOffset += advanced
-                return
-            }
-            
-            self.numbersReturned = numbersReturned
-        }
-        
-        advanced += scanDocuments(from: consuming.advanced(by: advanced), length: length - advanced)
-        upstreamOffset += advanced
-        
-        if isComplete, let reply = construct() {
-            downstream?.next(reply)
-        }
-        
-        return
-    }
-    
-    func scanDocuments(from pointer: BytesPointer, length: Int) -> Int {
-        guard let numbersReturned = numbersReturned else {
-            return 0
-        }
-        
-        var advanced = 0
-        
-        while documentsScanned < numbersReturned, advanced < length {
-            let documentSize: Int = pointer.advanced(by: advanced).withMemoryRebound(to: Int32.self, capacity: 1) { numericCast($0.pointee) }
-            
-            let remaining = length - advanced
-            
-            if documentSize <= remaining {
-                documentsData.append(pointer, count: documentSize)
-                advanced += documentSize
-                
-                documents.append(Document(data: documentsData))
-                
-                documentsData = Data()
-            } else {
-                documentsData.append(pointer, count: remaining)
-                advanced += remaining
-            }
-        }
-        
-        return advanced
-    }
-    
-    func construct() -> ServerReply? {
-        guard
-            let requestId = requestId,
-            let responseTo = responseTo,
-            let flags = flags,
-            let cursorID = cursorID,
-            let startingFrom = startingFrom,
-            let numbersReturned = numbersReturned
-        else {
-            return nil
-        }
-        
-        let docs = self.documents
-        
-        self.totalLength = nil
-        self.requestId = nil
-        self.responseTo = nil
-        self.opCode = nil
-        self.flags = nil
-        self.cursorID = nil
-        self.startingFrom = nil
-        self.numbersReturned = nil
-        self.documentsScanned = 0
-        self.documents = []
-        self.documentsData = Data()
-        
-        return ServerReply(requestID: requestId, responseTo: responseTo, flags: flags, cursorID: cursorID, startingFrom: startingFrom, numbersReturned: numbersReturned, documents: docs)
+protocol MessageType {
+    var header: Message.Header { get }
+    var storage: Message.Buffer { get }
+}
+
+extension MessageType {
+    var header: Message.Header {
+        return .init(from: storage)
     }
 }
 
-public struct ServerReply {
-    let requestID: Int32
-    let responseTo: Int32
-    let flags: ReplyFlags
-    let cursorID: Int
-    let startingFrom: Int32
-    let numbersReturned: Int32
-    var documents: [Document]
+enum Message {
+    final class Buffer {
+        enum Storage {
+            case readable(ByteBuffer)
+            case writable(MutableByteBuffer)
+        }
+        
+        let storage: Storage
+        
+        var buffer: ByteBuffer {
+            switch storage {
+            case .readable(let buffer):
+                return buffer
+            case .writable(let buffer):
+                return ByteBuffer(start: buffer.baseAddress, count: buffer.count)
+            }
+        }
+        
+        var mutableBuffer: MutableByteBuffer? {
+            guard case .writable(let buffer) = storage else { return nil }
+            return buffer
+        }
+        
+        init(_ buffer: ByteBuffer) {
+            self.storage = .readable(buffer)
+        }
+        
+        init(_ buffer: MutableByteBuffer) {
+            self.storage = .writable(buffer)
+        }
+        
+        deinit {
+            if case .writable(let buffer) = self.storage {
+                buffer.baseAddress?.deallocate(capacity: buffer.count)
+            }
+        }
+    }
+    
+    struct Header {
+        static let size = 12 // 3x int32 (no length)
+        
+        private let storage: Buffer
+        
+        var requestId: Int32 {
+            return storage.buffer.baseAddress!.withMemoryRebound(to: Int32.self, capacity: 1) { pointer in
+                return pointer.pointee
+            }
+            return storage.buffer.baseAddress!.withMemoryRebound(to: Int32.self)[1]
+        }
+        
+        var responseTo: Int32 {
+            return storage.buffer.baseAddress!.withMemoryRebound(to: Int32.self, capacity: 1) { pointer in
+                return pointer[1]
+            }
+            return storage.buffer.baseAddress!.withMemoryRebound(to: Int32.self)[2]
+        }
+        
+        var opCode: Int32 {
+            return storage.buffer.baseAddress!.withMemoryRebound(to: Int32.self, capacity: 1) { pointer in
+                return pointer[2]
+            }
+        }
+        
+        init(from buffer: Buffer) {
+            self.storage = buffer
+        }
+    }
+    
+    struct Reply: MessageType {
+        var storage: Buffer
+        
+        var flags: Int32 {
+            let offset = storage.buffer.baseAddress!.advanced(by: Header.size)
+                
+            return offset.withMemoryRebound(to: Int32.self, capacity: 1) { pointer in
+                return pointer.pointee
+            }
+        }
+        
+        var cursorId: Int64 {
+            // + Int32
+            let offset = storage.buffer.baseAddress!.advanced(by: Header.size &+ 4)
+                
+            return offset.withMemoryRebound(to: Int64.self, capacity: 1) { pointer in
+                return pointer.pointee
+            }
+        }
+        
+        var startingFrom: Int32 {
+            // + Int32 + Int64
+            let offset = storage.buffer.baseAddress!.advanced(by: Header.size &+ 12)
+                
+            return offset.withMemoryRebound(to: Int32.self, capacity: 1) { pointer in
+                return pointer.pointee
+            }
+        }
+        
+        var numberReturned: Int32 {
+            // + Int32 + Int64 + Int32
+            let offset = storage.buffer.baseAddress!.advanced(by: Header.size &+ 16)
+            
+            return offset.withMemoryRebound(to: Int32.self, capacity: 1) { pointer in
+                return pointer.pointee
+            }
+        }
+        
+        var documents: [Document] {
+            let offset = Header.size &+ 20
+            let buffer = ByteBuffer(
+                start: self.storage.buffer.baseAddress?.advanced(by: offset),
+                count: self.storage.buffer.count &- offset
+            )
+            
+            return [Document](bsonBytes: Data(buffer: buffer), validating: false)
+        }
+    }
+}
+
+struct MessageParser: ByteParser {
+    var state: ByteParserState<MessageParser>
+    
+    typealias Output = Message.Buffer
+    
+    enum ParsingState {
+        case unknownLength([UInt8])
+        case knownLength(buffer: Message.Buffer, accumulated: Int)
+    }
+    
+    init() {
+        self.state = .init()
+    }
+    
+    func parseBytes(from buffer: ByteBuffer, partial: ParsingState?) throws -> Future<ByteParserResult<MessageParser>> {
+        if let partial = partial {
+            switch partial {
+            case .unknownLength(var data):
+                let missing = 4 &- data.count
+                
+                if buffer.count < missing {
+                    return Future(.uncompleted(.unknownLength(data + Array(buffer))))
+                }
+                
+                data.append(contentsOf: buffer[..<missing])
+                let pointer = buffer.baseAddress!.advanced(by: missing)
+                let size = buffer.count &- missing
+                
+                var _length: Int32 = 0
+                memcpy(&_length, buffer.baseAddress!, 4)
+                let length: Int = numericCast(_length)
+                
+                // length - Int32 length header
+                if size < length &- 4 {
+                    // Don't include length header
+                    let messageSize = length &- 4
+                    
+                    let writePointer = MutableBytesPointer.allocate(capacity: messageSize)
+                    memcpy(writePointer, pointer, size)
+                    let mutableBuffer = Message.Buffer(MutableByteBuffer(start: writePointer, count: messageSize))
+                    
+                    return Future(.uncompleted(.knownLength(buffer: mutableBuffer, accumulated: size)))
+                }
+                
+                let buffer = Message.Buffer(ByteBuffer(start: pointer, count: size))
+                
+                return Future(.completed(consuming: missing &+ size, result: buffer))
+            case .knownLength(let message, let accumulated):
+                let needed = message.buffer.count &- accumulated
+                let copy = min(needed, buffer.count)
+                memcpy(message.mutableBuffer!.baseAddress!.advanced(by: accumulated), buffer.baseAddress!, copy)
+                
+                if copy < needed {
+                    return Future(.uncompleted(.knownLength(buffer: message, accumulated: accumulated &+ copy)))
+                }
+                
+                return Future(.completed(consuming: copy, result: buffer))
+            }
+        } else {
+            if buffer.count < 4 {
+                return Future(.uncompleted(.unknownLength(Array(buffer))))
+            }
+            
+            let length: Int = buffer.baseAddress!.withMemoryRebound(to: Int32.self, capacity: 1) { numericCast($0.pointee) }
+            
+            let messageStart = buffer.baseAddress!.advanced(by: 4)
+            
+            if buffer.count < length {
+                // Don't include length header
+                let messageSize = length &- 4
+                
+                let accumulating = buffer.count &- 4
+                
+                let writePointer = MutableBytesPointer.allocate(capacity: messageSize)
+                memcpy(writePointer, messageStart, accumulating)
+                let mutableBuffer = Message.Buffer(MutableByteBuffer(start: writePointer, count: messageSize))
+                
+                return Future(.uncompleted(.knownLength(buffer: mutableBuffer, accumulated: accumulating)))
+            } else {
+                let buffer = ByteBuffer(start: buffer.baseAddress!.advanced(by: 4), count: length &- 4)
+                
+                return Future(.completed(consuming: length, result: message.Buffer(buffer)))
+            }
+        }
+    }
 }

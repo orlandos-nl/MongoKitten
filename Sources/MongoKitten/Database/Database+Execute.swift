@@ -83,7 +83,7 @@ extension DatabaseConnection {
     
     func execute<E: Command, T>(
         _ command: E,
-        handle result: @escaping ((ServerReply, DatabaseConnection) throws -> (T))
+        handle result: @escaping ((Message.Reply, DatabaseConnection) throws -> (T))
     ) -> Future<T> {
         do {
             let query = try BSONEncoder().encode(command)

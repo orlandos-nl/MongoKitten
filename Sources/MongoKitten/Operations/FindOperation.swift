@@ -69,13 +69,9 @@ public struct FindOne<C: Codable> {
         let cursor = find.execute(on: connection)
         let promise = Promise<Document?>()
         
-        cursor.drain { _ in }.output { doc in
+        cursor.drain { doc, _ in
             promise.complete(doc)
-        }.finally {
-            promise.complete(nil)
-        }
-        
-        cursor.request()
+        }.upstream?.request()
         
         return promise.future
     }

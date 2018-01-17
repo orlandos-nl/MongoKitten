@@ -16,16 +16,8 @@ import Dispatch
 import TCP
 import AppleTLS
 
-public protocol ConnectionPool {
-    func retain() -> Future<DatabaseConnection>
-}
-
 /// A connection to MongoDB
-public final class DatabaseConnection: ConnectionPool {
-    public func retain() -> Future<DatabaseConnection> {
-        return Future(self)
-    }
-    
+public final class DatabaseConnection {
     let scram = SCRAMContext()
     
     fileprivate var requestID: Int32 = 0
@@ -36,7 +28,7 @@ public final class DatabaseConnection: ConnectionPool {
     }
     
     /// The responses being waited for
-    var waitingForResponses = [Int32: Promise<ServerReply>]()
+    var waitingForResponses = [Int32: Promise<Message.Reply>]()
     
     var wireProtocol: Int = 0
     
@@ -44,7 +36,7 @@ public final class DatabaseConnection: ConnectionPool {
     
     var error: Error?
     
-    let parser = ServerReplyParser()
+    let parser: TranslatingStreamWrapper<MessageParser>
     let serializer: PacketSerializer
     let eventloop: EventLoop
     
@@ -52,15 +44,18 @@ public final class DatabaseConnection: ConnectionPool {
         self.eventloop = eventloop
         self.socket = sink.socket
         self.serializer = PacketSerializer()
+        self.parser = MessageParser().stream(on: eventloop)
         
         serializer.output(to: sink)
         
-        source.stream(to: parser).drain { upstream in
+        source.stream(to: parser).map(to: Message.Reply.self) { buffer in
+            return Message.Reply(storage: buffer)
+        }.drain { reply, upstream in
+            let responseId = reply.header.responseTo
+            
+            self.waitingForResponses[responseId]?.complete(reply)
+            self.waitingForResponses[responseId] = nil
             upstream.request()
-        }.output { reply in
-            self.waitingForResponses[reply.responseTo]?.complete(reply)
-            self.waitingForResponses[reply.responseTo] = nil
-            self.parser.request()
         }.catch { error in
             for waiter in self.waitingForResponses.values {
                 waiter.fail(error)
@@ -72,7 +67,7 @@ public final class DatabaseConnection: ConnectionPool {
             self.socket.close()
         }.finally {
             self.socket.close()
-        }
+        }.upstream?.request()
     }
     
     public subscript(database: String) -> Database {
@@ -145,17 +140,15 @@ public final class DatabaseConnection: ConnectionPool {
         self.waitingForResponses = [:]
     }
     
-    func send(message: Message) -> Future<ServerReply> {
+    func send(message: Message) -> Future<Message.Reply> {
+        if let error = self.error {
+            return Future(error: error)
+        }
+        
         let promise = Promise<ServerReply>()
         
-        self.eventloop.async {
-            if let error = self.error {
-                return promise.fail(error)
-            }
-            
-            self.waitingForResponses[message.requestID] = promise
-            self.serializer.next(message)
-        }
+        self.waitingForResponses[message.requestID] = promise
+        self.serializer.next(message)
         
         return promise.future
     }
