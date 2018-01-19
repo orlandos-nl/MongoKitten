@@ -51,15 +51,14 @@ extension DatabaseConnection {
     internal func authenticateCR(_ credentials: MongoCredentials) throws -> Future<Void> {
         // Get the server's nonce
         let nonceMessage = Message.Query(
-            requestID: self.nextRequestId,
+            requestId: nextRequestId,
             flags: [],
-            collection: credentials.authDB + ".$cmd",
-            numbersToSkip: 0,
-            numbersToReturn: 1,
+            fullCollection: credentials.authDB + ".$cmd",
+            skip: 0,
+            return: 1,
             query: [
                 "getnonce": Int32(1)
-            ],
-            returnFields: nil
+            ]
         )
 
         return self.send(message: nonceMessage).flatMap(to: Void.self) { reply in
@@ -74,18 +73,17 @@ extension DatabaseConnection {
             let key = MD5.hash(Data("\(nonce)\(credentials.username)\(digest.hexString)".utf8)).hexString
             
             let commandMessage = Message.Query(
-                requestID: self.nextRequestId,
+                requestId: self.nextRequestId,
                 flags: [],
-                collection: credentials.authDB + ".$cmd",
-                numbersToSkip: 0,
-                numbersToReturn: 1,
+                fullCollection: credentials.authDB + ".$cmd",
+                skip: 0,
+                return: 1,
                 query: [
                     "authenticate": 1,
                     "nonce": nonce,
                     "user": credentials.username,
                     "key": key
-                ],
-                returnFields: nil
+                ]
             )
             
             return self.send(message: commandMessage).map(to: Void.self) { reply in
@@ -101,11 +99,18 @@ extension DatabaseConnection {
 extension DatabaseConnection {
     /// Experimental feature for authenticating with MongoDB-X509
     internal func authenticateX509(credentials: MongoCredentials) throws -> Future<Void> {
-        let message = Message.Query(requestID: self.nextRequestId, flags: [], collection: "$external.$cmd", numbersToSkip: 0, numbersToReturn: 1, query: [
-            "authenticate": 1,
-            "mechanism": "MONGODB-X509",
-            "user": credentials.username
-        ], returnFields: nil)
+        let message = Message.Query(
+            requestId: nextRequestId,
+            flags: [],
+            fullCollection: "$external.$cmd",
+            skip: 0,
+            return: 1,
+            query: [
+                "authenticate": 1,
+                "mechanism": "MONGODB-X509",
+                "user": credentials.username
+            ]
+        )
         
         return self.send(message: message).map(to: Void.self) { reply in
             // Check for success

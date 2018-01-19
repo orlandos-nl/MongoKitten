@@ -2,135 +2,6 @@ import Async
 import Bits
 import Foundation
 
-protocol MessageType {
-    var header: Message.Header { get }
-    var storage: Message.Buffer { get }
-}
-
-extension MessageType {
-    var header: Message.Header {
-        return .init(from: storage)
-    }
-}
-
-enum Message {
-    final class Buffer {
-        enum Storage {
-            case readable(ByteBuffer)
-            case writable(MutableByteBuffer)
-        }
-        
-        let storage: Storage
-        
-        var buffer: ByteBuffer {
-            switch storage {
-            case .readable(let buffer):
-                return buffer
-            case .writable(let buffer):
-                return ByteBuffer(start: buffer.baseAddress, count: buffer.count)
-            }
-        }
-        
-        var mutableBuffer: MutableByteBuffer? {
-            guard case .writable(let buffer) = storage else { return nil }
-            return buffer
-        }
-        
-        init(_ buffer: ByteBuffer) {
-            self.storage = .readable(buffer)
-        }
-        
-        init(_ buffer: MutableByteBuffer) {
-            self.storage = .writable(buffer)
-        }
-        
-        deinit {
-            if case .writable(let buffer) = self.storage {
-                buffer.baseAddress?.deallocate(capacity: buffer.count)
-            }
-        }
-    }
-    
-    struct Header {
-        static let size = 12 // 3x int32 (no length)
-        
-        private let storage: Buffer
-        
-        var requestId: Int32 {
-            return storage.buffer.baseAddress!.withMemoryRebound(to: Int32.self, capacity: 1) { pointer in
-                return pointer.pointee
-            }
-            return storage.buffer.baseAddress!.withMemoryRebound(to: Int32.self)[1]
-        }
-        
-        var responseTo: Int32 {
-            return storage.buffer.baseAddress!.withMemoryRebound(to: Int32.self, capacity: 1) { pointer in
-                return pointer[1]
-            }
-            return storage.buffer.baseAddress!.withMemoryRebound(to: Int32.self)[2]
-        }
-        
-        var opCode: Int32 {
-            return storage.buffer.baseAddress!.withMemoryRebound(to: Int32.self, capacity: 1) { pointer in
-                return pointer[2]
-            }
-        }
-        
-        init(from buffer: Buffer) {
-            self.storage = buffer
-        }
-    }
-    
-    struct Reply: MessageType {
-        var storage: Buffer
-        
-        var flags: Int32 {
-            let offset = storage.buffer.baseAddress!.advanced(by: Header.size)
-                
-            return offset.withMemoryRebound(to: Int32.self, capacity: 1) { pointer in
-                return pointer.pointee
-            }
-        }
-        
-        var cursorId: Int64 {
-            // + Int32
-            let offset = storage.buffer.baseAddress!.advanced(by: Header.size &+ 4)
-                
-            return offset.withMemoryRebound(to: Int64.self, capacity: 1) { pointer in
-                return pointer.pointee
-            }
-        }
-        
-        var startingFrom: Int32 {
-            // + Int32 + Int64
-            let offset = storage.buffer.baseAddress!.advanced(by: Header.size &+ 12)
-                
-            return offset.withMemoryRebound(to: Int32.self, capacity: 1) { pointer in
-                return pointer.pointee
-            }
-        }
-        
-        var numberReturned: Int32 {
-            // + Int32 + Int64 + Int32
-            let offset = storage.buffer.baseAddress!.advanced(by: Header.size &+ 16)
-            
-            return offset.withMemoryRebound(to: Int32.self, capacity: 1) { pointer in
-                return pointer.pointee
-            }
-        }
-        
-        var documents: [Document] {
-            let offset = Header.size &+ 20
-            let buffer = ByteBuffer(
-                start: self.storage.buffer.baseAddress?.advanced(by: offset),
-                count: self.storage.buffer.count &- offset
-            )
-            
-            return [Document](bsonBytes: Data(buffer: buffer), validating: false)
-        }
-    }
-}
-
 struct MessageParser: ByteParser {
     var state: ByteParserState<MessageParser>
     
@@ -168,11 +39,10 @@ struct MessageParser: ByteParser {
                     // Don't include length header
                     let messageSize = length &- 4
                     
-                    let writePointer = MutableBytesPointer.allocate(capacity: messageSize)
-                    memcpy(writePointer, pointer, size)
-                    let mutableBuffer = Message.Buffer(MutableByteBuffer(start: writePointer, count: messageSize))
+                    let message = Message.Buffer(size: messageSize)
+                    memcpy(message.mutableBuffer!.baseAddress!, pointer, size)
                     
-                    return Future(.uncompleted(.knownLength(buffer: mutableBuffer, accumulated: size)))
+                    return Future(.uncompleted(.knownLength(buffer: message, accumulated: size)))
                 }
                 
                 let buffer = Message.Buffer(ByteBuffer(start: pointer, count: size))
@@ -187,7 +57,7 @@ struct MessageParser: ByteParser {
                     return Future(.uncompleted(.knownLength(buffer: message, accumulated: accumulated &+ copy)))
                 }
                 
-                return Future(.completed(consuming: copy, result: buffer))
+                return Future(.completed(consuming: copy, result: message))
             }
         } else {
             if buffer.count < 4 {
@@ -204,15 +74,14 @@ struct MessageParser: ByteParser {
                 
                 let accumulating = buffer.count &- 4
                 
-                let writePointer = MutableBytesPointer.allocate(capacity: messageSize)
-                memcpy(writePointer, messageStart, accumulating)
-                let mutableBuffer = Message.Buffer(MutableByteBuffer(start: writePointer, count: messageSize))
+                let message = Message.Buffer(size: messageSize)
+                memcpy(message.mutableBuffer!.baseAddress!, messageStart, accumulating)
                 
-                return Future(.uncompleted(.knownLength(buffer: mutableBuffer, accumulated: accumulating)))
+                return Future(.uncompleted(.knownLength(buffer: message, accumulated: accumulating)))
             } else {
                 let buffer = ByteBuffer(start: buffer.baseAddress!.advanced(by: 4), count: length &- 4)
                 
-                return Future(.completed(consuming: length, result: message.Buffer(buffer)))
+                return Future(.completed(consuming: length, result: Message.Buffer(buffer)))
             }
         }
     }

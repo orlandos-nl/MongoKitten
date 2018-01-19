@@ -63,21 +63,3 @@ internal struct DeleteFlags : OptionSet {
     /// Remove only the first matching Document from the collection
     public static let RemoveOne = DeleteFlags(rawValue: 1 << 0)
 }
-
-/// The flags that are used by the Reply message
-internal struct ReplyFlags : OptionSet {
-    /// The raw value in Int32
-    internal let rawValue: Int32
-    
-    /// You can initialize this with an Int32 and compare the number with an array of ReplyFlags
-    internal init(rawValue: Int32) { self.rawValue = rawValue }
-    
-    /// The server could not find the cursor we tried to use
-    internal static let CursorNotFound = InsertFlags(rawValue: 0 << 0)
-    
-    /// The query we entered failed
-    internal static let QueryFailure = InsertFlags(rawValue: 1 << 0)
-    
-    /// The server is await-capable and thus supports the QueryFlag's AwaitData flag
-    internal static let AwaitCapable = InsertFlags(rawValue: 3 << 0)
-}

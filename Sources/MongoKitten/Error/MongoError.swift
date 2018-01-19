@@ -11,6 +11,10 @@
 import Foundation
 import BSON
 
+enum MongoParserError: Error {
+    case invalidReply
+}
+
 /// All MongoDB errors
 internal enum MongoError : Error {
     /// Can't create database with name

@@ -37,19 +37,22 @@ public final class DatabaseConnection {
     var error: Error?
     
     let parser: TranslatingStreamWrapper<MessageParser>
-    let serializer: PacketSerializer
+    var serializing: Message.Buffer?
+    let serializer = PushStream<Message.Buffer>()
     let eventloop: EventLoop
     
     init<T>(eventloop: EventLoop, source: SocketSource<T>, sink: SocketSink<T>) {
         self.eventloop = eventloop
         self.socket = sink.socket
-        self.serializer = PacketSerializer()
         self.parser = MessageParser().stream(on: eventloop)
         
-        serializer.output(to: sink)
+        serializer.map(to: ByteBuffer.self) { buffer in
+            self.serializing = buffer
+            return buffer.buffer
+        }.output(to: sink)
         
         source.stream(to: parser).map(to: Message.Reply.self) { buffer in
-            return Message.Reply(storage: buffer)
+            return try Message.Reply(buffer)
         }.drain { reply, upstream in
             let responseId = reply.header.responseTo
             
@@ -140,15 +143,15 @@ public final class DatabaseConnection {
         self.waitingForResponses = [:]
     }
     
-    func send(message: Message) -> Future<Message.Reply> {
+    func send(message: MessageType) -> Future<Message.Reply> {
         if let error = self.error {
             return Future(error: error)
         }
         
-        let promise = Promise<ServerReply>()
+        let promise = Promise<Message.Reply>()
         
-        self.waitingForResponses[message.requestID] = promise
-        self.serializer.next(message)
+        self.waitingForResponses[message.header.requestId] = promise
+        self.serializer.next(message.storage)
         
         return promise.future
     }
