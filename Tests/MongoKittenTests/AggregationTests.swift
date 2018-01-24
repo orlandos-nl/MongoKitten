@@ -119,20 +119,20 @@ public class AggregationTests: XCTestCase {
         let orders = db["orders"]
         let inventory = db["inventory"]
 
-        _ = try? orders.drop().blockingAwait(timeout: .seconds(10))
-        _ = try? inventory.drop().blockingAwait(timeout: .seconds(10))
+        _ = try? orders.drop().await(on: TestManager.loop)
+        _ = try? inventory.drop().await(on: TestManager.loop)
 
         let orderDocument: Document = ["_id": 1, "item": "MON1003", "price": 350, "quantity": 2, "specs": [ "27 inch", "Retina display", "1920x1080" ], "type": "Monitor"]
-        let orderId = try orders.insert(orderDocument).blockingAwait(timeout: .seconds(10))
+        let orderId = try orders.insert(orderDocument).await(on: TestManager.loop)
         XCTAssertEqual(orderId.ok, 1)
 
         let inventoryDocument1: Document = ["_id": 1, "sku": "MON1003", "type": "Monitor", "instock": 120, "size": "27 inch", "resolution": "1920x1080"]
         let inventoryDocument2: Document = ["_id": 2, "sku": "MON1012", "type": "Monitor", "instock": 85, "size": "23 inch", "resolution": "1280x800"]
         let inventoryDocument3: Document = ["_id": 3, "sku": "MON1031", "type": "Monitor", "instock": 60, "size": "23 inch", "display_type": "LED"]
 
-        _ = try inventory.insert(inventoryDocument1).blockingAwait(timeout: .seconds(10))
-        _ = try inventory.insert(inventoryDocument2).blockingAwait(timeout: .seconds(10))
-        _ = try inventory.insert(inventoryDocument3).blockingAwait(timeout: .seconds(10))
+        _ = try inventory.insert(inventoryDocument1).await(on: TestManager.loop)
+        _ = try inventory.insert(inventoryDocument2).await(on: TestManager.loop)
+        _ = try inventory.insert(inventoryDocument3).await(on: TestManager.loop)
 
         let unwind = AggregationPipeline.Stage.unwind("$specs")
         let lookup = AggregationPipeline.Stage.lookup(from: inventory, localField: "specs", foreignField: "size", as: "inventory_docs")
@@ -153,7 +153,7 @@ public class AggregationTests: XCTestCase {
             promise.complete(count)
         }
         
-        let amount = try promise.future.blockingAwait()
+        let amount = try promise.future.await(on: TestManager.loop)
         
         XCTAssertEqual(amount, 1)
     }
