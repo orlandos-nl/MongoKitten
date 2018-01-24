@@ -65,17 +65,16 @@ extension DatabaseConnection {
         }
         
         let commandMessage = Message.Query(
-            requestID: self.nextRequestId,
+            requestId: self.nextRequestId,
             flags: [],
-            collection: database + ".$cmd",
-            numbersToSkip: 0,
-            numbersToReturn: 1,
+            fullCollection: database + ".$cmd",
+            skip: 0,
+            return: 1,
             query: [
                 "saslContinue": Int32(1),
                 "conversationId": response.conversationId,
                 "payload": ""
-            ],
-            returnFields: nil
+            ]
         )
         
         return send(message: commandMessage).flatMap(to: Void.self) { reply in
@@ -113,17 +112,16 @@ extension DatabaseConnection {
         
         // Send the proof
         let commandMessage = Message.Query(
-            requestID: self.nextRequestId,
+            requestId: self.nextRequestId,
             flags: [],
-            collection: credentials.authDB + ".$cmd",
-            numbersToSkip: 0,
-            numbersToReturn: 1,
+            fullCollection: credentials.authDB + ".$cmd",
+            skip: 0,
+            return: 1,
             query: [
                 "saslContinue": Int32(1),
                 "conversationId": response.conversationId,
                 "payload": payload
-            ],
-            returnFields: nil
+            ]
         )
         
         return send(message: commandMessage).flatMap(to: Void.self) { reply in
@@ -144,17 +142,16 @@ extension DatabaseConnection {
         let payload = Base64Encoder().encode(string: authPayload)
         
         let message = Message.Query(
-            requestID: self.nextRequestId,
+            requestId: self.nextRequestId,
             flags: [],
-            collection: credentials.authDB + ".$cmd",
-            numbersToSkip: 0,
-            numbersToReturn: 1,
+            fullCollection: credentials.authDB + ".$cmd",
+            skip: 0,
+            return: 1,
             query: [
                 "saslStart": Int32(1),
                 "mechanism": "SCRAM-SHA-1",
                 "payload": payload
-            ],
-            returnFields: nil
+            ]
         )
         
         return send(message: message).flatMap(to: Void.self) { reply in

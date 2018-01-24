@@ -26,7 +26,7 @@ final class TestManager {
         return (String(validatingUTF8: out) ?? defaultURL, "mongokitten-unittest")
     }
     
-    static let loop = DispatchEventLoop(label: "mk-test")
+    static let loop = try! DefaultEventLoop(label: "mk-test")
     static var db = try! Database.connect(server: "mongodb://localhost", database: "mongokitten-unittest", worker: loop).await(on: loop)
 }
 

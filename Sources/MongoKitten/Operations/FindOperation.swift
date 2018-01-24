@@ -32,7 +32,7 @@ public struct Find<C: Codable>: Command, Operation {
         
         connection.execute(self, expecting: Reply.Cursor.self).do { spec in
             cursor.initialize(to: spec.cursor)
-        }.catch(cursor.error)
+        }.catch(cursor.pushStream.error)
         
         return cursor
     }
@@ -69,9 +69,11 @@ public struct FindOne<C: Codable> {
         let cursor = find.execute(on: connection)
         let promise = Promise<Document?>()
         
-        cursor.drain { doc, _ in
+        cursor.drain { doc in
             promise.complete(doc)
-        }.upstream?.request()
+        }.finally {
+            promise.complete(nil)
+        }
         
         return promise.future
     }

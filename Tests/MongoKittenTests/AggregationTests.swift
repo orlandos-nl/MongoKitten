@@ -144,7 +144,7 @@ public class AggregationTests: XCTestCase {
         var count = 0
         let promise = Promise<Int>()
         
-        cursor.drain { _ in }.output { document in
+        cursor.drain { document in
             XCTAssertEqual(String(document["item"]), "MON1003")
             XCTAssertEqual(Int(document["price"]), 350)
             XCTAssertEqual([Primitive](document["inventory_docs"])?.count, 1)
@@ -152,8 +152,6 @@ public class AggregationTests: XCTestCase {
         }.catch(onError: promise.fail).finally {
             promise.complete(count)
         }
-        
-        cursor.request(count: .max)
         
         let amount = try promise.future.blockingAwait()
         

@@ -53,12 +53,11 @@ public final class DatabaseConnection {
         
         source.stream(to: parser).map(to: Message.Reply.self) { buffer in
             return try Message.Reply(buffer)
-        }.drain { reply, upstream in
+        }.drain { reply in
             let responseId = reply.header.responseTo
             
             self.waitingForResponses[responseId]?.complete(reply)
             self.waitingForResponses[responseId] = nil
-            upstream.request()
         }.catch { error in
             for waiter in self.waitingForResponses.values {
                 waiter.fail(error)
@@ -70,7 +69,7 @@ public final class DatabaseConnection {
             self.socket.close()
         }.finally {
             self.socket.close()
-        }.upstream?.request()
+        }
     }
     
     public subscript(database: String) -> Database {
@@ -151,7 +150,7 @@ public final class DatabaseConnection {
         let promise = Promise<Message.Reply>()
         
         self.waitingForResponses[message.header.requestId] = promise
-        self.serializer.next(message.storage)
+        self.serializer.push(message.storage)
         
         return promise.future
     }

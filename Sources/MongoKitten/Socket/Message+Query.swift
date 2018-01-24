@@ -140,7 +140,6 @@ extension Message {
             var header = Header(from: storage)
             header.length = bufferSize
             header.requestId = requestId
-            
         }
     }
 }

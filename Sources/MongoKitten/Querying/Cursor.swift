@@ -32,7 +32,7 @@ extension Reply {
 ///// It can be looped over using a `for let document in cursor` loop like any other sequence.
 /////
 ///// It can be transformed into an array with `Array(cursor)` and allows transformation to another type.
-public final class Cursor<C: Codable>: Async.OutputStream, ConnectionContext {
+public final class Cursor<C: Codable>: Async.OutputStream {
     public typealias Output = Document
     
     /// The collection's namespace
@@ -44,7 +44,7 @@ public final class Cursor<C: Codable>: Async.OutputStream, ConnectionContext {
     let databaseConnection: DatabaseConnection
 
     /// The cursor's identifier that allows us to fetch more data from the server
-    fileprivate var cursorID: Int = 0
+    fileprivate var cursorID: Int64 = 0
 
     /// The amount of Documents to receive each time from the server
     fileprivate let chunkSize: Int32 = 100
@@ -52,7 +52,7 @@ public final class Cursor<C: Codable>: Async.OutputStream, ConnectionContext {
     /// Downstream client and eventloop input stream
     private var downstream: AnyInputStream<Document>?
     
-    var backlog = [Document]()
+    var pushStream = PushStream<Document>()
     
     var consumedBacklog: Int = 0
     
@@ -64,106 +64,68 @@ public final class Cursor<C: Codable>: Async.OutputStream, ConnectionContext {
         self.collection = collection
     }
     
+    public func output<S>(to inputStream: S) where S : InputStream, Cursor.Output == S.Input {
+        pushStream.output(to: inputStream)
+    }
+    
     func initialize(to spec: Reply.Cursor.CursorSpec) {
         self.spec = spec
-        self.backlog = spec.firstBatch
-        flushBacklog()
-    }
-    
-    public func output<S>(to inputStream: S) where S : InputStream, Cursor.Output == S.Input {
-        downstream = AnyInputStream(inputStream)
-        inputStream.connect(to: self)
-    }
-    
-    public func connection(_ event: ConnectionEvent) {
-        switch event {
-        case.request(let count):
-            self.downstreamRequest += count
-            
-            flushBacklog()
-        case .cancel:
-            self.downstreamRequest = 0
-            /// handle downstream canceling output requests
-            downstream?.close()
-        }
-    }
-    
-    fileprivate func flushBacklog() {
-        defer {
-            self.backlog.removeFirst(consumedBacklog)
-            self.consumedBacklog = 0
-        }
         
-        while backlog.count > consumedBacklog, downstreamRequest > 0 {
-            let doc = self.backlog[self.consumedBacklog]
-            consumedBacklog += 1
-            downstreamRequest -= 1
-            
-            downstream?.next(doc)
+        for doc in spec.firstBatch {
+            pushStream.push(doc)
         }
-        
-        if consumedBacklog >= backlog.count {
-            fetchMore()
-        }
-    }
-    
-    func error(_ error: Error) {
-        self.downstream?.error(error)
-        self.cancel()
     }
     
     fileprivate func fetchMore() {
         guard let spec = self.spec, cursorID != 0 else {
             // Prevent cancelling an uninitialized cursor
             if self.spec != nil {
-                self.cancel()
+                self.pushStream.close()
             }
             
             return
         }
         
-        if self.databaseConnection.wireProtocol >= 4 {
-            let command = Commands.GetMore(
-                getMore: self.cursorID,
-                collection: self.collection,
-                batchSize: self.chunkSize
-            )
+        guard self.databaseConnection.wireProtocol >= 4 else {
+            pushStream.error(MongoError.unsupportedFeature("GetMore from cursor"))
+            pushStream.close()
             
-            databaseConnection.execute(command, expecting: Reply.GetMore.self) { result, connection in
-                defer {
-                    if result.cursor.id <= 0 {
-                        self.cancel()
-                    }
+            return
+        }
+        
+        let command = Commands.GetMore(
+            getMore: self.cursorID,
+            collection: self.collection,
+            batchSize: self.chunkSize
+        )
+        
+        databaseConnection.execute(command, expecting: Reply.GetMore.self) { result, connection in
+            defer {
+                if result.cursor.id <= 0 {
+                    self.pushStream.close()
                 }
-                
-                self.backlog = result.cursor.nextBatch
-                self.cursorID = result.cursor.id
-                self.flushBacklog()
-            }.catch { error in
-                self.downstream?.error(error)
-                self.cancel()
             }
-        } else  {
-            let request = Message.GetMore(requestID: self.databaseConnection.nextRequestId, namespace: spec.ns, numberToReturn: self.chunkSize, cursor: self.cursorID)
             
-            self.databaseConnection.send(message: request).do { reply in
-                self.backlog = reply.documents
-                self.cursorID = reply.cursorID
-                
-                self.flushBacklog()
-            }.catch { error in
-                self.downstream?.error(error)
-                self.cancel()
+            for doc in result.cursor.nextBatch {
+                self.pushStream.push(doc)
             }
+            
+            self.cursorID = result.cursor.id
+        }.catch { error in
+            self.downstream?.error(error)
+            self.pushStream.close()
         }
     }
     
     /// When deinitializing we're killing the cursor on the server as well
     deinit {
-        if cursorID != 0 {
-            let killCursorsMessage = Message.KillCursors(requestID: self.databaseConnection.nextRequestId, cursorIDs: [self.cursorID])
-            _ = self.databaseConnection.send(message: killCursorsMessage)
-        }
+        let killCursors = Commands.KillCursors(
+            killCursors: self.collection,
+            cursors: [ self.cursorID ]
+        )
+        
+        _ = databaseConnection.execute(killCursors) { _, _ in }
+        self.cursorID = 0
     }
 }
 
@@ -176,9 +138,21 @@ extension Commands {
         static var writing: Bool { return false }
         static var emitsCursor: Bool { return false }
         
-        var getMore: Int
+        var getMore: Int64
         var collection: MongoCollection<C>
         var batchSize: Int32
+    }
+    
+    struct KillCursors<C: Codable>: Command {
+        var targetCollection: MongoCollection<C> {
+            return killCursors
+        }
+        
+        static var writing: Bool { return false }
+        static var emitsCursor: Bool { return false }
+        
+        var killCursors: MongoCollection<C>
+        var cursors: [Int64]
     }
 }
 
@@ -186,7 +160,7 @@ extension Reply {
     struct GetMore : Decodable {
         struct CursorData: Decodable {
             var nextBatch: [Document]
-            var id: Int
+            var id: Int64
         }
         
         var cursor: CursorData

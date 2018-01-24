@@ -31,7 +31,7 @@ public struct Aggregate<C: Codable>: Command, Operation {
         
         connection.execute(self, expecting: Reply.Cursor.self).do { spec in
             cursor.initialize(to: spec.cursor)
-        }.catch(cursor.error)
+        }.catch(cursor.pushStream.error)
         
         return cursor
     }
