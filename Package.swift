@@ -23,7 +23,8 @@ var package = Package(
         
         // Sockets
         .package(url: "https://github.com/vapor/async.git", .revision("beta")),
-        .package(url: "https://github.com/vapor/engine.git", .revision("beta")),
+        .package(url: "https://github.com/vapor/tls.git", .revision("beta")),
+        .package(url: "https://github.com/vapor/sockets.git", .revision("beta")),
         .package(url: "https://github.com/vapor/crypto.git", .revision("beta")),
     ],
     targets: [
