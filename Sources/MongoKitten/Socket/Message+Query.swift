@@ -49,7 +49,7 @@ extension Message {
                 size += 1
                 
                 if buffer.baseAddress![offset &+ size] == 0x00 {
-                    return size
+                    return size &+ 1 // skip 0x00
                 }
             }
             
@@ -66,11 +66,11 @@ extension Message {
         }
         
         var numberToReturn: Int32 {
-            // + Int32 + cString + Int32
-            let offset = storage.buffer.baseAddress!.advanced(by: Header.size &+ 4 &+ fullCollectionNameSize &+ 4)
-            
-            return offset.withMemoryRebound(to: Int32.self, capacity: 1) { pointer in
-                return pointer.pointee
+            get {
+                return storage[Header.size &+ 4 &+ fullCollectionNameSize &+ 4]
+            }
+            set {
+                storage[Header.size &+ 4 &+ fullCollectionNameSize &+ 4] = newValue
             }
         }
         
@@ -131,7 +131,7 @@ extension Message {
             flags: Flags = Flags(rawValue: 0),
             fullCollection: String,
             skip: Int32,
-            return: Int32,
+            return limit: Int32,
             query: Document
         ) {
             // length, header, flags, fullCollName, null, skip, limit, queryDoc
@@ -155,12 +155,13 @@ extension Message {
             
             self.flags = flags
             self.skip = skip
+            self.numberToReturn = limit
             
-            let data = query.makeBinary()
+            let data = query.bytes
             
             data.withUnsafeBytes { (buffer: BytesPointer) in
                 _ = memcpy(
-                    writePointer.advanced(by: Message.Header.size &+ 4 &+ fullCollection.utf8.count &+ 9),
+                    writePointer.advanced(by: Message.Header.size &+ 4 &+ fullCollectionNameSize &+ 4 &+ 4),
                     buffer,
                     data.count
                 )
