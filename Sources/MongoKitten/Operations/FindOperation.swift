@@ -54,7 +54,7 @@ public struct FindOne<C: Codable> {
         self.collation = collection.default.collation
     }
     
-    public func execute(on connection: DatabaseConnection) -> Future<Document?> {
+    public func execute(on connection: DatabaseConnection) -> Future<C?> {
         var find = Find(on: collection)
         find.batchSize = 1
         find.limit = 1
@@ -67,10 +67,12 @@ public struct FindOne<C: Codable> {
         find.projection = projection
         
         let cursor = find.execute(on: connection)
-        let promise = Promise<Document?>()
+        let promise = Promise<C?>()
         
         cursor.drain { doc in
-            promise.complete(doc)
+            let entity = try BSONDecoder().decode(C.self, from: doc)
+            
+            promise.complete(entity)
         }.finally {
             promise.complete(nil)
         }

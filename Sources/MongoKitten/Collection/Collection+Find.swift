@@ -96,7 +96,7 @@ extension Collection {
         _ filter: Query? = nil,
         sortedBy sort: Sort? = nil,
         projecting projection: Projection? = nil
-    ) -> Future<Document?> {
+    ) -> Future<C?> {
         var findOne = FindOne(for: self)
         findOne.filter = filter
         findOne.sort = sort
