@@ -24,10 +24,11 @@ extension Message {
         var storage: Buffer
         
         var flags: Flags {
-            let offset = storage.buffer.baseAddress!.advanced(by: Header.size)
-            
-            return offset.withMemoryRebound(to: Int32.self, capacity: 1) { pointer in
-                return Flags(rawValue: pointer.pointee)
+            get {
+                return Flags(rawValue: storage[Header.size])
+            }
+            set {
+                storage[Header.size] = newValue.rawValue
             }
         }
         
@@ -47,7 +48,7 @@ extension Message {
             while offset &+ size < buffer.count {
                 size += 1
                 
-                if buffer.baseAddress![size] == 0x00 {
+                if buffer.baseAddress![offset &+ size] == 0x00 {
                     return size
                 }
             }
@@ -73,12 +74,13 @@ extension Message {
             }
         }
         
-        var querySize: Int {
+        var querySize: Int32 {
             // + Int32 + cString + Int32 + Int32
-            let offset = storage.buffer.baseAddress!.advanced(by: Header.size &+ 4 &+ fullCollectionNameSize &+ 4 &+ 4)
-            
-            return offset.withMemoryRebound(to: Int32.self, capacity: 1) { pointer in
-                return numericCast(pointer.pointee)
+            get {
+                return storage[Header.size &+ 4 &+ fullCollectionNameSize &+ 4 &+ 4]
+            }
+            set {
+                storage[Header.size &+ 4 &+ fullCollectionNameSize &+ 4 &+ 4] = newValue
             }
         }
         
@@ -86,13 +88,13 @@ extension Message {
             // + Int32 + cString + Int32 + Int32
             let offset = storage.buffer.baseAddress!.advanced(by: Header.size &+ 4 &+ fullCollectionNameSize &+ 4 &+ 4)
             
-            let buffer = ByteBuffer(start: offset, count: self.querySize)
+            let buffer = ByteBuffer(start: offset, count: numericCast(self.querySize))
             return Document(data: Data(buffer: buffer))
         }
         
         var returnFieldsSize: Int? {
             // + Int32 + cString + Int32 + Int32 + Document
-            let previousSize = Header.size &+ 4 &+ fullCollectionNameSize &+ 4 &+ 4 &+ querySize
+            let previousSize = Header.size &+ 4 &+ fullCollectionNameSize &+ 4 &+ 4 &+ numericCast(querySize)
             
             guard storage.buffer.count > previousSize &+ 4 else { return nil }
             
@@ -106,7 +108,7 @@ extension Message {
         var returnFieldsSelector: Document? {
             guard let size = returnFieldsSize else { return nil }
             
-            let offset = Header.size &+ 4 &+ fullCollectionNameSize &+ 4 &+ 4 &+ querySize
+            let offset = Header.size &+ 4 &+ fullCollectionNameSize &+ 4 &+ 4 &+ numericCast(querySize)
             
             guard storage.buffer.count >= offset &+ size else { return nil }
             
@@ -138,8 +140,31 @@ extension Message {
             self.storage = Buffer(size: numericCast(bufferSize))
             
             var header = Header(from: storage)
-            header.length = bufferSize
             header.requestId = requestId
+            header.opCode = .query
+            
+            let writePointer = storage.mutableBuffer!.baseAddress!
+            
+            fullCollection.withCString { pointer in
+                _ = memcpy(
+                    writePointer.advanced(by: Message.Header.size &+ 4),
+                    pointer,
+                    fullCollection.utf8.count
+                )
+            }
+            
+            self.flags = flags
+            self.skip = skip
+            
+            let data = query.makeBinary()
+            
+            data.withUnsafeBytes { (buffer: BytesPointer) in
+                _ = memcpy(
+                    writePointer.advanced(by: Message.Header.size &+ 4 &+ fullCollection.utf8.count &+ 9),
+                    buffer,
+                    data.count
+                )
+            }
         }
     }
 }
