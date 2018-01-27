@@ -100,17 +100,18 @@ enum Message {
             }
         }
         
-        var opCode: Int32 {
+        var opCode: OpCode? {
             get {
-                return storage[12]
+                return OpCode(rawValue: storage[12])
             }
             set {
-                storage[12] = newValue
+                storage[12] = newValue?.rawValue ?? 0
             }
         }
         
         init(from buffer: Buffer) {
             self.storage = buffer
+            self.length = numericCast(storage.buffer.count)
         }
     }
 }

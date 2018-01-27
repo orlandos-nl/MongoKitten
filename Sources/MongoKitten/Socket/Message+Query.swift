@@ -48,7 +48,7 @@ extension Message {
             while offset &+ size < buffer.count {
                 size += 1
                 
-                if buffer.baseAddress![size] == 0x00 {
+                if buffer.baseAddress![offset &+ size] == 0x00 {
                     return size
                 }
             }
@@ -140,8 +140,8 @@ extension Message {
             self.storage = Buffer(size: numericCast(bufferSize))
             
             var header = Header(from: storage)
-            header.length = bufferSize
             header.requestId = requestId
+            header.opCode = .query
             
             let writePointer = storage.mutableBuffer!.baseAddress!
             
