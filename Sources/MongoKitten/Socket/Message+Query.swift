@@ -39,22 +39,23 @@ extension Message {
             return String(cString: offset)
         }
         
-        var fullCollectionNameSize: Int {
-            // + Int32
-            let offset = Header.size &+ 4
-            var size = 0
-            let buffer = storage.buffer
-            
-            while offset &+ size < buffer.count {
-                size += 1
-                
-                if buffer.baseAddress![offset &+ size] == 0x00 {
-                    return size &+ 1 // skip 0x00
-                }
-            }
-            
-            return size
-        }
+        let fullCollectionNameSize: Int
+//        var fullCollectionNameSize: Int {
+//            // + Int32
+//            let offset = Header.size &+ 4
+//            var size = 0
+//            let buffer = storage.buffer
+//
+//            while offset &+ size < buffer.count {
+//                size += 1
+//
+//                if buffer.baseAddress![offset &+ size] == 0x00 {
+//                    return size &+ 1 // skip 0x00
+//                }
+//            }
+//
+//            return size
+//        }
         
         var skip: Int32 {
             get {
@@ -95,11 +96,11 @@ extension Message {
         var returnFieldsSize: Int? {
             // + Int32 + cString + Int32 + Int32 + Document
             let previousSize = Header.size &+ 4 &+ fullCollectionNameSize &+ 4 &+ 4 &+ numericCast(querySize)
-            
+
             guard storage.buffer.count > previousSize &+ 4 else { return nil }
-            
+
             let offset = storage.buffer.baseAddress!.advanced(by: previousSize)
-            
+
             return offset.withMemoryRebound(to: Int32.self, capacity: 1) { pointer in
                 return numericCast(pointer.pointee)
             }
@@ -144,12 +145,13 @@ extension Message {
             header.opCode = .query
             
             let writePointer = storage.mutableBuffer!.baseAddress!
+            self.fullCollectionNameSize = fullCollection.utf8.count &+ 1
             
             fullCollection.withCString { pointer in
                 _ = memcpy(
                     writePointer.advanced(by: Message.Header.size &+ 4),
                     pointer,
-                    fullCollection.utf8.count
+                    fullCollectionNameSize
                 )
             }
             
@@ -166,6 +168,8 @@ extension Message {
                     data.count
                 )
             }
+            
+            print(Array(storage.buffer))
         }
     }
 }
