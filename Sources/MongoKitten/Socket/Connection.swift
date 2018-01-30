@@ -97,8 +97,8 @@ public final class DatabaseConnection {
         } else {
             try client.connect(hostname: host.hostname, port: host.port)
             
-            let sink = socket.sink(on: worker)
             let source = socket.source(on: worker)
+            let sink = socket.sink(on: worker)
             
             let connection = DatabaseConnection(eventloop: worker.eventLoop, source: source, sink: sink)
             
