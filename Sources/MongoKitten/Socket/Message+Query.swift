@@ -46,17 +46,20 @@ extension Message {
             let buffer = storage.buffer
             
             while offset &+ size < buffer.count {
-                size += 1
+                size = size &+ 1
                 
                 if buffer.baseAddress![offset &+ size] == 0x00 {
-                    return size
+                    // null terminator
+                    return size &+ 1
                 }
             }
             
-            return size
+            // null terminator
+            return size &+ 1
         }
         
         var skip: Int32 {
+            // + Int32 + cString
             get {
                 return storage[Header.size &+ 4 &+ fullCollectionNameSize]
             }
@@ -67,21 +70,17 @@ extension Message {
         
         var numberToReturn: Int32 {
             // + Int32 + cString + Int32
-            let offset = storage.buffer.baseAddress!.advanced(by: Header.size &+ 4 &+ fullCollectionNameSize &+ 4)
-            
-            return offset.withMemoryRebound(to: Int32.self, capacity: 1) { pointer in
-                return pointer.pointee
+            get {
+                return storage[Header.size &+ 4 &+ fullCollectionNameSize &+ 4]
+            }
+            set {
+                storage[Header.size &+ 4 &+ fullCollectionNameSize &+ 4] = newValue
             }
         }
         
         var querySize: Int32 {
             // + Int32 + cString + Int32 + Int32
-            get {
-                return storage[Header.size &+ 4 &+ fullCollectionNameSize &+ 4 &+ 4]
-            }
-            set {
-                storage[Header.size &+ 4 &+ fullCollectionNameSize &+ 4 &+ 4] = newValue
-            }
+            return storage[Header.size &+ 4 &+ fullCollectionNameSize &+ 4 &+ 4]
         }
         
         var query: Document {
@@ -155,12 +154,13 @@ extension Message {
             
             self.flags = flags
             self.skip = skip
+            self.numberToReturn = `return`
             
             let data = query.makeBinary()
             
             data.withUnsafeBytes { (buffer: BytesPointer) in
                 _ = memcpy(
-                    writePointer.advanced(by: Message.Header.size &+ 4 &+ fullCollection.utf8.count &+ 9),
+                    writePointer.advanced(by: Message.Header.size &+ 4 &+ fullCollectionNameSize &+ 8),
                     buffer,
                     data.count
                 )

@@ -27,27 +27,26 @@ struct MessageParser: ByteParser {
                 }
                 
                 data.append(contentsOf: buffer[..<missing])
-                let pointer = buffer.baseAddress!.advanced(by: missing)
                 let size = buffer.count &- missing
                 
                 var _length: Int32 = 0
                 memcpy(&_length, buffer.baseAddress!, 4)
                 let length: Int = numericCast(_length)
                 
-                // length - Int32 length header
-                if size < length &- 4 {
-                    // Don't include length header
-                    let messageSize = length &- 4
-                    
-                    let message = Message.Buffer(size: messageSize)
-                    memcpy(message.mutableBuffer!.baseAddress!, pointer, size)
-                    
+                let message = Message.Buffer(size: length)
+                
+                memcpy(message.mutableBuffer!.baseAddress, &_length, 4)
+                memcpy(
+                    message.mutableBuffer!.baseAddress!.advanced(by: 4),
+                    buffer.baseAddress!.advanced(by: missing),
+                    min(buffer.count &- missing, length &- 4)
+                )
+            
+                if size < length {
+                    return Future(.completed(consuming: length &- buffer.count, result: message))
+                } else {
                     return Future(.uncompleted(.knownLength(buffer: message, accumulated: size)))
                 }
-                
-                let buffer = Message.Buffer(ByteBuffer(start: pointer, count: size))
-                
-                return Future(.completed(consuming: missing &+ size, result: buffer))
             case .knownLength(let message, let accumulated):
                 let needed = message.buffer.count &- accumulated
                 let copy = min(needed, buffer.count)
@@ -70,16 +69,16 @@ struct MessageParser: ByteParser {
             
             if buffer.count < length {
                 // Don't include length header
-                let messageSize = length &- 4
+                let messageSize = length
                 
-                let accumulating = buffer.count &- 4
+                let accumulating = buffer.count
                 
                 let message = Message.Buffer(size: messageSize)
                 memcpy(message.mutableBuffer!.baseAddress!, messageStart, accumulating)
                 
-                return Future(.uncompleted(.knownLength(buffer: message, accumulated: accumulating)))
+                return Future(.uncompleted(.knownLength(buffer: message, accumulated: buffer.count)))
             } else {
-                let buffer = ByteBuffer(start: buffer.baseAddress!.advanced(by: 4), count: length &- 4)
+                let buffer = ByteBuffer(start: buffer.baseAddress, count: length)
                 
                 return Future(.completed(consuming: length, result: Message.Buffer(buffer)))
             }

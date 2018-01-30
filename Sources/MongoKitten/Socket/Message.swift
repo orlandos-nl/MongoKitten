@@ -111,7 +111,10 @@ enum Message {
         
         init(from buffer: Buffer) {
             self.storage = buffer
-            self.length = numericCast(storage.buffer.count)
+            
+            if case .writable(_) = buffer.storage {
+                self.length = numericCast(storage.buffer.count)
+            }
         }
     }
 }
@@ -119,7 +122,7 @@ enum Message {
 extension Message.Buffer {
     subscript(pos: Int) -> Int32 {
         get {
-            return mutableBuffer!.baseAddress!.advanced(by: pos).withMemoryRebound(to: Int32.self, capacity: 1) { pointer in
+            return buffer.baseAddress!.advanced(by: pos).withMemoryRebound(to: Int32.self, capacity: 1) { pointer in
                 return pointer.pointee
             }
         }
@@ -132,7 +135,7 @@ extension Message.Buffer {
     
     subscript(pos: Int) -> Int64 {
         get {
-            return mutableBuffer!.baseAddress!.advanced(by: pos).withMemoryRebound(to: Int64.self, capacity: 1) { pointer in
+            return buffer.baseAddress!.advanced(by: pos).withMemoryRebound(to: Int64.self, capacity: 1) { pointer in
                 return pointer.pointee
             }
         }

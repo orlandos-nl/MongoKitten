@@ -24,7 +24,7 @@ extension Message {
         var storage: Buffer
         
         init(_ storage: Buffer) throws {
-            guard storage.buffer.count == Header.size &+ 20 else {
+            guard storage.buffer.count == Header(from: storage).length else {
                 throw MongoParserError.invalidReply
             }
             
