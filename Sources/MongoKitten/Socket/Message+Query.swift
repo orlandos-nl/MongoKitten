@@ -143,13 +143,17 @@ extension Message {
             header.opCode = .query
             
             let writePointer = storage.mutableBuffer!.baseAddress!
+            let stringSize = fullCollection.utf8.count
             
             fullCollection.withCString { pointer in
                 _ = memcpy(
                     writePointer.advanced(by: Message.Header.size &+ 4),
                     pointer,
-                    fullCollection.utf8.count
+                    stringSize
                 )
+                
+                // Explicitly add null terminator to override existing data
+                writePointer[Message.Header.size &+ 4 &+ stringSize] = 0
             }
             
             self.flags = flags

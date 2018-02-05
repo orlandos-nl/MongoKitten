@@ -69,7 +69,7 @@ extension DatabaseConnection {
             flags: [],
             fullCollection: database + ".$cmd",
             skip: 0,
-            return: 1,
+            return: 0,
             query: [
                 "saslContinue": Int32(1),
                 "conversationId": response.conversationId,
@@ -116,7 +116,7 @@ extension DatabaseConnection {
             flags: [],
             fullCollection: credentials.authDB + ".$cmd",
             skip: 0,
-            return: 1,
+            return: 0,
             query: [
                 "saslContinue": Int32(1),
                 "conversationId": response.conversationId,
@@ -146,7 +146,7 @@ extension DatabaseConnection {
             flags: [],
             fullCollection: credentials.authDB + ".$cmd",
             skip: 0,
-            return: 1,
+            return: 0,
             query: [
                 "saslStart": Int32(1),
                 "mechanism": "SCRAM-SHA-1",

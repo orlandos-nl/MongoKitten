@@ -29,39 +29,39 @@ public class CollectionTests: XCTestCase {
         
         let collection = TestManager.db["test"]
         
-        _ = try? collection.drop().blockingAwait(timeout: .seconds(6))
+//        _ = try? collection.drop().await(on: TestManager.loop)
         
         try collection.insert(user).flatMap(to: Document?.self) { _ in
             return collection.findOne()
         }.map(to: Void.self) { result in
             XCTAssertNotNil(result)
             XCTAssertEqual(ObjectId(result?["_id"]), id)
-        }.blockingAwait(timeout: .seconds(6))
+        }.await(on: TestManager.loop)
         
         _ = try collection.insert([
             "_id": ObjectId()
-        ]).blockingAwait(timeout: .seconds(6))
+        ]).await(on: TestManager.loop)
         
         _ = try collection.insert([
             "_id": ObjectId()
-        ]).blockingAwait(timeout: .seconds(6))
+        ]).await(on: TestManager.loop)
         
-        XCTAssertEqual(try collection.count().blockingAwait(timeout: .seconds(6)), 3)
+        XCTAssertEqual(try collection.count().await(on: TestManager.loop), 3)
         
-        XCTAssertEqual(try collection.remove().blockingAwait(timeout: .seconds(6)), 1)
-        XCTAssertEqual(try collection.count().blockingAwait(timeout: .seconds(6)), 2)
+        XCTAssertEqual(try collection.remove().await(on: TestManager.loop), 1)
+        XCTAssertEqual(try collection.count().await(on: TestManager.loop), 2)
         
-        XCTAssertEqual(try collection.removeAll().blockingAwait(timeout: .seconds(6)), 2)
-        XCTAssertEqual(try collection.count().blockingAwait(timeout: .seconds(6)), 0)
+        XCTAssertEqual(try collection.removeAll().await(on: TestManager.loop), 2)
+        XCTAssertEqual(try collection.count().await(on: TestManager.loop), 0)
         
-        _ = try collection.upsert("_id" == id, to: user).blockingAwait(timeout: .seconds(6))
-        XCTAssertEqual(try collection.count().blockingAwait(timeout: .seconds(6)), 1)
-        XCTAssertEqual(Bool(try collection.findOne().blockingAwait(timeout: .seconds(6))?["test"]), true)
+        _ = try collection.upsert("_id" == id, to: user).await(on: TestManager.loop)
+        XCTAssertEqual(try collection.count().await(on: TestManager.loop), 1)
+        XCTAssertEqual(Bool(try collection.findOne().await(on: TestManager.loop)?["test"]), true)
         
         user["test"] = false
-        _ = try collection.upsert("_id" == id, to: user).blockingAwait(timeout: .seconds(6))
-        XCTAssertEqual(try collection.count().blockingAwait(timeout: .seconds(6)), 1)
-        XCTAssertEqual(Bool(try collection.findOne().blockingAwait(timeout: .seconds(6))?["test"]), false)
+        _ = try collection.upsert("_id" == id, to: user).await(on: TestManager.loop)
+        XCTAssertEqual(try collection.count().await(on: TestManager.loop), 1)
+        XCTAssertEqual(Bool(try collection.findOne().await(on: TestManager.loop)?["test"]), false)
         
         
     }

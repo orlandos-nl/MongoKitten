@@ -64,7 +64,7 @@ extension DatabaseConnection {
             flags: flags,
             fullCollection: database + ".$cmd",
             skip: 0,
-            return: 1,
+            return: 0,
             query: query
         )
         
@@ -97,9 +97,9 @@ extension DatabaseConnection {
             let query = Message.Query(
                 requestId: self.nextRequestId,
                 flags: flags,
-                fullCollection: command.targetCollection.database.name + ".$cmd",
+                fullCollection: command.targetCollection.namespace,
                 skip: 0,
-                return: 1,
+                return: 0,
                 query: try BSONEncoder().encode(command)
             )
             

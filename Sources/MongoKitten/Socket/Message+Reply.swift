@@ -18,7 +18,7 @@ extension Message {
             static let queryFailure = InsertFlags(rawValue: 1 << 1)
             
             /// The server is await-capable and thus supports the QueryFlag's AwaitData flag
-            static let awaitCapable = InsertFlags(rawValue: 1 << 2)
+            static let awaitCapable = InsertFlags(rawValue: 1 << 3)
         }
         
         var storage: Buffer

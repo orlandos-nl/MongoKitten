@@ -55,7 +55,7 @@ extension DatabaseConnection {
             flags: [],
             fullCollection: credentials.authDB + ".$cmd",
             skip: 0,
-            return: 1,
+            return: 0,
             query: [
                 "getnonce": Int32(1)
             ]
@@ -77,7 +77,7 @@ extension DatabaseConnection {
                 flags: [],
                 fullCollection: credentials.authDB + ".$cmd",
                 skip: 0,
-                return: 1,
+                return: 0,
                 query: [
                     "authenticate": 1,
                     "nonce": nonce,
@@ -104,7 +104,7 @@ extension DatabaseConnection {
             flags: [],
             fullCollection: "$external.$cmd",
             skip: 0,
-            return: 1,
+            return: 0,
             query: [
                 "authenticate": 1,
                 "mechanism": "MONGODB-X509",
