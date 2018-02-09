@@ -124,7 +124,8 @@ public final class Cursor<C: Codable>: Async.OutputStream {
             cursors: [ self.cursorID ]
         )
         
-        _ = databaseConnection.execute(killCursors) { _, _ in }
+        // TODO: Exclusive access crash
+        //_ = databaseConnection.execute(killCursors) { _, _ in }
         self.cursorID = 0
     }
 }

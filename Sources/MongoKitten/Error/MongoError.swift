@@ -41,6 +41,8 @@ internal enum MongoError : Error {
     /// The Database command execution failed
     case commandError(error: String)
     
+    case commandFailureReply(Message.Reply)
+    
     /// Thrown when the initialization of a cursor, on request of the server, failed because of missing data.
     case cursorInitializationError(cursorDocument: Document)
     

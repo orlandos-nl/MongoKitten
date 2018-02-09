@@ -45,7 +45,7 @@ public struct Version: Codable, Comparable {
     
     /// Converts to this from a String
     public init?(_ value: String) {
-        let numbers = value.components(separatedBy: ".").flatMap {
+        let numbers = value.components(separatedBy: ".").compactMap {
             Int($0)
         }
         

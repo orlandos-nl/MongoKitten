@@ -12,13 +12,13 @@ extension Message {
             init(rawValue: Int32) { self.rawValue = rawValue }
             
             /// The server could not find the cursor we tried to use
-            static let cursorNotFound = InsertFlags(rawValue: 1 << 0)
+            static let cursorNotFound = Flags(rawValue: 1 << 0)
             
             /// The query we entered failed
-            static let queryFailure = InsertFlags(rawValue: 1 << 1)
+            static let queryFailure = Flags(rawValue: 1 << 1)
             
             /// The server is await-capable and thus supports the QueryFlag's AwaitData flag
-            static let awaitCapable = InsertFlags(rawValue: 1 << 3)
+            static let awaitCapable = Flags(rawValue: 1 << 3)
         }
         
         var storage: Buffer

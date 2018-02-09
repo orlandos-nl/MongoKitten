@@ -158,7 +158,7 @@ extension Message {
             
             self.flags = flags
             self.skip = skip
-            self.numberToReturn = `return`
+            self.numberToReturn = -1
             
             let data = query.makeBinary()
             

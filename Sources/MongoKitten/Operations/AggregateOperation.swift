@@ -1,6 +1,6 @@
 import Async
 
-public struct Aggregate<C: Codable>: Command, Operation {
+public struct Aggregate<C: Codable>: Command {
     var targetCollection: MongoCollection<C> {
         return aggregate
     }

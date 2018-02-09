@@ -29,7 +29,7 @@ public class CollectionTests: XCTestCase {
         
         let collection = TestManager.db["test"]
         
-//        _ = try? collection.drop().await(on: TestManager.loop)
+        _ = try? collection.drop().await(on: TestManager.loop)
         
         try collection.insert(user).flatMap(to: Document?.self) { _ in
             return collection.findOne()

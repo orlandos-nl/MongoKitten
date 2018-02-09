@@ -53,6 +53,19 @@ extension DatabaseConnection {
         }
     }
     
+    func execute<E: Command, D: Decodable>(
+        _ command: E,
+        preferring type: D.Type
+    ) -> Future<D?> {
+        return execute(command) { reply, _ in
+            guard let first = reply.documents.first else {
+                throw InternalMongoError.incorrectReply(reply: reply)
+            }
+            
+            return try BSONDecoder.decodeOrError(D.self, from: first)
+        }
+    }
+    
     func execute<D: Decodable>(
         query: Document,
         flags: Message.Query.Flags = [],
@@ -64,7 +77,7 @@ extension DatabaseConnection {
             flags: flags,
             fullCollection: database + ".$cmd",
             skip: 0,
-            return: 0,
+            return: 1,
             query: query
         )
         
@@ -88,6 +101,21 @@ extension DatabaseConnection {
         }.map(to: T.self, result)
     }
     
+    func execute<E: Command, D: Decodable, T>(
+        _ command: E,
+        flags: Message.Query.Flags = [],
+        preferring type: D.Type = D.self,
+        handle result: @escaping ((D?, DatabaseConnection) throws -> (T))
+    ) -> Future<T> {
+        return execute(command, flags: flags) { reply, connection in
+            if let document = reply.documents.first {
+                return (try BSONDecoder.decodeOrError(D.self, from: document), connection)
+            } else {
+                return (nil, connection)
+            }
+        }.map(to: T.self, result)
+    }
+    
     func execute<E: Command, T>(
         _ command: E,
         flags: Message.Query.Flags = [],
@@ -97,13 +125,17 @@ extension DatabaseConnection {
             let query = Message.Query(
                 requestId: self.nextRequestId,
                 flags: flags,
-                fullCollection: command.targetCollection.namespace,
+                fullCollection: command.targetCollection.database.name + ".$cmd",
                 skip: 0,
-                return: 0,
+                return: 1,
                 query: try BSONEncoder().encode(command)
             )
             
             return send(message: query).map(to: T.self) { reply in
+                if reply.flags.contains(.queryFailure) {
+                    throw MongoError.commandFailureReply(reply)
+                }
+                
                 return try result(reply, self)
             }
         } catch {

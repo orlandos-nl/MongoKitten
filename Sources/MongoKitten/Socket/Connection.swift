@@ -23,7 +23,7 @@ public final class DatabaseConnection {
     fileprivate var requestID: Int32 = 0
     
     var nextRequestId: Int32 {
-        defer { requestID = requestID &+ 1 }
+        requestID = requestID &+ 1
         return requestID
     }
     

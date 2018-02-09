@@ -1,6 +1,6 @@
 import Async
 
-public struct Find<C: Codable>: Command, Operation {
+public struct Find<C: Codable>: Command {
     var targetCollection: MongoCollection<C> {
         return find
     }

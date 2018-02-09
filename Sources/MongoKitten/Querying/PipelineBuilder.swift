@@ -12,7 +12,15 @@ import Foundation
 import BSON
 
 /// A Pipeline used for aggregation queries
-public struct AggregationPipeline: ExpressibleByArrayLiteral, Codable {
+public struct AggregationPipeline: ExpressibleByArrayLiteral, Primitive {
+    public var typeIdentifier: UInt8 {
+        return self.stages.typeIdentifier
+    }
+    
+    public func makeBinary() -> Data {
+        return self.stages.makeBinary()
+    }
+    
     public func encode(to encoder: Encoder) throws {
         try stages.encode(to: encoder)
     }
@@ -44,7 +52,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, Codable {
     
     /// Create a pipeline from a Document
     public init(_ document: Document) {
-        self.stages = document.arrayRepresentation.flatMap(Document.init).map(Stage.init)
+        self.stages = document.arrayRepresentation.compactMap(Document.init).map(Stage.init)
     }
     
     /// A Pipeline stage. Pipelines pass their data of the collection through every stage. The last stage defines the output.
@@ -52,7 +60,15 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, Codable {
     /// The input are all Documents in the collection.
     ///
     /// The input of stage 2 is the output of stage 3 and so on..
-    public struct Stage: Codable {
+    public struct Stage: Primitive {
+        public var typeIdentifier: UInt8 {
+            return document.typeIdentifier
+        }
+        
+        public func makeBinary() -> Data {
+            return document.makeBinary()
+        }
+        
         /// The resulting Document that this Stage consists of
         var document: Document
         
@@ -192,7 +208,7 @@ public struct AggregationPipeline: ExpressibleByArrayLiteral, Codable {
                     "foreignField": foreignField,
                     "as": `as`
                 ]
-                ])
+            ])
         }
         
         /// Performs a left outer join to an unsharded collection in the same database

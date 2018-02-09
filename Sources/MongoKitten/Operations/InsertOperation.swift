@@ -28,10 +28,12 @@ public struct Insert<C: Codable>: Command, Operation {
     }
     
     @discardableResult
-    public func execute(on connection: DatabaseConnection) -> Future<Reply.Insert> {
-        return connection.execute(self, expecting: Reply.Insert.self) { reply, _ in
-            guard reply.ok == 1 else {
-                throw reply
+    public func execute(on connection: DatabaseConnection) -> Future<Reply.Insert?> {
+        return connection.execute(self, preferring: Reply.Insert.self) { reply, _ in
+            if let reply = reply {
+                guard reply.ok == 1 else {
+                    throw reply
+                }
             }
             
             return reply

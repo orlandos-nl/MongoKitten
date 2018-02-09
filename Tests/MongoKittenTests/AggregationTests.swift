@@ -124,7 +124,7 @@ public class AggregationTests: XCTestCase {
 
         let orderDocument: Document = ["_id": 1, "item": "MON1003", "price": 350, "quantity": 2, "specs": [ "27 inch", "Retina display", "1920x1080" ], "type": "Monitor"]
         let orderId = try orders.insert(orderDocument).await(on: TestManager.loop)
-        XCTAssertEqual(orderId.ok, 1)
+        XCTAssertEqual(orderId?.ok, 1)
 
         let inventoryDocument1: Document = ["_id": 1, "sku": "MON1003", "type": "Monitor", "instock": 120, "size": "27 inch", "resolution": "1920x1080"]
         let inventoryDocument2: Document = ["_id": 2, "sku": "MON1012", "type": "Monitor", "instock": 85, "size": "23 inch", "resolution": "1280x800"]
