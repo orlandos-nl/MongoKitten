@@ -123,7 +123,7 @@ extension CollectionQueryable {
         var errors = Array<InsertErrors.InsertError>()
         
         func throwErrors() -> InsertErrors {
-            let positions = errors.flatMap { insertError in
+            let positions: [Int] = errors.flatMap { insertError in
                 return insertError.writeErrors.flatMap { writeError in
                     return writeError.index
                 }
