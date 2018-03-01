@@ -86,7 +86,12 @@ public func &&(lhs: Query, rhs: Query) -> Query {
         return Query(aqt: .and(a))
     case (.nothing, let query), (let query, .nothing):
         return Query(aqt: query)
-    case (.and(var a), let other), (let other, .and(var a)):
+    // For chaining: `foo && bar && kitten`
+    case (.and(var a), let other):
+        a.append(other)
+        return Query(aqt: .and(a))
+        // Workaround for Swift 4.1
+    case (let other, .and(var a)):
         a.append(other)
         return Query(aqt: .and(a))
     default:
@@ -105,7 +110,7 @@ public func ||(lhs: Query, rhs: Query) -> Query {
     
     if case .or(var  a) = lhs, case .or(let b) = rhs {
         a.append(contentsOf: b)
-        return Query(aqt: .or(a))
+        return Query(aqt: .or(b))
     } else if case .or(var a) = lhs {
         a.append(rhs)
         return Query(aqt: .or(a))
