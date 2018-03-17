@@ -19,6 +19,27 @@ fileprivate let escape: UInt8 = 0x5c
 fileprivate let comma: UInt8 = 0x2c
 
 extension String {
+	
+	#if swift(>=3.2)
+	internal var characters: String {
+		get {
+			return self
+		}
+		set {
+			self = newValue
+		}
+	}
+	#else
+	internal var characters: CharacterView {
+		get {
+			return self.characters
+		}
+		set {
+			self.characters = newValue
+		}
+	}
+	#endif
+	
     /// Serializes a Stirng as escaped JSON String
     func makeJSONBinary() -> [UInt8] {
         var buffer = [UInt8]()

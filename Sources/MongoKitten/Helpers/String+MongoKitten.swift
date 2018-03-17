@@ -18,4 +18,24 @@ extension String {
 
         return byteArray
     }
+	
+	#if swift(>=3.2)
+	internal var characters: String {
+		get {
+			return self
+		}
+		set {
+			self = newValue
+		}
+	}
+	#else
+	internal var characters: CharacterView {
+		get {
+			return self.characters
+		}
+		set {
+			self.characters = newValue
+		}
+	}
+	#endif
 }
