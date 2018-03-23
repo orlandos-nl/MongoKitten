@@ -279,7 +279,13 @@ struct ServerReplyPlaceholder {
                 return Int32(data) as Int32
             } else {
                 advanced = 4
-                return consuming.withMemoryRebound(to: Int32.self, capacity: 1, { $0.pointee })
+                #if arch(s390x)
+                    var data = [UInt8](repeating: 0, count: 4)
+                    memcpy(&data, consuming, 4)
+                    return Int32(data) as Int32
+                #else
+                    return consuming.withMemoryRebound(to: Int32.self, capacity: 1, { $0.pointee })
+                #endif
             }
         }
         

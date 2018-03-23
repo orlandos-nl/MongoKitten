@@ -47,7 +47,11 @@ extension Int64 : BSONBytesProtocol {
 extension Int32 : BSONBytesProtocol {
     /// Serializes this Int32 to binary
     internal func makeBytes() -> Bytes {
-        let integer = self.littleEndian
+        #if arch(s390x)
+            let integer = self.bigEndian
+        #else
+            let integer = self.littleEndian
+        #endif
         
         return [
             Byte(integer & 0xFF),

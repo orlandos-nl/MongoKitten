@@ -38,7 +38,9 @@ extension Database {
             }
         }
         
-        log.verbose("Creating a collection named \"\(name)\" in \(self)\(validator != nil ? " with the provided validator" : "")")
+        #if !arch(s390x) // Remove this after fixing an issue of swift runtime/compiler for s390x
+            log.verbose("Creating a collection named \"\(name)\" in \(self)\(validator != nil ? " with the provided validator" : "")")
+        #endif
         
         if let validator = validator {
             command["validator"] = validator
@@ -74,7 +76,9 @@ extension Database {
         
         var request: Document = ["listCollections": 1]
         
-        log.verbose("Listing all collections\(filter != nil ? " using the provided filter" : "")")
+        #if !arch(s390x) // Remove this after fixing an issue of swift runtime/compiler for s390x
+            log.verbose("Listing all collections\(filter != nil ? " using the provided filter" : "")")
+        #endif
         
         if let filter = filter {
             log.debug("The collections are matches against the following filter: " + filter.makeExtendedJSON().serializedString())
