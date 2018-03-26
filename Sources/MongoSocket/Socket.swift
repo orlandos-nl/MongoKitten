@@ -255,8 +255,17 @@ public final class MongoSocket: MongoTCP {
                     throw Error.cannotConnect
                 }
                 
-                var hostname = [UInt8](hostname.utf8)
-                SSL_ctrl(ssl, SSL_CTRL_SET_TLSEXT_HOSTNAME, Int(TLSEXT_NAMETYPE_host_name), &hostname)
+                // https://github.com/vapor/tls/issues/47
+                var cName = hostname.utf8CString
+                cName.withUnsafeMutableBytes { name in
+                    // SSL_set_tlsext_host_name is a C macro,
+                    // which is not directly callable in Swift.
+                    // This is its expanded form.
+                    _ = SSL_ctrl(ssl,
+                                 SSL_CTRL_SET_TLSEXT_HOSTNAME,
+                                 Int(TLSEXT_NAMETYPE_host_name),
+                                 name.baseAddress)
+                }
                 
                 guard SSL_connect(ssl) == 1, SSL_do_handshake(ssl) == 1 else {
                     throw Error.cannotConnect
