@@ -1,11 +1,9 @@
 import Async
 
 public struct Find<C: Codable>: Command {
-    var targetCollection: MongoCollection<C> {
-        return find
-    }
+    let targetCollection: MongoCollection<C>
     
-    public let find: Collection<C>
+    public let find: String
     public var batchSize: Int32 = 100
     
     public var readConcern: ReadConcern?
@@ -20,7 +18,8 @@ public struct Find<C: Codable>: Command {
     static var emitsCursor: Bool { return true }
     
     public init(on collection: Collection<C>) {
-        self.find = collection
+        self.find = collection.name
+        self.targetCollection = collection
         
         // Collection defaults
         self.readConcern = collection.default.readConcern

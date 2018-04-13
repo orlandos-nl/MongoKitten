@@ -21,11 +21,9 @@ public struct Update<C: Codable>: Command, Operation {
         }
     }
     
-    var targetCollection: MongoCollection<C> {
-        return update
-    }
+    let targetCollection: MongoCollection<C>
     
-    public let update: Collection<C>
+    public let update: String
     public var updates: [Single]
     public var ordered: Bool?
     public var writeConcern: WriteConcern?
@@ -46,7 +44,8 @@ public struct Update<C: Codable>: Command, Operation {
     }
     
     public init<S: Sequence>(_ updates: S, in collection: Collection<C>) where S.Element == Single {
-        self.update = collection
+        self.update = collection.name
+        self.targetCollection = collection
         self.updates = Array(updates)
         
         self.writeConcern = collection.default.writeConcern

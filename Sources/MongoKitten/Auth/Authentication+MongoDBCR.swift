@@ -9,11 +9,7 @@
 //
 
 
-import Async
-import Dispatch
-import Foundation
 import BSON
-import Crypto
 
 /// Authentication extensions
 extension DatabaseConnection {
@@ -67,28 +63,22 @@ extension DatabaseConnection {
             }
             
             // Digest our password and prepare it for sending
-            let data = Data("\(credentials.username):mongo:\(credentials.password)".utf8)
+            let data = MD5()
+                .update("\(credentials.username):mongo:\(credentials.password)")
+                .finalize()
             
-            let digest = MD5.hash(data)
-            let key = MD5.hash(Data("\(nonce)\(credentials.username)\(digest.hexString)".utf8)).hexString
+            let digest = MD5()
+                .update(data)
+                .finalize()
             
-            let commandMessage = Message.Query(
-                requestId: self.nextRequestId,
-                flags: [],
-                fullCollection: credentials.authDB + ".$cmd",
-                skip: 0,
-                return: 1,
-                query: [
-                    "authenticate": 1,
-                    "nonce": nonce,
-                    "user": credentials.username,
-                    "key": key
-                ]
-            )
+            let key = MD5()
+                .update("\(nonce)\(credentials.username)\(digest.hexString)")
+                .finalize().hexString
             
-            return self.send(message: commandMessage).map(to: Void.self) { reply in
-                // Check for success
-                guard Int(lossy: reply.documents.first?["ok"]) == 1 else {
+            let command = MongoDBCRAuth(targetCollection: self["authDB"]["$cmd"], authenticate: 1, nonce: nonce, user: credentials.username, key: key)
+            
+            return self.execute(command, expecting: Reply.Okay.self).thenThrowing { ok in
+                guard ok.ok else {
                     throw MongoError.invalidCredentials(credentials)
                 }
             }
@@ -96,27 +86,16 @@ extension DatabaseConnection {
     }
 }
 
-extension DatabaseConnection {
-    /// Experimental feature for authenticating with MongoDB-X509
-    internal func authenticateX509(credentials: MongoCredentials) throws -> Future<Void> {
-        let message = Message.Query(
-            requestId: nextRequestId,
-            flags: [],
-            fullCollection: "$external.$cmd",
-            skip: 0,
-            return: 1,
-            query: [
-                "authenticate": 1,
-                "mechanism": "MONGODB-X509",
-                "user": credentials.username
-            ]
-        )
-        
-        return self.send(message: message).map(to: Void.self) { reply in
-            // Check for success
-            guard Int(lossy: reply.documents.first?["ok"]) == 1 else {
-                throw MongoError.X509AuthenticationFailed
-            }
-        }
-    }
+struct MongoDBCRAuth: Command {
+    typealias C = Document
+    
+    static var writing: Bool { return false }
+    static var emitsCursor: Bool { return false }
+    
+    var targetCollection: MongoCollection<C>
+    
+    var authenticate: Int32
+    var nonce: String
+    var user: String
+    var key: String
 }

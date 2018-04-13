@@ -1,5 +1,5 @@
 import Foundation
-import Async
+import NIO
 import BSON
 import Crypto
 
@@ -96,14 +96,14 @@ extension DatabaseConnection {
             throw AuthenticationError.incorrectCredentials
         }
         
-        let stringResponseData = try Base64Decoder().decode(string: response.payload)
-        
-        guard let decodedStringResponse = String(data: stringResponseData, encoding: .utf8) else {
+        guard
+            let stringResponseData = Data(base64Encoded: response.payload),
+            let decodedStringResponse = String(data: stringResponseData, encoding: .utf8)
+        else {
             throw MongoError.invalidBase64String
         }
         
-        let digestBytes = Data("\(credentials.username):mongo:\(credentials.password)".utf8)
-        let passwordBytes = Data(MD5.hash(digestBytes).hexString.utf8)
+        let passwordBytes = MD5().update("\(credentials.username):mongo:\(credentials.password)").finalize().hexString
         
         let result = try self.scram.process(decodedStringResponse, username: credentials.username, password: passwordBytes, usingNonce: nonce)
         

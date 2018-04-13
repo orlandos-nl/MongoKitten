@@ -16,7 +16,7 @@ struct MessageParser: ByteParser {
         self.state = .init()
     }
     
-    func parseBytes(from buffer: ByteBuffer, partial: ParsingState?) throws -> Future<ByteParserResult<MessageParser>> {
+    func parseBytes(from buffer: UnsafeBufferPointer<UInt8>, partial: ParsingState?) throws -> Future<ByteParserResult<MessageParser>> {
         if let partial = partial {
             switch partial {
             case .unknownLength(var data):

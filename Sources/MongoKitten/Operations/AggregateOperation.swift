@@ -1,11 +1,9 @@
 import Async
 
 public struct Aggregate<C: Codable>: Command {
-    var targetCollection: MongoCollection<C> {
-        return aggregate
-    }
+    let targetCollection: MongoCollection<C>
     
-    public let aggregate: Collection<C>
+    public let aggregate: String
     public var pipeline: [AggregationPipeline.Stage]
     public var cursor: CursorOptions
     public var maxTimeMS: UInt32?
@@ -17,7 +15,8 @@ public struct Aggregate<C: Codable>: Command {
     static var emitsCursor: Bool { return true }
     
     public init(pipeline: AggregationPipeline, on collection: Collection<C>) {
-        self.aggregate = collection
+        self.aggregate = collection.name
+        self.targetCollection = collection
         self.pipeline = pipeline.stages
         self.cursor = CursorOptions()
         

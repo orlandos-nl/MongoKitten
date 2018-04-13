@@ -8,13 +8,8 @@
 // See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of MongoKitten project authors
 //
 
-import Async
-import Bits
-import TLS
-import Foundation
-import Dispatch
-import TCP
-import AppleTLS
+import BSON
+import NIO
 
 /// A connection to MongoDB
 public final class DatabaseConnection {
@@ -32,7 +27,7 @@ public final class DatabaseConnection {
     
     var wireProtocol: Int = 0
     
-    fileprivate var socket: Socket
+    fileprivate var socket: NIOSocket
     
     var error: Error?
     

@@ -24,9 +24,7 @@ public struct Delete<C: Codable>: Command, Operation {
         }
     }
     
-    var targetCollection: MongoCollection<C> {
-        return delete
-    }
+    let targetCollection: MongoCollection<C>
     
     public let delete: Collection<C>
     public var deletes: [Single]
@@ -38,7 +36,8 @@ public struct Delete<C: Codable>: Command, Operation {
     static var emitsCursor: Bool { return false }
     
     public init(_ deletes: [Single], from collection: Collection<C>) {
-        self.delete = collection
+        self.delete = collection.name
+        self.targetCollection = collection
         self.deletes = Array(deletes)
         
         self.writeConcern = collection.default.writeConcern

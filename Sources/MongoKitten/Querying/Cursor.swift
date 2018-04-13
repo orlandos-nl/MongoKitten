@@ -1,18 +1,15 @@
-////
-//// This source file is part of the MongoKitten open source project
-////
-//// Copyright (c) 2016 - 2017 OpenKitten and the MongoKitten project authors
-//// Licensed under MIT
-////
-//// See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/LICENSE.md for license information
-//// See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of MongoKitten project authors
-////
 //
-//import Dispatch
-//import Foundation
+// This source file is part of the MongoKitten open source project
+//
+// Copyright (c) 2016 - 2017 OpenKitten and the MongoKitten project authors
+// Licensed under MIT
+//
+// See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/LICENSE.md for license information
+// See https://github.com/OpenKitten/MongoKitten/blob/mongokitten31/CONTRIBUTORS.md for the list of MongoKitten project authors
+//
+
 import BSON
-import Async
-//import ExtendedJSON
+import NIO
 
 extension Reply {
     struct Cursor: Decodable {
@@ -32,8 +29,9 @@ extension Reply {
 ///// It can be looped over using a `for let document in cursor` loop like any other sequence.
 /////
 ///// It can be transformed into an array with `Array(cursor)` and allows transformation to another type.
-public final class Cursor<C: Codable>: Async.OutputStream {
-    public typealias Output = Document
+public final class Cursor<C: Codable>: ChannelInboundHandler {
+    public typealias InboundIn = Message.Reply
+    public typealias InboundIn = C
     
     /// The collection's namespace
     var spec: Reply.Cursor.CursorSpec?
@@ -132,27 +130,23 @@ public final class Cursor<C: Codable>: Async.OutputStream {
 
 extension Commands {
     struct GetMore<C: Codable>: Command {
-        var targetCollection: MongoCollection<C> {
-            return collection
-        }
+        let targetCollection: MongoCollection<C>
         
         static var writing: Bool { return false }
         static var emitsCursor: Bool { return false }
         
         var getMore: Int64
-        var collection: MongoCollection<C>
+        var collection: String
         var batchSize: Int32
     }
     
     struct KillCursors<C: Codable>: Command {
-        var targetCollection: MongoCollection<C> {
-            return killCursors
-        }
+        let targetCollection: MongoCollection<C>
         
         static var writing: Bool { return false }
         static var emitsCursor: Bool { return false }
         
-        var killCursors: MongoCollection<C>
+        var killCursors: Sring
         var cursors: [Int64]
     }
 }

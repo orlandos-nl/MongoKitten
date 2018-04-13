@@ -6,7 +6,7 @@ public struct Insert<C: Codable>: Command, Operation {
         return insert
     }
     
-    public let insert: Collection<C>
+    public let insert: String
     public var documents: [C]
     public var ordered: Bool?
     public var writeConcern: WriteConcern?

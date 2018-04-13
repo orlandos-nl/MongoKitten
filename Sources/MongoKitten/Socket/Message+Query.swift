@@ -146,11 +146,7 @@ extension Message {
             let stringSize = fullCollection.utf8.count
             
             fullCollection.withCString { pointer in
-                _ = memcpy(
-                    writePointer.advanced(by: Message.Header.size &+ 4),
-                    pointer,
-                    stringSize
-                )
+                writePointer.advanced(by: Message.Header.size &+ 4).assign(from: pointer, count: stringSize)
                 
                 // Explicitly add null terminator to override existing data
                 writePointer[Message.Header.size &+ 4 &+ stringSize] = 0

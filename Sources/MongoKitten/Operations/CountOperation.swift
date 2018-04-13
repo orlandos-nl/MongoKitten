@@ -1,11 +1,9 @@
 import Async
 
 public struct Count<C: Codable>: Command, Operation {
-    var targetCollection: MongoCollection<C> {
-        return count
-    }
+    let targetCollection: MongoCollection<C>
     
-    public let count: Collection<C>
+    public let count: String
     public var query: Query?
     public var skip: Int?
     public var limit: Int?
@@ -16,7 +14,8 @@ public struct Count<C: Codable>: Command, Operation {
     static var emitsCursor: Bool { return false }
     
     public init(on collection: Collection<C>) {
-        self.count = collection
+        self.count = collection.name
+        self.targetCollection = collection
         
         // Collection defaults
         self.readConcern = collection.default.readConcern
