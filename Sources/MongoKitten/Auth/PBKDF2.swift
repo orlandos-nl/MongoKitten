@@ -4,8 +4,8 @@ import Core
 
 final class PBKDF2 {
     public func hash(
-        _ password: String,
-        salt: LosslessDataConvertible,
+        _ password: Data,
+        salt: Data,
         iterations: Int32,
         keySize: Int
     ) throws -> Data {
@@ -13,22 +13,28 @@ final class PBKDF2 {
         
         var output = Data(repeating: 0, count: keySize)
         
-        return try salt.withByteBuffer { saltBuffer in
-            try output.withMutableByteBuffer { outputBuffer in
-                let resultCode = PKCS5_PBKDF2_HMAC(
-                    password, Int32(password.count), // password string and length
-                    saltBuffer.baseAddress, Int32(saltBuffer.count), // salt pointer and length
-                    iterations, // Iteration count
-                    EVP_sha1(), // Algorithm identifier
-                    Int32(keySize), outputBuffer.baseAddress // Output buffer
-                )
-                
-                guard resultCode == 1 else {
-                    fatalError()
+        return password.withByteBuffer { passwordBuffer in
+            let passwordSize = password.count
+            
+            return passwordBuffer.baseAddress!.withMemoryRebound(to: Int8.self, capacity: passwordSize) { password in
+                return salt.withByteBuffer { saltBuffer in
+                    output.withMutableByteBuffer { outputBuffer in
+                        let resultCode = PKCS5_PBKDF2_HMAC(
+                            password, Int32(passwordSize), // password string and length
+                            saltBuffer.baseAddress, Int32(saltBuffer.count), // salt pointer and length
+                            iterations, // Iteration count
+                            EVP_sha1(), // Algorithm identifier
+                            Int32(keySize), outputBuffer.baseAddress // Output buffer
+                        )
+                        
+                        guard resultCode == 1 else {
+                            fatalError()
+                        }
+                    }
+                    
+                    return output
                 }
             }
-            
-            return output
         }
     }
 }

@@ -43,10 +43,12 @@ extension DatabaseConnection {
         let response = try BSONDecoder.decodeOrError(Complete.self, from: response)
         
         if response.ok > 0 && response.done == true {
-            return Future(())
+            let promise = self.eventloop.newPromise(Void.self)
+            promise.succeed()
+            return promise.futureResult
         }
         
-        let finalResponseData = try Base64Decoder().decode(string: response.payload)
+        let finalResponseData = try Data(base64Encoded: response.payload).assert()
         
         guard let finalResponse = String(data: finalResponseData, encoding: .utf8) else {
             throw MongoError.invalidBase64String
@@ -58,7 +60,7 @@ extension DatabaseConnection {
             throw AuthenticationError.responseParseError(response: response.payload)
         }
         
-        let serverSignature = try Base64Decoder().decode(string: v)
+        let serverSignature = try Data(base64URLEncoded: v).assert()
         
         guard serverSignature == signature else {
             throw AuthenticationError.serverSignatureInvalid
@@ -105,10 +107,10 @@ extension DatabaseConnection {
         
         let passwordBytes = MD5().update("\(credentials.username):mongo:\(credentials.password)").finalize().hexString
         
-        let result = try self.scram.process(decodedStringResponse, username: credentials.username, password: passwordBytes, usingNonce: nonce)
+        let result = try self.scram.process(decodedStringResponse, username: credentials.username, password: Data(passwordBytes.utf8), usingNonce: nonce)
         
         // Base64 the payload
-        let payload = Base64Encoder().encode(string: result.proof)
+        let payload = Data(result.proof.utf8).base64EncodedString()
         
         // Send the proof
         let commandMessage = Message.Query(
@@ -139,7 +141,7 @@ extension DatabaseConnection {
         
         let authPayload = scram.authenticate(credentials.username, usingNonce: nonce)
         
-        let payload = Base64Encoder().encode(string: authPayload)
+        let payload = Data(authPayload.utf8).base64EncodedString()
         
         let message = Message.Query(
             requestId: self.nextRequestId,

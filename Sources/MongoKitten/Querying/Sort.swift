@@ -22,7 +22,7 @@ public enum SortOrder: Int32 {
 /// A Sort object specifies to MongoDB in what order certain Documents need to be ordered
 ///
 /// This can be used in normal and aggregate queries
-public struct Sort: DocumentCodable, ExpressibleByDictionaryLiteral {
+public struct Sort: ExpressibleByDictionaryLiteral {
     /// The underlying Document
     public var document: Document
     

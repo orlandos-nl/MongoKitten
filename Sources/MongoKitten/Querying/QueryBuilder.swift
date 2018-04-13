@@ -345,7 +345,7 @@ public indirect enum AQT {
 }
 
 /// A `Query` that consists of an `AQT` statement
-public struct Query: ExpressibleByDictionaryLiteral, DocumentCodable, ExpressibleByStringLiteral {
+public struct Query: ExpressibleByDictionaryLiteral, ExpressibleByStringLiteral {
     public var document: Document {
         return self.aqt.document
     }

@@ -78,7 +78,7 @@ final class SCRAMContext {
                 
                 switch first {
                 case "v":
-                    signature = Array(try Base64Decoder().decode(string: String(data)))
+                    signature = try Array(Data(base64Encoded: Data(data.utf8)).assert())
                 default:
                     break
                 }
@@ -112,7 +112,7 @@ final class SCRAMContext {
             return result
         }
         
-        let encodedHeader = Base64Encoder().encode(string: gs2BindFlag)
+        let encodedHeader = Data(gs2BindFlag.utf8).base64EncodedData()
         
         let parsedResponse = try parse(challenge: challenge)
 
@@ -125,7 +125,7 @@ final class SCRAMContext {
         
         let noProof = "c=\(encodedHeader),r=\(parsedResponse.nonce)"
         
-        let salt = try Base64Decoder().decode(string: parsedResponse.salt)
+        let salt = try Data(base64URLEncoded: parsedResponse.salt).assert()
         let saltedPassword: Data
         let clientKey: Data
         let serverKey: Data
@@ -135,28 +135,29 @@ final class SCRAMContext {
             clientKey = cachedLoginData.clientKey
             serverKey = cachedLoginData.serverKey
         } else {
-            saltedPassword = try PBKDF2<SHA1>.deriveKey(fromPassword: password, saltedWith: salt, iterating: parsedResponse.iterations, derivedKeyLength: SHA1.digestSize)
+            let sha1Size = 20
+            saltedPassword = try PBKDF2().hash(password, salt: salt, iterations: Int32(parsedResponse.iterations), keySize: sha1Size)
             
             let ck = Data("Client Key".utf8)
             let sk = Data("Server Key".utf8)
                 
-            clientKey = HMAC<SHA1>.authenticate(ck, withKey: saltedPassword)
-            serverKey = HMAC<SHA1>.authenticate(sk, withKey: saltedPassword)
+            clientKey = HMAC_SHA1(ck, withKey: saltedPassword)
+            serverKey = HMAC_SHA1(sk, withKey: saltedPassword)
             
             cachedLoginData = (saltedPassword, clientKey, serverKey)
         }
         
-        let storedKey = SHA1.hash(clientKey)
+        let storedKey = SHA1().update(clientKey).finalize()
 
         let authenticationMessage = "n=\(fixUsername(username: username)),r=\(nonce),\(challenge),\(noProof)"
 
         let authenticationMessageBytes = Data(authenticationMessage.utf8)
         
-        let clientSignature = HMAC<SHA1>.authenticate(authenticationMessageBytes, withKey: storedKey)
+        let clientSignature = HMAC_SHA1(authenticationMessageBytes, withKey: storedKey)
         let clientProof = xor(clientKey, clientSignature)
-        let serverSignature = HMAC<SHA1>.authenticate(authenticationMessageBytes, withKey: serverKey)
+        let serverSignature = HMAC_SHA1(authenticationMessageBytes, withKey: serverKey)
         
-        let proof = String(data: Base64Encoder().encode(data: clientProof), encoding: .utf8)!
+        let proof = clientProof.base64EncodedString()
         
         return (proof: "\(noProof),p=\(proof)", serverSignature: serverSignature)
     }
@@ -173,5 +174,15 @@ final class SCRAMContext {
         }
         
         return ""
+    }
+}
+
+extension Optional where Wrapped == Data {
+    func assert() throws -> Wrapped {
+        guard let me = self else {
+            throw MongoError.invalidBase64String
+        }
+        
+        return me
     }
 }

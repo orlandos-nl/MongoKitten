@@ -13,7 +13,7 @@ import BSON
 /// A projection removes any keys from it's input Documents that have not been specified to be included except _id.
 ///
 /// If you don't want to include _id you'll have to explicitely not include it.
-public struct Projection: DocumentCodable {
+public struct Projection {
     public init(from document: Document) {
         self.document = document
     }
