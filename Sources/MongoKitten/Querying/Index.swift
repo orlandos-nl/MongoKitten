@@ -10,6 +10,38 @@
 
 import BSON
 
+/// Index direction
+///
+/// - asc: ascending direction
+/// - desc: descending direction
+public enum IndexDirection: Int {
+    case asc = 1, desc = -1
+}
+
+/// The name to index and the value of direction
+public struct IndexKey {
+    public let name: String
+    public let direction: IndexDirection
+    
+    /// IndexKey
+    ///
+    /// - Parameter name: The name of the field to index and ascending direction by default
+    public init(_ name: String) {
+        self.name = name
+        self.direction = .asc
+    }
+    
+    /// IndexKey
+    ///
+    /// - Parameters:
+    ///   - name: The name of the field to index
+    ///   - direction: The value is either the index direction or index type
+    public init(_ name: String, direction: IndexDirection) {
+        self.name = name
+        self.direction = direction
+    }
+}
+
 /// The options to apply to the creation of an index.
 ///
 /// - one:

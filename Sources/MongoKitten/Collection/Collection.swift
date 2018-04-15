@@ -529,36 +529,46 @@ public final class Collection: CollectionQueryable {
     ///
     /// ```swift
     /// // Makes "username" unique and indexed. Sort order doesn't technically matter much
-    /// try collection.createIndex(named: "login", .sort(field: "username", order: .ascending), .unique)
+    /// try collection.createIndex(named: IndexKey("login"), withParameters: .sort(field: "username", order: .ascending), .unique)
     /// ```
     ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/createIndexes/#dbcmd.createIndexes
     ///
-    /// - parameter name: The name of this index used to identify it
+    /// - parameter key: The key of this index used to identify it
     /// - parameter parameters: All `IndexParameter` options applied to the index
     ///
     /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
-    public func createIndex(named name: String, withParameters parameters: IndexParameter...) throws {
-        try self.createIndexes([(name: name, parameters: parameters)])
+    public func createIndex(key: IndexKey, withParameters parameters: IndexParameter...) throws {
+        try self.createIndexes([(keys: [key], parameters: parameters)])
     }
     
     /// Creates multiple indexes as specified
     ///
     /// For more information: https://docs.mongodb.com/manual/reference/command/createIndexes/#dbcmd.createIndexes
     ///
-    /// - parameter indexes: The indexes to create. Accepts an array of tuples (each tuple representing an Index) which an contain a name and always contains an array of `IndexParameter`.
+    /// - parameter indexes: The indexes to create. Accepts an array of tuples (each tuple representing an Index) which an contain a keys and always contains an array of `IndexParameter`.
     ///
     /// - throws: When unable to send the request/receive the response, the authenticated user doesn't have sufficient permissions or an error occurred
-    public func createIndexes(_ indexes: [(name: String, parameters: [IndexParameter])]) throws {
+    public func createIndexes(_ indexes: [(keys: [IndexKey], parameters: [IndexParameter])]) throws {
         guard let wireVersion = database.server.serverData?.maxWireVersion , wireVersion >= 2 else {
             throw MongoError.unsupportedOperations
         }
         
-        var indexDocs = [Document]()
+        var indexDocs: [Document] = []
         
         for index in indexes {
+            
+            let keys: [String: Int] = {
+                return index.keys.reduce([String: Int](), { (result, key) -> [String: Int] in
+                    var result = result
+                    result[key.name] = key.direction.rawValue
+                    return result
+                })
+            }()
+            
             var indexDocument: Document = [
-                "name": index.name
+                "key": keys,
+                "name": index.keys.reduce("", { $0 + $1.name + "_"})
             ]
             
             for parameter in index.parameters {
@@ -568,8 +578,8 @@ public final class Collection: CollectionQueryable {
             indexDocs.append(indexDocument)
         }
         
-        
-        let document = try firstDocument(in: try database.execute(command: ["createIndexes": self.name, "indexes": Document(array: indexDocs)]))
+        let document = try firstDocument(in: try database.execute(command: ["createIndexes": self.name,
+                                                                            "indexes": Document(array: indexDocs)]))
         
         guard Int(document["ok"]) == 1 else {
             throw MongoError.commandFailure(error: document)
