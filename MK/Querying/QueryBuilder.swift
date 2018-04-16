@@ -345,7 +345,15 @@ public indirect enum AQT {
 }
 
 /// A `Query` that consists of an `AQT` statement
-public struct Query: ExpressibleByDictionaryLiteral, ExpressibleByStringLiteral {
+public struct Query: Codable, ExpressibleByDictionaryLiteral, ExpressibleByStringLiteral {
+    public func encode(to encoder: Encoder) throws {
+        try document.encode(to: encoder)
+    }
+    
+    public init(from decoder: Decoder) throws {
+        self = try Query(from: Document(from: decoder))
+    }
+    
     public var document: Document {
         return self.aqt.document
     }

@@ -27,17 +27,22 @@ public final class DatabaseConnection {
     
     var wireProtocol: Int = 0
     
-    fileprivate var socket: NIOSocket
-    
     var error: Error?
     
-    let parser: TranslatingStreamWrapper<MessageParser>
     var serializing: Message.Buffer?
-    let serializer = PushStream<Message.Buffer>()
     let eventloop: EventLoop
     
-    init<T>(eventloop: EventLoop, source: SocketSource<T>, sink: SocketSink<T>) {
-        self.eventloop = eventloop
+    init(loop: EventLoop) {
+        self.eventloop = loop
+        
+        let client = ClientBootstrap(group: loop)
+            .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
+            .channelInitializer { channel in
+                return channel.pipeline.add(handler: MessageWriter()).then {
+                    return channel.pipeline.add(handler: MessageParser())
+                }
+            }
+        
         self.socket = sink.socket
         self.parser = MessageParser().stream(on: eventloop)
         

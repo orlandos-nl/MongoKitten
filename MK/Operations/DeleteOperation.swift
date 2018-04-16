@@ -26,7 +26,7 @@ public struct Delete<C: Codable>: Command, Operation {
     
     let targetCollection: MongoCollection<C>
     
-    public let delete: Collection<C>
+    public let delete: String
     public var deletes: [Single]
     public var ordered: Bool?
     public var writeConcern: WriteConcern?

@@ -27,7 +27,7 @@ public struct Find<C: Codable>: Command {
     }
     
     public func execute(on connection: DatabaseConnection) -> Cursor<C> {
-        let cursor = Cursor(collection: find, connection: connection)
+        let cursor = Cursor(collection: targetCollection, connection: connection)
         
         connection.execute(self, expecting: Reply.Cursor.self).do { spec in
             cursor.initialize(to: spec.cursor)
@@ -66,7 +66,7 @@ public struct FindOne<C: Codable> {
         find.projection = projection
         
         let cursor = find.execute(on: connection)
-        let promise = Promise<C?>()
+        let promise = connection.eventloop.newPromise(C?.self)
         
         cursor.drain { doc in
             let entity = try BSONDecoder().decode(C.self, from: doc)
@@ -76,6 +76,6 @@ public struct FindOne<C: Codable> {
             promise.complete(nil)
         }
         
-        return promise.future
+        return promise.futureResult
     }
 }
