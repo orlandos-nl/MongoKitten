@@ -6,10 +6,25 @@ import NIO
 // TODO: https://github.com/mongodb/specifications/blob/master/source/change-streams.rst
 
 public final class MongoDBConnection {
-    let parser = ClientConnectionParser()
+    let reader = ClientConnectionParser()
+    let writer = ClientConnectionSerializer()
+    let cconnectionHandler = ClientConnectionHandler()
+    let pipeline: ChannelPipeline
     
     init(pipeline: ChannelPipeline) {
-        pipeline.add(handler: parser)
+        self.pipeline = pipeline
+    }
+    
+    func doStuff() {
+        self.cconnectionHandler
+    }
+    
+    func initialize() -> EventLoopFuture<Void> {
+        return pipeline.add(handler: self.reader).then {
+            self.pipeline.add(handler: self.writer).then {
+                self.pipeline.add(handler: self.cconnectionHandler)
+            }
+        }
     }
     
     init(_ uri: String) {
@@ -20,37 +35,122 @@ public final class MongoDBConnection {
         // TODO: https://github.com/mongodb/specifications/tree/master/source/server-selection
         // TODO: https://github.com/mongodb/specifications/tree/master/source/server-discovery-and-monitoring
         // TODO: https://github.com/mongodb/specifications/blob/master/source/driver-read-preferences.rst
+        fatalError()
     }
 }
 
 struct IncorrectServerReplyHeader: Error {}
 
-final class ClientConnectionParser: ChannelInboundHandler {
-    typealias InboundIn = ByteBuffer
-    typealias OutboundOut = ServerReply
+final class ClientConnectionHandler: ChannelInboundHandler {
+    typealias InboundIn = ServerReply
+    typealias OutboundOut = ByteBuffer
+    
+    var queries = [Int: EventLoopPromise<ServerReply>]()
     
     func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
-        var buffer = self.unwrapInboundIn(data)
+        let reply = unwrapInboundIn(data)
+        let promise = queries[numericCast(reply.responseTo)]
         
-        do {
-            let messageHeader = try buffer.parseMessageHeader()
-            let reply: ServerReply
+        promise?.succeed(result: reply)
+    }
+    
+    func channelActive(ctx: ChannelHandlerContext) {
+        
+    }
+}
+
+protocol Command: Codable {
+    var collectionName: String { get }
+}
+
+final class ClientConnectionSerializer: MessageToByteEncoder {
+    typealias OutboundIn = Command
+    var opQuery = true
+    
+    func encode(ctx: ChannelHandlerContext, data: Command, out: inout ByteBuffer) throws {
+        var document = try BSONEncoder().encode(data)
+        let headerIndex = out.writerIndex
+        var flags: Int32 = 0
+        
+        out.moveWriterIndex(forwardBy: 24)
+        
+        if opQuery {
+            out.write(integer: flags)
             
-            switch messageHeader.opCode {
-            case .reply:
-                // <= Wire Version 5
-                reply = try ServerReply.reply(fromBuffer: &buffer)
-            case .message:
-                reply = try ServerReply.message(fromBuffer: &buffer)
-                // >= Wire Version 6
-            default:
-                throw IncorrectServerReplyHeader()
+            // cString
+            out.write(string: data.collectionName)
+            out.write(integer: 0 as UInt8)
+            
+            out.write(integer: 0 as Int32) // Number to skip, handled by query
+            out.write(integer: 0 as Int32) // Number to return, handled by query
+            
+            let header = document.withUnsafeBufferPointer { buffer -> MessageHeader in
+                out.write(bytes: buffer)
+                
+                return MessageHeader(
+                    messageLength: numericCast(out.writerIndex &- headerIndex),
+                    requestId: nextRequestId(),
+                    responseTo: 0,
+                    opCode: .query
+                )
             }
             
-            ctx.fireChannelRead(NIOAny(reply))
-        } catch {
-            ctx.fireErrorCaught(error)
+            let endIndex = out.writerIndex
+            out.write(header)
+            
+            out.moveWriterIndex(to: endIndex)
+        } else {
+            fatalError()
         }
+    }
+    
+    func nextRequestId() -> Int32 {
+        // TODO: Living cursors over time
+        return 0
+    }
+}
+
+final class ClientConnectionParser: ByteToMessageDecoder {
+    typealias InboundOut = ServerReply
+    
+    var cumulationBuffer: ByteBuffer?
+    var header: MessageHeader?
+    
+    func decode(ctx: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
+        let header: MessageHeader
+        
+        if let _header = self.header {
+            header = _header
+        } else {
+            let totalSize = (cumulationBuffer?.readableBytes ?? 0) + buffer.readableBytes
+            
+            if totalSize < 16 {
+                return .needMoreData
+            }
+            
+            header = try buffer.parseMessageHeader()
+        }
+        
+        if numericCast(header.messageLength) &- 24 < buffer.readableBytes {
+            return .needMoreData
+        }
+        
+        let reply: ServerReply
+        
+        switch header.opCode {
+        case .reply:
+            // <= Wire Version 5
+            reply = try ServerReply.reply(fromBuffer: &buffer, responseTo: header.responseTo)
+        case .message:
+            reply = try ServerReply.message(fromBuffer: &buffer, responseTo: header.responseTo)
+        // >= Wire Version 6
+        default:
+            throw IncorrectServerReplyHeader()
+        }
+        
+        ctx.fireChannelRead(wrapInboundOut(reply))
+        
+        return .continue
     }
     
     func errorCaught(ctx: ChannelHandlerContext, error: Error) {
@@ -61,10 +161,11 @@ final class ClientConnectionParser: ChannelInboundHandler {
 }
 
 struct ServerReply {
+    var responseTo: Int32
     var cursorId: Int64
     var documents: [Document]
     
-    static func reply(fromBuffer buffer: inout ByteBuffer) throws -> ServerReply {
+    static func reply(fromBuffer buffer: inout ByteBuffer, responseTo: Int32) throws -> ServerReply {
         // Skip responseFlags, they aren't interesting
         buffer.moveReaderIndex(forwardBy: 4)
         
@@ -77,10 +178,10 @@ struct ServerReply {
         
         let documents = try [Document](buffer: &buffer, count: numericCast(numberReturned))
         
-        return ServerReply(cursorId: cursorId, documents: documents)
+        return ServerReply(responseTo: responseTo, cursorId: cursorId, documents: documents)
     }
     
-    static func message(fromBuffer buffer: inout ByteBuffer) throws -> ServerReply {
+    static func message(fromBuffer buffer: inout ByteBuffer, responseTo: Int32) throws -> ServerReply {
         fatalError()
     }
 }
@@ -122,7 +223,7 @@ fileprivate extension Optional {
     }
 }
 
-extension ByteBuffer {
+fileprivate extension ByteBuffer {
     mutating func assertLittleEndian<FWI: FixedWidthInteger>() throws -> FWI {
         return try self.readInteger(endianness: .little, as: FWI.self).assert()
     }
@@ -138,6 +239,13 @@ extension ByteBuffer {
             responseTo: assertLittleEndian(),
             opCode: assertOpCode()
         )
+    }
+    
+    mutating func write(_ header: MessageHeader) {
+        write(integer: header.messageLength)
+        write(integer: header.requestId)
+        write(integer: header.responseTo)
+        write(integer: header.opCode.rawValue)
     }
 }
 
