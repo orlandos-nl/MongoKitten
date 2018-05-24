@@ -6,23 +6,33 @@ import NIO
 // TODO: https://github.com/mongodb/specifications/blob/master/source/change-streams.rst
 
 public final class MongoDBConnection {
-    let reader = ClientConnectionParser()
-    let writer = ClientConnectionSerializer()
-    let cconnectionHandler = ClientConnectionHandler()
-    let pipeline: ChannelPipeline
+    let context: ClientConnectionContext
+    let eventloop: EventLoop
     
-    init(pipeline: ChannelPipeline) {
-        self.pipeline = pipeline
+    public static func connect(on loop: EventLoop) throws -> EventLoopFuture<MongoDBConnection> {
+        let context = ClientConnectionContext()
+        
+        let bootstrap = ClientBootstrap(group: loop)
+            // Enable SO_REUSEADDR.
+            .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
+            .channelInitializer { channel in
+                return MongoDBConnection.initialize(pipeline: channel.pipeline, context: context)
+            }
+        
+        return bootstrap.connect(host: "127.0.0.1", port: 27017).map { channel in
+            return MongoDBConnection(channel: channel, context: context)
+        }
     }
     
-    func doStuff() {
-        self.cconnectionHandler
+    init(channel: Channel, context: ClientConnectionContext) {
+        self.eventloop = channel.eventLoop
+        self.context = context
     }
     
-    func initialize() -> EventLoopFuture<Void> {
-        return pipeline.add(handler: self.reader).then {
-            self.pipeline.add(handler: self.writer).then {
-                self.pipeline.add(handler: self.cconnectionHandler)
+    static func initialize(pipeline: ChannelPipeline, context: ClientConnectionContext) -> EventLoopFuture<Void> {
+        return pipeline.add(handler: ClientConnectionParser(context: context)).then {
+            pipeline.add(handler: ClientConnectionSerializer(context: context)).then {
+                pipeline.add(handler: ClientConnectionHandler(context: context))
             }
         }
     }
@@ -37,48 +47,104 @@ public final class MongoDBConnection {
         // TODO: https://github.com/mongodb/specifications/blob/master/source/driver-read-preferences.rst
         fatalError()
     }
+    
+    func _execute<C: AnyMongoDBCommand>(command: C) -> EventLoopFuture<ServerReply> {
+        let promise: EventLoopPromise<ServerReply> = self.eventloop.newPromise()
+        let command = MongoDBCommandContext(
+            command: command,
+            requestID: nextRequestId(),
+            promise: promise
+        )
+        
+        self.context.send(command)
+        
+        return promise.futureResult
+    }
+    
+    func execute<C: MongoDBCommand>(command: C) -> EventLoopFuture<C.Result> {
+        return _execute(command: command).thenThrowing(C.Result.init)
+    }
+    
+    private func nextRequestId() -> Int32 {
+        // TODO: Living cursors over time
+        return 0
+    }
 }
 
 struct IncorrectServerReplyHeader: Error {}
 
+struct MongoDBCommandContext {
+    var command: AnyMongoDBCommand
+    var requestID: Int32
+    var promise: EventLoopPromise<ServerReply>
+}
+
 final class ClientConnectionHandler: ChannelInboundHandler {
     typealias InboundIn = ServerReply
-    typealias OutboundOut = ByteBuffer
+    typealias OutboundOut = MongoDBCommandContext
     
-    var queries = [Int: EventLoopPromise<ServerReply>]()
+    let context: ClientConnectionContext
+    
+    init(context: ClientConnectionContext) {
+        self.context = context
+    }
     
     func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
         let reply = unwrapInboundIn(data)
-        let promise = queries[numericCast(reply.responseTo)]
+        let promise = context.queries[numericCast(reply.responseTo)]
         
         promise?.succeed(result: reply)
     }
     
     func channelActive(ctx: ChannelHandlerContext) {
+        context.channelContext = ctx
         
+        for command in context.unsentCommands {
+            ctx.fireChannelRead(wrapOutboundOut(command))
+            context.queries[command.requestID] = command.promise
+        }
+        
+        self.context.send = { command in
+            ctx.fireChannelRead(self.wrapOutboundOut(command))
+        }
+        
+        context.unsentCommands = []
     }
 }
 
-protocol Command: Codable {
-    var collectionName: String { get }
+final class ClientConnectionContext {
+    var queries = [Int32: EventLoopPromise<ServerReply>]()
+    var channelContext: ChannelHandlerContext?
+    var unsentCommands = [MongoDBCommandContext]()
+    
+    lazy var send: (MongoDBCommandContext) -> () = { command in
+        self.unsentCommands.append(command)
+    }
+    
+    init() {}
 }
 
 final class ClientConnectionSerializer: MessageToByteEncoder {
-    typealias OutboundIn = Command
-    var opQuery = true
+    typealias OutboundIn = MongoDBCommandContext
     
-    func encode(ctx: ChannelHandlerContext, data: Command, out: inout ByteBuffer) throws {
-        var document = try BSONEncoder().encode(data)
+    let context: ClientConnectionContext
+    
+    init(context: ClientConnectionContext) {
+        self.context = context
+    }
+    
+    func encode(ctx: ChannelHandlerContext, data: MongoDBCommandContext, out: inout ByteBuffer) throws {
+        var document = try BSONEncoder().encode(data.command)
         let headerIndex = out.writerIndex
         var flags: Int32 = 0
         
         out.moveWriterIndex(forwardBy: 24)
         
-        if opQuery {
+        if true {
             out.write(integer: flags)
             
             // cString
-            out.write(string: data.collectionName)
+            out.write(string: data.command.collectionName)
             out.write(integer: 0 as UInt8)
             
             out.write(integer: 0 as Int32) // Number to skip, handled by query
@@ -89,7 +155,7 @@ final class ClientConnectionSerializer: MessageToByteEncoder {
                 
                 return MessageHeader(
                     messageLength: numericCast(out.writerIndex &- headerIndex),
-                    requestId: nextRequestId(),
+                    requestId: data.requestID,
                     responseTo: 0,
                     opCode: .query
                 )
@@ -103,18 +169,18 @@ final class ClientConnectionSerializer: MessageToByteEncoder {
             fatalError()
         }
     }
-    
-    func nextRequestId() -> Int32 {
-        // TODO: Living cursors over time
-        return 0
-    }
 }
 
 final class ClientConnectionParser: ByteToMessageDecoder {
     typealias InboundOut = ServerReply
-    
     var cumulationBuffer: ByteBuffer?
     var header: MessageHeader?
+    
+    let context: ClientConnectionContext
+    
+    init(context: ClientConnectionContext) {
+        self.context = context
+    }
     
     func decode(ctx: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
         let header: MessageHeader
@@ -135,6 +201,7 @@ final class ClientConnectionParser: ByteToMessageDecoder {
             return .needMoreData
         }
         
+        self.header = nil
         let reply: ServerReply
         
         switch header.opCode {
