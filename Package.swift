@@ -16,15 +16,12 @@ var package = Package(
         .package(url: "https://github.com/OpenKitten/BSON.git", .revision("master/6.0")),
         
         // Async
-        .package(url: "https://github.com/apple/swift-nio.git", from: "1.0.0"),
-        
-        // TLS
-        .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "1.0.0"),
+        .package(url: "https://github.com/apple/swift-nio.git", from: "1.7.2"),
     ],
     targets: [
         .target(
             name: "MongoKitten",
-            dependencies: ["BSON", "NIO", "NIOOpenSSL"]),
+            dependencies: ["BSON", "NIO"]),
         .testTarget(
             name: "MongoKittenTests",
             dependencies: ["MongoKitten"]),

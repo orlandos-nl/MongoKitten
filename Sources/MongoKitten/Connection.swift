@@ -1,18 +1,22 @@
 import BSON
 import NIO
+import Foundation
+
 
 // TODO: https://github.com/mongodb/specifications/blob/master/source/wireversion-featurelist.rst
 // TODO: https://github.com/mongodb/specifications/tree/master/source/retryable-writes
 // TODO: https://github.com/mongodb/specifications/blob/master/source/change-streams.rst
 
+/// A single MongoDB connection to a single MongoDB server.
+/// `MongoDBConnection` handles the lowest level communication to a MongoDB instance.
 public final class MongoDBConnection {
     let context: ClientConnectionContext
     let eventloop: EventLoop
     
-    public static func connect(on loop: EventLoop) throws -> EventLoopFuture<MongoDBConnection> {
+    public static func connect(on group: EventLoopGroup) throws -> EventLoopFuture<MongoDBConnection> {
         let context = ClientConnectionContext()
         
-        let bootstrap = ClientBootstrap(group: loop)
+        let bootstrap = ClientBootstrap(group: group)
             // Enable SO_REUSEADDR.
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             .channelInitializer { channel in
@@ -45,7 +49,7 @@ public final class MongoDBConnection {
         // TODO: https://github.com/mongodb/specifications/tree/master/source/server-selection
         // TODO: https://github.com/mongodb/specifications/tree/master/source/server-discovery-and-monitoring
         // TODO: https://github.com/mongodb/specifications/blob/master/source/driver-read-preferences.rst
-        fatalError()
+        unimplemented()
     }
     
     func _execute<C: AnyMongoDBCommand>(command: C) -> EventLoopFuture<ServerReply> {
@@ -100,7 +104,8 @@ final class ClientConnectionHandler: ChannelInboundHandler {
         context.channelContext = ctx
         
         for command in context.unsentCommands {
-            ctx.fireChannelRead(wrapOutboundOut(command))
+//            ctx.write(wrapOutboundOut(command))
+            ctx.channel.writeAndFlush(command)
             context.queries[command.requestID] = command.promise
         }
         
@@ -134,40 +139,59 @@ final class ClientConnectionSerializer: MessageToByteEncoder {
     }
     
     func encode(ctx: ChannelHandlerContext, data: MongoDBCommandContext, out: inout ByteBuffer) throws {
-        var document = try BSONEncoder().encode(data.command)
+//        var document = try BSONEncoder().encode(data.command)
+        var document: Document = [
+            "insert": "testcollection",
+            "$db": "test",
+            "documents": [
+                ["_id": ObjectId(), "test": "test 1234567 MK is awesome"] as Document
+            ] as Document
+        ]
         let headerIndex = out.writerIndex
-        var flags: Int32 = 0
+        var flags: UInt32 = 0
         
-        out.moveWriterIndex(forwardBy: 24)
+        let docData = document.makeData()
+    
+        let length: Int32 = 16 + 4 + 1 + Int32(docData.count)
+        out.write(integer: length as Int32, endianness: .little) // messageLength
+        out.write(integer: data.requestID, endianness: .little)
+        out.write(integer: 0 as Int32, endianness: .little) // responseTo
+        out.write(integer: 2013 as Int32, endianness: .little) // opcode
+        out.write(integer: flags, endianness: .little)
+        out.write(integer: 0 as UInt8, endianness: .little) // section kind 0
+        out.write(bytes: docData)
         
-        if true {
-            out.write(integer: flags)
-            
-            // cString
-            out.write(string: data.command.collectionName)
-            out.write(integer: 0 as UInt8)
-            
-            out.write(integer: 0 as Int32) // Number to skip, handled by query
-            out.write(integer: 0 as Int32) // Number to return, handled by query
-            
-            let header = document.withUnsafeBufferPointer { buffer -> MessageHeader in
-                out.write(bytes: buffer)
-                
-                return MessageHeader(
-                    messageLength: numericCast(out.writerIndex &- headerIndex),
-                    requestId: data.requestID,
-                    responseTo: 0,
-                    opCode: .query
-                )
-            }
-            
-            let endIndex = out.writerIndex
-            out.write(header)
-            
-            out.moveWriterIndex(to: endIndex)
-        } else {
-            fatalError()
-        }
+//        out.moveWriterIndex(forwardBy: 24)
+//
+//        if true {
+//            out.write(integer: flags)
+//
+//            // cString
+//            out.write(string: data.command.collectionName)
+//            out.write(integer: 0 as UInt8)
+//
+//            out.write(integer: 0 as Int32) // Number to skip, handled by query
+//            out.write(integer: 0 as Int32) // Number to return, handled by query
+//
+//            let header = document.withUnsafeBufferPointer { buffer -> MessageHeader in
+//                out.write(bytes: buffer)
+//
+//                return MessageHeader(
+//                    messageLength: numericCast(out.writerIndex &- headerIndex),
+//                    requestId: data.requestID,
+//                    responseTo: 0,
+//                    opCode: .query
+//                )
+//            }
+//
+//            out.moveWriterIndex(to: 0)
+//            let endIndex = out.writerIndex
+//            out.write(header)
+//
+//            out.moveWriterIndex(to: endIndex)
+//        } else {
+//            fatalError()
+//        }
     }
 }
 
