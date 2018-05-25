@@ -10,6 +10,9 @@ var package = Package(
         .library(
             name: "MongoKitten",
             targets: ["MongoKitten"]),
+        .library(
+            name: "GridFS",
+            targets: ["GridFS"]),
     ],
     dependencies: [
         // For MongoDB Documents
@@ -22,6 +25,9 @@ var package = Package(
         .target(
             name: "MongoKitten",
             dependencies: ["BSON", "NIO"]),
+        .target(
+            name: "GridFS",
+            dependencies: ["BSON", "MongoKitten", "NIO"]),
         .testTarget(
             name: "MongoKittenTests",
             dependencies: ["MongoKitten"]),
