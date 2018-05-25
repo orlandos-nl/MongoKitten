@@ -15,7 +15,10 @@ protocol ServerReplyInitializable {
     init(reply: ServerReply) throws
 }
 
-protocol ServerReplyDecodable: Decodable, ServerReplyInitializable {}
+protocol ServerReplyDecodable: Decodable, ServerReplyInitializable {
+    var isSuccessful: Bool { get }
+    var mongoKittenError: MongoKittenError { get }
+}
 
 extension ServerReplyDecodable {
     init(reply: ServerReply) throws {

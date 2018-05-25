@@ -5,15 +5,20 @@ let group = MultiThreadedEventLoopGroup(numThreads: 1)
 
 let connection = try MongoDBConnection.connect(on: group)
 
-var future: EventLoopFuture<Insert<Document>.Result>?
+struct MyUser: Codable {
+    var _id = ObjectId()
+    var name: String
+    init(named name: String) {
+        self.name = name
+    }
+}
+
+var future: EventLoopFuture<InsertCommand<MyUser>.Result>?
 try connection.thenThrowing { connection -> Void in
-    let doc: Document = [
-        "_id": ObjectId(),
-        "hello": 3
-    ]
+    let user = MyUser(named: "kaas")
     
     let collectionRef = CollectionReference(to: "test", inDatabase: "test")
-    let insert = Insert([doc], into: collectionRef)
+    let insert = InsertCommand([user], into: collectionRef)
     future = try insert.execute(on: connection)
 }.wait()
 

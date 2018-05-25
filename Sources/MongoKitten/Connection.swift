@@ -343,7 +343,6 @@ extension Array where Element == Document {
                 let documentBuffer = UnsafeBufferPointer(start: buffer.baseAddress, count: documentSize)
                 let doc = Document(copying: documentBuffer, isArray: false)
                 array.append(doc)
-                print(doc.validate())
                 
                 return documentSize
             }

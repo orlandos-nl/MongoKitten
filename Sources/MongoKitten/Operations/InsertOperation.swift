@@ -1,7 +1,7 @@
 import BSON
 import NIO
 
-public struct Insert<C: Codable>: MongoDBCommand {
+public struct InsertCommand<C: Codable>: MongoDBCommand {
     public typealias Result = InsertReply
     
     var collectionReference: CollectionReference {
@@ -26,15 +26,25 @@ public struct Insert<C: Codable>: MongoDBCommand {
         self.documents = Array(documents)
     }
     
-    public func execute(on database: MongoDBConnection) throws -> EventLoopFuture<Insert<C>.Result> {
+    public func execute(on database: MongoDBConnection) throws -> EventLoopFuture<InsertCommand<C>.Result> {
         return database.execute(command: self)
     }
 }
 
 public struct InsertReply: ServerReplyDecodable {
-    public var n: Int?
-    public var ok: Int
-    public var errmsg: String?
-//    public var writeErrors: [Errors.Write]?
-//    public var writeConcernError: [Errors.WriteConcern]?
+    enum CodingKeys: String, CodingKey {
+        case n, ok, errorMessage = "errmsg"
+    }
+    
+    private var n: Int?
+    private var ok: Int
+    public private(set) var errorMessage: String?
+    
+    public var isSuccessful: Bool {
+        return ok == 1
+    }
+    
+    var mongoKittenError: MongoKittenError {
+        fatalError()
+    }
 }
