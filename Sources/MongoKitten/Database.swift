@@ -6,10 +6,11 @@
 //
 
 import Foundation
+import NIO
 
 public class Database {
     
-    public init(_ uri: String) {
+    public static func connect(_ uri: String) -> EventLoopFuture<Database> {
         unimplemented()
     }
     
