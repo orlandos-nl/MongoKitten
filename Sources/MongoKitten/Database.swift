@@ -8,7 +8,7 @@
 import Foundation
 import NIO
 
-public class Database {
+public final class Database {
     
     public static func connect(_ uri: String) -> EventLoopFuture<Database> {
         unimplemented()

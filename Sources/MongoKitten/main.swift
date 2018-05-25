@@ -5,16 +5,29 @@ let group = MultiThreadedEventLoopGroup(numThreads: 1)
 
 let connection = try MongoDBConnection.connect(on: group)
 
-var future: EventLoopFuture<Insert<Document>.Result>?
-try connection.thenThrowing { connection -> Void in
-    let doc: Document = [
-        "_id": ObjectId(),
-        "hello": 3
-    ]
+struct MyUser: Codable {
+    var _id = ObjectId()
+    var name: String
+    init(named name: String) {
+        self.name = name
+    }
+}
+
+var future: EventLoopFuture<InsertCommand<MyUser>.Result>?
+var future2: EventLoopFuture<DeleteCommand.Result>?
+
+let collectionRef = CollectionReference(to: "test", inDatabase: "test")
+
+try connection.map { connection -> Void in
+    let user = MyUser(named: "kaas")
     
-    let collectionRef = CollectionReference(to: "test", inDatabase: "test")
-    let insert = Insert([doc], into: collectionRef)
-    future = try insert.execute(on: connection)
+    let insert = InsertCommand([user], into: collectionRef)
+    future = insert.execute(on: connection)
+    
+    let single = DeleteCommand.Single(matching: "name" == "kaas")
+    let delete = DeleteCommand([single], from: collectionRef)
+    future2 = delete.execute(on: connection)
 }.wait()
 
 print(try future?.wait())
+print(try future2?.wait())

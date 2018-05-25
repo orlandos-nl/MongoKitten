@@ -7,7 +7,7 @@
 
 import Foundation
 
-public class Collection {
+public final class Collection {
     
     /// Initializes this collection with a database and name
     ///
