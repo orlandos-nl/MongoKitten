@@ -80,7 +80,7 @@ public struct UpdateReply: ServerReplyDecodable {
     }
     
     var mongoKittenError: MongoKittenError {
-        unimplemented()
+        return MongoKittenError(.commandFailure, reason: nil)
     }
     
     func makeResult() throws -> UpdateReply {

@@ -62,12 +62,12 @@ public struct DeleteReply: Codable, ServerReplyDecodable {
     }
     
     var mongoKittenError: MongoKittenError {
-        fatalError()
+        return MongoKittenError(.commandFailure, reason: nil)
     }
     
     func makeResult() throws -> Int {
         guard let successfulDeletes = successfulDeletes else {
-            unimplemented()
+            throw MongoKittenError(.commandFailure, reason: nil)
         }
         
         return successfulDeletes

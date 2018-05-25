@@ -37,7 +37,7 @@ struct CountReply: ServerReplyDecodable {
     }
     
     var mongoKittenError: MongoKittenError {
-        fatalError()
+        return MongoKittenError(.commandFailure, reason: nil)
     }
     
     func makeResult() -> Int {

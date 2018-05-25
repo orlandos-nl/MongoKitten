@@ -50,7 +50,7 @@ public struct InsertReply: ServerReplyDecodable {
     }
     
     var mongoKittenError: MongoKittenError {
-        fatalError()
+        return MongoKittenError(.commandFailure, reason: nil)
     }
     
     func makeResult() -> InsertReply {

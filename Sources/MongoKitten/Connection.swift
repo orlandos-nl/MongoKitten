@@ -267,7 +267,7 @@ struct ServerReply {
     }
     
     static func message(fromBuffer buffer: inout ByteBuffer, responseTo: Int32) throws -> ServerReply {
-        fatalError()
+        unimplemented()
     }
 }
 

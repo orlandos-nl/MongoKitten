@@ -14,12 +14,16 @@ public struct MongoKittenError : Codable, Error, CustomStringConvertible, Equata
         case invalidURI
         case unsupportedProtocol
         case unableToConnect
+        case commandFailure
         
         public var description: String {
             switch self {
             case .invalidURI: return "The given MongoDB connection URI is invalid"
             case .unsupportedProtocol: return "MongoKitten is unable to communicate with the server, because MongoKitten does not share a supported MongoDB protocol with the server"
             case .unableToConnect: return "MongoKitten is unable to connect to the server"
+            case .commandFailure:
+                // FIXME: This doesn't seem like a good error
+                return "MongoDB replied with an error reply indicating the command failed"
             }
         }
     }
