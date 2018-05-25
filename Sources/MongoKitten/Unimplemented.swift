@@ -7,6 +7,6 @@
 
 import Foundation
 
-func unimplemented(function: String = #function) -> Never {
+public func unimplemented(function: String = #function) -> Never {
     fatalError("\(function) is unimplemented")
 }
