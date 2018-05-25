@@ -4,14 +4,13 @@ import NIO
 public struct Insert<C: Codable>: MongoDBCommand {
     public typealias Result = InsertReply
     
-    var collectionName: String {
+    var collectionReference: CollectionReference {
         return insert
     }
     
-    public let insert: String
+    public let insert: CollectionReference
     public var documents: [C]
     public var ordered: Bool?
-//    public var writeConcern: WriteConcern?
     public var bypassDocumentValidation: Bool?
     
     static var writing: Bool {
@@ -22,7 +21,7 @@ public struct Insert<C: Codable>: MongoDBCommand {
         return false
     }
     
-    public init(_ documents: [C], into collection: String) {
+    public init(_ documents: [C], into collection: CollectionReference) {
         self.insert = collection
         self.documents = Array(documents)
     }

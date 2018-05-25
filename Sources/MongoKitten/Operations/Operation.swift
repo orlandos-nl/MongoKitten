@@ -1,8 +1,8 @@
 import BSON
 import NIO
 
-protocol AnyMongoDBCommand: Codable {
-    var collectionName: String { get }
+protocol AnyMongoDBCommand: Encodable {
+    var collectionReference: CollectionReference { get }
 }
 
 protocol MongoDBCommand: AnyMongoDBCommand {

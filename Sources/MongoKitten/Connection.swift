@@ -105,7 +105,7 @@ final class ClientConnectionHandler: ChannelInboundHandler {
         
         for command in context.unsentCommands {
 //            ctx.write(wrapOutboundOut(command))
-            ctx.channel.writeAndFlush(command)
+            _ = ctx.channel.writeAndFlush(command)
             context.queries[command.requestID] = command.promise
         }
         
@@ -133,33 +133,80 @@ final class ClientConnectionSerializer: MessageToByteEncoder {
     typealias OutboundIn = MongoDBCommandContext
     
     let context: ClientConnectionContext
+    var supportsOpMessage = false
+    let supportsQueryCommand = true
     
     init(context: ClientConnectionContext) {
         self.context = context
     }
     
-    func encode(ctx: ChannelHandlerContext, data: MongoDBCommandContext, out: inout ByteBuffer) throws {
-//        var document = try BSONEncoder().encode(data.command)
-        var document: Document = [
-            "insert": "testcollection",
-            "$db": "test",
-            "documents": [
-                ["_id": ObjectId(), "test": "test 1234567 MK is awesome"] as Document
-            ] as Document
-        ]
-        let headerIndex = out.writerIndex
-        var flags: UInt32 = 0
+    func encodeOpMessage(ctx: ChannelHandlerContext, data: MongoDBCommandContext, out: inout ByteBuffer) throws {
+        let opCode = MessageHeader.OpCode.message
         
+        let encoder = BSONEncoder()
+        
+        var document = try encoder.encode(data.command)
+        document["$db"] = data.command.collectionReference.databaseName
+        
+        let flags: UInt32 = 0
         let docData = document.makeData()
-    
-        let length: Int32 = 16 + 4 + 1 + Int32(docData.count)
-        out.write(integer: length as Int32, endianness: .little) // messageLength
-        out.write(integer: data.requestID, endianness: .little)
-        out.write(integer: 0 as Int32, endianness: .little) // responseTo
-        out.write(integer: 2013 as Int32, endianness: .little) // opcode
+        
+        let header = MessageHeader(
+            messageLength: MessageHeader.byteSize + 4 + 1 + Int32(docData.count),
+            requestId: data.requestID,
+            responseTo: 0,
+            opCode: opCode
+        )
+        
+        out.write(header)
         out.write(integer: flags, endianness: .little)
         out.write(integer: 0 as UInt8, endianness: .little) // section kind 0
+        
+        // TODO: Use ByteBuffer in BSON
         out.write(bytes: docData)
+    }
+    
+    func encodeQueryCommand(ctx: ChannelHandlerContext, data: MongoDBCommandContext, out: inout ByteBuffer) throws {
+        let opCode = MessageHeader.OpCode.query
+        
+        let encoder = BSONEncoder()
+        
+        var document = try encoder.encode(data.command)
+        
+        let flags: UInt32 = 0
+        let docData = document.makeData()
+        let namespace = data.command.collectionReference.databaseName + ".$cmd"
+        let namespaceSize = Int32(namespace.utf8.count) + 1
+        
+        let header = MessageHeader(
+            messageLength: MessageHeader.byteSize + namespaceSize + 12 + Int32(docData.count),
+            requestId: data.requestID,
+            responseTo: 0,
+            opCode: opCode
+        )
+        
+        out.write(header)
+        out.write(integer: flags, endianness: .little)
+        out.write(string: namespace)
+        out.write(integer: 0 as UInt8) // null terminator for String
+        out.write(integer: 0 as Int32, endianness: .little) // Skip handled by query
+        out.write(integer: 1 as Int32, endianness: .little) // Number to return
+        
+        // TODO: Use ByteBuffer in BSON
+        out.write(bytes: docData)
+    }
+    
+    func encode(ctx: ChannelHandlerContext, data: MongoDBCommandContext, out: inout ByteBuffer) throws {
+        if supportsOpMessage {
+            try encodeOpMessage(ctx: ctx, data: data, out: &out)
+        } else if supportsQueryCommand {
+            try encodeQueryCommand(ctx: ctx, data: data, out: &out)
+        } else {
+            // TODO: Better error here
+            struct UnsupportedMongoDBProtocol: Error {}
+            throw UnsupportedMongoDBProtocol()
+        }
+//        var document = try BSONEncoder().encode(data.command)
         
 //        out.moveWriterIndex(forwardBy: 24)
 //
@@ -214,14 +261,14 @@ final class ClientConnectionParser: ByteToMessageDecoder {
         } else {
             let totalSize = (cumulationBuffer?.readableBytes ?? 0) + buffer.readableBytes
             
-            if totalSize < 16 {
+            if totalSize < MessageHeader.byteSize {
                 return .needMoreData
             }
             
             header = try buffer.parseMessageHeader()
         }
         
-        if numericCast(header.messageLength) &- 24 < buffer.readableBytes {
+        if numericCast(header.messageLength) &- MessageHeader.byteSize < buffer.readableBytes {
             return .needMoreData
         }
         
@@ -291,10 +338,12 @@ extension Array where Element == Document {
             
             _ = buffer.readWithUnsafeReadableBytes { buffer in
                 let buffer = buffer.bindMemory(to: UInt8.self)
+                
                 let documentSize: Int = numericCast(documentSize)
                 let documentBuffer = UnsafeBufferPointer(start: buffer.baseAddress, count: documentSize)
                 let doc = Document(copying: documentBuffer, isArray: false)
                 array.append(doc)
+                print(doc.validate())
                 
                 return documentSize
             }
@@ -333,14 +382,16 @@ fileprivate extension ByteBuffer {
     }
     
     mutating func write(_ header: MessageHeader) {
-        write(integer: header.messageLength)
-        write(integer: header.requestId)
-        write(integer: header.responseTo)
-        write(integer: header.opCode.rawValue)
+        write(integer: header.messageLength, endianness: .little)
+        write(integer: header.requestId, endianness: .little)
+        write(integer: header.responseTo, endianness: .little)
+        write(integer: header.opCode.rawValue, endianness: .little)
     }
 }
 
 struct MessageHeader {
+    static let byteSize: Int32 = 16
+    
     enum OpCode: Int32 {
         case reply = 1
         case update = 2001
