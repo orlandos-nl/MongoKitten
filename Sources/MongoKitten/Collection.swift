@@ -18,7 +18,7 @@ public final class Collection {
         self.database = database
     }
     
-    public func insert<E: Encodable>(_ entity: E) -> EventLoopFuture<InsertReply> {
-        return InsertCommand([entity], into: self).execute(on: self.database.connection)
+    public func insert(_ document: Document) -> EventLoopFuture<InsertReply> {
+        return InsertCommand([document], into: self).execute(on: self.database.connection)
     }
 }

@@ -1,7 +1,7 @@
 import BSON
 import NIO
 
-public struct InsertCommand<E: Encodable>: MongoDBCommand {
+public struct InsertCommand: MongoDBCommand {
     typealias Reply = InsertReply
     
     internal var collectionReference: CollectionReference {
@@ -9,7 +9,7 @@ public struct InsertCommand<E: Encodable>: MongoDBCommand {
     }
     
     internal let insert: CollectionReference
-    public var documents: [E]
+    public var documents: [Document]
     public var ordered: Bool?
     public var bypassDocumentValidation: Bool?
     
@@ -21,7 +21,7 @@ public struct InsertCommand<E: Encodable>: MongoDBCommand {
         return false
     }
     
-    public init(_ documents: [E], into collection: Collection) {
+    public init(_ documents: [Document], into collection: Collection) {
         self.insert = collection.reference
         self.documents = Array(documents)
     }

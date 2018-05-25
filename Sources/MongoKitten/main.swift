@@ -16,13 +16,13 @@ struct MyUser: Codable {
 var future: EventLoopFuture<InsertReply>?
 var future2: EventLoopFuture<Int>?
 
-try connection.map { connection -> Void in
+try connection.thenThrowing { connection -> Void in
     let collection = connection["test"]["test"]
     
     let user = MyUser(named: "kaas")
+    let doc = try BSONEncoder().encode(user)
     
-    let insert = InsertCommand([user], into: collection)
-    future = insert.execute(on: connection)
+    future = collection.insert(doc)
     
     let single = DeleteCommand.Single(matching: "name" == "kaas")
     let delete = DeleteCommand([single], from: collection)
