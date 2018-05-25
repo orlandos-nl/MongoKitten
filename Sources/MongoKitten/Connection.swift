@@ -34,6 +34,10 @@ public final class MongoDBConnection {
         self.context = context
     }
     
+    public subscript(database: String) -> Database {
+        return Database(named: database, connection: self)
+    }
+    
     static func initialize(pipeline: ChannelPipeline, context: ClientConnectionContext) -> EventLoopFuture<Void> {
         return pipeline.add(handler: ClientConnectionParser(context: context)).then {
             pipeline.add(handler: ClientConnectionSerializer(context: context))
@@ -66,8 +70,8 @@ public final class MongoDBConnection {
         return promise.futureResult
     }
     
-    func execute<C: MongoDBCommand>(command: C) -> EventLoopFuture<C.Result> {
-        return _execute(command: command).thenThrowing(C.Result.init)
+    func execute<C: MongoDBCommand>(command: C) -> EventLoopFuture<C.Reply> {
+        return _execute(command: command).thenThrowing(C.Reply.init)
     }
     
     private func nextRequestId() -> Int32 {

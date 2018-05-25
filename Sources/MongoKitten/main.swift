@@ -13,19 +13,19 @@ struct MyUser: Codable {
     }
 }
 
-var future: EventLoopFuture<InsertCommand<MyUser>.Result>?
-var future2: EventLoopFuture<DeleteCommand.Result>?
-
-let collectionRef = CollectionReference(to: "test", inDatabase: "test")
+var future: EventLoopFuture<InsertReply>?
+var future2: EventLoopFuture<Int>?
 
 try connection.map { connection -> Void in
+    let collection = connection["test"]["test"]
+    
     let user = MyUser(named: "kaas")
     
-    let insert = InsertCommand([user], into: collectionRef)
+    let insert = InsertCommand([user], into: collection)
     future = insert.execute(on: connection)
     
     let single = DeleteCommand.Single(matching: "name" == "kaas")
-    let delete = DeleteCommand([single], from: collectionRef)
+    let delete = DeleteCommand([single], from: collection)
     future2 = delete.execute(on: connection)
 }.wait()
 

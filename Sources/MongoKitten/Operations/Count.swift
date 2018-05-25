@@ -1,51 +1,47 @@
-//import Async
-//
-//public struct Count<C: Codable>: Command, Operation {
-//    let targetCollection: MongoCollection<C>
-//    
-//    public let count: String
-//    public var query: Query?
-//    public var skip: Int?
-//    public var limit: Int?
+import BSON
+import NIO
+
+public struct Count: MongoDBCommand {
+    typealias Reply = CountReply
+    
+    internal var collectionReference: CollectionReference {
+        return count
+    }
+    
+    internal let count: CollectionReference
+    public var query: Query?
+    public var skip: Int?
+    public var limit: Int?
 //    public var readConcern: ReadConcern?
 //    public var collation: Collation?
-//    
-//    static var writing: Bool { return false }
-//    static var emitsCursor: Bool { return false }
-//    
-//    public init(on collection: Collection<C>) {
-//        self.count = collection.name
-//        self.targetCollection = collection
-//        
-//        // Collection defaults
-//        self.readConcern = collection.default.readConcern
-//        self.collation = collection.default.collation
-//    }
-//    
-//    public func execute(on connection: DatabaseConnection) -> Future<Int> {
-//        return connection.execute(self, expecting: Reply.Count.self) { reply, _ in
-//            guard reply.ok == 1 else {
-//                throw Errors.Count(from: reply)
-//            }
-//            
-//            return reply.n
-//        }
-//    }
-//}
-//
-//extension Reply {
-//    struct Count: Decodable {
-//        var n: Int
-//        var ok: Int
-//    }
-//}
-//
-//extension Errors {
-//    public struct Count: Error {
-//        // TODO:
-//        
-//        init(from reply: Reply.Count) {
-//            // TODO: 
-//        }
-//    }
-//}
+    
+    static var writing: Bool { return false }
+    static var emitsCursor: Bool { return false }
+    
+    public init(_ query: Query? = nil, in collection: Collection) {
+        self.count = collection.reference
+        self.query = query
+    }
+    
+    @discardableResult
+    public func execute(on connection: MongoDBConnection) -> EventLoopFuture<Int> {
+        return connection.execute(command: self).mapToResult()
+    }
+}
+
+struct CountReply: ServerReplyDecodable {
+    var n: Int
+    var ok: Int
+    
+    var isSuccessful: Bool {
+        return ok == 1
+    }
+    
+    var mongoKittenError: MongoKittenError {
+        fatalError()
+    }
+    
+    func makeResult() -> Int {
+        return n
+    }
+}

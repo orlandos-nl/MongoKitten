@@ -1,20 +1,24 @@
-//
-//  Collection.swift
-//  MongoKitten
-//
-//  Created by Robbert Brandsma on 24-05-18.
-//
-
+import NIO
 import Foundation
 
 public final class Collection {
+    public let name: String
+    public let database: Database
+    
+    internal var reference: CollectionReference {
+        return CollectionReference(to: self.name, inDatabase: self.database.name)
+    }
     
     /// Initializes this collection with a database and name
     ///
     /// - parameter name: The collection name
     /// - parameter database: The database this `Collection` exists in
     internal init(named name: String, in database: Database) {
-        unimplemented()
+        self.name = name
+        self.database = database
     }
     
+    public func insert<E: Encodable>(_ entity: E) -> EventLoopFuture<InsertReply> {
+        return InsertCommand([entity], into: self).execute(on: self.database.connection)
+    }
 }

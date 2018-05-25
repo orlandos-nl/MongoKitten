@@ -8,9 +8,16 @@
 import Foundation
 
 public final class Database {
+    public let name: String
+    public let connection: MongoDBConnection
     
     public init(_ uri: String) {
         unimplemented()
+    }
+    
+    internal init(named name: String, connection: MongoDBConnection) {
+        self.name = name
+        self.connection = connection
     }
     
     /// Get a `Collection` by providing a collection name as a `String`

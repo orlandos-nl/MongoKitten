@@ -1,15 +1,15 @@
 import BSON
 import NIO
 
-public struct InsertCommand<C: Codable>: MongoDBCommand {
-    public typealias Result = InsertReply
+public struct InsertCommand<E: Encodable>: MongoDBCommand {
+    typealias Reply = InsertReply
     
     internal var collectionReference: CollectionReference {
         return insert
     }
     
-    public let insert: CollectionReference
-    public var documents: [C]
+    internal let insert: CollectionReference
+    public var documents: [E]
     public var ordered: Bool?
     public var bypassDocumentValidation: Bool?
     
@@ -21,18 +21,20 @@ public struct InsertCommand<C: Codable>: MongoDBCommand {
         return false
     }
     
-    public init(_ documents: [C], into collection: CollectionReference) {
-        self.insert = collection
+    public init(_ documents: [E], into collection: Collection) {
+        self.insert = collection.reference
         self.documents = Array(documents)
     }
     
     @discardableResult
-    public func execute(on connection: MongoDBConnection) -> EventLoopFuture<InsertCommand<C>.Result> {
+    public func execute(on connection: MongoDBConnection) -> EventLoopFuture<InsertReply> {
         return connection.execute(command: self)
     }
 }
 
 public struct InsertReply: ServerReplyDecodable {
+    typealias Result = InsertReply
+    
     enum CodingKeys: String, CodingKey {
         case successfulInserts = "n"
         case ok
@@ -49,5 +51,9 @@ public struct InsertReply: ServerReplyDecodable {
     
     var mongoKittenError: MongoKittenError {
         fatalError()
+    }
+    
+    func makeResult() -> InsertReply {
+        return self
     }
 }

@@ -7,7 +7,7 @@ public enum RemoveLimit: Int, Codable {
 }
 
 public struct DeleteCommand: MongoDBCommand {
-    public typealias Result = DeleteReply
+    public typealias Reply = DeleteReply
     
     public struct Single: Encodable {
         public var q: Query
@@ -33,14 +33,14 @@ public struct DeleteCommand: MongoDBCommand {
     static var writing: Bool { return true }
     static var emitsCursor: Bool { return false }
     
-    public init(_ deletes: [Single], from collection: CollectionReference) {
-        self.delete = collection
+    public init(_ deletes: [Single], from collection: Collection) {
+        self.delete = collection.reference
         self.deletes = Array(deletes)
     }
     
     @discardableResult
-    public func execute(on connection: MongoDBConnection) -> EventLoopFuture<DeleteReply> {
-        return connection.execute(command: self)
+    public func execute(on connection: MongoDBConnection) -> EventLoopFuture<Int> {
+        return connection.execute(command: self).mapToResult()
     }
 }
 
@@ -59,6 +59,14 @@ public struct DeleteReply: Codable, ServerReplyDecodable {
     
     var mongoKittenError: MongoKittenError {
         fatalError()
+    }
+    
+    func makeResult() throws -> Int {
+        guard let successfulDeletes = successfulDeletes else {
+            unimplemented()
+        }
+        
+        return successfulDeletes
     }
 //    public var writeErrors: [Errors.Write]?
 //    public var writeConcernError: [Errors.WriteConcern]?
