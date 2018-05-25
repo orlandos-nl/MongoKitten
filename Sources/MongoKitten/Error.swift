@@ -25,10 +25,18 @@ public struct MongoKittenError : Codable, Error, CustomStringConvertible {
     /// Describes the reason why an error has occured, often providing details on how it could be fixed
     public enum Reason : String, Codable, CustomStringConvertible {
         case missingMongoDBScheme
+        case uriIsMalformed
+        case malformedAuthenticationDetails
+        case unsupportedAuthenticationMechanism
+        case invalidPort
         
         public var description: String {
             switch self {
             case .missingMongoDBScheme: return "The connection URI does not start with the 'mongodb://' scheme"
+            case .uriIsMalformed: return "The URI cannot be parsed because it is malformed"
+            case .malformedAuthenticationDetails: return "The authentication details in the URI are malformed and cannot be parsed"
+            case .unsupportedAuthenticationMechanism: return "The given authentication mechanism is not supported by MongoKitten"
+            case .invalidPort: return "The given port number is invalid"
             }
         }
     }

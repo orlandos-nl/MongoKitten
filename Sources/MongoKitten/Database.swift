@@ -6,12 +6,13 @@
 //
 
 import Foundation
+import NIO
 
 public final class Database {
     public let name: String
     public let connection: MongoDBConnection
     
-    public init(_ uri: String) {
+    public static func connect(_ uri: String) -> EventLoopFuture<Database> {
         unimplemented()
     }
     
@@ -25,7 +26,7 @@ public final class Database {
     /// - parameter collection: The collection/bucket to return
     ///
     /// - returns: The requested collection in this database
-    public subscript(collection: String) -> Collection {
+    public subscript(collection: String) -> MongoKitten.Collection {
         return Collection(named: collection, in: self)
     }
     
