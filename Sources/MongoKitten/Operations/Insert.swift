@@ -27,7 +27,7 @@ public struct InsertCommand<C: Codable>: MongoDBCommand {
     }
     
     @discardableResult
-    public func execute(on connection: MongoDBConnection) throws -> EventLoopFuture<InsertCommand<C>.Result> {
+    public func execute(on connection: MongoDBConnection) -> EventLoopFuture<InsertCommand<C>.Result> {
         return connection.execute(command: self)
     }
 }

@@ -11,7 +11,8 @@ import Foundation
 /// `MongoDBConnection` handles the lowest level communication to a MongoDB instance.
 public final class MongoDBConnection {
     let context: ClientConnectionContext
-    let eventloop: EventLoop
+    let channel: Channel
+    var currentRequestId: Int32 = 0
     
     public static func connect(on group: EventLoopGroup) throws -> EventLoopFuture<MongoDBConnection> {
         let context = ClientConnectionContext()
@@ -29,15 +30,13 @@ public final class MongoDBConnection {
     }
     
     init(channel: Channel, context: ClientConnectionContext) {
-        self.eventloop = channel.eventLoop
+        self.channel = channel
         self.context = context
     }
     
     static func initialize(pipeline: ChannelPipeline, context: ClientConnectionContext) -> EventLoopFuture<Void> {
         return pipeline.add(handler: ClientConnectionParser(context: context)).then {
-            pipeline.add(handler: ClientConnectionSerializer(context: context)).then {
-                pipeline.add(handler: ClientConnectionHandler(context: context))
-            }
+            pipeline.add(handler: ClientConnectionSerializer(context: context))
         }
     }
     
@@ -53,14 +52,16 @@ public final class MongoDBConnection {
     }
     
     func _execute<C: AnyMongoDBCommand>(command: C) -> EventLoopFuture<ServerReply> {
-        let promise: EventLoopPromise<ServerReply> = self.eventloop.newPromise()
+        let promise: EventLoopPromise<ServerReply> = self.channel.eventLoop.newPromise()
         let command = MongoDBCommandContext(
             command: command,
             requestID: nextRequestId(),
             promise: promise
         )
         
-        self.context.send(command)
+        self.context.queries[command.requestID] = command.promise
+        
+        _ = self.channel.writeAndFlush(command)
         
         return promise.futureResult
     }
@@ -70,8 +71,10 @@ public final class MongoDBConnection {
     }
     
     private func nextRequestId() -> Int32 {
+        defer { currentRequestId = currentRequestId &+ 1}
+        
         // TODO: Living cursors over time
-        return 0
+        return currentRequestId
     }
 }
 
@@ -81,40 +84,6 @@ struct MongoDBCommandContext {
     var command: AnyMongoDBCommand
     var requestID: Int32
     var promise: EventLoopPromise<ServerReply>
-}
-
-final class ClientConnectionHandler: ChannelInboundHandler {
-    typealias InboundIn = ServerReply
-    typealias OutboundOut = MongoDBCommandContext
-    
-    let context: ClientConnectionContext
-    
-    init(context: ClientConnectionContext) {
-        self.context = context
-    }
-    
-    func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
-        let reply = unwrapInboundIn(data)
-        let promise = context.queries[numericCast(reply.responseTo)]
-        
-        promise?.succeed(result: reply)
-    }
-    
-    func channelActive(ctx: ChannelHandlerContext) {
-        context.channelContext = ctx
-        
-        for command in context.unsentCommands {
-//            ctx.write(wrapOutboundOut(command))
-            _ = ctx.channel.writeAndFlush(command)
-            context.queries[command.requestID] = command.promise
-        }
-        
-        self.context.send = { command in
-            ctx.fireChannelRead(self.wrapOutboundOut(command))
-        }
-        
-        context.unsentCommands = []
-    }
 }
 
 final class ClientConnectionContext {
@@ -205,39 +174,6 @@ final class ClientConnectionSerializer: MessageToByteEncoder {
             // TODO: Better error here
             throw MongoKittenError(.unsupportedProtocol, reason: nil)
         }
-//        var document = try BSONEncoder().encode(data.command)
-        
-//        out.moveWriterIndex(forwardBy: 24)
-//
-//        if true {
-//            out.write(integer: flags)
-//
-//            // cString
-//            out.write(string: data.command.collectionName)
-//            out.write(integer: 0 as UInt8)
-//
-//            out.write(integer: 0 as Int32) // Number to skip, handled by query
-//            out.write(integer: 0 as Int32) // Number to return, handled by query
-//
-//            let header = document.withUnsafeBufferPointer { buffer -> MessageHeader in
-//                out.write(bytes: buffer)
-//
-//                return MessageHeader(
-//                    messageLength: numericCast(out.writerIndex &- headerIndex),
-//                    requestId: data.requestID,
-//                    responseTo: 0,
-//                    opCode: .query
-//                )
-//            }
-//
-//            out.moveWriterIndex(to: 0)
-//            let endIndex = out.writerIndex
-//            out.write(header)
-//
-//            out.moveWriterIndex(to: endIndex)
-//        } else {
-//            fatalError()
-//        }
     }
 }
 
@@ -285,7 +221,7 @@ final class ClientConnectionParser: ByteToMessageDecoder {
             throw IncorrectServerReplyHeader()
         }
         
-        ctx.fireChannelRead(wrapInboundOut(reply))
+        self.context.queries[reply.responseTo]?.succeed(result: reply)
         
         return .continue
     }

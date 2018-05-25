@@ -8,7 +8,7 @@ protocol AnyMongoDBCommand: Encodable {
 protocol MongoDBCommand: AnyMongoDBCommand {
     associatedtype Result: ServerReplyInitializable
     
-    func execute(on database: MongoDBConnection) throws -> EventLoopFuture<Result>
+    func execute(on database: MongoDBConnection) -> EventLoopFuture<Result>
 }
 
 protocol ServerReplyInitializable {
