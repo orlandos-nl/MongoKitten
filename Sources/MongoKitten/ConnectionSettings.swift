@@ -14,9 +14,9 @@ fileprivate extension Bool {
 }
 
 /// Describes the settings for a MongoDB connection, most of which can be represented in a connection string
-public struct ConnectionSettings {
+public struct ConnectionSettings : Equatable {
     
-    public enum Authentication {
+    public enum Authentication : Equatable {
         /// Unauthenticated
         case unauthenticated
         
@@ -27,7 +27,15 @@ public struct ConnectionSettings {
         case mongoDBCR(username: String, password: String)
     }
     
-    public typealias Host = (hostname: String, port: UInt16)
+    public struct Host : Equatable {
+        public var hostname: String
+        public var port: UInt16
+        
+        public init(hostname: String, port: UInt16) {
+            self.hostname = hostname
+            self.port = port
+        }
+    }
     
     /// The authentication details (mechanism + credentials) to use
     public var authentication: Authentication
@@ -53,6 +61,21 @@ public struct ConnectionSettings {
     
     // The time in milliseconds to attempt a send or receive on a socket before the attempt times out. Defaults to 5 minutes.
     public var socketTimeout: TimeInterval = 300
+    
+    /// The target path
+    public var targetDatabase: String? = nil
+    
+    public init(authentication: Authentication, authenticationSource: String? = nil, hosts: [Host], targetDatabase: String? = nil, useSSL: Bool = false, verifySSLCertificates: Bool = true, maximumNumberOfConnections: Int = 1, connectTimeout: TimeInterval = 300, socketTimeout: TimeInterval = 300) {
+        self.authentication = authentication
+        self.authenticationSource = authenticationSource
+        self.hosts = hosts
+        self.targetDatabase = targetDatabase
+        self.useSSL = useSSL
+        self.verifySSLCertificates = verifySSLCertificates
+        self.maximumNumberOfConnections = maximumNumberOfConnections
+        self.connectTimeout = connectTimeout
+        self.socketTimeout = socketTimeout
+    }
     
     /// Parses the given `uri` into the ConnectionSettings
     /// `mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]`
@@ -89,6 +112,14 @@ public struct ConnectionSettings {
         var queryParts = hostsPart.split(separator: "?")
         hostsPart = queryParts.removeFirst()
         let queryString = queryParts.first
+        
+        // Split the path
+        let pathParts = hostsPart.split(separator: "/")
+        hostsPart = pathParts[0]
+        
+        if pathParts.count > 1 {
+            self.targetDatabase = String(pathParts[1])
+        }
         
         // Parse all queries
         let queries: [Substring:Substring]
@@ -149,7 +180,7 @@ public struct ConnectionSettings {
                 port = 27017
             }
             
-            return (String(splitHost[0]), port)
+            return Host(hostname: String(splitHost[0]), port: port)
         }
         
         // Parse various options

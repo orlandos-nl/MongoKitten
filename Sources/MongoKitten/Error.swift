@@ -8,9 +8,9 @@
 import Foundation
 
 /// An error thrown by MongoKitten
-public struct MongoKittenError : Codable, Error, CustomStringConvertible {
+public struct MongoKittenError : Codable, Error, CustomStringConvertible, Equatable {
     /// Describes the type of error that has occured
-    public enum Kind : String, Codable, CustomStringConvertible {
+    public enum Kind : String, Codable, CustomStringConvertible, Equatable {
         case invalidURI
         case unsupportedProtocol
         
@@ -23,7 +23,7 @@ public struct MongoKittenError : Codable, Error, CustomStringConvertible {
     }
     
     /// Describes the reason why an error has occured, often providing details on how it could be fixed
-    public enum Reason : String, Codable, CustomStringConvertible {
+    public enum Reason : String, Codable, CustomStringConvertible, Equatable {
         case missingMongoDBScheme
         case uriIsMalformed
         case malformedAuthenticationDetails
