@@ -14,18 +14,26 @@ public final class MongoDBConnection {
     let channel: Channel
     var currentRequestId: Int32 = 0
     
-    public static func connect(on group: EventLoopGroup) throws -> EventLoopFuture<MongoDBConnection> {
-        let context = ClientConnectionContext()
-        
-        let bootstrap = ClientBootstrap(group: group)
-            // Enable SO_REUSEADDR.
-            .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
-            .channelInitializer { channel in
-                return MongoDBConnection.initialize(pipeline: channel.pipeline, context: context)
+    public static func connect(on group: EventLoopGroup, settings: ConnectionSettings) -> EventLoopFuture<MongoDBConnection> {
+        do {
+            let context = ClientConnectionContext()
+            
+            let bootstrap = ClientBootstrap(group: group)
+                // Enable SO_REUSEADDR.
+                .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
+                .channelInitializer { channel in
+                    return MongoDBConnection.initialize(pipeline: channel.pipeline, context: context)
             }
-        
-        return bootstrap.connect(host: "127.0.0.1", port: 27017).map { channel in
-            return MongoDBConnection(channel: channel, context: context)
+            
+            guard let host = settings.hosts.first else {
+                throw MongoKittenError(.unableToConnect, reason: .noHostSpecified)
+            }
+            
+            return bootstrap.connect(host: host.hostname, port: Int(host.port)).map { channel in
+                return MongoDBConnection(channel: channel, context: context)
+            }
+        } catch {
+            return group.next().newFailedFuture(error: error)
         }
     }
     

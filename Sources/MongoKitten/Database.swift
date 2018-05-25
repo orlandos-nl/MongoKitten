@@ -12,8 +12,22 @@ public final class Database {
     public let name: String
     public let connection: MongoDBConnection
     
-    public static func connect(_ uri: String) -> EventLoopFuture<Database> {
-        unimplemented()
+    public static func connect(_ uri: String, on group: EventLoopGroup) -> EventLoopFuture<Database> {
+        let loop = group.next()
+        
+        do {
+            let settings = try ConnectionSettings(uri)
+            
+            guard let targetDatabase = settings.targetDatabase else {
+                throw MongoKittenError(.unableToConnect, reason: .noTargetDatabaseSpecified)
+            }
+            
+            return MongoDBConnection.connect(on: group, settings: settings).map { connection -> Database in
+                return connection[targetDatabase]
+            }
+        } catch {
+            return loop.newFailedFuture(error: error)
+        }
     }
     
     internal init(named name: String, connection: MongoDBConnection) {

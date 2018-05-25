@@ -13,11 +13,13 @@ public struct MongoKittenError : Codable, Error, CustomStringConvertible, Equata
     public enum Kind : String, Codable, CustomStringConvertible, Equatable {
         case invalidURI
         case unsupportedProtocol
+        case unableToConnect
         
         public var description: String {
             switch self {
             case .invalidURI: return "The given MongoDB connection URI is invalid"
             case .unsupportedProtocol: return "MongoKitten is unable to communicate with the server, because MongoKitten does not share a supported MongoDB protocol with the server"
+            case .unableToConnect: return "MongoKitten is unable to connect to the server"
             }
         }
     }
@@ -29,6 +31,8 @@ public struct MongoKittenError : Codable, Error, CustomStringConvertible, Equata
         case malformedAuthenticationDetails
         case unsupportedAuthenticationMechanism
         case invalidPort
+        case noHostSpecified
+        case noTargetDatabaseSpecified
         
         public var description: String {
             switch self {
@@ -37,6 +41,8 @@ public struct MongoKittenError : Codable, Error, CustomStringConvertible, Equata
             case .malformedAuthenticationDetails: return "The authentication details in the URI are malformed and cannot be parsed"
             case .unsupportedAuthenticationMechanism: return "The given authentication mechanism is not supported by MongoKitten"
             case .invalidPort: return "The given port number is invalid"
+            case .noHostSpecified: return "No host was specified"
+            case .noTargetDatabaseSpecified: return "A target database was not specified"
             }
         }
     }
