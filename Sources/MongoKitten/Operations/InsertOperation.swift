@@ -4,7 +4,7 @@ import NIO
 public struct InsertCommand<C: Codable>: MongoDBCommand {
     public typealias Result = InsertReply
     
-    var collectionReference: CollectionReference {
+    internal var collectionReference: CollectionReference {
         return insert
     }
     
@@ -26,18 +26,21 @@ public struct InsertCommand<C: Codable>: MongoDBCommand {
         self.documents = Array(documents)
     }
     
-    public func execute(on database: MongoDBConnection) throws -> EventLoopFuture<InsertCommand<C>.Result> {
-        return database.execute(command: self)
+    @discardableResult
+    public func execute(on connection: MongoDBConnection) throws -> EventLoopFuture<InsertCommand<C>.Result> {
+        return connection.execute(command: self)
     }
 }
 
 public struct InsertReply: ServerReplyDecodable {
     enum CodingKeys: String, CodingKey {
-        case n, ok, errorMessage = "errmsg"
+        case successfulInserts = "n"
+        case ok
+        case errorMessage = "errmsg"
     }
     
-    private var n: Int?
-    private var ok: Int
+    public let successfulInserts: Int?
+    private let ok: Int
     public private(set) var errorMessage: String?
     
     public var isSuccessful: Bool {

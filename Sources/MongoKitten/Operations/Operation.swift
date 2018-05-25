@@ -25,6 +25,10 @@ extension ServerReplyDecodable {
         let doc = try reply.documents.assertFirst()
         
         self = try BSONDecoder().decode(Self.self, from: doc)
+        
+        guard self.isSuccessful else {
+            throw self.mongoKittenError
+        }
     }
 }
 

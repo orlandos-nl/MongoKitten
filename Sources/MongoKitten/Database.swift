@@ -7,7 +7,7 @@
 
 import Foundation
 
-public class Database {
+public final class Database {
     
     public init(_ uri: String) {
         unimplemented()
