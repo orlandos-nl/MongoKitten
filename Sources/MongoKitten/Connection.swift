@@ -203,8 +203,7 @@ final class ClientConnectionSerializer: MessageToByteEncoder {
             try encodeQueryCommand(ctx: ctx, data: data, out: &out)
         } else {
             // TODO: Better error here
-            struct UnsupportedMongoDBProtocol: Error {}
-            throw UnsupportedMongoDBProtocol()
+            throw MongoKittenError(.unsupportedProtocol, reason: nil)
         }
 //        var document = try BSONEncoder().encode(data.command)
         
