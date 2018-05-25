@@ -8,26 +8,70 @@ let connection = try MongoDBConnection.connect(on: group)
 struct MyUser: Codable {
     var _id = ObjectId()
     var name: String
+    
     init(named name: String) {
         self.name = name
     }
 }
 
-var future: EventLoopFuture<InsertReply>?
-var future2: EventLoopFuture<Int>?
-
-try connection.thenThrowing { connection -> Void in
+try connection.then { connection -> EventLoopFuture<Collection> in
     let collection = connection["test"]["test"]
     
-    let user = MyUser(named: "kaas")
-    let doc = try BSONEncoder().encode(user)
+    let user = MyUser(named: "piet")
+    let doc = try! BSONEncoder().encode(user)
     
-    future = collection.insert(doc)
+    let future = collection.insert(doc)
     
-    let single = DeleteCommand.Single(matching: "name" == "kaas")
-    let delete = DeleteCommand([single], from: collection)
-    future2 = delete.execute(on: connection)
+    future.whenSuccess { reply in
+        print(reply)
+    }
+    
+    return future.map { _ in
+        return collection
+    }
+}.then { collection -> EventLoopFuture<Collection> in
+    let future = collection.count()
+    
+    future.whenSuccess { count in
+        print("count", count)
+    }
+    
+    return future.map { _ in
+        return collection
+    }
+}.then { collection -> EventLoopFuture<Collection> in
+    let future = collection.update(
+        "name" == "piet",
+        setting: [
+            "name": "henk"
+        ]
+    )
+    
+    future.whenSuccess { removed in
+        print("updated", removed)
+    }
+    
+    return future.map { _ in
+        return collection
+    }
+}.then { collection -> EventLoopFuture<Collection> in
+    let future = collection.delete("name" == "kaas")
+    
+    future.whenSuccess { removed in
+        print("removed", removed)
+    }
+    
+    return future.map { _ in
+        return collection
+    }
+}.then { collection -> EventLoopFuture<Collection> in
+    let future = collection.count()
+    
+    future.whenSuccess { count in
+        print("count", count)
+    }
+    
+    return future.map { _ in
+        return collection
+    }
 }.wait()
-
-print(try future?.wait())
-print(try future2?.wait())

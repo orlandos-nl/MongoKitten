@@ -5,6 +5,10 @@ public final class Collection {
     public let name: String
     public let database: Database
     
+    internal var connection: MongoDBConnection {
+        return self.database.connection
+    }
+    
     internal var reference: CollectionReference {
         return CollectionReference(to: self.name, inDatabase: self.database.name)
     }
@@ -19,6 +23,48 @@ public final class Collection {
     }
     
     public func insert(_ document: Document) -> EventLoopFuture<InsertReply> {
-        return InsertCommand([document], into: self).execute(on: self.database.connection)
+        return InsertCommand([document], into: self).execute(on: connection)
+    }
+    
+    public func count(_ query: Query? = nil) -> EventLoopFuture<Int> {
+        return CountCommand(query, in: self).execute(on: connection)
+    }
+    
+    public func delete(_ query: Query = [:]) -> EventLoopFuture<Int> {
+        let delete = DeleteCommand.Single(matching: query)
+        
+        return DeleteCommand([delete], from: self).execute(on: connection)
+    }
+    
+    @discardableResult
+    public func update(_ query: Query, to document: Document) -> EventLoopFuture<UpdateReply> {
+        return UpdateCommand(query, to: document, in: self).execute(on: connection)
+    }
+    
+    @discardableResult
+    public func upsert(_ query: Query, to document: Document) -> EventLoopFuture<UpdateReply> {
+        var update = UpdateCommand.Single(matching: query, to: document)
+        update.upsert = true
+        
+        return UpdateCommand(update, in: self).execute(on: connection)
+    }
+    
+    @discardableResult
+    public func update(_ query: Query, setting set: [String: Primitive?]) -> EventLoopFuture<UpdateReply> {
+        var setQuery = Document()
+        var unsetQuery = Document()
+        
+        for (key, value) in set {
+            if let value = value {
+                setQuery[key] = value
+            } else {
+                unsetQuery[key] = ""
+            }
+        }
+        
+        return self.update(query, to: [
+            "$set": setQuery,
+            "$unset": unsetQuery
+        ])
     }
 }

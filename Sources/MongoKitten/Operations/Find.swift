@@ -1,6 +1,6 @@
 //import Async
 //
-//public struct Find<C: Codable>: Command {
+//public struct Find: Command {
 //    let targetCollection: MongoCollection<C>
 //
 //    public let find: String

@@ -10,12 +10,16 @@ public struct DeleteCommand: MongoDBCommand {
     public typealias Reply = DeleteReply
     
     public struct Single: Encodable {
-        public var q: Query
+        public enum CodingKeys: String, CodingKey {
+            case query = "q"
+            case limit
+        }
+        
+        public var query: Query
         public var limit: RemoveLimit
-//        public var collation: Collation?
         
         public init(matching query: Query, limit: RemoveLimit = .one) {
-            self.q = query
+            self.query = query
             self.limit = limit
         }
     }
@@ -30,8 +34,8 @@ public struct DeleteCommand: MongoDBCommand {
 //    public var writeConcern: WriteConcern?
     public var bypassDocumentValidation: Bool?
     
-    static var writing: Bool { return true }
-    static var emitsCursor: Bool { return false }
+    static let writing = true
+    static let emitsCursor = false
     
     public init(_ deletes: [Single], from collection: Collection) {
         self.delete = collection.reference
