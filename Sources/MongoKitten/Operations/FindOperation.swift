@@ -26,7 +26,9 @@ struct CursorReply: ServerReplyDecodable {
         var firstBatch: [Document]
     }
     
-    var mongoKittenError: MongoKittenError
+    var mongoKittenError: MongoKittenError {
+        return MongoKittenError(.commandFailure, reason: nil)
+    }
     
     internal let cursor: CursorDetails
     private let ok: Int

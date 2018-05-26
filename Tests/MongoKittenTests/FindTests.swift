@@ -12,12 +12,17 @@ class FindTests : XCTestCase {
     }
     
     func testFind() throws {
-        try connection.then { connection in
-            return connection["test"]["test"].find()
-        }.then { cursor in
-            cursor.forEach { doc in
-                print(doc)
-            }
-        }.wait()
+        do {
+            try connection.then { connection in
+                return connection["test"]["test"].find()
+            }.then { cursor in
+                cursor.forEach { doc in
+                    print(doc)
+                }
+            }.wait()
+        } catch {
+            print(error)
+            throw error
+        }
     }
 }
