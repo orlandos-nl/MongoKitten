@@ -214,16 +214,15 @@ final class ClientConnectionParser: ByteToMessageDecoder {
         if let _header = self.header {
             header = _header
         } else {
-            let totalSize = (cumulationBuffer?.readableBytes ?? 0) + buffer.readableBytes
-            
-            if totalSize < MessageHeader.byteSize {
+            if buffer.readableBytes < MessageHeader.byteSize {
                 return .needMoreData
             }
             
             header = try buffer.parseMessageHeader()
         }
         
-        if numericCast(header.messageLength) &- MessageHeader.byteSize < buffer.readableBytes {
+        guard numericCast(header.messageLength) &- MessageHeader.byteSize <= buffer.readableBytes else {
+            self.header = header
             return .needMoreData
         }
         
@@ -243,6 +242,7 @@ final class ClientConnectionParser: ByteToMessageDecoder {
         
         self.context.queries[reply.responseTo]?.succeed(result: reply)
         
+        self.header = nil
         return .continue
     }
     
@@ -291,16 +291,11 @@ extension Array where Element == Document {
                 as: Int32.self
             ).assert()
             
-            _ = buffer.readWithUnsafeReadableBytes { buffer in
-                let buffer = buffer.bindMemory(to: UInt8.self)
-                
-                let documentSize: Int = numericCast(documentSize)
-                let documentBuffer = UnsafeBufferPointer(start: buffer.baseAddress, count: documentSize)
-                let doc = Document(copying: documentBuffer, isArray: false)
-                array.append(doc)
-                
-                return documentSize
+            guard let bytes = buffer.readBytes(length: numericCast(documentSize)) else {
+                throw MongoKittenError(.protocolParsingError, reason: nil)
             }
+            
+            array.append(Document(bytes: bytes))
         }
         
         self = array

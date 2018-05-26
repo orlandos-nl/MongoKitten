@@ -11,8 +11,8 @@ public class Bucket {
         self.chunksCollection = database["\(name).chunks"]
     }
     
-    func find() -> Cursor<File> {
-        unimplemented()
-    }
+//    func find() -> Cursor<File> {
+//        unimplemented()
+//    }
     
 }

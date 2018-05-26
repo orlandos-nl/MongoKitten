@@ -17,13 +17,13 @@ public final class Cursor<Element> {
         unimplemented()
     }
     
-    func forEach(_ body: (Element) throws -> Void) -> EventLoopFuture<Void> {
+    public func forEach(_ body: (Element) throws -> Void) -> EventLoopFuture<Void> {
         do {
             for element in buffer {
                 try body(element)
             }
             
-            
+            return self.collection.eventLoop.newSucceededFuture(result: ())
         } catch {
             return self.collection.eventLoop.newFailedFuture(error: error)
         }
@@ -33,7 +33,7 @@ public final class Cursor<Element> {
         return GetMore(cursorId: self.id, batchSize: batchSize, on: self.collection)
             .execute(on: self.collection.connection)
             .map { batch in
-                batch.cursor.nextBatch
+//                batch.cursor.nextBatch
             }
     }
     

@@ -35,6 +35,14 @@ public final class Collection {
         return InsertCommand([document], into: self).execute(on: connection)
     }
     
+    public func insert(documents: [Document]) -> EventLoopFuture<InsertReply> {
+        return InsertCommand(documents, into: self).execute(on: connection)
+    }
+    
+    public func find(_ query: Query = [:]) -> EventLoopFuture<Cursor<Document>> {
+        return FindOperation(filter: query, on: self).execute(on: connection)
+    }
+    
     public func count(_ query: Query? = nil) -> EventLoopFuture<Int> {
         return CountCommand(query, in: self).execute(on: connection)
     }

@@ -15,6 +15,7 @@ public struct MongoKittenError : Codable, Error, CustomStringConvertible, Equata
         case unsupportedProtocol
         case unableToConnect
         case commandFailure
+        case protocolParsingError
         
         public var description: String {
             switch self {
@@ -24,6 +25,8 @@ public struct MongoKittenError : Codable, Error, CustomStringConvertible, Equata
             case .commandFailure:
                 // FIXME: This doesn't seem like a good error
                 return "MongoDB replied with an error reply indicating the command failed"
+            case .protocolParsingError:
+                return "An error occurred when parsing a reply message from MongoDB"
             }
         }
     }

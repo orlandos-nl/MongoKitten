@@ -1,6 +1,6 @@
 import NIO
 
-public struct Find: MongoDBCommand {
+public struct FindOperation: MongoDBCommand {
     typealias Reply = CursorReply
     
     
