@@ -1,4 +1,4 @@
-public struct CollectionReference: Encodable {
+internal struct Namespace: Encodable {
     public let collectionName: String
     public let databaseName: String
     public var fullCollectionName: String {

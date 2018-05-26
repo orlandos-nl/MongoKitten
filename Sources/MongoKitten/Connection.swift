@@ -14,6 +14,10 @@ public final class MongoDBConnection {
     let channel: Channel
     var currentRequestId: Int32 = 0
     
+    var eventLoop: EventLoop {
+        return channel.eventLoop
+    }
+    
     public static func connect(on group: EventLoopGroup, settings: ConnectionSettings) -> EventLoopFuture<MongoDBConnection> {
         do {
             let context = ClientConnectionContext()
@@ -44,6 +48,10 @@ public final class MongoDBConnection {
     
     public subscript(database: String) -> Database {
         return Database(named: database, connection: self)
+    }
+    
+    internal subscript(namespace: Namespace) -> Collection {
+        return self[namespace.databaseName][namespace.collectionName]
     }
     
     static func initialize(pipeline: ChannelPipeline, context: ClientConnectionContext) -> EventLoopFuture<Void> {
@@ -127,7 +135,7 @@ final class ClientConnectionSerializer: MessageToByteEncoder {
         let encoder = BSONEncoder()
         
         var document = try encoder.encode(data.command)
-        document["$db"] = data.command.collectionReference.databaseName
+        document["$db"] = data.command.namespace.databaseName
         
         let flags: UInt32 = 0
         let docData = document.makeData()
@@ -156,7 +164,7 @@ final class ClientConnectionSerializer: MessageToByteEncoder {
         
         let flags: UInt32 = 0
         let docData = document.makeData()
-        let namespace = data.command.collectionReference.databaseName + ".$cmd"
+        let namespace = data.command.namespace.databaseName + ".$cmd"
         let namespaceSize = Int32(namespace.utf8.count) + 1
         
         let header = MessageHeader(

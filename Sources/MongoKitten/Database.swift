@@ -12,6 +12,10 @@ public final class Database {
     public let name: String
     public let connection: MongoDBConnection
     
+    var eventLoop: EventLoop {
+        return connection.eventLoop
+    }
+    
     public static func connect(_ uri: String, on group: EventLoopGroup) -> EventLoopFuture<Database> {
         let loop = group.next()
         

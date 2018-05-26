@@ -4,11 +4,11 @@ import NIO
 public struct InsertCommand: MongoDBCommand {
     typealias Reply = InsertReply
     
-    internal var collectionReference: CollectionReference {
+    internal var namespace: Namespace {
         return insert
     }
     
-    internal let insert: CollectionReference
+    internal let insert: Namespace
     public var documents: [Document]
     public var ordered: Bool?
     public var bypassDocumentValidation: Bool?
@@ -53,7 +53,7 @@ public struct InsertReply: ServerReplyDecodable {
         return MongoKittenError(.commandFailure, reason: nil)
     }
     
-    func makeResult() -> InsertReply {
+    func makeResult(on collection: Collection) -> InsertReply {
         return self
     }
 }

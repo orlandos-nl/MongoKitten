@@ -4,11 +4,11 @@ import NIO
 public struct CountCommand: MongoDBCommand {
     typealias Reply = CountReply
     
-    internal var collectionReference: CollectionReference {
+    internal var namespace: Namespace {
         return count
     }
     
-    internal let count: CollectionReference
+    internal let count: Namespace
     public var query: Query?
     public var limit: Int?
     public var skip: Int?
@@ -24,7 +24,9 @@ public struct CountCommand: MongoDBCommand {
     }
     
     public func execute(on connection: MongoDBConnection) -> EventLoopFuture<Int> {
-        return connection.execute(command: self).mapToResult()
+        let collection = connection[self.namespace]
+        
+        return connection.execute(command: self).mapToResult(for: collection)
     }
 }
 
@@ -40,7 +42,7 @@ struct CountReply: ServerReplyDecodable {
         return MongoKittenError(.commandFailure, reason: nil)
     }
     
-    func makeResult() -> Int {
+    func makeResult(on collection: Collection) -> Int {
         return n
     }
 }

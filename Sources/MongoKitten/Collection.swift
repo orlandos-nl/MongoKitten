@@ -5,12 +5,16 @@ public final class Collection {
     public let name: String
     public let database: Database
     
+    var eventLoop: EventLoop {
+        return connection.eventLoop
+    }
+    
     internal var connection: MongoDBConnection {
         return self.database.connection
     }
     
-    internal var reference: CollectionReference {
-        return CollectionReference(to: self.name, inDatabase: self.database.name)
+    internal var reference: Namespace {
+        return Namespace(to: self.name, inDatabase: self.database.name)
     }
     
     /// Initializes this collection with a database and name
@@ -20,6 +24,11 @@ public final class Collection {
     internal init(named name: String, in database: Database) {
         self.name = name
         self.database = database
+    }
+    
+    /// The full collection name, database + collection
+    public var fullName: String {
+        return "\(self.database.name).\(self.name)"
     }
     
     public func insert(_ document: Document) -> EventLoopFuture<InsertReply> {

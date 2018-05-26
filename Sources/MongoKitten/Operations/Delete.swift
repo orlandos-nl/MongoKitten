@@ -7,7 +7,7 @@ public enum RemoveLimit: Int, Codable {
 }
 
 public struct DeleteCommand: MongoDBCommand {
-    public typealias Reply = DeleteReply
+    typealias Reply = DeleteReply
     
     public struct Single: Encodable {
         public enum CodingKeys: String, CodingKey {
@@ -24,11 +24,13 @@ public struct DeleteCommand: MongoDBCommand {
         }
     }
     
-    internal var collectionReference: CollectionReference {
+    internal var namespace: Namespace {
         return delete
     }
     
-    public let delete: CollectionReference
+    /// This variable _must_ be the first encoded value, so keep it above all others
+    internal let delete: Namespace
+    
     public var deletes: [Single]
     public var ordered: Bool?
 //    public var writeConcern: WriteConcern?
@@ -40,11 +42,6 @@ public struct DeleteCommand: MongoDBCommand {
     public init(_ deletes: [Single], from collection: Collection) {
         self.delete = collection.reference
         self.deletes = Array(deletes)
-    }
-    
-    @discardableResult
-    public func execute(on connection: MongoDBConnection) -> EventLoopFuture<Int> {
-        return connection.execute(command: self).mapToResult()
     }
 }
 
@@ -65,7 +62,7 @@ public struct DeleteReply: Codable, ServerReplyDecodable {
         return MongoKittenError(.commandFailure, reason: nil)
     }
     
-    func makeResult() throws -> Int {
+    func makeResult(on collection: Collection) throws -> Int {
         guard let successfulDeletes = successfulDeletes else {
             throw MongoKittenError(.commandFailure, reason: nil)
         }

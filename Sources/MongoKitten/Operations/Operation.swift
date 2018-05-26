@@ -2,19 +2,25 @@ import BSON
 import NIO
 
 protocol AnyMongoDBCommand: Encodable {
-    var collectionReference: CollectionReference { get }
+    var namespace: Namespace { get }
 }
 
 protocol MongoDBCommand: AnyMongoDBCommand {
     associatedtype Reply: ServerReplyInitializable
     
-    func execute(on database: MongoDBConnection) -> EventLoopFuture<Reply.Result>
+    func execute(on connection: MongoDBConnection) -> EventLoopFuture<Reply.Result>
+}
+
+extension MongoDBCommand {
+    func execute(on connection: MongoDBConnection) -> EventLoopFuture<Reply.Result> {
+        return connection.execute(command: self).mapToResult(for: connection[self.namespace])
+    }
 }
 
 extension EventLoopFuture where T: ServerReplyInitializable {
-    internal func mapToResult() -> EventLoopFuture<T.Result> {
+    internal func mapToResult(for collection: Collection) -> EventLoopFuture<T.Result> {
         return self.thenThrowing { reply in
-            return try reply.makeResult()
+            return try reply.makeResult(on: collection)
         }
     }
 }
@@ -24,7 +30,7 @@ protocol ServerReplyInitializable {
     
     init(reply: ServerReply) throws
     
-    func makeResult() throws -> Result
+    func makeResult(on collection: Collection) throws -> Result
 }
 
 protocol ServerReplyDecodable: Decodable, ServerReplyInitializable {

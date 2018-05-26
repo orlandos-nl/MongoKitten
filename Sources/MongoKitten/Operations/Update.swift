@@ -24,11 +24,11 @@ public struct UpdateCommand: MongoDBCommand {
         }
     }
     
-    internal var collectionReference: CollectionReference {
+    internal var namespace: Namespace {
         return update
     }
     
-    private let update: CollectionReference
+    private let update: Namespace
     public var updates: [Single]
     public var ordered: Bool?
 //    public var writeConcern: WriteConcern?
@@ -83,7 +83,7 @@ public struct UpdateReply: ServerReplyDecodable {
         return MongoKittenError(.commandFailure, reason: nil)
     }
     
-    func makeResult() throws -> UpdateReply {
+    func makeResult(on collection: Collection) throws -> UpdateReply {
         return self
     }
 }
