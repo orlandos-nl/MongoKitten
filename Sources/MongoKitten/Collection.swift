@@ -53,8 +53,14 @@ public final class Collection {
         return CountCommand(query, in: self).execute(on: connection)
     }
     
-    public func delete(_ query: Query = [:]) -> EventLoopFuture<Int> {
-        let delete = DeleteCommand.Single(matching: query)
+    public func deleteAll(_ query: Query = [:]) -> EventLoopFuture<Int> {
+        let delete = DeleteCommand.Single(matching: query, limit: .all)
+        
+        return DeleteCommand([delete], from: self).execute(on: connection)
+    }
+    
+    public func deleteOne(_ query: Query = [:]) -> EventLoopFuture<Int> {
+        let delete = DeleteCommand.Single(matching: query, limit: .one)
         
         return DeleteCommand([delete], from: self).execute(on: connection)
     }
