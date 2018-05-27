@@ -1,7 +1,7 @@
 import NIO
 
 public final class Cursor<Element> {
-    typealias Mapping = (Document) -> Element
+    typealias Mapping = (Document) throws -> Element
     
     var id: Int64
     var buffer: [Element]
@@ -19,8 +19,15 @@ public final class Cursor<Element> {
         self.mapping = mapping
     }
     
-    func map<T>(_ transform: (Element) throws -> T) -> Cursor<T> {
-        unimplemented()
+    public func map<T>(_ transform: @escaping (Element) throws -> T) throws -> Cursor<T> {
+        return try Cursor<T>(
+            id: self.id,
+            buffer: self.buffer.map(transform),
+            collection: self.collection,
+            mapping: { doc in
+                return try transform(self.mapping(doc))
+            }
+        )
     }
     
     public func forEach(_ body: @escaping (Element) throws -> Void) -> EventLoopFuture<Void> {
@@ -44,9 +51,9 @@ public final class Cursor<Element> {
     func getMore() -> EventLoopFuture<Void> {
         return GetMore(cursorId: self.id, batchSize: batchSize, on: self.collection)
             .execute(on: self.collection.connection)
-            .map { reply -> Void in
+            .thenThrowing { reply -> Void in
                 self.id = reply.cursor.id
-                self.buffer = reply.cursor.nextBatch.map(self.mapping)
+                self.buffer = try reply.cursor.nextBatch.map(self.mapping)
             }
     }
     
