@@ -9,16 +9,50 @@ class FindTests : XCTestCase {
     
     override func setUp() {
         self.connection = MongoDBConnection.connect(on: group, settings: settings)
+        
+        try! self.connection.then { connection in
+            return connection["test"].drop()
+        }.wait()
+    }
+    
+    func createTestData(n: Int, in collection: MongoCollection) -> EventLoopFuture<Void> {
+        func nextDocument() -> Document {
+            return [
+                "_id": collection.objectIdGenerator.generate()
+            ]
+        }
+        
+        var future = collection.insert(nextDocument())
+        
+        for _ in 1..<n {
+            future = future.then { _ in
+                return collection.insert(nextDocument())
+            }
+        }
+        
+        return future.map { _ in }
     }
     
     func testFind() throws {
         do {
-            try connection.then { connection in
-                return connection["test"]["test"].find()
-            }.then { cursor in
-                cursor.forEach { doc in
-                    print(doc)
+            var n = 152
+            
+            try connection.then { connection -> EventLoopFuture<Cursor<Document>> in
+                let collection = connection["test"]["test"]
+                
+                return self.createTestData(n: n, in: collection).then {
+                    return collection.find()
                 }
+            }.then { cursor -> EventLoopFuture<Void> in
+                let future = cursor.forEach { doc in
+                    n -= 1
+                }
+                
+                future.whenSuccess {
+                    XCTAssertEqual(n, 0, "The amount of inserts did not match the found results")
+                }
+                
+                return future
             }.wait()
         } catch {
             print(error)

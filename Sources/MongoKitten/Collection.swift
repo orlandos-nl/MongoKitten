@@ -1,6 +1,8 @@
 import NIO
 import Foundation
 
+public typealias MongoCollection = Collection
+
 public final class Collection {
     public let name: String
     public let database: Database
@@ -11,6 +13,10 @@ public final class Collection {
     
     internal var connection: MongoDBConnection {
         return self.database.connection
+    }
+    
+    public var objectIdGenerator: ObjectIdGenerator {
+        return connection.sharedGenerator
     }
     
     internal var reference: Namespace {

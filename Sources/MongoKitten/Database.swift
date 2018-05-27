@@ -5,12 +5,20 @@
 //  Created by Robbert Brandsma on 24-05-18.
 //
 
+import BSON
 import Foundation
 import NIO
 
 public final class Database {
     public let name: String
     public let connection: MongoDBConnection
+    internal var cmd: Collection {
+        return self["$cmd"]
+    }
+    
+    public var objectIdGenerator: ObjectIdGenerator {
+        return connection.sharedGenerator
+    }
     
     var eventLoop: EventLoop {
         return connection.eventLoop
@@ -48,4 +56,9 @@ public final class Database {
         return Collection(named: collection, in: self)
     }
     
+    public func drop() -> EventLoopFuture<Void> {
+        let command = AdministrativeCommand(command: DropDatabase(), on: cmd)
+        
+        return command.execute(on: connection).map { _ in }
+    }
 }

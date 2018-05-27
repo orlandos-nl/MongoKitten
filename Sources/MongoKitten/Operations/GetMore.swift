@@ -12,7 +12,6 @@ internal struct GetMore: MongoDBCommand {
     internal let getMore: Int64
     let collection: Namespace
     var batchSize: Int?
-    var maxTimeMS: Int? = 300_000 // 5 min
     
     init(cursorId: Int64, batchSize: Int?, on collection: Collection) {
         self.getMore = cursorId
@@ -32,7 +31,9 @@ struct GetMoreReply: ServerReplyDecodable {
         var nextBatch: [Document]
     }
     
-    var mongoKittenError: MongoKittenError
+    var mongoKittenError: MongoKittenError {
+        return MongoKittenError(.commandFailure, reason: nil)
+    }
     
     internal let cursor: CursorDetails
     private let ok: Int
