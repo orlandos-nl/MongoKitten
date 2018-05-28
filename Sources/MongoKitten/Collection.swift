@@ -23,10 +23,7 @@ public final class Collection {
         return Namespace(to: self.name, inDatabase: self.database.name)
     }
     
-    /// Initializes this collection with a database and name
-    ///
-    /// - parameter name: The collection name
-    /// - parameter database: The database this `Collection` exists in
+    /// Initializes this collection with by the database it's in and the collection name
     internal init(named name: String, in database: Database) {
         self.name = name
         self.database = database
@@ -45,36 +42,55 @@ public final class Collection {
         return InsertCommand(documents, into: self).execute(on: connection)
     }
     
-    public func find(_ query: Query = [:]) -> EventLoopFuture<Cursor<Document>> {
-        return FindOperation(filter: query, on: self).execute(on: connection)
-    }
-    
     public func find(
         _ query: Query = [:],
-        inRange range: CountableRange<Int>
+        sortedBy sort: Sort? = nil,
+        projecting projection: Projection? = nil
     ) -> EventLoopFuture<Cursor<Document>> {
         var operation = FindOperation(filter: query, on: self)
-        operation.limit = range.upperBound - range.lowerBound
-        operation.skip = range.lowerBound
+        operation.sort = sort
+        operation.projection = projection
         return operation.execute(on: connection)
     }
     
     public func find(
         _ query: Query = [:],
-        inRange range: CountablePartialRangeFrom<Int>
+        inRange range: CountableRange<Int>,
+        sortedBy sort: Sort? = nil,
+        projecting projection: Projection? = nil
     ) -> EventLoopFuture<Cursor<Document>> {
         var operation = FindOperation(filter: query, on: self)
+        operation.limit = range.upperBound - range.lowerBound
         operation.skip = range.lowerBound
+        operation.sort = sort
+        operation.projection = projection
         return operation.execute(on: connection)
     }
     
     public func find(
         _ query: Query = [:],
-        inRange range: CountableClosedRange<Int>
+        inRange range: CountablePartialRangeFrom<Int>,
+        sortedBy sort: Sort? = nil,
+        projecting projection: Projection? = nil
+    ) -> EventLoopFuture<Cursor<Document>> {
+        var operation = FindOperation(filter: query, on: self)
+        operation.skip = range.lowerBound
+        operation.sort = sort
+        operation.projection = projection
+        return operation.execute(on: connection)
+    }
+    
+    public func find(
+        _ query: Query = [:],
+        inRange range: CountableClosedRange<Int>,
+        sortedBy sort: Sort? = nil,
+        projecting projection: Projection? = nil
     ) -> EventLoopFuture<Cursor<Document>> {
         var operation = FindOperation(filter: query, on: self)
         operation.limit = range.upperBound - range.lowerBound
         operation.skip = range.lowerBound
+        operation.sort = sort
+        operation.projection = projection
         return operation.execute(on: connection)
     }
     
