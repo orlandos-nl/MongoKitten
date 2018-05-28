@@ -15,7 +15,7 @@ public final class MongoDBConnection {
     var currentRequestId: Int32 = 0
     internal let sharedGenerator = ObjectIdGenerator()
     
-    var eventLoop: EventLoop {
+    public var eventLoop: EventLoop {
         return channel.eventLoop
     }
     

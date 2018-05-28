@@ -19,6 +19,10 @@ public struct FindOperation: MongoDBCommand {
     }
 }
 
+public struct CursorSettings: Encodable {
+    var batchSize: Int?
+}
+
 struct CursorReply: ServerReplyDecodable {
     struct CursorDetails : Codable {
         var id: Int64

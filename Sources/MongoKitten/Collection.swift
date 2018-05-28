@@ -96,4 +96,21 @@ public final class Collection {
             "$unset": unsetQuery
         ])
     }
+    
+    public func distinct(onKey key: String, filter: Query? = nil) -> EventLoopFuture<[Primitive]> {
+        var distinct = DistinctCommand(onKey: key, into: self)
+        distinct.query = filter
+        return distinct.execute(on: connection)
+    }
+    
+    public func aggregate(_ pipeline: Pipeline<[Document]>) -> EventLoopFuture<Cursor<Document>> {
+        let command = AggregateCommand(pipeline: pipeline, in: self)
+        return command.execute(on: connection)
+    }
+    
+    public func aggregate<O>(_ pipeline: Pipeline<O>) -> EventLoopFuture<O> {
+        let command = AggregateCommand(pipeline: pipeline, in: self)
+        
+        return command.execute(on: connection).thenThrowing(pipeline.transform)
+    }
 }

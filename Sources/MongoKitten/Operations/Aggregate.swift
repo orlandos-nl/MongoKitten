@@ -1,41 +1,28 @@
-//import Async
-//
-//public struct Aggregate<C: Codable>: Command {
-//    let targetCollection: MongoCollection<C>
-//
-//    public let aggregate: String
-//    public var pipeline: [AggregationPipeline.Stage]
-//    public var cursor: CursorOptions
-//    public var maxTimeMS: UInt32?
-//    public var bypassDocumentValidation: Bool?
-//    public var readConcern: ReadConcern?
-//    public var collation: Collation?
-//
-//    static var writing: Bool { return true }
-//    static var emitsCursor: Bool { return true }
-//
-//    public init(pipeline: AggregationPipeline, on collection: Collection<C>) {
-//        self.aggregate = collection.name
-//        self.targetCollection = collection
-//        self.pipeline = pipeline.stages
-//        self.cursor = CursorOptions()
-//
-//        // Collection defaults
-//        self.readConcern = collection.default.readConcern
-//        self.collation = collection.default.collation
-//    }
-//
-//    public func execute(on connection: DatabaseConnection) -> Cursor<C> {
-//        let cursor = Cursor(collection: targetCollection, connection: connection)
-//
-//        connection.execute(self, expecting: Reply.Cursor.self).do { spec in
-//            cursor.initialize(to: spec.cursor)
-//        }.catch(cursor.pushStream.error)
-//
-//        return cursor
-//    }
-//}
-//
-//public struct CursorOptions: Codable {
-//    var batchSize: Int32 = 100
-//}
+import BSON
+import NIO
+
+public struct AggregateCommand: MongoDBCommand {
+    typealias Reply = CursorReply
+    
+    internal var namespace: Namespace {
+        return aggregate
+    }
+    
+    internal let aggregate: Namespace
+    public var pipeline: [Document]
+    public var cursor = CursorSettings()
+    
+    static let writing = false
+    static let emitsCursor = true
+    
+    public init<O>(pipeline: Pipeline<O>, in collection: Collection) {
+        self.aggregate = collection.reference
+        self.pipeline = pipeline.stages
+    }
+    
+    public func execute(on connection: MongoDBConnection) -> EventLoopFuture<Cursor<Document>> {
+        let collection = connection[self.namespace]
+        
+        return connection.execute(command: self).mapToResult(for: collection)
+    }
+}

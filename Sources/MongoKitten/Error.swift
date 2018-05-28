@@ -16,6 +16,7 @@ public struct MongoKittenError : Codable, Error, CustomStringConvertible, Equata
         case unableToConnect
         case commandFailure
         case protocolParsingError
+        case unexpectedAggregateResults
         
         public var description: String {
             switch self {
@@ -27,6 +28,8 @@ public struct MongoKittenError : Codable, Error, CustomStringConvertible, Equata
                 return "MongoDB replied with an error reply indicating the command failed"
             case .protocolParsingError:
                 return "An error occurred when parsing a reply message from MongoDB"
+            case .unexpectedAggregateResults:
+                return "The aggregate failed because the results mismatched MongoKitten's expectations"
             }
         }
     }
@@ -40,6 +43,9 @@ public struct MongoKittenError : Codable, Error, CustomStringConvertible, Equata
         case invalidPort
         case noHostSpecified
         case noTargetDatabaseSpecified
+        case multipleResultDocuments
+        case noResultDocuments
+        case unexpectedValue
         
         public var description: String {
             switch self {
@@ -50,6 +56,9 @@ public struct MongoKittenError : Codable, Error, CustomStringConvertible, Equata
             case .invalidPort: return "The given port number is invalid"
             case .noHostSpecified: return "No host was specified"
             case .noTargetDatabaseSpecified: return "A target database was not specified"
+            case .noResultDocuments: return "One Document was expected but none were returned"
+            case .multipleResultDocuments: return "One Document was expected but multiple were returned"
+            case .unexpectedValue: return "The value found in the result cursor did not match the type safe expectation"
             }
         }
     }
