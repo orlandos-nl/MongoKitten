@@ -98,7 +98,13 @@ public struct CountStage: PipelineStage {
         case let int as Int32:
             return numericCast(int)
         case let int as Int64:
-            return numericCast(int)
+            #if arch(x86_64)
+                // Int == Int64, don't do boundary checking
+                return numericCast(int)
+            #else
+                // Swift will handle safe conversion
+                return Int(int)
+            #endif
         default:
             throw MongoKittenError(.unexpectedAggregateResults, reason: .unexpectedValue)
         }

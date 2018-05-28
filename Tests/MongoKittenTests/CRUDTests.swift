@@ -15,18 +15,33 @@ class CRUDTests : XCTestCase {
         }.wait()
     }
     
+    func testRangeFind() throws {
+        try connection.then { connection -> EventLoopFuture<Void> in
+            let collection = connection["test"]["test"]
+            
+            return self.createTestData(n: 128, in: collection).then {
+                let findRange = collection.find(inRange: 10..<22).testRange(count: 12)
+                let findPartialRange = collection.find(inRange: 118...).testRange(startingAt: 118)
+                let findClosedRange = collection.find(inRange: 10...20).testRange()
+                
+                return findRange.and(findPartialRange).and(findClosedRange).map { _ in }
+            }
+        }.wait()
+    }
+    
     func createTestData(n: Int, in collection: MongoCollection) -> EventLoopFuture<Void> {
-        func nextDocument() -> Document {
+        func nextDocument(index: Int) -> Document {
             return [
-                "_id": collection.objectIdGenerator.generate()
+                "_id": collection.objectIdGenerator.generate(),
+                "n": index
             ]
         }
         
-        var future = collection.insert(nextDocument())
+        var future = collection.insert(nextDocument(index: 0))
         
-        for _ in 1..<n {
+        for index in 1..<n {
             future = future.then { _ in
-                return collection.insert(nextDocument())
+                return collection.insert(nextDocument(index: index))
             }
         }
         
@@ -68,7 +83,29 @@ class CRUDTests : XCTestCase {
         }.wait()
     }
     
-    func testPipeline() throws {
+    func testDistinct() throws {
+        let values = try connection.then { connection -> EventLoopFuture<[Primitive]> in
+            let pets = connection["test"]["pets"]
+            
+            // TODO: Real pet names?
+            let a = pets.addPet(named: "A", owner: "Joannis")
+            let b = pets.addPet(named: "B", owner: "Joannis")
+            let c = pets.addPet(named: "C", owner: "Robbert")
+            let d = pets.addPet(named: "D", owner: "Robbert")
+            let e = pets.addPet(named: "E", owner: "Test0")
+            let f = pets.addPet(named: "F", owner: "Test1")
+            
+            return a.and(b).and(c).and(d).and(e).and(f).then { _ in
+                return pets.distinct(onKey: "owner")
+            }
+        }.wait()
+        
+        let owners = Set(values.compactMap { $0 as? String })
+        
+        XCTAssertEqual(owners, ["Joannis", "Robbert", "Test0", "Test1"])
+    }
+    
+    func testPipelineUsage() throws {
         let pets = try connection.then { connection -> EventLoopFuture<Int> in
             let pets = connection["test"]["pets"]
             
@@ -77,8 +114,8 @@ class CRUDTests : XCTestCase {
             let b = pets.addPet(named: "B", owner: "Joannis")
             let c = pets.addPet(named: "C", owner: "Robbert")
             let d = pets.addPet(named: "D", owner: "Robbert")
-            let e = pets.addPet(named: "E", owner: "Henk")
-            let f = pets.addPet(named: "F", owner: "Piet")
+            let e = pets.addPet(named: "E", owner: "Test0")
+            let f = pets.addPet(named: "F", owner: "Test1")
             
             let inserts = a.and(b).and(c).and(d).and(e).and(f)
             
@@ -105,5 +142,20 @@ extension MongoCollection {
             "name": name,
             "owner": owner
         ]).map { _ in }
+    }
+}
+
+extension EventLoopFuture where T == Cursor<Document> {
+    func testRange(startingAt start: Int64 = 10, count: Int64 = 10) -> EventLoopFuture<Void> {
+        return self.then { cursor in
+            var n: Int64 = start
+            
+            return cursor.forEach { document in
+                XCTAssertEqual(document["n"] as? Int64, n)
+                n += 1
+            }.map {
+                XCTAssertEqual(n, start + count)
+            }
+        }
     }
 }

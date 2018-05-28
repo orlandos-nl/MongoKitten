@@ -49,6 +49,35 @@ public final class Collection {
         return FindOperation(filter: query, on: self).execute(on: connection)
     }
     
+    public func find(
+        _ query: Query = [:],
+        inRange range: CountableRange<Int>
+    ) -> EventLoopFuture<Cursor<Document>> {
+        var operation = FindOperation(filter: query, on: self)
+        operation.limit = range.upperBound - range.lowerBound
+        operation.skip = range.lowerBound
+        return operation.execute(on: connection)
+    }
+    
+    public func find(
+        _ query: Query = [:],
+        inRange range: CountablePartialRangeFrom<Int>
+    ) -> EventLoopFuture<Cursor<Document>> {
+        var operation = FindOperation(filter: query, on: self)
+        operation.skip = range.lowerBound
+        return operation.execute(on: connection)
+    }
+    
+    public func find(
+        _ query: Query = [:],
+        inRange range: CountableClosedRange<Int>
+    ) -> EventLoopFuture<Cursor<Document>> {
+        var operation = FindOperation(filter: query, on: self)
+        operation.limit = range.upperBound - range.lowerBound
+        operation.skip = range.lowerBound
+        return operation.execute(on: connection)
+    }
+    
     public func count(_ query: Query? = nil) -> EventLoopFuture<Int> {
         return CountCommand(query, in: self).execute(on: connection)
     }

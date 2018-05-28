@@ -3,7 +3,6 @@ import NIO
 public struct FindOperation: MongoDBCommand {
     typealias Reply = CursorReply
     
-    
     internal var namespace: Namespace {
         return find
     }
@@ -12,6 +11,10 @@ public struct FindOperation: MongoDBCommand {
     internal let find: Namespace
     
     public var filter: Query?
+//    public var sort: Sort
+//    public var projection: Projection
+    public var skip: Int?
+    public var limit: Int?
     
     public init(filter: Query?, on collection: Collection) {
         self.filter = filter
