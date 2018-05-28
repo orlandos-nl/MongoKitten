@@ -69,4 +69,10 @@ extension Cursor where Element == Document {
             return document
         }
     }
+    
+    public func mapDecode<D: Decodable>(to type: D.Type, using decoder: BSONDecoder) throws -> Cursor<D> {
+        return try self.map { document in
+            return try decoder.decode(D.self, from: document)
+        }
+    }
 }
