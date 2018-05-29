@@ -17,6 +17,7 @@ public struct MongoKittenError : Codable, Error, CustomStringConvertible, Equata
         case commandFailure
         case protocolParsingError
         case unexpectedAggregateResults
+        case cannotGetMore
         
         public var description: String {
             switch self {
@@ -30,6 +31,7 @@ public struct MongoKittenError : Codable, Error, CustomStringConvertible, Equata
                 return "An error occurred when parsing a reply message from MongoDB"
             case .unexpectedAggregateResults:
                 return "The aggregate failed because the results mismatched MongoKitten's expectations"
+            case .cannotGetMore: return "The cursor cannot get more elements"
             }
         }
     }
@@ -46,6 +48,7 @@ public struct MongoKittenError : Codable, Error, CustomStringConvertible, Equata
         case multipleResultDocuments
         case noResultDocuments
         case unexpectedValue
+        case cursorDrained
         
         public var description: String {
             switch self {
@@ -59,6 +62,7 @@ public struct MongoKittenError : Codable, Error, CustomStringConvertible, Equata
             case .noResultDocuments: return "One Document was expected but none were returned"
             case .multipleResultDocuments: return "One Document was expected but multiple were returned"
             case .unexpectedValue: return "The value found in the result cursor did not match the type safe expectation"
+            case .cursorDrained: return "The cursor has been drained, which means there are no more elements left to get"
             }
         }
     }

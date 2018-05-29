@@ -44,7 +44,7 @@ struct CursorReply: ServerReplyDecodable {
         return ok == 1
     }
     
-    func makeResult(on collection: Collection) throws -> Cursor<Document> {
-        return try Cursor(self, collection: collection)
+    func makeResult(on collection: Collection) throws -> _Cursor {
+        return _Cursor(reply: self, in: collection)
     }
 }
