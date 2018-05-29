@@ -2,10 +2,15 @@ import BSON
 import NIO
 import Foundation
 
-
 // TODO: https://github.com/mongodb/specifications/blob/master/source/wireversion-featurelist.rst
 // TODO: https://github.com/mongodb/specifications/tree/master/source/retryable-writes
 // TODO: https://github.com/mongodb/specifications/blob/master/source/change-streams.rst
+// TODO: https://github.com/mongodb/specifications/tree/master/source/initial-dns-seedlist-discovery
+// TODO: https://github.com/mongodb/specifications/tree/master/source/mongodb-handshake
+// TODO: https://github.com/mongodb/specifications/tree/master/source/max-staleness
+// TODO: https://github.com/mongodb/specifications/tree/master/source/server-selection
+// TODO: https://github.com/mongodb/specifications/tree/master/source/server-discovery-and-monitoring
+// TODO: https://github.com/mongodb/specifications/blob/master/source/driver-read-preferences.rst
 
 /// A single MongoDB connection to a single MongoDB server.
 /// `MongoDBConnection` handles the lowest level communication to a MongoDB instance.
@@ -59,17 +64,6 @@ public final class MongoDBConnection {
         return pipeline.add(handler: ClientConnectionParser(context: context)).then {
             pipeline.add(handler: ClientConnectionSerializer(context: context))
         }
-    }
-    
-    init(_ uri: String) {
-        // TODO: https://github.com/mongodb/specifications/tree/master/source/connection-string
-        // TODO: https://github.com/mongodb/specifications/tree/master/source/initial-dns-seedlist-discovery
-        // TODO: https://github.com/mongodb/specifications/tree/master/source/mongodb-handshake
-        // TODO: https://github.com/mongodb/specifications/tree/master/source/max-staleness
-        // TODO: https://github.com/mongodb/specifications/tree/master/source/server-selection
-        // TODO: https://github.com/mongodb/specifications/tree/master/source/server-discovery-and-monitoring
-        // TODO: https://github.com/mongodb/specifications/blob/master/source/driver-read-preferences.rst
-        unimplemented()
     }
     
     func _execute<C: AnyMongoDBCommand>(command: C) -> EventLoopFuture<ServerReply> {

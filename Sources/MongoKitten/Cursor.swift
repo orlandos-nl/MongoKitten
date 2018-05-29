@@ -98,7 +98,39 @@ public protocol QueryCursor {
     func forEach(handler: @escaping (Element) throws -> Void) -> EventLoopFuture<Void>
     
     func map<E>(transform: @escaping (Element) throws -> E) -> MappedCursor<Self, E>
-    func flatMap<E>(transform: @escaping (Element) throws -> EventLoopFuture<E>) -> FlatMappedCursor<Self, E>
+}
+
+extension QueryCursor {
+    @discardableResult
+    public func forEach(handler: @escaping (Element) throws -> Void) -> EventLoopFuture<Void> {
+        return execute().then { finalizedCursor in
+            func nextBatch() -> EventLoopFuture<Void> {
+                return finalizedCursor.nextBatch().then { batch in
+                    do {
+                        var batch = batch
+                        
+                        while let element = try batch.nextElement() {
+                            try handler(element)
+                        }
+                        
+                        if batch.isLast {
+                            return self.collection.connection.eventLoop.newSucceededFuture(result: ())
+                        }
+                        
+                        return nextBatch()
+                    } catch {
+                        return self.collection.connection.eventLoop.newFailedFuture(error: error)
+                    }
+                }
+            }
+            
+            return nextBatch()
+        }
+    }
+    
+    public func map<E>(transform: @escaping (Element) throws -> E) -> MappedCursor<Self, E> {
+        return MappedCursor(underlyingCursor: self, transform: transform)
+    }
 }
 
 internal protocol CursorBasedOnOtherCursor : QueryCursor {
@@ -175,58 +207,6 @@ extension QueryCursor where Element == Document {
     }
 }
 
-extension QueryCursor {
-    @discardableResult
-    public func forEach(handler: @escaping (Element) throws -> Void) -> EventLoopFuture<Void> {
-        return execute().then { finalizedCursor in
-            func nextBatch() -> EventLoopFuture<Void> {
-                return finalizedCursor.nextBatch().then { batch in
-                    do {
-                        var batch = batch
-                        
-                        while let element = try batch.nextElement() {
-                            try handler(element)
-                        }
-                        
-                        if batch.isLast {
-                            return self.collection.connection.eventLoop.newSucceededFuture(result: ())
-                        }
-                        
-                        return nextBatch()
-                    } catch {
-                        return self.collection.connection.eventLoop.newFailedFuture(error: error)
-                    }
-                }
-            }
-            
-            return nextBatch()
-        }
-    }
-    
-    public func map<E>(transform: @escaping (Element) throws -> E) -> MappedCursor<Self, E> {
-        return MappedCursor(underlyingCursor: self, transform: transform)
-    }
-    
-    public func flatMap<E>(transform: @escaping (Element) throws -> EventLoopFuture<E>) -> FlatMappedCursor<Self, E> {
-        unimplemented()
-    }
-}
-
-public final class FlatMappedCursor<Base: QueryCursor, Element> : CursorBasedOnOtherCursor {
-    
-    internal typealias Transform<E> = (Base.Element) throws -> EventLoopFuture<E>
-    
-    var underlyingCursor: Base
-    
-    internal init(underlyingCursor cursor: Base, transform: @escaping Transform<Element>) {
-        unimplemented()
-    }
-    
-    public func transformElement(_ element: Document) throws -> Element {
-        unimplemented()
-    }
-}
-    
 public final class MappedCursor<Base: QueryCursor, Element> : CursorBasedOnOtherCursor {
     internal typealias Transform<E> = (Base.Element) throws -> E
     

@@ -34,16 +34,29 @@ public final class Collection {
         return "\(self.database.name).\(self.name)"
     }
     
+    @discardableResult
     public func insert(_ document: Document) -> EventLoopFuture<InsertReply> {
         return InsertCommand([document], into: self).execute(on: connection)
     }
     
+    @discardableResult
     public func insert(documents: [Document]) -> EventLoopFuture<InsertReply> {
         return InsertCommand(documents, into: self).execute(on: connection)
     }
     
     public func find(_ query: Query = [:]) -> FindCursor {
         return FindCursor(operation: FindOperation(filter: query, on: self), on: self)
+    }
+    
+    public func findOne(_ query: Query = [:]) -> EventLoopFuture<Document?> {
+        var operation = FindOperation(filter: query, on: self)
+        operation.limit = 1
+        
+        return FindCursor(operation: operation, on: self).execute().then { cursor in
+            return cursor.nextBatch().map { batch in
+                return batch.batch.first
+            }
+        }
     }
     
     public func count(_ query: Query? = nil) -> EventLoopFuture<Int> {

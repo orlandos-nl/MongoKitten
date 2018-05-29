@@ -24,6 +24,21 @@ public final class Database {
         return connection.eventLoop
     }
     
+    /// A helper method that uses the normal `connect` method and awaits it. It creates an event loop group for you.
+    ///
+    /// It is not recommended to use `synchronousConnect` in a NIO environment (like Vapor 3), as it will create an event loop group for you.
+    ///
+    /// - parameter uri: A MongoDB URI that contains at least a database component
+    public static func synchronousConnect(_ uri: String) throws -> Database {
+        let group = MultiThreadedEventLoopGroup(numThreads: 1)
+        
+        return try self.connect(uri, on: group).wait()
+    }
+    
+    /// Connect to the database at the given `uri`
+    ///
+    /// - parameter uri: A MongoDB URI that contains at least a database component
+    /// - parameter group: An EventLoopGroup from NIO. If you want to use MongoKitten in a synchronous / non-NIO environment, use the `synchronousConnect` method.
     public static func connect(_ uri: String, on group: EventLoopGroup) -> EventLoopFuture<Database> {
         let loop = group.next()
         
