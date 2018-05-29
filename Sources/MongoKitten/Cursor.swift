@@ -102,6 +102,45 @@ public protocol QueryCursor {
 
 extension QueryCursor {
     @discardableResult
+    public func forEachFuture<T>(
+        handler: @escaping (T) -> Void
+    ) -> EventLoopFuture<Void> where Element == EventLoopFuture<T> {
+        return execute().then { finalizedCursor in
+            func nextBatch() -> EventLoopFuture<Void> {
+                return finalizedCursor.nextBatch().then { batch in
+                    do {
+                        var batch = batch
+                        
+                        guard let element = try batch.nextElement() else {
+                            return self.collection.connection.eventLoop.newSucceededFuture(result: ())
+                        }
+                        
+                        var future = element.map(handler)
+                        
+                        while let element = try batch.nextElement() {
+                            future = future.then {
+                                return element.map(handler)
+                            }
+                        }
+                        
+                        if batch.isLast {
+                            return self.collection.connection.eventLoop.newSucceededFuture(result: ())
+                        }
+                        
+                        return nextBatch()
+                    } catch {
+                        return self.collection.connection.eventLoop.newFailedFuture(error: error)
+                    }
+                }
+            }
+            
+            return nextBatch()
+        }
+    }
+}
+
+extension QueryCursor {
+    @discardableResult
     public func forEach(handler: @escaping (Element) throws -> Void) -> EventLoopFuture<Void> {
         return execute().then { finalizedCursor in
             func nextBatch() -> EventLoopFuture<Void> {

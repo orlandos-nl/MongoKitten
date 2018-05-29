@@ -7,14 +7,12 @@ let dbName = "MongoKittenUnitTests"
 class CRUDTests : XCTestCase {
     let group = MultiThreadedEventLoopGroup(numThreads: 1)
     let settings = try! ConnectionSettings("mongodb://localhost:27017")
-    var connection: EventLoopFuture<MongoDBConnection>!
+    var connection: MongoDBConnection!
     
     override func setUp() {
-        self.connection = MongoDBConnection.connect(on: group, settings: settings)
+        self.connection = try! MongoDBConnection.connect(on: group, settings: settings).wait()
         
-        try! self.connection.then { connection in
-            return connection[dbName].drop()
-        }.wait()
+        try! connection[dbName].drop().wait()
     }
     
 //    func testRangeFind() throws {
@@ -50,8 +48,40 @@ class CRUDTests : XCTestCase {
         return future.map { _ in }
     }
     
+    func testHenk() throws {
+        let dogs = connection[dbName]["dogs"]
+        let owners = connection[dbName]["owners"]
+        
+        let ownerId = owners.objectIdGenerator.generate()
+        dogs.insert(["_id": dogs.objectIdGenerator.generate(), "owner": ownerId])
+        owners.insert(["_id": ownerId])
+        
+        typealias Dog = Document
+        typealias Owner = Document
+        
+        typealias Pair = (Dog, Owner?)
+        struct NoOwnerFoundMeh: Error {}
+        
+        let pairs = try dogs.find().map { dog -> EventLoopFuture<(Dog, Owner?)> in
+            guard let ownerId = dog["owner"] as? ObjectId else {
+                throw NoOwnerFoundMeh()
+            }
+            
+            return owners.findOne("_id" == ownerId).map { owner in
+                return (dog, owner)
+            }
+        }.forEachFuture { dog, owner in
+            print("dog", dog)
+            print("owner", owner)
+
+        }.wait()
+        
+        try dogs.find().forEach { doc in
+            print(doc)
+        }.wait()
+    }
+    
     func testBasicFind() throws {
-        let connection = try self.connection.wait()
         let collection = connection[dbName]["test"]
             
         try createTestData(n: 241, in: collection).wait()
