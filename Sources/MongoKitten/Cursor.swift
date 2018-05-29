@@ -1,6 +1,6 @@
 import NIO
 
-internal final class _Cursor {
+internal final class Cursor {
     var id: Int64
     var initialBatch: [Document]?
     var drained: Bool {
@@ -79,12 +79,16 @@ fileprivate extension CursorBatch where Element == Document {
     }
 }
 
-public protocol Cursor {
+public protocol QueryCursor {
     associatedtype Element
     var collection: Collection { get }
     
     var batchSize: Int { get }
     func setBatchSize(_ batchSize: Int) -> Self
+    func limit(_ limit: Int) -> Self
+    func skip(_ skip: Int) -> Self
+    func project(_ projection: Projection) -> Self
+    func sort(_ sort: Sort) -> Self
     
     func execute() -> EventLoopFuture<FinalizedCursor<Self>>
     
@@ -97,8 +101,8 @@ public protocol Cursor {
     func flatMap<E>(transform: @escaping (Element) throws -> EventLoopFuture<E>) -> FlatMappedCursor<Self, E>
 }
 
-internal protocol CursorBasedOnOtherCursor : Cursor {
-    associatedtype Base : Cursor
+internal protocol CursorBasedOnOtherCursor : QueryCursor {
+    associatedtype Base : QueryCursor
     
     var underlyingCursor: Base { get }
 }
@@ -106,6 +110,26 @@ internal protocol CursorBasedOnOtherCursor : Cursor {
 extension CursorBasedOnOtherCursor {
     public func setBatchSize(_ batchSize: Int) -> Self {
         _ = underlyingCursor.setBatchSize(batchSize)
+        return self
+    }
+    
+    public func limit(_ limit: Int) -> Self {
+        _ = underlyingCursor.limit(limit)
+        return self
+    }
+    
+    public func skip(_ skip: Int) -> Self {
+        _ = underlyingCursor.skip(skip)
+        return self
+    }
+    
+    public func sort(_ sort: Sort) -> Self {
+        _ = underlyingCursor.sort(sort)
+        return self
+    }
+    
+    public func project(_ projection: Projection) -> Self {
+        _ = underlyingCursor.project(projection)
         return self
     }
     
@@ -124,11 +148,11 @@ extension CursorBasedOnOtherCursor {
     }
 }
 
-public final class FinalizedCursor<Base: Cursor> {
+public final class FinalizedCursor<Base: QueryCursor> {
     let base: Base
-    let cursor: _Cursor
+    let cursor: Cursor
     
-    init(basedOn base: Base, cursor: _Cursor) {
+    init(basedOn base: Base, cursor: Cursor) {
         self.base = base
         self.cursor = cursor
     }
@@ -143,7 +167,7 @@ public final class FinalizedCursor<Base: Cursor> {
     }
 }
 
-extension Cursor where Element == Document {
+extension QueryCursor where Element == Document {
     public func decode<D: Decodable>(to type: D.Type, using decoder: BSONDecoder = BSONDecoder()) throws -> MappedCursor<Self, D> {
         return self.map { document in
             return try decoder.decode(D.self, from: document)
@@ -151,7 +175,7 @@ extension Cursor where Element == Document {
     }
 }
 
-extension Cursor {
+extension QueryCursor {
     @discardableResult
     public func forEach(handler: @escaping (Element) throws -> Void) -> EventLoopFuture<Void> {
         return execute().then { finalizedCursor in
@@ -188,7 +212,7 @@ extension Cursor {
     }
 }
 
-public final class FlatMappedCursor<Base: Cursor, Element> : CursorBasedOnOtherCursor {
+public final class FlatMappedCursor<Base: QueryCursor, Element> : CursorBasedOnOtherCursor {
     
     internal typealias Transform<E> = (Base.Element) throws -> EventLoopFuture<E>
     
@@ -203,7 +227,7 @@ public final class FlatMappedCursor<Base: Cursor, Element> : CursorBasedOnOtherC
     }
 }
     
-public final class MappedCursor<Base: Cursor, Element> : CursorBasedOnOtherCursor {
+public final class MappedCursor<Base: QueryCursor, Element> : CursorBasedOnOtherCursor {
     internal typealias Transform<E> = (Base.Element) throws -> E
     
     internal var underlyingCursor: Base
@@ -217,34 +241,5 @@ public final class MappedCursor<Base: Cursor, Element> : CursorBasedOnOtherCurso
     public func transformElement(_ element: Document) throws -> Element {
         let input = try underlyingCursor.transformElement(element)
         return try transform(input)
-    }
-}
-
-public final class FindCursor: Cursor {
-    public typealias Element = Document
-    
-    public var batchSize = 101
-    public let collection: Collection
-    private var operation: FindOperation
-    public private(set) var didExecute = false
-    
-    public init(operation: FindOperation, on collection: Collection) {
-        self.operation = operation
-        self.collection = collection
-    }
-    
-    public func execute() -> EventLoopFuture<FinalizedCursor<FindCursor>> {
-        return self.collection.connection.execute(command: self.operation).mapToResult(for: collection).map { cursor in
-            return FinalizedCursor(basedOn: self, cursor: cursor)
-        }
-    }
-    
-    public func setBatchSize(_ batchSize: Int) -> FindCursor {
-        self.batchSize = batchSize
-        return self
-    }
-    
-    public func transformElement(_ element: Document) throws -> Document {
-        return element
     }
 }

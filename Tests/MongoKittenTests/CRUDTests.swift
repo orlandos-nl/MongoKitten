@@ -63,6 +63,30 @@ class CRUDTests : XCTestCase {
         }.wait()
         
         XCTAssertEqual(counter, 222)
+        
+        counter = 50
+        try collection.find("n" > 50).forEach { doc in
+            counter += 1
+            XCTAssertEqual(doc["n"] as? Int, counter)
+            }.wait()
+        
+        XCTAssertEqual(counter, 240)
+        
+        counter = 120
+        try collection.find("n" > 50).skip(70).limit(30).forEach { doc in
+            counter += 1
+            XCTAssertEqual(doc["n"] as? Int, counter)
+            }.wait()
+        
+        XCTAssertEqual(counter, 150)
+        
+        counter = 170
+        try collection.find("n" > 50).skip(70).limit(30).sort(["n": .descending]).forEach { doc in
+            XCTAssertEqual(doc["n"] as? Int, counter)
+            counter -= 1
+            }.wait()
+        
+        XCTAssertEqual(counter, 140)
     }
     
 //    func testUsage() throws {
