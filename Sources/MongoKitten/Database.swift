@@ -32,26 +32,36 @@ public final class Database {
     public static func synchronousConnect(_ uri: String) throws -> Database {
         let group = MultiThreadedEventLoopGroup(numThreads: 1)
         
-        return try self.connect(uri, on: group).wait()
+        return try self.connect(uri, on: group.next()).wait()
+    }
+    
+    /// Connect to the database with the given settings
+    ///
+    /// - parameter settings: The connection settings, which must include a database name
+    /// - parameter loop: An EventLoop from NIO. If you want to use MongoKitten in a synchronous / non-NIO environment, use the `synchronousConnect` method.
+    public static func connect(settings: ConnectionSettings, on loop: EventLoop) -> EventLoopFuture<Database> {
+        do {
+            guard let targetDatabase = settings.targetDatabase else {
+                throw MongoKittenError(.unableToConnect, reason: .noTargetDatabaseSpecified)
+            }
+            
+            return MongoDBConnection.connect(on: loop, settings: settings).map { connection -> Database in
+                return connection[targetDatabase]
+            }
+        } catch {
+            return loop.newFailedFuture(error: error)
+        }
     }
     
     /// Connect to the database at the given `uri`
     ///
     /// - parameter uri: A MongoDB URI that contains at least a database component
-    /// - parameter group: An EventLoopGroup from NIO. If you want to use MongoKitten in a synchronous / non-NIO environment, use the `synchronousConnect` method.
-    public static func connect(_ uri: String, on group: EventLoopGroup) -> EventLoopFuture<Database> {
-        let loop = group.next()
-        
+    /// - parameter loop: An EventLoop from NIO. If you want to use MongoKitten in a synchronous / non-NIO environment, use the `synchronousConnect` method.
+    public static func connect(_ uri: String, on loop: EventLoop) -> EventLoopFuture<Database> {
         do {
             let settings = try ConnectionSettings(uri)
             
-            guard let targetDatabase = settings.targetDatabase else {
-                throw MongoKittenError(.unableToConnect, reason: .noTargetDatabaseSpecified)
-            }
-            
-            return MongoDBConnection.connect(on: group, settings: settings).map { connection -> Database in
-                return connection[targetDatabase]
-            }
+            return connect(settings: settings, on: loop)
         } catch {
             return loop.newFailedFuture(error: error)
         }
