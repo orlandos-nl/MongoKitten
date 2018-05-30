@@ -14,9 +14,9 @@ fileprivate extension Bool {
 }
 
 /// Describes the settings for a MongoDB connection, most of which can be represented in a connection string
-public struct ConnectionSettings : Equatable {
+public struct ConnectionSettings: Equatable {
     
-    public enum Authentication : Equatable {
+    public enum Authentication: Equatable {
         /// Unauthenticated
         case unauthenticated
         
@@ -27,7 +27,7 @@ public struct ConnectionSettings : Equatable {
         case mongoDBCR(username: String, password: String)
     }
     
-    public struct Host : Equatable {
+    public struct Host: Equatable {
         public var hostname: String
         public var port: UInt16
         
@@ -63,7 +63,7 @@ public struct ConnectionSettings : Equatable {
     public var socketTimeout: TimeInterval = 300
     
     /// The target path
-    public var targetDatabase: String? = nil
+    public var targetDatabase: String?
     
     public init(authentication: Authentication, authenticationSource: String? = nil, hosts: [Host], targetDatabase: String? = nil, useSSL: Bool = false, verifySSLCertificates: Bool = true, maximumNumberOfConnections: Int = 1, connectTimeout: TimeInterval = 300, socketTimeout: TimeInterval = 300) {
         self.authentication = authentication
@@ -122,7 +122,7 @@ public struct ConnectionSettings : Equatable {
         }
         
         // Parse all queries
-        let queries: [Substring:Substring]
+        let queries: [Substring: Substring]
         if let queryString = queryString {
             queries = Dictionary(uniqueKeysWithValues: queryString.split(separator: "&").map { queryItem in
                 // queryItem can be either like `someOption` or like `someOption=abc`

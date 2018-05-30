@@ -172,8 +172,8 @@ extension QueryCursor {
     }
 }
 
-internal protocol CursorBasedOnOtherCursor : QueryCursor {
-    associatedtype Base : QueryCursor
+internal protocol CursorBasedOnOtherCursor: QueryCursor {
+    associatedtype Base: QueryCursor
     
     var underlyingCursor: Base { get }
 }

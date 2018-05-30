@@ -25,7 +25,7 @@ internal struct GetMore: MongoDBCommand {
 }
 
 struct GetMoreReply: ServerReplyDecodable {
-    struct CursorDetails : Codable {
+    struct CursorDetails: Codable {
         var id: Int64
         var ns: String
         var nextBatch: [Document]

@@ -106,7 +106,7 @@ final class ClientConnectionContext {
     var channelContext: ChannelHandlerContext?
     var unsentCommands = [MongoDBCommandContext]()
     
-    lazy var send: (MongoDBCommandContext) -> () = { command in
+    lazy var send: (MongoDBCommandContext) -> Void = { command in
         self.unsentCommands.append(command)
     }
     

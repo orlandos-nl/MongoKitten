@@ -11,11 +11,10 @@
 import Foundation
 import BSON
 
-
 // MARK: Equations
 
 /// Equals
-public func ==(key: String, pred: BSON.Primitive?) -> Query {
+public func == (key: String, pred: BSON.Primitive?) -> Query {
     if let pred = pred {
         return Query(aqt: .valEquals(key: key, val: pred))
     } else {
@@ -24,7 +23,7 @@ public func ==(key: String, pred: BSON.Primitive?) -> Query {
 }
 
 /// Does not equal
-public func !=(key: String, pred: BSON.Primitive?) -> Query {
+public func != (key: String, pred: BSON.Primitive?) -> Query {
     if let pred = pred {
         return Query(aqt: .valNotEquals(key: key, val: pred))
     } else {
@@ -39,7 +38,7 @@ public func !=(key: String, pred: BSON.Primitive?) -> Query {
 /// Checks whether the `Value` in `key` is larger than the `Value` provided
 ///
 /// - returns: A new `Query` requiring the `Value` in the `key` to be larger than the provided `Value`
-public func >(key: String, pred: BSON.Primitive) -> Query {
+public func > (key: String, pred: BSON.Primitive) -> Query {
     return Query(aqt: .greaterThan(key: key, val: pred))
 }
 
@@ -48,7 +47,7 @@ public func >(key: String, pred: BSON.Primitive) -> Query {
 /// Checks whether the `Value` in `key` is larger than or equal to the `Value` provided
 ///
 /// - returns: A new `Query` requiring the `Value` in the `key` to be larger than or equal to the provided `Value`
-public func >=(key: String, pred: BSON.Primitive) -> Query {
+public func >= (key: String, pred: BSON.Primitive) -> Query {
     return Query(aqt: .greaterThanOrEqual(key: key, val: pred))
 }
 
@@ -57,7 +56,7 @@ public func >=(key: String, pred: BSON.Primitive) -> Query {
 /// Checks whether the `Value` in `key` is smaller than the `Value` provided
 ///
 /// - returns: A new `Query` requiring the `Value` in the `key` to be smaller than the provided `Value`
-public func <(key: String, pred: BSON.Primitive) -> Query {
+public func < (key: String, pred: BSON.Primitive) -> Query {
     return Query(aqt: .smallerThan(key: key, val: pred))
 }
 
@@ -66,7 +65,7 @@ public func <(key: String, pred: BSON.Primitive) -> Query {
 /// Checks whether the `Value` in `key` is smaller than or equal to the `Value` provided
 ///
 /// - returns: A new `Query` requiring the `Value` in the `key` to be smaller than or equal to the provided `Value`
-public func <=(key: String, pred: BSON.Primitive) -> Query {
+public func <= (key: String, pred: BSON.Primitive) -> Query {
     return Query(aqt: .smallerThanOrEqual(key: key, val: pred))
 }
 
@@ -75,7 +74,7 @@ public func <=(key: String, pred: BSON.Primitive) -> Query {
 /// Checks whether both these `Query` statements are true
 ///
 /// - returns: A new `Query` that requires both the provided queries to be true
-public func &&(lhs: Query, rhs: Query) -> Query {
+public func && (lhs: Query, rhs: Query) -> Query {
     let lhs = lhs.aqt
     let rhs = rhs.aqt
 
@@ -98,7 +97,7 @@ public func &&(lhs: Query, rhs: Query) -> Query {
 /// Checks wither either of these `Query` statements is true
 ///
 /// - returns: A new `Query` that is true when at least one of the two queries is true
-public func ||(lhs: Query, rhs: Query) -> Query {
+public func || (lhs: Query, rhs: Query) -> Query {
     let lhs = lhs.aqt
     let rhs = rhs.aqt
 
@@ -121,14 +120,14 @@ public func ||(lhs: Query, rhs: Query) -> Query {
 /// - parameter query: The query to be checked as false
 ///
 /// - returns: A new `Query` that will be inverting the provided `Query`
-public prefix func !(query: Query) -> Query {
+public prefix func ! (query: Query) -> Query {
     return Query(aqt: .not(query.aqt))
 }
 
 /// MongoDB `$and`. Shorthand for `lhs = lhs && rhs`
 ///
 /// Checks whether both these `Query` statements are true
-public func &=(lhs: inout Query, rhs: Query) {
+public func &= (lhs: inout Query, rhs: Query) {
     lhs = lhs && rhs
 }
 
@@ -137,7 +136,7 @@ infix operator ||=
 /// MongoDB `$or`. Shorthand for `lhs = lhs || rhs`
 ///
 /// Checks wither either of these `Query` statements is true
-public func ||=(lhs: inout Query, rhs: Query) {
+public func ||= (lhs: inout Query, rhs: Query) {
     lhs = lhs || rhs
 }
 
@@ -256,11 +255,11 @@ public indirect enum AQT {
         case .containsElement(let key, let aqt):
             return [key: ["$elemMatch": aqt.document] as Document]
         case .and(let aqts):
-            let expressions = aqts.map{ $0.document }
+            let expressions = aqts.map { $0.document }
 
             return ["$and": expressions]
         case .or(let aqts):
-            let expressions = aqts.map{ $0.document }
+            let expressions = aqts.map { $0.document }
 
             return ["$or": expressions]
         case .not(let aqt):
