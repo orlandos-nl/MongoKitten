@@ -1,8 +1,6 @@
 import NIO
 import Foundation
 
-public typealias MongoCollection = Collection
-
 public final class Collection {
     public let name: String
     public let database: Database
