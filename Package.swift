@@ -16,7 +16,7 @@ var package = Package(
     ],
     dependencies: [
         // For MongoDB Documents
-        .package(url: "https://github.com/OpenKitten/BSON.git", .revision("master/6.0")),
+        .package(url: "https://github.com/OpenKitten/BSON.git", .revision("develop/6.0/rewrite")),
         
         // Async
         .package(url: "https://github.com/apple/swift-nio.git", from: "1.7.2"),
