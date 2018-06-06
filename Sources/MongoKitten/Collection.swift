@@ -1,7 +1,7 @@
 import NIO
 import Foundation
 
-public final class Collection {
+public final class Collection: FutureConvenienceCallable {
     public let name: String
     public let database: Database
     

@@ -9,7 +9,7 @@ import BSON
 import Foundation
 import NIO
 
-public final class Database {
+public final class Database: FutureConvenienceCallable {
     public let name: String
     public let connection: MongoDBConnection
     internal var cmd: Collection {
