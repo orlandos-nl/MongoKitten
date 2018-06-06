@@ -3,6 +3,7 @@
 
 
 // Provides convenience access to methods on Futures
+// To regenerate: run the './Codegen.sh' script. This requires Sourcery to be installed.
 
 import NIO
 
