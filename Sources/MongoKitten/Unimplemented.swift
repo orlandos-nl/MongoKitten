@@ -7,6 +7,7 @@
 
 import Foundation
 
-public func unimplemented(function: String = #function) -> Never {
+@available(*, deprecated, message: "Unimplemented methods should be implemented")
+func unimplemented(function: String = #function) -> Never {
     fatalError("\(function) is unimplemented")
 }

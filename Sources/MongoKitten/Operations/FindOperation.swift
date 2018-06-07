@@ -27,7 +27,7 @@ public struct CursorSettings: Encodable {
 }
 
 struct CursorReply: ServerReplyDecodable {
-    struct CursorDetails : Codable {
+    struct CursorDetails: Codable {
         var id: Int64
         var ns: String
         var firstBatch: [Document]

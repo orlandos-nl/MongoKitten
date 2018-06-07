@@ -1,7 +1,6 @@
 // Generated using Sourcery 0.11.2 — https://github.com/krzysztofzablocki/Sourcery
 // DO NOT EDIT
 
-
 // Provides convenience access to methods on Futures
 // To regenerate: run the './Codegen.sh' script. This requires Sourcery to be installed.
 
@@ -70,7 +69,7 @@ public extension EventLoopFuture where T == Collection {
     /// For documentation on this method, refer to `Collection.update(_:to:)`
     public func update(_ query: Query, to document: Document) -> EventLoopFuture<UpdateReply> {
         return self.then { collection in
-            return collection.update(query,to: document)
+            return collection.update(query, to: document)
         }
     }
 
@@ -79,7 +78,7 @@ public extension EventLoopFuture where T == Collection {
     /// For documentation on this method, refer to `Collection.upsert(_:to:)`
     public func upsert(_ query: Query, to document: Document) -> EventLoopFuture<UpdateReply> {
         return self.then { collection in
-            return collection.upsert(query,to: document)
+            return collection.upsert(query, to: document)
         }
     }
 
@@ -88,7 +87,7 @@ public extension EventLoopFuture where T == Collection {
     /// For documentation on this method, refer to `Collection.update(_:setting:)`
     public func update(_ query: Query, setting set: [String: Primitive?]) -> EventLoopFuture<UpdateReply> {
         return self.then { collection in
-            return collection.update(query,setting: set)
+            return collection.update(query, setting: set)
         }
     }
 
@@ -97,7 +96,7 @@ public extension EventLoopFuture where T == Collection {
     /// For documentation on this method, refer to `Collection.distinct(onKey:filter:)`
     public func distinct(onKey key: String, filter: Query? = nil) -> EventLoopFuture<[Primitive]> {
         return self.then { collection in
-            return collection.distinct(onKey: key,filter: filter)
+            return collection.distinct(onKey: key, filter: filter)
         }
     }
 

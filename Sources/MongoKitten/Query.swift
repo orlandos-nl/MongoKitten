@@ -383,7 +383,13 @@ public struct Query: Codable, ExpressibleByDictionaryLiteral, ExpressibleByStrin
         if elements.count == 0 {
             self.aqt = .nothing
         } else {
-            self.aqt = .exactly(Document(elements: elements.map { ($0.0, $0.1.makePrimitive()) }))
+            self.aqt = .exactly(Document(elements: elements.compactMap { key, value in
+                guard let primitive = value.makePrimitive() else {
+                    return nil // continue
+                }
+                
+                return (key, primitive)
+            }))
         }
     }
 
