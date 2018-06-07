@@ -246,7 +246,7 @@ extension QueryCursor where Element == Document {
     }
 }
 
-public final class MappedCursor<Base: QueryCursor, Element> : CursorBasedOnOtherCursor {
+public final class MappedCursor<Base: QueryCursor, Element>: CursorBasedOnOtherCursor {
     internal typealias Transform<E> = (Base.Element) throws -> E
     
     internal var underlyingCursor: Base
