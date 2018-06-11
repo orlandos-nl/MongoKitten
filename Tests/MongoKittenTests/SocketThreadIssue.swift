@@ -73,7 +73,7 @@ class SocketThreadIssue: XCTestCase {
     }
     
     func connectionString() -> String? {
-        return "mongodb://tester:XVpwKjP0hr6ux3yw@danake-shard-00-00-r2jwu.mongodb.net:27017,danake-shard-00-01-r2jwu.mongodb.net:27017,danake-shard-00-02-r2jwu.mongodb.net:27017/test?ssl=true&replicaSet=danake-shard-0&authSource=admin"
+        return nil
     }
     
 
