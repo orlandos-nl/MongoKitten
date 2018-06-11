@@ -9,7 +9,7 @@ import Foundation
 import XCTest
 import MongoKitten
 
-class SocketThreadIssue: XCTestCase {
+public class SocketThreadIssue: XCTestCase {
 
     
     func testDemonstrateSocketFailure() throws {
