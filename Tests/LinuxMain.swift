@@ -23,5 +23,6 @@ XCTMain([
     testCase(GridFSTest.allTests),  
     testCase(HelperObjectTests.allTests),    
     testCase(SetupTests.allTests),
-    testCase(QueryBuilderTests.allTests)
+    testCase(QueryBuilderTests.allTests),
+    testCase(SocketThreadIssue.allTests),
 ])
