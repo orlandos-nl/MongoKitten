@@ -11,6 +11,11 @@ import MongoKitten
 
 public class SocketThreadIssue: XCTestCase {
 
+    public static var allTests: [(String, (SocketThreadIssue) -> () throws -> Void)] {
+        return [
+            ("testDemonstrateSocketFailure", testDemonstrateSocketFailure),
+        ]
+    }
     
     func testDemonstrateSocketFailure() throws {
         struct MyStruct: Codable {
