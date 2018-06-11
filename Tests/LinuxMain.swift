@@ -24,5 +24,5 @@ XCTMain([
     testCase(HelperObjectTests.allTests),    
     testCase(SetupTests.allTests),
     testCase(QueryBuilderTests.allTests),
-    testCase(SocketThreadIssue.allTests),
+    testCase(SocketThreadIssue.allTests)
 ])
