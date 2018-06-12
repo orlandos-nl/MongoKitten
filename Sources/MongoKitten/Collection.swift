@@ -73,9 +73,10 @@ public final class Collection: FutureConvenienceCallable {
         return DeleteCommand([delete], from: self).execute(on: connection)
     }
     
+    // TODO: Make the future fail when the reply indicates an error
     @discardableResult
-    public func update(_ query: Query, to document: Document) -> EventLoopFuture<UpdateReply> {
-        return UpdateCommand(query, to: document, in: self).execute(on: connection)
+    public func update(_ query: Query, to document: Document, multiple: Bool? = nil) -> EventLoopFuture<UpdateReply> {
+        return UpdateCommand(query, to: document, in: self, multiple: multiple).execute(on: connection)
     }
     
     @discardableResult
@@ -87,7 +88,11 @@ public final class Collection: FutureConvenienceCallable {
     }
     
     @discardableResult
-    public func update(_ query: Query, setting set: [String: Primitive?]) -> EventLoopFuture<UpdateReply> {
+    public func update(_ query: Query, setting set: [String: Primitive?], multiple: Bool? = nil) -> EventLoopFuture<UpdateReply> {
+        guard set.count > 0 else {
+            return eventLoop.newFailedFuture(error: MongoKittenError(.cannotFormCommand, reason: .nothingToDo))
+        }
+        
         var setQuery = Document()
         var unsetQuery = Document()
         
@@ -99,10 +104,12 @@ public final class Collection: FutureConvenienceCallable {
             }
         }
         
-        return self.update(query, to: [
-            "$set": setQuery,
-            "$unset": unsetQuery
-        ])
+        let updateDocument: Document = [
+            "$set": setQuery.count > 0 ? setQuery : nil,
+            "$unset": unsetQuery.count > 0 ? unsetQuery : nil
+        ]
+        
+        return self.update(query, to: updateDocument, multiple: multiple)
     }
     
     // TODO: Discuss `filter` vs `query` as argument name

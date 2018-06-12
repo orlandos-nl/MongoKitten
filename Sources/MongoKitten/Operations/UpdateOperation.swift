@@ -18,9 +18,10 @@ public struct UpdateCommand: MongoDBCommand {
         public var upsert: Bool?
         public var multiple: Bool?
         
-        public init(matching query: Query, to document: Document) {
+        public init(matching query: Query, to document: Document, multiple: Bool? = nil) {
             self.query = query
             self.update = document
+            self.multiple = multiple
         }
     }
     
@@ -37,9 +38,9 @@ public struct UpdateCommand: MongoDBCommand {
     static let writing = true
     static let emitsCursor = false
     
-    public init(_ query: Query, to document: Document, in collection: Collection) {
+    public init(_ query: Query, to document: Document, in collection: Collection, multiple: Bool? = nil) {
         self.init(
-            Single(matching: query, to: document),
+            Single(matching: query, to: document, multiple: multiple),
             in: collection
         )
     }
