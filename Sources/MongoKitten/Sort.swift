@@ -16,11 +16,23 @@ public struct Sort: Encodable, ExpressibleByDictionaryLiteral {
     
     private var spec: [(String, SortOrder)]
     
+    public init(elements: [(String, SortOrder)]) {
+        self.spec = elements
+    }
+    
     public init(dictionaryLiteral elements: (String, SortOrder)...) {
         self.spec = elements
     }
     
     public func encode(to encoder: Encoder) throws {
         try self.document.encode(to: encoder)
+    }
+    
+    public static func + (lhs: Sort, rhs: Sort) -> Sort {
+        return Sort(elements: lhs.spec + rhs.spec)
+    }
+    
+    public static func += (lhs: inout Sort, rhs: Sort) {
+        lhs = lhs + rhs
     }
 }
