@@ -166,8 +166,37 @@ public final class Collection: FutureConvenienceCallable {
     
     /// Updates the document(s) matching the given query to the given `document`.
     ///
-    /// Unless given a `$set` or `$unset` command, this will replace the target document(s) with the given document.
+    /// ## Behavior
     ///
+    /// The `document` can contain either all update operator expressions or all field:value expressions.
+    ///
+    /// ### Update Operator Expressions
+    ///
+    /// If the `document` contains all update operator expressions, as in:
+    ///
+    /// ```
+    /// {
+    ///     $set: { status: "D" },
+    ///     $inc: { quantity: 2 }
+    /// }
+    /// ```
+    ///
+    /// Then, the update command updates only the corresponding fields in the document.
+    ///
+    /// ### `Field: Value` Expressions
+    ///
+    /// If the `document` contains only `field:value` expressions, as in:
+    ///
+    /// ```
+    /// {
+    ///     status: "D",
+    ///     quantity: 4
+    /// }
+    /// ```
+    ///
+    /// Then the update command replaces the matching document with the update document. The update command can only replace a single matching document; i.e. the multi field cannot be true. The update command does not replace the _id value.
+    ///
+    /// - see: https://docs.mongodb.com/manual/reference/command/update/index.html#update-command-behaviors
     /// - parameter query: The filter to apply
     /// - parameter document: The document to replace the target document(s) with
     /// - parameter multiple: If set to `true`, more than one document may be updated

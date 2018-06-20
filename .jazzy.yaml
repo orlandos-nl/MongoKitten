@@ -32,7 +32,7 @@ custom_categories:
       - "!=(_:_:)"
       - "&&(_:_:)"
       - "||(_:_:)"
-      - "&=(_:_:)"
+      - "&&=(_:_:)"
       - "||=(_:_:)"
       - "<(_:_:)"
       - ">(_:_:)"
@@ -54,8 +54,8 @@ custom_categories:
       - AggregateCursor
   - name: Commands
     children:
-      - FindOperation
-      - AggregateOperation
+      - FindCommand
+      - AggregateCommand
       - CountCommand
       - DeleteCommand
       - DistinctCommand

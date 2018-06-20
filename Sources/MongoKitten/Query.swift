@@ -13,67 +13,73 @@ import BSON
 
 // MARK: Equations
 
-/// Equals
-public func == (key: String, pred: BSON.Primitive?) -> Query {
+/// **If `pred` is not `nil`:** `$eq` - Specifies equality condition. The `$eq` operator matches documents where the value of a field equals the specified value.
+/// **If `pred` is `nil`:** `{$exists: false}` - the query returns only the documents that do not contain the field.
+///
+/// - see: https://docs.mongodb.com/manual/reference/operator/query/eq/index.html
+/// - see: https://docs.mongodb.com/manual/reference/operator/query/exists/index.html
+public func == (field: String, pred: BSON.Primitive?) -> Query {
     if let pred = pred {
-        return Query(aqt: .valEquals(key: key, val: pred))
+        return Query(aqt: .valEquals(field: field, val: pred))
     } else {
-        return Query(aqt: .exists(key: key, exists: false))
+        return Query(aqt: .exists(field: field, exists: false))
     }
 }
 
-/// Does not equal
-public func != (key: String, pred: BSON.Primitive?) -> Query {
+/// **If `pred` is not `nil`:** `$ne` - `$ne` selects the documents where the value of the field is not equal to the specified value. This includes documents that do not contain the field.
+/// **If `pred` is `nil`:** `{$exists: true}` - matches the documents that contain the field, including documents where the field value is null.
+///
+/// - see: https://docs.mongodb.com/manual/reference/operator/query/ne/index.html
+/// - see: https://docs.mongodb.com/manual/reference/operator/query/exists/index.html
+public func != (field: String, pred: BSON.Primitive?) -> Query {
     if let pred = pred {
-        return Query(aqt: .valNotEquals(key: key, val: pred))
+        return Query(aqt: .valNotEquals(field: field, val: pred))
     } else {
-        return Query(aqt: .exists(key: key, exists: true))
+        return Query(aqt: .exists(field: field, exists: true))
     }
 }
 
 // MARK: Comparisons
 
-/// MongoDB: `$gt`. Used like native swift `>`
+/// $gt selects those documents where the value of the field is greater than (i.e. >) the specified value.
 ///
-/// Checks whether the `Value` in `key` is larger than the `Value` provided
+/// For most data types, comparison operators only perform comparisons on fields where the BSON type matches the query value’s type. MongoDB supports limited cross-BSON comparison through Type Bracketing.
 ///
-/// - returns: A new `Query` requiring the `Value` in the `key` to be larger than the provided `Value`
-public func > (key: String, pred: BSON.Primitive) -> Query {
-    return Query(aqt: .greaterThan(key: key, val: pred))
+/// - see: https://docs.mongodb.com/manual/reference/operator/query/gt/index.html
+public func > (field: String, pred: BSON.Primitive) -> Query {
+    return Query(aqt: .greaterThan(field: field, val: pred))
 }
 
-/// MongoDB: `$gte`. Used like native swift `>=`
+/// $gte selects the documents where the value of the field is greater than or equal to (i.e. >=) a specified value (e.g. value.)
 ///
-/// Checks whether the `Value` in `key` is larger than or equal to the `Value` provided
+/// For most data types, comparison operators only perform comparisons on fields where the BSON type matches the query value’s type. MongoDB supports limited cross-BSON comparison through Type Bracketing.
 ///
-/// - returns: A new `Query` requiring the `Value` in the `key` to be larger than or equal to the provided `Value`
-public func >= (key: String, pred: BSON.Primitive) -> Query {
-    return Query(aqt: .greaterThanOrEqual(key: key, val: pred))
+/// - see: https://docs.mongodb.com/manual/reference/operator/aggregation/gte/index.html
+public func >= (field: String, pred: BSON.Primitive) -> Query {
+    return Query(aqt: .greaterThanOrEqual(field: field, val: pred))
 }
 
-/// MongoDB: `$lt`. Used like native swift `<`
+/// $lt selects the documents where the value of the field is less than (i.e. <) the specified value.
 ///
-/// Checks whether the `Value` in `key` is smaller than the `Value` provided
+/// For most data types, comparison operators only perform comparisons on fields where the BSON type matches the query value’s type. MongoDB supports limited cross-BSON comparison through Type Bracketing.
 ///
-/// - returns: A new `Query` requiring the `Value` in the `key` to be smaller than the provided `Value`
-public func < (key: String, pred: BSON.Primitive) -> Query {
-    return Query(aqt: .smallerThan(key: key, val: pred))
+/// - see: https://docs.mongodb.com/manual/reference/operator/query/lt/index.html
+public func < (field: String, pred: BSON.Primitive) -> Query {
+    return Query(aqt: .smallerThan(field: field, val: pred))
 }
 
-/// MongoDB: `$lte`. Used like native swift `<=`
+/// $lte selects the documents where the value of the field is less than or equal to (i.e. <=) the specified value.
 ///
-/// Checks whether the `Value` in `key` is smaller than or equal to the `Value` provided
+/// For most data types, comparison operators only perform comparisons on fields where the BSON type matches the query value’s type. MongoDB supports limited cross-BSON comparison through Type Bracketing.
 ///
-/// - returns: A new `Query` requiring the `Value` in the `key` to be smaller than or equal to the provided `Value`
-public func <= (key: String, pred: BSON.Primitive) -> Query {
-    return Query(aqt: .smallerThanOrEqual(key: key, val: pred))
+/// - see: https://docs.mongodb.com/manual/reference/operator/query/lte/index.html
+public func <= (field: String, pred: BSON.Primitive) -> Query {
+    return Query(aqt: .smallerThanOrEqual(field: field, val: pred))
 }
 
-/// MongoDB `$and`. Used like native swift `&&`
+/// $and performs a logical AND operation on an array of two or more expressions (e.g. <expression1>, <expression2>, etc.) and selects the documents that satisfy all the expressions in the array. The $and operator uses short-circuit evaluation. If the first expression (e.g. <expression1>) evaluates to false, MongoDB will not evaluate the remaining expressions.
 ///
-/// Checks whether both these `Query` statements are true
-///
-/// - returns: A new `Query` that requires both the provided queries to be true
+/// - see: https://docs.mongodb.com/manual/reference/operator/query/and/index.html
 public func && (lhs: Query, rhs: Query) -> Query {
     let lhs = lhs.aqt
     let rhs = rhs.aqt
@@ -92,11 +98,9 @@ public func && (lhs: Query, rhs: Query) -> Query {
     }
 }
 
-/// MongoDB: `$or`. Used like native swift `||`
+/// The $or operator performs a logical OR operation on an array of two or more <expressions> and selects the documents that satisfy at least one of the <expressions>.
 ///
-/// Checks wither either of these `Query` statements is true
-///
-/// - returns: A new `Query` that is true when at least one of the two queries is true
+/// - see: https://docs.mongodb.com/manual/reference/operator/query/or/index.html
 public func || (lhs: Query, rhs: Query) -> Query {
     let lhs = lhs.aqt
     let rhs = rhs.aqt
@@ -115,36 +119,28 @@ public func || (lhs: Query, rhs: Query) -> Query {
     }
 }
 
-/// Whether the `Query` provided is false
+/// $not performs a logical NOT operation on the specified <operator-expression> and selects the documents that do not match the <operator-expression>. This includes documents that do not contain the field.
 ///
-/// - parameter query: The query to be checked as false
-///
-/// - returns: A new `Query` that will be inverting the provided `Query`
+/// - see: https://docs.mongodb.com/manual/reference/operator/query/not/index.html
 public prefix func ! (query: Query) -> Query {
     return Query(aqt: .not(query.aqt))
 }
 
-/// MongoDB `$and`. Shorthand for `lhs = lhs && rhs`
+/// $and performs a logical AND operation on an array of two or more expressions (e.g. <expression1>, <expression2>, etc.) and selects the documents that satisfy all the expressions in the array. The $and operator uses short-circuit evaluation. If the first expression (e.g. <expression1>) evaluates to false, MongoDB will not evaluate the remaining expressions.
 ///
-/// Checks whether both these `Query` statements are true
-public func &= (lhs: inout Query, rhs: Query) {
+/// - see: https://docs.mongodb.com/manual/reference/operator/query/and/index.html
+public func &&= (lhs: inout Query, rhs: Query) {
     lhs = lhs && rhs
 }
 
+infix operator &&=
 infix operator ||=
 
-/// MongoDB `$or`. Shorthand for `lhs = lhs || rhs`
+/// The $or operator performs a logical OR operation on an array of two or more <expressions> and selects the documents that satisfy at least one of the <expressions>.
 ///
-/// Checks wither either of these `Query` statements is true
+/// - see: https://docs.mongodb.com/manual/reference/operator/query/or/index.html
 public func ||= (lhs: inout Query, rhs: Query) {
     lhs = lhs || rhs
-}
-
-extension String {
-    /// MongoDB `$in` operator
-    public func `in`(_ elements: [Primitive]) -> Query {
-        return Query(aqt: .in(key: self, in: elements))
-    }
 }
 
 /// Abstract Query Tree.
@@ -225,35 +221,35 @@ public indirect enum AQT {
     /// Returns a Document that represents this AQT as a Query/Filter
     public var document: Document {
         switch self {
-        case .typeof(let key, let type):
+        case .typeof(let field, let type):
             if type == .number {
                 let aqt = AQT.or([
-                    .typeof(key: key, type: .double),
-                    .typeof(key: key, type: .int32),
-                    .typeof(key: key, type: .int64)
+                    .typeof(field: field, type: .double),
+                    .typeof(field: field, type: .int32),
+                    .typeof(field: field, type: .int64)
                     ])
                 return aqt.document
 
             } else {
                 // TODO: Check if we can remove the `as Document` here and below by changing BSON
-                return [key: ["$type": type.rawValue] as Document]
+                return [field: ["$type": type.rawValue] as Document]
             }
-        case .exactly(let doc):
+        case .custom(let doc):
             return doc
-        case .valEquals(let key, let val):
-            return [key: ["$eq": val] as Document]
-        case .valNotEquals(let key, let val):
-            return [key: ["$ne": val] as Document]
-        case .greaterThan(let key, let val):
-            return [key: ["$gt": val] as Document]
-        case .greaterThanOrEqual(let key, let val):
-            return [key: ["$gte": val] as Document]
-        case .smallerThan(let key, let val):
-            return [key: ["$lt": val] as Document]
-        case .smallerThanOrEqual(let key, let val):
-            return [key: ["$lte": val] as Document]
-        case .containsElement(let key, let aqt):
-            return [key: ["$elemMatch": aqt.document] as Document]
+        case .valEquals(let field, let val):
+            return [field: ["$eq": val] as Document]
+        case .valNotEquals(let field, let val):
+            return [field: ["$ne": val] as Document]
+        case .greaterThan(let field, let val):
+            return [field: ["$gt": val] as Document]
+        case .greaterThanOrEqual(let field, let val):
+            return [field: ["$gte": val] as Document]
+        case .smallerThan(let field, let val):
+            return [field: ["$lt": val] as Document]
+        case .smallerThanOrEqual(let field, let val):
+            return [field: ["$lte": val] as Document]
+        case .containsElement(let field, let aqt):
+            return [field: ["$elemMatch": aqt.document] as Document]
         case .and(let aqts):
             let expressions = aqts.map { $0.document }
 
@@ -272,46 +268,46 @@ public indirect enum AQT {
             }
 
             return query
-//        case .contains(let key, let val, let options):
-//            return [key: RegularExpression(pattern: val, options: options)]
-//        case .startsWith(let key, let val):
-//            return [key: RegularExpression(pattern: "^" + val, options: .anchorsMatchLines)]
-//        case .endsWith(let key, let val):
-//            return [key: RegularExpression(pattern: val + "$", options: .anchorsMatchLines)]
+//        case .contains(let field, let val, let options):
+//            return [field: RegularExpression(pattern: val, options: options)]
+//        case .startsWith(let field, let val):
+//            return [field: RegularExpression(pattern: "^" + val, options: .anchorsMatchLines)]
+//        case .endsWith(let field, let val):
+//            return [field: RegularExpression(pattern: val + "$", options: .anchorsMatchLines)]
         case .nothing:
             return [:]
-        case .in(let key, let array):
-            return [key: ["$in": Document(array: array)] as Document]
-        case .exists(let key, let exists):
+        case .in(let field, let array):
+            return [field: ["$in": Document(array: array)] as Document]
+        case .exists(let field, let exists):
             return [
-                key: [ "$exists": exists ] as Document
+                field: [ "$exists": exists ] as Document
             ]
         }
     }
 
     /// Whether the type in `key` is equal to the AQTType https://docs.mongodb.com/manual/reference/operator/query/type/#op._S_type
-    case typeof(key: String, type: AQTType)
+    case typeof(field: String, type: AQTType)
 
     /// Does the `Value` within the `key` match this `Value`
-    case valEquals(key: String, val: BSON.Primitive)
+    case valEquals(field: String, val: BSON.Primitive)
 
     /// The `Value` within the `key` does not match this `Value`
-    case valNotEquals(key: String, val: BSON.Primitive)
+    case valNotEquals(field: String, val: BSON.Primitive)
 
     /// Whether the `Value` within the `key` is greater than this `Value`
-    case greaterThan(key: String, val: BSON.Primitive)
+    case greaterThan(field: String, val: BSON.Primitive)
 
     /// Whether the `Value` within the `key` is greater than or equal to this `Value`
-    case greaterThanOrEqual(key: String, val: BSON.Primitive)
+    case greaterThanOrEqual(field: String, val: BSON.Primitive)
 
     /// Whether the `Value` within the `key` is smaller than this `Value`
-    case smallerThan(key: String, val: BSON.Primitive)
+    case smallerThan(field: String, val: BSON.Primitive)
 
     /// Whether the `Value` within the `key` is smaller than or equal to this `Value`
-    case smallerThanOrEqual(key: String, val: BSON.Primitive)
+    case smallerThanOrEqual(field: String, val: BSON.Primitive)
 
     /// Whether a subdocument in the array within the `key` matches one of the queries/filters
-    case containsElement(key: String, match: AQT)
+    case containsElement(field: String, match: AQT)
 
     /// Whether all `AQT` Conditions are correct
     case and([AQT])
@@ -326,22 +322,22 @@ public indirect enum AQT {
     case nothing
 
 //    /// Whether the String value within the `key` contains this `String`.
-//    case contains(key: String, val: String, options: NSRegularExpression.Options)
+//    case contains(field: String, val: String, options: NSRegularExpression.Options)
 //
 //    /// Whether the String value within the `key` starts with this `String`.
-//    case startsWith(key: String, val: String)
+//    case startsWith(field: String, val: String)
 //
 //    /// Whether the String value within the `key` ends with this `String`.
-//    case endsWith(key: String, val: String)
+//    case endsWith(field: String, val: String)
 
     /// A literal Document
-    case exactly(Document)
+    case custom(Document)
 
     /// Value at this key exists, even if it is `Null`
-    case exists(key: String, exists: Bool)
+    case exists(field: String, exists: Bool)
 
     /// Value is one of the given values
-    case `in`(key: String, in: [BSON.Primitive])
+    case `in`(field: String, in: [BSON.Primitive])
 }
 
 /// A `Query` that consists of an `AQT` statement
@@ -383,7 +379,7 @@ public struct Query: Codable, ExpressibleByDictionaryLiteral, ExpressibleByStrin
         if elements.count == 0 {
             self.aqt = .nothing
         } else {
-            self.aqt = .exactly(Document(elements: elements.compactMap { key, value in
+            self.aqt = .custom(Document(elements: elements.compactMap { key, value in
                 guard let primitive = value.makePrimitive() else {
                     return nil // continue
                 }
@@ -406,7 +402,7 @@ public struct Query: Codable, ExpressibleByDictionaryLiteral, ExpressibleByStrin
         if document.count == 0 {
             self.aqt = .nothing
         } else {
-            self.aqt = .exactly(document)
+            self.aqt = .custom(document)
         }
     }
 
