@@ -146,7 +146,7 @@ public final class Collection: FutureConvenienceCallable {
     /// - warning: If you provide no query, all documents in the collection will be deleted
     /// - parameter query: The filter to apply. Defaults to an empty query, deleting every document.
     /// - returns: The number of documents removed
-    public func deleteAll(_ query: Query = [:]) -> EventLoopFuture<Int> {
+    public func deleteAll(where query: Query = [:]) -> EventLoopFuture<Int> {
         let delete = DeleteCommand.Single(matching: query, limit: .all)
         
         return DeleteCommand([delete], from: self).execute(on: connection)
@@ -156,7 +156,7 @@ public final class Collection: FutureConvenienceCallable {
     ///
     /// - parameter query: The filter to apply. Defaults to an empty query
     /// - returns: The number of documents removed
-    public func deleteOne(_ query: Query = [:]) -> EventLoopFuture<Int> {
+    public func deleteOne(where query: Query = [:]) -> EventLoopFuture<Int> {
         let delete = DeleteCommand.Single(matching: query, limit: .one)
         
         return DeleteCommand([delete], from: self).execute(on: connection)
@@ -201,7 +201,7 @@ public final class Collection: FutureConvenienceCallable {
     /// - parameter document: The document to replace the target document(s) with
     /// - parameter multiple: If set to `true`, more than one document may be updated
     @discardableResult
-    public func update(_ query: Query, to document: Document, multiple: Bool? = nil) -> EventLoopFuture<UpdateReply> {
+    public func update(where query: Query, to document: Document, multiple: Bool? = nil) -> EventLoopFuture<UpdateReply> {
         // TODO: Make the future fail when the reply indicates an error
         return UpdateCommand(query, to: document, in: self, multiple: multiple).execute(on: connection)
     }
@@ -211,7 +211,7 @@ public final class Collection: FutureConvenienceCallable {
     /// - parameter query: The filter to apply
     /// - parameter document: The document to insert or to replace the target document with
     @discardableResult
-    public func upsert(_ query: Query, to document: Document) -> EventLoopFuture<UpdateReply> {
+    public func upsert(where query: Query, to document: Document) -> EventLoopFuture<UpdateReply> {
         var update = UpdateCommand.Single(matching: query, to: document)
         update.upsert = true
         
@@ -227,7 +227,7 @@ public final class Collection: FutureConvenienceCallable {
     ///                     values. To remove the value for a certain key, specify `nil` as its value.
     /// - parameter multiple: If set to `true`, more than one document may be updated
     @discardableResult
-    public func update(_ query: Query, setting set: [String: Primitive?], multiple: Bool? = nil) -> EventLoopFuture<UpdateReply> {
+    public func update(where query: Query, setting set: [String: Primitive?], multiple: Bool? = nil) -> EventLoopFuture<UpdateReply> {
         guard set.count > 0 else {
             return eventLoop.newFailedFuture(error: MongoKittenError(.cannotFormCommand, reason: .nothingToDo))
         }
@@ -248,6 +248,6 @@ public final class Collection: FutureConvenienceCallable {
             "$unset": unsetQuery.count > 0 ? unsetQuery : nil
         ]
         
-        return self.update(query, to: updateDocument, multiple: multiple)
+        return self.update(where: query, to: updateDocument, multiple: multiple)
     }
 }

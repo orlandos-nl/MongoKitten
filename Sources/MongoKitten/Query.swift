@@ -20,9 +20,9 @@ import BSON
 /// - see: https://docs.mongodb.com/manual/reference/operator/query/exists/index.html
 public func == (field: String, pred: BSON.Primitive?) -> Query {
     if let pred = pred {
-        return Query(aqt: .valEquals(field: field, val: pred))
+        return .valEquals(field: field, val: pred)
     } else {
-        return Query(aqt: .exists(field: field, exists: false))
+        return .exists(field: field, exists: false)
     }
 }
 
@@ -33,9 +33,9 @@ public func == (field: String, pred: BSON.Primitive?) -> Query {
 /// - see: https://docs.mongodb.com/manual/reference/operator/query/exists/index.html
 public func != (field: String, pred: BSON.Primitive?) -> Query {
     if let pred = pred {
-        return Query(aqt: .valNotEquals(field: field, val: pred))
+        return .valNotEquals(field: field, val: pred)
     } else {
-        return Query(aqt: .exists(field: field, exists: true))
+        return .exists(field: field, exists: true)
     }
 }
 
@@ -47,7 +47,7 @@ public func != (field: String, pred: BSON.Primitive?) -> Query {
 ///
 /// - see: https://docs.mongodb.com/manual/reference/operator/query/gt/index.html
 public func > (field: String, pred: BSON.Primitive) -> Query {
-    return Query(aqt: .greaterThan(field: field, val: pred))
+    return .greaterThan(field: field, val: pred)
 }
 
 /// $gte selects the documents where the value of the field is greater than or equal to (i.e. >=) a specified value (e.g. value.)
@@ -56,7 +56,7 @@ public func > (field: String, pred: BSON.Primitive) -> Query {
 ///
 /// - see: https://docs.mongodb.com/manual/reference/operator/aggregation/gte/index.html
 public func >= (field: String, pred: BSON.Primitive) -> Query {
-    return Query(aqt: .greaterThanOrEqual(field: field, val: pred))
+    return .greaterThanOrEqual(field: field, val: pred)
 }
 
 /// $lt selects the documents where the value of the field is less than (i.e. <) the specified value.
@@ -65,7 +65,7 @@ public func >= (field: String, pred: BSON.Primitive) -> Query {
 ///
 /// - see: https://docs.mongodb.com/manual/reference/operator/query/lt/index.html
 public func < (field: String, pred: BSON.Primitive) -> Query {
-    return Query(aqt: .smallerThan(field: field, val: pred))
+    return .smallerThan(field: field, val: pred)
 }
 
 /// $lte selects the documents where the value of the field is less than or equal to (i.e. <=) the specified value.
@@ -74,27 +74,24 @@ public func < (field: String, pred: BSON.Primitive) -> Query {
 ///
 /// - see: https://docs.mongodb.com/manual/reference/operator/query/lte/index.html
 public func <= (field: String, pred: BSON.Primitive) -> Query {
-    return Query(aqt: .smallerThanOrEqual(field: field, val: pred))
+    return .smallerThanOrEqual(field: field, val: pred)
 }
 
 /// $and performs a logical AND operation on an array of two or more expressions (e.g. <expression1>, <expression2>, etc.) and selects the documents that satisfy all the expressions in the array. The $and operator uses short-circuit evaluation. If the first expression (e.g. <expression1>) evaluates to false, MongoDB will not evaluate the remaining expressions.
 ///
 /// - see: https://docs.mongodb.com/manual/reference/operator/query/and/index.html
 public func && (lhs: Query, rhs: Query) -> Query {
-    let lhs = lhs.aqt
-    let rhs = rhs.aqt
-
     switch (lhs, rhs) {
     case (.and(var a), .and(let b)):
         a.append(contentsOf: b)
-        return Query(aqt: .and(a))
+        return .and(a)
     case (.nothing, let query), (let query, .nothing):
-        return Query(aqt: query)
+        return query
     case (.and(var a), let other), (let other, .and(var a)):
         a.append(other)
-        return Query(aqt: .and(a))
+        return .and(a)
     default:
-        return Query(aqt: .and([lhs, rhs]))
+        return .and([lhs, rhs])
     }
 }
 
@@ -102,20 +99,17 @@ public func && (lhs: Query, rhs: Query) -> Query {
 ///
 /// - see: https://docs.mongodb.com/manual/reference/operator/query/or/index.html
 public func || (lhs: Query, rhs: Query) -> Query {
-    let lhs = lhs.aqt
-    let rhs = rhs.aqt
-
     if case .or(var  a) = lhs, case .or(let b) = rhs {
         a.append(contentsOf: b)
-        return Query(aqt: .or(a))
+        return .or(a)
     } else if case .or(var a) = lhs {
         a.append(rhs)
-        return Query(aqt: .or(a))
+        return .or(a)
     } else if case .or(var b) = rhs {
         b.append(lhs)
-        return Query(aqt: .or(b))
+        return .or(b)
     } else {
-        return Query(aqt: .or([lhs, rhs]))
+        return .or([lhs, rhs])
     }
 }
 
@@ -123,7 +117,7 @@ public func || (lhs: Query, rhs: Query) -> Query {
 ///
 /// - see: https://docs.mongodb.com/manual/reference/operator/query/not/index.html
 public prefix func ! (query: Query) -> Query {
-    return Query(aqt: .not(query.aqt))
+    return .not(query)
 }
 
 /// $and performs a logical AND operation on an array of two or more expressions (e.g. <expression1>, <expression2>, etc.) and selects the documents that satisfy all the expressions in the array. The $and operator uses short-circuit evaluation. If the first expression (e.g. <expression1>) evaluates to false, MongoDB will not evaluate the remaining expressions.
@@ -146,14 +140,11 @@ public func ||= (lhs: inout Query, rhs: Query) {
 /// Abstract Query Tree.
 ///
 /// Made to be easily readable/usable so that an `AQT` instance can be easily translated to a `Document` as a Query or even possibly `SQL` in the future.
-public indirect enum AQT {
+public indirect enum Query: Codable, ExpressibleByDictionaryLiteral {
     /// The types we support as raw `Int32` values
     ///
     /// The raw values are defined in https://docs.mongodb.com/manual/reference/operator/query/type/#op._S_type
-    public enum AQTType: Int32 {
-        /// -
-        case precisely
-
+    public enum QueryType: Int32 {
         /// Any number. So a `.double`, `.int32` or `.int64`
         case number = -2
 
@@ -218,12 +209,12 @@ public indirect enum AQT {
         case maxKey = 127
     }
 
-    /// Returns a Document that represents this AQT as a Query/Filter
+    /// Returns a Document that represents this Query
     public var document: Document {
         switch self {
         case .typeof(let field, let type):
             if type == .number {
-                let aqt = AQT.or([
+                let aqt = Query.or([
                     .typeof(field: field, type: .double),
                     .typeof(field: field, type: .int32),
                     .typeof(field: field, type: .int64)
@@ -268,12 +259,6 @@ public indirect enum AQT {
             }
 
             return query
-//        case .contains(let field, let val, let options):
-//            return [field: RegularExpression(pattern: val, options: options)]
-//        case .startsWith(let field, let val):
-//            return [field: RegularExpression(pattern: "^" + val, options: .anchorsMatchLines)]
-//        case .endsWith(let field, let val):
-//            return [field: RegularExpression(pattern: val + "$", options: .anchorsMatchLines)]
         case .nothing:
             return [:]
         case .in(let field, let array):
@@ -286,7 +271,7 @@ public indirect enum AQT {
     }
 
     /// Whether the type in `key` is equal to the AQTType https://docs.mongodb.com/manual/reference/operator/query/type/#op._S_type
-    case typeof(field: String, type: AQTType)
+    case typeof(field: String, type: QueryType)
 
     /// Does the `Value` within the `key` match this `Value`
     case valEquals(field: String, val: BSON.Primitive)
@@ -307,30 +292,21 @@ public indirect enum AQT {
     case smallerThanOrEqual(field: String, val: BSON.Primitive)
 
     /// Whether a subdocument in the array within the `key` matches one of the queries/filters
-    case containsElement(field: String, match: AQT)
+    case containsElement(field: String, match: Query)
 
     /// Whether all `AQT` Conditions are correct
-    case and([AQT])
+    case and([Query])
 
     /// Whether any of these `AQT` conditions is correct
-    case or([AQT])
+    case or([Query])
 
     /// Whether none of these `AQT` conditions are correct
-    case not(AQT)
+    case not(Query)
 
     /// Whether nothing needs to be matched. Is always true and just a placeholder
     case nothing
 
-//    /// Whether the String value within the `key` contains this `String`.
-//    case contains(field: String, val: String, options: NSRegularExpression.Options)
-//
-//    /// Whether the String value within the `key` starts with this `String`.
-//    case startsWith(field: String, val: String)
-//
-//    /// Whether the String value within the `key` ends with this `String`.
-//    case endsWith(field: String, val: String)
-
-    /// A literal Document
+    /// A custom query
     case custom(Document)
 
     /// Value at this key exists, even if it is `Null`
@@ -338,48 +314,22 @@ public indirect enum AQT {
 
     /// Value is one of the given values
     case `in`(field: String, in: [BSON.Primitive])
-}
-
-/// A `Query` that consists of an `AQT` statement
-public struct Query: Codable, ExpressibleByDictionaryLiteral, ExpressibleByStringLiteral {
-    public func encode(to encoder: Encoder) throws {
-        try document.encode(to: encoder)
-    }
-
+    
     public init(from decoder: Decoder) throws {
-        self = try Query(from: Document(from: decoder))
+        self = .custom(try Document(from: decoder))
     }
-
-    public var document: Document {
-        return self.aqt.document
-    }
-
-    /// Initializes this Query with a String literal for a text search
-    public init(stringLiteral value: String) {
-        self = .textSearch(forString: value)
-    }
-
-    /// Initializes this Query with a String literal for a text search
-    public init(unicodeScalarLiteral value: String) {
-        self = .textSearch(forString: value)
-    }
-
-    /// Initializes this Query with a String literal for a text search
-    public init(extendedGraphemeClusterLiteral value: String) {
-        self = .textSearch(forString: value)
-    }
-
-    /// Initializes an empty query, matching nothing
+    
+    /// Initializes an empty query
     public init() {
-        self.aqt = .nothing
+        self = .nothing
     }
-
-    /// Creates a Query from a Dictionary Literal
+    
+    /// Creates a query from a dictionary literal
     public init(dictionaryLiteral elements: (String, PrimitiveConvertible)...) {
         if elements.count == 0 {
-            self.aqt = .nothing
+            self = .nothing
         } else {
-            self.aqt = .custom(Document(elements: elements.compactMap { key, value in
+            self = .custom(Document(elements: elements.compactMap { key, value in
                 guard let primitive = value.makePrimitive() else {
                     return nil // continue
                 }
@@ -388,37 +338,8 @@ public struct Query: Codable, ExpressibleByDictionaryLiteral, ExpressibleByStrin
             }))
         }
     }
-
-    /// The `AQT` statement that's used as a query/filter
-    public var aqt: AQT
-
-    /// Initializes a `Query` with an `AQT` filter
-    public init(aqt: AQT) {
-        self.aqt = aqt
-    }
-
-    /// Initializes a Query from a Document and uses this Document as the Query
-    public init(from document: Document) {
-        if document.count == 0 {
-            self.aqt = .nothing
-        } else {
-            self.aqt = .custom(document)
-        }
-    }
-
-    /// Creates a textSearch for a specified string
-    public static func textSearch(forString string: String, language: String? = nil, caseSensitive: Bool = false, diacriticSensitive: Bool = false) -> Query {
-        var textSearch: Document = ["$text": [
-            "$search": string,
-            "$caseSensitive": caseSensitive,
-            "$diacriticSensitive": diacriticSensitive
-            ] as Document
-        ]
-
-        if let language = language {
-            textSearch["$language"] = language
-        }
-
-        return Query(from: textSearch)
+    
+    public func encode(to encoder: Encoder) throws {
+        try document.encode(to: encoder)
     }
 }

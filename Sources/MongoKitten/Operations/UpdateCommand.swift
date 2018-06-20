@@ -113,3 +113,62 @@ public struct UpdateReply: ServerReplyDecodable {
         return self
     }
 }
+
+/// Modifiers that are available for use in update operations.
+///
+/// - see: https://docs.mongodb.com/manual/reference/operator/update/
+public enum UpdateOperator: Encodable {
+    /// The $currentDate operator sets the value of a field to the current date, as a `Date`
+    case currentDate(field: String)
+    
+    /// The $inc operator increments a field by a specified value.
+    case increment(field: String, amount: Primitive)
+    
+    /// The $min updates the value of the field to a specified value if the specified value is less than the current value of the field. The $min operator can compare values of different types, using the BSON comparison order.
+    case min(String, Primitive)
+    
+    /// The $max operator updates the value of the field to a specified value if the specified value is greater than the current value of the field. The $max operator can compare values of different types, using the BSON comparison order.
+    case max(String, Primitive)
+    
+    /// Multiply the value of a field by a number.
+    case multiply(String, Primitive)
+    
+    /// The $rename operator updates the name of a field
+    case rename(field: String, to: String)
+    
+    /// Replaces the value of a field with the specified value
+    case set(field: String, to: Primitive)
+    
+    /// Unsets the given field
+    case unset(field: String)
+    
+    /// A custom update operator
+    case custom(document: Document)
+    
+    public func encode(to encoder: Encoder) throws {
+        let document: Document
+        
+        switch self {
+        case .currentDate(let field):
+            document = ["$currentDate": [field: true]]
+        case .increment(let field, let amount):
+            document = ["$inc": [field: amount] as Document]
+        case .min(let field, let value):
+            document = ["$min": [field: value] as Document]
+        case .max(let field, let value):
+            document = ["$max": [field: value] as Document]
+        case .multiply(let field, let value):
+            document = ["$mul": [field: value] as Document]
+        case .rename(let field, let newName):
+            document = ["$rename": [field: newName]]
+        case .set(let field, let value):
+            document = ["$set": [field: value] as Document]
+        case .unset(let field):
+            document = ["$unset": [field: ""]]
+        case .custom(let spec):
+            document = spec
+        }
+        
+        try document.encode(to: encoder)
+    }
+}

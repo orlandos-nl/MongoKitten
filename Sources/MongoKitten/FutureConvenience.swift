@@ -52,7 +52,7 @@ public extension EventLoopFuture where T == Collection {
     /// For documentation on this method, refer to `Collection.deleteAll(_:)`
     public func deleteAll(_ query: Query = [:]) -> EventLoopFuture<Int> {
         return self.then { collection in
-            return collection.deleteAll(query)
+            return collection.deleteAll(where: query)
         }
     }
 
@@ -61,7 +61,7 @@ public extension EventLoopFuture where T == Collection {
     /// For documentation on this method, refer to `Collection.deleteOne(_:)`
     public func deleteOne(_ query: Query = [:]) -> EventLoopFuture<Int> {
         return self.then { collection in
-            return collection.deleteOne(query)
+            return collection.deleteOne(where: query)
         }
     }
 
@@ -70,7 +70,7 @@ public extension EventLoopFuture where T == Collection {
     /// For documentation on this method, refer to `Collection.update(_:to:multiple:)`
     public func update(_ query: Query, to document: Document, multiple: Bool? = nil) -> EventLoopFuture<UpdateReply> {
         return self.then { collection in
-            return collection.update(query,to: document,multiple: multiple)
+            return collection.update(where: query, to: document, multiple: multiple)
         }
     }
 
@@ -79,7 +79,7 @@ public extension EventLoopFuture where T == Collection {
     /// For documentation on this method, refer to `Collection.upsert(_:to:)`
     public func upsert(_ query: Query, to document: Document) -> EventLoopFuture<UpdateReply> {
         return self.then { collection in
-            return collection.upsert(query,to: document)
+            return collection.upsert(where: query,to: document)
         }
     }
 
@@ -88,7 +88,7 @@ public extension EventLoopFuture where T == Collection {
     /// For documentation on this method, refer to `Collection.update(_:setting:multiple:)`
     public func update(_ query: Query, setting set: [String: Primitive?], multiple: Bool? = nil) -> EventLoopFuture<UpdateReply> {
         return self.then { collection in
-            return collection.update(query,setting: set,multiple: multiple)
+            return collection.update(where: query, setting: set, multiple: multiple)
         }
     }
 
