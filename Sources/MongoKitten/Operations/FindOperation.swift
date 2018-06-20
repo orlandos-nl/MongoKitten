@@ -82,17 +82,17 @@ public final class FindCursor: QueryCursor {
         return self
     }
     
-    public func skip(_ skip: Int) -> Self {
+    public func skip(_ skip: Int) -> FindCursor {
         self.operation.skip = skip
         return self
     }
     
-    public func project(_ projection: Projection) -> Self {
+    public func project(_ projection: Projection) -> FindCursor {
         self.operation.projection = projection
         return self
     }
     
-    public func sort(_ sort: Sort) -> Self {
+    public func sort(_ sort: Sort) -> FindCursor {
         self.operation.sort = sort
         return self
     }

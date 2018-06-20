@@ -19,6 +19,7 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         case unexpectedAggregateResults
         case cannotGetMore
         case cannotFormCommand
+        case unexpectedNil
         
         public var description: String {
             switch self {
@@ -34,6 +35,7 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
                 return "The aggregate failed because the results mismatched MongoKitten's expectations"
             case .cannotGetMore: return "The cursor cannot get more elements"
             case .cannotFormCommand: return "A command for the requested action could not be formed"
+            case .unexpectedNil: return "A value was unexpectedly nil"
             }
         }
     }
@@ -48,7 +50,7 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         case noHostSpecified
         case noTargetDatabaseSpecified
         case multipleResultDocuments
-        case noResultDocuments
+        case noResultDocument
         case unexpectedValue
         case cursorDrained
         case nothingToDo
@@ -62,7 +64,7 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
             case .invalidPort: return "The given port number is invalid"
             case .noHostSpecified: return "No host was specified"
             case .noTargetDatabaseSpecified: return "A target database was not specified"
-            case .noResultDocuments: return "One Document was expected but none were returned"
+            case .noResultDocument: return "One Document was expected but none were returned"
             case .multipleResultDocuments: return "One Document was expected but multiple were returned"
             case .unexpectedValue: return "The value found in the result cursor did not match the type safe expectation"
             case .cursorDrained: return "The cursor has been drained, which means there are no more elements left to get"

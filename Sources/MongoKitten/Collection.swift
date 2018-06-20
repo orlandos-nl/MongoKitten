@@ -50,11 +50,7 @@ public final class Collection: FutureConvenienceCallable {
         var operation = FindOperation(filter: query, on: self)
         operation.limit = 1
         
-        return FindCursor(operation: operation, on: self).execute().then { cursor in
-            return cursor.nextBatch().map { batch in
-                return batch.batch.first
-            }
-        }
+        return FindCursor(operation: operation, on: self).getFirstResult()
     }
     
     public func count(_ query: Query? = nil) -> EventLoopFuture<Int> {
@@ -117,6 +113,19 @@ public final class Collection: FutureConvenienceCallable {
         var distinct = DistinctCommand(onKey: key, into: self)
         distinct.query = filter
         return distinct.execute(on: connection)
+    }
+    
+    /// Calculates aggregate values for the data in a collection or a view.
+    ///
+    /// - parameter comment: Users can specify an arbitrary string to help trace the operation through the database profiler, currentOp, and logs.
+    public func aggregate(comment: String? = nil) -> AggregateCursor<Document> {
+        var cursor = AggregateCursor(on: self)
+        
+        if let comment = comment {
+            cursor.operation.comment = comment
+        }
+        
+        return cursor
     }
     
 //    public func aggregate(_ pipeline: Pipeline<[Document]>) -> Cursor<Document> {

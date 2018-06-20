@@ -79,16 +79,17 @@ fileprivate extension CursorBatch where Element == Document {
     }
 }
 
-public protocol QueryCursor {
+public protocol QueryCursor: class {
     associatedtype Element
     var collection: Collection { get }
     
     var batchSize: Int { get }
-    func setBatchSize(_ batchSize: Int) -> Self
-    func limit(_ limit: Int) -> Self
-    func skip(_ skip: Int) -> Self
-    func project(_ projection: Projection) -> Self
-    func sort(_ sort: Sort) -> Self
+    
+    @discardableResult func setBatchSize(_ batchSize: Int) -> Self
+    @discardableResult func limit(_ limit: Int) -> Self
+    @discardableResult func skip(_ skip: Int) -> Self
+    @discardableResult func project(_ projection: Projection) -> Self
+    @discardableResult func sort(_ sort: Sort) -> Self
     
     func execute() -> EventLoopFuture<FinalizedCursor<Self>>
     
@@ -98,6 +99,8 @@ public protocol QueryCursor {
     func forEach(handler: @escaping (Element) throws -> Void) -> EventLoopFuture<Void>
     
     func map<E>(transform: @escaping (Element) throws -> E) -> MappedCursor<Self, E>
+    
+    func getFirstResult() -> EventLoopFuture<Element?>
 }
 
 extension QueryCursor {
@@ -170,12 +173,27 @@ extension QueryCursor {
     public func map<E>(transform: @escaping (Element) throws -> E) -> MappedCursor<Self, E> {
         return MappedCursor(underlyingCursor: self, transform: transform)
     }
+    
+    /// Executes the cursor and returns the first result
+    /// Always uses a batch size of 1
+    public func getFirstResult() -> EventLoopFuture<Element?> {
+        let currentBatchSize = self.batchSize
+        setBatchSize(1)
+        
+        defer { setBatchSize(currentBatchSize) }
+        return execute().then { finalizedCursor in
+            return finalizedCursor.nextBatch()
+            }.thenThrowing { batch in
+                var batch = batch
+                return try batch.nextElement()
+        }
+    }
 }
 
 internal protocol CursorBasedOnOtherCursor: QueryCursor {
     associatedtype Base: QueryCursor
     
-    var underlyingCursor: Base { get }
+    var underlyingCursor: Base { get set }
 }
 
 extension CursorBasedOnOtherCursor {
@@ -239,7 +257,7 @@ public final class FinalizedCursor<Base: QueryCursor> {
 }
 
 extension QueryCursor where Element == Document {
-    public func decode<D: Decodable>(to type: D.Type, using decoder: BSONDecoder = BSONDecoder()) throws -> MappedCursor<Self, D> {
+    public func decode<D: Decodable>(_ type: D.Type, using decoder: BSONDecoder = BSONDecoder()) -> MappedCursor<Self, D> {
         return self.map { document in
             return try decoder.decode(D.self, from: document)
         }
