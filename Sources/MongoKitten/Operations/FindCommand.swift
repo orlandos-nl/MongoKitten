@@ -1,6 +1,6 @@
 import NIO
 
-public struct FindOperation: MongoDBCommand {
+public struct FindCommand: MongoDBCommand {
     typealias Reply = CursorReply
     
     internal var namespace: Namespace {
@@ -49,21 +49,25 @@ struct CursorReply: ServerReplyDecodable {
     }
 }
 
+/// A cursor that results from a `FindCommand`
 public final class FindCursor: QueryCursor {
+    /// The FindCursor alays results in a `Document`
     public typealias Element = Document
     
+    /// The batch size
     public var batchSize = 101
-    public let collection: Collection
-    private var operation: FindOperation
-    public private(set) var didExecute = false
     
-    public init(operation: FindOperation, on collection: Collection) {
-        self.operation = operation
+    /// The collection this cursor applies to
+    public let collection: Collection
+    private var command: FindCommand
+    
+    public init(command: FindCommand, on collection: Collection) {
+        self.command = command
         self.collection = collection
     }
     
     public func execute() -> EventLoopFuture<FinalizedCursor<FindCursor>> {
-        return self.collection.connection.execute(command: self.operation).mapToResult(for: collection).map { cursor in
+        return self.collection.connection.execute(command: self.command).mapToResult(for: collection).map { cursor in
             return FinalizedCursor(basedOn: self, cursor: cursor)
         }
     }
@@ -78,22 +82,22 @@ public final class FindCursor: QueryCursor {
     }
     
     public func limit(_ limit: Int) -> FindCursor {
-        self.operation.limit = limit
+        self.command.limit = limit
         return self
     }
     
     public func skip(_ skip: Int) -> FindCursor {
-        self.operation.skip = skip
+        self.command.skip = skip
         return self
     }
     
     public func project(_ projection: Projection) -> FindCursor {
-        self.operation.projection = projection
+        self.command.projection = projection
         return self
     }
     
     public func sort(_ sort: Sort) -> FindCursor {
-        self.operation.sort = sort
+        self.command.sort = sort
         return self
     }
 }

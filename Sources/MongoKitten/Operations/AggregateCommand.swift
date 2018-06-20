@@ -2,7 +2,7 @@ import BSON
 import NIO
 
 /// Performs aggregation operation using the aggregation pipeline. The pipeline allows users to process data from a collection or other source with a sequence of stage-based manipulations.
-public struct AggregateOperation: MongoDBCommand {
+public struct AggregateCommand: MongoDBCommand {
     typealias Reply = CursorReply
     
     internal var namespace: Namespace {
@@ -68,12 +68,12 @@ public final class AggregateCursor<Element>: QueryCursor {
     public var collection: Collection
     private var transformer: (Document) -> Element
     public var batchSize: Int { return self.operation.cursor.batchSize ?? 101 }
-    var operation: AggregateOperation
+    var operation: AggregateCommand
     
     init(on collection: Collection, transformer: @escaping (Document) -> Element) {
         self.collection = collection
         self.transformer = transformer
-        self.operation = AggregateOperation(pipeline: [], in: collection)
+        self.operation = AggregateCommand(pipeline: [], in: collection)
     }
     
     @discardableResult public func setBatchSize(_ batchSize: Int) -> AggregateCursor<Element> {

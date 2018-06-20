@@ -56,7 +56,7 @@ public final class Collection: FutureConvenienceCallable {
     /// - parameter query: The query to execute. Defaults to an empty query that returns every document.
     /// - returns: A `FindCursor` that can be used to fetch results, or perform additional refinement of the results
     public func find(_ query: Query = [:]) -> FindCursor {
-        return FindCursor(operation: FindOperation(filter: query, on: self), on: self)
+        return FindCursor(command: FindCommand(filter: query, on: self), on: self)
     }
     
     /// Executes a query on the collection, and returns the first result.
@@ -65,10 +65,10 @@ public final class Collection: FutureConvenienceCallable {
     /// - parameter query: The query to execute. Defaults to an empty query that returns every document.
     /// - returns: The first result
     public func findOne(_ query: Query = [:]) -> EventLoopFuture<Document?> {
-        var operation = FindOperation(filter: query, on: self)
-        operation.limit = 1
+        var command = FindCommand(filter: query, on: self)
+        command.limit = 1
         
-        return FindCursor(operation: operation, on: self).getFirstResult()
+        return FindCursor(command: command, on: self).getFirstResult()
     }
     
     /// Counts the number of documents in a collection or a view for the given query.
@@ -94,7 +94,7 @@ public final class Collection: FutureConvenienceCallable {
     
     /// Calculates aggregate values for the data in a collection or a view.
     ///
-    /// You add pipeline stages to the aggregation operation by calling methods on the returned cursor. For example:
+    /// You add pipeline stages to the aggregation command by calling methods on the returned cursor. For example:
     ///
     /// ```swift
     /// collection.aggregate()
