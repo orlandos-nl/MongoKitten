@@ -34,7 +34,7 @@ internal final class Cursor {
     }
 }
 
-public struct CursorBatch<Element> {
+struct CursorBatch<Element> {
     typealias Transform = (Document) throws -> Element
     
     internal let isLast: Bool
@@ -79,31 +79,69 @@ fileprivate extension CursorBatch where Element == Document {
     }
 }
 
+/// A cursor with results from a query. Implemented by `FindCursor` and `AggregateCursor`.
 public protocol QueryCursor: class {
+    /// The Element type of the cursor
     associatedtype Element
+    
+    /// The collection this cursor fetches results from
     var collection: Collection { get }
     
+    /// The batchSize used for requesting results
     var batchSize: Int { get }
     
+    /// Sets the batch size of the cursor to a new value.
+    ///
+    /// - returns: The cursor, to facilitate chaining multiple method calls.
     @discardableResult func setBatchSize(_ batchSize: Int) -> Self
+    
+    /// Sets a limit on the number of results
+    ///
+    /// - returns: The cursor, to facilitate chaining multiple method calls.
     @discardableResult func limit(_ limit: Int) -> Self
+    
+    /// Sets the amount of results to skip.
+    ///
+    /// - returns: The cursor, to facilitate chaining multiple method calls.
     @discardableResult func skip(_ skip: Int) -> Self
+    
+    /// Applies a projection to the cursor.
+    ///
+    /// - returns: The cursor, to facilitate chaining multiple method calls.
     @discardableResult func project(_ projection: Projection) -> Self
+    
+    /// Applies a `Sort` to the cursor.
+    ///
+    /// - returns: The cursor, to facilitate chaining multiple method calls.
     @discardableResult func sort(_ sort: Sort) -> Self
     
+    /// Executes the cursor, returning a `FinalizedCursor` after the operation has completed.
     func execute() -> EventLoopFuture<FinalizedCursor<Self>>
     
+    /// Transforms a given `Document` to the cursor `Element` type
     func transformElement(_ element: Document) throws -> Element
     
+    /// Executes the given `handler` for every element of the cursor.
+    ///
+    /// - parameter handler: A handler to execute on every result
+    /// - returns: A future that resolves when the operation is complete, or fails if an error is thrown
     @discardableResult
     func forEach(handler: @escaping (Element) throws -> Void) -> EventLoopFuture<Void>
     
+    /// Returns a new cursor with the results of mapping the given closure over the cursor's elements. This operation is lazy.
+    ///
+    /// - parameter transform: A mapping closure. `transform` accepts an element of this cursor as its parameter and returns a transformed value of the same or of a different type.
     func map<E>(transform: @escaping (Element) throws -> E) -> MappedCursor<Self, E>
     
+    /// Executes the cursor and returns the first result
     func getFirstResult() -> EventLoopFuture<Element?>
 }
 
 extension QueryCursor {
+    /// Helper method for executing a closure on each element of a cursor whose element is itself a future.
+    ///
+    /// - parameter handler: A closure that will be executed on the result of every succeeded future
+    /// - returns: A future that succeeds when the operation is completed
     @discardableResult
     public func forEachFuture<T>(
         handler: @escaping (T) -> Void
@@ -143,6 +181,10 @@ extension QueryCursor {
 }
 
 extension QueryCursor {
+    /// Executes the given `handler` for every element of the cursor.
+    ///
+    /// - parameter handler: A handler to execute on every result
+    /// - returns: A future that resolves when the operation is complete, or fails if an error is thrown
     @discardableResult
     public func forEach(handler: @escaping (Element) throws -> Void) -> EventLoopFuture<Void> {
         return execute().then { finalizedCursor in
@@ -170,6 +212,9 @@ extension QueryCursor {
         }
     }
     
+    /// Returns a new cursor with the results of mapping the given closure over the cursor's elements. This operation is lazy.
+    ///
+    /// - parameter transform: A mapping closure. `transform` accepts an element of this cursor as its parameter and returns a transformed value of the same or of a different type.
     public func map<E>(transform: @escaping (Element) throws -> E) -> MappedCursor<Self, E> {
         return MappedCursor(underlyingCursor: self, transform: transform)
     }
@@ -190,12 +235,14 @@ extension QueryCursor {
     }
 }
 
+/// A cursor that is based on another cursor
 internal protocol CursorBasedOnOtherCursor: QueryCursor {
     associatedtype Base: QueryCursor
     
     var underlyingCursor: Base { get set }
 }
 
+/// Includes default implementations that forward to the underlying cursor
 extension CursorBasedOnOtherCursor {
     public func setBatchSize(_ batchSize: Int) -> Self {
         _ = underlyingCursor.setBatchSize(batchSize)
@@ -237,6 +284,7 @@ extension CursorBasedOnOtherCursor {
     }
 }
 
+/// A concrete cursor, with a corrosponding server side cursor, as the result of a `QueryCursor`
 public final class FinalizedCursor<Base: QueryCursor> {
     let base: Base
     let cursor: Cursor
@@ -246,9 +294,6 @@ public final class FinalizedCursor<Base: QueryCursor> {
         self.cursor = cursor
     }
     
-    /// - returns: A future resolving with the next element, or with `nil` if the cursor is drained
-//    func next() -> EventLoopFuture<Element?>
-    
     internal func nextBatch() -> EventLoopFuture<CursorBatch<Base.Element>> {
         return cursor.getMore(batchSize: base.batchSize).thenThrowing { batch in
             return batch.map(self.base.transformElement)
@@ -257,6 +302,7 @@ public final class FinalizedCursor<Base: QueryCursor> {
 }
 
 extension QueryCursor where Element == Document {
+    /// Generates a `MappedCursor` with decoded instances of `D` as its element type, using the given `decoder`.
     public func decode<D: Decodable>(_ type: D.Type, using decoder: BSONDecoder = BSONDecoder()) -> MappedCursor<Self, D> {
         return self.map { document in
             return try decoder.decode(D.self, from: document)
@@ -264,6 +310,7 @@ extension QueryCursor where Element == Document {
     }
 }
 
+/// A cursor that is the result of mapping another cursor
 public final class MappedCursor<Base: QueryCursor, Element>: CursorBasedOnOtherCursor {
     internal typealias Transform<E> = (Base.Element) throws -> E
     

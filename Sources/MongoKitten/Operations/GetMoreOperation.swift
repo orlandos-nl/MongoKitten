@@ -19,7 +19,7 @@ internal struct GetMore: MongoDBCommand {
         self.batchSize = batchSize
     }
     
-    func execute(on connection: MongoDBConnection) -> EventLoopFuture<GetMoreReply> {
+    func execute(on connection: Connection) -> EventLoopFuture<GetMoreReply> {
         return connection.execute(command: self)
     }
 }

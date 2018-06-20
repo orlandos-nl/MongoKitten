@@ -55,7 +55,7 @@ public struct UpdateCommand: MongoDBCommand {
     }
     
     @discardableResult
-    public func execute(on connection: MongoDBConnection) -> EventLoopFuture<UpdateReply> {
+    public func execute(on connection: Connection) -> EventLoopFuture<UpdateReply> {
         return connection.execute(command: self)
     }
 }

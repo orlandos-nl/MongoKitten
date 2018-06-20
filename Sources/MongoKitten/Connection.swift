@@ -13,18 +13,32 @@ import Foundation
 // TODO: https://github.com/mongodb/specifications/blob/master/source/driver-read-preferences.rst
 
 /// A single MongoDB connection to a single MongoDB server.
-/// `MongoDBConnection` handles the lowest level communication to a MongoDB instance.
-public final class MongoDBConnection {
+/// `Connection` handles the lowest level communication to a MongoDB instance.
+public final class Connection {
+    
+    /// The NIO Client Connection Context
     let context: ClientConnectionContext
+    
+    /// The NIO channel
     let channel: Channel
+    
+    /// The current request ID, used to generate unique identifiers for MongoDB commands
     var currentRequestId: Int32 = 0
+    
+    /// The shared ObjectId generator for this connection
     internal let sharedGenerator = ObjectIdGenerator()
     
+    /// The eventLoop this connection lives on
     public var eventLoop: EventLoop {
         return channel.eventLoop
     }
     
-    public static func connect(on group: EventLoopGroup, settings: ConnectionSettings) -> EventLoopFuture<MongoDBConnection> {
+    /// Connects to the MongoDB server with the given `ConnectionSettings`
+    ///
+    /// - parameter group: The NIO EventLoopGroup or EventLoop to use for this connection
+    /// - parameter settings: The connection settings to use
+    /// - returns: A future that resolves with a connected connection if the connection was succesful, or with an error if the connection failed
+    public static func connect(on group: EventLoopGroup, settings: ConnectionSettings) -> EventLoopFuture<Connection> {
         do {
             let context = ClientConnectionContext()
             
@@ -32,7 +46,7 @@ public final class MongoDBConnection {
                 // Enable SO_REUSEADDR.
                 .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
                 .channelInitializer { channel in
-                    return MongoDBConnection.initialize(pipeline: channel.pipeline, context: context)
+                    return Connection.initialize(pipeline: channel.pipeline, context: context)
             }
             
             guard let host = settings.hosts.first else {
@@ -40,7 +54,7 @@ public final class MongoDBConnection {
             }
             
             return bootstrap.connect(host: host.hostname, port: Int(host.port)).map { channel in
-                return MongoDBConnection(channel: channel, context: context)
+                return Connection(channel: channel, context: context)
             }
         } catch {
             return group.next().newFailedFuture(error: error)
@@ -52,10 +66,12 @@ public final class MongoDBConnection {
         self.context = context
     }
     
+    /// Returns the database named `database`, on this connection
     public subscript(database: String) -> Database {
         return Database(named: database, connection: self)
     }
     
+    /// Returns the collection for the given namespace
     internal subscript(namespace: Namespace) -> Collection {
         return self[namespace.databaseName][namespace.collectionName]
     }
@@ -81,6 +97,10 @@ public final class MongoDBConnection {
         return promise.futureResult
     }
     
+    /// Executes the given MongoDB command, returning the result
+    ///
+    /// - parameter command: The `MongoDBCommand` to execute
+    /// - returns: The reply to the command
     func execute<C: MongoDBCommand>(command: C) -> EventLoopFuture<C.Reply> {
         return _execute(command: command).thenThrowing(C.Reply.init)
     }

@@ -8,11 +8,11 @@ protocol AnyMongoDBCommand: Encodable {
 protocol MongoDBCommand: AnyMongoDBCommand {
     associatedtype Reply: ServerReplyInitializable
     
-    func execute(on connection: MongoDBConnection) -> EventLoopFuture<Reply.Result>
+    func execute(on connection: Connection) -> EventLoopFuture<Reply.Result>
 }
 
 extension MongoDBCommand {
-    func execute(on connection: MongoDBConnection) -> EventLoopFuture<Reply.Result> {
+    func execute(on connection: Connection) -> EventLoopFuture<Reply.Result> {
         return connection.execute(command: self).mapToResult(for: connection[self.namespace])
     }
 }

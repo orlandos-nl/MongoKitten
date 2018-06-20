@@ -1,8 +1,70 @@
-author: "Joannis Orlandos, Laurent Gaches and Robbert Brandsma"
+author: "Joannis Orlandos and Robbert Brandsma"
 module: MongoKitten
 readme: README.md
+theme: fullwidth
 github_url: https://github.com/OpenKitten/MongoKitten
 xcodebuild_arguments:
   - "-scheme"
   - "MongoKitten-Package"
 dash_url: http://openkitten.github.io/MongoKitten/MongoKitten.xml
+output: docs/generated
+documentation: docs/*.md
+custom_categories:
+  - name: Guides
+    children:
+      - Getting Started
+  - name: About MongoKitten
+    children:
+      - Architecture
+      - Philosophy
+  - name: Core Types
+    children:
+      - Database
+      - Collection
+      - Connection
+      - ConnectionSettings
+  - name: Query Builder
+    children:
+      - Query
+      - String
+      - AQT
+      - "!(_:)"
+      - "!=(_:_:)"
+      - "&&(_:_:)"
+      - "||(_:_:)"
+      - "&=(_:_:)"
+      - "||=(_:_:)"
+      - "<(_:_:)"
+      - ">(_:_:)"
+      - "<=(_:_:)"
+      - ">=(_:_:)"
+      - "==(_:_:)"
+  - name: Sorting
+    children:
+      - Sort
+      - SortOrder
+  - name: Find
+    children:
+      - FindCursor
+      - Sort
+      - SortOrder
+      - Projection
+  - name: Aggregate
+    children:
+      - AggregateCursor
+  - name: Commands
+    children:
+      - FindOperation
+      - AggregateOperation
+      - CountCommand
+      - DeleteCommand
+      - DistinctCommand
+      - InsertCommand
+      - UpdateCommand
+      - CursorSettings
+  - name: Replies
+    children:
+      - InsertReply
+      - UpdateReply
+      - DeleteReply
+      - CursorBatch

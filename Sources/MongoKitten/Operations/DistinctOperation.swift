@@ -25,7 +25,7 @@ public struct DistinctCommand: MongoDBCommand {
         self.key = key
     }
     
-    public func execute(on connection: MongoDBConnection) -> EventLoopFuture<[Primitive]> {
+    public func execute(on connection: Connection) -> EventLoopFuture<[Primitive]> {
         return connection.execute(command: self).mapToResult(for: connection[namespace])
     }
 }

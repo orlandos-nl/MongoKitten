@@ -27,7 +27,7 @@ public struct InsertCommand: MongoDBCommand {
     }
     
     @discardableResult
-    public func execute(on connection: MongoDBConnection) -> EventLoopFuture<InsertReply> {
+    public func execute(on connection: Connection) -> EventLoopFuture<InsertReply> {
         return connection.execute(command: self)
     }
 }

@@ -61,6 +61,9 @@ fileprivate struct CountResult: Decodable {
     var count: Int
 }
 
+/// A cursor that is used for executing aggregates.
+///
+/// - see: `Collection.aggregate(...)`
 public final class AggregateCursor<Element>: QueryCursor {
     public var collection: Collection
     private var transformer: (Document) -> Element
@@ -164,10 +167,10 @@ extension AggregateCursor where Element == Document {
         self.init(on: collection, transformer: { $0 })
     }
     
+    /// Appends a `$count` stage to the aggregate, executes it, and returns the result
     public func count() -> EventLoopFuture<Int> {
-        let cursor = self
-        
-        return cursor
+        // TODO: Clone the cursor so this does not mutate the cursor
+        return self
             .count(into: "count")
             .decode(CountResult.self)
             .getFirstResult()

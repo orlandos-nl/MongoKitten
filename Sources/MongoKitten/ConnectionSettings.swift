@@ -16,6 +16,7 @@ fileprivate extension Bool {
 /// Describes the settings for a MongoDB connection, most of which can be represented in a connection string
 public struct ConnectionSettings: Equatable {
     
+    /// The authentication details to use with the database
     public enum Authentication: Equatable {
         /// Unauthenticated
         case unauthenticated
@@ -27,10 +28,19 @@ public struct ConnectionSettings: Equatable {
         case mongoDBCR(username: String, password: String)
     }
     
+    /// Defines a MongoDB host
     public struct Host: Equatable {
+        
+        /// The hostname, like "localhost", "example.com" or "127.0.0.1"
         public var hostname: String
+        
+        /// The port. The default MongoDB port is 27017
         public var port: UInt16
         
+        /// Initializes a new `Host` instance
+        ///
+        /// - parameter hostname: The hostname
+        /// - parameter port: The port
         public init(hostname: String, port: UInt16) {
             self.hostname = hostname
             self.port = port
@@ -53,18 +63,29 @@ public struct ConnectionSettings: Equatable {
     /// When true, SSL certificates will be validated
     public var verifySSLCertificates: Bool = true
     
-    // The maximum number of connections allowed
+    /// The maximum number of connections allowed
     public var maximumNumberOfConnections: Int = 1
     
-    // The connection timeout, in seconds. Defaults to 5 minutes.
+    /// The connection timeout, in seconds. Defaults to 5 minutes.
     public var connectTimeout: TimeInterval = 300
     
-    // The time in milliseconds to attempt a send or receive on a socket before the attempt times out. Defaults to 5 minutes.
+    /// The time in seconds to attempt a send or receive on a socket before the attempt times out. Defaults to 5 minutes.
     public var socketTimeout: TimeInterval = 300
     
     /// The target path
     public var targetDatabase: String?
     
+    /// Initializes a new connection settings instacen.
+    ///
+    /// - parameter authentication: See `ConnectionSettings.Authentication`
+    /// - parameter authenticationSource: See `ConnectionSettings.authenticationSource`
+    /// - parameter hosts: Hosts to connect to
+    /// - parameter targetDatabase: The target path
+    /// - parameter useSSL: When true, SSL will be used
+    /// - parameter verifySSLCertificates: When true, SSL certificates will be validated
+    /// - parameter maximumNumberOfConnections: The maximum number of connections allowed
+    /// - parameter connectTimeout: See `ConnectionSettings.connectTimeout`
+    /// - parameter socketTimeout: See `ConnectionSettings.socketTimeout`
     public init(authentication: Authentication, authenticationSource: String? = nil, hosts: [Host], targetDatabase: String? = nil, useSSL: Bool = false, verifySSLCertificates: Bool = true, maximumNumberOfConnections: Int = 1, connectTimeout: TimeInterval = 300, socketTimeout: TimeInterval = 300) {
         self.authentication = authentication
         self.authenticationSource = authenticationSource

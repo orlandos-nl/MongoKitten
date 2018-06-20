@@ -11,14 +11,31 @@ import Foundation
 public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatable {
     /// Describes the type of error that has occured
     public enum Kind: String, Codable, CustomStringConvertible, Equatable {
+        /// The given MongoDB connection URI is invalid
         case invalidURI
+        
+        /// MongoKitten is unable to communicate with the server, because MongoKitten does not share a supported MongoDB protocol with the server
         case unsupportedProtocol
+        
+        /// MongoKitten is unable to connect to the server
         case unableToConnect
+        
+        /// MongoDB replied with an error reply indicating the command failed
         case commandFailure
+        
+        /// An error occurred when parsing a reply message from MongoDB
         case protocolParsingError
+        
+        /// The aggregate failed because the results mismatched MongoKitten's expectations
         case unexpectedAggregateResults
+        
+        /// The cursor cannot get more elements
         case cannotGetMore
+        
+        /// A command for the requested action could not be formed
         case cannotFormCommand
+        
+        /// A value was unexpectedly nil
         case unexpectedNil
         
         public var description: String {
@@ -42,17 +59,40 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
     
     /// Describes the reason why an error has occured, often providing details on how it could be fixed
     public enum Reason: String, Codable, CustomStringConvertible, Equatable {
+        /// The connection URI does not start with the 'mongodb://' scheme
         case missingMongoDBScheme
+        
+        /// The URI cannot be parsed because it is malformed
         case uriIsMalformed
+        
+        /// The authentication details in the URI are malformed and cannot be parsed
         case malformedAuthenticationDetails
+        
+        /// The given authentication mechanism is not supported by MongoKitten
         case unsupportedAuthenticationMechanism
+        
+        /// The given port number is invalid
         case invalidPort
+        
+        /// No host was specified
         case noHostSpecified
+        
+        /// A target database was not specified
         case noTargetDatabaseSpecified
-        case multipleResultDocuments
+        
+        /// One Document was expected but none were returned
         case noResultDocument
+        
+        /// One Document was expected but multiple were returned
+        case multipleResultDocuments
+        
+        /// The value found in the result cursor did not match the expectation
         case unexpectedValue
+        
+        /// The cursor has been drained, which means there are no more elements left to get
         case cursorDrained
+        
+        /// There is nothing to do with the given parameters
         case nothingToDo
         
         public var description: String {
@@ -66,7 +106,7 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
             case .noTargetDatabaseSpecified: return "A target database was not specified"
             case .noResultDocument: return "One Document was expected but none were returned"
             case .multipleResultDocuments: return "One Document was expected but multiple were returned"
-            case .unexpectedValue: return "The value found in the result cursor did not match the type safe expectation"
+            case .unexpectedValue: return "The value found in the result cursor did not match the expectation"
             case .cursorDrained: return "The cursor has been drained, which means there are no more elements left to get"
             case .nothingToDo: return "There is nothing to do with the given parameters"
             }
