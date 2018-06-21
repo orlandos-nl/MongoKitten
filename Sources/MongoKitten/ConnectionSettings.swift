@@ -75,6 +75,9 @@ public struct ConnectionSettings: Equatable {
     /// The target path
     public var targetDatabase: String?
     
+    /// The application name is printed to the mongod logs upon establishing the connection. It is also recorded in the slow query logs and profile collections.
+    public var applicationName: String?
+    
     /// Initializes a new connection settings instacen.
     ///
     /// - parameter authentication: See `ConnectionSettings.Authentication`
@@ -86,7 +89,8 @@ public struct ConnectionSettings: Equatable {
     /// - parameter maximumNumberOfConnections: The maximum number of connections allowed
     /// - parameter connectTimeout: See `ConnectionSettings.connectTimeout`
     /// - parameter socketTimeout: See `ConnectionSettings.socketTimeout`
-    public init(authentication: Authentication, authenticationSource: String? = nil, hosts: [Host], targetDatabase: String? = nil, useSSL: Bool = false, verifySSLCertificates: Bool = true, maximumNumberOfConnections: Int = 1, connectTimeout: TimeInterval = 300, socketTimeout: TimeInterval = 300) {
+    /// - parameter applicationName: The application name is printed to the mongod logs upon establishing the connection. It is also recorded in the slow query logs and profile collections.
+    public init(authentication: Authentication, authenticationSource: String? = nil, hosts: [Host], targetDatabase: String? = nil, useSSL: Bool = false, verifySSLCertificates: Bool = true, maximumNumberOfConnections: Int = 1, connectTimeout: TimeInterval = 300, socketTimeout: TimeInterval = 300, applicationName: String? = nil) {
         self.authentication = authentication
         self.authenticationSource = authenticationSource
         self.hosts = hosts
@@ -96,6 +100,7 @@ public struct ConnectionSettings: Equatable {
         self.maximumNumberOfConnections = maximumNumberOfConnections
         self.connectTimeout = connectTimeout
         self.socketTimeout = socketTimeout
+        self.applicationName = applicationName
     }
     
     /// Parses the given `uri` into the ConnectionSettings
@@ -227,6 +232,10 @@ public struct ConnectionSettings: Equatable {
         
         if let socketTimeoutMSOption = queries["socketTimeoutMS"], let socketTimeoutMSNumber = Int(socketTimeoutMSOption), socketTimeoutMSNumber > 0 {
             self.socketTimeout = TimeInterval(socketTimeoutMSNumber) / 1000
+        }
+        
+        if let appName = queries["appname"] {
+            self.applicationName = String(appName)
         }
     }
     
