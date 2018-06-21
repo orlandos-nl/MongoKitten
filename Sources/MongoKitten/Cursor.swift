@@ -258,6 +258,8 @@ extension QueryCursor {
                     }.cascadeFailure(promise: promise)
             }
             
+            nextBatch()
+            
             return promise.futureResult
         }
     }
