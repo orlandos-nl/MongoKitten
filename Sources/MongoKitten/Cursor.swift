@@ -233,6 +233,34 @@ extension QueryCursor {
                 return try batch.nextElement()
         }
     }
+    
+    /// Executes the cursor and returns all results as an array
+    /// Please be aware that this may consume a large amount of memory or time with a large number of results
+    public func getAllResults() -> EventLoopFuture<[Element]> {
+        return execute().then { finalizedCursor in
+            var promise: EventLoopPromise<[Element]> = self.collection.eventLoop.newPromise()
+            var results = [Element]()
+            
+            func nextBatch() {
+                finalizedCursor.nextBatch().thenThrowing { batch in
+                    var batch = batch
+                    
+                    while let element = try batch.nextElement() {
+                        results.append(element)
+                    }
+                    
+                    guard !batch.isLast else {
+                        promise.succeed(result: results)
+                        return
+                    }
+                    
+                    nextBatch()
+                    }.cascadeFailure(promise: promise)
+            }
+            
+            return promise.futureResult
+        }
+    }
 }
 
 /// A cursor that is based on another cursor
