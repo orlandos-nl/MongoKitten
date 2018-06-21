@@ -159,6 +159,35 @@ public final class AggregateCursor<Element>: QueryCursor {
         return self
     }
     
+    /// Deconstructs an array field from the input documents to output a document for each element. Each output document is the input document with the value of the array field replaced by the element.
+    ///
+    /// - parameter path: Field path to an array field. To specify a field path, prefix the field name with a dollar sign $ and enclose in quotes.
+    /// - parameter includeArrayIndex: Optional. The name of a new field to hold the array index of the element. The name cannot start with a dollar sign $.
+    /// - parameter preserveNullAndEmptyArrays: Optional. If true, if the path is null, missing, or an empty array, $unwind outputs the document. If false, $unwind does not output a document if the path is null, missing, or an empty array. The default value is false.
+    ///
+    /// - see: https://docs.mongodb.com/manual/reference/operator/aggregation/unwind/index.html
+    @discardableResult public func unwind(_ path: String, includeArrayIndex: String? = nil, preserveNullAndEmptyArrays: Bool? = nil) -> AggregateCursor<Element> {
+        append(["$unwind": ["path": path, "includeArrayIndex": includeArrayIndex, "preserveNullAndEmptyArrays": preserveNullAndEmptyArrays] as Document])
+        return self
+    }
+    
+    /// Equality match
+    ///
+    /// Performs a left outer join to an unsharded collection in the same database to filter in documents from the “joined” collection for processing. To each input document, the $lookup stage adds a new array field whose elements are the matching documents from the “joined” collection. The $lookup stage passes these reshaped documents to the next stage.
+    ///
+    /// - parameter from: Specifies the collection in the same database to perform the join with. The from collection cannot be sharded.
+    /// - parameter localField: Specifies the field from the documents input to the $lookup stage. $lookup performs an equality match on the localField to the foreignField from the documents of the from collection. If an input document does not contain the localField, the $lookup treats the field as having a value of null for matching purposes.
+    /// - parameter foreignField: Specifies the field from the documents in the from collection. $lookup performs an equality match on the foreignField to the localField from the input documents. If a document in the from collection does not contain the foreignField, the $lookup treats the value as null for matching purposes.
+    /// - parameter targetField: Specifies the name of the new array field to add to the input documents. The new array field contains the matching documents from the from collection. If the specified name already exists in the input document, the existing field is overwritten.
+    ///
+    /// - see: https://docs.mongodb.com/manual/reference/operator/aggregation/lookup/index.html
+    @discardableResult public func lookup(from: String, localField: String, foreignField: String, as targetName: String) -> AggregateCursor<Element> {
+        append(["$lookup": ["from": from, "localField": localField, "foreignField": foreignField, "as": targetName]])
+        return self
+    }
+    
+    // TODO: https://docs.mongodb.com/manual/reference/operator/aggregation/lookup/index.html - Join Conditions and Uncorrelated Sub-queries
+    
     /// Adds the specified pipeline stage
     ///
     /// - parameter stage: The pipeline stage to add, like `["$limit": 100]`
