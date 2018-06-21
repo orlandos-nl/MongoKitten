@@ -15,16 +15,19 @@ var package = Package(
             targets: ["GridFS"]),
     ],
     dependencies: [
-        // For MongoDB Documents
+        // 💾
         .package(url: "https://github.com/OpenKitten/BSON.git", .revision("develop/6.0/rewrite")),
         
-        // Async
+        // 🚀
         .package(url: "https://github.com/apple/swift-nio.git", from: "1.7.2"),
+        
+        // 🔑
+        .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "1.1.1")
     ],
     targets: [
         .target(
             name: "MongoKitten",
-            dependencies: ["BSON", "NIO"]),
+            dependencies: ["BSON", "NIO", "NIOOpenSSL"]),
         .target(
             name: "GridFS",
             dependencies: ["BSON", "MongoKitten", "NIO"]),

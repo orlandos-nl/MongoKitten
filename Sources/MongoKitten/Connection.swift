@@ -1,5 +1,6 @@
 import BSON
 import NIO
+import NIOOpenSSL
 import Foundation
 
 // TODO: https://github.com/mongodb/specifications/blob/master/source/wireversion-featurelist.rst
@@ -46,7 +47,7 @@ public final class Connection {
                 // Enable SO_REUSEADDR.
                 .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
                 .channelInitializer { channel in
-                    return Connection.initialize(pipeline: channel.pipeline, context: context)
+                    return Connection.initialize(pipeline: channel.pipeline, context: context, settings: settings)
             }
             
             guard let host = settings.hosts.first else {
@@ -76,10 +77,40 @@ public final class Connection {
         return self[namespace.databaseName][namespace.collectionName]
     }
     
-    static func initialize(pipeline: ChannelPipeline, context: ClientConnectionContext) -> EventLoopFuture<Void> {
-        return pipeline.add(handler: ClientConnectionParser(context: context)).then {
-            pipeline.add(handler: ClientConnectionSerializer(context: context))
+    static func initialize(pipeline: ChannelPipeline, context: ClientConnectionContext, settings: ConnectionSettings) -> EventLoopFuture<Void> {
+        let promise: EventLoopPromise<Void> = pipeline.eventLoop.newPromise()
+        
+        var handlers: [ChannelHandler] = [ClientConnectionParser(context: context), ClientConnectionSerializer(context: context)]
+        
+        if settings.useSSL {
+            do {
+                let sslConfiguration = TLSConfiguration.forClient()
+                let sslContext = try SSLContext(configuration: sslConfiguration)
+                let sslHandler = try OpenSSLClientHandler(context: sslContext)
+                
+                handlers.insert(sslHandler, at: 0)
+            } catch {
+                promise.fail(error: error)
+                return promise.futureResult
+            }
         }
+        
+        func addNext() {
+            guard handlers.count > 0 else {
+                promise.succeed(result: ())
+                return
+            }
+            
+            let handler = handlers.removeFirst()
+            
+            pipeline.add(handler: handler).whenSuccess {
+                addNext()
+            }
+        }
+        
+        addNext()
+        
+        return promise.futureResult
     }
     
     func _execute<C: AnyMongoDBCommand>(command: C) -> EventLoopFuture<ServerReply> {
