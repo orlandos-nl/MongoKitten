@@ -28,13 +28,15 @@ public final class Connection {
     let settings: ConnectionSettings
     
     /// The result of the `isMaster` handshake with the server
-    public private(set) var handshakeResult: ConnectionHandshakeReply? = nil
+    public private(set) var handshakeResult: ConnectionHandshakeReply! = nil
     
     /// The current request ID, used to generate unique identifiers for MongoDB commands
     var currentRequestId: Int32 = 0
     
     /// The shared ObjectId generator for this connection
     internal let sharedGenerator = ObjectIdGenerator()
+    
+    private let clientConnectionSerializer: ClientConnectionSerializer
     
     /// The eventLoop this connection lives on
     public var eventLoop: EventLoop {
@@ -49,12 +51,13 @@ public final class Connection {
     public static func connect(on group: EventLoopGroup, settings: ConnectionSettings) -> EventLoopFuture<Connection> {
         do {
             let context = ClientConnectionContext()
+            let serializer = ClientConnectionSerializer(context: context)
             
             let bootstrap = ClientBootstrap(group: group)
                 // Enable SO_REUSEADDR.
                 .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
                 .channelInitializer { channel in
-                    return Connection.initialize(pipeline: channel.pipeline, context: context, settings: settings)
+                    return Connection.initialize(pipeline: channel.pipeline, context: context, settings: settings, serializer: serializer)
             }
             
             guard let host = settings.hosts.first else {
@@ -62,30 +65,22 @@ public final class Connection {
             }
             
             return bootstrap.connect(host: host.hostname, port: Int(host.port)).then { channel in
-                let connection = Connection(channel: channel, context: context, settings: settings)
+                let connection = Connection(channel: channel, context: context, settings: settings, serializer: serializer)
                 
-                let app: ConnectionHandshakeCommand.ClientDetails.ApplicationDetails?
-                if let appName = settings.applicationName {
-                    app = .init(name: appName)
-                } else {
-                    app = nil
-                }
-                
-                return connection.execute(command: ConnectionHandshakeCommand(application: app, collection: connection["admin"]["$cmd"])).then { reply in
-                    connection.handshakeResult = reply
-                    
-                    return connection.authenticate().map { connection }
-                }
+                return connection.executeHandshake()
+                    .then { connection.authenticate() }
+                    .map { connection }
             }
         } catch {
             return group.next().newFailedFuture(error: error)
         }
     }
     
-    init(channel: Channel, context: ClientConnectionContext, settings: ConnectionSettings) {
+    init(channel: Channel, context: ClientConnectionContext, settings: ConnectionSettings, serializer: ClientConnectionSerializer) {
         self.channel = channel
         self.context = context
         self.settings = settings
+        self.clientConnectionSerializer = serializer
     }
     
     /// Returns the database named `database`, on this connection
@@ -98,10 +93,10 @@ public final class Connection {
         return self[namespace.databaseName][namespace.collectionName]
     }
     
-    static func initialize(pipeline: ChannelPipeline, context: ClientConnectionContext, settings: ConnectionSettings) -> EventLoopFuture<Void> {
+    static func initialize(pipeline: ChannelPipeline, context: ClientConnectionContext, settings: ConnectionSettings, serializer: ClientConnectionSerializer) -> EventLoopFuture<Void> {
         let promise: EventLoopPromise<Void> = pipeline.eventLoop.newPromise()
         
-        var handlers: [ChannelHandler] = [ClientConnectionParser(context: context), ClientConnectionSerializer(context: context)]
+        var handlers: [ChannelHandler] = [ClientConnectionParser(context: context), serializer]
         
         if settings.useSSL {
             do {
@@ -174,6 +169,27 @@ public final class Connection {
             unimplemented()
         }
     }
+    
+    private func executeHandshake() -> EventLoopFuture<Void> {
+        // Construct app details
+        let app: ConnectionHandshakeCommand.ClientDetails.ApplicationDetails?
+        if let appName = settings.applicationName {
+            app = .init(name: appName)
+        } else {
+            app = nil
+        }
+        
+        let commandCollection = self["admin"]["$cmd"]
+        
+        return self.execute(command: ConnectionHandshakeCommand(application: app, collection: commandCollection)).map { reply in
+            self.handshakeResult = reply
+            
+            
+            self.clientConnectionSerializer.supportsOpMessage = reply.maxWireVersion >= 6
+            
+            return ()
+        }
+    }
 }
 
 struct IncorrectServerReplyHeader: Error {}
@@ -215,7 +231,7 @@ final class ClientConnectionSerializer: MessageToByteEncoder {
         var document = try encoder.encode(data.command)
         document["$db"] = data.command.namespace.databaseName
         
-        let flags: UInt32 = 0
+        let flags: OpMsgFlags = []
         let docData = document.makeData()
         
         let header = MessageHeader(
@@ -226,7 +242,7 @@ final class ClientConnectionSerializer: MessageToByteEncoder {
         )
         
         out.write(header)
-        out.write(integer: flags, endianness: .little)
+        out.write(integer: flags.rawValue, endianness: .little)
         out.write(integer: 0 as UInt8, endianness: .little) // section kind 0
         
         // TODO: Use ByteBuffer in BSON
@@ -312,8 +328,8 @@ final class ClientConnectionParser: ByteToMessageDecoder {
             // <= Wire Version 5
             reply = try ServerReply.reply(fromBuffer: &buffer, responseTo: header.responseTo)
         case .message:
+            // >= Wire Version 6
             reply = try ServerReply.message(fromBuffer: &buffer, responseTo: header.responseTo)
-        // >= Wire Version 6
         default:
             throw IncorrectServerReplyHeader()
         }
@@ -328,16 +344,32 @@ final class ClientConnectionParser: ByteToMessageDecoder {
         // TODO: Fail all queries
         // TODO: Close connection
         // TODO: Reconnect? Trigger future/callback?
+        assertionFailure()
     }
+}
+
+struct OpMsgFlags: OptionSet {
+    let rawValue: UInt32
+    
+    /// The message ends with 4 bytes containing a CRC-32C [1] checksum. See Checksum for details.
+    static let checksumPresent = OpMsgFlags(rawValue: 1 << 0)
+    
+    /// Another message will follow this one without further action from the receiver. The receiver MUST NOT send another message until receiving one with moreToCome set to 0 as sends may block, causing deadlock. Requests with the moreToCome bit set will not receive a reply. Replies will only have this set in response to requests with the exhaustAllowed bit set.
+    static let moreToCome = OpMsgFlags(rawValue: 1 << 1)
+    
+    /// The client is prepared for multiple replies to this request using the moreToCome bit. The server will never produce replies with the moreToCome bit set unless the request has this bit set.
+    ///
+    /// This ensures that multiple replies are only sent when the network layer of the requester is prepared for them.
+    static let exhaustAllowed = OpMsgFlags(rawValue: 16 << 0)
 }
 
 struct ServerReply {
     var responseTo: Int32
-    var cursorId: Int64
+    var cursorId: Int64 // 0 for OP_MSG
     var documents: [Document]
     
     static func reply(fromBuffer buffer: inout ByteBuffer, responseTo: Int32) throws -> ServerReply {
-        // Skip responseFlags, they aren't interesting
+        // Skip responseFlags for now
         buffer.moveReaderIndex(forwardBy: 4)
         
         let cursorId = try buffer.assertLittleEndian() as Int64
@@ -353,7 +385,29 @@ struct ServerReply {
     }
     
     static func message(fromBuffer buffer: inout ByteBuffer, responseTo: Int32) throws -> ServerReply {
-        unimplemented()
+        // Read flags
+        // TODO: The first 16 bits (0-15) are required and parsers MUST error if an unknown bit is set.
+        let rawFlags = try buffer.assertLittleEndian() as UInt32
+        let flags = OpMsgFlags(rawValue: rawFlags) // TODO: Handle flags, like checksum
+        
+        var documents: [Document] = []
+        
+        // minimum BSON size is 5, checksum is 4 bytes, so this works
+        while buffer.readableBytes > 4 {
+            let kind = try buffer.assertLittleEndian() as UInt8
+            switch kind {
+            case 0: // body
+                documents += try [Document](buffer: &buffer, count: 1)
+            default: // document sequence (1)
+                unimplemented()
+            }
+        }
+        
+        if flags.contains(.checksumPresent) {
+            unimplemented()
+        }
+        
+        return ServerReply(responseTo: responseTo, cursorId: 0, documents: documents)
     }
 }
 
