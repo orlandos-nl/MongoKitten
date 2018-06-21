@@ -42,7 +42,7 @@ public final class Database: FutureConvenienceCallable {
     /// - throws: Can throw for a variety of reasons, including an invalid connection string, failure to connect to the MongoDB database, etcetera.
     /// - returns: A connected database instance
     public static func synchronousConnect(_ uri: String) throws -> Database {
-        let group = MultiThreadedEventLoopGroup(numThreads: 1)
+        let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
         
         return try self.connect(uri, on: group.next()).wait()
     }
