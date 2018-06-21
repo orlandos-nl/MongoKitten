@@ -7,10 +7,10 @@ let dbName = "MongoKittenUnitTests"
 class CRUDTests : XCTestCase {
     let group = MultiThreadedEventLoopGroup(numThreads: 1)
     let settings = try! ConnectionSettings("mongodb://localhost:27017")
-    var connection: MongoDBConnection!
+    var connection: Connection!
     
     override func setUp() {
-        self.connection = try! MongoDBConnection.connect(on: group, settings: settings).wait()
+        self.connection = try! Connection.connect(on: group, settings: settings).wait()
         
         try! connection[dbName].drop().wait()
     }
@@ -29,7 +29,7 @@ class CRUDTests : XCTestCase {
 //        }.wait()
 //    }
     
-    func createTestData(n: Int, in collection: MongoCollection) -> EventLoopFuture<Void> {
+    func createTestData(n: Int, in collection: MongoKitten.Collection) -> EventLoopFuture<Void> {
         func nextDocument(index: Int) -> Document {
             return [
                 "_id": collection.objectIdGenerator.generate(),
