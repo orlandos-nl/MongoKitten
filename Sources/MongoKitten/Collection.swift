@@ -33,7 +33,7 @@ public final class Collection: FutureConvenienceCallable {
     }
     
     
-    internal var reference: Namespace {
+    internal var namespace: Namespace {
         return Namespace(to: self.name, inDatabase: self.database.name)
     }
     

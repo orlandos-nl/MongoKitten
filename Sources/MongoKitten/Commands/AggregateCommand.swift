@@ -52,7 +52,7 @@ public struct AggregateCommand: MongoDBCommand {
     static let emitsCursor = true
     
     public init(pipeline: [Document], in collection: Collection) {
-        self.aggregate = collection.reference
+        self.aggregate = collection.namespace
         self.pipeline = pipeline
     }
 }

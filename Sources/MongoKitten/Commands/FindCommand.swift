@@ -18,7 +18,7 @@ public struct FindCommand: MongoDBCommand {
     
     public init(filter: Query?, on collection: Collection) {
         self.filter = filter
-        self.find = collection.reference
+        self.find = collection.namespace
     }
 }
 

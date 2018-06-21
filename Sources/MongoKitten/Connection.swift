@@ -23,6 +23,9 @@ public final class Connection {
     /// The NIO channel
     let channel: Channel
     
+    /// The result of the `isMaster` handshake with the server
+    public private(set) var handshakeResult: ConnectionHandshakeReply? = nil
+    
     /// The current request ID, used to generate unique identifiers for MongoDB commands
     var currentRequestId: Int32 = 0
     
@@ -54,8 +57,20 @@ public final class Connection {
                 throw MongoKittenError(.unableToConnect, reason: .noHostSpecified)
             }
             
-            return bootstrap.connect(host: host.hostname, port: Int(host.port)).map { channel in
-                return Connection(channel: channel, context: context)
+            return bootstrap.connect(host: host.hostname, port: Int(host.port)).then { channel in
+                let connection = Connection(channel: channel, context: context)
+                
+                let app: ConnectionHandshakeCommand.ClientDetails.ApplicationDetails?
+                if let appName = settings.applicationName {
+                    app = .init(name: appName)
+                } else {
+                    app = nil
+                }
+                
+                return connection.execute(command: ConnectionHandshakeCommand(application: app, collection: connection["admin"]["$cmd"])).map { reply in
+                    connection.handshakeResult = reply
+                    return connection
+                }
             }
         } catch {
             return group.next().newFailedFuture(error: error)

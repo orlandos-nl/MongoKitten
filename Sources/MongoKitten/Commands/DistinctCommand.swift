@@ -21,12 +21,8 @@ public struct DistinctCommand: MongoDBCommand {
     }
     
     public init(onKey key: String, into collection: Collection) {
-        self.distinct = collection.reference
+        self.distinct = collection.namespace
         self.key = key
-    }
-    
-    public func execute(on connection: Connection) -> EventLoopFuture<[Primitive]> {
-        return connection.execute(command: self).mapToResult(for: connection[namespace])
     }
 }
 

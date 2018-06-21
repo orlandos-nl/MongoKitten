@@ -30,7 +30,7 @@ public struct CountCommand: MongoDBCommand {
     /// - parameter query: The query
     /// - parameter collection: The collection
     public init(_ query: Query? = nil, in collection: Collection) {
-        self.count = collection.reference
+        self.count = collection.namespace
         self.query = query
     }
     

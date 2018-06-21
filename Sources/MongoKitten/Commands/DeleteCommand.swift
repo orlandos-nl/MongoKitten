@@ -57,7 +57,7 @@ public struct DeleteCommand: MongoDBCommand {
     /// - parameter deletes: See `DeleteCommand.deletes`
     /// - parameter collection: The collection
     public init(_ deletes: [Single], from collection: Collection) {
-        self.delete = collection.reference
+        self.delete = collection.namespace
         self.deletes = Array(deletes)
     }
 }

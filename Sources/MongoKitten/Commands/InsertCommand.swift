@@ -22,7 +22,7 @@ public struct InsertCommand: MongoDBCommand {
     }
     
     public init(_ documents: [Document], into collection: Collection) {
-        self.insert = collection.reference
+        self.insert = collection.namespace
         self.documents = Array(documents)
     }
     

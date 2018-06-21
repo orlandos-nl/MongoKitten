@@ -74,7 +74,7 @@ public struct UpdateCommand: MongoDBCommand {
     /// - parameter updates: An array of one or more update statements to perform in the collection.
     /// - parameter collection: The collection
     public init(_ updates: [Single], in collection: Collection) {
-        self.update = collection.reference
+        self.update = collection.namespace
         self.updates = Array(updates)
     }
     

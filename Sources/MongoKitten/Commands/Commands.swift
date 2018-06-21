@@ -9,7 +9,7 @@ struct AdministrativeCommand<Command: Encodable>: MongoDBCommand {
     }
     
     init(command: Command, on collection: Collection) {
-        self.namespace = collection.reference
+        self.namespace = collection.namespace
         self.command = command
     }
 }

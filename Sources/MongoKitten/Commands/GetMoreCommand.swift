@@ -15,7 +15,7 @@ internal struct GetMore: MongoDBCommand {
     
     init(cursorId: Int64, batchSize: Int?, on collection: Collection) {
         self.getMore = cursorId
-        self.collection = collection.reference
+        self.collection = collection.namespace
         self.batchSize = batchSize
     }
     
