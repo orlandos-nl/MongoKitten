@@ -9,8 +9,8 @@ public struct Projection: Encodable, ExpressibleByDictionaryLiteral {
         public func makePrimitive() -> Primitive? {
             switch self {
             case .custom(let convertible): return convertible
-            case .included: return true
-            case .excluded: return false
+            case .included: return 1 as Int32
+            case .excluded: return 0 as Int32
             }
         }
         
