@@ -122,6 +122,7 @@ public struct ConnectionSettings: Equatable {
         var uri = uri
         
         // First, remove the mongodb:// scheme
+        // TODO: Implement support for "mongodb+srv://" urls
         guard uri.starts(with: "mongodb://") else {
             throw MongoKittenError(.invalidURI, reason: .missingMongoDBScheme)
         }
