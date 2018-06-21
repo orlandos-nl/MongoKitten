@@ -398,13 +398,26 @@ struct ServerReply {
             switch kind {
             case 0: // body
                 documents += try [Document](buffer: &buffer, count: 1)
-            default: // document sequence (1)
-                unimplemented()
+            case 1: // document sequence
+                let size = try buffer.assertLittleEndian() as Int32
+                let documentSequenceIdentifier = try buffer.readCString() // Document sequence identifier
+                // TODO: Handle document sequence identifier correctly
+                
+                let bsonObjectsSectionSize = Int(size) - 4 - documentSequenceIdentifier.utf8.count - 1
+                guard bsonObjectsSectionSize > 0 else {
+                    throw MongoKittenError(.protocolParsingError, reason: .unexpectedValue)
+                }
+                
+                documents += try [Document](buffer: &buffer, consumeBytes: bsonObjectsSectionSize)
+            default:
+                throw MongoKittenError(.protocolParsingError, reason: .unexpectedValue)
             }
         }
         
         if flags.contains(.checksumPresent) {
-            unimplemented()
+            // Checksum validation is unimplemented
+            // MongoDB 3.6 does not support validating the message checksum, but will correctly skip it if present.
+            buffer.moveReaderIndex(forwardBy: 4)
         }
         
         return ServerReply(responseTo: responseTo, cursorId: 0, documents: documents)
@@ -413,8 +426,8 @@ struct ServerReply {
 
 extension Array where Element == Document {
     init(buffer: inout ByteBuffer, count: Int) throws {
-        var array = [Document]()
-        array.reserveCapacity(count)
+        self = []
+        reserveCapacity(count)
         
         for _ in 0..<count {
             let documentSize = try buffer.getInteger(
@@ -427,10 +440,29 @@ extension Array where Element == Document {
                 throw MongoKittenError(.protocolParsingError, reason: nil)
             }
             
-            array.append(Document(bytes: bytes))
+            append(Document(bytes: bytes))
         }
+    }
+    
+    init(buffer: inout ByteBuffer, consumeBytes: Int) throws {
+        self = []
         
-        self = array
+        var consumedBytes = 0
+        while consumedBytes < consumeBytes {
+            let documentSize = try buffer.getInteger(
+                at: buffer.readerIndex,
+                endianness: .little,
+                as: Int32.self
+                ).assert()
+            
+            consumedBytes += Int(documentSize)
+            
+            guard let bytes = buffer.readBytes(length: numericCast(documentSize)) else {
+                throw MongoKittenError(.protocolParsingError, reason: nil)
+            }
+            
+            append(Document(bytes: bytes))
+        }
     }
 }
 
@@ -467,6 +499,15 @@ fileprivate extension ByteBuffer {
         write(integer: header.requestId, endianness: .little)
         write(integer: header.responseTo, endianness: .little)
         write(integer: header.opCode.rawValue, endianness: .little)
+    }
+    
+    mutating func readCString() throws -> String {
+        var bytes = Data()
+        while let byte = self.readInteger(endianness: .little, as: UInt8.self), byte != 0 {
+            bytes.append(byte)
+        }
+        
+        return try String(data: bytes, encoding: .utf8).assert()
     }
 }
 
