@@ -95,6 +95,9 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         /// There is nothing to do with the given parameters
         case nothingToDo
         
+        /// The server replied with an opcode that is not supported by MongoKitten
+        case unsupportedOpCode
+        
         public var description: String {
             switch self {
             case .missingMongoDBScheme: return "The connection URI does not start with the 'mongodb://' scheme"
@@ -109,6 +112,7 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
             case .unexpectedValue: return "The value found in the result cursor did not match the expectation"
             case .cursorDrained: return "The cursor has been drained, which means there are no more elements left to get"
             case .nothingToDo: return "There is nothing to do with the given parameters"
+            case .unsupportedOpCode: return "The server replied with an opcode that is not supported by MongoKitten"
             }
         }
     }

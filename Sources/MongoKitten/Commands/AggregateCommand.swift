@@ -143,6 +143,22 @@ public final class AggregateCursor<Element>: QueryCursor {
         return self
     }
     
+    /// Groups documents by some specified expression and outputs to the next stage a document for each distinct grouping. The output documents contain an _id field which contains the distinct group by key. The output documents can also contain computed fields that hold the values of some accumulator expression grouped by the $group’s _id field. $group does not order its output documents.
+    ///
+    /// - parameter id: The distinct group by key. You can specify an _id value of `nil` to calculate accumulated values for all the input documents as a whole.
+    ///
+    /// - see: https://docs.mongodb.com/manual/reference/operator/aggregation/group/index.html
+    @discardableResult public func group(id: Primitive?, fields: [String: GroupAccumulator] = [:]) -> AggregateCursor<Element> {
+        var document: Document = ["_id": id ?? Null()]
+        
+        for (field, accumulator) in fields {
+            document[field] = accumulator.document
+        }
+        
+        append(document)
+        return self
+    }
+    
     /// Adds the specified pipeline stage
     ///
     /// - parameter stage: The pipeline stage to add, like `["$limit": 100]`
@@ -184,3 +200,81 @@ extension AggregateCursor where Element == Document {
     }
 }
 
+/// A group accumulator operator
+public enum GroupAccumulator {
+    /// Returns the average value of the numeric values. $avg ignores non-numeric values.
+    ///
+    /// - see: https://docs.mongodb.com/manual/reference/operator/aggregation/avg/#grp._S_avg
+    case average([Primitive])
+    
+    /// Returns the value that results from applying an expression to the first document in a group of documents that share the same group by key. Only meaningful when documents are in a defined order.
+    ///
+    /// - see: https://docs.mongodb.com/manual/reference/operator/aggregation/first/#grp._S_first
+    case first(Primitive)
+    
+    /// Returns the value that results from applying an expression to the last document in a group of documents that share the same group by a field. Only meaningful when documents are in a defined order.
+    ///
+    /// - see: https://docs.mongodb.com/manual/reference/operator/aggregation/last/#grp._S_last
+    case last(Primitive)
+    
+    /// Returns the maximum value. $max compares both value and type, using the specified BSON comparison order for values of different types.
+    ///
+    /// - see: https://docs.mongodb.com/manual/reference/operator/aggregation/max/#grp._S_max
+    case max(Primitive)
+    
+    /// Returns the minimum value. $min compares both value and type, using the specified BSON comparison order for values of different types.
+    ///
+    /// - see: https://docs.mongodb.com/manual/reference/operator/aggregation/min/#grp._S_min
+    case min(Primitive)
+    
+    /// Returns an array of all values that result from applying an expression to each document in a group of documents that share the same group by key.
+    ///
+    /// - see: https://docs.mongodb.com/manual/reference/operator/aggregation/push/#grp._S_push
+    case push(Primitive)
+    
+    /// Returns an array of all unique values that results from applying an expression to each document in a group of documents that share the same group by key. Order of the elements in the output array is unspecified.
+    ///
+    /// - see: https://docs.mongodb.com/manual/reference/operator/aggregation/addToSet/#grp._S_addToSet
+    case addToSet(Primitive)
+    
+    /// Calculates the population standard deviation of the input values. Use if the values encompass the entire population of data you want to represent and do not wish to generalize about a larger population. $stdDevPop ignores non-numeric values.
+    ///
+    /// - see: https://docs.mongodb.com/manual/reference/operator/aggregation/stdDevPop/#grp._S_stdDevPop
+    case populationStandardDeviation(Primitive)
+    
+    /// Calculates the sample standard deviation of the input values. Use if the values encompass a sample of a population of data from which to generalize about the population. $stdDevSamp ignores non-numeric values.
+    ///
+    /// - see: https://docs.mongodb.com/manual/reference/operator/aggregation/stdDevSamp/#grp._S_stdDevSamp
+    case sampleStandardDeviation(Primitive)
+    
+    /// Calculates and returns the sum of numeric values. $sum ignores non-numeric values.
+    ///
+    /// - see: https://docs.mongodb.com/manual/reference/operator/aggregation/sum/#grp._S_sum
+    case sum(Primitive)
+    
+    /// The document representation of the group accumulator, like `["$sum": ...]`
+    var document: Document {
+        switch self {
+        case .average(let val):
+            return ["$avg": Document(array: val)]
+        case .first(let val):
+            return ["$first": val]
+        case .last(let val):
+            return ["$last": val]
+        case .max(let val):
+            return ["$max": val]
+        case .min(let val):
+            return ["$min": val]
+        case .push(let val):
+            return ["$push": val]
+        case .addToSet(let val):
+            return ["$addToSet": val]
+        case .populationStandardDeviation(let val):
+            return ["$stdDevPop": val]
+        case .sampleStandardDeviation(let val):
+            return ["$stdDevSamp": val]
+        case .sum(let val):
+            return ["$sum": val]
+        }
+    }
+}

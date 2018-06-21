@@ -192,8 +192,6 @@ public final class Connection {
     }
 }
 
-struct IncorrectServerReplyHeader: Error {}
-
 struct MongoDBCommandContext {
     var command: AnyMongoDBCommand
     var requestID: Int32
@@ -331,7 +329,7 @@ final class ClientConnectionParser: ByteToMessageDecoder {
             // >= Wire Version 6
             reply = try ServerReply.message(fromBuffer: &buffer, responseTo: header.responseTo)
         default:
-            throw IncorrectServerReplyHeader()
+            throw MongoKittenError(.protocolParsingError, reason: .unsupportedOpCode)
         }
         
         self.context.queries[reply.responseTo]?.succeed(result: reply)
@@ -468,11 +466,11 @@ extension Array where Element == Document {
 
 fileprivate extension Optional {
     func assert() throws -> Wrapped {
-        guard let me = self else {
-            throw IncorrectServerReplyHeader()
+        guard let `self` = self else {
+            throw MongoKittenError(.unexpectedNil, reason: nil)
         }
         
-        return me
+        return self
     }
 }
 
