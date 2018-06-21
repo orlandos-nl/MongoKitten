@@ -7,7 +7,6 @@ import Foundation
 // TODO: https://github.com/mongodb/specifications/tree/master/source/retryable-writes
 // TODO: https://github.com/mongodb/specifications/blob/master/source/change-streams.rst
 // TODO: https://github.com/mongodb/specifications/tree/master/source/initial-dns-seedlist-discovery
-// TODO: https://github.com/mongodb/specifications/tree/master/source/mongodb-handshake
 // TODO: https://github.com/mongodb/specifications/tree/master/source/max-staleness
 // TODO: https://github.com/mongodb/specifications/tree/master/source/server-selection
 // TODO: https://github.com/mongodb/specifications/tree/master/source/server-discovery-and-monitoring

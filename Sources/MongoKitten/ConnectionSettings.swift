@@ -112,6 +112,7 @@ public struct ConnectionSettings: Equatable {
     /// - `authSource`: The authentication source, see the documenation on `ConnectionSettings.authenticationSource` for details
     /// - `ssl`: SSL will be used when set to true
     /// - `sslVerify`: When set to `0` or `false`, the SSL certificate will not be verified
+    /// - `appname`: The application name is printed to the mongod logs upon establishing the connection. It is also recorded in the slow query logs and profile collections.
     ///
     /// For query options, `0`, `false` and `FALSE` are interpreted as false. All other values, including no value at all (when the key is included), are interpreted as true.
     public init(_ uri: String) throws {
