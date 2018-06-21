@@ -19,7 +19,7 @@ var package = Package(
         .package(url: "https://github.com/OpenKitten/BSON.git", .revision("develop/6.0/rewrite")),
         
         // 🚀
-        .package(url: "https://github.com/apple/swift-nio.git", from: "1.7.2"),
+        .package(url: "https://github.com/apple/swift-nio.git", from: "1.8.0"),
         
         // 🔑
         .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "1.1.1")
