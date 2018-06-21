@@ -155,7 +155,7 @@ public final class AggregateCursor<Element>: QueryCursor {
             document[field] = accumulator.document
         }
         
-        append(document)
+        append(["$group": document])
         return self
     }
     
