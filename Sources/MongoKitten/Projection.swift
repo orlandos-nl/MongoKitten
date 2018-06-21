@@ -1,7 +1,58 @@
 import BSON
 
-public struct Projection: Encodable {
+public struct Projection: Encodable, ExpressibleByDictionaryLiteral {
     var document: Document
+    
+    /// An expression that can be specified to either include or exclude a field (or some custom value)
+    public enum ProjectionExpression: ExpressibleByBooleanLiteral, ExpressibleByStringLiteral, ExpressibleByDictionaryLiteral, PrimitiveConvertible {
+        /// Creates a BSON.Primitive of this ProjectionExpression for easy embedding in Documents
+        public func makePrimitive() -> Primitive? {
+            switch self {
+            case .custom(let convertible): return convertible
+            case .included: return true
+            case .excluded: return false
+            }
+        }
+        
+        /// A dictionary literal that makes this a custom ProjectionExpression
+        public init(stringLiteral value: String) {
+            self = .custom(value)
+        }
+        
+        /// A dictionary literal that makes this a custom ProjectionExpression
+        public init(unicodeScalarLiteral value: String) {
+            self = .custom(value)
+        }
+        
+        /// A dictionary literal that makes this a custom ProjectionExpression
+        public init(extendedGraphemeClusterLiteral value: String) {
+            self = .custom(value)
+        }
+        
+        /// A custom projection value
+        case custom(BSON.Primitive)
+        
+        /// Includes this field in the projection
+        case included
+        
+        /// Excludes this field from the projection
+        case excluded
+        
+        /// Includes when `true`, Excludes when `false`
+        public init(booleanLiteral value: Bool) {
+            self = value ? .included : .excluded
+        }
+        
+        /// A dictionary literal that makes this a custom ProjectionExpression
+        public init(dictionaryLiteral elements: (String, PrimitiveConvertible)...) {
+            self = .custom(Document(elements: elements))
+        }
+    }
+    
+    public init(dictionaryLiteral elements: (String, ProjectionExpression)...) {
+        // Mapping as a workarond for the compiler being unable to infer the compliance to a protocol
+        self.document = Document(elements: elements.map { $0 })
+    }
     
     public init(document: Document) {
         self.document = document
