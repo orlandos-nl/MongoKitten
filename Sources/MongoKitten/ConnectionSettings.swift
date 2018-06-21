@@ -24,7 +24,10 @@ public struct ConnectionSettings: Equatable {
         /// SCRAM-SHA1 mechanism
         case scramSha1(username: String, password: String)
         
-        /// MongoDB Challenge Response mechanism
+        /// SCRAM-SHA256 mechanism
+        case scramSha256(username: String, password: String)
+        
+        /// Deprecated MongoDB Challenge Response mechanism
         case mongoDBCR(username: String, password: String)
     }
     
@@ -181,6 +184,8 @@ public struct ConnectionSettings: Equatable {
             switch mechanism {
             case "SCRAM_SHA_1":
                 self.authentication = .scramSha1(username: username, password: password)
+            case "SCRAM_SHA_256":
+                self.authentication = .scramSha256(username: username, password: password)
             case "MONGODB_CR":
                 self.authentication = .mongoDBCR(username: username, password: password)
             default:

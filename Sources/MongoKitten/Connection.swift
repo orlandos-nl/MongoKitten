@@ -14,6 +14,8 @@ import Foundation
 
 /// A single MongoDB connection to a single MongoDB server.
 /// `Connection` handles the lowest level communication to a MongoDB instance.
+///
+/// `Connection` is not threadsafe. It is bound to a single NIO EventLoop.
 public final class Connection {
     
     /// The NIO Client Connection Context
@@ -21,6 +23,9 @@ public final class Connection {
     
     /// The NIO channel
     let channel: Channel
+    
+    /// The connection settings for this connectoin
+    let settings: ConnectionSettings
     
     /// The result of the `isMaster` handshake with the server
     public private(set) var handshakeResult: ConnectionHandshakeReply? = nil
@@ -57,7 +62,7 @@ public final class Connection {
             }
             
             return bootstrap.connect(host: host.hostname, port: Int(host.port)).then { channel in
-                let connection = Connection(channel: channel, context: context)
+                let connection = Connection(channel: channel, context: context, settings: settings)
                 
                 let app: ConnectionHandshakeCommand.ClientDetails.ApplicationDetails?
                 if let appName = settings.applicationName {
@@ -66,9 +71,10 @@ public final class Connection {
                     app = nil
                 }
                 
-                return connection.execute(command: ConnectionHandshakeCommand(application: app, collection: connection["admin"]["$cmd"])).map { reply in
+                return connection.execute(command: ConnectionHandshakeCommand(application: app, collection: connection["admin"]["$cmd"])).then { reply in
                     connection.handshakeResult = reply
-                    return connection
+                    
+                    return connection.authenticate().map { connection }
                 }
             }
         } catch {
@@ -76,9 +82,10 @@ public final class Connection {
         }
     }
     
-    init(channel: Channel, context: ClientConnectionContext) {
+    init(channel: Channel, context: ClientConnectionContext, settings: ConnectionSettings) {
         self.channel = channel
         self.context = context
+        self.settings = settings
     }
     
     /// Returns the database named `database`, on this connection
@@ -98,7 +105,9 @@ public final class Connection {
         
         if settings.useSSL {
             do {
-                let sslConfiguration = TLSConfiguration.forClient()
+                let sslConfiguration = TLSConfiguration.forClient(
+                    certificateVerification: settings.verifySSLCertificates ? .fullVerification : .none
+                )
                 let sslContext = try SSLContext(configuration: sslConfiguration)
                 let sslHandler = try OpenSSLClientHandler(context: sslContext)
                 
@@ -155,6 +164,15 @@ public final class Connection {
         
         // TODO: Living cursors over time
         return currentRequestId
+    }
+    
+    private func authenticate() -> EventLoopFuture<Void> {
+        switch settings.authentication {
+        case .unauthenticated:
+            return eventLoop.newSucceededFuture(result: ())
+        default:
+            unimplemented()
+        }
     }
 }
 
