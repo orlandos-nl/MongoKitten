@@ -141,9 +141,7 @@ public final class Connection {
         
         self.context.queries[command.requestID] = command.promise
         
-        _ = self.channel.writeAndFlush(command)
-        
-        return promise.futureResult
+        return self.channel.writeAndFlush(command).then { promise.futureResult }
     }
     
     /// Executes the given MongoDB command, returning the result
@@ -183,7 +181,6 @@ public final class Connection {
         
         return self.execute(command: ConnectionHandshakeCommand(application: app, collection: commandCollection)).map { reply in
             self.handshakeResult = reply
-            
             
             self.clientConnectionSerializer.supportsOpMessage = reply.maxWireVersion >= 6
             
@@ -327,12 +324,15 @@ final class ClientConnectionParser: ByteToMessageDecoder {
             reply = try ServerReply.reply(fromBuffer: &buffer, responseTo: header.responseTo)
         case .message:
             // >= Wire Version 6
-            reply = try ServerReply.message(fromBuffer: &buffer, responseTo: header.responseTo)
+            reply = try ServerReply.message(fromBuffer: &buffer, responseTo: header.responseTo, header: header)
         default:
             throw MongoKittenError(.protocolParsingError, reason: .unsupportedOpCode)
         }
         
-        self.context.queries[reply.responseTo]?.succeed(result: reply)
+        if let query = self.context.queries[reply.responseTo] {
+            query.succeed(result: reply)
+            self.context.queries[reply.responseTo] = nil
+        }
         
         self.header = nil
         return .continue
@@ -382,7 +382,7 @@ struct ServerReply {
         return ServerReply(responseTo: responseTo, cursorId: cursorId, documents: documents)
     }
     
-    static func message(fromBuffer buffer: inout ByteBuffer, responseTo: Int32) throws -> ServerReply {
+    static func message(fromBuffer buffer: inout ByteBuffer, responseTo: Int32, header: MessageHeader) throws -> ServerReply {
         // Read flags
         // TODO: The first 16 bits (0-15) are required and parsers MUST error if an unknown bit is set.
         let rawFlags = try buffer.assertLittleEndian() as UInt32
@@ -390,8 +390,15 @@ struct ServerReply {
         
         var documents: [Document] = []
         
+        var sectionsSize = Int(header.messageLength - MessageHeader.byteSize - 4)
+        if flags.contains(.checksumPresent) {
+            sectionsSize -= 4
+        }
+        
+        let readerIndexAfterSectionParsing = buffer.readerIndex + sectionsSize
+        
         // minimum BSON size is 5, checksum is 4 bytes, so this works
-        while buffer.readableBytes > 4 {
+        while buffer.readerIndex < readerIndexAfterSectionParsing {
             let kind = try buffer.assertLittleEndian() as UInt8
             switch kind {
             case 0: // body
@@ -403,11 +410,13 @@ struct ServerReply {
                 
                 let bsonObjectsSectionSize = Int(size) - 4 - documentSequenceIdentifier.utf8.count - 1
                 guard bsonObjectsSectionSize > 0 else {
+                    // TODO: Investigate why this error gets silienced
                     throw MongoKittenError(.protocolParsingError, reason: .unexpectedValue)
                 }
                 
                 documents += try [Document](buffer: &buffer, consumeBytes: bsonObjectsSectionSize)
             default:
+                // TODO: Investigate why this error gets silienced
                 throw MongoKittenError(.protocolParsingError, reason: .unexpectedValue)
             }
         }
