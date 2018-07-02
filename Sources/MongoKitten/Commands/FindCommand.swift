@@ -33,16 +33,8 @@ struct CursorReply: ServerReplyDecodable {
         var firstBatch: [Document]
     }
     
-    var mongoKittenError: MongoKittenError {
-        return MongoKittenError(.commandFailure, reason: nil)
-    }
-    
     internal let cursor: CursorDetails
     private let ok: Int
-    
-    public var isSuccessful: Bool {
-        return ok == 1
-    }
     
     func makeResult(on collection: Collection) throws -> Cursor {
         return Cursor(reply: self, in: collection)

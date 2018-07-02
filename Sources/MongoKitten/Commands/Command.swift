@@ -33,25 +33,42 @@ protocol ServerReplyInitializable {
     func makeResult(on collection: Collection) throws -> Result
 }
 
-protocol ServerReplyDecodable: Decodable, ServerReplyInitializable {
-    var isSuccessful: Bool { get }
-    var mongoKittenError: MongoKittenError { get }
-}
+protocol ServerReplyDecodable: Decodable, ServerReplyInitializable {}
 
 extension ServerReplyDecodable {
     init(reply: ServerReply) throws {
         let doc = try reply.documents.assertFirst()
         
-        self = try BSONDecoder().decode(Self.self, from: doc)
-        
-        guard self.isSuccessful else {
-            throw self.mongoKittenError
+        if let ok: Double = doc.ok, ok < 1 {
+            let errorReply = try BSONDecoder().decode(ErrorReply.self, from: doc)
+            throw MongoKittenError(errorReply)
         }
+        
+        self = try BSONDecoder().decode(Self.self, from: doc)
     }
 }
 
 fileprivate extension Array where Element == Document {
     func assertFirst() throws -> Document {
         return self.first!
+    }
+}
+
+/// A reply from the server, indicating an error
+public struct ErrorReply: ServerReplyDecodable, Equatable, Encodable {
+    typealias Result = ErrorReply
+    
+    public let ok: Int
+    public let errorMessage: String?
+    public let code: Int?
+    public let codeName: String?
+    
+    private enum CodingKeys: String, CodingKey {
+        case ok, code, codeName
+        case errorMessage = "errmsg"
+    }
+    
+    func makeResult(on collection: Collection) throws -> ErrorReply {
+        return self
     }
 }

@@ -124,14 +124,24 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         self.reason = reason
     }
     
+    internal init(_ reply: ErrorReply) {
+        self.kind = .commandFailure
+        self.errorReply = reply
+    }
+    
     /// The error kind. See the documentation on `MongoKittenError.Kind` for details
     public private(set) var kind: Kind
     
     /// If there are multiple reasons why an error may be thrown, details on the reason. See `MongoKittenError.Reason`.
     public private(set) var reason: Reason?
     
+    /// The MongoDB error reply that caused the error
+    public private(set) var errorReply: ErrorReply?
+    
     public var description: String {
-        if let reason = reason {
+        if let errorReply = errorReply {
+            return "\(kind): \(errorReply.errorMessage ?? "unknown")"
+        } else if let reason = reason {
             return "\(kind): \(reason)"
         } else {
             return "\(kind)"
