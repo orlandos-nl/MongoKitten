@@ -128,6 +128,14 @@ public protocol QueryCursor: class {
     @discardableResult
     func forEach(handler: @escaping (Element) throws -> Void) -> EventLoopFuture<Void>
     
+    // TODO: forEachAsync: correct name?
+    /// Executes the given `handler` for every element of the cursor, waiting for each invocations future to complete before heading to the next one
+    ///
+    /// - parameter handler: A handler to execute on every result
+    /// - returns: A future that resolves when the operation is complete, or fails if an error is thrown
+    @discardableResult
+    func forEachAsync(handler: @escaping (Element) throws -> EventLoopFuture<Void>) -> EventLoopFuture<Void>
+    
     /// Returns a new cursor with the results of mapping the given closure over the cursor's elements. This operation is lazy.
     ///
     /// - parameter transform: A mapping closure. `transform` accepts an element of this cursor as its parameter and returns a transformed value of the same or of a different type.
@@ -202,6 +210,43 @@ extension QueryCursor {
                         }
                         
                         return nextBatch()
+                    } catch {
+                        return self.collection.connection.eventLoop.newFailedFuture(error: error)
+                    }
+                }
+            }
+            
+            return nextBatch()
+        }
+    }
+    
+    @discardableResult
+    public func forEachAsync(handler: @escaping (Element) throws -> EventLoopFuture<Void>) -> EventLoopFuture<Void> {
+        return execute().then { finalizedCursor in
+            func nextBatch() -> EventLoopFuture<Void> {
+                return finalizedCursor.nextBatch().then { batch in
+                    do {
+                        var batch = batch
+                        
+                        func next() throws -> EventLoopFuture<Void> {
+                            guard let element = try batch.nextElement() else {
+                                if batch.isLast {
+                                    return self.collection.connection.eventLoop.newSucceededFuture(result: ())
+                                }
+                                
+                                return nextBatch()
+                            }
+                            
+                            return try handler(element).then {
+                                do {
+                                    return try next()
+                                } catch {
+                                    return self.collection.connection.eventLoop.newFailedFuture(error: error)
+                                }
+                            }
+                        }
+                        
+                        return try next()
                     } catch {
                         return self.collection.connection.eventLoop.newFailedFuture(error: error)
                     }
