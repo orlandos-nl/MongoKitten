@@ -115,14 +115,15 @@ public final class Database {
     ///
     /// - parameter url: A MongoDB connection string containing a database name, such as `mongodb://localhost/myDatabase`
     /// - parameter maxConnections: The maximum number of connections to allow to the server
-    public init(_ url: String, maxConnectionsPerServer maxConnections: Int = 100) throws {
+    /// - parameter timeout: The timeout used for connections/queries
+    public init(_ url: String, maxConnectionsPerServer maxConnections: Int = 100, timeout: TimeInterval = 30) throws {
         let path = url.characters.split(separator: "/", maxSplits: 2, omittingEmptySubsequences: true)
         
         guard path.count == 3, let dbname = path.last?.split(separator: "?")[0] else {
             throw MongoError.invalidDatabase("")
         }
         
-        self.server = try Server(url, maxConnectionsPerServer: maxConnections)
+        self.server = try Server(url, maxConnectionsPerServer: maxConnections, defaultTimeout: timeout)
         
         self.name = String(dbname)
         
