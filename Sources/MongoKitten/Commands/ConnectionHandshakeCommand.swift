@@ -18,7 +18,7 @@ struct ConnectionHandshakeCommand: MongoDBCommand {
         struct OSDetails: Encodable {
             #if os(Linux)
             let type = "Linux"
-            let name: String? // TODO: see if we can fill this in
+            let name: String? = nil // TODO: see if we can fill this in
             #elseif os(macOS)
             let type = "Darwin"
             let name: String? = "macOS"
@@ -27,16 +27,16 @@ struct ConnectionHandshakeCommand: MongoDBCommand {
             let name: String? = "iOS"
             #elseif os(Windows)
             let type = "Windows"
-            let name: String?
+            let name: String? = nil
             #else
             let type = "unknown"
-            let name: String?
+            let name: String? = nil
             #endif
             
             #if arch(x86_64)
             let architecture: String? = "x86_64"
             #else
-            let architecture: String?
+            let architecture: String? = nil
             #endif
             
             let version: String? = nil
