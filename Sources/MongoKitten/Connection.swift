@@ -253,7 +253,7 @@ final class ClientConnectionSerializer: MessageToByteEncoder {
         
         let encoder = BSONEncoder()
         
-        var document = try encoder.encode(data.command)
+        let document = try encoder.encode(data.command)
         
         let flags: UInt32 = 0
         let docData = document.makeData()
