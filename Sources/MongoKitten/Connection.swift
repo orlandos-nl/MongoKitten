@@ -18,13 +18,17 @@ import Foundation
 /// `Connection` is not threadsafe. It is bound to a single NIO EventLoop.
 public final class Connection {
     
+    deinit {
+        _ = channel.close(mode: .all)
+    }
+    
     /// The NIO Client Connection Context
     let context: ClientConnectionContext
     
     /// The NIO channel
     let channel: Channel
     
-    /// The connection settings for this connectoin
+    /// The connection settings for this connection
     let settings: ConnectionSettings
     
     /// The result of the `isMaster` handshake with the server
@@ -249,7 +253,7 @@ final class ClientConnectionSerializer: MessageToByteEncoder {
         
         let encoder = BSONEncoder()
         
-        var document = try encoder.encode(data.command)
+        let document = try encoder.encode(data.command)
         
         let flags: UInt32 = 0
         let docData = document.makeData()
@@ -334,10 +338,13 @@ final class ClientConnectionParser: ByteToMessageDecoder {
             self.context.queries[reply.responseTo] = nil
         }
         
+        // TODO: Proper handling by passing the reply / error to the next handler
+        
         self.header = nil
         return .continue
     }
     
+    // TODO: this does not belong here but on the next handler
     func errorCaught(ctx: ChannelHandlerContext, error: Error) {
         // TODO: Fail all queries
         // TODO: Close connection
