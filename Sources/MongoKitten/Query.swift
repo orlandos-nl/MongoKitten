@@ -250,6 +250,7 @@ public indirect enum Query: Codable, ExpressibleByDictionaryLiteral {
 
             return ["$or": expressions]
         case .not(let aqt):
+            // TODO: Fix `!("a" == 1 || "b" == 1)` - this implementation generates an invalid query
             var query = Document()
             
             for (key, value) in aqt.document {
