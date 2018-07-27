@@ -1,6 +1,6 @@
 import BSON
 
-public struct CreteIndexesCommand: MongoDBCommand {
+public struct CreateIndexesCommand: MongoDBCommand {
     typealias Reply = CreateIndexesReply
     internal var namespace: Namespace { return createIndexes }
     
@@ -11,14 +11,12 @@ public struct CreteIndexesCommand: MongoDBCommand {
     
     public init(_ indexes: [Index], for collection: Collection) {
         self.indexes = indexes
-        self.createIndexes = collection.reference
+        self.createIndexes = collection.namespace
     }
 }
 
 struct CreateIndexesReply: Codable, ServerReplyDecodable {
-    func makeResult(on collection: Collection) throws -> Void {
-        
-    }
+    func makeResult(on collection: Collection) throws -> Void {}
     
     typealias Result = Void
     

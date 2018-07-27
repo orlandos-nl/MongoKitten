@@ -98,6 +98,9 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         /// The server replied with an opcode that is not supported by MongoKitten
         case unsupportedOpCode
         
+        /// Index creation failed
+        case indexCreationFailed
+        
         public var description: String {
             switch self {
             case .missingMongoDBScheme: return "The connection URI does not start with the 'mongodb://' scheme"
@@ -113,6 +116,7 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
             case .cursorDrained: return "The cursor has been drained, which means there are no more elements left to get"
             case .nothingToDo: return "There is nothing to do with the given parameters"
             case .unsupportedOpCode: return "The server replied with an opcode that is not supported by MongoKitten"
+            case .indexCreationFailed: return "There was a failure whilst creating the index."
             }
         }
     }
