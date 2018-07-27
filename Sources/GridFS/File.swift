@@ -9,14 +9,20 @@ public class File: Codable {
     
     private var fs: GridFS
     
+    // TODO: allow different _id types, see https://github.com/mongodb/specifications/blob/master/source/gridfs/gridfs-spec.rst#before-read-operations - Why have we changed our mind about requiring the file id to be an ObjectId?
     var _id: ObjectId
     public internal(set) var length: Int
     public private(set) var chunkSize: Int = 261_120 // 255 kB
     public let uploadDate: Date
     public internal(set) var md5: String
     public var filename: String?
+    
+    @available(*, deprecated, message: "Applications wishing to store a contentType should add a contentType field to the metadata document instead.")
     public var contentType: String?
+    
+    @available(*, deprecated, message: "Applications wishing to store aliases should add an aliases field to the metadata document instead.")
     public var aliasses: [String]?
+    
     public var metadata: Primitive?
     
     internal init() {
