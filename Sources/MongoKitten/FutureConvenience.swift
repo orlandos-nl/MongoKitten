@@ -95,9 +95,9 @@ public extension EventLoopFuture where T == Collection {
     /// Convenience accessor that calls distinct(onKey:filter:) on the collection after the future has completed.
     ///
     /// For documentation on this method, refer to `Collection.distinct(onKey:filter:)`
-    public func distinct(onKey key: String, filter: Query? = nil) -> EventLoopFuture<[Primitive]> {
+    public func distinct(onKey key: String, where filter: Query? = nil) -> EventLoopFuture<[Primitive]> {
         return self.then { collection in
-            return collection.distinct(onKey: key,filter: filter)
+            return collection.distinct(onKey: key, where: filter)
         }
     }
 
