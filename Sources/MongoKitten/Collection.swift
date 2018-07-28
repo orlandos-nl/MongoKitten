@@ -273,11 +273,12 @@ public struct CollectionIndexes {
         return command.execute(on: collection.connection)
     }
     
-    /// Creates a new index by a unique name and keys.
+    /// Creates a new sorted compound index by a unique name and keys.
     ///
     /// If the name already exists, this index will overwrite the existing one unless they're identical.
-    ///
     /// The keys will be used for indexing, any specifics can be set in the options
+    ///
+    /// Notifies completion through a future.
     public func createCompound(
         named name: String,
         keys: IndexKeys,
