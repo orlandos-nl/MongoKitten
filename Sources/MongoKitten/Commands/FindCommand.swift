@@ -27,6 +27,10 @@ public struct CursorSettings: Encodable {
 }
 
 struct CursorReply: ServerReplyDecodable {
+    var isSuccessful: Bool {
+        return ok == 1
+    }
+    
     struct CursorDetails: Codable {
         var id: Int64
         var ns: String
