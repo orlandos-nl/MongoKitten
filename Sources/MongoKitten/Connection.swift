@@ -57,15 +57,15 @@ public final class Connection {
             let context = ClientConnectionContext()
             let serializer = ClientConnectionSerializer(context: context)
             
+            guard let host = settings.hosts.first else {
+                throw MongoKittenError(.unableToConnect, reason: .noHostSpecified)
+            }
+            
             let bootstrap = ClientBootstrap(group: group)
                 // Enable SO_REUSEADDR.
                 .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
                 .channelInitializer { channel in
-                    return Connection.initialize(pipeline: channel.pipeline, context: context, settings: settings, serializer: serializer)
-            }
-            
-            guard let host = settings.hosts.first else {
-                throw MongoKittenError(.unableToConnect, reason: .noHostSpecified)
+                    return Connection.initialize(pipeline: channel.pipeline, hostname: host.hostname, context: context, settings: settings, serializer: serializer)
             }
             
             return bootstrap.connect(host: host.hostname, port: Int(host.port)).then { channel in
@@ -97,7 +97,7 @@ public final class Connection {
         return self[namespace.databaseName][namespace.collectionName]
     }
     
-    static func initialize(pipeline: ChannelPipeline, context: ClientConnectionContext, settings: ConnectionSettings, serializer: ClientConnectionSerializer) -> EventLoopFuture<Void> {
+    static func initialize(pipeline: ChannelPipeline, hostname: String?, context: ClientConnectionContext, settings: ConnectionSettings, serializer: ClientConnectionSerializer) -> EventLoopFuture<Void> {
         let promise: EventLoopPromise<Void> = pipeline.eventLoop.newPromise()
         
         var handlers: [ChannelHandler] = [ClientConnectionParser(context: context), serializer]
@@ -107,8 +107,9 @@ public final class Connection {
                 let sslConfiguration = TLSConfiguration.forClient(
                     certificateVerification: settings.verifySSLCertificates ? .fullVerification : .none
                 )
+                
                 let sslContext = try SSLContext(configuration: sslConfiguration)
-                let sslHandler = try OpenSSLClientHandler(context: sslContext)
+                let sslHandler = try OpenSSLClientHandler(context: sslContext, serverHostname: hostname)
                 
                 handlers.insert(sslHandler, at: 0)
             } catch {
