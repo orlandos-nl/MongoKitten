@@ -14,6 +14,9 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         /// The given MongoDB connection URI is invalid
         case invalidURI
         
+        /// MongoKitten was unable ot authenticate
+        case authenticationFailure
+        
         /// MongoKitten is unable to communicate with the server, because MongoKitten does not share a supported MongoDB protocol with the server
         case unsupportedProtocol
         
@@ -40,6 +43,7 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         
         public var description: String {
             switch self {
+            case .authenticationFailure: return "MongoKitten was unable ot authenticate"
             case .invalidURI: return "The given MongoDB connection URI is invalid"
             case .unsupportedProtocol: return "MongoKitten is unable to communicate with the server, because MongoKitten does not share a supported MongoDB protocol with the server"
             case .unableToConnect: return "MongoKitten is unable to connect to the server"
@@ -70,6 +74,12 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         
         /// The given authentication mechanism is not supported by MongoKitten
         case unsupportedAuthenticationMechanism
+        
+        /// The reason for the error was internal
+        case internalError
+        
+        /// SCRAM protocol failure
+        case scramFailure
         
         /// The given port number is invalid
         case invalidPort
@@ -105,8 +115,10 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
             switch self {
             case .missingMongoDBScheme: return "The connection URI does not start with the 'mongodb://' scheme"
             case .uriIsMalformed: return "The URI cannot be parsed because it is malformed"
+            case .scramFailure: return "SCRAM protocol failed, the communication was incorrect"
             case .malformedAuthenticationDetails: return "The authentication details in the URI are malformed and cannot be parsed"
             case .unsupportedAuthenticationMechanism: return "The given authentication mechanism is not supported by MongoKitten"
+            case .internalError: return "The reason for the error was internal"
             case .invalidPort: return "The given port number is invalid"
             case .noHostSpecified: return "No host was specified"
             case .noTargetDatabaseSpecified: return "A target database was not specified"

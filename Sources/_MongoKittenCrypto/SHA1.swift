@@ -30,7 +30,7 @@ public struct SHA1 : Hash {
         totalLength = 0
     }
     
-    public var hash: [UInt8] {
+    public var hashValue: [UInt8] {
         var buffer = [UInt8]()
         buffer.reserveCapacity(20)
         

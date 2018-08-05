@@ -21,6 +21,9 @@ public struct ConnectionSettings: Equatable {
         /// Unauthenticated
         case unauthenticated
         
+        /// Unknown username password mechanism
+        case unknown(username: String, password: String)
+        
         /// SCRAM-SHA1 mechanism
         case scramSha1(username: String, password: String)
         

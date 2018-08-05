@@ -55,7 +55,7 @@ public struct MD5 : Hash {
     
     public init() {}
     
-    public var hash: [UInt8] {
+    public var hashValue: [UInt8] {
         var buffer = [UInt8]()
         buffer.reserveCapacity(16)
         

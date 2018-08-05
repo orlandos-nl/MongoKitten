@@ -121,7 +121,7 @@ public final class PBKDF2 {
                 
                 for _ in 0..<iterations &- 1 {
                     u1 = authenticate(message: u1, count: ui.count)
-                    xor(lhs: &ui, rhs: u1)
+                    xor(&ui, u1)
                 }
                 
                 output.append(contentsOf: ui)
@@ -142,7 +142,7 @@ public final class PBKDF2 {
 /// XORs the lhs bytes with the rhs bytes on the same index
 ///
 /// Assumes and asserts lhs and rhs to have an equal count
-fileprivate func xor(lhs: inout [UInt8], rhs: [UInt8]) {
+public func xor(_ lhs: inout [UInt8], _ rhs: [UInt8]) {
     // These two must be equal for the PBKDF2 implementation to be correct
     precondition(lhs.count == rhs.count)
     

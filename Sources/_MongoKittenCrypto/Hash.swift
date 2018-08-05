@@ -3,7 +3,7 @@ public protocol Hash {
     static var chunkSize: Int { get }
     static var digestSize: Int { get }
     
-    var hash: [UInt8] { get }
+    var hashValue: [UInt8] { get }
     
     mutating func reset()
     mutating func update(from pointer: UnsafePointer<UInt8>)
@@ -32,7 +32,7 @@ extension Hash {
             offset = offset &+ chunkSize
         }
         
-        let result = self.hash
+        let result = self.hashValue
         self.reset()
         return result
     }

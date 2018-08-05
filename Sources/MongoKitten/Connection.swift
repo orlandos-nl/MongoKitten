@@ -1,4 +1,5 @@
 import BSON
+import _MongoKittenCrypto
 import NIO
 import NIOOpenSSL
 import Foundation
@@ -165,9 +166,16 @@ public final class Connection {
     }
     
     private func authenticate() -> EventLoopFuture<Void> {
+        let source = settings.authenticationSource ?? "admin"
+        let namespace = Namespace(to: "$cmd", inDatabase: source)
+        
         switch settings.authentication {
         case .unauthenticated:
             return eventLoop.newSucceededFuture(result: ())
+        case .scramSha1(let username, let password):
+            return self.authenticateSASL(hasher: SHA1(), namespace: namespace, username: username, password: password)
+//        case .scramSha256(let username, let password):
+//            return self.authenticateSASL(hasher: SHA256(), username: username, password: password)
         default:
             unimplemented()
         }
