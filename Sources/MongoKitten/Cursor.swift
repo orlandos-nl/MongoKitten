@@ -300,7 +300,7 @@ extension QueryCursor {
                     }
                     
                     nextBatch()
-                    }.cascadeFailure(promise: promise)
+                }.cascadeFailure(promise: promise)
             }
             
             nextBatch()

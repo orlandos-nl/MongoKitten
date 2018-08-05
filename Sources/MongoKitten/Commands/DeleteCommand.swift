@@ -64,7 +64,7 @@ public struct DeleteCommand: MongoDBCommand {
 
 /// The reply to a `DeleteCommand`
 public struct DeleteReply: Codable, ServerReplyDecodable {
-    enum CodingKeys: String, CodingKey {
+    private enum CodingKeys: String, CodingKey {
         case successfulDeletes = "n"
         case ok
     }

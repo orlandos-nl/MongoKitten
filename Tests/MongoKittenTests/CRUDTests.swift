@@ -29,7 +29,7 @@ class CRUDTests : XCTestCase {
 //        }.wait()
 //    }
     
-    func createTestData(n: Int, in collection: MongoCollection) -> EventLoopFuture<Void> {
+    func createTestData(n: Int, in collection: MongoKitten.Collection) -> EventLoopFuture<Void> {
         func nextDocument(index: Int) -> Document {
             return [
                 "_id": collection.objectIdGenerator.generate(),
@@ -62,7 +62,7 @@ class CRUDTests : XCTestCase {
         typealias Pair = (Dog, Owner?)
         struct NoOwnerFoundMeh: Error {}
         
-        let pairs = try dogs.find().map { dog -> EventLoopFuture<(Dog, Owner?)> in
+        try dogs.find().map { dog -> EventLoopFuture<(Dog, Owner?)> in
             guard let ownerId = dog["owner"] as? ObjectId else {
                 throw NoOwnerFoundMeh()
             }
@@ -117,6 +117,26 @@ class CRUDTests : XCTestCase {
             }.wait()
         
         XCTAssertEqual(counter, 140)
+    }
+    
+    func testChangeStream() throws {
+        let collection = connection[dbName]["test"]
+        
+        let changeStream = try collection.aggregate().match("owner" == "Joannis").watch().wait()
+        var count = 0
+        
+        let future = changeStream.forEachAsync { notification in
+            count += 1
+            XCTAssertEqual(notification.fullDocument?["owner"] as? String, "Joannis")
+            return collection.database.connection.eventLoop.newSucceededFuture(result: ())
+        }
+        
+        try collection.insert(["_id": ObjectId(), "owner": "Joannis"]).wait()
+        try collection.insert(["_id": ObjectId(), "owner": "Robbert"]).wait()
+        
+        try future.wait()
+        
+        XCTAssertEqual(count, 1)
     }
     
 //    func testUsage() throws {
