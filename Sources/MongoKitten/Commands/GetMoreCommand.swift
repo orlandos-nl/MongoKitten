@@ -38,7 +38,7 @@ struct GetMoreReply: ServerReplyDecodable {
     internal let cursor: CursorDetails
     private let ok: Int
     
-    public var isSuccessful: Bool {
+    var isSuccessful: Bool {
         return ok == 1
     }
     
