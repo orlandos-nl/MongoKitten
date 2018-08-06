@@ -51,7 +51,8 @@ internal final class SCRAM<H: Hash> {
         // Check for sensible iterations, too
         guard
             let saltData = Data(base64Encoded: challenge.salt),
-            challenge.iterations > 0 && challenge.iterations < 50_000
+            challenge.iterations > 0 && challenge.iterations < 50_000,
+            challenge.nonce.starts(with: nonce)
         else {
             throw MongoKittenError(.authenticationFailure, reason: .scramFailure)
         }

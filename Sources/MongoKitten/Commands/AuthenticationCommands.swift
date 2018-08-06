@@ -1,3 +1,4 @@
+import Foundation
 import NIO
 import _MongoKittenCrypto
 
@@ -56,7 +57,8 @@ extension Connection {
         let context = SCRAM<H>(hasher)
         
         do {
-            let request = try context.authenticationString(forUser: username)
+            let rawRequest = try context.authenticationString(forUser: username)
+            let request = Data(rawRequest.utf8).base64EncodedString()
             let command = SASLStart(namespace: namespace, payload: request)
             
             return self.execute(command: command).then { reply in
@@ -65,7 +67,21 @@ extension Connection {
                 }
                 
                 do {
-                    let response = try context.respond(toChallenge: reply.payload, password: password)
+                    var md5 = MD5()
+                    let credentials = "\(username):mongo:\(password)"
+                    let password = md5.hash(bytes: Array(credentials.utf8)).hexString
+                    
+                    guard
+                        let challengeData = Data(base64Encoded: reply.payload),
+                        let challenge = String(data: challengeData, encoding: .utf8)
+                    else {
+                        let error = MongoKittenError(.authenticationFailure, reason: .scramFailure)
+                        return self.eventLoop.newFailedFuture(error: error)
+                    }
+                    
+                    let rawResponse = try context.respond(toChallenge: challenge, password: password)
+                    let response = Data(rawResponse.utf8).base64EncodedString()
+                    
                     let next = SASLContinue(
                         namespace: namespace,
                         conversation: reply.conversationId,

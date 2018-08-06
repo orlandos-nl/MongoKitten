@@ -8,9 +8,13 @@ import Foundation
 /// Any data added beyond this limit
 ///
 /// WARNING: Do not switch these key sizes, new sizes may be added
-public enum PBKDF2KeySize {
+public enum PBKDF2KeySize: ExpressibleByIntegerLiteral {
     case digestSize
     case fixed(Int)
+    
+    public init(integerLiteral value: Int) {
+        self = .fixed(value)
+    }
     
     fileprivate func size(for digest: Hash) -> Int {
         switch self {
@@ -76,72 +80,65 @@ public final class PBKDF2 {
         
         let saltSize = salt.count
         var salt = salt + [0, 0, 0, 0]
+        
+        var password = password
+        
+        if password.count > chunkSize {
+            password = hash.hash(password, count: password.count)
+        }
+        
+        if password.count < chunkSize {
+            password = password + [UInt8](repeating: 0, count: chunkSize - password.count)
+        }
+        
+        var outerPadding = [UInt8](repeating: 0x5c, count: chunkSize)
+        var innerPadding = [UInt8](repeating: 0x36, count: chunkSize)
+        
+        xor(&innerPadding, password)
+        xor(&outerPadding, password)
+        
+        func authenticate(message: [UInt8]) -> [UInt8] {
+            let innerPaddingHash = hash.hash(bytes: innerPadding + message)
+            return hash.hash(bytes: outerPadding + innerPaddingHash)
+        }
+        
         var output = [UInt8]()
         output.reserveCapacity(keySize)
         
-        return salt.withUnsafeMutableBytes { salt in
-            guard let saltPointer = salt.baseAddress else {
-                fatalError("Invalid internal state, buffer with no pointer")
+        let blocks = UInt32((keySize + digestSize - 1) / digestSize)
+        
+        for block in 1...blocks {
+            salt.withUnsafeMutableBytes { salt in
+                salt.baseAddress!.advanced(by: saltSize).assumingMemoryBound(to: UInt32.self).pointee = block.bigEndian
             }
             
-            let paddedSaltSize = salt.count
-            let saltBytes = saltPointer.assumingMemoryBound(to: UInt8.self)
+            var u = authenticate(message: salt)
+            var ret = u
             
-            var password = password
-            let passwordLength = password.count
-    
-            if passwordLength > chunkSize {
-                password = hash.hash(password, count: passwordLength)
-            } else if passwordLength < chunkSize {
-                password = password + [UInt8](repeating: 0, count: chunkSize - passwordLength)
-            }
-            
-            var outerPadding = [UInt8](repeating: 0x5c, count: chunkSize)
-            var innerPadding = [UInt8](repeating: 0x36, count: chunkSize)
-            
-            func authenticate(message: UnsafePointer<UInt8>, count: Int) -> [UInt8] {
-                let innerPaddingHash = hash.hash(message, count: count)
-                return hash.hash(bytes: outerPadding + innerPaddingHash)
-            }
-            
-            for i in 0..<passwordLength {
-                let byte = password[i]
-                
-                outerPadding[i] = byte ^ outerPadding[i]
-                innerPadding[i] = byte ^ innerPadding[i]
-            }
-            
-            let blocks = UInt32((keySize + digestSize - 1) / digestSize)
-            
-            for block in 1...blocks {
-                saltPointer.advanced(by: saltSize).assumingMemoryBound(to: UInt32.self).pointee = block
-                
-                var ui = authenticate(message: saltBytes, count: paddedSaltSize)
-                var u1 = ui
-                
-                for _ in 0..<iterations &- 1 {
-                    u1 = authenticate(message: u1, count: ui.count)
-                    xor(&ui, u1)
-                }
-                
-                output.append(contentsOf: ui)
-                
-                let extra = output.count &- keySize
-                
-                if extra >= 0 {
-                    output.removeLast(extra)
-                    return output
+            if iterations > 1 {
+                for _ in 1..<iterations {
+                    u = authenticate(message: u)
+                    xor(&ret, u)
                 }
             }
             
+            output.append(contentsOf: ret)
+        }
+        
+        let extra = output.count &- keySize
+        
+        if extra >= 0 {
+            output.removeLast(extra)
             return output
         }
+        
+        return output
     }
 }
 
 /// XORs the lhs bytes with the rhs bytes on the same index
 ///
-/// Assumes and asserts lhs and rhs to have an equal count
+/// Requires lhs and rhs to have an equal count
 public func xor(_ lhs: inout [UInt8], _ rhs: [UInt8]) {
     // These two must be equal for the PBKDF2 implementation to be correct
     precondition(lhs.count == rhs.count)

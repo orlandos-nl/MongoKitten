@@ -42,6 +42,12 @@ extension ServerReplyDecodable {
         if let ok: Double = doc.ok, ok < 1 {
             let errorReply = try BSONDecoder().decode(ErrorReply.self, from: doc)
             throw MongoKittenError(errorReply)
+        } else if let ok: Int = doc.ok, ok < 1 {
+            let errorReply = try BSONDecoder().decode(ErrorReply.self, from: doc)
+            throw MongoKittenError(errorReply)
+        } else if let ok: Int32 = doc.ok, ok < 1 {
+            let errorReply = try BSONDecoder().decode(ErrorReply.self, from: doc)
+            throw MongoKittenError(errorReply)
         }
         
         self = try BSONDecoder().decode(Self.self, from: doc)

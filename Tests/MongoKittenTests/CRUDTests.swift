@@ -5,12 +5,26 @@ import XCTest
 let dbName = "MongoKittenUnitTests"
 
 class CRUDTests : XCTestCase {
-    let group = MultiThreadedEventLoopGroup(numThreads: 1)
-    let settings = try! ConnectionSettings("mongodb://localhost:27017")
-    var connection: MongoDBConnection!
+    let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    let settings = ConnectionSettings(
+        authentication: .scramSha1(username: "joannis", password: "illZYJG7x1YuGhC4"),
+        authenticationSource: nil,
+        hosts: [
+            .init(hostname: "ok0-shard-00-00-xkvc1.mongodb.net", port: 27017)
+        ],
+        targetDatabase: nil,
+        useSSL: true,
+        verifySSLCertificates: false,
+        maximumNumberOfConnections: 1,
+        connectTimeout: 0,
+        socketTimeout: 0,
+        applicationName: "Test MK5"
+    )
+    
+    var connection: Connection!
     
     override func setUp() {
-        self.connection = try! MongoDBConnection.connect(on: group, settings: settings).wait()
+        self.connection = try! Connection.connect(on: group, settings: settings).wait()
         
         try! connection[dbName].drop().wait()
     }

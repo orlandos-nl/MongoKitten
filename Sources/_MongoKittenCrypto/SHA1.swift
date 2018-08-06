@@ -19,7 +19,7 @@ public struct SHA1 : Hash {
     var k: UInt32 = 0
     var temp: UInt32 = 0
     
-    public var totalLength: UInt64 = 0
+    public var processedBytes: UInt64 = 0
     
     public mutating func reset() {
         h0 = 0x67452301
@@ -27,7 +27,7 @@ public struct SHA1 : Hash {
         h2 = 0x98BADCFE
         h3 = 0x10325476
         h4 = 0xC3D2E1F0
-        totalLength = 0
+        processedBytes = 0
     }
     
     public var hashValue: [UInt8] {
