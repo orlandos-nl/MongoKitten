@@ -145,8 +145,8 @@ class CRUDTests : XCTestCase {
             return collection.database.connection.eventLoop.newSucceededFuture(result: ())
         }
         
-        try collection.insert(["_id": ObjectId(), "owner": "Joannis"]).wait()
-        try collection.insert(["_id": ObjectId(), "owner": "Robbert"]).wait()
+        XCTAssert(try collection.insert(["_id": ObjectId(), "owner": "Joannis"]).wait().isSuccessful)
+        XCTAssert(try collection.insert(["_id": ObjectId(), "owner": "Robbert"]).wait().isSuccessful)
         
         try future.wait()
         

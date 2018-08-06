@@ -75,14 +75,7 @@ extension Connection {
                     let credentials = "\(username):mongo:\(password)"
                     let password = md5.hash(bytes: Array(credentials.utf8)).hexString
                     
-                    guard
-                        let challengeData = Data(base64Encoded: reply.payload),
-                        let challenge = String(data: challengeData, encoding: .utf8)
-                    else {
-                        let error = MongoKittenError(.authenticationFailure, reason: .scramFailure)
-                        return self.eventLoop.newFailedFuture(error: error)
-                    }
-                    
+                    let challenge = try reply.payload.base64Decoded()
                     let rawResponse = try context.respond(toChallenge: challenge, password: password)
                     let response = Data(rawResponse.utf8).base64EncodedString()
                     
@@ -94,7 +87,9 @@ extension Connection {
                     
                     return self.execute(command: next).then { reply in
                         do {
-                            try context.completeAuthentication(withResponse: reply.payload)
+                            let successReply = try reply.payload.base64Decoded()
+                            try context.completeAuthentication(withResponse: successReply)
+                            
                             return self.eventLoop.newSucceededFuture(result: ())
                         } catch {
                             return self.eventLoop.newFailedFuture(error: error)
@@ -107,5 +102,18 @@ extension Connection {
         } catch {
             return self.eventLoop.newFailedFuture(error: error)
         }
+    }
+}
+
+extension String {
+    func base64Decoded() throws -> String {
+        guard
+            let data = Data(base64Encoded: self),
+            let string = String(data: data, encoding: .utf8)
+        else {
+            throw MongoKittenError(.authenticationFailure, reason: .scramFailure)
+        }
+        
+        return string
     }
 }

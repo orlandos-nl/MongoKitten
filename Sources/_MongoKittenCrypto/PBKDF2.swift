@@ -105,24 +105,26 @@ public final class PBKDF2 {
         var output = [UInt8]()
         output.reserveCapacity(keySize)
         
-        let blocks = UInt32((keySize + digestSize - 1) / digestSize)
-        
-        for block in 1...blocks {
+        func calculate(block: UInt32) {
             salt.withUnsafeMutableBytes { salt in
                 salt.baseAddress!.advanced(by: saltSize).assumingMemoryBound(to: UInt32.self).pointee = block.bigEndian
             }
             
-            var u = authenticate(message: salt)
-            var ret = u
+            var ui = authenticate(message: salt)
+            var u1 = ui
             
             if iterations > 1 {
                 for _ in 1..<iterations {
-                    u = authenticate(message: u)
-                    xor(&ret, u)
+                    ui = authenticate(message: ui)
+                    xor(&u1, ui)
                 }
             }
             
-            output.append(contentsOf: ret)
+            output.append(contentsOf: u1)
+        }
+        
+        for block in 1...UInt32((keySize + digestSize - 1) / digestSize) {
+            calculate(block: block)
         }
         
         let extra = output.count &- keySize
