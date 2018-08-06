@@ -98,10 +98,6 @@ public struct Projection: Encodable, ExpressibleByDictionaryLiteral {
         self.document[field] = ["$slice": -elements] as Document
     }
     
-    public mutating func rename(_ field: String, to newName: String) {
-        self.document[newName] = "$\(field)"
-    }
-    
     public mutating func projectElements(inArray field: String, from offset: Int, count: Int) {
         self.document[field] = [
             "$slice": [offset, count] as Document

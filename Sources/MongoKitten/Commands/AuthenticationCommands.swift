@@ -22,7 +22,11 @@ struct SASLStart: MongoDBCommand {
 }
 
 struct SASLReply: ServerReplyDecodable {
-//    let ok: Int
+    var isSuccessful: Bool {
+        return ok == 1
+    }
+    
+    let ok: Int
     let conversationId: Int
     let done: Bool
     let payload: String
