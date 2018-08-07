@@ -34,6 +34,80 @@ public final class Database: FutureConvenienceCallable {
         return connection.eventLoop
     }
     
+    internal init(named name: String, connection: Connection) {
+        self.name = name
+        self.connection = connection
+    }
+    
+    /// Get a `Collection` by providing a collection name as a `String`
+    ///
+    /// - parameter collection: The collection/bucket to return
+    ///
+    /// - returns: The requested collection in this database
+    public subscript(collection: String) -> MongoKitten.Collection {
+        return Collection(named: collection, in: self)
+    }
+    
+    /// Drops the current database, deleting the associated data files
+    ///
+    /// - see: https://docs.mongodb.com/manual/reference/command/dropDatabase
+    public func drop() -> EventLoopFuture<Void> {
+        let command = AdministrativeCommand(command: DropDatabase(), on: cmd)
+        
+        return command.execute(on: connection).map { _ in }
+    }
+}
+
+#if canImport(NIOTransportServices)
+import NIOTransportServices
+
+extension Database {
+    /// A helper method that uses the normal `connect` method and awaits it. It creates an event loop group for you.
+    ///
+    /// It is not recommended to use `synchronousConnect` in a NIO environment (like Vapor 3), as it will create an event loop group for you.
+    ///
+    /// - parameter uri: A MongoDB URI that contains at least a database component
+    /// - throws: Can throw for a variety of reasons, including an invalid connection string, failure to connect to the MongoDB database, etcetera.
+    /// - returns: A connected database instance
+    public static func synchronousConnect(_ uri: String) throws -> Database {
+        let group = NIOTSEventLoopGroup()
+        return try self.connect(uri, on: group).wait()
+    }
+    
+    /// Connect to the database at the given `uri`
+    ///
+    /// - parameter uri: A MongoDB URI that contains at least a database component
+    /// - parameter loop: An EventLoop from NIO. If you want to use MongoKitten in a synchronous / non-NIO environment, use the `synchronousConnect` method.
+    public static func connect(_ uri: String, on group: NIOTSEventLoopGroup) -> EventLoopFuture<Database> {
+        do {
+            let settings = try ConnectionSettings(uri)
+            
+            return connect(settings: settings, on: group)
+        } catch {
+            return group.next().newFailedFuture(error: error)
+        }
+    }
+    
+    /// Connect to the database with the given settings. You can also use `connect(_:on:)` to connect by using a connection string.
+    ///
+    /// - parameter settings: The connection settings, which must include a database name
+    /// - parameter loop: An EventLoop from NIO. If you want to use MongoKitten in a synchronous / non-NIO environment, use the `synchronousConnect` method.
+    public static func connect(settings: ConnectionSettings, on group: NIOTSEventLoopGroup) -> EventLoopFuture<Database> {
+        do {
+            guard let targetDatabase = settings.targetDatabase else {
+                throw MongoKittenError(.unableToConnect, reason: .noTargetDatabaseSpecified)
+            }
+            
+            return Connection.connect(on: group, settings: settings).map { connection -> Database in
+                return connection[targetDatabase]
+            }
+        } catch {
+            return group.next().newFailedFuture(error: error)
+        }
+    }
+}
+#else
+extension Database {
     /// A helper method that uses the normal `connect` method and awaits it. It creates an event loop group for you.
     ///
     /// It is not recommended to use `synchronousConnect` in a NIO environment (like Vapor 3), as it will create an event loop group for you.
@@ -78,27 +152,5 @@ public final class Database: FutureConvenienceCallable {
             return loop.newFailedFuture(error: error)
         }
     }
-    
-    internal init(named name: String, connection: Connection) {
-        self.name = name
-        self.connection = connection
-    }
-    
-    /// Get a `Collection` by providing a collection name as a `String`
-    ///
-    /// - parameter collection: The collection/bucket to return
-    ///
-    /// - returns: The requested collection in this database
-    public subscript(collection: String) -> MongoKitten.Collection {
-        return Collection(named: collection, in: self)
-    }
-    
-    /// Drops the current database, deleting the associated data files
-    ///
-    /// - see: https://docs.mongodb.com/manual/reference/command/dropDatabase
-    public func drop() -> EventLoopFuture<Void> {
-        let command = AdministrativeCommand(command: DropDatabase(), on: cmd)
-        
-        return command.execute(on: connection).map { _ in }
-    }
 }
+#endif

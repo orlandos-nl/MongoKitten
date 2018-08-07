@@ -1,7 +1,16 @@
 import BSON
 import _MongoKittenCrypto
 import NIO
+
+#if canImport(NIOTransportServices)
+import NIOTransportServices
+import Network
+public typealias _MKNIOEventLoopRequirement = NIOTSEventLoopGroup
+#else
 import NIOOpenSSL
+public typealias _MKNIOEventLoopRequirement = EventLoopGroup
+#endif
+
 import Foundation
 
 // TODO: https://github.com/mongodb/specifications/blob/master/source/wireversion-featurelist.rst
@@ -53,7 +62,7 @@ public final class Connection {
     /// - parameter group: The NIO EventLoopGroup or EventLoop to use for this connection
     /// - parameter settings: The connection settings to use
     /// - returns: A future that resolves with a connected connection if the connection was succesful, or with an error if the connection failed
-    public static func connect(on group: EventLoopGroup, settings: ConnectionSettings) -> EventLoopFuture<Connection> {
+    public static func connect(on group: _MKNIOEventLoopRequirement, settings: ConnectionSettings) -> EventLoopFuture<Connection> {
         do {
             let context = ClientConnectionContext()
             let serializer = ClientConnectionSerializer(context: context)
@@ -62,14 +71,22 @@ public final class Connection {
                 throw MongoKittenError(.unableToConnect, reason: .noHostSpecified)
             }
             
+            #if canImport(NIOTransportServices)
+            var bootstrap = NIOTSConnectionBootstrap(group: group)
+            
+            if settings.useSSL {
+                bootstrap = bootstrap.tlsOptions(NWProtocolTLS.Options())
+            }
+            #else
             let bootstrap = ClientBootstrap(group: group)
-                // Enable SO_REUSEADDR.
-                .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
+            #endif
+            
+            return bootstrap
+                .connectTimeout(.seconds(Int(settings.connectTimeout)))
+                .channelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
                 .channelInitializer { channel in
                     return Connection.initialize(pipeline: channel.pipeline, hostname: host.hostname, context: context, settings: settings, serializer: serializer)
-            }
-            
-            return bootstrap.connect(host: host.hostname, port: Int(host.port)).then { channel in
+            }.connect(host: host.hostname, port: Int(host.port)).then { channel in
                 let connection = Connection(channel: channel, context: context, settings: settings, serializer: serializer)
                 
                 return connection.executeHandshake()
@@ -103,6 +120,7 @@ public final class Connection {
         
         var handlers: [ChannelHandler] = [ClientConnectionParser(context: context), serializer]
         
+        #if !canImport(NIOTransportServices)
         if settings.useSSL {
             do {
                 let sslConfiguration = TLSConfiguration.forClient(
@@ -118,6 +136,7 @@ public final class Connection {
                 return promise.futureResult
             }
         }
+        #endif
         
         func addNext() {
             guard handlers.count > 0 else {
