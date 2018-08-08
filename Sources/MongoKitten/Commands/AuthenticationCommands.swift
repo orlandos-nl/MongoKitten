@@ -2,9 +2,14 @@ import Foundation
 import NIO
 import _MongoKittenCrypto
 
+/// A SASLStart message initiates a SASL conversation, in our case, used for SCRAM-SHA-xxx authentication.
 struct SASLStart: MongoDBCommand {
     private enum CodingKeys: String, CodingKey {
         case saslStart, mechanism, payload
+    }
+    
+    enum Mechanism: String, Codable {
+        case scramSha1 = "SCRAM-SHA-1"
     }
     
     typealias Reply = SASLReply
@@ -12,15 +17,23 @@ struct SASLStart: MongoDBCommand {
     let namespace: Namespace
     
     let saslStart: Int32 = 1
-    let mechanism = "SCRAM-SHA-1"
+    let mechanism: Mechanism
     let payload: String
     
-    init(namespace: Namespace, payload: String) {
+    init(namespace: Namespace, mechanism: Mechanism, payload: String) {
         self.namespace = namespace
+        self.mechanism = mechanism
         self.payload = payload
     }
 }
 
+/// A generic type containing a payload and conversationID.
+/// The payload contains an answer to the previous SASLMessage.
+///
+/// For SASLStart it contains a challenge the client needs to answer
+/// For SASLContinue it contains a success or failure state
+///
+/// If no authentication is needed, SASLStart's reply may contain `done: true` meaning the SASL proceedure has ended
 struct SASLReply: ServerReplyDecodable {
     var isSuccessful: Bool {
         return ok == 1
@@ -36,6 +49,8 @@ struct SASLReply: ServerReplyDecodable {
     }
 }
 
+/// A SASLContinue message contains the previous conversationId (from the SASLReply to SASLStart).
+/// The payload must contian an answer to the SASLReply's challenge
 struct SASLContinue: MongoDBCommand {
     private enum CodingKeys: String, CodingKey {
         case saslContinue, conversationId, payload
@@ -57,13 +72,16 @@ struct SASLContinue: MongoDBCommand {
 }
 
 extension Connection {
+    /// Handles a SCRAM authentication flow
+    ///
+    /// The Hasher `H` specifies the hashing algorithm used with SCRAM.
     func authenticateSASL<H: Hash>(hasher: H, namespace: Namespace, username: String, password: String) -> EventLoopFuture<Void> {
         let context = SCRAM<H>(hasher)
         
         do {
             let rawRequest = try context.authenticationString(forUser: username)
             let request = Data(rawRequest.utf8).base64EncodedString()
-            let command = SASLStart(namespace: namespace, payload: request)
+            let command = SASLStart(namespace: namespace, mechanism: .scramSha1, payload: request)
             
             return self.execute(command: command).then { reply in
                 if reply.done {
@@ -106,6 +124,7 @@ extension Connection {
 }
 
 extension String {
+    /// Decodes a base64 string into another String
     func base64Decoded() throws -> String {
         guard
             let data = Data(base64Encoded: self),

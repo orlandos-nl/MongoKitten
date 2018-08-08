@@ -7,12 +7,16 @@
 import Foundation
 import _MongoKittenCrypto
 
+/// Used by the SCRAM helper to keep track of the current state and the previous state's relevant parameters
 fileprivate enum ProgressState {
     case none
     case challenge(user: String, nonce: String)
     case verify(signature: [UInt8])
 }
 
+/// A thread-safe global cache that all MongoDB clients can use to reduce computational cost of authentication
+///
+/// By caching the proof of being auhtenticated.
 fileprivate final class CredentialsCache {
     static let `default` = CredentialsCache()
     
@@ -37,13 +41,14 @@ fileprivate final class CredentialsCache {
     }
 }
 
+/// This type contains all information needed to reduce the computational weight of authentication
 struct Credentials {
     let saltedPassword: [UInt8]
     let clientKey: [UInt8]
     let serverKey: [UInt8]
 }
 
-// TODO: Cache scram credentials between multiple connections/threads
+/// A helper that can authenticate with the SCRAM machanism.
 internal final class SCRAM<H: Hash> {
     var hasher: H
     var hmac: HMAC<H>
@@ -133,6 +138,10 @@ internal final class SCRAM<H: Hash> {
     public func completeAuthentication(withResponse response: String) throws {
         guard case .verify(let signature) = self.state else {
             throw MongoKittenError(.authenticationFailure, reason: .internalError)
+        }
+        
+        defer {
+            self.state = .none
         }
         
         guard response.count > 2 else {
