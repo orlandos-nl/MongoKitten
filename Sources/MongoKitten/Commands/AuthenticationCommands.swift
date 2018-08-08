@@ -90,7 +90,15 @@ extension Connection {
                     
                     return self.execute(command: next).then { reply in
                         do {
-                            try context.completeAuthentication(withResponse: reply.payload)
+                            guard
+                                let successResponseData = Data(base64Encoded: reply.payload),
+                                let successResponse = String(data: successResponseData, encoding: .utf8)
+                            else {
+                                let error = MongoKittenError(.authenticationFailure, reason: .scramFailure)
+                                return self.eventLoop.newFailedFuture(error: error)
+                            }
+                            
+                            try context.completeAuthentication(withResponse: successResponse)
                             return self.eventLoop.newSucceededFuture(result: ())
                         } catch {
                             return self.eventLoop.newFailedFuture(error: error)

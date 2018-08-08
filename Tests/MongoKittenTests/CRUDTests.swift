@@ -6,20 +6,30 @@ let dbName = "MongoKittenUnitTests"
 
 class CRUDTests : XCTestCase {
     let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-    let settings = ConnectionSettings(
-        authentication: .scramSha1(username: "joannis", password: "illZYJG7x1YuGhC4"),
-        authenticationSource: nil,
-        hosts: [
-            .init(hostname: "ok0-shard-00-00-xkvc1.mongodb.net", port: 27017)
-        ],
-        targetDatabase: nil,
-        useSSL: true,
-        verifySSLCertificates: false,
-        maximumNumberOfConnections: 1,
-        connectTimeout: 0,
-        socketTimeout: 0,
-        applicationName: "Test MK5"
-    )
+    
+    
+    var settings: ConnectionSettings {
+        if let mktestEnv = Process().environment?["mk5testenv"] {
+            return try! ConnectionSettings(mktestEnv)
+        } else if let config = FileManager.default.contents(atPath: ".mktestenv"), let string = String(data: config, encoding: .utf8) {
+            return try! ConnectionSettings(string)
+        }
+        
+        return ConnectionSettings(
+            authentication: .scramSha1(username: "test", password: ""),
+            authenticationSource: nil,
+            hosts: [
+                .init(hostname: "localhost", port: 27017)
+            ],
+            targetDatabase: nil,
+            useSSL: true,
+            verifySSLCertificates: false,
+            maximumNumberOfConnections: 1,
+            connectTimeout: 0,
+            socketTimeout: 0,
+            applicationName: "Test MK5"
+        )
+    }
     
     var connection: Connection!
     
@@ -136,7 +146,9 @@ class CRUDTests : XCTestCase {
     func testChangeStream() throws {
         let collection = connection[dbName]["test"]
         
-        let changeStream = try collection.aggregate().match("owner" == "Joannis").watch().wait()
+        try collection.insert(["_id": ObjectId(), "owner": "Robbert"]).wait()
+        
+        let changeStream = try collection.aggregate().watch().wait()
         var count = 0
         
         let future = changeStream.forEachAsync { notification in
