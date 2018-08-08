@@ -238,10 +238,10 @@ final class ClientConnectionSerializer: MessageToByteEncoder {
         document["$db"] = data.command.namespace.databaseName
         
         let flags: OpMsgFlags = []
-        let docData = document.makeData()
+        var buffer = document.makeByteBuffer()
         
         let header = MessageHeader(
-            messageLength: MessageHeader.byteSize + 4 + 1 + Int32(docData.count),
+            messageLength: MessageHeader.byteSize + 4 + 1 + Int32(buffer.readableBytes),
             requestId: data.requestID,
             responseTo: 0,
             opCode: opCode
@@ -251,8 +251,7 @@ final class ClientConnectionSerializer: MessageToByteEncoder {
         out.write(integer: flags.rawValue, endianness: .little)
         out.write(integer: 0 as UInt8, endianness: .little) // section kind 0
         
-        // TODO: Use ByteBuffer in BSON
-        out.write(bytes: docData)
+        out.write(buffer: &buffer)
     }
     
     func encodeQueryCommand(ctx: ChannelHandlerContext, data: MongoDBCommandContext, out: inout ByteBuffer) throws {
@@ -263,12 +262,12 @@ final class ClientConnectionSerializer: MessageToByteEncoder {
         let document = try encoder.encode(data.command)
         
         let flags: UInt32 = 0
-        let docData = document.makeData()
+        var buffer = document.makeByteBuffer()
         let namespace = data.command.namespace.databaseName + ".$cmd"
         let namespaceSize = Int32(namespace.utf8.count) + 1
         
         let header = MessageHeader(
-            messageLength: MessageHeader.byteSize + namespaceSize + 12 + Int32(docData.count),
+            messageLength: MessageHeader.byteSize + namespaceSize + 12 + Int32(buffer.readableBytes),
             requestId: data.requestID,
             responseTo: 0,
             opCode: opCode
@@ -281,8 +280,7 @@ final class ClientConnectionSerializer: MessageToByteEncoder {
         out.write(integer: 0 as Int32, endianness: .little) // Skip handled by query
         out.write(integer: 1 as Int32, endianness: .little) // Number to return
         
-        // TODO: Use ByteBuffer in BSON
-        out.write(bytes: docData)
+        out.write(buffer: &buffer)
     }
     
     func encode(ctx: ChannelHandlerContext, data: MongoDBCommandContext, out: inout ByteBuffer) throws {

@@ -20,15 +20,21 @@ extension MongoDBCommand {
 extension EventLoopFuture where T: ServerReplyInitializable {
     internal func mapToResult(for collection: Collection) -> EventLoopFuture<T.Result> {
         return self.thenThrowing { reply in
+            guard reply.isSuccessful else {
+                throw reply
+            }
+            
             return try reply.makeResult(on: collection)
         }
     }
 }
 
-protocol ServerReplyInitializable {
+protocol ServerReplyInitializable: Error {
     associatedtype Result
     
     init(reply: ServerReply) throws
+    
+    var isSuccessful: Bool { get }
     
     func makeResult(on collection: Collection) throws -> Result
 }
@@ -68,6 +74,10 @@ public struct ErrorReply: ServerReplyDecodable, Equatable, Encodable {
     public let errorMessage: String?
     public let code: Int?
     public let codeName: String?
+    
+    var isSuccessful: Bool {
+        return ok == 1
+    }
     
     private enum CodingKeys: String, CodingKey {
         case ok, code, codeName

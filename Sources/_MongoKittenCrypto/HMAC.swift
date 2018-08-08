@@ -14,11 +14,11 @@ public struct HMAC<H: Hash> {
         var op = [UInt8](repeating: 0x5c, count: chunkSize)
         var ip = [UInt8](repeating: 0x36, count: chunkSize)
         
-        if keyLength > chunkSize {
+        if key.count > chunkSize {
             key = hasher.hash(bytes: key)
         }
         
-        if keyLength < chunkSize {
+        if key.count < chunkSize {
             key += [UInt8](repeating: 0, count: chunkSize &- keyLength)
         }
         

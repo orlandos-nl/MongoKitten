@@ -47,16 +47,23 @@ class CryptoTests: XCTestCase {
     func testPBKDF2() throws {
         let pbkdf2 = PBKDF2(digest: SHA1())
         
-        let pass = Array("plnlrtfpijpuhqylxbgqiiyipieyxvfsavzgxbbcfusqkozwpngsyejqlmjsytrmd".utf8)
-        let salt = Array("eBkXQTfuBqp'cTcar&g*".utf8)
+        func test(password: String, salt: String, match: String) {
+            let hash = pbkdf2.hash(
+                Array(password.utf8),
+                salt: Array(salt.utf8),
+                iterations: 1_000
+            ).hexString
+            
+            XCTAssertEqual(hash, match)
+        }
         
-        let expectedHash: [UInt8] = [
-            0x17, 0xEB, 0x40, 0x14, 0xC8, 0xC4, 0x61, 0xC3,
-            0x00, 0xE9, 0xB6, 0x15, 0x18, 0xB9, 0xA1, 0x8B
+        let passes: [(String, String, String)] = [
+            ("password", "longsalt", "1712d0a135d5fcd98f00bb25407035c41f01086a"),
+            ("password2", "othersalt", "7a0363dd39e51c2cf86218038ad55f6fbbff6291"),
+            ("somewhatlongpasswordstringthatIwanttotest", "1", "8cba8dd99a165833c8d7e3530641c0ecddc6e48c"),
+            ("p", "somewhatlongsaltstringthatIwanttotest", "31593b82b859877ea36dc474503d073e6d56a33d"),
         ]
         
-        let hash = pbkdf2.hash(pass, salt: salt, iterations: 1000, keySize: 16)
-        
-        XCTAssertEqual(hash, expectedHash)
+        passes.forEach(test)
     }
 }
