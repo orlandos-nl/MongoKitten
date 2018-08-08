@@ -148,7 +148,7 @@ class CRUDTests : XCTestCase {
         
         try collection.insert(["_id": ObjectId(), "owner": "Robbert"]).wait()
         
-        let changeStream = try collection.aggregate().watch().wait()
+        let changeStream = try collection.watch().wait()
         var count = 0
         
         let future = changeStream.forEachAsync { notification in
