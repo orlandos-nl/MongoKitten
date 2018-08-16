@@ -11,9 +11,9 @@ public class File: Codable {
     
     var _id: Primitive
     public internal(set) var length: Int
-    public private(set) var chunkSize: Int = 261_120 // 255 kB
+    public private(set) var chunkSize: Int
     public let uploadDate: Date
-    public internal(set) var md5: String
+    public internal(set) var md5: String?
     public var filename: String?
     
     @available(*, deprecated, message: "Applications wishing to store a contentType should add a contentType field to the metadata document instead.")
@@ -22,10 +22,16 @@ public class File: Codable {
     @available(*, deprecated, message: "Applications wishing to store aliases should add an aliases field to the metadata document instead.")
     public var aliasses: [String]?
     
-    public var metadata: Primitive?
+    public var metadata: Document?
     
-    internal init() {
-        fatalError("unimplemented")
+    internal init(id: Primitive, length: Int, chunkSize: Int, metadata: Document?, filename: String?, fs: GridFS) {
+        self._id = id
+        self.length = length
+        self.chunkSize = chunkSize
+        self.metadata = metadata
+        self.filename = filename
+        self.fs = fs
+        self.uploadDate = Date()
     }
     
     private enum CodingKeys: String, CodingKey {
@@ -53,7 +59,7 @@ public class File: Codable {
         self.filename = try container.decodeIfPresent(String.self, forKey: .filename)
         self.contentType = try container.decodeIfPresent(String.self, forKey: .contentType)
         self.aliasses = try container.decodeIfPresent([String].self, forKey: .aliasses)
-        self.metadata = try container.decodeIfPresent(Primitive.self, forKey: .metadata)
+        self.metadata = try container.decodeIfPresent(Document.self, forKey: .metadata)
     }
     
     public func encode(to encoder: Encoder) throws {

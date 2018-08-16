@@ -14,7 +14,7 @@ class Chunk: Codable {
     var sequenceNumber: Int
     var data: Binary
     
-    init(filesId: ObjectId, sequenceNumber: Int, data: Binary) {
+    init(filesId: Primitive, sequenceNumber: Int, data: Binary) {
         self.filesId = filesId
         self.sequenceNumber = sequenceNumber
         self.data = data

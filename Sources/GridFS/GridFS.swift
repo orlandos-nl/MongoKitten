@@ -1,11 +1,14 @@
 import MongoKitten
 import NIO
+import Foundation
 
 extension CodingUserInfoKey {
     static let gridFS = CodingUserInfoKey(rawValue: "GridFS")!
 }
 
 public class GridFS {
+    
+    public static let defaultChunkSize = 261_120 // 255 kB
     
     public typealias FileCursor = MappedCursor<FindCursor, File>
     
@@ -21,6 +24,14 @@ public class GridFS {
     public init(named name: String = "fs", in database: Database) {
         self.filesCollection = database["\(name).files"]
         self.chunksCollection = database["\(name).chunks"]
+    }
+    
+    public func upload(data: Data, id: Primitive = ObjectId(), chunkSize: Int = GridFS.defaultChunkSize) -> EventLoopFuture<Void> {
+        var buffer = FileWriter.allocator.buffer(capacity: data.count)
+        buffer.write(bytes: data)
+        
+        let writer = FileWriter(fs: self, fileId: id, chunkSize: GridFS.defaultChunkSize, buffer: buffer)
+        return try writer.finalize()
     }
     
     public func find(_ query: Query) -> FileCursor {
