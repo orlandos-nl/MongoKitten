@@ -7,9 +7,8 @@ enum GridFSError: Error {
 
 public class File: Codable {
     
-    private var fs: GridFS
+    internal var fs: GridFS
     
-    // TODO: allow different _id types, see https://github.com/mongodb/specifications/blob/master/source/gridfs/gridfs-spec.rst#before-read-operations - Why have we changed our mind about requiring the file id to be an ObjectId?
     var _id: Primitive
     public internal(set) var length: Int
     public private(set) var chunkSize: Int = 261_120 // 255 kB
@@ -31,6 +30,10 @@ public class File: Codable {
     
     private enum CodingKeys: String, CodingKey {
         case _id, length, chunkSize, uploadDate, md5, filename, contentType, aliasses, metadata
+    }
+    
+    public var reader: FileReader {
+        return FileReader(file: self)
     }
     
     public required init(from decoder: Decoder) throws {

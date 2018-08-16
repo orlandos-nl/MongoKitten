@@ -12,13 +12,13 @@ public class GridFS {
     let filesCollection: MongoKitten.Collection
     let chunksCollection: MongoKitten.Collection
     
-    private var didEnsureIndexes: Bool = false
+    private var didEnsureIndexes = false
     
     var eventLoop: EventLoop {
         return filesCollection.database.connection.eventLoop
     }
     
-    public init(named name: String, in database: Database) {
+    public init(named name: String = "fs", in database: Database) {
         self.filesCollection = database["\(name).files"]
         self.chunksCollection = database["\(name).chunks"]
     }
