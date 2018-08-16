@@ -10,7 +10,7 @@ public class File: Codable {
     private var fs: GridFS
     
     // TODO: allow different _id types, see https://github.com/mongodb/specifications/blob/master/source/gridfs/gridfs-spec.rst#before-read-operations - Why have we changed our mind about requiring the file id to be an ObjectId?
-    var _id: ObjectId
+    var _id: Primitive
     public internal(set) var length: Int
     public private(set) var chunkSize: Int = 261_120 // 255 kB
     public let uploadDate: Date
@@ -42,7 +42,7 @@ public class File: Codable {
         }
         
         self.fs = fs
-        self._id = try container.decode(ObjectId.self, forKey: ._id)
+        self._id = try container.decode(Primitive.self, forKey: ._id)
         self.length = try container.decode(Int.self, forKey: .length)
         self.chunkSize = try container.decode(Int.self, forKey: .chunkSize)
         self.uploadDate = try container.decode(Date.self, forKey: .uploadDate)
@@ -56,7 +56,7 @@ public class File: Codable {
     public func encode(to encoder: Encoder) throws {
         var container = try encoder.container(keyedBy: CodingKeys.self)
         
-        try container.encode(self._id, forKey: ._id)
+        try container.encodeBSONPrimitive(self._id, forKey: ._id)
         try container.encode(self.length, forKey: .length)
         try container.encode(self.chunkSize, forKey: .chunkSize)
         try container.encode(self.uploadDate, forKey: .uploadDate)
