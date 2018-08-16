@@ -37,7 +37,7 @@ final class FileWriter {
         return self.flush()
     }
     
-    public func finalize() -> EventLoopFuture<Void> {
+    public func finalize(filename: String, metadata: Document? = nil) -> EventLoopFuture<Void> {
         assert(self.finalized == false, "Finalizing a finalized writer is an error")
         
         self.finalized = true
@@ -47,8 +47,8 @@ final class FileWriter {
                 let file = File(id: self.fileId,
                                 length: self.length,
                                 chunkSize: self.chunkSize,
-                                metadata: nil, // TODO
-                                filename: nil, // TODO
+                                metadata: metadata,
+                                filename: filename,
                                 fs: self.fs)
                 
                 do {

@@ -26,12 +26,12 @@ public class GridFS {
         self.chunksCollection = database["\(name).chunks"]
     }
     
-    public func upload(data: Data, id: Primitive = ObjectId(), chunkSize: Int = GridFS.defaultChunkSize) -> EventLoopFuture<Void> {
+    public func upload(data: Data, id: Primitive = ObjectId(), chunkSize: Int = GridFS.defaultChunkSize, filename: String,  metadata: Document? = nil) -> EventLoopFuture<Void> {
         var buffer = FileWriter.allocator.buffer(capacity: data.count)
         buffer.write(bytes: data)
         
         let writer = FileWriter(fs: self, fileId: id, chunkSize: GridFS.defaultChunkSize, buffer: buffer)
-        return writer.finalize()
+        return writer.finalize(filename: filename, metadata: metadata)
     }
     
     public func find(_ query: Query) -> FileCursor {
