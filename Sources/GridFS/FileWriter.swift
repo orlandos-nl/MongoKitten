@@ -82,4 +82,8 @@ final class FileWriter {
         }
     }
     
+    deinit {
+        assert(finalized == true || length == 0, "A GridFS FileWriter was deinitialized, while the writing has not been finalized. This will cause orphan chunks in the chunks collection in GridFS.")
+    }
+    
 }
