@@ -31,7 +31,7 @@ public class GridFS {
         buffer.write(bytes: data)
         
         let writer = FileWriter(fs: self, fileId: id, chunkSize: GridFS.defaultChunkSize, buffer: buffer)
-        return try writer.finalize()
+        return writer.finalize()
     }
     
     public func find(_ query: Query) -> FileCursor {

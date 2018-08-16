@@ -12,7 +12,7 @@ final class FileWriter {
     let chunkSize: Int
     var buffer: ByteBuffer
     var nextChunkNumber = 0
-    var length = 0
+    var length: Int
     var finalized = false
     
     internal init(fs: GridFS, fileId: Primitive, chunkSize: Int, buffer: ByteBuffer? = nil) {
@@ -20,6 +20,7 @@ final class FileWriter {
         self.fileId = fileId
         self.chunkSize = chunkSize
         self.buffer = buffer ?? FileWriter.allocator.buffer(capacity: chunkSize)
+        self.length = self.buffer.readableBytes
     }
     
     public func write(data: ByteBuffer) -> EventLoopFuture<Void> {
