@@ -40,8 +40,15 @@ public class GridFS {
             .getFirstResult()
     }
     
-    public func findFile(byId id: ObjectId) -> EventLoopFuture<File?> {
+    public func findFile(byId id: Primitive) -> EventLoopFuture<File?> {
         return self.findFile("_id" == id)
+    }
+    
+    public func deleteFile(byId id: Primitive) -> EventLoopFuture<Void> {
+        return EventLoopFuture<Void>.andAll([
+            self.filesCollection.deleteAll(where: "_id" == id).map { _ in },
+            self.chunksCollection.deleteAll(where: "files_id" == id).map { _ in }
+            ], eventLoop: eventLoop)
     }
     
     // TODO: Cancellable, streaming writes & reads
