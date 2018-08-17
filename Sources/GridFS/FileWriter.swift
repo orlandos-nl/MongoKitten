@@ -77,8 +77,8 @@ final class FileWriter {
             let chunk = Chunk(filesId: fileId, sequenceNumber: nextChunkNumber, data: .init(buffer: slice))
             let encoded = try FileWriter.encoder.encode(chunk)
             
-            return fs.chunksCollection.insert(encoded).map { _ in
-                self.flush(finalize: finalize)
+            return fs.chunksCollection.insert(encoded).then { _ in
+                return self.flush(finalize: finalize)
             }
         } catch {
             return fs.eventLoop.newFailedFuture(error: error)

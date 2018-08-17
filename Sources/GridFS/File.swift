@@ -17,10 +17,30 @@ public class File: Codable {
     public var filename: String?
     
     @available(*, deprecated, message: "Applications wishing to store a contentType should add a contentType field to the metadata document instead.")
-    public var contentType: String?
+    public var contentType: String? {
+        get {
+            return _contentType
+        }
+        set {
+            _contentType = newValue
+        }
+    }
+    
+    /// We use the getters and setters so we can decode and encode the contentType without warnings, while providing a deprecation warning to users trying to use the property
+    private var _contentType: String?
     
     @available(*, deprecated, message: "Applications wishing to store aliases should add an aliases field to the metadata document instead.")
-    public var aliasses: [String]?
+    public var aliasses: [String]? {
+        get {
+            return _aliasses
+        }
+        set {
+            _aliasses = newValue
+        }
+    }
+    
+    /// We use the getters and setters so we can decode and encode the aliasses without warnings, while providing a deprecation warning to users trying to use the property
+    private var _aliasses: [String]?
     
     public var metadata: Document?
     
@@ -57,13 +77,13 @@ public class File: Codable {
         self.uploadDate = try container.decode(Date.self, forKey: .uploadDate)
         self.md5 = try container.decode(String.self, forKey: .md5)
         self.filename = try container.decodeIfPresent(String.self, forKey: .filename)
-        self.contentType = try container.decodeIfPresent(String.self, forKey: .contentType)
-        self.aliasses = try container.decodeIfPresent([String].self, forKey: .aliasses)
+        self._contentType = try container.decodeIfPresent(String.self, forKey: .contentType)
+        self._aliasses = try container.decodeIfPresent([String].self, forKey: .aliasses)
         self.metadata = try container.decodeIfPresent(Document.self, forKey: .metadata)
     }
     
     public func encode(to encoder: Encoder) throws {
-        var container = try encoder.container(keyedBy: CodingKeys.self)
+        var container = encoder.container(keyedBy: CodingKeys.self)
         
         try container.encodeBSONPrimitive(self._id, forKey: ._id)
         try container.encode(self.length, forKey: .length)
@@ -71,8 +91,8 @@ public class File: Codable {
         try container.encode(self.uploadDate, forKey: .uploadDate)
         try container.encode(self.md5, forKey: .md5)
         try container.encode(self.filename, forKey: .filename)
-        try container.encode(self.contentType, forKey: .contentType)
-        try container.encode(self.aliasses, forKey: .aliasses)
+        try container.encode(self._contentType, forKey: .contentType)
+        try container.encode(self._aliasses, forKey: .aliasses)
         try container.encodeBSONPrimitive(self.metadata, forKey: .metadata)
     }
     

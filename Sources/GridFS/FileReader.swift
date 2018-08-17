@@ -11,7 +11,7 @@ public struct FileReader {
     }
     
     public func readAll() -> EventLoopFuture<Data> {
-        return try file.fs.chunksCollection
+        return file.fs.chunksCollection
             .find("files_id" == file._id)
             .sort(["n": .ascending])
             .decode(Chunk.self)
