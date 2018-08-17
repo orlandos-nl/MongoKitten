@@ -8,7 +8,7 @@ extension CodingUserInfoKey {
 
 public class GridFS {
     
-    public static let defaultChunkSize = 261_120 // 255 kB
+    public static let defaultChunkSize: Int32 = 261_120 // 255 kB
     
     public typealias FileCursor = MappedCursor<FindCursor, File>
     
@@ -26,11 +26,11 @@ public class GridFS {
         self.chunksCollection = database["\(name).chunks"]
     }
     
-    public func upload(data: Data, id: Primitive = ObjectId(), chunkSize: Int = GridFS.defaultChunkSize, filename: String,  metadata: Document? = nil) -> EventLoopFuture<Void> {
+    public func upload(data: Data, id: Primitive = ObjectId(), chunkSize: Int32 = GridFS.defaultChunkSize, filename: String,  metadata: Document? = nil) -> EventLoopFuture<Void> {
         var buffer = FileWriter.allocator.buffer(capacity: data.count)
         buffer.write(bytes: data)
         
-        let writer = FileWriter(fs: self, fileId: id, chunkSize: GridFS.defaultChunkSize, buffer: buffer)
+        let writer = FileWriter(fs: self, fileId: id, chunkSize: chunkSize, buffer: buffer)
         return writer.finalize(filename: filename, metadata: metadata)
     }
     

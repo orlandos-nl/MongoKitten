@@ -9,17 +9,17 @@ final class FileWriter {
     
     let fs: GridFS
     let fileId: Primitive
-    let chunkSize: Int
+    let chunkSize: Int32
     var buffer: ByteBuffer
     var nextChunkNumber = 0
     var length: Int
     var finalized = false
     
-    internal init(fs: GridFS, fileId: Primitive, chunkSize: Int, buffer: ByteBuffer? = nil) {
+    internal init(fs: GridFS, fileId: Primitive, chunkSize: Int32, buffer: ByteBuffer? = nil) {
         self.fs = fs
         self.fileId = fileId
         self.chunkSize = chunkSize
-        self.buffer = buffer ?? FileWriter.allocator.buffer(capacity: chunkSize)
+        self.buffer = buffer ?? FileWriter.allocator.buffer(capacity: Int(chunkSize))
         self.length = self.buffer.readableBytes
     }
     
@@ -62,6 +62,8 @@ final class FileWriter {
     }
     
     private func flush(finalize: Bool = false) -> EventLoopFuture<Void> {
+        let chunkSize = Int(self.chunkSize) // comparison here is always to int
+        
         guard buffer.readableBytes > 0, finalize || buffer.readableBytes >= chunkSize else {
             return fs.eventLoop.newSucceededFuture(result: ())
         }

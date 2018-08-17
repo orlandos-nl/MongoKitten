@@ -11,7 +11,7 @@ public class File: Codable {
     
     var _id: Primitive
     public internal(set) var length: Int
-    public private(set) var chunkSize: Int
+    public private(set) var chunkSize: Int32
     public let uploadDate: Date
     public internal(set) var md5: String?
     public var filename: String?
@@ -24,7 +24,7 @@ public class File: Codable {
     
     public var metadata: Document?
     
-    internal init(id: Primitive, length: Int, chunkSize: Int, metadata: Document?, filename: String?, fs: GridFS) {
+    internal init(id: Primitive, length: Int, chunkSize: Int32, metadata: Document?, filename: String?, fs: GridFS) {
         self._id = id
         self.length = length
         self.chunkSize = chunkSize
@@ -53,7 +53,7 @@ public class File: Codable {
         self.fs = fs
         self._id = try container.decode(Primitive.self, forKey: ._id)
         self.length = try container.decode(Int.self, forKey: .length)
-        self.chunkSize = try container.decode(Int.self, forKey: .chunkSize)
+        self.chunkSize = try container.decode(Int32.self, forKey: .chunkSize)
         self.uploadDate = try container.decode(Date.self, forKey: .uploadDate)
         self.md5 = try container.decode(String.self, forKey: .md5)
         self.filename = try container.decodeIfPresent(String.self, forKey: .filename)
