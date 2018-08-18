@@ -35,7 +35,7 @@ var package = Package(
     ]
 )
 
-let targetDependencies: [Target.Dependency] = ["BSON", "_MongoKittenCrypto", "NIO"]
+var targetDependencies: [Target.Dependency] = ["BSON", "_MongoKittenCrypto", "NIO"]
 
 // 🔑
 if #available(macOS 10.14, *) {
