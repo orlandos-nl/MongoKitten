@@ -3,7 +3,7 @@
 
 import PackageDescription
 
-let package = Package(
+var package = Package(
     name: "MongoKitten",
     products: [
         // Products define the executables and libraries produced by a package, and make them visible to other packages.
@@ -20,9 +20,6 @@ let package = Package(
         
         // 🚀
         .package(url: "https://github.com/apple/swift-nio.git", from: "1.8.0"),
-        
-        // 🔑
-        .package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "0.1.0")
     ],
     targets: [
         .target(
@@ -30,13 +27,34 @@ let package = Package(
             dependencies: []
         ),
         .target(
-            name: "MongoKitten",
-            dependencies: ["BSON", "_MongoKittenCrypto", "NIO", "NIOTransportServices"]),
-        .target(
             name: "GridFS",
             dependencies: ["BSON", "MongoKitten", "NIO"]),
         .testTarget(
             name: "MongoKittenTests",
             dependencies: ["MongoKitten"]),
     ]
+)
+
+let targetDependencies: [Target.Dependency] = ["BSON", "_MongoKittenCrypto", "NIO"]
+
+// 🔑
+if #available(macOS 10.14, *) {
+    package.dependencies.append(
+        .package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "0.1.0")
+    )
+    
+    targetDependencies.append("NIOTransportServices")
+} else {
+    package.dependencies.append(
+        .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "1.1.1")
+    )
+    
+    targetDependencies.append("NIOOpenSSL")
+}
+
+package.targets.append(
+    .target(
+        name: "MongoKitten",
+        dependencies: targetDependencies
+    )
 )
