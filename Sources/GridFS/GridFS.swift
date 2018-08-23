@@ -12,8 +12,8 @@ public class GridFS {
     
     public typealias FileCursor = MappedCursor<FindCursor, File>
     
-    let filesCollection: MongoKitten.Collection
-    let chunksCollection: MongoKitten.Collection
+    public let filesCollection: MongoKitten.Collection
+    public let chunksCollection: MongoKitten.Collection
     
     private var didEnsureIndexes = false
     
