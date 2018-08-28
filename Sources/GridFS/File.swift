@@ -7,30 +7,59 @@ enum GridFSError: Error {
 
 public class File: Codable {
     
-    private var fs: GridFS
+    internal var fs: GridFS
     
-    // TODO: allow different _id types, see https://github.com/mongodb/specifications/blob/master/source/gridfs/gridfs-spec.rst#before-read-operations - Why have we changed our mind about requiring the file id to be an ObjectId?
-    var _id: ObjectId
+    var _id: Primitive
     public internal(set) var length: Int
-    public private(set) var chunkSize: Int = 261_120 // 255 kB
+    public private(set) var chunkSize: Int32
     public let uploadDate: Date
-    public internal(set) var md5: String
+    public internal(set) var md5: String?
     public var filename: String?
     
     @available(*, deprecated, message: "Applications wishing to store a contentType should add a contentType field to the metadata document instead.")
-    public var contentType: String?
+    public var contentType: String? {
+        get {
+            return _contentType
+        }
+        set {
+            _contentType = newValue
+        }
+    }
+    
+    /// We use the getters and setters so we can decode and encode the contentType without warnings, while providing a deprecation warning to users trying to use the property
+    private var _contentType: String?
     
     @available(*, deprecated, message: "Applications wishing to store aliases should add an aliases field to the metadata document instead.")
-    public var aliasses: [String]?
+    public var aliasses: [String]? {
+        get {
+            return _aliasses
+        }
+        set {
+            _aliasses = newValue
+        }
+    }
     
-    public var metadata: Primitive?
+    /// We use the getters and setters so we can decode and encode the aliasses without warnings, while providing a deprecation warning to users trying to use the property
+    private var _aliasses: [String]?
     
-    internal init() {
-        fatalError("unimplemented")
+    public var metadata: Document?
+    
+    internal init(id: Primitive, length: Int, chunkSize: Int32, metadata: Document?, filename: String?, fs: GridFS) {
+        self._id = id
+        self.length = length
+        self.chunkSize = chunkSize
+        self.metadata = metadata
+        self.filename = filename
+        self.fs = fs
+        self.uploadDate = Date()
     }
     
     private enum CodingKeys: String, CodingKey {
         case _id, length, chunkSize, uploadDate, md5, filename, contentType, aliasses, metadata
+    }
+    
+    public var reader: FileReader {
+        return FileReader(file: self)
     }
     
     public required init(from decoder: Decoder) throws {
@@ -42,28 +71,28 @@ public class File: Codable {
         }
         
         self.fs = fs
-        self._id = try container.decode(ObjectId.self, forKey: ._id)
+        self._id = try container.decode(Primitive.self, forKey: ._id)
         self.length = try container.decode(Int.self, forKey: .length)
-        self.chunkSize = try container.decode(Int.self, forKey: .chunkSize)
+        self.chunkSize = try container.decode(Int32.self, forKey: .chunkSize)
         self.uploadDate = try container.decode(Date.self, forKey: .uploadDate)
         self.md5 = try container.decode(String.self, forKey: .md5)
         self.filename = try container.decodeIfPresent(String.self, forKey: .filename)
-        self.contentType = try container.decodeIfPresent(String.self, forKey: .contentType)
-        self.aliasses = try container.decodeIfPresent([String].self, forKey: .aliasses)
-        self.metadata = try container.decodeIfPresent(Primitive.self, forKey: .metadata)
+        self._contentType = try container.decodeIfPresent(String.self, forKey: .contentType)
+        self._aliasses = try container.decodeIfPresent([String].self, forKey: .aliasses)
+        self.metadata = try container.decodeIfPresent(Document.self, forKey: .metadata)
     }
     
     public func encode(to encoder: Encoder) throws {
-        var container = try encoder.container(keyedBy: CodingKeys.self)
+        var container = encoder.container(keyedBy: CodingKeys.self)
         
-        try container.encode(self._id, forKey: ._id)
+        try container.encodeBSONPrimitive(self._id, forKey: ._id)
         try container.encode(self.length, forKey: .length)
         try container.encode(self.chunkSize, forKey: .chunkSize)
         try container.encode(self.uploadDate, forKey: .uploadDate)
         try container.encode(self.md5, forKey: .md5)
         try container.encode(self.filename, forKey: .filename)
-        try container.encode(self.contentType, forKey: .contentType)
-        try container.encode(self.aliasses, forKey: .aliasses)
+        try container.encode(self._contentType, forKey: .contentType)
+        try container.encode(self._aliasses, forKey: .aliasses)
         try container.encodeBSONPrimitive(self.metadata, forKey: .metadata)
     }
     
