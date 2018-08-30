@@ -7,7 +7,7 @@ enum GridFSError: Error {
 
 public class File: Codable {
     
-    internal var fs: GridFS
+    internal var fs: GridFSBucket
     
     var _id: Primitive
     public internal(set) var length: Int
@@ -44,7 +44,7 @@ public class File: Codable {
     
     public var metadata: Document?
     
-    internal init(id: Primitive, length: Int, chunkSize: Int32, metadata: Document?, filename: String?, fs: GridFS) {
+    internal init(id: Primitive, length: Int, chunkSize: Int32, metadata: Document?, filename: String?, fs: GridFSBucket) {
         self._id = id
         self.length = length
         self.chunkSize = chunkSize
@@ -66,7 +66,7 @@ public class File: Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
         let userInfo = decoder.userInfo
-        guard let fs = userInfo[.gridFS] as? GridFS else {
+        guard let fs = userInfo[.gridFS] as? GridFSBucket else {
             throw GridFSError.missingGridFSUserInfo
         }
         

@@ -7,7 +7,7 @@ final class FileWriter {
     static let allocator = ByteBufferAllocator()
     static let encoder = BSONEncoder()
     
-    let fs: GridFS
+    let fs: GridFSBucket
     let fileId: Primitive
     let chunkSize: Int32
     var buffer: ByteBuffer
@@ -15,7 +15,7 @@ final class FileWriter {
     var length: Int
     var finalized = false
     
-    internal init(fs: GridFS, fileId: Primitive, chunkSize: Int32, buffer: ByteBuffer? = nil) {
+    internal init(fs: GridFSBucket, fileId: Primitive, chunkSize: Int32, buffer: ByteBuffer? = nil) {
         self.fs = fs
         self.fileId = fileId
         self.chunkSize = chunkSize

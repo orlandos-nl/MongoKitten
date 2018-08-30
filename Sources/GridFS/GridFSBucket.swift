@@ -6,7 +6,7 @@ extension CodingUserInfoKey {
     static let gridFS = CodingUserInfoKey(rawValue: "GridFS")!
 }
 
-public class GridFS {
+public class GridFSBucket {
     
     public static let defaultChunkSize: Int32 = 261_120 // 255 kB
     
@@ -26,7 +26,7 @@ public class GridFS {
         self.chunksCollection = database["\(name).chunks"]
     }
     
-    public func upload(data: Data, id: Primitive = ObjectId(), chunkSize: Int32 = GridFS.defaultChunkSize, filename: String,  metadata: Document? = nil) -> EventLoopFuture<Void> {
+    public func upload(data: Data, id: Primitive = ObjectId(), chunkSize: Int32 = GridFSBucket.defaultChunkSize, filename: String,  metadata: Document? = nil) -> EventLoopFuture<Void> {
         var buffer = FileWriter.allocator.buffer(capacity: data.count)
         buffer.write(bytes: data)
         
