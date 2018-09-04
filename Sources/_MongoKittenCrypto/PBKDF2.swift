@@ -56,6 +56,11 @@ public final class PBKDF2 {
     /// https://en.wikipedia.org/wiki/SHA-1
     public static var sha1: PBKDF2 { return .init(digest: SHA1()) }
     
+    /// SHA-1 digest powered key derivation.
+    ///
+    /// https://en.wikipedia.org/wiki/SHA-256
+    public static var sha256: PBKDF2 { return .init(digest: SHA256()) }
+    
     /// Creates a new PBKDF2 derivator based on a hashing algorithm
     public init(digest: Hash) {
         self.hash = digest

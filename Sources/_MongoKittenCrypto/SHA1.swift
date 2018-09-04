@@ -52,7 +52,9 @@ public struct SHA1 : Hash {
         return buffer
     }
     
-    public init() {}
+    public init() {
+        reset()
+    }
     
     public mutating func update(from pointer: UnsafePointer<UInt8>) {
         var w = pointer.withMemoryRebound(to: UInt32.self, capacity: 16, { pointer in

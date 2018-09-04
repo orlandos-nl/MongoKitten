@@ -174,6 +174,8 @@ public final class Connection {
             return eventLoop.newSucceededFuture(result: ())
         case .scramSha1(let username, let password):
             return self.authenticateSASL(hasher: SHA1(), namespace: namespace, username: username, password: password)
+        case .scramSha256(let username, let password):
+            return self.authenticateSASL(hasher: SHA256(), namespace: namespace, username: username, password: password)
         default:
             unimplemented()
         }
