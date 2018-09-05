@@ -10,6 +10,7 @@ struct SASLStart: MongoDBCommand {
     
     enum Mechanism: String, Codable {
         case scramSha1 = "SCRAM-SHA-1"
+        case scramSha256 = "SCRAM-SHA-256"
     }
     
     typealias Reply = SASLReply
@@ -71,17 +72,29 @@ struct SASLContinue: MongoDBCommand {
     }
 }
 
+protocol SASLHash: Hash {
+    static var algorithm: SASLStart.Mechanism { get }
+}
+
+extension SHA1: SASLHash {
+    static let algorithm = SASLStart.Mechanism.scramSha1
+}
+
+extension SHA256: SASLHash {
+    static let algorithm = SASLStart.Mechanism.scramSha256
+}
+
 extension Connection {
     /// Handles a SCRAM authentication flow
     ///
     /// The Hasher `H` specifies the hashing algorithm used with SCRAM.
-    func authenticateSASL<H: Hash>(hasher: H, namespace: Namespace, username: String, password: String) -> EventLoopFuture<Void> {
+    func authenticateSASL<H: SASLHash>(hasher: H, namespace: Namespace, username: String, password: String) -> EventLoopFuture<Void> {
         let context = SCRAM<H>(hasher)
         
         do {
             let rawRequest = try context.authenticationString(forUser: username)
             let request = Data(rawRequest.utf8).base64EncodedString()
-            let command = SASLStart(namespace: namespace, mechanism: .scramSha1, payload: request)
+            let command = SASLStart(namespace: namespace, mechanism: H.algorithm, payload: request)
             
             return self.execute(command: command).then { reply in
                 if reply.done {
