@@ -12,8 +12,6 @@ public protocol Hash {
 
 extension Hash {
     public mutating func finish(from pointer: UnsafeBufferPointer<UInt8>) -> [UInt8] {
-        self.reset()
-        
         // Hash size in _bits_
         let hashSize = (UInt64(pointer.count) &+ processedBytes) &* 8
         
@@ -51,12 +49,20 @@ extension Hash {
     }
     
     public mutating func hash(bytes data: [UInt8]) -> [UInt8] {
+        defer {
+            self.reset()
+        }
+        
         return data.withUnsafeBufferPointer { buffer in
             self.finish(from: buffer)
         }
     }
     
     public mutating func hash(_ data: UnsafePointer<UInt8>, count: Int) -> [UInt8] {
+        defer {
+            self.reset()
+        }
+        
         let buffer = UnsafeBufferPointer(start: data, count: count)
         
         return finish(from: buffer)

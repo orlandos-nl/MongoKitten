@@ -2,34 +2,27 @@ import NIO
 import MongoKitten
 import XCTest
 
-let dbName = "MongoKittenUnitTests"
+let dbName = "test"
 
 class CRUDTests : XCTestCase {
     let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     
+//    let settings = ConnectionSettings(
+//        authentication: .scramSha1(username: "mongokitten", password: "xrQqOYD28lvAOKXc"),
+//        authenticationSource: nil,
+//        hosts: [
+//            .init(hostname: "ok0-shard-00-00-xkvc1.mongodb.net", port: 27017)
+//        ],
+//        targetDatabase: nil,
+//        useSSL: true,
+//        verifySSLCertificates: true,
+//        maximumNumberOfConnections: 1,
+//        connectTimeout: 0,
+//        socketTimeout: 0,
+//        applicationName: "Test MK5"
+//    )
     
-    var settings: ConnectionSettings {
-        if let mktestEnv = Process().environment?["mk5testenv"] {
-            return try! ConnectionSettings(mktestEnv)
-        } else if let config = FileManager.default.contents(atPath: ".mktestenv"), let string = String(data: config, encoding: .utf8) {
-            return try! ConnectionSettings(string)
-        }
-        
-        return ConnectionSettings(
-            authentication: .scramSha1(username: "test", password: ""),
-            authenticationSource: nil,
-            hosts: [
-                .init(hostname: "localhost", port: 27017)
-            ],
-            targetDatabase: nil,
-            useSSL: true,
-            verifySSLCertificates: false,
-            maximumNumberOfConnections: 1,
-            connectTimeout: 0,
-            socketTimeout: 0,
-            applicationName: "Test MK5"
-        )
-    }
+    let settings = try! ConnectionSettings("mongodb://mongokitten:xrQqOYD28lvAOKXc@ok0-shard-00-00-xkvc1.mongodb.net:27017?ssl=true")
     
     var connection: Connection!
     
@@ -97,7 +90,6 @@ class CRUDTests : XCTestCase {
         }.forEachFuture { dog, owner in
             print("dog", dog)
             print("owner", owner)
-
         }.wait()
         
         try dogs.find().forEach { doc in

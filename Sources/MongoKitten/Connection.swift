@@ -197,7 +197,7 @@ public final class Connection {
             
             self.clientConnectionSerializer.supportsOpMessage = reply.maxWireVersion >= 6
             
-            return ()
+            return
         }
     }
 }
