@@ -11,6 +11,10 @@ struct SASLStart: MongoDBCommand {
     enum Mechanism: String, Codable {
         case scramSha1 = "SCRAM-SHA-1"
         case scramSha256 = "SCRAM-SHA-256"
+        
+        var md5Digested: Bool {
+            return self == .scramSha1
+        }
     }
     
     typealias Reply = SASLReply
@@ -102,12 +106,18 @@ extension Connection {
                 }
                 
                 do {
-                    var md5 = MD5()
-                    let credentials = "\(username):mongo:\(password)"
-                    let password = md5.hash(bytes: Array(credentials.utf8)).hexString
+                    let preppedPassword: String
+                    
+                    if H.algorithm.md5Digested {
+                        var md5 = MD5()
+                        let credentials = "\(username):mongo:\(password)"
+                        preppedPassword = md5.hash(bytes: Array(credentials.utf8)).hexString
+                    } else {
+                        preppedPassword = password
+                    }
                     
                     let challenge = try reply.payload.base64Decoded()
-                    let rawResponse = try context.respond(toChallenge: challenge, password: password)
+                    let rawResponse = try context.respond(toChallenge: challenge, password: preppedPassword)
                     let response = Data(rawResponse.utf8).base64EncodedString()
                     
                     let next = SASLContinue(
@@ -121,7 +131,21 @@ extension Connection {
                             let successReply = try reply.payload.base64Decoded()
                             try context.completeAuthentication(withResponse: successReply)
                             
-                            return self.eventLoop.newSucceededFuture(result: ())
+                            if reply.done {
+                                return self.eventLoop.newSucceededFuture(result: ())
+                            } else {
+                                let final = SASLContinue(
+                                    namespace: namespace,
+                                    conversation: reply.conversationId,
+                                    payload: ""
+                                )
+                                
+                                return self.execute(command: final).thenThrowing { reply in
+                                    guard reply.done else {
+                                        throw MongoKittenError(.authenticationFailure, reason: .malformedAuthenticationDetails)
+                                    }
+                                }
+                            }
                         } catch {
                             return self.eventLoop.newFailedFuture(error: error)
                         }
