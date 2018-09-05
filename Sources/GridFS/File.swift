@@ -75,7 +75,7 @@ public class File: Codable {
         self.length = try container.decode(Int.self, forKey: .length)
         self.chunkSize = try container.decode(Int32.self, forKey: .chunkSize)
         self.uploadDate = try container.decode(Date.self, forKey: .uploadDate)
-        self.md5 = try container.decode(String.self, forKey: .md5)
+        self.md5 = try container.decodeIfPresent(String.self, forKey: .md5)
         self.filename = try container.decodeIfPresent(String.self, forKey: .filename)
         self._contentType = try container.decodeIfPresent(String.self, forKey: .contentType)
         self._aliasses = try container.decodeIfPresent([String].self, forKey: .aliasses)
