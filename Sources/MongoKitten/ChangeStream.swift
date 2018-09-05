@@ -58,7 +58,7 @@ extension Collection {
     ///
     /// Options can be provided to alter the type and detail of information being received.
     ///
-    /// ChangeStream is only available to MongoDB 3.6+ users
+    /// ChangeStream is only available to MongoDB clusters running MongoDB 3.6+
     public func watch(withOptions options: ChangeStreamOptions = ChangeStreamOptions()) -> EventLoopFuture<ChangeStream> {
         let stage = ChangeStreamStage(options: options)
         
@@ -67,6 +67,25 @@ extension Collection {
             return self.aggregate().append(document).execute().map(ChangeStream.init)
         } catch {
             return self.eventLoop.newFailedFuture(error: error)
+        }
+    }
+}
+
+extension AggregateCursor where Element == Document {
+    /// Watches for changes within this Collection. Matches changed documents against the previous stages of this aggregate pipeline.
+    /// Can reflect all mutating operations (Insert, Partial Update, Replace and Delete).
+    ///
+    /// Options can be provided to alter the type and detail of information being received.
+    ///
+    /// ChangeStream is only available to MongoDB clusters running MongoDB 3.6+
+    public func watch(withOptions options: ChangeStreamOptions = ChangeStreamOptions()) -> EventLoopFuture<ChangeStream> {
+        let stage = ChangeStreamStage(options: options)
+        
+        do {
+            let document = try BSONEncoder().encode(stage)
+            return self.append(document).execute().map(ChangeStream.init)
+        } catch {
+            return self.collection.eventLoop.newFailedFuture(error: error)
         }
     }
 }
