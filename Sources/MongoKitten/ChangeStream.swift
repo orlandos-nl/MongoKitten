@@ -83,7 +83,8 @@ extension AggregateCursor where Element == Document {
         
         do {
             let document = try BSONEncoder().encode(stage)
-            return self.append(document).execute().map(ChangeStream.init)
+            self.operation.pipeline.insert(document, at: 0)
+            return self.execute().map(ChangeStream.init)
         } catch {
             return self.collection.eventLoop.newFailedFuture(error: error)
         }
