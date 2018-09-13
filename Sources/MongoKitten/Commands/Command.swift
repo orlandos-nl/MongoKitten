@@ -29,6 +29,17 @@ extension EventLoopFuture where T: ServerReplyInitializable {
     }
 }
 
+extension Document {
+    func makeError() -> Error {
+        do {
+            let errorReply = try BSONDecoder().decode(ErrorReply.self, from: self)
+            return MongoKittenError(errorReply)
+        } catch {
+            return error
+        }
+    }
+}
+
 protocol ServerReplyInitializable: Error {
     associatedtype Result
     
@@ -46,21 +57,23 @@ extension ServerReplyDecodable {
         let doc = try reply.documents.assertFirst()
         
         if let ok: Double = doc.ok, ok < 1 {
-            let errorReply = try BSONDecoder().decode(ErrorReply.self, from: doc)
-            throw MongoKittenError(errorReply)
+            throw doc.makeError()
         } else if let ok: Int = doc.ok, ok < 1 {
-            let errorReply = try BSONDecoder().decode(ErrorReply.self, from: doc)
-            throw MongoKittenError(errorReply)
+            throw doc.makeError()
         } else if let ok: Int32 = doc.ok, ok < 1 {
-            let errorReply = try BSONDecoder().decode(ErrorReply.self, from: doc)
-            throw MongoKittenError(errorReply)
+            throw doc.makeError()
         }
         
-        self = try BSONDecoder().decode(Self.self, from: doc)
+        do {
+            self = try BSONDecoder().decode(Self.self, from: doc)
+        } catch {
+            print(Self.self)
+            throw error
+        }
     }
 }
 
-fileprivate extension Array where Element == Document {
+extension Array where Element == Document {
     func assertFirst() throws -> Document {
         return self.first!
     }

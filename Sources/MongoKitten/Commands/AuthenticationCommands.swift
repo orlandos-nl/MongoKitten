@@ -1,4 +1,5 @@
 import Foundation
+import BSON
 import NIO
 import _MongoKittenCrypto
 
@@ -39,7 +40,7 @@ struct SASLStart: MongoDBCommand {
 /// For SASLContinue it contains a success or failure state
 ///
 /// If no authentication is needed, SASLStart's reply may contain `done: true` meaning the SASL proceedure has ended
-struct SASLReply: ServerReplyDecodable {
+struct SASLReply: ServerReplyInitializable {
     var isSuccessful: Bool {
         return ok == 1
     }
@@ -48,6 +49,51 @@ struct SASLReply: ServerReplyDecodable {
     let conversationId: Int
     let done: Bool
     let payload: String
+    
+    init(reply: ServerReply) throws {
+        let doc = try reply.documents.assertFirst()
+        
+        if let ok: Double = doc.ok {
+            if ok < 1 {
+                throw doc.makeError()
+            }
+            self.ok = Int(ok)
+        } else if let ok: Int = doc.ok {
+            if ok < 1 {
+                throw doc.makeError()
+            }
+            self.ok = ok
+        } else if let ok: Int32 = doc.ok {
+            if ok < 1 {
+                throw doc.makeError()
+            }
+            self.ok = Int(ok)
+        } else {
+            throw doc.makeError()
+        }
+        
+        if let conversationId: Int = doc.conversationId {
+            self.conversationId = conversationId
+        } else if let conversationId: Int32 = doc.conversationId {
+            self.conversationId = Int(conversationId)
+        } else {
+            throw doc.makeError()
+        }
+        
+        guard let done: Bool = doc.done else {
+            throw doc.makeError()
+        }
+        
+        self.done = done
+        
+        if let payload: String = doc.payload {
+            self.payload = payload
+        } else  if let payload: Binary = doc.payload, let string = String(data: payload.data, encoding: .utf8) {
+            self.payload = string
+        } else {
+            throw doc.makeError()
+        }
+    }
     
     func makeResult(on collection: Collection) throws -> SASLReply {
         return self
