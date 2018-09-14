@@ -59,7 +59,7 @@ extension Collection {
     /// Options can be provided to alter the type and detail of information being received.
     ///
     /// ChangeStream is only available to MongoDB clusters running MongoDB 3.6+
-    public func watch(withOptions options: ChangeStreamOptions = ChangeStreamOptions()) -> EventLoopFuture<ChangeStream> {
+    public func watch(withOptions options: ChangeStreamOptions = ChangeStreamOptions()) -> EventLoopFuture<ChangeStream<ChangeStreamNotification<Document?>>> {
         let stage = ChangeStreamStage(options: options)
         
         do {
@@ -78,7 +78,7 @@ extension AggregateCursor where Element == Document {
     /// Options can be provided to alter the type and detail of information being received.
     ///
     /// ChangeStream is only available to MongoDB clusters running MongoDB 3.6+
-    public func watch(withOptions options: ChangeStreamOptions = ChangeStreamOptions()) -> EventLoopFuture<ChangeStream> {
+    public func watch(withOptions options: ChangeStreamOptions = ChangeStreamOptions()) -> EventLoopFuture<ChangeStream<ChangeStreamNotification<Document?>>> {
         let stage = ChangeStreamStage(options: options)
         
         do {
@@ -94,7 +94,7 @@ extension AggregateCursor where Element == Document {
 /// A ChangeStream can be used to watch changes within a collection or database.
 ///
 /// ChangeStream is only available to MongoDB 3.6+ users
-public final class ChangeStream {
+public final class ChangeStream<Notification: Decodable> {
     /// The aggregate cursor that is secretly being wrapped
     private let cursor: FinalizedCursor<AggregateCursor<Document>>
     
@@ -102,15 +102,15 @@ public final class ChangeStream {
         self.cursor = cursor
     }
     
+    public func close() -> EventLoopFuture<Void> {
+        return self.cursor.close()
+    }
+    
     /// Calls the `handler` for each incoming notification
     ///
     /// On failure, the ChangeStream is aborted
-    public func forEach(handler: @escaping (ChangeStreamNotification) throws -> Void) {
-        cursor.base.forEach { doc in
-            let notification = try BSONDecoder().decode(ChangeStreamNotification.self, from: doc)
-            
-            try handler(notification)
-        }
+    public func forEach(handler: @escaping (Notification) throws -> Void) {
+        cursor.base.decode(Notification.self).forEach(handler: handler)
     }
     
     /// Calls the `handler` for each incoming notification but only continues fetching more notifications when the handler notifies completion through the returned future.
@@ -118,17 +118,13 @@ public final class ChangeStream {
     /// On failure, the ChangeStream is aborted
     ///
     /// When stopping or cancelling (due to failure), this function's own return value will be completed accordingly.
-    public func forEachAsync(handler: @escaping (ChangeStreamNotification) throws -> EventLoopFuture<Void>) -> EventLoopFuture<Void> {
-        return cursor.base.forEachAsync { doc in
-            let notification = try BSONDecoder().decode(ChangeStreamNotification.self, from: doc)
-            
-            return try handler(notification)
-        }
+    public func forEachAsync(handler: @escaping (Notification) throws -> EventLoopFuture<Void>) -> EventLoopFuture<Void> {
+        return cursor.base.decode(Notification.self).forEachAsync(handler: handler)
     }
 }
 
 /// A single notification coming from the MongoDB collection/database.
-public struct ChangeStreamNotification: Codable {
+public struct ChangeStreamNotification<FullDocument: Codable>: Codable {
     private enum CodingKeys: String, CodingKey {
         case _id, operationType
         case namespace = "ns"
@@ -180,6 +176,6 @@ public struct ChangeStreamNotification: Codable {
     
     /// Always present in `insert` and `replace`, showing the new document
     ///
-    /// Available on `update` is the `updateLookup` is set in the ChangeStreamOptions. Will contain the current Document if it wasn't deleted afterwards.
-    public let fullDocument: Document?
+    /// Available on `update` if the `updateLookup` is set in the ChangeStreamOptions. Will contain the current Document if it wasn't deleted afterwards.
+    public let fullDocument: FullDocument
 }

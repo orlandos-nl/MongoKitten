@@ -102,6 +102,9 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         /// The cursor has been drained, which means there are no more elements left to get
         case cursorDrained
         
+        /// The cursor was intentionally closed and will not yield more results
+        case cursorClosed
+        
         /// There is nothing to do with the given parameters
         case nothingToDo
         
@@ -126,6 +129,7 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
             case .multipleResultDocuments: return "One Document was expected but multiple were returned"
             case .unexpectedValue: return "The value found in the result cursor did not match the expectation"
             case .cursorDrained: return "The cursor has been drained, which means there are no more elements left to get"
+            case .cursorClosed: return "The cursor was intentionally closed and will not yield more results"
             case .nothingToDo: return "There is nothing to do with the given parameters"
             case .unsupportedOpCode: return "The server replied with an opcode that is not supported by MongoKitten"
             case .indexCreationFailed: return "There was a failure whilst creating the index."

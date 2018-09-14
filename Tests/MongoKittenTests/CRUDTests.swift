@@ -22,7 +22,8 @@ class CRUDTests : XCTestCase {
 //        applicationName: "Test MK5"
 //    )
     
-    let settings = try! ConnectionSettings("mongodb://mongokitten:xrQqOYD28lvAOKXc@ok0-shard-00-00-xkvc1.mongodb.net:27017?ssl=true")
+//    let settings = try! ConnectionSettings("mongodb://mongokitten:xrQqOYD28lvAOKXc@ok0-shard-00-00-xkvc1.mongodb.net:27017?ssl=true")
+    let settings = try! ConnectionSettings("mongodb://localhost")
     
     var connection: Connection!
     
@@ -98,63 +99,72 @@ class CRUDTests : XCTestCase {
     }
     
     func testBasicFind() throws {
-        let collection = connection[dbName]["test"]
+        do {
+            let collection = connection[dbName]["test"]
             
-        try createTestData(n: 241, in: collection).wait()
-        
-        var counter = 50
-        try collection.find("n" > 50 && "n" < 223).forEach { doc in
-            counter += 1
-            XCTAssertEqual(doc["n"] as? Int, counter)
-        }.wait()
-        
-        XCTAssertEqual(counter, 222)
-        
-        counter = 50
-        try collection.find("n" > 50).forEach { doc in
-            counter += 1
-            XCTAssertEqual(doc["n"] as? Int, counter)
+            try createTestData(n: 241, in: collection).wait()
+            
+            var counter = 50
+            try collection.find("n" > 50 && "n" < 223).forEach { doc in
+                counter += 1
+                XCTAssertEqual(doc["n"] as? Int, counter)
             }.wait()
-        
-        XCTAssertEqual(counter, 240)
-        
-        counter = 120
-        try collection.find("n" > 50).skip(70).limit(30).forEach { doc in
-            counter += 1
-            XCTAssertEqual(doc["n"] as? Int, counter)
-            }.wait()
-        
-        XCTAssertEqual(counter, 150)
-        
-        counter = 170
-        try collection.find("n" > 50).skip(70).limit(30).sort(["n": .descending]).forEach { doc in
-            XCTAssertEqual(doc["n"] as? Int, counter)
-            counter -= 1
-            }.wait()
-        
-        XCTAssertEqual(counter, 140)
+            
+            XCTAssertEqual(counter, 222)
+            
+            counter = 50
+            try collection.find("n" > 50).forEach { doc in
+                counter += 1
+                XCTAssertEqual(doc["n"] as? Int, counter)
+                }.wait()
+            
+            XCTAssertEqual(counter, 240)
+            
+            counter = 120
+            try collection.find("n" > 50).skip(70).limit(30).forEach { doc in
+                counter += 1
+                XCTAssertEqual(doc["n"] as? Int, counter)
+                }.wait()
+            
+            XCTAssertEqual(counter, 150)
+            
+            counter = 170
+            try collection.find("n" > 50).skip(70).limit(30).sort(["n": .descending]).forEach { doc in
+                XCTAssertEqual(doc["n"] as? Int, counter)
+                counter -= 1
+                }.wait()
+            
+            XCTAssertEqual(counter, 140)
+        } catch {
+            XCTFail("\(error)")
+        }
     }
     
     func testChangeStream() throws {
-        let collection = connection[dbName]["test"]
-        
-        try collection.insert(["_id": ObjectId(), "owner": "Robbert"]).wait()
-        
-        let changeStream = try collection.watch().wait()
-        var count = 0
-        
-        let future = changeStream.forEachAsync { notification in
-            count += 1
-            XCTAssertEqual(notification.fullDocument?["owner"] as? String, "Joannis")
-            return collection.database.connection.eventLoop.newSucceededFuture(result: ())
+        do {
+            let collection = connection[dbName]["test"]
+            
+            try collection.insert(["_id": ObjectId(), "owner": "Robbert"]).wait()
+            
+            let changeStream = try collection.watch().wait()
+            var count = 0
+            
+            let future = changeStream.forEachAsync { notification in
+                count += 1
+                XCTAssertEqual(notification.fullDocument?["owner"] as? String, "Joannis")
+                return collection.database.connection.eventLoop.newSucceededFuture(result: ())
+            }
+            
+            XCTAssert(try collection.insert(["_id": ObjectId(), "owner": "Joannis"]).wait().isSuccessful)
+            XCTAssert(try collection.insert(["_id": ObjectId(), "owner": "Robbert"]).wait().isSuccessful)
+
+            try changeStream.close().wait()
+            try future.wait()
+            
+            XCTAssertEqual(count, 1)
+        } catch {
+            XCTFail("\(error)")
         }
-        
-        XCTAssert(try collection.insert(["_id": ObjectId(), "owner": "Joannis"]).wait().isSuccessful)
-        XCTAssert(try collection.insert(["_id": ObjectId(), "owner": "Robbert"]).wait().isSuccessful)
-        
-        try future.wait()
-        
-        XCTAssertEqual(count, 1)
     }
     
 //    func testUsage() throws {
