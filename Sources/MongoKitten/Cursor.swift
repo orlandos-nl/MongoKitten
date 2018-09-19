@@ -201,11 +201,11 @@ extension QueryCursor {
                     do {
                         var batch = batch
                         
-                        while let element = try batch.nextElement() {
+                        while let element = try batch.nextElement(), !finalizedCursor.closed {
                             try handler(element)
                         }
                         
-                        if batch.isLast {
+                        if batch.isLast || finalizedCursor.closed {
                             return self.collection.connection.eventLoop.newSucceededFuture(result: ())
                         }
                         
@@ -229,8 +229,8 @@ extension QueryCursor {
                         var batch = batch
                         
                         func next() throws -> EventLoopFuture<Void> {
-                            guard let element = try batch.nextElement() else {
-                                if batch.isLast {
+                            guard let element = try batch.nextElement(), !finalizedCursor.closed else {
+                                if batch.isLast || finalizedCursor.closed {
                                     return self.collection.connection.eventLoop.newSucceededFuture(result: ())
                                 }
                                 
@@ -300,7 +300,7 @@ extension QueryCursor {
                     }
                     
                     nextBatch()
-                    }.cascadeFailure(promise: promise)
+                }.cascadeFailure(promise: promise)
             }
             
             nextBatch()
@@ -363,6 +363,7 @@ extension CursorBasedOnOtherCursor {
 public final class FinalizedCursor<Base: QueryCursor> {
     let base: Base
     let cursor: Cursor
+    private(set) var closed = false
     
     init(basedOn base: Base, cursor: Cursor) {
         self.base = base
@@ -370,9 +371,21 @@ public final class FinalizedCursor<Base: QueryCursor> {
     }
     
     internal func nextBatch() -> EventLoopFuture<CursorBatch<Base.Element>> {
+        if closed {
+            return cursor.collection.eventLoop.newFailedFuture(error: MongoKittenError(.cannotGetMore, reason: .cursorClosed))
+        }
+        
         return cursor.getMore(batchSize: base.batchSize).thenThrowing { batch in
             return batch.map(self.base.transformElement)
         }
+    }
+    
+    /// Closes the cursor stopping any further data from being read
+    public func close() -> EventLoopFuture<Void> {
+        closed = true
+        
+        let command = KillCursorsCommand([self.cursor.id], in: base.collection.namespace)
+        return command.execute(on: self.cursor.collection.connection).map { _ in }
     }
 }
 

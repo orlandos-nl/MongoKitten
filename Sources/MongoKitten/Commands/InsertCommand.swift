@@ -35,7 +35,7 @@ public struct InsertCommand: MongoDBCommand {
 public struct InsertReply: ServerReplyDecodable {
     typealias Result = InsertReply
     
-    enum CodingKeys: String, CodingKey {
+    private enum CodingKeys: String, CodingKey {
         case successfulInserts = "n"
         case ok
         case errorMessage = "errmsg"

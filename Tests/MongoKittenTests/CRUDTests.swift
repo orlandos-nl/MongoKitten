@@ -2,15 +2,33 @@ import NIO
 import MongoKitten
 import XCTest
 
-let dbName = "MongoKittenUnitTests"
+let dbName = "test"
 
 class CRUDTests : XCTestCase {
-    let group = MultiThreadedEventLoopGroup(numThreads: 1)
-    let settings = try! ConnectionSettings("mongodb://localhost:27017")
-    var connection: MongoDBConnection!
+    let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    
+//    let settings = ConnectionSettings(
+//        authentication: .scramSha1(username: "mongokitten", password: "xrQqOYD28lvAOKXc"),
+//        authenticationSource: nil,
+//        hosts: [
+//            .init(hostname: "ok0-shard-00-00-xkvc1.mongodb.net", port: 27017)
+//        ],
+//        targetDatabase: nil,
+//        useSSL: true,
+//        verifySSLCertificates: true,
+//        maximumNumberOfConnections: 1,
+//        connectTimeout: 0,
+//        socketTimeout: 0,
+//        applicationName: "Test MK5"
+//    )
+    
+//    let settings = try! ConnectionSettings("mongodb://mongokitten:xrQqOYD28lvAOKXc@ok0-shard-00-00-xkvc1.mongodb.net:27017?ssl=true")
+    let settings = try! ConnectionSettings("mongodb://localhost")
+    
+    var connection: Connection!
     
     override func setUp() {
-        self.connection = try! MongoDBConnection.connect(on: group, settings: settings).wait()
+        self.connection = try! Connection.connect(on: group, settings: settings).wait()
         
         try! connection[dbName].drop().wait()
     }
@@ -29,7 +47,7 @@ class CRUDTests : XCTestCase {
 //        }.wait()
 //    }
     
-    func createTestData(n: Int, in collection: MongoCollection) -> EventLoopFuture<Void> {
+    func createTestData(n: Int, in collection: MongoKitten.Collection) -> EventLoopFuture<Void> {
         func nextDocument(index: Int) -> Document {
             return [
                 "_id": collection.objectIdGenerator.generate(),
@@ -62,7 +80,7 @@ class CRUDTests : XCTestCase {
         typealias Pair = (Dog, Owner?)
         struct NoOwnerFoundMeh: Error {}
         
-        let pairs = try dogs.find().map { dog -> EventLoopFuture<(Dog, Owner?)> in
+        try dogs.find().map { dog -> EventLoopFuture<(Dog, Owner?)> in
             guard let ownerId = dog["owner"] as? ObjectId else {
                 throw NoOwnerFoundMeh()
             }
@@ -73,7 +91,6 @@ class CRUDTests : XCTestCase {
         }.forEachFuture { dog, owner in
             print("dog", dog)
             print("owner", owner)
-
         }.wait()
         
         try dogs.find().forEach { doc in
@@ -82,41 +99,72 @@ class CRUDTests : XCTestCase {
     }
     
     func testBasicFind() throws {
-        let collection = connection[dbName]["test"]
+        do {
+            let collection = connection[dbName]["test"]
             
-        try createTestData(n: 241, in: collection).wait()
-        
-        var counter = 50
-        try collection.find("n" > 50 && "n" < 223).forEach { doc in
-            counter += 1
-            XCTAssertEqual(doc["n"] as? Int, counter)
-        }.wait()
-        
-        XCTAssertEqual(counter, 222)
-        
-        counter = 50
-        try collection.find("n" > 50).forEach { doc in
-            counter += 1
-            XCTAssertEqual(doc["n"] as? Int, counter)
+            try createTestData(n: 241, in: collection).wait()
+            
+            var counter = 50
+            try collection.find("n" > 50 && "n" < 223).forEach { doc in
+                counter += 1
+                XCTAssertEqual(doc["n"] as? Int, counter)
             }.wait()
-        
-        XCTAssertEqual(counter, 240)
-        
-        counter = 120
-        try collection.find("n" > 50).skip(70).limit(30).forEach { doc in
-            counter += 1
-            XCTAssertEqual(doc["n"] as? Int, counter)
-            }.wait()
-        
-        XCTAssertEqual(counter, 150)
-        
-        counter = 170
-        try collection.find("n" > 50).skip(70).limit(30).sort(["n": .descending]).forEach { doc in
-            XCTAssertEqual(doc["n"] as? Int, counter)
-            counter -= 1
-            }.wait()
-        
-        XCTAssertEqual(counter, 140)
+            
+            XCTAssertEqual(counter, 222)
+            
+            counter = 50
+            try collection.find("n" > 50).forEach { doc in
+                counter += 1
+                XCTAssertEqual(doc["n"] as? Int, counter)
+                }.wait()
+            
+            XCTAssertEqual(counter, 240)
+            
+            counter = 120
+            try collection.find("n" > 50).skip(70).limit(30).forEach { doc in
+                counter += 1
+                XCTAssertEqual(doc["n"] as? Int, counter)
+                }.wait()
+            
+            XCTAssertEqual(counter, 150)
+            
+            counter = 170
+            try collection.find("n" > 50).skip(70).limit(30).sort(["n": .descending]).forEach { doc in
+                XCTAssertEqual(doc["n"] as? Int, counter)
+                counter -= 1
+                }.wait()
+            
+            XCTAssertEqual(counter, 140)
+        } catch {
+            XCTFail("\(error)")
+        }
+    }
+    
+    func testChangeStream() throws {
+        do {
+            let collection = connection[dbName]["test"]
+            
+            try collection.insert(["_id": ObjectId(), "owner": "Robbert"]).wait()
+            
+            let changeStream = try collection.watch().wait()
+            var count = 0
+            
+            let future = changeStream.forEachAsync { notification in
+                count += 1
+                XCTAssertEqual(notification.fullDocument?["owner"] as? String, "Joannis")
+                return collection.database.connection.eventLoop.newSucceededFuture(result: ())
+            }
+            
+            XCTAssert(try collection.insert(["_id": ObjectId(), "owner": "Joannis"]).wait().isSuccessful)
+            XCTAssert(try collection.insert(["_id": ObjectId(), "owner": "Robbert"]).wait().isSuccessful)
+
+            try changeStream.close().wait()
+            try future.wait()
+            
+            XCTAssertEqual(count, 1)
+        } catch {
+            XCTFail("\(error)")
+        }
     }
     
 //    func testUsage() throws {

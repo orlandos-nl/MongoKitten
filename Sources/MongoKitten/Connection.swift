@@ -1,4 +1,5 @@
 import BSON
+import _MongoKittenCrypto
 import NIO
 import NIOOpenSSL
 import Foundation
@@ -57,15 +58,15 @@ public final class Connection {
             let context = ClientConnectionContext()
             let serializer = ClientConnectionSerializer(context: context)
             
+            guard let host = settings.hosts.first else {
+                throw MongoKittenError(.unableToConnect, reason: .noHostSpecified)
+            }
+            
             let bootstrap = ClientBootstrap(group: group)
                 // Enable SO_REUSEADDR.
                 .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
                 .channelInitializer { channel in
-                    return Connection.initialize(pipeline: channel.pipeline, context: context, settings: settings, serializer: serializer)
-            }
-            
-            guard let host = settings.hosts.first else {
-                throw MongoKittenError(.unableToConnect, reason: .noHostSpecified)
+                    return Connection.initialize(pipeline: channel.pipeline, hostname: host.hostname, context: context, settings: settings, serializer: serializer)
             }
             
             return bootstrap.connect(host: host.hostname, port: Int(host.port)).then { channel in
@@ -97,7 +98,7 @@ public final class Connection {
         return self[namespace.databaseName][namespace.collectionName]
     }
     
-    static func initialize(pipeline: ChannelPipeline, context: ClientConnectionContext, settings: ConnectionSettings, serializer: ClientConnectionSerializer) -> EventLoopFuture<Void> {
+    static func initialize(pipeline: ChannelPipeline, hostname: String?, context: ClientConnectionContext, settings: ConnectionSettings, serializer: ClientConnectionSerializer) -> EventLoopFuture<Void> {
         let promise: EventLoopPromise<Void> = pipeline.eventLoop.newPromise()
         
         var handlers: [ChannelHandler] = [ClientConnectionParser(context: context), serializer]
@@ -107,8 +108,9 @@ public final class Connection {
                 let sslConfiguration = TLSConfiguration.forClient(
                     certificateVerification: settings.verifySSLCertificates ? .fullVerification : .none
                 )
+                
                 let sslContext = try SSLContext(configuration: sslConfiguration)
-                let sslHandler = try OpenSSLClientHandler(context: sslContext)
+                let sslHandler = try OpenSSLClientHandler(context: sslContext, serverHostname: hostname)
                 
                 handlers.insert(sslHandler, at: 0)
             } catch {
@@ -164,9 +166,16 @@ public final class Connection {
     }
     
     private func authenticate() -> EventLoopFuture<Void> {
+        let source = settings.authenticationSource ?? "admin"
+        let namespace = Namespace(to: "$cmd", inDatabase: source)
+        
         switch settings.authentication {
         case .unauthenticated:
             return eventLoop.newSucceededFuture(result: ())
+        case .scramSha1(let username, let password):
+            return self.authenticateSASL(hasher: SHA1(), namespace: namespace, username: username, password: password)
+        case .scramSha256(let username, let password):
+            return self.authenticateSASL(hasher: SHA256(), namespace: namespace, username: username, password: password)
         default:
             unimplemented()
         }
@@ -188,7 +197,7 @@ public final class Connection {
             
             self.clientConnectionSerializer.supportsOpMessage = reply.maxWireVersion >= 6
             
-            return ()
+            return
         }
     }
 }
@@ -231,10 +240,10 @@ final class ClientConnectionSerializer: MessageToByteEncoder {
         document["$db"] = data.command.namespace.databaseName
         
         let flags: OpMsgFlags = []
-        let docData = document.makeData()
+        var buffer = document.makeByteBuffer()
         
         let header = MessageHeader(
-            messageLength: MessageHeader.byteSize + 4 + 1 + Int32(docData.count),
+            messageLength: MessageHeader.byteSize + 4 + 1 + Int32(buffer.readableBytes),
             requestId: data.requestID,
             responseTo: 0,
             opCode: opCode
@@ -244,8 +253,7 @@ final class ClientConnectionSerializer: MessageToByteEncoder {
         out.write(integer: flags.rawValue, endianness: .little)
         out.write(integer: 0 as UInt8, endianness: .little) // section kind 0
         
-        // TODO: Use ByteBuffer in BSON
-        out.write(bytes: docData)
+        out.write(buffer: &buffer)
     }
     
     func encodeQueryCommand(ctx: ChannelHandlerContext, data: MongoDBCommandContext, out: inout ByteBuffer) throws {
@@ -256,12 +264,12 @@ final class ClientConnectionSerializer: MessageToByteEncoder {
         let document = try encoder.encode(data.command)
         
         let flags: UInt32 = 0
-        let docData = document.makeData()
+        var buffer = document.makeByteBuffer()
         let namespace = data.command.namespace.databaseName + ".$cmd"
         let namespaceSize = Int32(namespace.utf8.count) + 1
         
         let header = MessageHeader(
-            messageLength: MessageHeader.byteSize + namespaceSize + 12 + Int32(docData.count),
+            messageLength: MessageHeader.byteSize + namespaceSize + 12 + Int32(buffer.readableBytes),
             requestId: data.requestID,
             responseTo: 0,
             opCode: opCode
@@ -274,8 +282,7 @@ final class ClientConnectionSerializer: MessageToByteEncoder {
         out.write(integer: 0 as Int32, endianness: .little) // Skip handled by query
         out.write(integer: 1 as Int32, endianness: .little) // Number to return
         
-        // TODO: Use ByteBuffer in BSON
-        out.write(bytes: docData)
+        out.write(buffer: &buffer)
     }
     
     func encode(ctx: ChannelHandlerContext, data: MongoDBCommandContext, out: inout ByteBuffer) throws {

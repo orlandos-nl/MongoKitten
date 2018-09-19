@@ -43,19 +43,21 @@ public struct MD5 : Hash {
     var g: Int = 0
     var Mg: UInt32 = 0
     
-    public var totalLength: UInt64 = 0
+    public private(set) var processedBytes: UInt64 = 0
     
     public mutating func reset() {
         a0 = 0x67452301
         b0 = 0xefcdab89
         c0 = 0x98badcfe
         d0 = 0x10325476
-        totalLength = 0
+        processedBytes = 0
     }
     
-    public init() {}
+    public init() {
+        reset()
+    }
     
-    public var hash: [UInt8] {
+    public var hashValue: [UInt8] {
         var buffer = [UInt8]()
         buffer.reserveCapacity(16)
         
@@ -98,7 +100,7 @@ public struct MD5 : Hash {
                 g = (7 &* i) % 16
             }
             
-            Mg = pointer.advanced(by: g << 2).withMemoryRebound(to: UInt32.self, capacity: 1, { $0.pointee })
+            Mg = pointer.advanced(by: g << 2).withMemoryRebound(to: UInt32.self, capacity: 1) { $0.pointee }
             
             F = F &+ a1 &+ k[i] &+ Mg
             a1 = d1

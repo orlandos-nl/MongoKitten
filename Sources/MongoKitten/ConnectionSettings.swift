@@ -225,6 +225,8 @@ public struct ConnectionSettings: Equatable {
             self.useSSL = useSSL
         }
         
+        // TODO: Custom root cert for IBM bluemix
+        
         if let sslVerify = Bool(queryValue: queries["sslVerify"]) {
             self.verifySSLCertificates = sslVerify
         }

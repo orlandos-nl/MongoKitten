@@ -20,15 +20,32 @@ extension MongoDBCommand {
 extension EventLoopFuture where T: ServerReplyInitializable {
     internal func mapToResult(for collection: Collection) -> EventLoopFuture<T.Result> {
         return self.thenThrowing { reply in
+            guard reply.isSuccessful else {
+                throw reply
+            }
+            
             return try reply.makeResult(on: collection)
         }
     }
 }
 
-protocol ServerReplyInitializable {
+extension Document {
+    func makeError() -> Error {
+        do {
+            let errorReply = try BSONDecoder().decode(ErrorReply.self, from: self)
+            return MongoKittenError(errorReply)
+        } catch {
+            return error
+        }
+    }
+}
+
+protocol ServerReplyInitializable: Error {
     associatedtype Result
     
     init(reply: ServerReply) throws
+    
+    var isSuccessful: Bool { get }
     
     func makeResult(on collection: Collection) throws -> Result
 }
@@ -40,15 +57,23 @@ extension ServerReplyDecodable {
         let doc = try reply.documents.assertFirst()
         
         if let ok: Double = doc.ok, ok < 1 {
-            let errorReply = try BSONDecoder().decode(ErrorReply.self, from: doc)
-            throw MongoKittenError(errorReply)
+            throw doc.makeError()
+        } else if let ok: Int = doc.ok, ok < 1 {
+            throw doc.makeError()
+        } else if let ok: Int32 = doc.ok, ok < 1 {
+            throw doc.makeError()
         }
         
-        self = try BSONDecoder().decode(Self.self, from: doc)
+        do {
+            self = try BSONDecoder().decode(Self.self, from: doc)
+        } catch {
+            print(Self.self)
+            throw error
+        }
     }
 }
 
-fileprivate extension Array where Element == Document {
+extension Array where Element == Document {
     func assertFirst() throws -> Document {
         return self.first!
     }
@@ -62,6 +87,10 @@ public struct ErrorReply: ServerReplyDecodable, Equatable, Encodable {
     public let errorMessage: String?
     public let code: Int?
     public let codeName: String?
+    
+    var isSuccessful: Bool {
+        return ok == 1
+    }
     
     private enum CodingKeys: String, CodingKey {
         case ok, code, codeName

@@ -26,8 +26,12 @@ let package = Package(
     ],
     targets: [
         .target(
+            name: "_MongoKittenCrypto",
+            dependencies: []
+        ),
+        .target(
             name: "MongoKitten",
-            dependencies: ["BSON", "NIO", "NIOOpenSSL"]),
+            dependencies: ["BSON", "_MongoKittenCrypto", "NIO", "NIOOpenSSL"]),
         .target(
             name: "GridFS",
             dependencies: ["BSON", "MongoKitten", "NIO"]),

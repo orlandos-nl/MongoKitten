@@ -3,47 +3,68 @@ public protocol Hash {
     static var chunkSize: Int { get }
     static var digestSize: Int { get }
     
-    var hash: [UInt8] { get }
+    var processedBytes: UInt64 { get }
+    var hashValue: [UInt8] { get }
     
     mutating func reset()
     mutating func update(from pointer: UnsafePointer<UInt8>)
 }
 
 extension Hash {
-    public mutating func hash(_ data: UnsafeBufferPointer<UInt8>) -> [UInt8] {
-        var offset = 0
-        let limit = data.count
-        let chunkSize = Self.chunkSize
+    public mutating func finish(from pointer: UnsafeBufferPointer<UInt8>) -> [UInt8] {
+        // Hash size in _bits_
+        let hashSize = (UInt64(pointer.count) &+ processedBytes) &* 8
         
-        while offset < limit {
-            let diff = limit &- offset
-            
-            if diff < chunkSize {
-                let padding = [UInt8](repeating: 0, count: chunkSize &- diff)
-                let data = data + padding
-                
-                data.withUnsafeBufferPointer { buffer in
-                    self.update(from: buffer.baseAddress!.advanced(by: offset))
-                }
-            } else {
-                self.update(from: data.baseAddress!.advanced(by: offset))
-            }
-            
-            offset = offset &+ chunkSize
+        var needed = (pointer.count + 9)
+        let remainder = needed % Self.chunkSize
+        
+        if remainder != 0 {
+            needed = needed - remainder + Self.chunkSize
         }
         
-        let result = self.hash
-        self.reset()
-        return result
+        var data = [UInt8](repeating: 0, count: needed)
+        data.withUnsafeMutableBufferPointer { buffer in
+            buffer.baseAddress!.assign(from: pointer.baseAddress!, count: pointer.count)
+            
+            buffer[pointer.count] = 0x80
+            
+            buffer.baseAddress!.advanced(by: needed &- 8).withMemoryRebound(to: UInt64.self, capacity: 1) { pointer in
+                if Self.littleEndian {
+                    pointer.pointee = hashSize.littleEndian
+                } else {
+                    pointer.pointee = hashSize.bigEndian
+                }
+            }
+            
+            var offset = 0
+            
+            while offset < needed {
+                self.update(from: buffer.baseAddress!.advanced(by: offset))
+                
+                offset = offset &+ Self.chunkSize
+            }
+        }
+        
+        return self.hashValue
     }
     
     public mutating func hash(bytes data: [UInt8]) -> [UInt8] {
-        return self.hash(data, count: data.count)
+        defer {
+            self.reset()
+        }
+        
+        return data.withUnsafeBufferPointer { buffer in
+            self.finish(from: buffer)
+        }
     }
     
     public mutating func hash(_ data: UnsafePointer<UInt8>, count: Int) -> [UInt8] {
+        defer {
+            self.reset()
+        }
+        
         let buffer = UnsafeBufferPointer(start: data, count: count)
         
-        return hash(buffer)
+        return finish(from: buffer)
     }
 }
