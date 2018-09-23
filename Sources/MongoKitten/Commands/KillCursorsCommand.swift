@@ -1,6 +1,5 @@
-internal struct KillCursorsCommand: MongoDBCommand {
+internal struct KillCursorsCommand: AdministrativeMongoDBCommand {
     typealias Reply = KillCursorsReply
-    typealias ErrorReply = GenericErrorReply
     
     var namespace: Namespace {
         return killCursors

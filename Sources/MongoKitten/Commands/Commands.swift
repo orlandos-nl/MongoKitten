@@ -1,6 +1,5 @@
-struct AdministrativeCommand<Command: Encodable>: MongoDBCommand {
+struct AdministrativeCommand<Command: Encodable>: AdministrativeMongoDBCommand {
     typealias Reply = OK
-    typealias ErrorReply = OK
     
     var namespace: Namespace
     let command: Command

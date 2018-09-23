@@ -29,9 +29,8 @@ import NIO
 //    }
 //}
 
-struct EndSessionsCommand: MongoDBCommand {
+struct EndSessionsCommand: AdministrativeMongoDBCommand {
     typealias Reply = OK
-    typealias ErrorReply = GenericErrorReply
     
     private enum CodingKeys: String, CodingKey {
         case endSessions

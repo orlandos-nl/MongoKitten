@@ -2,9 +2,8 @@ import Foundation
 import BSON
 
 /// - see: https://github.com/mongodb/specifications/blob/master/source/mongodb-handshake/handshake.rst
-struct ConnectionHandshakeCommand: MongoDBCommand {
+struct ConnectionHandshakeCommand: AdministrativeMongoDBCommand {
     typealias Reply = ConnectionHandshakeReply
-    typealias ErrorReply = GenericErrorReply
     
     struct ClientDetails: Encodable {
         struct ApplicationDetails: Encodable {
@@ -116,7 +115,7 @@ public struct WireVersion: Codable, ExpressibleByIntegerLiteral {
     public var supportsShardedTransactions: Bool { return version >= 8 }
     
     public init(from decoder: Decoder) throws {
-        var container = try decoder.singleValueContainer()
+        let container = try decoder.singleValueContainer()
         
         self.version = try container.decode(Int.self)
     }

@@ -1,8 +1,7 @@
 import NIO
 
-internal struct GetMore: MongoDBCommand {
+internal struct GetMore: AdministrativeMongoDBCommand {
     typealias Reply = GetMoreReply
-    typealias ErrorReply = ReadErrorReply
     
     internal var namespace: Namespace {
         return collection

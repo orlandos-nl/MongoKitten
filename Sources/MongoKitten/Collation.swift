@@ -1,0 +1,5 @@
+
+
+public struct Collation: Codable {
+    
+}

@@ -2,6 +2,8 @@ import BSON
 import NIO
 
 protocol AnyMongoDBCommand: Encodable {
+    func checkValidity(for maxWireVersion: WireVersion) throws
+    
     var namespace: Namespace { get }
 }
 
@@ -12,14 +14,35 @@ protocol MongoDBCommand: AnyMongoDBCommand {
     func execute(on connection: Connection) -> EventLoopFuture<Reply.Result>
 }
 
+protocol AdministrativeMongoDBCommand: MongoDBCommand where ErrorReply == GenericErrorReply {}
+
+extension AdministrativeMongoDBCommand {
+    func checkValidity(for maxWireVersion: WireVersion) throws {}
+}
+
 protocol WriteCommand: MongoDBCommand where ErrorReply == WriteErrorReply {
     var writeConcern: WriteConcern? { get }
+}
+
+extension WriteCommand {
+    func checkValidity(for maxWireVersion: WireVersion) throws {
+        if !maxWireVersion.supportsWriteConcern, self.writeConcern != nil {
+            throw MongoKittenError(.unsupportedFeatureByServer, reason: .writeConcernUnsupported)
+        }
+    }
 }
 
 protocol ReadCommand: MongoDBCommand where ErrorReply == ReadErrorReply {
     var readConcern: ReadConcern? { get }
 }
 
+extension ReadCommand {
+    func checkValidity(for maxWireVersion: WireVersion) throws {
+        if !maxWireVersion.supportsWriteConcern, self.readConcern != nil {
+            throw MongoKittenError(.unsupportedFeatureByServer, reason: .readConcernUnsupported)
+        }
+    }
+}
 
 extension MongoDBCommand {
     func execute(on connection: Connection) -> EventLoopFuture<Reply.Result> {

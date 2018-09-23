@@ -38,6 +38,9 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         /// A command for the requested action could not be formed
         case cannotFormCommand
         
+        /// A feature you're trying to use is unsupported by your version of MongoDB
+        case unsupportedFeatureByServer
+        
         /// A value was unexpectedly nil
         case unexpectedNil
         
@@ -57,6 +60,7 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
             case .cannotGetMore: return "The cursor cannot get more elements"
             case .cannotFormCommand: return "A command for the requested action could not be formed"
             case .unexpectedNil: return "A value was unexpectedly nil"
+            case .unsupportedFeatureByServer: return "A feature you're trying to use is unsupported by your version of MongoDB"
             }
         }
     }
@@ -114,6 +118,12 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         /// Index creation failed
         case indexCreationFailed
         
+        /// The MongoDB server does not support read concerns
+        case readConcernUnsupported
+        
+        /// The MongoDB server does not support write concerns
+        case writeConcernUnsupported
+        
         public var description: String {
             switch self {
             case .missingMongoDBScheme: return "The connection URI does not start with the 'mongodb://' scheme"
@@ -133,6 +143,8 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
             case .nothingToDo: return "There is nothing to do with the given parameters"
             case .unsupportedOpCode: return "The server replied with an opcode that is not supported by MongoKitten"
             case .indexCreationFailed: return "There was a failure whilst creating the index."
+            case .readConcernUnsupported: return "The MongoDB server does not support read concerns"
+            case .writeConcernUnsupported: return "The MongoDB server does not support read concerns"
             }
         }
     }

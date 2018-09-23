@@ -149,6 +149,12 @@ public final class Connection {
     }
     
     func _execute<C: AnyMongoDBCommand>(command: C) -> EventLoopFuture<ServerReply> {
+        do {
+            try command.checkValidity(for: self.handshakeResult.maxWireVersion)
+        } catch {
+            return self.eventLoop.newFailedFuture(error: error)
+        }
+        
         let promise: EventLoopPromise<ServerReply> = self.channel.eventLoop.newPromise()
         let command = MongoDBCommandContext(
             command: command,

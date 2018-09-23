@@ -1,14 +1,12 @@
 import BSON
 
-public struct CreateIndexesCommand: MongoDBCommand {
+public struct CreateIndexesCommand: AdministrativeMongoDBCommand {
     typealias Reply = CreateIndexesReply
-    typealias ErrorReply = GenericErrorReply
     
     internal var namespace: Namespace { return createIndexes }
     
     internal let createIndexes: Namespace
     public var indexes: [Index]
-    public var readConcern: ReadConcern?
     
     public init(_ indexes: [Index], for collection: Collection) {
         self.indexes = indexes

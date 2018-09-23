@@ -4,7 +4,7 @@ import NIO
 import _MongoKittenCrypto
 
 /// A SASLStart message initiates a SASL conversation, in our case, used for SCRAM-SHA-xxx authentication.
-struct SASLStart: MongoDBCommand {
+struct SASLStart: AdministrativeMongoDBCommand {
     private enum CodingKeys: String, CodingKey {
         case saslStart, mechanism, payload
     }
@@ -19,7 +19,6 @@ struct SASLStart: MongoDBCommand {
     }
     
     typealias Reply = SASLReply
-    typealias ErrorReply = SASLReply
     
     let namespace: Namespace
     
@@ -103,13 +102,12 @@ struct SASLReply: ServerReplyDecodableResult {
 
 /// A SASLContinue message contains the previous conversationId (from the SASLReply to SASLStart).
 /// The payload must contian an answer to the SASLReply's challenge
-struct SASLContinue: MongoDBCommand {
+struct SASLContinue: AdministrativeMongoDBCommand {
     private enum CodingKeys: String, CodingKey {
         case saslContinue, conversationId, payload
     }
 
     typealias Reply = SASLReply
-    typealias ErrorReply = SASLReply
     
     let namespace: Namespace
     
