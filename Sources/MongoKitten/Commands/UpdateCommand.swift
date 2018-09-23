@@ -2,7 +2,7 @@ import BSON
 import NIO
 
 /// The update command modifies documents in a collection. A single update command can contain multiple update statements. The update methods provided by the MongoDB drivers use this command internally.
-public struct UpdateCommand: MongoDBCommand {
+public struct UpdateCommand: WriteCommand {
     typealias Reply = UpdateReply
     
     /// A single update statement
@@ -49,7 +49,7 @@ public struct UpdateCommand: MongoDBCommand {
     /// Optional. If true, then when an update statement fails, return without performing the remaining update statements. If false, then when an update fails, continue with the remaining update statements, if any. Defaults to true.
     public var ordered: Bool?
     
-//    public var writeConcern: WriteConcern?
+    public var writeConcern: WriteConcern?
     
     /// Optional. Enables update to bypass document validation during the operation. This lets you update documents that do not meet the validation requirements.
     public var bypassDocumentValidation: Bool?
@@ -85,7 +85,7 @@ public struct UpdateCommand: MongoDBCommand {
     }
 }
 
-public struct UpdateReply: ServerReplyDecodable {
+public struct UpdateReply: ServerReplyDecodableResult {
     typealias Result = UpdateReply
     
     public enum CodingKeys: String, CodingKey {
@@ -103,10 +103,6 @@ public struct UpdateReply: ServerReplyDecodable {
     
     public var isSuccessful: Bool {
         return ok == 1
-    }
-    
-    var mongoKittenError: MongoKittenError {
-        return MongoKittenError(.commandFailure, reason: nil)
     }
     
     func makeResult(on collection: Collection) throws -> UpdateReply {

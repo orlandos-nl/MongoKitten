@@ -43,6 +43,17 @@ public final class Connection {
     
     private let clientConnectionSerializer: ClientConnectionSerializer
     
+    public var retryWrites = false
+    
+    public var slaveOk: Bool {
+        get {
+            return clientConnectionSerializer.slaveOk
+        }
+        set {
+            clientConnectionSerializer.slaveOk = newValue
+        }
+    }
+    
     /// The eventLoop this connection lives on
     public var eventLoop: EventLoop {
         return channel.eventLoop
@@ -155,7 +166,13 @@ public final class Connection {
     /// - parameter command: The `MongoDBCommand` to execute
     /// - returns: The reply to the command
     func execute<C: MongoDBCommand>(command: C) -> EventLoopFuture<C.Reply> {
-        return _execute(command: command).thenThrowing(C.Reply.init)
+        return _execute(command: command).thenThrowing { reply in
+            do {
+                return try C.Reply(reply: reply)
+            } catch {
+                throw try C.ErrorReply(reply: reply)
+            }
+        }
     }
     
     private func nextRequestId() -> Int32 {
@@ -195,7 +212,7 @@ public final class Connection {
         return self.execute(command: ConnectionHandshakeCommand(application: app, collection: commandCollection)).map { reply in
             self.handshakeResult = reply
             
-            self.clientConnectionSerializer.supportsOpMessage = reply.maxWireVersion >= 6
+            self.clientConnectionSerializer.supportsOpMessage = reply.maxWireVersion.supportsOpMessage
             
             return
         }
@@ -225,6 +242,7 @@ final class ClientConnectionSerializer: MessageToByteEncoder {
     
     let context: ClientConnectionContext
     var supportsOpMessage = false
+    var slaveOk = false
     let supportsQueryCommand = true
     
     init(context: ClientConnectionContext) {
@@ -240,6 +258,8 @@ final class ClientConnectionSerializer: MessageToByteEncoder {
         document["$db"] = data.command.namespace.databaseName
         
         let flags: OpMsgFlags = []
+        
+        // TODO: Error when this buffer <= 16MB
         var buffer = document.makeByteBuffer()
         
         let header = MessageHeader(
@@ -263,7 +283,13 @@ final class ClientConnectionSerializer: MessageToByteEncoder {
         
         let document = try encoder.encode(data.command)
         
-        let flags: UInt32 = 0
+        var flags: OpQueryFlags = []
+        
+        if slaveOk {
+            flags.insert(.slaveOk)
+        }
+        
+        // TODO: Error when this buffer <= 16MB
         var buffer = document.makeByteBuffer()
         let namespace = data.command.namespace.databaseName + ".$cmd"
         let namespaceSize = Int32(namespace.utf8.count) + 1
@@ -276,7 +302,7 @@ final class ClientConnectionSerializer: MessageToByteEncoder {
         )
         
         out.write(header)
-        out.write(integer: flags, endianness: .little)
+        out.write(integer: flags.rawValue, endianness: .little)
         out.write(string: namespace)
         out.write(integer: 0 as UInt8) // null terminator for String
         out.write(integer: 0 as Int32, endianness: .little) // Skip handled by query
@@ -360,6 +386,30 @@ final class ClientConnectionParser: ByteToMessageDecoder {
     }
 }
 
+struct OpQueryFlags: OptionSet {
+    let rawValue: UInt32
+    
+    /// Tailable cursors are not closed when the last data is received.
+    static let tailableCursor = OpQueryFlags(rawValue: 1 << 1)
+    
+    /// This option allows querying a replica slave.
+    static let slaveOk = OpQueryFlags(rawValue: 1 << 2)
+    
+    /// Only for internal replication use
+    // static let oplogReplay = OpQueryFlags(rawValue: 1 << 3)
+    
+    /// Normally cursors get closed after 10 minutes of inactivity. This option prevents that
+    static let noCursorTimeout = OpQueryFlags(rawValue: 1 << 4)
+    
+    /// To be used with TailableCursor. When at the end of the data, block for a while rather than returning no data.
+    static let awaitData = OpQueryFlags(rawValue: 1 << 5)
+    
+    /// Stream the data down into a full blast of 'more' packages, MongoKitten will need to handle all data in one go.
+//    static let exhaust = OpQueryFlags(rawValue: 1 << 6)
+    
+//    static let partial = OpQueryFlags(rawValue: 1 << 7)
+}
+
 struct OpMsgFlags: OptionSet {
     let rawValue: UInt32
     
@@ -371,8 +421,8 @@ struct OpMsgFlags: OptionSet {
     
     /// The client is prepared for multiple replies to this request using the moreToCome bit. The server will never produce replies with the moreToCome bit set unless the request has this bit set.
     ///
-    /// This ensures that multiple replies are only sent when the network layer of the requester is prepared for them.
-    static let exhaustAllowed = OpMsgFlags(rawValue: 16 << 0)
+    /// This ensures that multiple replies are only sent when the network layer of the requester is prepared for them. MongoDB 3.6 ignores this flag.
+    static let exhaustAllowed = OpMsgFlags(rawValue: 1 << 16)
 }
 
 struct ServerReply {

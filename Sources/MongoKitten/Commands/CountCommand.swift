@@ -4,7 +4,7 @@ import NIO
 /// Counts the number of documents in a collection or a view. Returns a document that contains this count and as well as the command status.
 ///
 /// - see: https://docs.mongodb.com/manual/reference/command/count/index.html
-public struct CountCommand: MongoDBCommand {
+public struct CountCommand: ReadCommand {
     typealias Reply = CountReply
     
     internal var namespace: Namespace {
@@ -21,8 +21,8 @@ public struct CountCommand: MongoDBCommand {
     
     /// Optional. The number of matching documents to skip before returning results.
     public var skip: Int?
-//    public var readConcern: ReadConcern?
-//    public var collation: Collation?
+    public var readConcern: ReadConcern?
+    public var collation: Collation?
     
     static let writing = false
     static let emitsCursor = false
@@ -33,25 +33,14 @@ public struct CountCommand: MongoDBCommand {
         self.count = collection.namespace
         self.query = query
     }
-    
-    /// Executes the count command on the given connection
-    public func execute(on connection: Connection) -> EventLoopFuture<Int> {
-        let collection = connection[self.namespace]
-        
-        return connection.execute(command: self).mapToResult(for: collection)
-    }
 }
 
-struct CountReply: ServerReplyDecodable {
+struct CountReply: ServerReplyDecodableResult {
     let n: Int
     let ok: Int
     
     var isSuccessful: Bool {
         return ok == 1
-    }
-    
-    var mongoKittenError: MongoKittenError {
-        return MongoKittenError(.commandFailure, reason: nil)
     }
     
     func makeResult(on collection: Collection) -> Int {

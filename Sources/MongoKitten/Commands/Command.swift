@@ -6,10 +6,20 @@ protocol AnyMongoDBCommand: Encodable {
 }
 
 protocol MongoDBCommand: AnyMongoDBCommand {
-    associatedtype Reply: ServerReplyInitializable
+    associatedtype Reply: ServerReplyInitializableResult
+    associatedtype ErrorReply: ServerReplyInitializable
     
     func execute(on connection: Connection) -> EventLoopFuture<Reply.Result>
 }
+
+protocol WriteCommand: MongoDBCommand where ErrorReply == WriteErrorReply {
+    var writeConcern: WriteConcern? { get }
+}
+
+protocol ReadCommand: MongoDBCommand where ErrorReply == ReadErrorReply {
+    var readConcern: ReadConcern? { get }
+}
+
 
 extension MongoDBCommand {
     func execute(on connection: Connection) -> EventLoopFuture<Reply.Result> {
@@ -17,7 +27,7 @@ extension MongoDBCommand {
     }
 }
 
-extension EventLoopFuture where T: ServerReplyInitializable {
+extension EventLoopFuture where T: ServerReplyInitializableResult {
     internal func mapToResult(for collection: Collection) -> EventLoopFuture<T.Result> {
         return self.thenThrowing { reply in
             guard reply.isSuccessful else {
@@ -32,7 +42,7 @@ extension EventLoopFuture where T: ServerReplyInitializable {
 extension Document {
     func makeError() -> Error {
         do {
-            let errorReply = try BSONDecoder().decode(ErrorReply.self, from: self)
+            let errorReply = try BSONDecoder().decode(GenericErrorReply.self, from: self)
             return MongoKittenError(errorReply)
         } catch {
             return error
@@ -41,9 +51,11 @@ extension Document {
 }
 
 protocol ServerReplyInitializable: Error {
-    associatedtype Result
-    
     init(reply: ServerReply) throws
+}
+
+protocol ServerReplyInitializableResult: ServerReplyInitializable {
+    associatedtype Result
     
     var isSuccessful: Bool { get }
     
@@ -51,6 +63,8 @@ protocol ServerReplyInitializable: Error {
 }
 
 protocol ServerReplyDecodable: Decodable, ServerReplyInitializable {}
+
+typealias ServerReplyDecodableResult = ServerReplyDecodable & ServerReplyInitializableResult
 
 extension ServerReplyDecodable {
     init(reply: ServerReply) throws {
@@ -80,24 +94,55 @@ extension Array where Element == Document {
 }
 
 /// A reply from the server, indicating an error
-public struct ErrorReply: ServerReplyDecodable, Equatable, Encodable {
-    typealias Result = ErrorReply
-    
+public struct GenericErrorReply: ServerReplyDecodable, Encodable, Equatable {
     public let ok: Int
     public let errorMessage: String?
     public let code: Int?
     public let codeName: String?
     
-    var isSuccessful: Bool {
-        return ok == 1
-    }
-    
     private enum CodingKeys: String, CodingKey {
         case ok, code, codeName
         case errorMessage = "errmsg"
     }
+}
+
+public protocol ErrorDocument: Codable {
+    var code: Int { get }
+    var errInfo: Document { get }
+    var errmsg: String { get }
+}
+
+public struct WriteErrorDocument: ErrorDocument {
+    public let code: Int
+    public let errInfo: Document
+    public let errmsg: String
+    public let index: Int
+}
+
+public struct WriteErrorReply: ServerReplyDecodable, Encodable {
+    typealias Result = WriteErrorReply
     
-    func makeResult(on collection: Collection) throws -> ErrorReply {
+    public let ok: Int
+    public let writeErrors: [WriteErrorDocument]?
+    public let writeConcernError: WriteErrorDocument?
+    public let errmsg: String
+    
+    internal let isSuccessful = false
+    
+    func makeResult(on collection: Collection) -> WriteErrorReply {
+        return self
+    }
+}
+
+public struct ReadErrorReply: ServerReplyDecodable {
+    typealias Result = ReadErrorReply
+    
+    public let ok: Int
+    public let errmsg: String
+    public let code: Int
+    let isSuccessful = false
+    
+    func makeResult(on collection: Collection) throws -> ReadErrorReply {
         return self
     }
 }

@@ -1,7 +1,7 @@
 import BSON
 import NIO
 
-public struct DistinctCommand: MongoDBCommand {
+public struct DistinctCommand: ReadCommand {
     typealias Reply = DistinctReply
     
     internal var namespace: Namespace {
@@ -11,6 +11,7 @@ public struct DistinctCommand: MongoDBCommand {
     internal let distinct: Namespace
     public var key: String
     public var query: Query?
+    public var readConcern: ReadConcern?
     
     static var writing: Bool {
         return true
@@ -26,15 +27,11 @@ public struct DistinctCommand: MongoDBCommand {
     }
 }
 
-struct DistinctReply: ServerReplyDecodable {
+struct DistinctReply: ServerReplyDecodableResult {
     typealias Result = [Primitive]
     
     let ok: Int
     let values: Document
-    
-    var mongoKittenError: MongoKittenError {
-        return MongoKittenError(.commandFailure, reason: nil)
-    }
     
     var isSuccessful: Bool {
         return ok == 1

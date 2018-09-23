@@ -19,6 +19,7 @@ struct SASLStart: MongoDBCommand {
     }
     
     typealias Reply = SASLReply
+    typealias ErrorReply = SASLReply
     
     let namespace: Namespace
     
@@ -40,7 +41,7 @@ struct SASLStart: MongoDBCommand {
 /// For SASLContinue it contains a success or failure state
 ///
 /// If no authentication is needed, SASLStart's reply may contain `done: true` meaning the SASL proceedure has ended
-struct SASLReply: ServerReplyInitializable {
+struct SASLReply: ServerReplyDecodableResult {
     var isSuccessful: Bool {
         return ok == 1
     }
@@ -108,6 +109,7 @@ struct SASLContinue: MongoDBCommand {
     }
 
     typealias Reply = SASLReply
+    typealias ErrorReply = SASLReply
     
     let namespace: Namespace
     

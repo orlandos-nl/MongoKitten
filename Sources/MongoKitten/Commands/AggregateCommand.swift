@@ -2,7 +2,7 @@ import BSON
 import NIO
 
 /// Performs aggregation operation using the aggregation pipeline. The pipeline allows users to process data from a collection or other source with a sequence of stage-based manipulations.
-public struct AggregateCommand: MongoDBCommand {
+public struct AggregateCommand: ReadCommand {
     typealias Reply = CursorReply
     
     internal var namespace: Namespace {
@@ -36,6 +36,8 @@ public struct AggregateCommand: MongoDBCommand {
     ///
     /// New in version 3.2.
     public var bypassDocumentValidation: Bool?
+    
+    public var readConcern: ReadConcern?
     
     // readConcern
     // collation

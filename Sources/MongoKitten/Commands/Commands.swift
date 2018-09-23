@@ -1,5 +1,6 @@
 struct AdministrativeCommand<Command: Encodable>: MongoDBCommand {
     typealias Reply = OK
+    typealias ErrorReply = OK
     
     var namespace: Namespace
     let command: Command
@@ -20,12 +21,8 @@ struct DropDatabase: Encodable {
     init() {}
 }
 
-struct OK: ServerReplyDecodable {
-    typealias Result = Bool
-    
-    var mongoKittenError: MongoKittenError {
-        return MongoKittenError(.commandFailure, reason: nil)
-    }
+struct OK: ServerReplyDecodableResult {
+    typealias Result = Void
     
     let ok: Int
     
@@ -33,7 +30,7 @@ struct OK: ServerReplyDecodable {
         return ok == 1
     }
     
-    func makeResult(on collection: Collection) throws -> Bool {
-        return isSuccessful
+    func makeResult(on collection: Collection) throws -> Void {
+        return
     }
 }

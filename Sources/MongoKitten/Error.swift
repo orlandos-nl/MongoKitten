@@ -144,7 +144,7 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         self.reason = reason
     }
     
-    internal init(_ reply: ErrorReply) {
+    internal init(_ reply: GenericErrorReply) {
         self.kind = .commandFailure
         self.errorReply = reply
     }
@@ -156,7 +156,7 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
     public private(set) var reason: Reason?
     
     /// The MongoDB error reply that caused the error
-    public private(set) var errorReply: ErrorReply?
+    public private(set) var errorReply: GenericErrorReply?
     
     public var description: String {
         if let errorReply = errorReply {

@@ -2,6 +2,7 @@ import NIO
 
 internal struct GetMore: MongoDBCommand {
     typealias Reply = GetMoreReply
+    typealias ErrorReply = ReadErrorReply
     
     internal var namespace: Namespace {
         return collection
@@ -12,6 +13,7 @@ internal struct GetMore: MongoDBCommand {
     internal let getMore: Int64
     let collection: Namespace
     var batchSize: Int?
+    var readConcern: ReadConcern?
     
     init(cursorId: Int64, batchSize: Int?, on collection: Collection) {
         self.getMore = cursorId
@@ -24,15 +26,11 @@ internal struct GetMore: MongoDBCommand {
     }
 }
 
-struct GetMoreReply: ServerReplyDecodable {
+struct GetMoreReply: ServerReplyDecodable, ServerReplyInitializableResult {
     struct CursorDetails: Codable {
         var id: Int64
         var ns: String
         var nextBatch: [Document]
-    }
-    
-    var mongoKittenError: MongoKittenError {
-        return MongoKittenError(.commandFailure, reason: nil)
     }
     
     internal let cursor: CursorDetails

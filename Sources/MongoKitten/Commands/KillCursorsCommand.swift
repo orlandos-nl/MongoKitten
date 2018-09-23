@@ -1,5 +1,6 @@
 internal struct KillCursorsCommand: MongoDBCommand {
     typealias Reply = KillCursorsReply
+    typealias ErrorReply = GenericErrorReply
     
     var namespace: Namespace {
         return killCursors
@@ -14,7 +15,7 @@ internal struct KillCursorsCommand: MongoDBCommand {
     }
 }
 
-struct KillCursorsReply: ServerReplyDecodable {
+struct KillCursorsReply: ServerReplyDecodableResult {
     typealias Result = KillCursorsReply
     
     let cursorsKilled: [Int64]
