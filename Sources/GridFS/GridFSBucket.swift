@@ -18,7 +18,7 @@ public class GridFSBucket {
     private var didEnsureIndexes = false
     
     var eventLoop: EventLoop {
-        return filesCollection.database.connection.eventLoop
+        return filesCollection.database.eventLoop
     }
     
     public init(named name: String = "fs", in database: Database) {

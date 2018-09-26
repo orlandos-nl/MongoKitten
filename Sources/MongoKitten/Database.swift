@@ -17,7 +17,7 @@ public final class Database: FutureConvenienceCallable {
     public let name: String
     
     /// The connection the database instance uses
-    public let connection: Connection
+    public let session: ClientSession
     
     /// The collection to execute commands on
     internal var cmd: Collection {
@@ -26,12 +26,12 @@ public final class Database: FutureConvenienceCallable {
     
     /// The ObjectId generator tied to this datatabase
     public var objectIdGenerator: ObjectIdGenerator {
-        return connection.sharedGenerator
+        return session.connection.sharedGenerator
     }
     
-    /// The NIO event loop. Returns the `connection` event loop.
-    var eventLoop: EventLoop {
-        return connection.eventLoop
+    /// The NIO event loop.
+    public var eventLoop: EventLoop {
+        return session.connection.eventLoop
     }
     
     /// A helper method that uses the normal `connect` method and awaits it. It creates an event loop group for you.
@@ -79,9 +79,9 @@ public final class Database: FutureConvenienceCallable {
         }
     }
     
-    internal init(named name: String, connection: Connection) {
+    internal init(named name: String, session: ClientSession) {
         self.name = name
-        self.connection = connection
+        self.session = session
     }
     
     /// Get a `Collection` by providing a collection name as a `String`
@@ -99,6 +99,6 @@ public final class Database: FutureConvenienceCallable {
     public func drop() -> EventLoopFuture<Void> {
         let command = AdministrativeCommand(command: DropDatabase(), on: cmd)
         
-        return command.execute(on: connection).map { _ in }
+        return command.execute(on: session.connection).map { _ in }
     }
 }

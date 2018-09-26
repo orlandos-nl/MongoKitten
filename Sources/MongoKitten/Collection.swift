@@ -19,7 +19,7 @@ public final class Collection: FutureConvenienceCallable {
     }
     
     internal var connection: Connection {
-        return self.database.connection
+        return self.database.session.connection
     }
     
     /// The connection's ObjectId generator
