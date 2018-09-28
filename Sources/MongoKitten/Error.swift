@@ -82,6 +82,9 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         /// The reason for the error was internal
         case internalError
         
+        /// The operation exceeded the 16MB command limit
+        case commandSizeTooLarge
+        
         /// SCRAM protocol failure
         case scramFailure
         
@@ -137,6 +140,7 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
             case .internalError: return "The reason for the error was internal"
             case .invalidPort: return "The given port number is invalid"
             case .noHostSpecified: return "No host was specified"
+            case .commandSizeTooLarge: return "The operation exceeded the 16MB command limit"
             case .noTargetDatabaseSpecified: return "A target database was not specified"
             case .connectionClosed: return "The connection to MongoDB was closed"
             case .noResultDocument: return "One Document was expected but none were returned"

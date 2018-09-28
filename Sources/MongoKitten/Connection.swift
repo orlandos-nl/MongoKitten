@@ -276,8 +276,13 @@ final class ClientConnectionSerializer: MessageToByteEncoder {
         
         let flags: OpMsgFlags = []
         
-        // TODO: Error when this buffer <= 16MB
         var buffer = document.makeByteBuffer()
+        
+        // MongoDB supports messages up to 16MB
+        if buffer.writerIndex > 16_000_000 {
+            data.promise.fail(error: MongoKittenError(.commandFailure, reason: MongoKittenError.Reason.commandSizeTooLarge))
+            return
+        }
         
         let header = MessageHeader(
             messageLength: MessageHeader.byteSize + 4 + 1 + Int32(buffer.readableBytes),
@@ -312,6 +317,13 @@ final class ClientConnectionSerializer: MessageToByteEncoder {
         
         // TODO: Error when this buffer <= 16MB
         var buffer = document.makeByteBuffer()
+        
+        // MongoDB supports messages up to 16MB
+        if buffer.writerIndex > 16_000_000 {
+            data.promise.fail(error: MongoKittenError(.commandFailure, reason: MongoKittenError.Reason.commandSizeTooLarge))
+            return
+        }
+        
         let namespace = data.command.namespace.databaseName + ".$cmd"
         let namespaceSize = Int32(namespace.utf8.count) + 1
         
