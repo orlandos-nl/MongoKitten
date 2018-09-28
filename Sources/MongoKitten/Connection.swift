@@ -25,7 +25,7 @@ public final class Connection {
     var implicitSession: ClientSession!
     
     /// The connection settings for this connection
-    let settings: ConnectionSettings
+    private(set) var settings: ConnectionSettings
     
     /// The result of the `isMaster` handshake with the server
     public private(set) var handshakeResult: ConnectionHandshakeReply! = nil {
@@ -199,6 +199,16 @@ public final class Connection {
         switch settings.authentication {
         case .unauthenticated:
             return eventLoop.newSucceededFuture(result: ())
+        case .auto(let username, let password):
+            switch handshakeResult.maxWireVersion.version {
+            case 0..<3:
+                // MongoDB-CR
+                unimplemented()
+            case 3..<7:
+                return self.authenticateSASL(hasher: SHA1(), namespace: namespace, username: username, password: password)
+            default:
+                return self.authenticateSASL(hasher: SHA256(), namespace: namespace, username: username, password: password)
+            }
         case .scramSha1(let username, let password):
             return self.authenticateSASL(hasher: SHA1(), namespace: namespace, username: username, password: password)
         case .scramSha256(let username, let password):
@@ -219,8 +229,45 @@ public final class Connection {
         
         let commandCollection = self["admin"]["$cmd"]
         
-        return implicitSession.execute(command: ConnectionHandshakeCommand(application: app, collection: commandCollection)).map { reply in
+        let userNamespace: String?
+        
+        if case .auto(let user, _) = settings.authentication {
+            let authDB = settings.targetDatabase ?? "admin"
+            userNamespace = "\(authDB).\(user)"
+        } else {
+            userNamespace = nil
+        }
+        
+        return implicitSession.execute(command: ConnectionHandshakeCommand(
+            application: app,
+            userNamespace: userNamespace,
+            collection: commandCollection
+        )).map { reply in
             self.handshakeResult = reply
+            
+            algorithmSelection: if
+                case .auto(let user, let pass) = self.settings.authentication,
+                let saslSupportedMechs = reply.saslSupportedMechs
+            {
+                var selectedAlgorithm: ConnectionSettings.Authentication?
+                
+                nextMechanism: for mech in saslSupportedMechs {
+                    switch mech {
+                    case "SCRAM-SHA-256":
+                        selectedAlgorithm = .scramSha256(username: user, password: pass)
+                        break algorithmSelection
+                    case "SCRAM-SHA-1":
+                        selectedAlgorithm = .scramSha1(username: user, password: pass)
+                    default:
+                        // Unknown algorithm
+                        continue nextMechanism
+                    }
+                }
+                
+                if let selectedAlgorithm = selectedAlgorithm {
+                    self.settings.authentication = selectedAlgorithm
+                }
+            }
             
             self.clientConnectionSerializer.supportsOpMessage = reply.maxWireVersion.supportsOpMessage
             

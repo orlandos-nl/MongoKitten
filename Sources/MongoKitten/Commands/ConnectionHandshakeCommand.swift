@@ -66,12 +66,14 @@ struct ConnectionHandshakeCommand: AdministrativeMongoDBCommand {
     }
     
     var isMaster: Int32 = 1
+    var saslSupportedMechs: String?
     var client: ClientDetails
     
     var namespace: Namespace
     
-    init(application: ClientDetails.ApplicationDetails?, collection: Collection) {
+    init(application: ClientDetails.ApplicationDetails?, userNamespace: String?, collection: Collection) {
         self.client = ClientDetails(application: application)
+        self.saslSupportedMechs = userNamespace
         self.namespace = collection.namespace
     }
 }
@@ -141,6 +143,9 @@ public struct ConnectionHandshakeReply: ServerReplyDecodableResult {
     
     /// The maximum permitted size of a BSON wire protocol message. The default value is 48000000 bytes.
     public let maxMessageSizeBytes: Int?
+    
+    /// A list of all supported mechanisms
+    public let saslSupportedMechs: [String]?
     
     /// The maximum number of write operations permitted in a write batch. If a batch exceeds this limit, the client driver divides the batch into smaller groups each with counts less than or equal to the value of this field.
     public let maxWriteBatchSize: Int? // TODO: Handle according to this value
