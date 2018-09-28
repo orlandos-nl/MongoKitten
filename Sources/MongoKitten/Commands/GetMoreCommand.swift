@@ -20,8 +20,8 @@ internal struct GetMore: AdministrativeMongoDBCommand {
         self.batchSize = batchSize
     }
     
-    func execute(on connection: Connection) -> EventLoopFuture<GetMoreReply> {
-        return connection.execute(command: self)
+    func execute(on session: ClientSession) -> EventLoopFuture<GetMoreReply> {
+        return session.execute(command: self)
     }
 }
 

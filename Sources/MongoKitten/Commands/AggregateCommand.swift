@@ -199,7 +199,7 @@ public final class AggregateCursor<Element>: QueryCursor {
     }
     
     public func execute() -> EventLoopFuture<FinalizedCursor<AggregateCursor<Element>>> {
-        return self.collection.connection.execute(command: self.operation).mapToResult(for: collection).map { cursor in
+        return self.collection.session.execute(command: self.operation).mapToResult(for: collection).map { cursor in
             return FinalizedCursor(basedOn: self, cursor: cursor)
         }
     }

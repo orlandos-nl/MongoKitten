@@ -154,7 +154,7 @@ public final class Connection {
         return promise.futureResult
     }
     
-    func _execute<C: AnyMongoDBCommand>(command: C) -> EventLoopFuture<ServerReply> {
+    func _execute<C: AnyMongoDBCommand>(command: C, session: ClientSession) -> EventLoopFuture<ServerReply> {
         do {
             try command.checkValidity(for: self.handshakeResult.maxWireVersion)
         } catch {
@@ -165,27 +165,13 @@ public final class Connection {
         let command = MongoDBCommandContext(
             command: command,
             requestID: nextRequestId(),
-            session: nil,
+            session: session,
             promise: promise
         )
         
         self.context.queries[command.requestID] = command.promise
         
         return self.channel.writeAndFlush(command).then { promise.futureResult }
-    }
-    
-    /// Executes the given MongoDB command, returning the result
-    ///
-    /// - parameter command: The `MongoDBCommand` to execute
-    /// - returns: The reply to the command
-    func execute<C: MongoDBCommand>(command: C) -> EventLoopFuture<C.Reply> {
-        return _execute(command: command).thenThrowing { reply in
-            do {
-                return try C.Reply(reply: reply)
-            } catch {
-                throw try C.ErrorReply(reply: reply)
-            }
-        }
     }
     
     private func nextRequestId() -> Int32 {
@@ -222,7 +208,7 @@ public final class Connection {
         
         let commandCollection = self["admin"]["$cmd"]
         
-        return self.execute(command: ConnectionHandshakeCommand(application: app, collection: commandCollection)).map { reply in
+        return implicitSession.execute(command: ConnectionHandshakeCommand(application: app, collection: commandCollection)).map { reply in
             self.handshakeResult = reply
             
             self.clientConnectionSerializer.supportsOpMessage = reply.maxWireVersion.supportsOpMessage

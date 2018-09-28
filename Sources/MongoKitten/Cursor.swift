@@ -26,7 +26,7 @@ internal final class Cursor {
         }
         
         let command = GetMore(cursorId: self.id, batchSize: batchSize, on: collection)
-        return collection.connection.execute(command: command).map { newCursor in
+        return collection.database.session.execute(command: command).map { newCursor in
             self.id = newCursor.cursor.id
             
             return CursorBatch(batch: newCursor.cursor.nextBatch, isLast: self.drained)
@@ -385,7 +385,7 @@ public final class FinalizedCursor<Base: QueryCursor> {
         closed = true
         
         let command = KillCursorsCommand([self.cursor.id], in: base.collection.namespace)
-        return command.execute(on: self.cursor.collection.connection).map { _ in }
+        return command.execute(on: self.cursor.collection.session).map { _ in }
     }
 }
 

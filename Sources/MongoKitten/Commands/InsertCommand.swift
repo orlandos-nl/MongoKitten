@@ -28,8 +28,8 @@ public struct InsertCommand: WriteCommand {
     }
     
     @discardableResult
-    public func execute(on connection: Connection) -> EventLoopFuture<InsertReply> {
-        return connection.execute(command: self)
+    public func execute(on session: ClientSession) -> EventLoopFuture<InsertReply> {
+        return session.execute(command: self)
     }
 }
 

@@ -54,6 +54,24 @@ public final class ClientSession {
         // Ignore if the new time <= the current time
     }
     
+    /// Executes the given MongoDB command, returning the result
+    ///
+    /// - parameter command: The `MongoDBCommand` to execute
+    /// - returns: The reply to the command
+    func execute<C: MongoDBCommand>(command: C) -> EventLoopFuture<C.Reply> {
+        return connection._execute(command: command, session: self).thenThrowing { reply in
+            do {
+                return try C.Reply(reply: reply)
+            } catch {
+                throw try C.ErrorReply(reply: reply)
+            }
+        }
+    }
+    
+    subscript(namespace: Namespace) -> Collection {
+        return Database(named: namespace.databaseName, session: self)[namespace.collectionName]
+    }
+    
 //    public func end() -> EventLoopFuture<Void> {
 //        let command = EndSessionsCommand(
 //            [sessionId],

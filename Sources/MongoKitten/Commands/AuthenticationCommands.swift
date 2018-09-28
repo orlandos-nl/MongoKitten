@@ -146,7 +146,7 @@ extension Connection {
             let request = Data(rawRequest.utf8).base64EncodedString()
             let command = SASLStart(namespace: namespace, mechanism: H.algorithm, payload: request)
             
-            return self.execute(command: command).then { reply in
+            return implicitSession.execute(command: command).then { reply in
                 if reply.done {
                     return self.eventLoop.newSucceededFuture(result: ())
                 }
@@ -172,7 +172,7 @@ extension Connection {
                         payload: response
                     )
                     
-                    return self.execute(command: next).then { reply in
+                    return self.implicitSession.execute(command: next).then { reply in
                         do {
                             let successReply = try reply.payload.base64Decoded()
                             try context.completeAuthentication(withResponse: successReply)
@@ -186,7 +186,7 @@ extension Connection {
                                     payload: ""
                                 )
                                 
-                                return self.execute(command: final).thenThrowing { reply in
+                                return self.implicitSession.execute(command: final).thenThrowing { reply in
                                     guard reply.done else {
                                         throw MongoKittenError(.authenticationFailure, reason: .malformedAuthenticationDetails)
                                     }

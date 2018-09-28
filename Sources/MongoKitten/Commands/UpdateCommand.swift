@@ -79,9 +79,9 @@ public struct UpdateCommand: WriteCommand {
     }
     
     @discardableResult
-    public func execute(on connection: Connection) -> EventLoopFuture<UpdateReply> {
+    public func execute(on session: ClientSession) -> EventLoopFuture<UpdateReply> {
         // TODO: Discuss: Why do we need to pass the connection here, while it is already stored as variable?
-        return connection.execute(command: self)
+        return session.execute(command: self)
     }
 }
 

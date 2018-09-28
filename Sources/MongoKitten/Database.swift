@@ -99,6 +99,6 @@ public final class Database: FutureConvenienceCallable {
     public func drop() -> EventLoopFuture<Void> {
         let command = AdministrativeCommand(command: DropDatabase(), on: cmd)
         
-        return command.execute(on: session.connection).map { _ in }
+        return command.execute(on: session).map { _ in }
     }
 }
