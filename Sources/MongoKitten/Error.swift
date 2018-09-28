@@ -85,6 +85,9 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         /// SCRAM protocol failure
         case scramFailure
         
+        /// The connection to MongoDB was closed
+        case connectionClosed
+        
         /// The given port number is invalid
         case invalidPort
         
@@ -135,6 +138,7 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
             case .invalidPort: return "The given port number is invalid"
             case .noHostSpecified: return "No host was specified"
             case .noTargetDatabaseSpecified: return "A target database was not specified"
+            case .connectionClosed: return "The connection to MongoDB was closed"
             case .noResultDocument: return "One Document was expected but none were returned"
             case .multipleResultDocuments: return "One Document was expected but multiple were returned"
             case .unexpectedValue: return "The value found in the result cursor did not match the expectation"

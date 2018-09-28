@@ -42,8 +42,9 @@ public final class Connection {
     
     private let clientConnectionSerializer: ClientConnectionSerializer
     
-    public var retryWrites = false
+    // TODO: public var retryWrites = false
     
+    /// If `true`, allows reading from this node if it's a slave node
     public var slaveOk: Bool {
         get {
             return clientConnectionSerializer.slaveOk
@@ -51,6 +52,13 @@ public final class Connection {
         set {
             clientConnectionSerializer.slaveOk = newValue
         }
+    }
+    
+    /// Closes the connection to MongoDB
+    public func close() -> EventLoopFuture<Void> {
+        self.context.isClosed = true
+        
+        return self.channel.close()
     }
     
     /// The eventLoop this connection lives on
@@ -154,6 +162,10 @@ public final class Connection {
     }
     
     func _execute<C: AnyMongoDBCommand>(command: C, session: ClientSession) -> EventLoopFuture<ServerReply> {
+        if self.context.isClosed {
+            return self.eventLoop.newFailedFuture(error: MongoKittenError(.commandFailure, reason: .connectionClosed))
+        }
+        
         do {
             try command.checkValidity(for: self.handshakeResult.maxWireVersion)
         } catch {
@@ -228,6 +240,7 @@ final class ClientConnectionContext {
     var queries = [Int32: EventLoopPromise<ServerReply>]()
     var channelContext: ChannelHandlerContext?
     var unsentCommands = [MongoDBCommandContext]()
+    var isClosed = false
     
     lazy var send: (MongoDBCommandContext) -> Void = { command in
         self.unsentCommands.append(command)
@@ -387,10 +400,14 @@ final class ClientConnectionParser: ByteToMessageDecoder {
     
     // TODO: this does not belong here but on the next handler
     func errorCaught(ctx: ChannelHandlerContext, error: Error) {
-        // TODO: Fail all queries
-        // TODO: Close connection
-        // TODO: Reconnect? Trigger future/callback?
-        assertionFailure()
+        let queries = self.context.queries.values
+        self.context.queries = [:]
+        self.context.isClosed = true
+        ctx.close(promise: nil)
+        
+        for query in queries {
+            query.fail(error: MongoKittenError(.protocolParsingError, reason: nil))
+        }
     }
 }
 

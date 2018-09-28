@@ -9,6 +9,15 @@ public final class Cluster {
     let eventLoop: EventLoop
     let settings: ConnectionSettings
     let sessionManager: SessionManager
+    
+    public var slaveOk = false {
+        didSet {
+            for connection in pool {
+                connection.connection.slaveOk = self.slaveOk
+            }
+        }
+    }
+    
     private var pool: [PooledConnection]
     
     private init(eventLoop: EventLoop, sessionManager: SessionManager, settings: ConnectionSettings, initialConnection connection: PooledConnection) {
@@ -37,6 +46,7 @@ public final class Cluster {
             host: autoSelectedHost
         ).map { connection in
             let pooledConection = PooledConnection(host: autoSelectedHost, connection: connection)
+            
             return Cluster(eventLoop: loop, sessionManager: sessionManager, settings: settings, initialConnection: pooledConection)
         }
     }
@@ -52,6 +62,8 @@ public final class Cluster {
             settings: settings,
             host: host
         ).map { connection in
+            connection.slaveOk = self.slaveOk
+            
             return PooledConnection(host: host, connection: connection)
         }
     }
