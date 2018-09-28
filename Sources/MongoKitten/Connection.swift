@@ -5,7 +5,6 @@ import NIOOpenSSL
 import Foundation
 
 // TODO: https://github.com/mongodb/specifications/tree/master/source/retryable-writes
-// TODO: https://github.com/mongodb/specifications/blob/master/source/driver-read-preferences.rst
 
 /// A single MongoDB connection to a single MongoDB server.
 /// `Connection` handles the lowest level communication to a MongoDB instance.

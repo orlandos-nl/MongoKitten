@@ -15,9 +15,23 @@ struct AdministrativeCommand<Command: Encodable>: AdministrativeMongoDBCommand {
 }
 
 struct DropDatabase: Encodable {
-    let dropDatabase: Int = 1
+    private let dropDatabase: Int = 1
     
     init() {}
+}
+
+struct DropCollection: Encodable {
+    private enum CodingKeys: String, CodingKey {
+        case collection = "drop"
+        case writeConcern
+    }
+    
+    let collection: String
+    var writeConcern: WriteConcern?
+    
+    init(named name: String) {
+        self.collection = name
+    }
 }
 
 struct OK: ServerReplyDecodableResult {

@@ -258,6 +258,12 @@ public final class Collection: FutureConvenienceCallable {
     public var indexes: CollectionIndexes {
         return CollectionIndexes(for: self)
     }
+    
+    public func drop() -> EventLoopFuture<Void> {
+        let command = AdministrativeCommand(command: DropCollection(named: self.name), on: database.cmd)
+        
+        return command.execute(on: session).map { _ in }
+    }
 }
 
 /// A view into the Collection's indexes
