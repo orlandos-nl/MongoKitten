@@ -14,7 +14,7 @@ public final class Collection: FutureConvenienceCallable {
     /// The database this collection resides in
     public let database: Database
     
-    var eventLoop: EventLoop {
+    public var eventLoop: EventLoop {
         return connection.eventLoop
     }
     
@@ -35,7 +35,6 @@ public final class Collection: FutureConvenienceCallable {
     public var fullName: String {
         return "\(self.database.name).\(self.name)"
     }
-    
     
     internal var namespace: Namespace {
         return Namespace(to: self.name, inDatabase: self.database.name)
@@ -275,72 +274,6 @@ public final class Collection: FutureConvenienceCallable {
             let command = AdministrativeCommand(command: DropCollection(named: self.name), on: database.cmd)
             
             return command.execute(on: session).map { _ in }
-        }
-    }
-}
-
-/// A view into the Collection's indexes
-public struct CollectionIndexes {
-    let collection: Collection
-    
-    init(for collection: Collection) {
-        self.collection = collection
-    }
-    
-    /// Creates a new index from the raw specification
-    ///
-    /// Notifies completion through a future.
-    public func create(_ index: Index) -> EventLoopFuture<Void> {
-        let command = CreateIndexesCommand([index], for: collection)
-        
-        return command.execute(on: collection.session)
-    }
-    
-    /// Creates a new sorted compound index by a unique name and keys.
-    ///
-    /// If the name already exists, this index will overwrite the existing one unless they're identical.
-    /// The keys will be used for indexing, any specifics can be set in the options
-    ///
-    /// Notifies completion through a future.
-    public func createCompound(
-        named name: String,
-        keys: IndexKeys,
-        options: [IndexOption] = []
-    ) -> EventLoopFuture<Void> {
-        var index = Index(named: name, keys: keys)
-        
-        for option in options {
-            option.apply(to: &index)
-        }
-        
-        return self.create(index)
-    }
-}
-
-/// These options may be expanded in the future. Do _not_ rely on all of their cases being finalized.
-public enum IndexOption {
-    /// All keys will be marked as unqiue
-    case unique
-    
-    /// The index will be created in the background
-    case buildInBackground
-    
-    /// All indexed documents will expire after the specified duration
-    case expires(seconds: Int)
-    
-    /// The index only affects documents matching this query
-    case filterSubset(Query)
-    
-    func apply(to index: inout Index) {
-        switch self {
-        case .unique:
-            index.unique = true
-        case .buildInBackground:
-            index.background = true
-        case .expires(let seconds):
-            index.expireAfterSeconds = seconds
-        case .filterSubset(let query):
-            index.partialFilterExpression = query
         }
     }
 }

@@ -123,6 +123,7 @@ public final class ChangeStream<Notification: Decodable> {
     }
 }
 
+// TODO: Specialize with Document?
 /// A single notification coming from the MongoDB collection/database.
 public struct ChangeStreamNotification<FullDocument: Codable>: Codable {
     private enum CodingKeys: String, CodingKey {

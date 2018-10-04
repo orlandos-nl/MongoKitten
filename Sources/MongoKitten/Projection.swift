@@ -19,16 +19,6 @@ public struct Projection: Encodable, ExpressibleByDictionaryLiteral {
             self = .custom(value)
         }
         
-        /// A dictionary literal that makes this a custom ProjectionExpression
-        public init(unicodeScalarLiteral value: String) {
-            self = .custom(value)
-        }
-        
-        /// A dictionary literal that makes this a custom ProjectionExpression
-        public init(extendedGraphemeClusterLiteral value: String) {
-            self = .custom(value)
-        }
-        
         /// A custom projection value
         case custom(BSON.Primitive)
         

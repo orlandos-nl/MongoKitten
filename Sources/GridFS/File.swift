@@ -9,7 +9,7 @@ public class File: Codable {
     
     internal var fs: GridFSBucket
     
-    var _id: Primitive
+    public let _id: Primitive
     public internal(set) var length: Int
     public private(set) var chunkSize: Int32
     public let uploadDate: Date

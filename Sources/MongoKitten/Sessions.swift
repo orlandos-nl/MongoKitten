@@ -78,7 +78,7 @@ public final class ClientSession {
 //            inNamespace: connection["admin"]["$cmd"].namespace
 //        )
 //
-//        return command.execute(on: connection)
+    //        return command.execute(on: connection)
 //    }
 
     deinit {

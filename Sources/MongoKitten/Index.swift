@@ -1,5 +1,71 @@
 import BSON
 
+/// A view into the Collection's indexes
+public struct CollectionIndexes {
+    let collection: Collection
+    
+    init(for collection: Collection) {
+        self.collection = collection
+    }
+    
+    /// Creates a new index from the raw specification
+    ///
+    /// Notifies completion through a future.
+    public func create(_ index: Index) -> EventLoopFuture<Void> {
+        let command = CreateIndexesCommand([index], for: collection)
+        
+        return command.execute(on: collection.session)
+    }
+    
+    /// Creates a new sorted compound index by a unique name and keys.
+    ///
+    /// If the name already exists, this index will overwrite the existing one unless they're identical.
+    /// The keys will be used for indexing, any specifics can be set in the options
+    ///
+    /// Notifies completion through a future.
+    public func createCompound(
+        named name: String,
+        keys: IndexKeys,
+        options: [IndexOption] = []
+        ) -> EventLoopFuture<Void> {
+        var index = Index(named: name, keys: keys)
+        
+        for option in options {
+            option.apply(to: &index)
+        }
+        
+        return self.create(index)
+    }
+}
+
+/// These options may be expanded in the future. Do _not_ rely on all of their cases being finalized.
+public enum IndexOption {
+    /// All keys will be marked as unqiue
+    case unique
+    
+    /// The index will be created in the background
+    case buildInBackground
+    
+    /// All indexed documents will expire after the specified duration
+    case expires(seconds: Int)
+    
+    /// The index only affects documents matching this query
+    case filterSubset(Query)
+    
+    func apply(to index: inout Index) {
+        switch self {
+        case .unique:
+            index.unique = true
+        case .buildInBackground:
+            index.background = true
+        case .expires(let seconds):
+            index.expireAfterSeconds = seconds
+        case .filterSubset(let query):
+            index.partialFilterExpression = query
+        }
+    }
+}
+
 /// An internal helper that functions as a raw coding key
 ///
 /// Used to read dictionaries dynamically

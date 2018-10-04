@@ -22,11 +22,11 @@ public class GridFSBucket {
     }
     
     public init(named name: String = "fs", in database: Database) {
-        self.filesCollection = database["\(name).files"]
-        self.chunksCollection = database["\(name).chunks"]
+        self.filesCollection = database[name + ".files"]
+        self.chunksCollection = database[name + ".chunks"]
     }
     
-    public func upload(data: Data, id: Primitive = ObjectId(), chunkSize: Int32 = GridFSBucket.defaultChunkSize, filename: String,  metadata: Document? = nil) -> EventLoopFuture<Void> {
+    public func upload(_ data: Data, filename: String, id: Primitive = ObjectId(), metadata: Document? = nil, chunkSize: Int32 = GridFSBucket.defaultChunkSize) -> EventLoopFuture<Void> {
         var buffer = FileWriter.allocator.buffer(capacity: data.count)
         buffer.write(bytes: data)
         
