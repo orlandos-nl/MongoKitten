@@ -130,7 +130,7 @@ public final class Collection: FutureConvenienceCallable {
     /// - see: https://docs.mongodb.com/manual/reference/command/insert/index.html
     @discardableResult
     public func insert(_ document: Document) -> EventLoopFuture<InsertReply> {
-        return InsertCommand([document], into: self).execute(on: session)
+        return insert(documents: [document])
     }
     
     /// Inserts one or more documents into the collection
@@ -140,7 +140,9 @@ public final class Collection: FutureConvenienceCallable {
     /// - see: https://docs.mongodb.com/manual/reference/command/insert/index.html
     @discardableResult
     public func insert(documents: [Document]) -> EventLoopFuture<InsertReply> {
-        return InsertCommand(documents, into: self).execute(on: session)
+        return session.connection.withAssertions(.writable) {
+            return InsertCommand(documents, into: self).execute(on: session)
+        }
     }
     
     // MARK: Removing documents
@@ -151,9 +153,11 @@ public final class Collection: FutureConvenienceCallable {
     /// - parameter query: The filter to apply. Defaults to an empty query, deleting every document.
     /// - returns: The number of documents removed
     public func deleteAll(where query: Query = [:]) -> EventLoopFuture<Int> {
-        let delete = DeleteCommand.Single(matching: query, limit: .all)
-        
-        return DeleteCommand([delete], from: self).execute(on: session)
+        return session.connection.withAssertions(.writable) {
+            let delete = DeleteCommand.Single(matching: query, limit: .all)
+            
+            return DeleteCommand([delete], from: self).execute(on: session)
+        }
     }
     
     /// Deletes one document that matches the given query.
@@ -161,9 +165,11 @@ public final class Collection: FutureConvenienceCallable {
     /// - parameter query: The filter to apply. Defaults to an empty query
     /// - returns: The number of documents removed
     public func deleteOne(where query: Query = [:]) -> EventLoopFuture<Int> {
-        let delete = DeleteCommand.Single(matching: query, limit: .one)
-        
-        return DeleteCommand([delete], from: self).execute(on: session)
+        return session.connection.withAssertions(.writable) {
+            let delete = DeleteCommand.Single(matching: query, limit: .one)
+            
+            return DeleteCommand([delete], from: self).execute(on: session)
+        }
     }
     
     // MARK: Performing updates
@@ -206,8 +212,9 @@ public final class Collection: FutureConvenienceCallable {
     /// - parameter multiple: If set to `true`, more than one document may be updated
     @discardableResult
     public func update(where query: Query, to document: Document, multiple: Bool? = nil) -> EventLoopFuture<UpdateReply> {
-        // TODO: Make the future fail when the reply indicates an error
-        return UpdateCommand(query, to: document, in: self, multiple: multiple).execute(on: session)
+        return session.connection.withAssertions(.writable) {
+            return UpdateCommand(query, to: document, in: self, multiple: multiple).execute(on: session)
+        }
     }
     
     /// Updates the document(s) matching the given query to the given `document`. If no document matches the given query, the document will be inserted into the collection.
@@ -216,10 +223,12 @@ public final class Collection: FutureConvenienceCallable {
     /// - parameter document: The document to insert or to replace the target document with
     @discardableResult
     public func upsert(where query: Query, to document: Document) -> EventLoopFuture<UpdateReply> {
-        var update = UpdateCommand.Single(matching: query, to: document)
-        update.upsert = true
-        
-        return UpdateCommand(update, in: self).execute(on: session)
+        return session.connection.withAssertions(.writable) {
+            var update = UpdateCommand.Single(matching: query, to: document)
+            update.upsert = true
+            
+            return UpdateCommand(update, in: self).execute(on: session)
+        }
     }
     
     /// Updates the document(s) matching the given query, setting the values given in `set`.
@@ -252,7 +261,9 @@ public final class Collection: FutureConvenienceCallable {
             "$unset": unsetQuery.count > 0 ? unsetQuery : nil
         ]
         
-        return self.update(where: query, to: updateDocument, multiple: multiple)
+        return session.connection.withAssertions(.writable) {
+            return self.update(where: query, to: updateDocument, multiple: multiple)
+        }
     }
     
     public var indexes: CollectionIndexes {
@@ -260,9 +271,11 @@ public final class Collection: FutureConvenienceCallable {
     }
     
     public func drop() -> EventLoopFuture<Void> {
-        let command = AdministrativeCommand(command: DropCollection(named: self.name), on: database.cmd)
-        
-        return command.execute(on: session).map { _ in }
+        return session.connection.withAssertions(.writable) {
+            let command = AdministrativeCommand(command: DropCollection(named: self.name), on: database.cmd)
+            
+            return command.execute(on: session).map { _ in }
+        }
     }
 }
 
