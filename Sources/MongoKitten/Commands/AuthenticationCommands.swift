@@ -53,17 +53,17 @@ struct SASLReply: ServerReplyDecodableResult {
     init(reply: ServerReply) throws {
         let doc = try reply.documents.assertFirst()
         
-        if let ok: Double = doc.ok {
+        if let ok = doc["ok"] as? Double {
             if ok < 1 {
                 throw doc.makeError()
             }
             self.ok = Int(ok)
-        } else if let ok: Int = doc.ok {
+        } else if let ok = doc["ok"] as? Int {
             if ok < 1 {
                 throw doc.makeError()
             }
             self.ok = ok
-        } else if let ok: Int32 = doc.ok {
+        } else if let ok = doc["ok"] as? Int32 {
             if ok < 1 {
                 throw doc.makeError()
             }
@@ -72,23 +72,23 @@ struct SASLReply: ServerReplyDecodableResult {
             throw doc.makeError()
         }
         
-        if let conversationId: Int = doc.conversationId {
+        if let conversationId = doc["conversationId"] as? Int {
             self.conversationId = conversationId
-        } else if let conversationId: Int32 = doc.conversationId {
+        } else if let conversationId = doc["conversationId"] as? Int32 {
             self.conversationId = Int(conversationId)
         } else {
             throw doc.makeError()
         }
         
-        guard let done: Bool = doc.done else {
+        guard let done = doc["done"] as? Bool else {
             throw doc.makeError()
         }
         
         self.done = done
         
-        if let payload: String = doc.payload {
+        if let payload = doc["payload"] as? String {
             self.payload = payload
-        } else  if let payload: Binary = doc.payload, let string = String(data: payload.data, encoding: .utf8) {
+        } else  if let payload = doc["payload"] as? Binary, let string = String(data: payload.data, encoding: .utf8) {
             self.payload = string
         } else {
             throw doc.makeError()

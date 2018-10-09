@@ -94,7 +94,6 @@ public struct Projection: Encodable, ExpressibleByDictionaryLiteral {
         ] as Document
     }
     
-    // TODO: Collection rather than Set?
     public static func allExcluding(_ fields: Set<String>) -> Projection {
         var document = Document()
         
@@ -105,7 +104,6 @@ public struct Projection: Encodable, ExpressibleByDictionaryLiteral {
         return Projection(document: document)
     }
     
-    // TODO: Collection rather than Set?
     public static func subset(_ fields: Set<String>, suppressingId: Bool = false) -> Projection {
         var document = Document()
         

@@ -93,11 +93,11 @@ extension ServerReplyDecodable {
     init(reply: ServerReply) throws {
         let doc = try reply.documents.assertFirst()
         
-        if let ok: Double = doc.ok, ok < 1 {
+        if let ok = doc["ok"] as? Double, ok < 1 {
             throw doc.makeError()
-        } else if let ok: Int = doc.ok, ok < 1 {
+        } else if let ok = doc["ok"] as? Int, ok < 1 {
             throw doc.makeError()
-        } else if let ok: Int32 = doc.ok, ok < 1 {
+        } else if let ok = doc["ok"] as? Int32, ok < 1 {
             throw doc.makeError()
         }
         
