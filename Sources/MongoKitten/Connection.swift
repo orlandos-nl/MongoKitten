@@ -28,9 +28,11 @@ public final class Connection {
     private(set) var settings: ConnectionSettings
     
     /// The result of the `isMaster` handshake with the server
-    public private(set) var handshakeResult: ConnectionHandshakeReply! = nil {
+    public private(set) var handshakeResult: ConnectionHandshakeReply? = nil {
         didSet {
-            clientConnectionSerializer.includeSession = handshakeResult.maxWireVersion.supportsSessions
+            if let handshakeResult = handshakeResult {
+                clientConnectionSerializer.includeSession = handshakeResult.maxWireVersion.supportsSessions
+            }
         }
     }
     
@@ -167,7 +169,9 @@ public final class Connection {
         }
         
         do {
-            try command.checkValidity(for: self.handshakeResult.maxWireVersion)
+            if let handshakeResult = self.handshakeResult {
+                try command.checkValidity(for: handshakeResult.maxWireVersion)
+            }
         } catch {
             return self.eventLoop.newFailedFuture(error: error)
         }
@@ -200,7 +204,7 @@ public final class Connection {
         case .unauthenticated:
             return eventLoop.newSucceededFuture(result: ())
         case .auto(let username, let password):
-            switch handshakeResult.maxWireVersion.version {
+            switch handshakeResult!.maxWireVersion.version {
             case 0..<3:
                 // MongoDB-CR
                 unimplemented()

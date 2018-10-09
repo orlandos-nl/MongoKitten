@@ -70,7 +70,7 @@ public final class Cluster {
     
     public func getConnection(writable: Bool = true) -> EventLoopFuture<Connection> {
         let matchingConnection = pool.first { pooledConnection in
-            if writable && pooledConnection.connection.handshakeResult.readOnly ?? false {
+            if writable && pooledConnection.connection.handshakeResult?.readOnly ?? false {
                 return false
             }
             

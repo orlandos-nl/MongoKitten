@@ -15,8 +15,8 @@ extension Connection {
     func test(_ assertion: HandshakeAssertion) -> Bool {
         switch assertion {
         case .writable:
-            if let readOnly = handshakeResult.readOnly, readOnly { return false }
-            if !handshakeResult.ismaster { return slaveOk }
+            if let readOnly = handshakeResult?.readOnly, readOnly { return false }
+            if handshakeResult?.ismaster == false { return slaveOk }
             return true
         }
     }
