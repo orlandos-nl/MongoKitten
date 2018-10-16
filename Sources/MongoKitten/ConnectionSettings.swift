@@ -21,6 +21,9 @@ public struct ConnectionSettings: Equatable {
         /// Unauthenticated
         case unauthenticated
         
+        /// Automatically select the mechanism
+        case auto(username: String, password: String)
+        
         /// SCRAM-SHA1 mechanism
         case scramSha1(username: String, password: String)
         
@@ -180,15 +183,15 @@ public struct ConnectionSettings: Equatable {
                 throw MongoKittenError(.invalidURI, reason: .malformedAuthenticationDetails)
             }
             
-            let mechanism = queries["authMechanism"]?.uppercased() ?? "SCRAM_SHA_1"
-            
-            switch mechanism {
-            case "SCRAM_SHA_1":
+            switch queries["authMechanism"]?.uppercased() {
+            case "SCRAM_SHA_1"?:
                 self.authentication = .scramSha1(username: username, password: password)
-            case "SCRAM_SHA_256":
+            case "SCRAM_SHA_256"?:
                 self.authentication = .scramSha256(username: username, password: password)
-            case "MONGODB_CR":
+            case "MONGODB_CR"?:
                 self.authentication = .mongoDBCR(username: username, password: password)
+            case nil:
+                self.authentication = .auto(username: username, password: password)
             default:
                 throw MongoKittenError(.invalidURI, reason: .unsupportedAuthenticationMechanism)
             }
@@ -224,6 +227,8 @@ public struct ConnectionSettings: Equatable {
         if let useSSL = Bool(queryValue: queries["ssl"]) {
             self.useSSL = useSSL
         }
+        
+        // TODO: Custom root cert for IBM bluemix
         
         if let sslVerify = Bool(queryValue: queries["sslVerify"]) {
             self.verifySSLCertificates = sslVerify

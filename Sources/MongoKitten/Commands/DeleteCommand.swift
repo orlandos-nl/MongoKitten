@@ -13,7 +13,7 @@ public enum RemoveLimit: Int, Codable {
 /// The delete command removes documents from a collection. A single delete command can contain multiple delete specifications. The command cannot operate on capped collections. The remove methods provided by the MongoDB drivers use this command internally.
 ///
 /// - see: https://docs.mongodb.com/manual/reference/command/delete/index.html
-public struct DeleteCommand: MongoDBCommand {
+public struct DeleteCommand: WriteCommand {
     typealias Reply = DeleteReply
     
     /// A single delete statement
@@ -49,7 +49,7 @@ public struct DeleteCommand: MongoDBCommand {
     
     /// Optional. If true, then when a delete statement fails, return without performing the remaining delete statements. If false, then when a delete statement fails, continue with the remaining delete statements, if any. Defaults to true.
     public var ordered: Bool?
-//    public var writeConcern: WriteConcern?
+    public var writeConcern: WriteConcern?
     
     static let writing = true
     static let emitsCursor = false
@@ -63,7 +63,7 @@ public struct DeleteCommand: MongoDBCommand {
 }
 
 /// The reply to a `DeleteCommand`
-public struct DeleteReply: Codable, ServerReplyDecodable {
+public struct DeleteReply: ServerReplyDecodableResult {
     private enum CodingKeys: String, CodingKey {
         case successfulDeletes = "n"
         case ok
@@ -76,10 +76,6 @@ public struct DeleteReply: Codable, ServerReplyDecodable {
     /// `true` if the `DeleteCommand` was successful
     public var isSuccessful: Bool {
         return ok == 1
-    }
-    
-    var mongoKittenError: MongoKittenError {
-        return MongoKittenError(.commandFailure, reason: nil)
     }
     
     func makeResult(on collection: Collection) throws -> Int {

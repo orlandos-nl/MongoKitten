@@ -7,13 +7,48 @@
 import Foundation
 import _MongoKittenCrypto
 
+/// Used by the SCRAM helper to keep track of the current state and the previous state's relevant parameters
 fileprivate enum ProgressState {
     case none
     case challenge(user: String, nonce: String)
     case verify(signature: [UInt8])
 }
 
-// TODO: Cache scram credentials between multiple connections/threads
+/// A thread-safe global cache that all MongoDB clients can use to reduce computational cost of authentication
+///
+/// By caching the proof of being auhtenticated.
+fileprivate final class CredentialsCache {
+    static let `default` = CredentialsCache()
+    
+    private init() {}
+    
+    private var _cache = [String: Credentials]()
+    private let lock = NSRecursiveLock()
+    
+    subscript(key: String) -> Credentials? {
+        get {
+            lock.lock()
+            defer { lock.unlock() }
+            
+            return _cache[key]
+        }
+        set {
+            lock.lock()
+            defer { lock.unlock() }
+            
+            self._cache[key] = newValue
+        }
+    }
+}
+
+/// This type contains all information needed to reduce the computational weight of authentication
+struct Credentials {
+    let saltedPassword: [UInt8]
+    let clientKey: [UInt8]
+    let serverKey: [UInt8]
+}
+
+/// A helper that can authenticate with the SCRAM machanism.
 internal final class SCRAM<H: Hash> {
     var hasher: H
     var hmac: HMAC<H>
@@ -34,7 +69,7 @@ internal final class SCRAM<H: Hash> {
         
         self.state = .challenge(user: user, nonce: nonce)
         
-        return "\(gs2BindFlag)n=\(user.normalized()),r=\(nonce)"
+        return "n,,n=\(user.normalized()),r=\(nonce)"
     }
     
     public func respond(toChallenge challengeString: String, password: String) throws -> String {
@@ -44,30 +79,42 @@ internal final class SCRAM<H: Hash> {
         
         let challenge = try decodeChallenge(challengeString)
         
-        let noProof = "c=\(encodedGs2BindFlag),r=\(challenge.nonce)"
+        let noProof = "c=biws,r=\(challenge.nonce)"
+        
+        let saltedPassword: [UInt8]
+        let clientKey: [UInt8]
+        let serverKey: [UInt8]
         
         // TODO: Custom simple base64 decoder
-        
-        // Check for sensible iterations, too
-        guard
-            let saltData = Data(base64Encoded: challenge.salt),
-            challenge.iterations > 0 && challenge.iterations < 50_000,
-            challenge.nonce.starts(with: nonce)
-        else {
-            throw MongoKittenError(.authenticationFailure, reason: .scramFailure)
+        if let credentials = CredentialsCache.default[password + challenge.salt] {
+            saltedPassword = credentials.saltedPassword
+            clientKey = credentials.clientKey
+            serverKey = credentials.serverKey
+        } else {
+            // Check for sensible iterations, too
+            guard
+                let saltData = Data(base64Encoded: challenge.salt),
+                challenge.iterations > 0 && challenge.iterations < 50_000,
+                challenge.nonce.starts(with: nonce)
+            else {
+                throw MongoKittenError(.authenticationFailure, reason: .scramFailure)
+            }
+            
+            let salt = Array(saltData)
+            
+            // TIDI: Cache login data
+            saltedPassword = PBKDF2(digest: hasher).hash(
+                Array(password.utf8),
+                salt: salt,
+                iterations: challenge.iterations
+            )
+            
+            clientKey = hmac.authenticate(clientKeyBytes, withKey: saltedPassword)
+            serverKey = hmac.authenticate(serverKeyBytes, withKey: saltedPassword)
+            
+            let credentials = Credentials(saltedPassword: saltedPassword, clientKey: clientKey, serverKey: serverKey)
+            CredentialsCache.default[password + challenge.salt] = credentials
         }
-        
-        let salt = Array(saltData)
-        
-        // TIDI: Cache login data
-        let saltedPassword = PBKDF2(digest: hasher).hash(
-            Array(password.utf8),
-            salt: salt,
-            iterations: challenge.iterations
-        )
-        
-        let clientKey = hmac.authenticate(clientKeyBytes, withKey: saltedPassword)
-        let serverKey = hmac.authenticate(serverKeyBytes, withKey: saltedPassword)
         
         let storedKey = hasher.hash(bytes: clientKey)
         
@@ -91,6 +138,10 @@ internal final class SCRAM<H: Hash> {
     public func completeAuthentication(withResponse response: String) throws {
         guard case .verify(let signature) = self.state else {
             throw MongoKittenError(.authenticationFailure, reason: .internalError)
+        }
+        
+        defer {
+            self.state = .none
         }
         
         guard response.count > 2 else {
@@ -149,8 +200,6 @@ fileprivate struct Challenge {
     let iterations: Int32
 }
 
-fileprivate let gs2BindFlag = "n,,"
-fileprivate let encodedGs2BindFlag = "biws"
 fileprivate let clientKeyBytes = Array("Client Key".utf8)
 fileprivate let serverKeyBytes = Array("Server Key".utf8)
 

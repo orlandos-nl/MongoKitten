@@ -1,4 +1,4 @@
-struct AdministrativeCommand<Command: Encodable>: MongoDBCommand {
+struct AdministrativeCommand<Command: Encodable>: AdministrativeMongoDBCommand {
     typealias Reply = OK
     
     var namespace: Namespace
@@ -15,17 +15,27 @@ struct AdministrativeCommand<Command: Encodable>: MongoDBCommand {
 }
 
 struct DropDatabase: Encodable {
-    let dropDatabase: Int = 1
+    private let dropDatabase: Int = 1
     
     init() {}
 }
 
-struct OK: ServerReplyDecodable {
-    typealias Result = Bool
-    
-    var mongoKittenError: MongoKittenError {
-        return MongoKittenError(.commandFailure, reason: nil)
+struct DropCollection: Encodable {
+    private enum CodingKeys: String, CodingKey {
+        case collection = "drop"
+        case writeConcern
     }
+    
+    let collection: String
+    var writeConcern: WriteConcern?
+    
+    init(named name: String) {
+        self.collection = name
+    }
+}
+
+struct OK: ServerReplyDecodableResult {
+    typealias Result = Void
     
     let ok: Int
     
@@ -33,7 +43,7 @@ struct OK: ServerReplyDecodable {
         return ok == 1
     }
     
-    func makeResult(on collection: Collection) throws -> Bool {
-        return isSuccessful
+    func makeResult(on collection: Collection) throws -> Void {
+        return
     }
 }

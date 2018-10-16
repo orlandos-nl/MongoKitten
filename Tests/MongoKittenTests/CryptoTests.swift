@@ -15,14 +15,28 @@ class CryptoTests: XCTestCase {
     }
     
     func testSHA1() throws {
-        var md5 = SHA1()
+        var hasher = SHA1()
         let data: [(String, String)] = [
             ("The quick brown fox jumps over the lazy dog", "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12"),
             ("The quick brown fox jumps over the lazy cog", "de9f2c7fd25e1b3afad3e85a0bd17d9b100db4b3"),
-        ]
+            ]
         
         for (input, match) in data {
-            let result = md5.hash(bytes: Array(input.utf8)).hexString
+            let result = hasher.hash(bytes: Array(input.utf8)).hexString
+            XCTAssertEqual(result, match)
+        }
+    }
+    
+    func testSHA256() throws {
+        var hasher = SHA256()
+        let data: [(String, String)] = [
+            ("The quick brown fox jumps over the lazy dog", "d7a8fbb307d7809469ca9abcb0082e4f8d5651e46d3cdb762d02d0bf37c9e592"),
+            ("The quick brown fox jumps over the lazy cog", "e4c4d8f3bf76b692de791a173e05321150f7a345b46484fe427f6acc7ecc81be"),
+            ("", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+            ]
+        
+        for (input, match) in data {
+            let result = hasher.hash(bytes: Array(input.utf8)).hexString
             XCTAssertEqual(result, match)
         }
     }
@@ -44,7 +58,7 @@ class CryptoTests: XCTestCase {
         test(&sha1h, message: "", key: "", expectation: "fbdb1d1b18aa6c08324b7d64b71fb76370690e1d")
     }
     
-    func testPBKDF2() throws {
+    func testPBKDF2_SHA1() throws {
         let pbkdf2 = PBKDF2(digest: SHA1())
         
         func test(password: String, salt: String, match: String) {

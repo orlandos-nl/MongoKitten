@@ -2,7 +2,7 @@ import Foundation
 import BSON
 
 /// - see: https://github.com/mongodb/specifications/blob/master/source/mongodb-handshake/handshake.rst
-struct ConnectionHandshakeCommand: MongoDBCommand {
+struct ConnectionHandshakeCommand: AdministrativeMongoDBCommand {
     typealias Reply = ConnectionHandshakeReply
     
     struct ClientDetails: Encodable {
@@ -66,18 +66,73 @@ struct ConnectionHandshakeCommand: MongoDBCommand {
     }
     
     var isMaster: Int32 = 1
+    var saslSupportedMechs: String?
     var client: ClientDetails
     
     var namespace: Namespace
     
-    init(application: ClientDetails.ApplicationDetails?, collection: Collection) {
+    init(application: ClientDetails.ApplicationDetails?, userNamespace: String?, collection: Collection) {
         self.client = ClientDetails(application: application)
+        self.saslSupportedMechs = userNamespace
         self.namespace = collection.namespace
     }
 }
 
+public struct WireVersion: Codable, ExpressibleByIntegerLiteral {
+    public let version: Int
+    
+    // Wire version 3
+    public var supportsScramSha1: Bool { return version >= 3 }
+    public var supportsListIndexes: Bool { return version >= 3 }
+    public var supportsListCollections: Bool { return version >= 3 }
+    public var supportsExplain: Bool { return version >= 3 }
+    
+    // Wire version 4
+    public var supportsCursorCommands: Bool { return version >= 4 }
+    public var supportsReadConcern: Bool { return version >= 4 }
+    public var supportsDocumentValidation: Bool { return version >= 4 }
+//    currentOp command
+//    fsyncUnlock command
+//    findAndModify take write concern
+//    explain command supports distinct and findAndModify
+    
+    // Wire version 5
+    public var supportsWriteConcern: Bool { return version >= 5 }
+    public var supportsCollation: Bool { return version >= 5 }
+    
+    // Wire version 6
+    public var supportsOpMessage: Bool { return version >= 6 }
+    public var supportsCollectionChangeStream: Bool { return version >= 6 }
+    public var supportsSessions: Bool { return version >= 6 }
+    public var supportsRetryableWrites: Bool { return version >= 6 }
+    // TODO: Causally Consistent Reads
+    public var supportsArrayFiltersOption: Bool { return version >= 6 }
+    
+    // Wire version 7
+    public var supportsDatabaseChangeStream: Bool { return version >= 7 }
+    public var supportsClusterChangeStream: Bool { return version >= 7 }
+    public var supportsReplicaTransactions: Bool { return version >= 7 }
+    
+    // Wire version 8
+    public var supportsShardedTransactions: Bool { return version >= 8 }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        
+        self.version = try container.decode(Int.self)
+    }
+    
+    public init(integerLiteral value: Int) {
+        self.version = value
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        try version.encode(to: encoder)
+    }
+}
+
 /// - see: https://docs.mongodb.com/manual/reference/command/isMaster/index.html
-public struct ConnectionHandshakeReply: ServerReplyDecodable {
+public struct ConnectionHandshakeReply: ServerReplyDecodableResult {
     typealias Result = ConnectionHandshakeReply
     
     /// A boolean value that reports when this node is writable. If true, then this instance is a primary in a replica set, or a master in a master-slave configuration, or a mongos instance, or a standalone mongod.
@@ -88,6 +143,9 @@ public struct ConnectionHandshakeReply: ServerReplyDecodable {
     
     /// The maximum permitted size of a BSON wire protocol message. The default value is 48000000 bytes.
     public let maxMessageSizeBytes: Int?
+    
+    /// A list of all supported mechanisms
+    public let saslSupportedMechs: [String]?
     
     /// The maximum number of write operations permitted in a write batch. If a batch exceeds this limit, the client driver divides the batch into smaller groups each with counts less than or equal to the value of this field.
     public let maxWriteBatchSize: Int? // TODO: Handle according to this value
@@ -101,10 +159,10 @@ public struct ConnectionHandshakeReply: ServerReplyDecodable {
     public let logicalSessionTimeoutMinutes: Int?
     
     /// The earliest version of the wire protocol that this mongod or mongos instance is capable of using to communicate with clients.
-    public let minWireVersion: Int
+    public let minWireVersion: WireVersion
     
     /// The latest version of the wire protocol that this mongod or mongos instance is capable of using to communicate with clients.
-    public let maxWireVersion: Int                                                      
+    public let maxWireVersion: WireVersion
     
     /// A boolean value that, when true, indicates that the mongod or mongos is running in read-only mode.
     public let readOnly: Bool?
@@ -162,10 +220,6 @@ public struct ConnectionHandshakeReply: ServerReplyDecodable {
     public let electionId: String? // TODO: Is this the correct type?
     
     // MARK: ServerReplyDecodable
-    public var mongoKittenError: MongoKittenError {
-        return MongoKittenError(.commandFailure, reason: nil)
-    }
-    
     public var isSuccessful: Bool {
         return true
     }

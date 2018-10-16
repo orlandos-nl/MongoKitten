@@ -1,7 +1,7 @@
 import BSON
 import NIO
 
-public struct InsertCommand: MongoDBCommand {
+public struct InsertCommand: WriteCommand {
     typealias Reply = InsertReply
     
     internal var namespace: Namespace {
@@ -12,6 +12,7 @@ public struct InsertCommand: MongoDBCommand {
     public var documents: [Document]
     public var ordered: Bool?
     public var bypassDocumentValidation: Bool?
+    public var writeConcern: WriteConcern?
     
     static var writing: Bool {
         return true
@@ -27,12 +28,12 @@ public struct InsertCommand: MongoDBCommand {
     }
     
     @discardableResult
-    public func execute(on connection: Connection) -> EventLoopFuture<InsertReply> {
-        return connection.execute(command: self)
+    public func execute(on session: ClientSession) -> EventLoopFuture<InsertReply> {
+        return session.execute(command: self)
     }
 }
 
-public struct InsertReply: ServerReplyDecodable {
+public struct InsertReply: ServerReplyDecodableResult {
     typealias Result = InsertReply
     
     private enum CodingKeys: String, CodingKey {
@@ -47,10 +48,6 @@ public struct InsertReply: ServerReplyDecodable {
     
     public var isSuccessful: Bool {
         return ok == 1
-    }
-    
-    var mongoKittenError: MongoKittenError {
-        return MongoKittenError(.commandFailure, reason: nil)
     }
     
     func makeResult(on collection: Collection) -> InsertReply {

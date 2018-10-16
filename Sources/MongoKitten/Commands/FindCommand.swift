@@ -1,6 +1,6 @@
 import NIO
 
-public struct FindCommand: MongoDBCommand {
+public struct FindCommand: ReadCommand {
     typealias Reply = CursorReply
     
     internal var namespace: Namespace {
@@ -15,6 +15,7 @@ public struct FindCommand: MongoDBCommand {
     public var projection: Projection?
     public var skip: Int?
     public var limit: Int?
+    public var readConcern: ReadConcern?
     
     public init(filter: Query?, on collection: Collection) {
         self.filter = filter
@@ -26,7 +27,7 @@ public struct CursorSettings: Encodable {
     var batchSize: Int?
 }
 
-struct CursorReply: ServerReplyDecodable {
+struct CursorReply: ServerReplyDecodableResult {
     var isSuccessful: Bool {
         return ok == 1
     }
@@ -63,7 +64,7 @@ public final class FindCursor: QueryCursor {
     }
     
     public func execute() -> EventLoopFuture<FinalizedCursor<FindCursor>> {
-        return self.collection.connection.execute(command: self.command).mapToResult(for: collection).map { cursor in
+        return self.collection.database.session.execute(command: self.command).mapToResult(for: collection).map { cursor in
             return FinalizedCursor(basedOn: self, cursor: cursor)
         }
     }

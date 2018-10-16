@@ -38,6 +38,9 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         /// A command for the requested action could not be formed
         case cannotFormCommand
         
+        /// A feature you're trying to use is unsupported by your version of MongoDB
+        case unsupportedFeatureByServer
+        
         /// A value was unexpectedly nil
         case unexpectedNil
         
@@ -57,6 +60,7 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
             case .cannotGetMore: return "The cursor cannot get more elements"
             case .cannotFormCommand: return "A command for the requested action could not be formed"
             case .unexpectedNil: return "A value was unexpectedly nil"
+            case .unsupportedFeatureByServer: return "A feature you're trying to use is unsupported by your version of MongoDB"
             }
         }
     }
@@ -78,8 +82,14 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         /// The reason for the error was internal
         case internalError
         
+        /// The operation exceeded the 16MB command limit
+        case commandSizeTooLarge
+        
         /// SCRAM protocol failure
         case scramFailure
+        
+        /// The connection to MongoDB was closed
+        case connectionClosed
         
         /// The given port number is invalid
         case invalidPort
@@ -89,6 +99,9 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         
         /// A target database was not specified
         case noTargetDatabaseSpecified
+        
+        /// The target server is not writable
+        case hostNotWritable
         
         /// One Document was expected but none were returned
         case noResultDocument
@@ -102,6 +115,9 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         /// The cursor has been drained, which means there are no more elements left to get
         case cursorDrained
         
+        /// The cursor was intentionally closed and will not yield more results
+        case cursorClosed
+        
         /// There is nothing to do with the given parameters
         case nothingToDo
         
@@ -110,6 +126,12 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         
         /// Index creation failed
         case indexCreationFailed
+        
+        /// The MongoDB server does not support read concerns
+        case readConcernUnsupported
+        
+        /// The MongoDB server does not support write concerns
+        case writeConcernUnsupported
         
         public var description: String {
             switch self {
@@ -121,14 +143,20 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
             case .internalError: return "The reason for the error was internal"
             case .invalidPort: return "The given port number is invalid"
             case .noHostSpecified: return "No host was specified"
+            case .hostNotWritable: return "The target server is not writable"
+            case .commandSizeTooLarge: return "The operation exceeded the 16MB command limit"
             case .noTargetDatabaseSpecified: return "A target database was not specified"
+            case .connectionClosed: return "The connection to MongoDB was closed"
             case .noResultDocument: return "One Document was expected but none were returned"
             case .multipleResultDocuments: return "One Document was expected but multiple were returned"
             case .unexpectedValue: return "The value found in the result cursor did not match the expectation"
             case .cursorDrained: return "The cursor has been drained, which means there are no more elements left to get"
+            case .cursorClosed: return "The cursor was intentionally closed and will not yield more results"
             case .nothingToDo: return "There is nothing to do with the given parameters"
             case .unsupportedOpCode: return "The server replied with an opcode that is not supported by MongoKitten"
             case .indexCreationFailed: return "There was a failure whilst creating the index."
+            case .readConcernUnsupported: return "The MongoDB server does not support read concerns"
+            case .writeConcernUnsupported: return "The MongoDB server does not support read concerns"
             }
         }
     }
@@ -140,7 +168,7 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         self.reason = reason
     }
     
-    internal init(_ reply: ErrorReply) {
+    internal init(_ reply: GenericErrorReply) {
         self.kind = .commandFailure
         self.errorReply = reply
     }
@@ -152,7 +180,7 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
     public private(set) var reason: Reason?
     
     /// The MongoDB error reply that caused the error
-    public private(set) var errorReply: ErrorReply?
+    public private(set) var errorReply: GenericErrorReply?
     
     public var description: String {
         if let errorReply = errorReply {

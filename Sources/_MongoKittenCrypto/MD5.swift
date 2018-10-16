@@ -53,7 +53,9 @@ public struct MD5 : Hash {
         processedBytes = 0
     }
     
-    public init() {}
+    public init() {
+        reset()
+    }
     
     public var hashValue: [UInt8] {
         var buffer = [UInt8]()

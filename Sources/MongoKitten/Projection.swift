@@ -19,16 +19,6 @@ public struct Projection: Encodable, ExpressibleByDictionaryLiteral {
             self = .custom(value)
         }
         
-        /// A dictionary literal that makes this a custom ProjectionExpression
-        public init(unicodeScalarLiteral value: String) {
-            self = .custom(value)
-        }
-        
-        /// A dictionary literal that makes this a custom ProjectionExpression
-        public init(extendedGraphemeClusterLiteral value: String) {
-            self = .custom(value)
-        }
-        
         /// A custom projection value
         case custom(BSON.Primitive)
         
@@ -104,7 +94,6 @@ public struct Projection: Encodable, ExpressibleByDictionaryLiteral {
         ] as Document
     }
     
-    // TODO: Collection rather than Set?
     public static func allExcluding(_ fields: Set<String>) -> Projection {
         var document = Document()
         
@@ -115,7 +104,6 @@ public struct Projection: Encodable, ExpressibleByDictionaryLiteral {
         return Projection(document: document)
     }
     
-    // TODO: Collection rather than Set?
     public static func subset(_ fields: Set<String>, suppressingId: Bool = false) -> Projection {
         var document = Document()
         
