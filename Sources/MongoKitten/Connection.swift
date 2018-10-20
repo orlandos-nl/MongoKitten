@@ -197,7 +197,7 @@ public final class Connection {
     }
     
     private func authenticate() -> EventLoopFuture<Void> {
-        let source = settings.authenticationSource ?? "admin"
+        let source = settings.authenticationSource ?? settings.targetDatabase ?? "admin"
         let namespace = Namespace(to: "$cmd", inDatabase: source)
         
         switch settings.authentication {
