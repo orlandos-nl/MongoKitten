@@ -10,7 +10,6 @@ import NIO
 public protocol FutureConvenienceCallable {}
 
 public extension EventLoopFuture where T == Collection {
-
     /// Convenience accessor that calls insert(_:) on the collection after the future has completed.
     ///
     /// For documentation on this method, refer to `Collection.insert(_:)`

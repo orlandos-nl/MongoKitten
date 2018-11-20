@@ -204,21 +204,30 @@ public final class Connection {
         case .unauthenticated:
             return eventLoop.newSucceededFuture(result: ())
         case .auto(let username, let password):
-            switch handshakeResult!.maxWireVersion.version {
-            case 0..<3:
-                // MongoDB-CR
-                unimplemented()
-            case 3..<7:
+            if let mechanisms = handshakeResult!.saslSupportedMechs {
+                nextMechanism: for mechanism in mechanisms {
+                    switch mechanism {
+                    case "SCRAM-SHA-1":
+                        return self.authenticateSASL(hasher: SHA1(), namespace: namespace, username: username, password: password)
+                    case "SCRAM-SHA-256":
+                        return self.authenticateSASL(hasher: SHA256(), namespace: namespace, username: username, password: password)
+                    default:
+                        continue nextMechanism
+                    }
+                }
+                
+                return eventLoop.newFailedFuture(error: MongoKittenError(.authenticationFailure, reason: .unsupportedAuthenticationMechanism))
+            } else if handshakeResult!.maxWireVersion.supportsScramSha1 {
                 return self.authenticateSASL(hasher: SHA1(), namespace: namespace, username: username, password: password)
-            default:
-                return self.authenticateSASL(hasher: SHA256(), namespace: namespace, username: username, password: password)
+            } else {
+                return self.authenticateCR(username, password: password, namespace: namespace)
             }
         case .scramSha1(let username, let password):
             return self.authenticateSASL(hasher: SHA1(), namespace: namespace, username: username, password: password)
         case .scramSha256(let username, let password):
             return self.authenticateSASL(hasher: SHA256(), namespace: namespace, username: username, password: password)
-        default:
-            unimplemented()
+        case .mongoDBCR(let username, let password):
+            return self.authenticateCR(username, password: password, namespace: namespace)
         }
     }
     

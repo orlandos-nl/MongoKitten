@@ -22,8 +22,8 @@ class CRUDTests : XCTestCase {
 //        applicationName: "Test MK5"
 //    )
     
-//    let settings = try! ConnectionSettings("mongodb://mongokitten:xrQqOYD28lvAOKXc@ok0-shard-00-00-xkvc1.mongodb.net:27017?ssl=true")
-    let settings = try! ConnectionSettings("mongodb://localhost")
+    let settings = try! ConnectionSettings("mongodb://mongokitten:xrQqOYD28lvAOKXc@ok0-shard-00-00-xkvc1.mongodb.net:27017?ssl=true")
+//    let settings = try! ConnectionSettings("mongodb://localhost")
     
     var connection: Connection!
     
@@ -152,7 +152,7 @@ class CRUDTests : XCTestCase {
             let future = changeStream.forEachAsync { notification in
                 count += 1
                 XCTAssertEqual(notification.fullDocument?["owner"] as? String, "Joannis")
-                return collection.database.connection.eventLoop.newSucceededFuture(result: ())
+                return collection.database.eventLoop.newSucceededFuture(result: ())
             }
             
             XCTAssert(try collection.insert(["_id": ObjectId(), "owner": "Joannis"]).wait().isSuccessful)
