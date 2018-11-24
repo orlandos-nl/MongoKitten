@@ -216,8 +216,10 @@ extension AggregateCursor where Element == Document {
     
     /// Appends a `$count` stage to the aggregate, executes it, and returns the result
     public func count() -> EventLoopFuture<Int> {
-        // TODO: Clone the cursor so this does not mutate the cursor
-        return self
+        let cursor = AggregateCursor(on: self.collection)
+        cursor.operation = self.operation
+        
+        return cursor
             .count(into: "count")
             .decode(CountResult.self)
             .getFirstResult()

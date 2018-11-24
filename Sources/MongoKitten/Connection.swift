@@ -192,7 +192,6 @@ public final class Connection {
     private func nextRequestId() -> Int32 {
         defer { currentRequestId = currentRequestId &+ 1}
         
-        // TODO: Living cursors over time
         return currentRequestId
     }
     
@@ -375,7 +374,6 @@ final class ClientConnectionSerializer: MessageToByteEncoder {
             flags.insert(.slaveOk)
         }
         
-        // TODO: Error when this buffer <= 16MB
         var buffer = document.makeByteBuffer()
         
         // MongoDB supports messages up to 16MB
@@ -410,7 +408,6 @@ final class ClientConnectionSerializer: MessageToByteEncoder {
         } else if supportsQueryCommand {
             try encodeQueryCommand(ctx: ctx, data: data, out: &out)
         } else {
-            // TODO: Better error here
             throw MongoKittenError(.unsupportedProtocol, reason: nil)
         }
     }

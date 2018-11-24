@@ -128,13 +128,12 @@ public protocol QueryCursor: class {
     @discardableResult
     func forEach(handler: @escaping (Element) throws -> Void) -> EventLoopFuture<Void>
     
-    // TODO: forEachAsync: correct name?
     /// Executes the given `handler` for every element of the cursor, waiting for each invocations future to complete before heading to the next one
     ///
     /// - parameter handler: A handler to execute on every result
     /// - returns: A future that resolves when the operation is complete, or fails if an error is thrown
     @discardableResult
-    func forEachAsync(handler: @escaping (Element) throws -> EventLoopFuture<Void>) -> EventLoopFuture<Void>
+    func sequentialForEach(handler: @escaping (Element) throws -> EventLoopFuture<Void>) -> EventLoopFuture<Void>
     
     /// Returns a new cursor with the results of mapping the given closure over the cursor's elements. This operation is lazy.
     ///
@@ -221,7 +220,7 @@ extension QueryCursor {
     }
     
     @discardableResult
-    public func forEachAsync(handler: @escaping (Element) throws -> EventLoopFuture<Void>) -> EventLoopFuture<Void> {
+    public func sequentialForEach(handler: @escaping (Element) throws -> EventLoopFuture<Void>) -> EventLoopFuture<Void> {
         return execute().then { finalizedCursor in
             func nextBatch() -> EventLoopFuture<Void> {
                 return finalizedCursor.nextBatch().then { batch in

@@ -85,7 +85,6 @@ internal final class SCRAM<H: Hash> {
         let clientKey: [UInt8]
         let serverKey: [UInt8]
         
-        // TODO: Custom simple base64 decoder
         if let credentials = CredentialsCache.default[password + challenge.salt] {
             saltedPassword = credentials.saltedPassword
             clientKey = credentials.clientKey

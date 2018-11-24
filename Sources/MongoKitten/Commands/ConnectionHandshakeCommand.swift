@@ -217,7 +217,7 @@ public struct ConnectionHandshakeReply: ServerReplyDecodableResult {
     public let me: String?
     
     /// A unique identifier for each election. Included only in the output of isMaster for the primary. Used by clients to determine when elections occur.
-    public let electionId: String? // TODO: Is this the correct type?
+    public let electionId: ObjectId?
     
     // MARK: ServerReplyDecodable
     public var isSuccessful: Bool {

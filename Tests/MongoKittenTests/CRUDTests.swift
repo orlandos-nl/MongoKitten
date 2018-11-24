@@ -144,12 +144,12 @@ class CRUDTests : XCTestCase {
         do {
             let collection = connection[dbName]["test"]
             
-            try collection.insert(["_id": ObjectId(), "owner": "Robbert"]).wait()
+            _ = try collection.insert(["_id": ObjectId(), "owner": "Robbert"]).wait()
             
             let changeStream = try collection.watch().wait()
             var count = 0
             
-            let future = changeStream.forEachAsync { notification in
+            let future = changeStream.sequentialForEach { notification in
                 count += 1
                 XCTAssertEqual(notification.fullDocument?["owner"] as? String, "Joannis")
                 return collection.database.eventLoop.newSucceededFuture(result: ())

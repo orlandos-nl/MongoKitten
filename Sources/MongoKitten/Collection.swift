@@ -89,7 +89,6 @@ public final class Collection: FutureConvenienceCallable {
     /// - parameter key: The field for which to return distinct values.
     /// - parameter query: A query that specifies the documents from which to retrieve the distinct values.
     public func distinct(onKey key: String, where filter: Query? = nil) -> EventLoopFuture<[Primitive]> {
-        // TODO: Discuss `filter` vs `query` as argument name
         var distinct = DistinctCommand(onKey: key, into: self)
         distinct.query = filter
         return distinct.execute(on: session)
