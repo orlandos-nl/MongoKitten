@@ -58,13 +58,11 @@ final class ClientSession {
     /// - parameter command: The `MongoDBCommand` to execute
     /// - returns: The reply to the command
     func execute<C: MongoDBCommand>(command: C) -> EventLoopFuture<C.Reply> {
-        return cluster.getConnection().then { connection in
-            return connection._execute(command: command, session: self).thenThrowing { reply in
-                do {
-                    return try C.Reply(reply: reply)
-                } catch {
-                    throw try C.ErrorReply(reply: reply)
-                }
+        return cluster.send(command: command, session: self).thenThrowing { reply in
+            do {
+                return try C.Reply(reply: reply)
+            } catch {
+                throw try C.ErrorReply(reply: reply)
             }
         }
     }

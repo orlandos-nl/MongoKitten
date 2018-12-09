@@ -47,6 +47,28 @@ class CRUDTests : XCTestCase {
 //        }.wait()
 //    }
     
+    func testCluster() throws {
+        let users = self.cluster[dbName]["users"]
+        _ = try users.insert(["name": "Joannis"]).wait()
+        
+        for i in 0..<100 {
+            print("Start cycle \(i)")
+            
+            let future = users.findOne()
+                
+            future.whenSuccess { user in
+                XCTAssertEqual(user?["name"] as? String, "Joannis")
+                print("End cycle \(i)")
+            }
+            
+            future.whenFailure { error in
+                print("\(error)")
+            }
+            
+            sleep(2)
+        }
+    }
+    
     func createTestData(n: Int, in collection: MongoKitten.Collection) -> EventLoopFuture<Void> {
         func nextDocument(index: Int) -> Document {
             return [
@@ -148,20 +170,19 @@ class CRUDTests : XCTestCase {
             
             let changeStream = try collection.watch().wait()
             var count = 0
+            var names = ["Joannis" ,"Robbert"]
             
-            let future = changeStream.sequentialForEach { notification in
+            changeStream.forEach { notification in
+                XCTAssertEqual(notification.fullDocument?["owner"] as? String, names[count])
                 count += 1
-                XCTAssertEqual(notification.fullDocument?["owner"] as? String, "Joannis")
-                return collection.database.eventLoop.newSucceededFuture(result: ())
             }
             
             XCTAssert(try collection.insert(["_id": ObjectId(), "owner": "Joannis"]).wait().isSuccessful)
             XCTAssert(try collection.insert(["_id": ObjectId(), "owner": "Robbert"]).wait().isSuccessful)
 
             try changeStream.close().wait()
-            try future.wait()
             
-            XCTAssertEqual(count, 1)
+            XCTAssertEqual(count, 2)
         } catch {
             XCTFail("\(error)")
         }

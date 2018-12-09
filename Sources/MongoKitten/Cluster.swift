@@ -40,8 +40,31 @@ public final class Cluster {
         self.sessionManager = sessionManager
         self.settings = settings
         self.pool = []
-        
         // SDAM, monitor online hosts
+    }
+    
+    private func send(context: MongoDBCommandContext) -> EventLoopFuture<ServerReply> {
+        let future = self.getConnection().thenIfError { _ in
+            return self.makeConnection(writable: true).map { $0.connection }
+        }.then { connection -> EventLoopFuture<Void> in
+            connection.context.queries.append(context)
+            return connection.channel.writeAndFlush(context)
+        }
+        future.cascadeFailure(promise: context.promise)
+        
+        return future.then { context.promise.futureResult }
+    }
+    
+    func send<C: MongoDBCommand>(command: C, session: ClientSession? = nil) -> EventLoopFuture<ServerReply> {
+        let context = MongoDBCommandContext(
+            command: command,
+            requestID: 0,
+            retry: true,
+            session: session,
+            promise: self.eventLoop.newPromise()
+        )
+        
+        return send(context: context)
     }
     
     public static func connect(on group: EventLoopGroup, settings: ConnectionSettings) -> EventLoopFuture<Cluster> {
@@ -53,7 +76,7 @@ public final class Cluster {
         
         let sessionManager = SessionManager()
         let cluster = Cluster(eventLoop: loop, sessionManager: sessionManager, settings: settings)
-        return cluster.makeConnection(writable: true).map { _ in
+        return cluster.getConnection().map { _ in
             return cluster
         }
     }
@@ -70,11 +93,32 @@ public final class Cluster {
             connection.slaveOk = self.slaveOk
             
             /// Ensures we default to the cluster's lowest version
-            if  let connectionHandshake = connection.handshakeResult,
-                let clusterHandshake = self.handshakeResult,
-                connectionHandshake.maxWireVersion.version < clusterHandshake.maxWireVersion.version
-            {
-                self.handshakeResult = connectionHandshake
+            if let connectionHandshake = connection.handshakeResult {
+                if let clusterHandshake = self.handshakeResult {
+                    if clusterHandshake.maxWireVersion.version > connectionHandshake.maxWireVersion.version {
+                        self.handshakeResult = connectionHandshake
+                    }
+                } else {
+                    self.handshakeResult = connectionHandshake
+                }
+            }
+            
+            let connectionId = ObjectIdentifier(connection)
+            connection.channel.closeFuture.whenComplete { [weak self] in
+                guard let me = self else { return }
+                
+                if let index = me.pool.firstIndex(where: { ObjectIdentifier($0.connection) == connectionId }) {
+                    let connection = me.pool[index].connection
+                    me.pool.remove(at: index)
+                    connection.context.prepareForResend()
+                    
+                    for query in connection.context.queries {
+                        _ = me.send(context: query)
+                    }
+                    
+                    // So they don't get failed on deinit of the connection
+                    connection.context.queries = []
+                }
             }
             
             return PooledConnection(host: host, connection: connection)
@@ -82,12 +126,24 @@ public final class Cluster {
     }
     
     func getConnection(writable: Bool = true) -> EventLoopFuture<Connection> {
-        let matchingConnection = pool.first { pooledConnection in
-            if writable && pooledConnection.connection.handshakeResult?.readOnly ?? false {
-                return false
+        var index = pool.count
+        var matchingConnection: PooledConnection?
+        
+        nextConnection: while index > 0 {
+            index = index &- 1
+            let pooledConnection = pool[index]
+            let connection = pooledConnection.connection
+            
+            if connection.context.isClosed {
+                self.pool.remove(at: index)
+                continue nextConnection
             }
             
-            return true
+            if writable && handshakeResult?.readOnly ?? false {
+                continue nextConnection
+            }
+            
+            matchingConnection = pooledConnection
         }
         
         if let matchingConnection = matchingConnection {

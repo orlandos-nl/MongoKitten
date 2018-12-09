@@ -16,7 +16,7 @@ internal final class Connection {
     }
     
     /// The NIO Client Connection Context
-    let context: ClientConnectionContext
+    let context: ClientQueryContext
     
     /// The NIO channel
     let channel: Channel
@@ -69,7 +69,7 @@ internal final class Connection {
         for cluster: Cluster,
         host: ConnectionSettings.Host
     ) -> EventLoopFuture<Connection> {
-        let context = ClientConnectionContext()
+        let context = ClientQueryContext()
         let serializer = ClientConnectionSerializer(context: context)
         
         let bootstrap = ClientBootstrap(group: cluster.eventLoop)
@@ -101,7 +101,7 @@ internal final class Connection {
         }
     }
     
-    init(channel: Channel, context: ClientConnectionContext, implicitSession: ClientSession, sessionManager: SessionManager, settings: ConnectionSettings, serializer: ClientConnectionSerializer) {
+    init(channel: Channel, context: ClientQueryContext, implicitSession: ClientSession, sessionManager: SessionManager, settings: ConnectionSettings, serializer: ClientConnectionSerializer) {
         self.channel = channel
         self.context = context
         self.sessionManager = sessionManager
@@ -110,7 +110,7 @@ internal final class Connection {
         self.implicitSession = implicitSession
     }
     
-    static func initialize(pipeline: ChannelPipeline, hostname: String?, context: ClientConnectionContext, settings: ConnectionSettings, serializer: ClientConnectionSerializer) -> EventLoopFuture<Void> {
+    static func initialize(pipeline: ChannelPipeline, hostname: String?, context: ClientQueryContext, settings: ConnectionSettings, serializer: ClientConnectionSerializer) -> EventLoopFuture<Void> {
         let promise: EventLoopPromise<Void> = pipeline.eventLoop.newPromise()
         
         var handlers: [ChannelHandler] = [ClientConnectionParser(context: context), serializer]
@@ -166,13 +166,15 @@ internal final class Connection {
         let command = MongoDBCommandContext(
             command: command,
             requestID: nextRequestId(),
+            retry: true, // TODO: This is not correct, and a difference between read/write
             session: session,
             promise: promise
         )
         
-        self.context.queries[command.requestID] = command.promise
+        self.context.queries.append(command)
         
-        return self.channel.writeAndFlush(command).then { promise.futureResult }
+        _ = self.channel.writeAndFlush(command)
+        return promise.futureResult
     }
     
     private func nextRequestId() -> Int32 {
@@ -284,33 +286,52 @@ internal final class Connection {
 struct MongoDBCommandContext {
     var command: AnyMongoDBCommand
     var requestID: Int32
+    var retry: Bool
     let session: ClientSession?
     var promise: EventLoopPromise<ServerReply>
 }
 
-final class ClientConnectionContext {
-    var queries = [Int32: EventLoopPromise<ServerReply>]()
+final class ClientQueryContext {
+    var queries = [MongoDBCommandContext]()
     var channelContext: ChannelHandlerContext?
-    var unsentCommands = [MongoDBCommandContext]()
     var isClosed = false
     
-    lazy var send: (MongoDBCommandContext) -> Void = { command in
-        self.unsentCommands.append(command)
+    func prepareForResend() {
+        var i = queries.count
+        
+        while i > 0 {
+            i = i &- 1
+            var query = queries[i]
+            if !query.retry {
+                queries.remove(at: i)
+                query.promise.fail(error: MongoKittenError(.protocolParsingError, reason: nil))
+            } else {
+                // TODO: This ensures only 1 retry, is that valid?
+                query.retry = false
+                queries[i] = query
+            }
+        }
     }
     
     init() {}
+    
+    deinit {
+        for query in queries {
+            query.promise.fail(error: MongoKittenError(.unableToConnect, reason: nil))
+        }
+    }
 }
 
 final class ClientConnectionSerializer: MessageToByteEncoder {
     typealias OutboundIn = MongoDBCommandContext
     
-    let context: ClientConnectionContext
+    let context: ClientQueryContext
     var supportsOpMessage = false
     var slaveOk = false
     var includeSession = false
     let supportsQueryCommand = true
     
-    init(context: ClientConnectionContext) {
+    init(context: ClientQueryContext) {
         self.context = context
     }
     
@@ -411,9 +432,9 @@ final class ClientConnectionParser: ByteToMessageDecoder {
     var cumulationBuffer: ByteBuffer?
     var header: MessageHeader?
     
-    let context: ClientConnectionContext
+    let context: ClientQueryContext
     
-    init(context: ClientConnectionContext) {
+    init(context: ClientQueryContext) {
         self.context = context
     }
     
@@ -449,9 +470,9 @@ final class ClientConnectionParser: ByteToMessageDecoder {
             throw MongoKittenError(.protocolParsingError, reason: .unsupportedOpCode)
         }
         
-        if let query = self.context.queries[reply.responseTo] {
-            query.succeed(result: reply)
-            self.context.queries[reply.responseTo] = nil
+        if let index = self.context.queries.firstIndex(where: { $0.requestID == reply.responseTo }) {
+            self.context.queries[index].promise.succeed(result: reply)
+            self.context.queries.remove(at: index)
         }
         
         // TODO: Proper handling by passing the reply / error to the next handler
@@ -462,14 +483,12 @@ final class ClientConnectionParser: ByteToMessageDecoder {
     
     // TODO: this does not belong here but on the next handler
     func errorCaught(ctx: ChannelHandlerContext, error: Error) {
-        let queries = self.context.queries.values
-        self.context.queries = [:]
-        self.context.isClosed = true
-        ctx.close(promise: nil)
+        self.context.prepareForResend()
         
-        for query in queries {
-            query.fail(error: MongoKittenError(.protocolParsingError, reason: nil))
-        }
+        self.context.isClosed = true
+        // TODO: Notify cluster to remove this connection
+        // So that it can take the remaining queries and re-try them
+        ctx.close(promise: nil)
     }
 }
 
