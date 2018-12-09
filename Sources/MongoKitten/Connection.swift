@@ -218,7 +218,7 @@ internal final class Connection {
         }
     }
     
-    private func executeHandshake() -> EventLoopFuture<Void> {
+    func executeHandshake() -> EventLoopFuture<Void> {
         // Construct app details
         let app: ConnectionHandshakeCommand.ClientDetails.ApplicationDetails?
         if let appName = settings.applicationName {
