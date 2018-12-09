@@ -22,8 +22,8 @@ class CRUDTests : XCTestCase {
 //        applicationName: "Test MK5"
 //    )
     
-    let settings = try! ConnectionSettings("mongodb://mongokitten:xrQqOYD28lvAOKXc@ok0-shard-00-00-xkvc1.mongodb.net:27017?ssl=true")
-//    let settings = try! ConnectionSettings("mongodb://localhost")
+//    let settings = try! ConnectionSettings("mongodb://mongokitten:xrQqOYD28lvAOKXc@ok0-shard-00-00-xkvc1.mongodb.net:27017?ssl=true")
+    let settings = try! ConnectionSettings("mongodb://localhost")
     
     var connection: Connection!
     
@@ -96,6 +96,33 @@ class CRUDTests : XCTestCase {
         try dogs.find().forEach { doc in
             print(doc)
         }.wait()
+    }
+    
+    func testGenericFindOne() throws {
+        struct User: Codable {
+            let _id: ObjectId
+            let name: String
+            
+            init(named name: String) {
+                self._id = ObjectId()
+                self.name = name
+            }
+        }
+        
+        do {
+            let collection = connection[dbName]["test"]
+            let user = User(named: "Red")
+            _ = try collection.insert(BSONEncoder().encode(user)).wait()
+            
+            if let newUser = try collection.findOne("name" == user.name, as: User.self).wait() {
+                XCTAssertEqual(user.name, newUser.name)
+                XCTAssertEqual(user._id, newUser._id)
+            } else {
+                XCTFail()
+            }
+        } catch {
+            XCTFail("\(error)")
+        }
     }
     
     func testBasicFind() throws {
