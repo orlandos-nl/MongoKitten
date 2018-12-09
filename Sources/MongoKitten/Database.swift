@@ -17,7 +17,7 @@ public final class Database: FutureConvenienceCallable {
     public let name: String
     
     /// The connection the database instance uses
-    public let session: ClientSession
+    let session: ClientSession
     
     /// The collection to execute commands on
     internal var cmd: Collection {
@@ -26,12 +26,12 @@ public final class Database: FutureConvenienceCallable {
     
     /// The ObjectId generator tied to this datatabase
     public var objectIdGenerator: ObjectIdGenerator {
-        return session.connection.sharedGenerator
+        return session.cluster.sharedGenerator
     }
     
     /// The NIO event loop.
     public var eventLoop: EventLoop {
-        return session.connection.eventLoop
+        return session.cluster.eventLoop
     }
     
     /// A helper method that uses the normal `connect` method and awaits it. It creates an event loop group for you.
@@ -71,8 +71,8 @@ public final class Database: FutureConvenienceCallable {
                 throw MongoKittenError(.unableToConnect, reason: .noTargetDatabaseSpecified)
             }
             
-            return Connection.connect(on: loop, settings: settings).map { connection -> Database in
-                return connection[targetDatabase]
+            return Cluster.connect(on: loop, settings: settings).map { cluster in
+                return cluster[targetDatabase]
             }
         } catch {
             return loop.newFailedFuture(error: error)

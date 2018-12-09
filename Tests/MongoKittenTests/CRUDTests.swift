@@ -22,15 +22,15 @@ class CRUDTests : XCTestCase {
 //        applicationName: "Test MK5"
 //    )
     
-    let settings = try! ConnectionSettings("mongodb://mongokitten:xrQqOYD28lvAOKXc@ok0-shard-00-00-xkvc1.mongodb.net:27017?ssl=true")
-//    let settings = try! ConnectionSettings("mongodb://localhost")
+//    let settings = try! ConnectionSettings("mongodb://mongokitten:xrQqOYD28lvAOKXc@ok0-shard-00-00-xkvc1.mongodb.net:27017?ssl=true")
+    let settings = try! ConnectionSettings("mongodb://localhost")
     
-    var connection: Connection!
+    var cluster: Cluster!
     
     override func setUp() {
-        self.connection = try! Connection.connect(on: group, settings: settings).wait()
+        self.cluster = try! Cluster.connect(on: group, settings: settings).wait()
         
-        try! connection[dbName].drop().wait()
+        try! cluster[dbName].drop().wait()
     }
     
 //    func testRangeFind() throws {
@@ -67,8 +67,8 @@ class CRUDTests : XCTestCase {
     }
     
     func testHenk() throws {
-        let dogs = connection[dbName]["dogs"]
-        let owners = connection[dbName]["owners"]
+        let dogs = cluster[dbName]["dogs"]
+        let owners = cluster[dbName]["owners"]
         
         let ownerId = owners.objectIdGenerator.generate()
         dogs.insert(["_id": dogs.objectIdGenerator.generate(), "owner": ownerId])
@@ -100,7 +100,7 @@ class CRUDTests : XCTestCase {
     
     func testBasicFind() throws {
         do {
-            let collection = connection[dbName]["test"]
+            let collection = cluster[dbName]["test"]
             
             try createTestData(n: 241, in: collection).wait()
             
@@ -142,7 +142,7 @@ class CRUDTests : XCTestCase {
     
     func testChangeStream() throws {
         do {
-            let collection = connection[dbName]["test"]
+            let collection = cluster[dbName]["test"]
             
             _ = try collection.insert(["_id": ObjectId(), "owner": "Robbert"]).wait()
             

@@ -146,12 +146,16 @@ extension Connection {
             let request = Data(rawRequest.utf8).base64EncodedString()
             let command = SASLStart(namespace: namespace, mechanism: H.algorithm, payload: request)
             
-            return implicitSession.execute(command: command).then { reply in
-                if reply.done {
-                    return self.eventLoop.newSucceededFuture(result: ())
-                }
-                
+            // NO session must be used here: https://github.com/mongodb/specifications/blob/master/source/sessions/driver-sessions.rst#when-opening-and-authenticating-a-connection
+            // Forced on the current connection
+            return self._execute(command: command, session: nil).then { serverReply in
                 do {
+                    let reply = try SASLReply(reply: serverReply)
+                    
+                    if reply.done {
+                        return self.eventLoop.newSucceededFuture(result: ())
+                    }
+                    
                     let preppedPassword: String
                     
                     if H.algorithm.md5Digested {
@@ -172,8 +176,10 @@ extension Connection {
                         payload: response
                     )
                     
-                    return self.implicitSession.execute(command: next).then { reply in
+                    return self._execute(command: next, session: nil).then { serverReply in
                         do {
+                            let reply = try SASLReply(reply: serverReply)
+                            
                             let successReply = try reply.payload.base64Decoded()
                             try context.completeAuthentication(withResponse: successReply)
                             
@@ -186,7 +192,9 @@ extension Connection {
                                     payload: ""
                                 )
                                 
-                                return self.implicitSession.execute(command: final).thenThrowing { reply in
+                                return self._execute(command: final, session: nil).thenThrowing { serverReply in
+                                    let reply = try SASLReply(reply: serverReply)
+                                    
                                     guard reply.done else {
                                         throw MongoKittenError(.authenticationFailure, reason: .malformedAuthenticationDetails)
                                     }

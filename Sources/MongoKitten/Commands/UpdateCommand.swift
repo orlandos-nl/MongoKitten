@@ -79,7 +79,7 @@ public struct UpdateCommand: WriteCommand {
     }
     
     @discardableResult
-    public func execute(on session: ClientSession) -> EventLoopFuture<UpdateReply> {
+    func execute(on session: ClientSession) -> EventLoopFuture<UpdateReply> {
         return session.execute(command: self)
     }
 }

@@ -1,6 +1,6 @@
 import NIO
 
-extension Connection {
+extension Cluster {
     func withAssertions<T>(
         _ assertions: HandshakeAssertion...,
         do function: () -> EventLoopFuture<T>

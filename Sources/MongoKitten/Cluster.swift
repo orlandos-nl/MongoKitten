@@ -10,6 +10,13 @@ public final class Cluster {
     let settings: ConnectionSettings
     let sessionManager: SessionManager
     
+    /// Set to the lowest version handshake received from MongoDB
+    internal var handshakeResult: ConnectionHandshakeReply?
+    
+    /// The shared ObjectId generator for this cluster
+    /// Using the shared generator is more efficient and correct than `ObjectId()`
+    internal let sharedGenerator = ObjectIdGenerator()
+    
     public var slaveOk = false {
         didSet {
             for connection in pool {
@@ -20,11 +27,19 @@ public final class Cluster {
     
     private var pool: [PooledConnection]
     
-    private init(eventLoop: EventLoop, sessionManager: SessionManager, settings: ConnectionSettings, initialConnection connection: PooledConnection) {
+    /// Returns the database named `database`, on this connection
+    public subscript(database: String) -> Database {
+        return Database(
+            named: database,
+            session: sessionManager.makeImplicitSession(for: self)
+        )
+    }
+    
+    private init(eventLoop: EventLoop, sessionManager: SessionManager, settings: ConnectionSettings) {
         self.eventLoop = eventLoop
         self.sessionManager = sessionManager
         self.settings = settings
-        self.pool = [connection]
+        self.pool = []
         
         // SDAM, monitor online hosts
     }
@@ -36,18 +51,10 @@ public final class Cluster {
             return loop.newFailedFuture(error: MongoKittenError(.unableToConnect, reason: .noHostSpecified))
         }
         
-        let autoSelectedHost = settings.hosts.first!
         let sessionManager = SessionManager()
-        
-        return Connection.connect(
-            on: group,
-            sessionManager: sessionManager,
-            settings: settings,
-            host: autoSelectedHost
-        ).map { connection in
-            let pooledConection = PooledConnection(host: autoSelectedHost, connection: connection)
-            
-            return Cluster(eventLoop: loop, sessionManager: sessionManager, settings: settings, initialConnection: pooledConection)
+        let cluster = Cluster(eventLoop: loop, sessionManager: sessionManager, settings: settings)
+        return cluster.makeConnection(writable: true).map { _ in
+            return cluster
         }
     }
     
@@ -57,18 +64,24 @@ public final class Cluster {
         
         // TODO: Failed to connect, different host until all hosts have been had
         return Connection.connect(
-            on: eventLoop,
-            sessionManager: sessionManager,
-            settings: settings,
-            host: host
+            for: self,
+            host: settings.hosts.first!
         ).map { connection in
             connection.slaveOk = self.slaveOk
+            
+            /// Ensures we default to the cluster's lowest version
+            if  let connectionHandshake = connection.handshakeResult,
+                let clusterHandshake = self.handshakeResult,
+                connectionHandshake.maxWireVersion.version < clusterHandshake.maxWireVersion.version
+            {
+                self.handshakeResult = connectionHandshake
+            }
             
             return PooledConnection(host: host, connection: connection)
         }
     }
     
-    public func getConnection(writable: Bool = true) -> EventLoopFuture<Connection> {
+    func getConnection(writable: Bool = true) -> EventLoopFuture<Connection> {
         let matchingConnection = pool.first { pooledConnection in
             if writable && pooledConnection.connection.handshakeResult?.readOnly ?? false {
                 return false
