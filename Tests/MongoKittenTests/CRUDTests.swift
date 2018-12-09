@@ -47,27 +47,27 @@ class CRUDTests : XCTestCase {
 //        }.wait()
 //    }
     
-    func testCluster() throws {
-        let users = self.cluster[dbName]["users"]
-        _ = try users.insert(["name": "Joannis"]).wait()
-        
-        for i in 0..<100 {
-            print("Start cycle \(i)")
-            
-            let future = users.findOne()
-                
-            future.whenSuccess { user in
-                XCTAssertEqual(user?["name"] as? String, "Joannis")
-                print("End cycle \(i)")
-            }
-            
-            future.whenFailure { error in
-                print("\(error)")
-            }
-            
-            sleep(2)
-        }
-    }
+//    func testCluster() throws {
+//        let users = self.cluster[dbName]["users"]
+//        _ = try users.insert(["name": "Joannis"]).wait()
+//        
+//        for i in 0..<100 {
+//            print("Start cycle \(i)")
+//            
+//            let future = users.findOne()
+//                
+//            future.whenSuccess { user in
+//                XCTAssertEqual(user?["name"] as? String, "Joannis")
+//                print("End cycle \(i)")
+//            }
+//            
+//            future.whenFailure { error in
+//                print("\(error)")
+//            }
+//            
+//            sleep(2)
+//        }
+//    }
     
     func createTestData(n: Int, in collection: MongoKitten.Collection) -> EventLoopFuture<Void> {
         func nextDocument(index: Int) -> Document {
