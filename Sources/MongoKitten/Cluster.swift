@@ -76,7 +76,7 @@ public final class Cluster {
         
         let sessionManager = SessionManager()
         let cluster = Cluster(eventLoop: loop, sessionManager: sessionManager, settings: settings)
-        return cluster.getConnection().map { _ in
+        return cluster.getConnection().then { _ in
             return cluster.rediscover().map { return cluster }
         }
     }
