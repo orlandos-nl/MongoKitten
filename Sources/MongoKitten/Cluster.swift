@@ -107,7 +107,7 @@ public final class Cluster {
             }
         }
         
-        rediscover()
+//        _ = rediscover()
     }
     
     private func makeConnection(to host: ConnectionSettings.Host) -> EventLoopFuture<PooledConnection> {
