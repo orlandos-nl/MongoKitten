@@ -77,7 +77,7 @@ public final class Cluster {
         let sessionManager = SessionManager()
         let cluster = Cluster(eventLoop: loop, sessionManager: sessionManager, settings: settings)
         return cluster.getConnection().map { _ in
-            return cluster
+            return cluster.rediscover().map { return cluster }
         }
     }
     
@@ -106,8 +106,6 @@ public final class Cluster {
                 }
             }
         }
-        
-//        _ = rediscover()
     }
     
     private func makeConnection(to host: ConnectionSettings.Host) -> EventLoopFuture<PooledConnection> {
