@@ -216,7 +216,10 @@ public final class Cluster {
                 continue nextConnection
             }
             
-            if writable && handshakeResult?.readOnly ?? false {
+            let unwritable = writable && handshakeResult?.readOnly ?? false
+            let unreadable = !self.slaveOk
+            
+            if unwritable || unreadable {
                 continue nextConnection
             }
             
@@ -240,7 +243,10 @@ public final class Cluster {
                 return self.eventLoop.newFailedFuture(error: MongoKittenError(.unableToConnect, reason: .handshakeFailed))
             }
             
-            if writable && handshake.readOnly == true {
+            let unwritable = writable && handshake.readOnly == true
+            let unreadable = !self.slaveOk
+            
+            if unwritable || unreadable {
                 return self.getConnection(writable: writable)
             } else {
                 return self.eventLoop.newSucceededFuture(result: pooledConnection.connection)
