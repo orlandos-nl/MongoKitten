@@ -217,7 +217,7 @@ public final class Cluster {
             }
             
             let unwritable = writable && handshakeResult?.readOnly ?? false
-            let unreadable = !self.slaveOk && handshakeResult?.ismaster ?? false
+            let unreadable = !self.slaveOk && !(handshakeResult?.ismaster ?? false)
             
             if unwritable || unreadable {
                 continue nextConnection
@@ -244,7 +244,7 @@ public final class Cluster {
             }
             
             let unwritable = writable && handshake.readOnly == true
-            let unreadable = !self.slaveOk && handshake.ismaster
+            let unreadable = !self.slaveOk && !handshake.ismaster
             
             if unwritable || unreadable {
                 return self.getConnection(writable: writable)
