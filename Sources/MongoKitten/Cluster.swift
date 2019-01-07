@@ -10,9 +10,6 @@ public final class Cluster {
     let settings: ConnectionSettings
     let sessionManager: SessionManager
     
-    /// Set to the lowest version handshake received from MongoDB
-    internal var handshakeResult: ConnectionHandshakeReply?
-    
     /// The shared ObjectId generator for this cluster
     /// Using the shared generator is more efficient and correct than `ObjectId()`
     internal let sharedGenerator = ObjectIdGenerator()
@@ -46,9 +43,9 @@ public final class Cluster {
     private func send(context: MongoDBCommandContext) -> EventLoopFuture<ServerReply> {
         let future = self.getConnection().thenIfError { _ in
             return self.getConnection(writable: true)
-        }.then { connection -> EventLoopFuture<Void> in
-            connection.context.queries.append(context)
-            return connection.channel.writeAndFlush(context)
+            }.then { connection -> EventLoopFuture<Void> in
+                connection.context.queries.append(context)
+                return connection.channel.writeAndFlush(context)
         }
         future.cascadeFailure(promise: context.promise)
         
@@ -107,30 +104,22 @@ public final class Cluster {
         let connection = Connection.connect(
             for: self,
             host: host
-        ).map { connection -> PooledConnection in
-            connection.slaveOk = self.slaveOk
-            
-            /// Ensures we default to the cluster's lowest version
-            if let connectionHandshake = connection.handshakeResult {
-                if let clusterHandshake = self.handshakeResult {
-                    if clusterHandshake.maxWireVersion.version > connectionHandshake.maxWireVersion.version {
-                        self.handshakeResult = connectionHandshake
-                    }
-                } else {
-                    self.handshakeResult = connectionHandshake
+            ).map { connection -> PooledConnection in
+                connection.slaveOk = self.slaveOk
+                
+                /// Ensures we default to the cluster's lowest version
+                if let connectionHandshake = connection.handshakeResult {
+                    self.updateSDAM(from: connectionHandshake)
                 }
                 
-                self.updateSDAM(from: connectionHandshake)
-            }
-            
-            let connectionId = ObjectIdentifier(connection)
-            connection.channel.closeFuture.whenComplete { [weak self] in
-                guard let me = self else { return }
+                let connectionId = ObjectIdentifier(connection)
+                connection.channel.closeFuture.whenComplete { [weak self] in
+                    guard let me = self else { return }
+                    
+                    me.remove(connectionId: connectionId)
+                }
                 
-                me.remove(connectionId: connectionId)
-            }
-            
-            return PooledConnection(host: host, connection: connection)
+                return PooledConnection(host: host, connection: connection)
         }
         
         connection.whenFailure { error in
@@ -198,13 +187,13 @@ public final class Cluster {
         nextConnection: for pooledConnection in pool {
             let connection = pooledConnection.connection
             
-            if connection.context.isClosed {
+            guard !connection.context.isClosed, let handshakeResult = connection.handshakeResult else {
                 self.remove(connectionId: ObjectIdentifier(connection))
                 continue nextConnection
             }
             
-            let unwritable = writable && handshakeResult?.readOnly ?? false
-            let unreadable = !self.slaveOk && !(handshakeResult?.ismaster ?? false)
+            let unwritable = writable && handshakeResult.readOnly ?? false
+            let unreadable = !self.slaveOk && !handshakeResult.ismaster
             
             if unwritable || unreadable {
                 continue nextConnection
