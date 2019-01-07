@@ -88,9 +88,9 @@ public final class Cluster {
     }
     private var timeoutHosts = Set<ConnectionSettings.Host>()
     
-    private func updateSDAM(from handshake: ConnectionHandshakeReply?) -> EventLoopFuture<Void> {
-        var hosts = handshake?.hosts ?? []
-        hosts += handshake?.passives ?? []
+    private func updateSDAM(from handshake: ConnectionHandshakeReply) {
+        var hosts = handshake.hosts ?? []
+        hosts += handshake.passives ?? []
         
         for host in hosts {
             do {
@@ -99,25 +99,23 @@ public final class Cluster {
             } catch { }
         }
         
-        var futures = [EventLoopFuture<Void>]()
-        
-        for host in undiscoveredHosts {
-            let future = makeConnection(to: host).map { pooledConnection in
-                self.pool.append(pooledConnection)
+        for host in self.hosts {
+            if !discoveredHosts.contains(host) {
+                makeConnection(to: host).whenSuccess { pooledConnection in
+                    self.pool.append(pooledConnection)
+                }
             }
-            futures.append(future)
         }
-        
-        return EventLoopFuture<Void>.andAll(futures, eventLoop: eventLoop)
     }
     
     private func makeConnection(to host: ConnectionSettings.Host) -> EventLoopFuture<PooledConnection> {
         discoveredHosts.insert(host)
         
+        // TODO: Failed to connect, different host until all hosts have been had
         let connection = Connection.connect(
             for: self,
             host: host
-        ).then { connection -> EventLoopFuture<PooledConnection> in
+        ).map { connection -> PooledConnection in
             connection.slaveOk = self.slaveOk
             
             /// Ensures we default to the cluster's lowest version
@@ -129,6 +127,8 @@ public final class Cluster {
                 } else {
                     self.handshakeResult = connectionHandshake
                 }
+                
+                self.updateSDAM(from: connectionHandshake)
             }
             
             let connectionId = ObjectIdentifier(connection)
@@ -138,9 +138,7 @@ public final class Cluster {
                 me.remove(connectionId: connectionId)
             }
             
-            return self.updateSDAM(from: connection.handshakeResult).map {
-                return PooledConnection(host: host, connection: connection)
-            }
+            return PooledConnection(host: host, connection: connection)
         }
         
         connection.whenFailure { error in
@@ -156,10 +154,12 @@ public final class Cluster {
         var handshakes = [EventLoopFuture<Void>]()
         
         for pooledConnection in pool {
-            let handshake = pooledConnection.connection.executeHandshake().then {
-                return self.updateSDAM(from: pooledConnection.connection.handshakeResult)
+            let handshake = pooledConnection.connection.executeHandshake()
+            handshake.whenSuccess {
+                if let handshake = pooledConnection.connection.handshakeResult {
+                    self.updateSDAM(from: handshake)
+                }
             }
-                
             handshake.whenFailure { _ in
                 self.discoveredHosts.remove(pooledConnection.host)
             }
