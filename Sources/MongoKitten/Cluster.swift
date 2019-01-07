@@ -98,14 +98,6 @@ public final class Cluster {
                 self.hosts.insert(host)
             } catch { }
         }
-        
-        for host in self.hosts {
-            if !discoveredHosts.contains(host) {
-                makeConnection(to: host).whenSuccess { pooledConnection in
-                    self.pool.append(pooledConnection)
-                }
-            }
-        }
     }
     
     private func makeConnection(to host: ConnectionSettings.Host) -> EventLoopFuture<PooledConnection> {
@@ -201,12 +193,9 @@ public final class Cluster {
     }
     
     func getConnection(writable: Bool = true) -> EventLoopFuture<Connection> {
-        var index = pool.count
         var matchingConnection: PooledConnection?
         
-        nextConnection: while index > 0 {
-            index = index &- 1
-            let pooledConnection = pool[index]
+        nextConnection: for pooledConnection in pool {
             let connection = pooledConnection.connection
             
             if connection.context.isClosed {
