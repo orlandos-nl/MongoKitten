@@ -1,3 +1,4 @@
+import Foundation
 import NIO
 
 // TODO: https://github.com/mongodb/specifications/tree/master/source/server-selection
@@ -13,6 +14,14 @@ public final class Cluster {
     /// The shared ObjectId generator for this cluster
     /// Using the shared generator is more efficient and correct than `ObjectId()`
     internal let sharedGenerator = ObjectIdGenerator()
+    
+    public var heartbeatFrequency = TimeAmount.seconds(10) {
+        didSet {
+            if heartbeatFrequency < .milliseconds(500) {
+                heartbeatFrequency = .milliseconds(500)
+            }
+        }
+    }
     
     public var slaveOk = false {
         didSet {
@@ -73,8 +82,22 @@ public final class Cluster {
         
         let sessionManager = SessionManager()
         let cluster = Cluster(eventLoop: loop, sessionManager: sessionManager, settings: settings)
-        return cluster.getConnection().then { _ in
+        let connected = cluster.getConnection().then { _ in
             return cluster.rediscover().map { return cluster }
+        }
+            
+        connected.whenSuccess { cluster in
+            cluster.scheduleDiscovery()
+        }
+        
+        return connected
+    }
+    
+    private func scheduleDiscovery() {
+        _ = eventLoop.scheduleTask(in: heartbeatFrequency) { [weak self] in
+            guard let `self` = self else { return }
+            
+            self.rediscover().whenSuccess(self.scheduleDiscovery)
         }
     }
     
