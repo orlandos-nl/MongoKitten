@@ -135,7 +135,7 @@ public final class Cluster {
         var handshakes = [EventLoopFuture<Void>]()
         
         for pooledConnection in pool {
-            let handshake = pooledConnection.connection.executeHandshake()
+            let handshake = pooledConnection.connection.executeHandshake(withClientMetadata: false)
             handshake.whenSuccess {
                 if let handshake = pooledConnection.connection.handshakeResult {
                     self.updateSDAM(from: handshake)
@@ -181,7 +181,7 @@ public final class Cluster {
         }
     }
     
-    func getConnection(writable: Bool = true) -> EventLoopFuture<Connection> {
+    func findMatchingConnection(writable: Bool) -> PooledConnection? {
         var matchingConnection: PooledConnection?
         
         nextConnection: for pooledConnection in pool {
@@ -202,14 +202,22 @@ public final class Cluster {
             matchingConnection = pooledConnection
         }
         
-        if let matchingConnection = matchingConnection {
+        return matchingConnection
+    }
+    
+    func getConnection(writable: Bool = true) -> EventLoopFuture<Connection> {
+        if let matchingConnection = findMatchingConnection(writable: writable) {
             return eventLoop.newSucceededFuture(result: matchingConnection.connection)
         }
         
         guard let host = undiscoveredHosts.first else {
-            _ = self.rediscover()
-            
-            return eventLoop.newFailedFuture(error: MongoKittenError(.unableToConnect, reason: .noAvailableHosts))
+            return self.rediscover().thenThrowing { _ in
+                guard let match = self.findMatchingConnection(writable: writable) else {
+                    throw MongoKittenError(.unableToConnect, reason: .noAvailableHosts)
+                }
+                
+                return match.connection
+            }
         }
         
         return makeConnection(to: host).then { pooledConnection in

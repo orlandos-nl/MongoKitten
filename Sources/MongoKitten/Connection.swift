@@ -95,7 +95,7 @@ internal final class Connection {
                 serializer: serializer
             )
             
-            return connection.executeHandshake()
+            return connection.executeHandshake(withClientMetadata: true)
                 .then { connection.authenticate() }
                 .map { connection }
         }
@@ -218,7 +218,7 @@ internal final class Connection {
         }
     }
     
-    func executeHandshake() -> EventLoopFuture<Void> {
+    func executeHandshake(withClientMetadata: Bool) -> EventLoopFuture<Void> {
         // Construct app details
         let app: ConnectionHandshakeCommand.ClientDetails.ApplicationDetails?
         if let appName = settings.applicationName {
@@ -241,7 +241,7 @@ internal final class Connection {
         // NO session must be used here: https://github.com/mongodb/specifications/blob/master/source/sessions/driver-sessions.rst#when-opening-and-authenticating-a-connection
         // Forced on the current connection
         return self._execute(command: ConnectionHandshakeCommand(
-            application: app,
+            clientDetails: withClientMetadata ? ConnectionHandshakeCommand.ClientDetails(application: app) : nil,
             userNamespace: userNamespace,
             collection: commandCollection
         ), session: nil).thenThrowing { serverReply in

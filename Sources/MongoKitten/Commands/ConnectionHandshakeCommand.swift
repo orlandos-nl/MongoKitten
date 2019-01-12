@@ -67,12 +67,12 @@ struct ConnectionHandshakeCommand: AdministrativeMongoDBCommand {
     
     var isMaster: Int32 = 1
     var saslSupportedMechs: String?
-    var client: ClientDetails
+    var client: ClientDetails?
     
     var namespace: Namespace
     
-    init(application: ClientDetails.ApplicationDetails?, userNamespace: String?, collection: Collection) {
-        self.client = ClientDetails(application: application)
+    init(clientDetails: ClientDetails?, userNamespace: String?, collection: Collection) {
+        self.client = clientDetails
         self.saslSupportedMechs = userNamespace
         self.namespace = collection.namespace
     }
