@@ -4,8 +4,7 @@ import Foundation
 /// A reference to a collection in a `Database`.
 ///
 /// MongoDB stores documents in collections. Collections are analogous to tables in relational databases.
-public final class Collection: FutureConvenienceCallable {
-    
+public class Collection: FutureConvenienceCallable {
     // MARK: Properties
     
     /// The name of the collection
@@ -15,20 +14,18 @@ public final class Collection: FutureConvenienceCallable {
     public let database: Database
     
     public var eventLoop: EventLoop {
-        return connection.eventLoop
+        return cluster.eventLoop
     }
     
-    var session: ClientSession {
-        return database.session
-    }
+    internal var session: ClientSession
     
-    internal var connection: Connection {
-        return self.database.session.connection
+    internal var cluster: Cluster {
+        return self.database.session.cluster
     }
     
     /// The connection's ObjectId generator
     public var objectIdGenerator: ObjectIdGenerator {
-        return connection.sharedGenerator
+        return cluster.sharedGenerator
     }
     
     /// The full collection namespace: "databasename.collectionname"
@@ -44,6 +41,7 @@ public final class Collection: FutureConvenienceCallable {
     internal init(named name: String, in database: Database) {
         self.name = name
         self.database = database
+        self.session = database.session
     }
     
     // MARK: Reading from a collection
@@ -138,7 +136,7 @@ public final class Collection: FutureConvenienceCallable {
     /// - see: https://docs.mongodb.com/manual/reference/command/insert/index.html
     @discardableResult
     public func insert(documents: [Document]) -> EventLoopFuture<InsertReply> {
-        return session.connection.withAssertions(.writable) {
+        return session.cluster.withAssertions(.writable) {
             return InsertCommand(documents, into: self).execute(on: session)
         }
     }
@@ -150,8 +148,8 @@ public final class Collection: FutureConvenienceCallable {
     /// - warning: If you provide no query, all documents in the collection will be deleted
     /// - parameter query: The filter to apply. Defaults to an empty query, deleting every document.
     /// - returns: The number of documents removed
-    public func deleteAll(where query: Query = [:]) -> EventLoopFuture<Int> {
-        return session.connection.withAssertions(.writable) {
+    public func deleteAll(where query: Query) -> EventLoopFuture<Int> {
+        return session.cluster.withAssertions(.writable) {
             let delete = DeleteCommand.Single(matching: query, limit: .all)
             
             return DeleteCommand([delete], from: self).execute(on: session)
@@ -162,8 +160,8 @@ public final class Collection: FutureConvenienceCallable {
     ///
     /// - parameter query: The filter to apply. Defaults to an empty query
     /// - returns: The number of documents removed
-    public func deleteOne(where query: Query = [:]) -> EventLoopFuture<Int> {
-        return session.connection.withAssertions(.writable) {
+    public func deleteOne(where query: Query) -> EventLoopFuture<Int> {
+        return session.cluster.withAssertions(.writable) {
             let delete = DeleteCommand.Single(matching: query, limit: .one)
             
             return DeleteCommand([delete], from: self).execute(on: session)
@@ -210,7 +208,7 @@ public final class Collection: FutureConvenienceCallable {
     /// - parameter multiple: If set to `true`, more than one document may be updated
     @discardableResult
     public func update(where query: Query, to document: Document, multiple: Bool? = nil) -> EventLoopFuture<UpdateReply> {
-        return session.connection.withAssertions(.writable) {
+        return session.cluster.withAssertions(.writable) {
             return UpdateCommand(query, to: document, in: self, multiple: multiple).execute(on: session)
         }
     }
@@ -221,7 +219,7 @@ public final class Collection: FutureConvenienceCallable {
     /// - parameter document: The document to insert or to replace the target document with
     @discardableResult
     public func upsert(where query: Query, to document: Document) -> EventLoopFuture<UpdateReply> {
-        return session.connection.withAssertions(.writable) {
+        return session.cluster.withAssertions(.writable) {
             var update = UpdateCommand.Single(matching: query, to: document)
             update.upsert = true
             
@@ -259,7 +257,7 @@ public final class Collection: FutureConvenienceCallable {
             "$unset": unsetQuery.count > 0 ? unsetQuery : nil
         ]
         
-        return session.connection.withAssertions(.writable) {
+        return session.cluster.withAssertions(.writable) {
             return self.update(where: query, to: updateDocument, multiple: multiple)
         }
     }
@@ -269,7 +267,7 @@ public final class Collection: FutureConvenienceCallable {
     }
     
     public func drop() -> EventLoopFuture<Void> {
-        return session.connection.withAssertions(.writable) {
+        return session.cluster.withAssertions(.writable) {
             let command = AdministrativeCommand(command: DropCollection(named: self.name), on: database.cmd)
             
             return command.execute(on: session).map { _ in }

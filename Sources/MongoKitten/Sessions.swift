@@ -30,10 +30,9 @@ struct SessionIdentifier: Codable {
     }
 }
 
-public final class ClientSession {
+final class ClientSession {
     let serverSession: ServerSession
-    // TODO: Sessions within a cluster rather than a single (TCP) connection
-    let connection: Connection
+    let cluster: Cluster
     let sessionManager: SessionManager
     let clusterTime: Document?
     let options: SessionOptions
@@ -41,9 +40,9 @@ public final class ClientSession {
         return serverSession.sessionId
     }
     
-    init(serverSession: ServerSession, connection: Connection, sessionManager: SessionManager, options: SessionOptions) {
+    init(serverSession: ServerSession, cluster: Cluster, sessionManager: SessionManager, options: SessionOptions) {
         self.serverSession = serverSession
-        self.connection = connection
+        self.cluster = cluster
         self.sessionManager = sessionManager
         self.options = options
         self.clusterTime = nil
@@ -59,7 +58,7 @@ public final class ClientSession {
     /// - parameter command: The `MongoDBCommand` to execute
     /// - returns: The reply to the command
     func execute<C: MongoDBCommand>(command: C) -> EventLoopFuture<C.Reply> {
-        return connection._execute(command: command, session: self).thenThrowing { reply in
+        return cluster.send(command: command, session: self).thenThrowing { reply in
             do {
                 return try C.Reply(reply: reply)
             } catch {
@@ -103,6 +102,16 @@ internal final class ServerSession {
 
 final class SessionManager {
     var availableSessions = [ServerSession]()
+    private let implicitSession = ServerSession.random
+    
+    func makeImplicitSession(for cluster: Cluster) -> ClientSession {
+        return ClientSession(
+            serverSession: cluster.sessionManager.implicitSession,
+            cluster: cluster,
+            sessionManager: cluster.sessionManager,
+            options: SessionOptions()
+        )
+    }
     
     init() {}
     
@@ -110,7 +119,7 @@ final class SessionManager {
         self.availableSessions.append(session)
     }
     
-    func next(withOptions options: SessionOptions, forConnection connection: Connection) -> ClientSession {
+    func next(with options: SessionOptions, for cluster: Cluster) -> ClientSession {
         let serverSession: ServerSession
         
         if availableSessions.count > 0 {
@@ -119,21 +128,13 @@ final class SessionManager {
             serverSession = .random
         }
         
-        return ClientSession(serverSession: serverSession, connection: connection, sessionManager: self, options: options)
-    }
-}
-
-extension Connection {
-    public func startSession(withOptions options: SessionOptions) -> ClientSession {
-        return sessionManager.next(withOptions: options, forConnection: self)
+        return ClientSession(serverSession: serverSession, cluster: cluster, sessionManager: self, options: options)
     }
 }
 
 extension Cluster {
-    public func startSession(withOptions options: SessionOptions) -> EventLoopFuture<ClientSession> {
-        return self.getConnection().map { connection in
-            return connection.startSession(withOptions: options)
-        }
+    func startSession(with options: SessionOptions) -> ClientSession {
+        return self.sessionManager.next(with: options, for: self)
     }
 }
 

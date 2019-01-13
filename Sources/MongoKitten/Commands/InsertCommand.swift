@@ -28,7 +28,7 @@ public struct InsertCommand: WriteCommand {
     }
     
     @discardableResult
-    public func execute(on session: ClientSession) -> EventLoopFuture<InsertReply> {
+    func execute(on session: ClientSession) -> EventLoopFuture<InsertReply> {
         return session.execute(command: self)
     }
 }

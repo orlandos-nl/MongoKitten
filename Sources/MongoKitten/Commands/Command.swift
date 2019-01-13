@@ -104,7 +104,6 @@ extension ServerReplyDecodable {
         do {
             self = try BSONDecoder().decode(Self.self, from: doc)
         } catch {
-            print(Self.self)
             throw error
         }
     }

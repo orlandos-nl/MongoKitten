@@ -10,13 +10,13 @@ import Foundation
 /// `Connection` handles the lowest level communication to a MongoDB instance.
 ///
 /// `Connection` is not threadsafe. It is bound to a single NIO EventLoop.
-public final class Connection {
+internal final class Connection {
     deinit {
         _ = channel.close(mode: .all)
     }
     
     /// The NIO Client Connection Context
-    let context: ClientConnectionContext
+    let context: ClientQueryContext
     
     /// The NIO channel
     let channel: Channel
@@ -28,7 +28,7 @@ public final class Connection {
     private(set) var settings: ConnectionSettings
     
     /// The result of the `isMaster` handshake with the server
-    public private(set) var handshakeResult: ConnectionHandshakeReply? = nil {
+    private(set) var handshakeResult: ConnectionHandshakeReply? = nil {
         didSet {
             if let handshakeResult = handshakeResult {
                 clientConnectionSerializer.includeSession = handshakeResult.maxWireVersion.supportsSessions
@@ -39,15 +39,12 @@ public final class Connection {
     /// The current request ID, used to generate unique identifiers for MongoDB commands
     var currentRequestId: Int32 = 0
     
-    /// The shared ObjectId generator for this connection
-    internal let sharedGenerator = ObjectIdGenerator()
-    
     private let clientConnectionSerializer: ClientConnectionSerializer
     
-    // TODO: public var retryWrites = false
+    // TODO: var retryWrites = false
     
     /// If `true`, allows reading from this node if it's a slave node
-    public var slaveOk: Bool {
+    var slaveOk: Bool {
         get {
             return clientConnectionSerializer.slaveOk
         }
@@ -57,74 +54,63 @@ public final class Connection {
     }
     
     /// Closes the connection to MongoDB
-    public func close() -> EventLoopFuture<Void> {
+    func close() -> EventLoopFuture<Void> {
         self.context.isClosed = true
         
         return self.channel.close()
     }
     
     /// The eventLoop this connection lives on
-    public var eventLoop: EventLoop {
+    var eventLoop: EventLoop {
         return channel.eventLoop
     }
     
-    /// Connects to the MongoDB server with the given `ConnectionSettings`
-    ///
-    /// - parameter group: The NIO EventLoopGroup or EventLoop to use for this connection
-    /// - parameter settings: The connection settings to use
-    /// - returns: A future that resolves with a connected connection if the connection was succesful, or with an error if the connection failed
-    public static func connect(on group: EventLoopGroup, settings: ConnectionSettings) -> EventLoopFuture<Connection> {
-        do {
-            guard let host = settings.hosts.first else {
-                throw MongoKittenError(.unableToConnect, reason: .noHostSpecified)
-            }
-            
-            return Connection.connect(on: group, sessionManager: SessionManager(), settings: settings, host: host)
-        } catch {
-            return group.next().newFailedFuture(error: error)
-        }
-    }
-        
-    internal static func connect(on group: EventLoopGroup, sessionManager: SessionManager, settings: ConnectionSettings, host: ConnectionSettings.Host) -> EventLoopFuture<Connection> {
-        let context = ClientConnectionContext()
+    internal static func connect(
+        for cluster: Cluster,
+        host: ConnectionSettings.Host
+    ) -> EventLoopFuture<Connection> {
+        let context = ClientQueryContext()
         let serializer = ClientConnectionSerializer(context: context)
         
-        let bootstrap = ClientBootstrap(group: group)
+        let bootstrap = ClientBootstrap(group: cluster.eventLoop)
             // Enable SO_REUSEADDR.
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             .channelInitializer { channel in
-                return Connection.initialize(pipeline: channel.pipeline, hostname: host.hostname, context: context, settings: settings, serializer: serializer)
+                return Connection.initialize(
+                    pipeline: channel.pipeline,
+                    hostname: host.hostname,
+                    context: context,
+                    settings: cluster.settings,
+                    serializer: serializer
+                )
         }
         
         return bootstrap.connect(host: host.hostname, port: Int(host.port)).then { channel in
-            let connection = Connection(channel: channel, context: context, sessionManager: sessionManager, settings: settings, serializer: serializer)
+            let connection = Connection(
+                channel: channel,
+                context: context,
+                implicitSession: cluster.sessionManager.makeImplicitSession(for: cluster),
+                sessionManager: cluster.sessionManager,
+                settings: cluster.settings,
+                serializer: serializer
+            )
             
-            return connection.executeHandshake()
+            return connection.executeHandshake(withClientMetadata: true)
                 .then { connection.authenticate() }
                 .map { connection }
         }
     }
     
-    init(channel: Channel, context: ClientConnectionContext, sessionManager: SessionManager, settings: ConnectionSettings, serializer: ClientConnectionSerializer) {
+    init(channel: Channel, context: ClientQueryContext, implicitSession: ClientSession, sessionManager: SessionManager, settings: ConnectionSettings, serializer: ClientConnectionSerializer) {
         self.channel = channel
         self.context = context
         self.sessionManager = sessionManager
         self.settings = settings
         self.clientConnectionSerializer = serializer
-        self.implicitSession = ClientSession(serverSession: .random, connection: self, sessionManager: sessionManager, options: SessionOptions())
+        self.implicitSession = implicitSession
     }
     
-    /// Returns the database named `database`, on this connection
-    public subscript(database: String) -> Database {
-        return Database(named: database, session: implicitSession)
-    }
-    
-    /// Returns the collection for the given namespace
-    internal subscript(namespace: Namespace) -> Collection {
-        return self[namespace.databaseName][namespace.collectionName]
-    }
-    
-    static func initialize(pipeline: ChannelPipeline, hostname: String?, context: ClientConnectionContext, settings: ConnectionSettings, serializer: ClientConnectionSerializer) -> EventLoopFuture<Void> {
+    static func initialize(pipeline: ChannelPipeline, hostname: String?, context: ClientQueryContext, settings: ConnectionSettings, serializer: ClientConnectionSerializer) -> EventLoopFuture<Void> {
         let promise: EventLoopPromise<Void> = pipeline.eventLoop.newPromise()
         
         var handlers: [ChannelHandler] = [ClientConnectionParser(context: context), serializer]
@@ -163,7 +149,7 @@ public final class Connection {
         return promise.futureResult
     }
     
-    func _execute<C: AnyMongoDBCommand>(command: C, session: ClientSession) -> EventLoopFuture<ServerReply> {
+    func _execute<C: AnyMongoDBCommand>(command: C, session: ClientSession?) -> EventLoopFuture<ServerReply> {
         if self.context.isClosed {
             return self.eventLoop.newFailedFuture(error: MongoKittenError(.commandFailure, reason: .connectionClosed))
         }
@@ -180,13 +166,15 @@ public final class Connection {
         let command = MongoDBCommandContext(
             command: command,
             requestID: nextRequestId(),
+            retry: true, // TODO: This is not correct, and a difference between read/write
             session: session,
             promise: promise
         )
         
-        self.context.queries[command.requestID] = command.promise
+        self.context.queries.append(command)
         
-        return self.channel.writeAndFlush(command).then { promise.futureResult }
+        _ = self.channel.writeAndFlush(command)
+        return promise.futureResult
     }
     
     private func nextRequestId() -> Int32 {
@@ -230,7 +218,7 @@ public final class Connection {
         }
     }
     
-    private func executeHandshake() -> EventLoopFuture<Void> {
+    func executeHandshake(withClientMetadata: Bool) -> EventLoopFuture<Void> {
         // Construct app details
         let app: ConnectionHandshakeCommand.ClientDetails.ApplicationDetails?
         if let appName = settings.applicationName {
@@ -239,7 +227,7 @@ public final class Connection {
             app = nil
         }
         
-        let commandCollection = self["admin"]["$cmd"]
+        let commandCollection = self.implicitSession.cluster["admin"]["$cmd"]
         
         let userNamespace: String?
         
@@ -250,11 +238,18 @@ public final class Connection {
             userNamespace = nil
         }
         
-        return implicitSession.execute(command: ConnectionHandshakeCommand(
-            application: app,
+        // NO session must be used here: https://github.com/mongodb/specifications/blob/master/source/sessions/driver-sessions.rst#when-opening-and-authenticating-a-connection
+        // Forced on the current connection
+        return self._execute(command: ConnectionHandshakeCommand(
+            clientDetails: withClientMetadata ? ConnectionHandshakeCommand.ClientDetails(application: app) : nil,
             userNamespace: userNamespace,
             collection: commandCollection
-        )).map { reply in
+        ), session: nil).thenThrowing { serverReply in
+            let reply = try BSONDecoder().decode(
+                ConnectionHandshakeCommand.Reply.self,
+                from: try serverReply.documents.assertFirst()
+            )
+            
             self.handshakeResult = reply
             
             algorithmSelection: if
@@ -291,33 +286,52 @@ public final class Connection {
 struct MongoDBCommandContext {
     var command: AnyMongoDBCommand
     var requestID: Int32
+    var retry: Bool
     let session: ClientSession?
     var promise: EventLoopPromise<ServerReply>
 }
 
-final class ClientConnectionContext {
-    var queries = [Int32: EventLoopPromise<ServerReply>]()
+final class ClientQueryContext {
+    var queries = [MongoDBCommandContext]()
     var channelContext: ChannelHandlerContext?
-    var unsentCommands = [MongoDBCommandContext]()
     var isClosed = false
     
-    lazy var send: (MongoDBCommandContext) -> Void = { command in
-        self.unsentCommands.append(command)
+    func prepareForResend() {
+        var i = queries.count
+        
+        while i > 0 {
+            i = i &- 1
+            var query = queries[i]
+            if !query.retry {
+                queries.remove(at: i)
+                query.promise.fail(error: MongoKittenError(.protocolParsingError, reason: nil))
+            } else {
+                // TODO: This ensures only 1 retry, is that valid?
+                query.retry = false
+                queries[i] = query
+            }
+        }
     }
     
     init() {}
+    
+    deinit {
+        for query in queries {
+            query.promise.fail(error: MongoKittenError(.unableToConnect, reason: nil))
+        }
+    }
 }
 
 final class ClientConnectionSerializer: MessageToByteEncoder {
     typealias OutboundIn = MongoDBCommandContext
     
-    let context: ClientConnectionContext
+    let context: ClientQueryContext
     var supportsOpMessage = false
     var slaveOk = false
     var includeSession = false
     let supportsQueryCommand = true
     
-    init(context: ClientConnectionContext) {
+    init(context: ClientQueryContext) {
         self.context = context
     }
     
@@ -418,9 +432,9 @@ final class ClientConnectionParser: ByteToMessageDecoder {
     var cumulationBuffer: ByteBuffer?
     var header: MessageHeader?
     
-    let context: ClientConnectionContext
+    let context: ClientQueryContext
     
-    init(context: ClientConnectionContext) {
+    init(context: ClientQueryContext) {
         self.context = context
     }
     
@@ -456,9 +470,9 @@ final class ClientConnectionParser: ByteToMessageDecoder {
             throw MongoKittenError(.protocolParsingError, reason: .unsupportedOpCode)
         }
         
-        if let query = self.context.queries[reply.responseTo] {
-            query.succeed(result: reply)
-            self.context.queries[reply.responseTo] = nil
+        if let index = self.context.queries.firstIndex(where: { $0.requestID == reply.responseTo }) {
+            self.context.queries[index].promise.succeed(result: reply)
+            self.context.queries.remove(at: index)
         }
         
         // TODO: Proper handling by passing the reply / error to the next handler
@@ -469,14 +483,12 @@ final class ClientConnectionParser: ByteToMessageDecoder {
     
     // TODO: this does not belong here but on the next handler
     func errorCaught(ctx: ChannelHandlerContext, error: Error) {
-        let queries = self.context.queries.values
-        self.context.queries = [:]
-        self.context.isClosed = true
-        ctx.close(promise: nil)
+        self.context.prepareForResend()
         
-        for query in queries {
-            query.fail(error: MongoKittenError(.protocolParsingError, reason: nil))
-        }
+        self.context.isClosed = true
+        // TODO: Notify cluster to remove this connection
+        // So that it can take the remaining queries and re-try them
+        ctx.close(promise: nil)
     }
 }
 
