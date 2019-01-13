@@ -16,7 +16,7 @@ let package = Package(
     ],
     dependencies: [
         // 💾
-        .package(url: "https://github.com/OpenKitten/BSON.git", .revision("6.0.0-beta.1")),
+        .package(url: "https://github.com/OpenKitten/BSON.git", from: "6.0.0"),
         
         // 🚀
         .package(url: "https://github.com/apple/swift-nio.git", from: "1.8.0"),
