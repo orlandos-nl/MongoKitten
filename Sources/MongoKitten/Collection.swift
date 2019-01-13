@@ -148,7 +148,7 @@ public class Collection: FutureConvenienceCallable {
     /// - warning: If you provide no query, all documents in the collection will be deleted
     /// - parameter query: The filter to apply. Defaults to an empty query, deleting every document.
     /// - returns: The number of documents removed
-    public func deleteAll(where query: Query = [:]) -> EventLoopFuture<Int> {
+    public func deleteAll(where query: Query) -> EventLoopFuture<Int> {
         return session.cluster.withAssertions(.writable) {
             let delete = DeleteCommand.Single(matching: query, limit: .all)
             
@@ -160,7 +160,7 @@ public class Collection: FutureConvenienceCallable {
     ///
     /// - parameter query: The filter to apply. Defaults to an empty query
     /// - returns: The number of documents removed
-    public func deleteOne(where query: Query = [:]) -> EventLoopFuture<Int> {
+    public func deleteOne(where query: Query) -> EventLoopFuture<Int> {
         return session.cluster.withAssertions(.writable) {
             let delete = DeleteCommand.Single(matching: query, limit: .one)
             
