@@ -1,11 +1,10 @@
-<center>
-
+<div style="text-align: center;">
 ![OpenKitten](assets/ReadmeHeader.svg)
 
 ![OpenKitten](assets/Descriptions.gif)
 
 [Installation](#installation) | [Basic usage](#basic-usage) | [About BSON](#about-bson-documents) | [Codable](#codable) | [Community](#community) | [How to help](#how-to-help)
-</center>
+</div>
 
 A fast, pure swift [MongoDB](https://mongodb.com) driver based on [Swift NIO](https://github.com/apple/swift-nio) built for Server Side Swift. It features a great API and a battle-tested core.
 
