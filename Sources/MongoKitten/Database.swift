@@ -29,6 +29,10 @@ public final class Database: FutureConvenienceCallable {
         return session.cluster.sharedGenerator
     }
     
+    public var cluster: Cluster {
+        return session.cluster
+    }
+    
     /// The NIO event loop.
     public var eventLoop: EventLoop {
         return session.cluster.eventLoop

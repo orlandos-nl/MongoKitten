@@ -1,8 +1,6 @@
 import Foundation
 import NIO
 
-// TODO: https://github.com/mongodb/specifications/tree/master/source/server-selection
-// TODO: https://github.com/mongodb/specifications/tree/master/source/server-discovery-and-monitoring
 // TODO: https://github.com/mongodb/specifications/tree/master/source/max-staleness
 // TODO: https://github.com/mongodb/specifications/tree/master/source/initial-dns-seedlist-discovery
 
