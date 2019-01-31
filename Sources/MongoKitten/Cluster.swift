@@ -73,6 +73,24 @@ public final class Cluster {
         return send(context: context)
     }
     
+    public static func lazyConnect(on group: EventLoopGroup, settings: ConnectionSettings) throws -> Cluster {
+        let loop = group.next()
+        
+        guard settings.hosts.count > 0 else {
+            throw MongoKittenError(.unableToConnect, reason: .noHostSpecified)
+        }
+        
+        let sessionManager = SessionManager()
+        let cluster = Cluster(eventLoop: loop, sessionManager: sessionManager, settings: settings)
+        cluster.getConnection().then { _ in
+            return cluster.rediscover().map { return cluster }
+        }.whenSuccess { cluster in
+            cluster.scheduleDiscovery()
+        }
+        
+        return cluster
+    }
+    
     public static func connect(on group: EventLoopGroup, settings: ConnectionSettings) -> EventLoopFuture<Cluster> {
         let loop = group.next()
         
