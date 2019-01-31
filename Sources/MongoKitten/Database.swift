@@ -61,6 +61,13 @@ public final class Database: FutureConvenienceCallable {
         }
     }
     
+    
+    public static func lazyConnect(_ uri: String, on loop: EventLoop) throws -> Database {
+        let settings = try ConnectionSettings(uri)
+        
+        return try lazyConnect(settings: settings, on: loop)
+    }
+    
     /// Connect to the database with the given settings. You can also use `connect(_:on:)` to connect by using a connection string.
     ///
     /// - parameter settings: The connection settings, which must include a database name
@@ -79,6 +86,14 @@ public final class Database: FutureConvenienceCallable {
         }
     }
     
+    public static func lazyConnect(settings: ConnectionSettings, on loop: EventLoop) throws -> Database {
+        guard let targetDatabase = settings.targetDatabase else {
+            throw MongoKittenError(.unableToConnect, reason: .noTargetDatabaseSpecified)
+        }
+        
+        return try Cluster.lazyConnect(on: loop, settings: settings)[targetDatabase]
+    }
+
     internal init(named name: String, session: ClientSession) {
         self.name = name
         self.session = session
