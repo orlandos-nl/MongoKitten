@@ -15,6 +15,9 @@ public final class Cluster {
     /// Using the shared generator is more efficient and correct than `ObjectId()`
     internal let sharedGenerator = ObjectIdGenerator()
     
+    /// The interval at which cluster discovery is triggered, at a minimum of 500 milliseconds
+    ///
+    /// This is not thread safe outside of the cluster's eventloop
     public var heartbeatFrequency = TimeAmount.seconds(10) {
         didSet {
             if heartbeatFrequency < .milliseconds(500) {
@@ -23,6 +26,7 @@ public final class Cluster {
         }
     }
     
+    /// When set to true, read queries are also executed on slave instances of MongoDB
     public var slaveOk = false {
         didSet {
             for connection in pool {
@@ -73,6 +77,9 @@ public final class Cluster {
         return send(context: context)
     }
     
+    /// Connects to a cluster lazily, which means you don't know if the connection was successful until you start querying
+    ///
+    /// This is useful when you need a cluster synchronously to query asynchronously
     public static func lazyConnect(on group: EventLoopGroup, settings: ConnectionSettings) throws -> Cluster {
         let loop = group.next()
         
@@ -91,6 +98,9 @@ public final class Cluster {
         return cluster
     }
     
+    /// Connects to a cluster asynchronously
+    ///
+    /// You can query it using the Cluster returned from the future
     public static func connect(on group: EventLoopGroup, settings: ConnectionSettings) -> EventLoopFuture<Cluster> {
         let loop = group.next()
         
