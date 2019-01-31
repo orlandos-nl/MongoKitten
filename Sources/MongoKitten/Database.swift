@@ -105,4 +105,16 @@ public final class Database: FutureConvenienceCallable {
         
         return command.execute(on: session).map { _ in }
     }
+    
+    public func listCollections() -> EventLoopFuture<[Collection]> {
+        return ListCollections(inDatabase: self.name).execute(on: session).then { cursor in
+            return CursorDrainer(cursor: cursor).collectAll().thenThrowing { documents in
+                let decoder = BSONDecoder()
+                return try documents.map { document -> Collection in
+                    let description = try decoder.decode(CollectionDescription.self, from: document)
+                    return self[description.name]
+                }
+            }
+        }
+    }
 }

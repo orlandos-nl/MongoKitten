@@ -1,4 +1,5 @@
 import NIO
+import BSON
 
 internal final class Cursor {
     var id: Int64
@@ -30,6 +31,28 @@ internal final class Cursor {
             self.id = newCursor.cursor.id
             
             return CursorBatch(batch: newCursor.cursor.nextBatch, isLast: self.drained)
+        }
+    }
+}
+
+final class CursorDrainer {
+    var documents = [Document]()
+    let cursor: Cursor
+    
+    init(cursor: Cursor) {
+        self.documents = cursor.initialBatch ?? []
+        self.cursor = cursor
+    }
+    
+    func collectAll() -> EventLoopFuture<[Document]> {
+        return cursor.getMore(batchSize: 101).then { batch -> EventLoopFuture<[Document]> in
+            self.documents += batch.batch
+            
+            if batch.isLast {
+                return self.cursor.collection.eventLoop.newSucceededFuture(result: self.documents)
+            }
+            
+            return self.collectAll()
         }
     }
 }

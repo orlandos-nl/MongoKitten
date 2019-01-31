@@ -15,3 +15,12 @@ internal struct Namespace: Encodable {
         try container.encode(collectionName)
     }
 }
+
+internal struct AdministrativeNamespace: Encodable {
+    let namespace: Namespace
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(Int32(1))
+    }
+}

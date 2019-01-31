@@ -39,6 +39,10 @@ class CRUDTests : XCTestCase {
         XCTAssertGreaterThan(dbs.count, 0)
     }
     
+    func testListCollections() throws {
+        print(try cluster["admin"].listCollections().wait().map { $0.fullName })
+    }
+    
 //    func testRangeFind() throws {
 //        try connection.then { connection -> EventLoopFuture<Void> in
 //            let collection = connection["test"]["test"]
