@@ -106,6 +106,9 @@ public final class Database: FutureConvenienceCallable {
         return command.execute(on: session).map { _ in }
     }
     
+    /// Lists all collections your user has knowledge of
+    ///
+    /// Returns them as a MongoKitten Collection with you can query
     public func listCollections() -> EventLoopFuture<[Collection]> {
         return ListCollections(inDatabase: self.name).execute(on: session).then { cursor in
             return CursorDrainer(cursor: cursor).collectAll().thenThrowing { documents in
