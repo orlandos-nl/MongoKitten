@@ -49,6 +49,8 @@ public final class Database: FutureConvenienceCallable {
     
     /// Connect to the database at the given `uri`
     ///
+    /// Will postpone queries until initial discovery is complete. Since the cluster is lazily initialized, you'll only know of a failure in connecting (such as wrong credentials) during queries
+    ///
     /// - parameter uri: A MongoDB URI that contains at least a database component
     /// - parameter loop: An EventLoop from NIO. If you want to use MongoKitten in a synchronous / non-NIO environment, use the `synchronousConnect` method.
     public static func connect(_ uri: String, on loop: EventLoop) -> EventLoopFuture<Database> {
@@ -61,10 +63,12 @@ public final class Database: FutureConvenienceCallable {
         }
     }
     
-    
+    /// Connect to the database at the given `uri`
+    ///
+    /// - parameter uri: A MongoDB URI that contains at least a database component
+    /// - parameter loop: An EventLoop from NIO. If you want to use MongoKitten in a synchronous / non-NIO environment, use the `synchronousConnect` method.
     public static func lazyConnect(_ uri: String, on loop: EventLoop) throws -> Database {
         let settings = try ConnectionSettings(uri)
-        
         return try lazyConnect(settings: settings, on: loop)
     }
     
@@ -86,12 +90,18 @@ public final class Database: FutureConvenienceCallable {
         }
     }
     
-    public static func lazyConnect(settings: ConnectionSettings, on loop: EventLoop) throws -> Database {
+    /// Connect to the database with the given settings _lazily_. You can also use `connect(_:on:)` to connect by using a connection string.
+    ///
+    /// Will postpone queries until initial discovery is complete. Since the cluster is lazily initialized, you'll only know of a failure in connecting (such as wrong credentials) during queries
+    ///
+    /// - parameter settings: The connection settings, which must include a database name
+    /// - parameter loop: An EventLoop from NIO. If you want to use MongoKitten in a synchronous / non-NIO environment, use the `synchronousConnect` method.
+    public static func lazyConnect(settings: ConnectionSettings, on group: EventLoopGroup) throws -> Database {
         guard let targetDatabase = settings.targetDatabase else {
             throw MongoKittenError(.unableToConnect, reason: .noTargetDatabaseSpecified)
         }
         
-        return try Cluster.lazyConnect(on: loop, settings: settings)[targetDatabase]
+        return try Cluster(lazyConnectingTo: settings, on: group)[targetDatabase]
     }
 
     internal init(named name: String, session: ClientSession) {
