@@ -1,5 +1,8 @@
 import NIO
 
+/// A database specific for a single transaction
+///
+/// Can be subscripted to get a TransactionCollection
 public final class TransactionDatabase: Database {
     internal init(named name: String, session: ClientSession, transaction: Transaction) {
         super.init(named: name, session: session)
@@ -15,7 +18,10 @@ public final class TransactionDatabase: Database {
 }
 
 // TODO: Transitions: https://github.com/mongodb/specifications/raw/master/source/transactions/client-session-transaction-states.png
+
+/// A collection specific for a single transaction
 public final class TransactionCollection: Collection {
+    /// Commits all changes permanently
     public func commit() -> EventLoopFuture<Void> {
         // Crash if the transaction is `nil`, this is a bad violation of the API
         guard let transactionQueryOptions = self.makeTransactionQueryOptions(), transaction!.active else {
@@ -26,6 +32,7 @@ public final class TransactionCollection: Collection {
         return session.execute(command: CommitTransactionCommand(), transaction: transactionQueryOptions).mapToResult(for: self)
     }
     
+    /// Aborts the transaction, rolling back to the old database contents
     public func abort() -> EventLoopFuture<Void> {
         // Crash if the transaction is `nil`, this is a bad violation of the API
         guard let transactionQueryOptions = self.makeTransactionQueryOptions(), transaction!.active else {
@@ -34,11 +41,6 @@ public final class TransactionCollection: Collection {
         }
         
         return session.execute(command: AbortTransactionCommand(), transaction: transactionQueryOptions).mapToResult(for: self)
-    }
-    
-    public func close() {
-//        database.sta
-//        let command = EndSessionsCommand([session.sessionId], inNamespace: namespace)
     }
 }
 

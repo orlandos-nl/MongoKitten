@@ -90,12 +90,16 @@ public class Database: FutureConvenienceCallable {
         self.session = session
     }
     
-    public func startSession(with options: SessionOptions) -> Database {
-        let newSession = session.cluster.sessionManager.next(with: options, for: session.cluster)
-        return Database(named: name, session: newSession)
-    }
+    /// Stats a new session which can be used for retryable writes, transactions and more
+//    public func startSession(with options: SessionOptions) -> Database {
+//        let newSession = session.cluster.sessionManager.next(with: options, for: session.cluster)
+//        return Database(named: name, session: newSession)
+//    }
     
-    // TODO: Error for < 4.0 installations
+    /// Creates a new tranasction provided the SessionOptions and optional TransactionOptions
+    ///
+    /// The TransactionDatabase that is created can be used like a normal Database for queries within transactions _only_
+    /// Creating a TransactionCollection is done the same way it's created with a normal Database.
     public func startTransaction(with options: SessionOptions, transactionOptions: TransactionOptions? = nil) throws -> TransactionDatabase {
         guard session.cluster.wireVersion?.supportsReplicaTransactions == true else {
             throw MongoKittenError(.unsupportedFeatureByServer, reason: nil)
