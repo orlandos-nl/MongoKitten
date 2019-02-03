@@ -26,11 +26,6 @@ public struct InsertCommand: WriteCommand {
         self.insert = collection.namespace
         self.documents = Array(documents)
     }
-    
-    @discardableResult
-    func execute(on session: ClientSession) -> EventLoopFuture<InsertReply> {
-        return session.execute(command: self)
-    }
 }
 
 public struct InsertReply: ServerReplyDecodableResult {

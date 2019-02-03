@@ -17,6 +17,8 @@ internal struct Namespace: Encodable {
 }
 
 internal struct AdministrativeNamespace: Encodable {
+    static let admin = AdministrativeNamespace(namespace: Namespace(to: "$cmd", inDatabase: "admin"))
+    
     let namespace: Namespace
     
     func encode(to encoder: Encoder) throws {

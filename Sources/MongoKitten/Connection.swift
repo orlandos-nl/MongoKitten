@@ -149,7 +149,7 @@ internal final class Connection {
         return promise.futureResult
     }
     
-    func _execute<C: AnyMongoDBCommand>(command: C, session: ClientSession?) -> EventLoopFuture<ServerReply> {
+    func _execute<C: AnyMongoDBCommand>(command: C, session: ClientSession?, transaction: TransactionQueryOptions?) -> EventLoopFuture<ServerReply> {
         if self.context.isClosed {
             return self.eventLoop.newFailedFuture(error: MongoKittenError(.commandFailure, reason: .connectionClosed))
         }
@@ -168,6 +168,7 @@ internal final class Connection {
             requestID: nextRequestId(),
             retry: true, // TODO: This is not correct, and a difference between read/write
             session: session,
+            transaction: transaction,
             promise: promise
         )
         
@@ -244,7 +245,7 @@ internal final class Connection {
             clientDetails: withClientMetadata ? ConnectionHandshakeCommand.ClientDetails(application: app) : nil,
             userNamespace: userNamespace,
             collection: commandCollection
-        ), session: nil).thenThrowing { serverReply in
+        ), session: nil, transaction: nil).thenThrowing { serverReply in
             let reply = try BSONDecoder().decode(
                 ConnectionHandshakeCommand.Reply.self,
                 from: try serverReply.documents.assertFirst()
@@ -283,11 +284,18 @@ internal final class Connection {
     }
 }
 
+struct TransactionQueryOptions {
+    let id: Int
+    let startTransaction: Bool
+    let autocommit: Bool
+}
+
 struct MongoDBCommandContext {
     var command: AnyMongoDBCommand
     var requestID: Int32
     var retry: Bool
     let session: ClientSession?
+    let transaction: TransactionQueryOptions?
     var promise: EventLoopPromise<ServerReply>
 }
 
@@ -345,6 +353,15 @@ final class ClientConnectionSerializer: MessageToByteEncoder {
         
         if includeSession, let session = data.session {
             document["lsid"]["id"] = session.sessionId.id
+        }
+        
+        if let transaction = data.transaction {
+            document["txnNumber"] = transaction.id
+            document["autocommit"] = transaction.autocommit
+            
+            if transaction.startTransaction {
+                document["startTransaction"] = true
+            }
         }
         
         let flags: OpMsgFlags = []

@@ -139,6 +139,9 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         /// No host was newly known
         case noAvailableHosts
         
+        /// Cannot commit or abort an inactive transaction
+        case inactiveTransaction
+        
         public var description: String {
             switch self {
             case .missingMongoDBScheme: return "The connection URI does not start with the 'mongodb://' scheme"
@@ -146,6 +149,7 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
             case .scramFailure: return "SCRAM protocol failed, the communication was incorrect"
             case .malformedAuthenticationDetails: return "The authentication details in the URI are malformed and cannot be parsed"
             case .unsupportedAuthenticationMechanism: return "The given authentication mechanism is not supported by MongoKitten"
+            case .inactiveTransaction: return "Cannot commit or abort an inactive transaction"
             case .internalError: return "The reason for the error was internal"
             case .invalidPort: return "The given port number is invalid"
             case .noHostSpecified: return "No host was specified"
