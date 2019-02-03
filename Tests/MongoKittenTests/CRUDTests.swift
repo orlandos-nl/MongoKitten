@@ -7,23 +7,23 @@ let dbName = "test"
 class CRUDTests : XCTestCase {
     let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     
-    let settings = ConnectionSettings(
-        authentication: .scramSha1(username: "joannis", password: "uPygrsKkyI6tYl1d"),
-        authenticationSource: nil,
-        hosts: [
-            .init(hostname: "ok0-shard-00-00-xkvc1.mongodb.net", port: 27017)
-        ],
-        targetDatabase: nil,
-        useSSL: true,
-        verifySSLCertificates: true,
-        maximumNumberOfConnections: 1,
-        connectTimeout: 0,
-        socketTimeout: 0,
-        applicationName: "Test MK5"
-    )
+//    let settings = ConnectionSettings(
+//        authentication: .scramSha1(username: "joannis", password: "test"),
+//        authenticationSource: nil,
+//        hosts: [
+//            .init(hostname: "ok0-shard-00-00-xkvc1.mongodb.net", port: 27017)
+//        ],
+//        targetDatabase: nil,
+//        useSSL: true,
+//        verifySSLCertificates: true,
+//        maximumNumberOfConnections: 1,
+//        connectTimeout: 0,
+//        socketTimeout: 0,
+//        applicationName: "Test MK5"
+//    )
     
 //    let settings = try! ConnectionSettings("mongodb://mongokitten:xrQqOYD28lvAOKXc@ok0-shard-00-00-xkvc1.mongodb.net:27017?ssl=true")
-//    let settings = try! ConnectionSettings("mongodb://localhost")
+    let settings = try! ConnectionSettings("mongodb://localhost")
     
     var cluster: Cluster!
     
