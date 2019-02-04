@@ -65,6 +65,18 @@ public class Collection: FutureConvenienceCallable {
     /// - see: `Query`
     /// - parameter query: The query to execute. Defaults to an empty query that returns every document.
     /// - returns: The first result
+    public func findOne<D: Decodable>(_ query: Query = [:], as type: D.Type) -> EventLoopFuture<D?> {
+        var command = FindCommand(filter: query, on: self)
+        command.limit = 1
+        
+        return FindCursor(command: command, on: self).decode(type).getFirstResult()
+    }
+    
+    /// Executes a query on the collection, and returns the first result.
+    ///
+    /// - see: `Query`
+    /// - parameter query: The query to execute. Defaults to an empty query that returns every document.
+    /// - returns: The first result
     public func findOne(_ query: Query = [:]) -> EventLoopFuture<Document?> {
         var command = FindCommand(filter: query, on: self)
         command.limit = 1
