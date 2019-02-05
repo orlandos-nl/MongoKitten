@@ -78,7 +78,11 @@ struct ConnectionHandshakeCommand: AdministrativeMongoDBCommand {
     }
 }
 
-public struct WireVersion: Codable, ExpressibleByIntegerLiteral {
+public struct WireVersion: Codable, Comparable, ExpressibleByIntegerLiteral {
+    public static func < (lhs: WireVersion, rhs: WireVersion) -> Bool {
+        return lhs.version < rhs.version
+    }
+    
     public let version: Int
     
     // Wire version 3

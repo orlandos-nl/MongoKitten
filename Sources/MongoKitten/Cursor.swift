@@ -411,7 +411,7 @@ public final class FinalizedCursor<Base: QueryCursor> {
         closed = true
         
         let command = KillCursorsCommand([self.cursor.id], in: base.collection.namespace)
-        return command.execute(on: self.cursor.collection.session).map { _ in }
+        return command.execute(on: self.cursor.collection).map { _ in }
     }
 }
 

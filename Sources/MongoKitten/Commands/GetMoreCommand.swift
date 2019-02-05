@@ -19,10 +19,6 @@ internal struct GetMore: AdministrativeMongoDBCommand {
         self.collection = collection.namespace
         self.batchSize = batchSize
     }
-    
-    func execute(on session: ClientSession) -> EventLoopFuture<GetMoreReply> {
-        return session.execute(command: self)
-    }
 }
 
 struct GetMoreReply: ServerReplyDecodable, ServerReplyInitializableResult {

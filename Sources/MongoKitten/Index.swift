@@ -14,7 +14,7 @@ public struct CollectionIndexes {
     public func create(_ index: Index) -> EventLoopFuture<Void> {
         let command = CreateIndexesCommand([index], for: collection)
         
-        return command.execute(on: collection.session)
+        return command.execute(on: collection)
     }
     
     /// Creates a new sorted compound index by a unique name and keys.

@@ -64,7 +64,9 @@ public final class FindCursor: QueryCursor {
     }
     
     public func execute() -> EventLoopFuture<FinalizedCursor<FindCursor>> {
-        return self.collection.database.session.execute(command: self.command).mapToResult(for: collection).map { cursor in
+        let options = collection.makeTransactionQueryOptions()
+        
+        return self.collection.database.session.execute(command: self.command, transaction: options).mapToResult(for: collection).map { cursor in
             return FinalizedCursor(basedOn: self, cursor: cursor)
         }
     }

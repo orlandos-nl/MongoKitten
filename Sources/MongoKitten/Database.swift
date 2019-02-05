@@ -12,7 +12,9 @@ import NIO
 /// A reference to a MongoDB database, over a `Connection`.
 ///
 /// Databases hold collections of documents.
-public final class Database: FutureConvenienceCallable {
+public class Database: FutureConvenienceCallable {
+    internal var transaction: Transaction!
+    
     /// The name of the database
     public let name: String
     
@@ -88,6 +90,30 @@ public final class Database: FutureConvenienceCallable {
         self.session = session
     }
     
+    /// Stats a new session which can be used for retryable writes, transactions and more
+//    public func startSession(with options: SessionOptions) -> Database {
+//        let newSession = session.cluster.sessionManager.next(with: options, for: session.cluster)
+//        return Database(named: name, session: newSession)
+//    }
+    
+    /// Creates a new tranasction provided the SessionOptions and optional TransactionOptions
+    ///
+    /// The TransactionDatabase that is created can be used like a normal Database for queries within transactions _only_
+    /// Creating a TransactionCollection is done the same way it's created with a normal Database.
+    public func startTransaction(with options: SessionOptions, transactionOptions: TransactionOptions? = nil) throws -> TransactionDatabase {
+        guard session.cluster.wireVersion?.supportsReplicaTransactions == true else {
+            throw MongoKittenError(.unsupportedFeatureByServer, reason: nil)
+        }
+        
+        let newSession = session.cluster.sessionManager.next(with: options, for: session.cluster)
+        let transactionOptions = transactionOptions ?? options.defaultTransactionOptions ?? TransactionOptions()
+        let transaction = Transaction(
+            options: transactionOptions,
+            transactionId: newSession.serverSession.nextTransactionNumber()
+        )
+        return TransactionDatabase(named: name, session: newSession, transaction: transaction)
+    }
+    
     /// Get a `Collection` by providing a collection name as a `String`
     ///
     /// - parameter collection: The collection/bucket to return
@@ -103,7 +129,7 @@ public final class Database: FutureConvenienceCallable {
     public func drop() -> EventLoopFuture<Void> {
         let command = AdministrativeCommand(command: DropDatabase(), on: cmd)
         
-        return command.execute(on: session).map { _ in }
+        return command.execute(on: self["$cmd"]).map { _ in }
     }
     
     /// Lists all collections your user has knowledge of
