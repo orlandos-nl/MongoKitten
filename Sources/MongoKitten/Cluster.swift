@@ -13,6 +13,9 @@ public final class Cluster {
     /// Using the shared generator is more efficient and correct than `ObjectId()`
     internal let sharedGenerator = ObjectIdGenerator()
     
+    /// The interval at which cluster discovery is triggered, at a minimum of 500 milliseconds
+    ///
+    /// This is not thread safe outside of the cluster's eventloop
     public var heartbeatFrequency = TimeAmount.seconds(10) {
         didSet {
             if heartbeatFrequency < .milliseconds(500) {
@@ -21,6 +24,7 @@ public final class Cluster {
         }
     }
     
+    /// When set to true, read queries are also executed on slave instances of MongoDB
     public var slaveOk = false {
         didSet {
             for connection in pool {
@@ -29,9 +33,13 @@ public final class Cluster {
         }
     }
     
+    private let isDiscovering: EventLoopPromise<Void>
     private var pool: [PooledConnection]
     internal private(set) var wireVersion: WireVersion?
     private var newWireVersion: WireVersion?
+    
+    /// Used as a shortcut to not have to set a callback on `isDiscovering`
+    private var completedInitialDiscovery = false
     
     /// Returns the database named `database`, on this connection
     public subscript(database: String) -> Database {
@@ -45,8 +53,29 @@ public final class Cluster {
         self.eventLoop = eventLoop
         self.sessionManager = sessionManager
         self.settings = settings
+        self.isDiscovering = eventLoop.newPromise()
         self.pool = []
         self.hosts = Set(settings.hosts)
+    }
+    
+    /// Connects to a cluster lazily, which means you don't know if the connection was successful until you start querying
+    ///
+    /// This is useful when you need a cluster synchronously to query asynchronously
+    public convenience init(lazyConnectingTo settings: ConnectionSettings, on group: EventLoopGroup) throws {
+        guard settings.hosts.count > 0 else {
+            throw MongoKittenError(.unableToConnect, reason: .noHostSpecified)
+        }
+        
+        self.init(eventLoop: group.next(), sessionManager: SessionManager(), settings: settings)
+        
+        self._getConnection().then { _ in
+            return self.rediscover()
+        }.whenComplete {
+            self.completedInitialDiscovery = true
+            self.isDiscovering.succeed(result: ())
+        }
+        
+        self.isDiscovering.futureResult.whenComplete(self.scheduleDiscovery)
     }
     
     private func send(context: MongoDBCommandContext) -> EventLoopFuture<ServerReply> {
@@ -74,24 +103,16 @@ public final class Cluster {
         return send(context: context)
     }
     
+    /// Connects to a cluster asynchronously
+    ///
+    /// You can query it using the Cluster returned from the future
     public static func connect(on group: EventLoopGroup, settings: ConnectionSettings) -> EventLoopFuture<Cluster> {
-        let loop = group.next()
-        
-        guard settings.hosts.count > 0 else {
-            return loop.newFailedFuture(error: MongoKittenError(.unableToConnect, reason: .noHostSpecified))
+        do {
+            let cluster = try Cluster(lazyConnectingTo: settings, on: group)
+            return cluster.isDiscovering.futureResult.map { cluster }
+        } catch {
+            return group.next().newFailedFuture(error: error)
         }
-        
-        let sessionManager = SessionManager()
-        let cluster = Cluster(eventLoop: loop, sessionManager: sessionManager, settings: settings)
-        let connected = cluster.getConnection().then { _ in
-            return cluster.rediscover().map { return cluster }
-        }
-            
-        connected.whenSuccess { cluster in
-            cluster.scheduleDiscovery()
-        }
-        
-        return connected
     }
     
     private func scheduleDiscovery() {
@@ -242,6 +263,16 @@ public final class Cluster {
     }
     
     func getConnection(writable: Bool = true) -> EventLoopFuture<Connection> {
+        if completedInitialDiscovery {
+            return self._getConnection(writable: writable)
+        }
+        
+        return isDiscovering.futureResult.then {
+            return self._getConnection(writable: writable)
+        }
+    }
+    
+    private func _getConnection(writable: Bool = true) -> EventLoopFuture<Connection> {
         if let matchingConnection = findMatchingConnection(writable: writable) {
             return eventLoop.newSucceededFuture(result: matchingConnection.connection)
         }
