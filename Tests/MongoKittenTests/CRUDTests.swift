@@ -179,7 +179,7 @@ class CRUDTests : XCTestCase {
         }
         
         do {
-            let collection = connection[dbName]["test"]
+            let collection = cluster[dbName]["test"]
             let user = User(named: "Red")
             _ = try collection.insert(BSONEncoder().encode(user)).wait()
             

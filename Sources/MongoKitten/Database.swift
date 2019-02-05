@@ -136,7 +136,7 @@ public class Database: FutureConvenienceCallable {
     ///
     /// Returns them as a MongoKitten Collection with you can query
     public func listCollections() -> EventLoopFuture<[Collection]> {
-        return ListCollections(inDatabase: self.name).execute(on: session).then { cursor in
+        return ListCollections(inDatabase: self.name).execute(on: self["$cmd"]).then { cursor in
             return cursor.drain().thenThrowing { documents in
                 let decoder = BSONDecoder()
                 return try documents.map { document -> Collection in
