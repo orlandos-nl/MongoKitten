@@ -27,13 +27,13 @@ public struct CursorSettings: Encodable {
     var batchSize: Int?
 }
 
-struct CursorDetails: Codable {
-    var id: Int64
-    var ns: String
-    var firstBatch: [Document]
-}
-
 struct CursorReply: ServerReplyDecodableResult {
+    struct CursorDetails: Codable {
+        var id: Int64
+        var ns: String
+        var firstBatch: [Document]
+    }
+    
     var isSuccessful: Bool {
         return ok == 1
     }
