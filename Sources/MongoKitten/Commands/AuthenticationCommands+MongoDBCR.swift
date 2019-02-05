@@ -54,17 +54,27 @@ struct GetNonceResult: ServerReplyDecodableResult {
 
 extension Connection {
     func authenticateCR(_ username: String, password: String, namespace: Namespace) -> EventLoopFuture<Void> {
-        return GetNonce(namespace: namespace).execute(on: self.implicitSession).then { nonce in
-            var md5 = MD5()
-            
-            let credentials = username + ":mongo:" + password
-            let digest = md5.hash(bytes: Array(credentials.utf8)).hexString
-            let key = nonce + username + digest
-            let keyDigest = md5.hash(bytes: Array(key.utf8)).hexString
-            
-            let authenticate = AuthenticateCR(namespace: namespace, nonce: nonce, user: username, key: keyDigest)
-            
-            return authenticate.execute(on: self.implicitSession)
+        return self._execute(command: GetNonce(namespace: namespace), session: nil, transaction: nil).then { reply -> EventLoopFuture<Void> in
+            do {
+                let nonce = try GetNonceResult(reply: reply).nonce
+                
+                var md5 = MD5()
+                
+                let credentials = username + ":mongo:" + password
+                let digest = md5.hash(bytes: Array(credentials.utf8)).hexString
+                let key = nonce + username + digest
+                let keyDigest = md5.hash(bytes: Array(key.utf8)).hexString
+                
+                let authenticate = AuthenticateCR(namespace: namespace, nonce: nonce, user: username, key: keyDigest)
+                
+                return self._execute(command: authenticate, session: nil, transaction: nil).thenThrowing { reply in
+                    guard try OK(reply: reply).isSuccessful else {
+                        throw MongoKittenError(try GenericErrorReply(reply: reply))
+                    }
+                }
+            } catch {
+                return self.eventLoop.newFailedFuture(error: error)
+            }
         }
     }
 }

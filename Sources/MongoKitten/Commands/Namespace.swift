@@ -15,3 +15,14 @@ internal struct Namespace: Encodable {
         try container.encode(collectionName)
     }
 }
+
+internal struct AdministrativeNamespace: Encodable {
+    static let admin = AdministrativeNamespace(namespace: Namespace(to: "$cmd", inDatabase: "admin"))
+    
+    let namespace: Namespace
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(Int32(1))
+    }
+}

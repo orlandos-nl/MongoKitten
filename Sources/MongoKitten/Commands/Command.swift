@@ -11,7 +11,7 @@ protocol MongoDBCommand: AnyMongoDBCommand {
     associatedtype Reply: ServerReplyInitializableResult
     associatedtype ErrorReply: ServerReplyInitializable
     
-    func execute(on session: ClientSession) -> EventLoopFuture<Reply.Result>
+    func execute(on collection: Collection) -> EventLoopFuture<Reply.Result>
 }
 
 protocol AdministrativeMongoDBCommand: MongoDBCommand where ErrorReply == GenericErrorReply {}
@@ -45,8 +45,9 @@ extension ReadCommand {
 }
 
 extension MongoDBCommand {
-    func execute(on session: ClientSession) -> EventLoopFuture<Reply.Result> {
-        return session.execute(command: self).mapToResult(for: session[self.namespace])
+    func execute(on collection: Collection) -> EventLoopFuture<Reply.Result> {
+        let transaction = collection.makeTransactionQueryOptions()
+        return collection.session.execute(command: self, transaction: transaction).mapToResult(for: collection)
     }
 }
 

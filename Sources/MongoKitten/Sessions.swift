@@ -57,8 +57,8 @@ final class ClientSession {
     ///
     /// - parameter command: The `MongoDBCommand` to execute
     /// - returns: The reply to the command
-    func execute<C: MongoDBCommand>(command: C) -> EventLoopFuture<C.Reply> {
-        return cluster.send(command: command, session: self).thenThrowing { reply in
+    func execute<C: MongoDBCommand>(command: C, transaction: TransactionQueryOptions? = nil) -> EventLoopFuture<C.Reply> {
+        return cluster.send(command: command, session: self, transaction: transaction).thenThrowing { reply in
             do {
                 return try C.Reply(reply: reply)
             } catch {
@@ -88,6 +88,17 @@ final class ClientSession {
 internal final class ServerSession {
     let sessionId: SessionIdentifier
     let lastUse: Date
+    private var transaction: Int = 1
+    
+    func nextTransactionNumber() -> Int {
+        defer {
+            // Overflow to negative will break new transactions
+            // MongoDB has no solution other than using a different ServerSession
+            transaction = transaction &+ 1
+        }
+        
+        return transaction
+    }
     
     init(for sessionId: SessionIdentifier) {
         self.sessionId = sessionId
@@ -138,15 +149,19 @@ extension Cluster {
     }
 }
 
-//final class Transaction {
-//    let session: ClientSession
+// TODO: Verify server feature version with https://github.com/mongodb/specifications/blob/master/source/retryable-writes/retryable-writes.rst#supported-server-versions
+/// Supported single-statement write operations include insertOne(), updateOne(), replaceOne(), deleteOne(), findOneAndDelete(), findOneAndReplace(), and findOneAndUpdate().
 //
-//    deinit {
-//
-//    }
-//}
-//
+// Supported multi-statement write operations include insertMany() and bulkWrite(). The ordered option may be true or false. In the case of bulkWrite(), UpdateMany or DeleteMany operations within the requests parameter may make some write commands ineligible for retryability. Drivers MUST evaluate eligibility for each write command sent as part of the bulkWrite()
+// https://github.com/mongodb/specifications/blob/master/source/retryable-writes/retryable-writes.rst#how-will-users-know-which-operations-are-supported
+// Write commands specifying an unacknowledged write concern (e.g. {w: 0})) do not support retryable behavior.
+// https://github.com/mongodb/specifications/blob/master/source/retryable-writes/retryable-writes.rst#unsupported-write-operations
+// TODO: Write commands
+// In MongoDB 4.0 the only supported retryable write commands within a transaction are commitTransaction and abortTransaction. Therefore drivers MUST NOT retry write commands within transactions even when retryWrites has been enabled on the MongoClient. Drivers MUST retry the commitTransaction and abortTransaction commands even when retryWrites has been disabled on the MongoClient. commitTransaction and abortTransaction are retryable write commands and MUST be retried according to the Retryable Writes Specification.
 public struct SessionOptions {
+    public var casualConsistency: Bool?
+    public var defaultTransactionOptions: TransactionOptions?
+    
     public init() {}
 }
 

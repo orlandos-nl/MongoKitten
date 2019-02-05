@@ -29,6 +29,30 @@ import NIO
 //    }
 //}
 
+struct CommitTransactionCommand: AdministrativeMongoDBCommand {
+    var namespace: Namespace {
+        return commitTransaction.namespace
+    }
+    
+    typealias Reply = OK
+    
+    let commitTransaction = AdministrativeNamespace.admin
+    
+    init() {}
+}
+
+struct AbortTransactionCommand: AdministrativeMongoDBCommand {
+    var namespace: Namespace {
+        return abortTransaction.namespace
+    }
+    
+    typealias Reply = OK
+    
+    let abortTransaction = AdministrativeNamespace.admin
+    
+    init() {}
+}
+
 struct EndSessionsCommand: AdministrativeMongoDBCommand {
     typealias Reply = OK
     

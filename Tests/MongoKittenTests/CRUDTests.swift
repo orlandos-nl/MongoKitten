@@ -8,7 +8,7 @@ class CRUDTests : XCTestCase {
     let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     
 //    let settings = ConnectionSettings(
-//        authentication: .scramSha1(username: "mongokitten", password: "xrQqOYD28lvAOKXc"),
+//        authentication: .scramSha1(username: "joannis", password: "test"),
 //        authenticationSource: nil,
 //        hosts: [
 //            .init(hostname: "ok0-shard-00-00-xkvc1.mongodb.net", port: 27017)
@@ -31,6 +31,53 @@ class CRUDTests : XCTestCase {
         self.cluster = try! Cluster.connect(on: group, settings: settings).wait()
         
         try! cluster[dbName].drop().wait()
+    }
+    
+    func testTransactions() throws {
+        let db = cluster[dbName]
+        let users = db["users"]
+        _ = try db["users"].insert(["username": "Creating collection user"]).wait()
+        let base = 1
+        
+        do {
+            let transactionDB = try db.startTransaction(with: SessionOptions())
+            let transactionUsers = transactionDB["users"]
+            
+            XCTAssertEqual(try users.count().wait(), base)
+            _ = try transactionUsers.insert(["username": "henk"]).wait()
+            sleep(2)
+            XCTAssertEqual(try transactionUsers.aggregate().count().wait(), base + 1)
+            XCTAssertEqual(try users.count().wait(), base + 1)
+            try transactionUsers.abort().wait()
+            XCTAssertEqual(try users.count().wait(), base)
+        } catch {
+            XCTFail()
+            return
+        }
+        
+        do {
+            let transactionDB = try db.startTransaction(with: SessionOptions())
+            let transactionUsers = transactionDB["users"]
+            XCTAssertEqual(try users.count().wait(), base)
+            _ = try transactionUsers.insert(["username": "henk"]).wait()
+            XCTAssertEqual(try transactionUsers.aggregate().count().wait(), base + 1)
+            XCTAssertEqual(try users.count().wait(), base + 1)
+            try transactionUsers.commit().wait()
+            XCTAssertEqual(try users.count().wait(), base + 1)
+        } catch {
+            XCTFail()
+            return
+        }
+    }
+    
+    func testListDatabases() throws {
+        let dbs = try cluster.listDatabases().wait()
+        
+        XCTAssertGreaterThan(dbs.count, 0)
+    }
+    
+    func testListCollections() throws {
+        print(try cluster["admin"].listCollections().wait().map { $0.fullName })
     }
     
 //    func testRangeFind() throws {

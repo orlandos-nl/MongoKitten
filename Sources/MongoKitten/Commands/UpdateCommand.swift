@@ -77,11 +77,6 @@ public struct UpdateCommand: WriteCommand {
         self.update = collection.namespace
         self.updates = Array(updates)
     }
-    
-    @discardableResult
-    func execute(on session: ClientSession) -> EventLoopFuture<UpdateReply> {
-        return session.execute(command: self)
-    }
 }
 
 public struct UpdateReply: ServerReplyDecodableResult {

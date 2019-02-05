@@ -1,8 +1,6 @@
 import Foundation
 import NIO
 
-// TODO: https://github.com/mongodb/specifications/tree/master/source/server-selection
-// TODO: https://github.com/mongodb/specifications/tree/master/source/server-discovery-and-monitoring
 // TODO: https://github.com/mongodb/specifications/tree/master/source/max-staleness
 // TODO: https://github.com/mongodb/specifications/tree/master/source/initial-dns-seedlist-discovery
 
@@ -32,6 +30,8 @@ public final class Cluster {
     }
     
     private var pool: [PooledConnection]
+    internal private(set) var wireVersion: WireVersion?
+    private var newWireVersion: WireVersion?
     
     /// Returns the database named `database`, on this connection
     public subscript(database: String) -> Database {
@@ -61,12 +61,13 @@ public final class Cluster {
         return future.then { context.promise.futureResult }
     }
     
-    func send<C: MongoDBCommand>(command: C, session: ClientSession? = nil) -> EventLoopFuture<ServerReply> {
+    func send<C: MongoDBCommand>(command: C, session: ClientSession? = nil, transaction: TransactionQueryOptions? = nil) -> EventLoopFuture<ServerReply> {
         let context = MongoDBCommandContext(
             command: command,
             requestID: 0,
             retry: true,
             session: session,
+            transaction: transaction,
             promise: self.eventLoop.newPromise()
         )
         
@@ -109,6 +110,12 @@ public final class Cluster {
     private var timeoutHosts = Set<ConnectionSettings.Host>()
     
     private func updateSDAM(from handshake: ConnectionHandshakeReply) {
+        if let newWireVersion = newWireVersion {
+            self.newWireVersion = min(handshake.maxWireVersion, newWireVersion)
+        } else {
+            self.newWireVersion = handshake.maxWireVersion
+        }
+        
         var hosts = handshake.hosts ?? []
         hosts += handshake.passives ?? []
         
@@ -155,6 +162,7 @@ public final class Cluster {
     
     /// Checks all known hosts for isMaster and writability
     private func rediscover() -> EventLoopFuture<Void> {
+        self.newWireVersion = nil
         var handshakes = [EventLoopFuture<Void>]()
         
         for pooledConnection in pool {
@@ -172,7 +180,12 @@ public final class Cluster {
         }
         
         self.timeoutHosts = []
-        return EventLoopFuture<Void>.andAll(handshakes, eventLoop: self.eventLoop)
+        let completedDiscovery = EventLoopFuture<Void>.andAll(handshakes, eventLoop: self.eventLoop)
+        completedDiscovery.whenComplete {
+            self.wireVersion = self.newWireVersion
+        }
+        
+        return completedDiscovery
     }
     
     private func remove(connectionId: ObjectIdentifier) {
