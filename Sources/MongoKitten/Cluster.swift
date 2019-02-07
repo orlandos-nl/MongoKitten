@@ -298,7 +298,7 @@ public final class Cluster {
             let unreadable = !self.slaveOk && !handshake.ismaster
             
             if unwritable || unreadable {
-                return self.getConnection(writable: writable)
+                return self._getConnection(writable: writable)
             } else {
                 return self.eventLoop.newSucceededFuture(result: pooledConnection.connection)
             }
