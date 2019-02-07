@@ -1,13 +1,19 @@
 import Foundation
 import NIO
+import NioDNS
 
 // TODO: https://github.com/mongodb/specifications/tree/master/source/max-staleness
 // TODO: https://github.com/mongodb/specifications/tree/master/source/initial-dns-seedlist-discovery
 
 public final class Cluster {
     let eventLoop: EventLoop
-    let settings: ConnectionSettings
+    private(set) var settings: ConnectionSettings {
+        didSet {
+            hosts = Set(settings.hosts)
+        }
+    }
     let sessionManager: SessionManager
+    private var dns: NioDNS?
     
     /// The shared ObjectId generator for this cluster
     /// Using the shared generator is more efficient and correct than `ObjectId()`
@@ -66,10 +72,17 @@ public final class Cluster {
             throw MongoKittenError(.unableToConnect, reason: .noHostSpecified)
         }
         
-        self.init(eventLoop: group.next(), sessionManager: SessionManager(), settings: settings)
+        let loop = group.next()
         
-        self._getConnection().then { _ in
-            return self.rediscover()
+        self.init(eventLoop: loop, sessionManager: SessionManager(), settings: settings)
+        
+        Cluster.withResolvedSRV(settings, on: loop) { settings, dns -> EventLoopFuture<Void> in
+            self.settings = settings
+            self.dns = dns
+            
+            return self._getConnection().then { _ in
+                return self.rediscover()
+            }
         }.whenComplete {
             self.completedInitialDiscovery = true
             self.isDiscovering.succeed(result: ())
@@ -81,9 +94,9 @@ public final class Cluster {
     private func send(context: MongoDBCommandContext) -> EventLoopFuture<ServerReply> {
         let future = self.getConnection().thenIfError { _ in
             return self.getConnection(writable: true)
-            }.then { connection -> EventLoopFuture<Void> in
-                connection.context.queries.append(context)
-                return connection.channel.writeAndFlush(context)
+        }.then { connection -> EventLoopFuture<Void> in
+            connection.context.queries.append(context)
+            return connection.channel.writeAndFlush(context)
         }
         future.cascadeFailure(promise: context.promise)
         
@@ -142,9 +155,31 @@ public final class Cluster {
         
         for host in hosts {
             do {
-                let host = try ConnectionSettings.Host(host)
+                let host = try ConnectionSettings.Host(host, srv: false)
                 self.hosts.insert(host)
             } catch { }
+        }
+    }
+    
+    private static func withResolvedSRV<T>(_ settings: ConnectionSettings, on loop: EventLoop, run: @escaping (ConnectionSettings, NioDNS?) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+        if !settings.isSRV {
+            return run(settings, nil)
+        }
+        
+        return NioDNS.connect(on: loop, host: "8.8.8.8").then { client in
+            return resolveSRV(settings.hosts.first!, on: client).then { hosts in
+                var settings = settings
+                settings.hosts = hosts
+                return run(settings, client)
+            }
+        }
+    }
+    
+    private static func resolveSRV(_ host: ConnectionSettings.Host, on client: NioDNS) -> EventLoopFuture<[ConnectionSettings.Host]> {
+        return client.getSRVRecords(from: "_mongodb._tcp.\(host.hostname)").map { records in
+            return records.map { record in
+                return ConnectionSettings.Host(hostname: record.domainName.string, port: host.port)
+            }
         }
     }
     

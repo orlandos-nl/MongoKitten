@@ -50,11 +50,15 @@ public struct ConnectionSettings: Equatable {
             self.port = port
         }
         
-        internal init<S: StringProtocol>(_ hostString: S) throws {
+        internal init<S: StringProtocol>(_ hostString: S, srv: Bool) throws {
             let splitHost = hostString.split(separator: ":", maxSplits: 1)
             let specifiesPort = splitHost.count == 2
             
             if specifiesPort {
+                if srv {
+                    throw MongoKittenError(.invalidURI, reason: .srvCannotSpecifyPort)
+                }
+                
                 let specifiedPortString = splitHost[1]
                 guard let specifiedPort = UInt16(specifiedPortString) else {
                     throw MongoKittenError(.invalidURI, reason: .invalidPort)
@@ -100,6 +104,9 @@ public struct ConnectionSettings: Equatable {
     /// The application name is printed to the mongod logs upon establishing the connection. It is also recorded in the slow query logs and profile collections.
     public var applicationName: String?
     
+    /// Indicates that there is one host for which we'll need to do an query
+    public let isSRV: Bool
+    
     /// Initializes a new connection settings instacen.
     ///
     /// - parameter authentication: See `ConnectionSettings.Authentication`
@@ -123,6 +130,7 @@ public struct ConnectionSettings: Equatable {
         self.connectTimeout = connectTimeout
         self.socketTimeout = socketTimeout
         self.applicationName = applicationName
+        self.isSRV = false
     }
     
     /// Parses the given `uri` into the ConnectionSettings
@@ -140,13 +148,20 @@ public struct ConnectionSettings: Equatable {
     public init(_ uri: String) throws {
         var uri = uri
         
+        let isSRV: Bool
+        
         // First, remove the mongodb:// scheme
         // TODO: Implement support for "mongodb+srv://" urls
-        guard uri.starts(with: "mongodb://") else {
+        if uri.starts(with: "mongodb://") {
+            uri.removeFirst("mongodb://".count)
+            isSRV = false
+        } else if uri.starts(with: "mongodb+srv://") {
+            uri.removeFirst("mongodb+srv://".count)
+            isSRV = true
+        } else {
             throw MongoKittenError(.invalidURI, reason: .missingMongoDBScheme)
         }
-        
-        uri.removeFirst("mongodb://".count)
+        self.isSRV = isSRV
         
         // Split the string in parts before and after the authentication details
         let parts = uri.split(separator: "@")
@@ -216,7 +231,11 @@ public struct ConnectionSettings: Equatable {
         }
         
         /// Parse the hosts, which may or may not contain a port number
-        self.hosts = try hostsPart.split(separator: ",").map(Host.init)
+        self.hosts = try hostsPart.split(separator: ",").map { try Host($0, srv: isSRV) }
+        
+        if hosts.count != 1 && isSRV {
+            throw MongoKittenError(.invalidURI, reason: .srvNeedsOneHost)
+        }
         
         // Parse various options
         if let authSource = queries["authSource"] {

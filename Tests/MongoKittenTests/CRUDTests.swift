@@ -28,7 +28,7 @@ class CRUDTests : XCTestCase {
     var cluster: Cluster!
     
     override func setUp() {
-        self.cluster = try! Cluster.connect(on: group, settings: settings).wait()
+        self.cluster = try! Cluster(lazyConnectingTo: settings, on: group)
         
         try! cluster[dbName].drop().wait()
     }
