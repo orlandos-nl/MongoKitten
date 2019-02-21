@@ -67,18 +67,22 @@ struct ConnectionHandshakeCommand: AdministrativeMongoDBCommand {
     
     var isMaster: Int32 = 1
     var saslSupportedMechs: String?
-    var client: ClientDetails
+    var client: ClientDetails?
     
     var namespace: Namespace
     
-    init(application: ClientDetails.ApplicationDetails?, userNamespace: String?, collection: Collection) {
-        self.client = ClientDetails(application: application)
+    init(clientDetails: ClientDetails?, userNamespace: String?, collection: Collection) {
+        self.client = clientDetails
         self.saslSupportedMechs = userNamespace
         self.namespace = collection.namespace
     }
 }
 
-public struct WireVersion: Codable, ExpressibleByIntegerLiteral {
+public struct WireVersion: Codable, Comparable, ExpressibleByIntegerLiteral {
+    public static func < (lhs: WireVersion, rhs: WireVersion) -> Bool {
+        return lhs.version < rhs.version
+    }
+    
     public let version: Int
     
     // Wire version 3
@@ -217,7 +221,7 @@ public struct ConnectionHandshakeReply: ServerReplyDecodableResult {
     public let me: String?
     
     /// A unique identifier for each election. Included only in the output of isMaster for the primary. Used by clients to determine when elections occur.
-    public let electionId: String? // TODO: Is this the correct type?
+    public let electionId: ObjectId?
     
     // MARK: ServerReplyDecodable
     public var isSuccessful: Bool {

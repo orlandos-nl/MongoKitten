@@ -1,4 +1,5 @@
 import NIO
+import BSON
 
 internal final class Cursor {
     var id: Int64
@@ -30,6 +31,32 @@ internal final class Cursor {
             self.id = newCursor.cursor.id
             
             return CursorBatch(batch: newCursor.cursor.nextBatch, isLast: self.drained)
+        }
+    }
+    
+    func drain() -> EventLoopFuture<[Document]> {
+        return CursorDrainer(cursor: self).collectAll()
+    }
+    
+    private final class CursorDrainer {
+        var documents = [Document]()
+        let cursor: Cursor
+        
+        init(cursor: Cursor) {
+            self.documents = cursor.initialBatch ?? []
+            self.cursor = cursor
+        }
+        
+        func collectAll() -> EventLoopFuture<[Document]> {
+            return cursor.getMore(batchSize: 101).then { batch -> EventLoopFuture<[Document]> in
+                self.documents += batch.batch
+                
+                if batch.isLast {
+                    return self.cursor.collection.eventLoop.newSucceededFuture(result: self.documents)
+                }
+                
+                return self.collectAll()
+            }
         }
     }
 }
@@ -128,13 +155,12 @@ public protocol QueryCursor: class {
     @discardableResult
     func forEach(handler: @escaping (Element) throws -> Void) -> EventLoopFuture<Void>
     
-    // TODO: forEachAsync: correct name?
     /// Executes the given `handler` for every element of the cursor, waiting for each invocations future to complete before heading to the next one
     ///
     /// - parameter handler: A handler to execute on every result
     /// - returns: A future that resolves when the operation is complete, or fails if an error is thrown
     @discardableResult
-    func forEachAsync(handler: @escaping (Element) throws -> EventLoopFuture<Void>) -> EventLoopFuture<Void>
+    func sequentialForEach(handler: @escaping (Element) throws -> EventLoopFuture<Void>) -> EventLoopFuture<Void>
     
     /// Returns a new cursor with the results of mapping the given closure over the cursor's elements. This operation is lazy.
     ///
@@ -161,7 +187,7 @@ extension QueryCursor {
                         var batch = batch
                         
                         guard let element = try batch.nextElement() else {
-                            return self.collection.connection.eventLoop.newSucceededFuture(result: ())
+                            return self.collection.cluster.eventLoop.newSucceededFuture(result: ())
                         }
                         
                         var future = element.map(handler)
@@ -173,12 +199,12 @@ extension QueryCursor {
                         }
                         
                         if batch.isLast {
-                            return self.collection.connection.eventLoop.newSucceededFuture(result: ())
+                            return self.collection.cluster.eventLoop.newSucceededFuture(result: ())
                         }
                         
                         return nextBatch()
                     } catch {
-                        return self.collection.connection.eventLoop.newFailedFuture(error: error)
+                        return self.collection.cluster.eventLoop.newFailedFuture(error: error)
                     }
                 }
             }
@@ -206,12 +232,12 @@ extension QueryCursor {
                         }
                         
                         if batch.isLast || finalizedCursor.closed {
-                            return self.collection.connection.eventLoop.newSucceededFuture(result: ())
+                            return self.collection.cluster.eventLoop.newSucceededFuture(result: ())
                         }
                         
                         return nextBatch()
                     } catch {
-                        return self.collection.connection.eventLoop.newFailedFuture(error: error)
+                        return self.collection.cluster.eventLoop.newFailedFuture(error: error)
                     }
                 }
             }
@@ -221,7 +247,7 @@ extension QueryCursor {
     }
     
     @discardableResult
-    public func forEachAsync(handler: @escaping (Element) throws -> EventLoopFuture<Void>) -> EventLoopFuture<Void> {
+    public func sequentialForEach(handler: @escaping (Element) throws -> EventLoopFuture<Void>) -> EventLoopFuture<Void> {
         return execute().then { finalizedCursor in
             func nextBatch() -> EventLoopFuture<Void> {
                 return finalizedCursor.nextBatch().then { batch in
@@ -231,7 +257,7 @@ extension QueryCursor {
                         func next() throws -> EventLoopFuture<Void> {
                             guard let element = try batch.nextElement(), !finalizedCursor.closed else {
                                 if batch.isLast || finalizedCursor.closed {
-                                    return self.collection.connection.eventLoop.newSucceededFuture(result: ())
+                                    return self.collection.cluster.eventLoop.newSucceededFuture(result: ())
                                 }
                                 
                                 return nextBatch()
@@ -241,14 +267,14 @@ extension QueryCursor {
                                 do {
                                     return try next()
                                 } catch {
-                                    return self.collection.connection.eventLoop.newFailedFuture(error: error)
+                                    return self.collection.cluster.eventLoop.newFailedFuture(error: error)
                                 }
                             }
                         }
                         
                         return try next()
                     } catch {
-                        return self.collection.connection.eventLoop.newFailedFuture(error: error)
+                        return self.collection.cluster.eventLoop.newFailedFuture(error: error)
                     }
                 }
             }
@@ -385,7 +411,7 @@ public final class FinalizedCursor<Base: QueryCursor> {
         closed = true
         
         let command = KillCursorsCommand([self.cursor.id], in: base.collection.namespace)
-        return command.execute(on: self.cursor.collection.session).map { _ in }
+        return command.execute(on: self.cursor.collection).map { _ in }
     }
 }
 

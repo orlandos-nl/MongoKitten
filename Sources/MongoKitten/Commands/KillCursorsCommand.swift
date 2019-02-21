@@ -18,9 +18,7 @@ struct KillCursorsReply: ServerReplyDecodableResult {
     typealias Result = KillCursorsReply
     
     let cursorsKilled: [Int64]
-    let cursorsNotKilled: [Int64]
     let cursorsAlive: [Int64]
-    let cursorsUnknown: [Int64]
     let ok: Int
     
     func makeResult(on collection: Collection) throws -> KillCursorsReply {

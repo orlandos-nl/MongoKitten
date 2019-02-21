@@ -199,7 +199,9 @@ public final class AggregateCursor<Element>: QueryCursor {
     }
     
     public func execute() -> EventLoopFuture<FinalizedCursor<AggregateCursor<Element>>> {
-        return self.collection.session.execute(command: self.operation).mapToResult(for: collection).map { cursor in
+        let transaction = collection.makeTransactionQueryOptions()
+        
+        return self.collection.session.execute(command: self.operation, transaction: transaction).mapToResult(for: collection).map { cursor in
             return FinalizedCursor(basedOn: self, cursor: cursor)
         }
     }
@@ -216,14 +218,16 @@ extension AggregateCursor where Element == Document {
     
     /// Appends a `$count` stage to the aggregate, executes it, and returns the result
     public func count() -> EventLoopFuture<Int> {
-        // TODO: Clone the cursor so this does not mutate the cursor
-        return self
+        let cursor = AggregateCursor(on: self.collection)
+        cursor.operation = self.operation
+        
+        return cursor
             .count(into: "count")
             .decode(CountResult.self)
             .getFirstResult()
             .thenThrowing { result in
                 guard let result = result else {
-                    throw MongoKittenError(.unexpectedNil, reason: .noResultDocument)
+                    return 0
                 }
                 
                 return result.count

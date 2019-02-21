@@ -28,14 +28,14 @@ public struct CursorSettings: Encodable {
 }
 
 struct CursorReply: ServerReplyDecodableResult {
-    var isSuccessful: Bool {
-        return ok == 1
-    }
-    
     struct CursorDetails: Codable {
         var id: Int64
         var ns: String
         var firstBatch: [Document]
+    }
+    
+    var isSuccessful: Bool {
+        return ok == 1
     }
     
     internal let cursor: CursorDetails
@@ -64,7 +64,9 @@ public final class FindCursor: QueryCursor {
     }
     
     public func execute() -> EventLoopFuture<FinalizedCursor<FindCursor>> {
-        return self.collection.database.session.execute(command: self.command).mapToResult(for: collection).map { cursor in
+        let options = collection.makeTransactionQueryOptions()
+        
+        return self.collection.database.session.execute(command: self.command, transaction: options).mapToResult(for: collection).map { cursor in
             return FinalizedCursor(basedOn: self, cursor: cursor)
         }
     }

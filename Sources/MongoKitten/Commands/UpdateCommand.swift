@@ -77,12 +77,6 @@ public struct UpdateCommand: WriteCommand {
         self.update = collection.namespace
         self.updates = Array(updates)
     }
-    
-    @discardableResult
-    public func execute(on session: ClientSession) -> EventLoopFuture<UpdateReply> {
-        // TODO: Discuss: Why do we need to pass the connection here, while it is already stored as variable?
-        return session.execute(command: self)
-    }
 }
 
 public struct UpdateReply: ServerReplyDecodableResult {

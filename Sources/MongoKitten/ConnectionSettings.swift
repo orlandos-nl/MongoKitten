@@ -15,7 +15,6 @@ fileprivate extension Bool {
 
 /// Describes the settings for a MongoDB connection, most of which can be represented in a connection string
 public struct ConnectionSettings: Equatable {
-    
     /// The authentication details to use with the database
     public enum Authentication: Equatable {
         /// Unauthenticated
@@ -35,8 +34,7 @@ public struct ConnectionSettings: Equatable {
     }
     
     /// Defines a MongoDB host
-    public struct Host: Equatable {
-        
+    public struct Host: Hashable {
         /// The hostname, like "localhost", "example.com" or "127.0.0.1"
         public var hostname: String
         
@@ -50,6 +48,24 @@ public struct ConnectionSettings: Equatable {
         public init(hostname: String, port: UInt16) {
             self.hostname = hostname
             self.port = port
+        }
+        
+        internal init<S: StringProtocol>(_ hostString: S) throws {
+            let splitHost = hostString.split(separator: ":", maxSplits: 1)
+            let specifiesPort = splitHost.count == 2
+            
+            if specifiesPort {
+                let specifiedPortString = splitHost[1]
+                guard let specifiedPort = UInt16(specifiedPortString) else {
+                    throw MongoKittenError(.invalidURI, reason: .invalidPort)
+                }
+                
+                port = specifiedPort
+            } else {
+                port = 27017
+            }
+            
+            self.hostname = String(splitHost[0])
         }
     }
     
@@ -200,24 +216,7 @@ public struct ConnectionSettings: Equatable {
         }
         
         /// Parse the hosts, which may or may not contain a port number
-        self.hosts = try hostsPart.split(separator: ",").map { hostString in
-            let splitHost = hostString.split(separator: ":", maxSplits: 1)
-            let specifiesPort = splitHost.count == 2
-            let port: UInt16
-            
-            if specifiesPort {
-                let specifiedPortString = splitHost[1]
-                guard let specifiedPort = UInt16(specifiedPortString) else {
-                    throw MongoKittenError(.invalidURI, reason: .invalidPort)
-                }
-                
-                port = specifiedPort
-            } else {
-                port = 27017
-            }
-            
-            return Host(hostname: String(splitHost[0]), port: port)
-        }
+        self.hosts = try hostsPart.split(separator: ",").map(Host.init)
         
         // Parse various options
         if let authSource = queries["authSource"] {

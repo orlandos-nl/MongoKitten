@@ -8,7 +8,7 @@ class CRUDTests : XCTestCase {
     let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     
 //    let settings = ConnectionSettings(
-//        authentication: .scramSha1(username: "mongokitten", password: "xrQqOYD28lvAOKXc"),
+//        authentication: .scramSha1(username: "joannis", password: "test"),
 //        authenticationSource: nil,
 //        hosts: [
 //            .init(hostname: "ok0-shard-00-00-xkvc1.mongodb.net", port: 27017)
@@ -25,12 +25,59 @@ class CRUDTests : XCTestCase {
 //    let settings = try! ConnectionSettings("mongodb://mongokitten:xrQqOYD28lvAOKXc@ok0-shard-00-00-xkvc1.mongodb.net:27017?ssl=true")
     let settings = try! ConnectionSettings("mongodb://localhost")
     
-    var connection: Connection!
+    var cluster: Cluster!
     
     override func setUp() {
-        self.connection = try! Connection.connect(on: group, settings: settings).wait()
+        self.cluster = try! Cluster.connect(on: group, settings: settings).wait()
         
-        try! connection[dbName].drop().wait()
+        try! cluster[dbName].drop().wait()
+    }
+    
+    func testTransactions() throws {
+        let db = cluster[dbName]
+        let users = db["users"]
+        _ = try db["users"].insert(["username": "Creating collection user"]).wait()
+        let base = 1
+        
+        do {
+            let transactionDB = try db.startTransaction(with: SessionOptions())
+            let transactionUsers = transactionDB["users"]
+            
+            XCTAssertEqual(try users.count().wait(), base)
+            _ = try transactionUsers.insert(["username": "henk"]).wait()
+            sleep(2)
+            XCTAssertEqual(try transactionUsers.aggregate().count().wait(), base + 1)
+            XCTAssertEqual(try users.count().wait(), base + 1)
+            try transactionUsers.abort().wait()
+            XCTAssertEqual(try users.count().wait(), base)
+        } catch {
+            XCTFail()
+            return
+        }
+        
+        do {
+            let transactionDB = try db.startTransaction(with: SessionOptions())
+            let transactionUsers = transactionDB["users"]
+            XCTAssertEqual(try users.count().wait(), base)
+            _ = try transactionUsers.insert(["username": "henk"]).wait()
+            XCTAssertEqual(try transactionUsers.aggregate().count().wait(), base + 1)
+            XCTAssertEqual(try users.count().wait(), base + 1)
+            try transactionUsers.commit().wait()
+            XCTAssertEqual(try users.count().wait(), base + 1)
+        } catch {
+            XCTFail()
+            return
+        }
+    }
+    
+    func testListDatabases() throws {
+        let dbs = try cluster.listDatabases().wait()
+        
+        XCTAssertGreaterThan(dbs.count, 0)
+    }
+    
+    func testListCollections() throws {
+        print(try cluster["admin"].listCollections().wait().map { $0.fullName })
     }
     
 //    func testRangeFind() throws {
@@ -45,6 +92,28 @@ class CRUDTests : XCTestCase {
 //                return findRange.and(findPartialRange).and(findClosedRange).map { _ in }
 //            }
 //        }.wait()
+//    }
+    
+//    func testCluster() throws {
+//        let users = self.cluster[dbName]["users"]
+//        _ = try users.insert(["name": "Joannis"]).wait()
+//        
+//        for i in 0..<100 {
+//            print("Start cycle \(i)")
+//            
+//            let future = users.findOne()
+//                
+//            future.whenSuccess { user in
+//                XCTAssertEqual(user?["name"] as? String, "Joannis")
+//                print("End cycle \(i)")
+//            }
+//            
+//            future.whenFailure { error in
+//                print("\(error)")
+//            }
+//            
+//            sleep(2)
+//        }
 //    }
     
     func createTestData(n: Int, in collection: MongoKitten.Collection) -> EventLoopFuture<Void> {
@@ -67,8 +136,8 @@ class CRUDTests : XCTestCase {
     }
     
     func testHenk() throws {
-        let dogs = connection[dbName]["dogs"]
-        let owners = connection[dbName]["owners"]
+        let dogs = cluster[dbName]["dogs"]
+        let owners = cluster[dbName]["owners"]
         
         let ownerId = owners.objectIdGenerator.generate()
         dogs.insert(["_id": dogs.objectIdGenerator.generate(), "owner": ownerId])
@@ -98,9 +167,36 @@ class CRUDTests : XCTestCase {
         }.wait()
     }
     
+    func testGenericFindOne() throws {
+        struct User: Codable {
+            let _id: ObjectId
+            let name: String
+            
+            init(named name: String) {
+                self._id = ObjectId()
+                self.name = name
+            }
+        }
+        
+        do {
+            let collection = cluster[dbName]["test"]
+            let user = User(named: "Red")
+            _ = try collection.insert(BSONEncoder().encode(user)).wait()
+            
+            if let newUser = try collection.findOne("name" == user.name, as: User.self).wait() {
+                XCTAssertEqual(user.name, newUser.name)
+                XCTAssertEqual(user._id, newUser._id)
+            } else {
+                XCTFail()
+            }
+        } catch {
+            XCTFail("\(error)")
+        }
+    }
+    
     func testBasicFind() throws {
         do {
-            let collection = connection[dbName]["test"]
+            let collection = cluster[dbName]["test"]
             
             try createTestData(n: 241, in: collection).wait()
             
@@ -142,26 +238,25 @@ class CRUDTests : XCTestCase {
     
     func testChangeStream() throws {
         do {
-            let collection = connection[dbName]["test"]
+            let collection = cluster[dbName]["test"]
             
-            try collection.insert(["_id": ObjectId(), "owner": "Robbert"]).wait()
+            _ = try collection.insert(["_id": ObjectId(), "owner": "Robbert"]).wait()
             
             let changeStream = try collection.watch().wait()
             var count = 0
+            var names = ["Joannis" ,"Robbert"]
             
-            let future = changeStream.forEachAsync { notification in
+            changeStream.forEach { notification in
+                XCTAssertEqual(notification.fullDocument?["owner"] as? String, names[count])
                 count += 1
-                XCTAssertEqual(notification.fullDocument?["owner"] as? String, "Joannis")
-                return collection.database.connection.eventLoop.newSucceededFuture(result: ())
             }
             
             XCTAssert(try collection.insert(["_id": ObjectId(), "owner": "Joannis"]).wait().isSuccessful)
             XCTAssert(try collection.insert(["_id": ObjectId(), "owner": "Robbert"]).wait().isSuccessful)
 
             try changeStream.close().wait()
-            try future.wait()
             
-            XCTAssertEqual(count, 1)
+            XCTAssertEqual(count, 2)
         } catch {
             XCTFail("\(error)")
         }

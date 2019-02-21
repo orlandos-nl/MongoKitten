@@ -118,8 +118,8 @@ public final class ChangeStream<Notification: Decodable> {
     /// On failure, the ChangeStream is aborted
     ///
     /// When stopping or cancelling (due to failure), this function's own return value will be completed accordingly.
-    public func forEachAsync(handler: @escaping (Notification) throws -> EventLoopFuture<Void>) -> EventLoopFuture<Void> {
-        return cursor.base.decode(Notification.self).forEachAsync(handler: handler)
+    public func sequentialForEach(handler: @escaping (Notification) throws -> EventLoopFuture<Void>) -> EventLoopFuture<Void> {
+        return cursor.base.decode(Notification.self).sequentialForEach(handler: handler)
     }
 }
 
