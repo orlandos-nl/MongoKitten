@@ -505,8 +505,9 @@ final class ClientConnectionParser: ByteToMessageDecoder {
         }
         
         if let index = self.context.queries.firstIndex(where: { $0.requestID == reply.responseTo }) {
-            self.context.queries[index].promise.succeed(result: reply)
+            let query = self.context.queries[index]
             self.context.queries.remove(at: index)
+            query.promise.succeed(result: reply)
         }
         
         // TODO: Proper handling by passing the reply / error to the next handler
