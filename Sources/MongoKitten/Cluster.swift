@@ -71,8 +71,12 @@ public final class Cluster {
         self._getConnection().then { _ in
             return self.rediscover()
         }.whenComplete {
-            self.completedInitialDiscovery = true
-            self.isDiscovering.succeed(result: ())
+            if self.pool.count > 0 {
+                self.completedInitialDiscovery = true
+                self.isDiscovering.succeed(result: ())
+            } else {
+                self.isDiscovering.fail(error: MongoKittenError(.unableToConnect, reason: .noAvailableHosts))
+            }
         }
         
         self.isDiscovering.futureResult.whenComplete(self.scheduleDiscovery)
