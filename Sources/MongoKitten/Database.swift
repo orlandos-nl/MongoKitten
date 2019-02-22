@@ -9,6 +9,14 @@ import BSON
 import Foundation
 import NIO
 
+#if canImport(NIOTransportServices)
+import NIOTransportServices
+
+public typealias PlatformEventLoopGroup = NIOTSEventLoopGroup
+#else
+public typealias PlatformEventLoopGroup = EventLoopGroup
+#endif
+
 /// A reference to a MongoDB database, over a `Connection`.
 ///
 /// Databases hold collections of documents.
@@ -45,34 +53,6 @@ public class Database: FutureConvenienceCallable {
         self.session = session
     }
     
-    /// Get a `Collection` by providing a collection name as a `String`
-    ///
-    /// - parameter collection: The collection/bucket to return
-    ///
-    /// - returns: The requested collection in this database
-    public subscript(collection: String) -> MongoKitten.Collection {
-        return Collection(named: collection, in: self)
-    }
-    
-    /// Drops the current database, deleting the associated data files
-    ///
-    /// - see: https://docs.mongodb.com/manual/reference/command/dropDatabase
-    public func drop() -> EventLoopFuture<Void> {
-        let command = AdministrativeCommand(command: DropDatabase(), on: cmd)
-        
-        return command.execute(on: session).map { _ in }
-    }
-}
-
-#if canImport(NIOTransportServices)
-import NIOTransportServices
-
-public typealias PlatformEventLoop = NIOTSEventLoopGroup
-#else
-public typealias PlatformEventLoop = EventLoopGroup
-#endif
-
-extension Database {
     /// A helper method that uses the normal `connect` method and awaits it. It creates an event loop group for you.
     ///
     /// It is not recommended to use `synchronousConnect` in a NIO environment (like Vapor 3), as it will create an event loop group for you.
@@ -81,9 +61,13 @@ extension Database {
     /// - throws: Can throw for a variety of reasons, including an invalid connection string, failure to connect to the MongoDB database, etcetera.
     /// - returns: A connected database instance
     public static func synchronousConnect(_ uri: String) throws -> Database {
+        #if canImport(NIOTransportServices)
+        let group = NIOTSEventLoopGroup(loopCount: 1, defaultQoS: .default)
+        #else
         let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+        #endif
         
-        return try self.connect(uri, on: group.next()).wait()
+        return try self.connect(uri, on: group).wait()
     }
     
     /// Connect to the database at the given `uri`
@@ -92,13 +76,13 @@ extension Database {
     ///
     /// - parameter uri: A MongoDB URI that contains at least a database component
     /// - parameter loop: An EventLoop from NIO. If you want to use MongoKitten in a synchronous / non-NIO environment, use the `synchronousConnect` method.
-    public static func connect(_ uri: String, on loop: PlatformEventLoop) -> EventLoopFuture<Database> {
+    public static func connect(_ uri: String, on group: PlatformEventLoopGroup) -> EventLoopFuture<Database> {
         do {
             let settings = try ConnectionSettings(uri)
             
-            return connect(settings: settings, on: loop)
+            return connect(settings: settings, on: group)
         } catch {
-            return loop.newFailedFuture(error: error)
+            return group.next().newFailedFuture(error: error)
         }
     }
     
@@ -106,7 +90,7 @@ extension Database {
     ///
     /// - parameter uri: A MongoDB URI that contains at least a database component
     /// - parameter loop: An EventLoop from NIO. If you want to use MongoKitten in a synchronous / non-NIO environment, use the `synchronousConnect` method.
-    public static func lazyConnect(_ uri: String, on loop: PlatformEventLoop) throws -> Database {
+    public static func lazyConnect(_ uri: String, on loop: PlatformEventLoopGroup) throws -> Database {
         let settings = try ConnectionSettings(uri)
         return try lazyConnect(settings: settings, on: loop)
     }
@@ -115,17 +99,17 @@ extension Database {
     ///
     /// - parameter settings: The connection settings, which must include a database name
     /// - parameter loop: An EventLoop from NIO. If you want to use MongoKitten in a synchronous / non-NIO environment, use the `synchronousConnect` method.
-    public static func connect(settings: ConnectionSettings, on loop: PlatformEventLoop) -> EventLoopFuture<Database> {
+    public static func connect(settings: ConnectionSettings, on group: PlatformEventLoopGroup) -> EventLoopFuture<Database> {
         do {
             guard let targetDatabase = settings.targetDatabase else {
                 throw MongoKittenError(.unableToConnect, reason: .noTargetDatabaseSpecified)
             }
             
-            return Cluster.connect(on: loop, settings: settings).map { cluster in
+            return Cluster.connect(on: group, settings: settings).map { cluster in
                 return cluster[targetDatabase]
             }
         } catch {
-            return loop.newFailedFuture(error: error)
+            return group.next().newFailedFuture(error: error)
         }
     }
     
@@ -135,17 +119,12 @@ extension Database {
     ///
     /// - parameter settings: The connection settings, which must include a database name
     /// - parameter loop: An EventLoop from NIO. If you want to use MongoKitten in a synchronous / non-NIO environment, use the `synchronousConnect` method.
-    public static func lazyConnect(settings: ConnectionSettings, on group: PlatformEventLoop) throws -> Database {
+    public static func lazyConnect(settings: ConnectionSettings, on group: PlatformEventLoopGroup) throws -> Database {
         guard let targetDatabase = settings.targetDatabase else {
             throw MongoKittenError(.unableToConnect, reason: .noTargetDatabaseSpecified)
         }
         
         return try Cluster(lazyConnectingTo: settings, on: group)[targetDatabase]
-    }
-
-    internal init(named name: String, session: ClientSession) {
-        self.name = name
-        self.session = session
     }
     
     /// Stats a new session which can be used for retryable writes, transactions and more

@@ -81,33 +81,41 @@ internal final class Connection {
         let context = ClientQueryContext()
         let serializer = ClientConnectionSerializer(context: context)
         
+        #if canImport(NIOTransportServices)
+        var bootstrap = NIOTSConnectionBootstrap(group: cluster.group)
+        
+        if cluster.settings.useSSL {
+            bootstrap = bootstrap.tlsOptions(NWProtocolTLS.Options())
+        }
+        #else
         let bootstrap = ClientBootstrap(group: cluster.eventLoop)
-            // Enable SO_REUSEADDR.
+        #endif
+        
+        return bootstrap// Enable SO_REUSEADDR.
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             .channelInitializer { channel in
                 return Connection.initialize(
                     pipeline: channel.pipeline,
+                    group: cluster.group,
                     hostname: host.hostname,
                     context: context,
                     settings: cluster.settings,
                     serializer: serializer
                 )
-        }
-        
-        return bootstrap.connect(host: host.hostname, port: Int(host.port)).then { channel in
-            let connection = Connection(
-                channel: channel,
-                context: context,
-                implicitSession: cluster.sessionManager.makeImplicitSession(for: cluster),
-                sessionManager: cluster.sessionManager,
-                settings: cluster.settings,
-                serializer: serializer
-            )
-            
-            return connection.executeHandshake(withClientMetadata: true)
-                .then { connection.authenticate() }
-                .map { connection }
-        }
+            }.connect(host: host.hostname, port: Int(host.port)).then { channel in
+                let connection = Connection(
+                    channel: channel,
+                    context: context,
+                    implicitSession: cluster.sessionManager.makeImplicitSession(for: cluster),
+                    sessionManager: cluster.sessionManager,
+                    settings: cluster.settings,
+                    serializer: serializer
+                )
+                
+                return connection.executeHandshake(withClientMetadata: true)
+                    .then { connection.authenticate() }
+                    .map { connection }
+            }
     }
     
     init(channel: Channel, context: ClientQueryContext, implicitSession: ClientSession, sessionManager: SessionManager, settings: ConnectionSettings, serializer: ClientConnectionSerializer) {
@@ -119,18 +127,12 @@ internal final class Connection {
         self.implicitSession = implicitSession
     }
     
-    static func initialize(pipeline: ChannelPipeline, hostname: String?, context: ClientQueryContext, settings: ConnectionSettings, serializer: ClientConnectionSerializer) -> EventLoopFuture<Void> {
+    static func initialize(pipeline: ChannelPipeline, group: PlatformEventLoopGroup, hostname: String?, context: ClientQueryContext, settings: ConnectionSettings, serializer: ClientConnectionSerializer) -> EventLoopFuture<Void> {
         let promise: EventLoopPromise<Void> = pipeline.eventLoop.newPromise()
         
         var handlers: [ChannelHandler] = [ClientConnectionParser(context: context), serializer]
         
-        #if canImport(NIOTransportServices)
-        var bootstrap = NIOTSConnectionBootstrap(group: group)
-        
-        if settings.useSSL {
-            bootstrap = bootstrap.tlsOptions(NWProtocolTLS.Options())
-        }
-        #else
+        #if !canImport(NIOTransportServices)
         if settings.useSSL {
             do {
                 let sslConfiguration = TLSConfiguration.forClient(

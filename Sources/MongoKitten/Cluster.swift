@@ -37,6 +37,7 @@ public final class Cluster {
     private var pool: [PooledConnection]
     internal private(set) var wireVersion: WireVersion?
     private var newWireVersion: WireVersion?
+    let group: PlatformEventLoopGroup
     
     /// Used as a shortcut to not have to set a callback on `isDiscovering`
     private var completedInitialDiscovery = false
@@ -49,8 +50,9 @@ public final class Cluster {
         )
     }
     
-    private init(eventLoop: EventLoop, sessionManager: SessionManager, settings: ConnectionSettings) {
-        self.eventLoop = eventLoop
+    private init(group: PlatformEventLoopGroup, sessionManager: SessionManager, settings: ConnectionSettings) {
+        self.group = group
+        self.eventLoop = group.next()
         self.sessionManager = sessionManager
         self.settings = settings
         self.isDiscovering = eventLoop.newPromise()
@@ -61,12 +63,12 @@ public final class Cluster {
     /// Connects to a cluster lazily, which means you don't know if the connection was successful until you start querying
     ///
     /// This is useful when you need a cluster synchronously to query asynchronously
-    public convenience init(lazyConnectingTo settings: ConnectionSettings, on group: EventLoopGroup) throws {
+    public convenience init(lazyConnectingTo settings: ConnectionSettings, on group: PlatformEventLoopGroup) throws {
         guard settings.hosts.count > 0 else {
             throw MongoKittenError(.unableToConnect, reason: .noHostSpecified)
         }
         
-        self.init(eventLoop: group.next(), sessionManager: SessionManager(), settings: settings)
+        self.init(group: group, sessionManager: SessionManager(), settings: settings)
         
         self._getConnection().then { _ in
             return self.rediscover()
@@ -110,7 +112,7 @@ public final class Cluster {
     /// Connects to a cluster asynchronously
     ///
     /// You can query it using the Cluster returned from the future
-    public static func connect(on group: EventLoopGroup, settings: ConnectionSettings) -> EventLoopFuture<Cluster> {
+    public static func connect(on group: PlatformEventLoopGroup, settings: ConnectionSettings) -> EventLoopFuture<Cluster> {
         do {
             let cluster = try Cluster(lazyConnectingTo: settings, on: group)
             return cluster.isDiscovering.futureResult.map { cluster }

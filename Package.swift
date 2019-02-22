@@ -20,9 +20,6 @@ var package = Package(
         
         // 🚀
         .package(url: "https://github.com/apple/swift-nio.git", from: "1.8.0"),
-        
-        // 🔑
-        .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "1.1.1"),
     ],
     targets: [
         .target(
@@ -41,9 +38,9 @@ var package = Package(
 var targetDependencies: [Target.Dependency] = ["BSON", "_MongoKittenCrypto", "NIO"]
 
 // 🔑
-if #available(macOS 10.14, *) {
+if #available(macOS 10.14, iOS 11, *) {
     package.dependencies.append(
-        .package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "0.1.0")
+        .package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "0.5.1")
     )
     
     targetDependencies.append("NIOTransportServices")
