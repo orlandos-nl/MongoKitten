@@ -21,7 +21,7 @@ fileprivate final class Library {
         var parameters = mongo_embedded_v1_init_params()
         
         guard let library = mongo_embedded_v1_lib_init(&parameters, statusBuffer) else {
-            fatalError()
+            throw MobileError.cannotCreateDB
         }
         
         self.library = library
@@ -35,7 +35,7 @@ fileprivate final class Library {
 }
 
 enum MobileError: Error {
-    case cannotConnect, notServer, notSocket, alreadyClosed, invalidState
+    case invalidResponse, invalidState, cannotCreateDB
     case errorMessage(String)
 }
 
@@ -62,11 +62,11 @@ public final class MobileDatabase: _ConnectionPool {
         self.library = try Library.default()
         
         guard let database = mongo_embedded_v1_instance_create(library.library, json, status) else {
-            fatalError()
+            throw MobileError.cannotCreateDB
         }
         
         guard let client = mongo_embedded_v1_client_create(database, status) else {
-            fatalError()
+            throw MobileError.cannotCreateDB
         }
         
         self.database = database
@@ -82,6 +82,7 @@ public final class MobileDatabase: _ConnectionPool {
                 throw MobileError.invalidState
             }
             
+            writeBuffer.clear()
             try serializer.encode(data: context, into: &writeBuffer)
         
             let data = try writeBuffer.withUnsafeReadableBytes { writeBuffer -> Data in
@@ -112,14 +113,13 @@ public final class MobileDatabase: _ConnectionPool {
                 try deserializer.parse(from: &buffer) == .continue,
                 let reply = deserializer.reply
             else {
-                fatalError("Invalid response")
+                throw MobileError.invalidResponse
             }
             
             context.promise.succeed(result: reply)
             return
         } catch let error {
             self.invalid = true
-            print(error)
             context.promise.fail(error: error)
         }
     }
