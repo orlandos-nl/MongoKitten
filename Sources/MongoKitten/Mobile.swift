@@ -36,134 +36,10 @@ fileprivate final class Library {
 
 enum MobileError: Error {
     case cannotConnect, notServer, notSocket, alreadyClosed, invalidState
+    case errorMessage(String)
 }
 
-final class MobileChannel: Channel, ChannelCore {
-    private let library: Library
-    private let database: OpaquePointer
-    private let client: OpaquePointer
-    private let close: EventLoopPromise<Void>
-    private var _pipeline: ChannelPipeline!
-    
-    let allocator = ByteBufferAllocator()
-    let eventLoop: EventLoop
-    let localAddress: SocketAddress? = nil
-    let remoteAddress: SocketAddress? = nil
-    
-    private(set) var isOpen = true
-    let parent: Channel? = nil
-    private(set) var isActive = false
-    let isWritable = true
-    
-    var _unsafe: ChannelCore { return self }
-    var pipeline: ChannelPipeline { return _pipeline }
-    var closeFuture: EventLoopFuture<Void> { return close.futureResult }
-    
-    init(settings: MobileConfiguration, group: PlatformEventLoopGroup) throws {
-        let json = String(data: try JSONEncoder().encode(settings), encoding: .utf8)!
-        
-        self.library = try Library.default()
-        
-        guard let database = mongo_embedded_v1_instance_create(library.library, json, nil) else {
-            fatalError()
-        }
-        
-        guard let client = mongo_embedded_v1_client_create(database, nil) else {
-            fatalError()
-        }
-        
-        self.eventLoop = group.next()
-        self.close = eventLoop.newPromise()
-        self.database = database
-        self.client = client
-        self._pipeline = ChannelPipeline(channel: self)
-    }
-    
-    func setOption<T>(option: T, value: T.OptionType) -> EventLoopFuture<Void> where T : ChannelOption {
-        fatalError("No options supported")
-    }
-    
-    func getOption<T>(option: T) -> EventLoopFuture<T.OptionType> where T : ChannelOption {
-        fatalError("No options supported")
-    }
-    
-    func localAddress0() throws -> SocketAddress {
-        eventLoop.assertInEventLoop()
-        
-        throw MobileError.notSocket
-    }
-    
-    func remoteAddress0() throws -> SocketAddress {
-        eventLoop.assertInEventLoop()
-        
-        throw MobileError.notSocket
-    }
-    
-    func register0(promise: EventLoopPromise<Void>?) {
-        eventLoop.assertInEventLoop()
-        
-        if isOpen {
-            promise?.fail(error: MobileError.alreadyClosed)
-            return
-        }
-        
-        promise?.succeed(result: ())
-    }
-    
-    func bind0(to: SocketAddress, promise: EventLoopPromise<Void>?) {
-        // This is exclusively a client
-        promise?.fail(error: MobileError.notServer)
-    }
-    
-    func connect0(to: SocketAddress, promise: EventLoopPromise<Void>?) {
-        // We're connected by default
-        promise?.fail(error: MobileError.cannotConnect)
-    }
-    
-    func write0(_ data: NIOAny, promise: EventLoopPromise<Void>?) {
-//        eventLoop.assertInEventLoop()
-//
-//        let buffer = unwrapData(data, as: ByteBuffer.self)
-//
-//        buffer.withUnsafeReadableBytes { buffer in
-//            mongo_embedded_v1_client_invoke(client, buffer.baseAddress!, buffer.count, <#T##output: UnsafeMutablePointer<UnsafeMutableRawPointer?>!##UnsafeMutablePointer<UnsafeMutableRawPointer?>!#>, <#T##output_size: UnsafeMutablePointer<Int>!##UnsafeMutablePointer<Int>!#>, <#T##status: OpaquePointer!##OpaquePointer!#>)
-//        }
-    }
-    
-    func flush0() {
-        // Nothing to do, flush is handled by the mongo_embedded instance
-    }
-    
-    func read0() {
-        eventLoop.assertInEventLoop()
-    }
-    
-    func close0(error: Error, mode: CloseMode, promise: EventLoopPromise<Void>?) {
-        self.eventLoop.assertInEventLoop()
-        
-        if self.isOpen {
-            promise?.fail(error: MobileError.alreadyClosed)
-            return
-        }
-        
-        self.close.succeed(result: ())
-        promise?.succeed(result: ())
-    }
-    
-    func triggerUserOutboundEvent0(_ event: Any, promise: EventLoopPromise<Void>?) {
-        promise?.succeed(result: ())
-    }
-    
-    func channelRead0(_ data: NIOAny) {
-        // The data is "lost", but that's fine if MongoKitten doesn't need this data
-    }
-    
-    func errorCaught0(error: Error) {
-        // Don't do anything, handling errors before this is not a requirement
-    }
-    
-}
-
+// TODO: https://github.com/mongodb/stitch-ios-sdk/blob/c9a0808c9af94d4f8bbfb5ad929b166e3df70d98/Darwin/Services/StitchLocalMongoDBService/StitchLocalMongoDBService/LocalMongoClient.swift#L138
 public final class MobileDatabase: _ConnectionPool {
     private let library: Library
     private let database: OpaquePointer
@@ -171,42 +47,44 @@ public final class MobileDatabase: _ConnectionPool {
     private let allocator = ByteBufferAllocator()
     private let serializer = MongoSerializer()
     private let deserializer = MongoDeserializer()
-    private var writeBuffer: ByteBuffer
-    private var readBuffer: ByteBuffer
     private let status = mongo_embedded_v1_status_create()
+    private var writeBuffer: ByteBuffer
     private var invalid = false
     
     public init(settings: MobileConfiguration, group: PlatformEventLoopGroup = PlatformEventLoopGroup(loopCount: 1, defaultQoS: .default)) throws {
-        let json = String(data: try JSONEncoder().encode(settings), encoding: .utf8)!
+        let dbPath = settings.storage.dbPath
+        let fileManager = FileManager()
+        if !fileManager.fileExists(atPath: dbPath) {
+            try fileManager.createDirectory(atPath: dbPath, withIntermediateDirectories: true)
+        }
         
+        let json = String(data: try JSONEncoder().encode(settings), encoding: .utf8)!
         self.library = try Library.default()
         
-        guard let database = mongo_embedded_v1_instance_create(library.library, json, nil) else {
+        guard let database = mongo_embedded_v1_instance_create(library.library, json, status) else {
             fatalError()
         }
         
-        guard let client = mongo_embedded_v1_client_create(database, nil) else {
+        guard let client = mongo_embedded_v1_client_create(database, status) else {
             fatalError()
         }
         
         self.database = database
         self.client = client
-        writeBuffer = allocator.buffer(capacity: 16_000_000)
-        readBuffer = allocator.buffer(capacity: 16_000_000)
+        self.writeBuffer = allocator.buffer(capacity: 16_000_000)
         
         super.init(eventLoop: group.next(), sessionManager: SessionManager())
     }
     
-    private func _send(context: MongoDBCommandContext) -> EventLoopFuture<ServerReply> {
+    private func _send(context: MongoDBCommandContext, requestId: Int32) {
         do {
             if self.invalid {
                 throw MobileError.invalidState
             }
             
-            writeBuffer.clear()
             try serializer.encode(data: context, into: &writeBuffer)
         
-            return try writeBuffer.withUnsafeReadableBytes { writeBuffer -> EventLoopFuture<ServerReply> in
+            let data = try writeBuffer.withUnsafeReadableBytes { writeBuffer -> Data in
                 var readPointer: UnsafeMutableRawPointer?
                 var readCount = 0
                     
@@ -219,34 +97,56 @@ public final class MobileDatabase: _ConnectionPool {
                     status
                 )
                 
-                let buffer = UnsafeRawBufferPointer(start: readPointer!, count: readCount)
-                self.readBuffer.write(bytes: buffer)
-                let result = try deserializer.parse(from: &readBuffer)
+                let error = mongo_embedded_v1_status_get_error(status)
                 
-                guard result == .continue, let reply = deserializer.reply else {
-                    throw MobileError.invalidState
+                guard error == MONGO_EMBEDDED_V1_SUCCESS.rawValue else {
+                    throw MobileError.errorMessage(String(cString: mongo_embedded_v1_status_get_explanation(status)))
                 }
                 
-                readBuffer.clear()
-                return eventLoop.newSucceededFuture(result: reply)
+                return Data(bytes: readPointer!, count: readCount)
             }
-        } catch {
+            
+            var buffer = allocator.buffer(capacity: data.count)
+            buffer.write(bytes: data)
+            guard
+                try deserializer.parse(from: &buffer) == .continue,
+                let reply = deserializer.reply
+            else {
+                fatalError("Invalid response")
+            }
+            
+            context.promise.succeed(result: reply)
+            return
+        } catch let error {
             self.invalid = true
-            return eventLoop.newFailedFuture(error: error)
+            print(error)
+            context.promise.fail(error: error)
         }
     }
     
+    /// The current request ID, used to generate unique identifiers for MongoDB commands
+    private var currentRequestId: Int32 = 0
+    
+    private func nextRequestId() -> Int32 {
+        defer { currentRequestId = currentRequestId &+ 1}
+        
+        return currentRequestId
+    }
+    
     override func send<C>(command: C, session: ClientSession? = nil, transaction: TransactionQueryOptions? = nil) -> EventLoopFuture<ServerReply> where C : MongoDBCommand {
+        let promise = self.eventLoop.newPromise(of: ServerReply.self)
+        let requestId = nextRequestId()
         let context = MongoDBCommandContext(
             command: command,
-            requestID: 0,
+            requestID: requestId,
             retry: true,
             session: session,
             transaction: transaction,
-            promise: self.eventLoop.newPromise()
+            promise: promise
         )
         
-        return _send(context: context)
+        _send(context: context, requestId: requestId)
+        return promise.futureResult
     }
     
     deinit {

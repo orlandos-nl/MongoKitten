@@ -6,8 +6,6 @@ class MongoDeserializer {
     private(set) var reply: ServerReply?
     
     func parse(from buffer: inout ByteBuffer) throws -> DecodingState {
-        assert(reply == nil, "Invalid decoding state")
-        
         let header: MessageHeader
         
         if let _header = self.header {
