@@ -18,9 +18,9 @@ High and low level APIs for interacting with MongoDB databases. Supports codable
 
   s.swift_version = '4.2'
   s.homepage         = 'https://github.com/OpenKitten/MongoKitten'
-  s.license          = { :type => 'MIT', :file => 'LICENSE' }
+  s.license          = { :type => 'MIT', :file => 'LICENSE.md' }
   s.author           = { 'joannis' => 'joannis@orlandos.nl' }
-  s.source           = { :git => 'https://github.com/OpenKitten/MongoKitteN.git', :tag => s.version.to_s }
+  s.source           = { :git => 'https://github.com/OpenKitten/MongoKitten.git', :tag => s.version.to_s }
   s.social_media_url = 'https://twitter.com/joannisorlandos'
 
   s.dependency 'BSON', '>= 6.0.2'
@@ -38,6 +38,7 @@ High and low level APIs for interacting with MongoDB databases. Supports codable
   
   s.subspec 'Core' do |sub|
     sub.source_files = 'Sources/MongoKitten/**/*'
-    sub.dependency   'MongoKitten/_MongoKittenCrypto'
+    sub.dependency     'MongoKitten/_MongoKittenCrypto'
+    sub.dependency     'mongo_embedded', '~> 4.0.4'
   end
 end

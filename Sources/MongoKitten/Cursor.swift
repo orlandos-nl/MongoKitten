@@ -187,7 +187,7 @@ extension QueryCursor {
                         var batch = batch
                         
                         guard let element = try batch.nextElement() else {
-                            return self.collection.cluster.eventLoop.newSucceededFuture(result: ())
+                            return self.collection.eventLoop.newSucceededFuture(result: ())
                         }
                         
                         var future = element.map(handler)
@@ -199,12 +199,12 @@ extension QueryCursor {
                         }
                         
                         if batch.isLast {
-                            return self.collection.cluster.eventLoop.newSucceededFuture(result: ())
+                            return self.collection.eventLoop.newSucceededFuture(result: ())
                         }
                         
                         return nextBatch()
                     } catch {
-                        return self.collection.cluster.eventLoop.newFailedFuture(error: error)
+                        return self.collection.eventLoop.newFailedFuture(error: error)
                     }
                 }
             }
@@ -232,12 +232,12 @@ extension QueryCursor {
                         }
                         
                         if batch.isLast || finalizedCursor.closed {
-                            return self.collection.cluster.eventLoop.newSucceededFuture(result: ())
+                            return self.collection.eventLoop.newSucceededFuture(result: ())
                         }
                         
                         return nextBatch()
                     } catch {
-                        return self.collection.cluster.eventLoop.newFailedFuture(error: error)
+                        return self.collection.eventLoop.newFailedFuture(error: error)
                     }
                 }
             }
@@ -257,7 +257,7 @@ extension QueryCursor {
                         func next() throws -> EventLoopFuture<Void> {
                             guard let element = try batch.nextElement(), !finalizedCursor.closed else {
                                 if batch.isLast || finalizedCursor.closed {
-                                    return self.collection.cluster.eventLoop.newSucceededFuture(result: ())
+                                    return self.collection.eventLoop.newSucceededFuture(result: ())
                                 }
                                 
                                 return nextBatch()
@@ -267,14 +267,14 @@ extension QueryCursor {
                                 do {
                                     return try next()
                                 } catch {
-                                    return self.collection.cluster.eventLoop.newFailedFuture(error: error)
+                                    return self.collection.eventLoop.newFailedFuture(error: error)
                                 }
                             }
                         }
                         
                         return try next()
                     } catch {
-                        return self.collection.cluster.eventLoop.newFailedFuture(error: error)
+                        return self.collection.eventLoop.newFailedFuture(error: error)
                     }
                 }
             }

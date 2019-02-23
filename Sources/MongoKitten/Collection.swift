@@ -15,7 +15,7 @@ public class Collection: FutureConvenienceCallable {
     public let database: Database
     
     public var eventLoop: EventLoop {
-        return cluster.eventLoop
+        return pool.eventLoop
     }
     
     internal func makeTransactionQueryOptions() -> TransactionQueryOptions? {
@@ -37,13 +37,13 @@ public class Collection: FutureConvenienceCallable {
     
     internal var session: ClientSession
     
-    internal var cluster: Cluster {
-        return self.database.session.cluster
+    internal var pool: _ConnectionPool {
+        return self.database.session.pool
     }
     
     /// The connection's ObjectId generator
     public var objectIdGenerator: ObjectIdGenerator {
-        return cluster.sharedGenerator
+        return pool.sharedGenerator
     }
     
     /// The full collection namespace: "databasename.collectionname"

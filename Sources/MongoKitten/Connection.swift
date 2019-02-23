@@ -34,7 +34,7 @@ internal final class Connection {
     let channel: Channel
     
     let sessionManager: SessionManager
-    var implicitSession: ClientSession!
+    var implicitSession: ClientSession
     
     /// The connection settings for this connection
     private(set) var settings: ConnectionSettings
@@ -128,6 +128,17 @@ internal final class Connection {
         self.settings = settings
         self.clientConnectionSerializer = serializer
         self.implicitSession = implicitSession
+    }
+    
+    static func initializeMobile(pipeline: ChannelPipeline, group: PlatformEventLoopGroup, context: ClientQueryContext, serializer: ClientConnectionSerializer, dbPath: String) -> EventLoopFuture<Void>  {
+        #if canImport(mongo_mobile)
+        let config = MongoConfiguration(storage: .init(dbPath: dbPath))
+        let tcp = MobileWriter(pipeline: pipeline)
+        
+        return pipeline.addHandlers([ClientConnectionParser(context: context), serializer, tcp])
+        #else
+        fatalError("MongoKitten Mobile unsupported for this platform/configuration")
+        #endif
     }
     
     static func initialize(pipeline: ChannelPipeline, group: PlatformEventLoopGroup, hostname: String?, context: ClientQueryContext, settings: ConnectionSettings, serializer: ClientConnectionSerializer) -> EventLoopFuture<Void> {
@@ -250,7 +261,7 @@ internal final class Connection {
             app = nil
         }
         
-        let commandCollection = self.implicitSession.cluster["admin"]["$cmd"]
+        let commandCollection = self.implicitSession.pool["admin"]["$cmd"]
         
         let userNamespace: String?
         
@@ -352,124 +363,25 @@ final class ClientQueryContext {
     }
 }
 
-final class ClientConnectionSerializer: MessageToByteEncoder {
+final class ClientConnectionSerializer: MongoSerializer, MessageToByteEncoder {
     typealias OutboundIn = MongoDBCommandContext
     
     let context: ClientQueryContext
-    var supportsOpMessage = false
-    var slaveOk = false
-    var includeSession = false
-    let supportsQueryCommand = true
     
     init(context: ClientQueryContext) {
         self.context = context
-    }
-    
-    func encodeOpMessage(ctx: ChannelHandlerContext, data: MongoDBCommandContext, out: inout ByteBuffer) throws {
-        let opCode = MessageHeader.OpCode.message
         
-        let encoder = BSONEncoder()
-        
-        var document = try encoder.encode(data.command)
-        document["$db"] = data.command.namespace.databaseName
-        
-        if includeSession, let session = data.session {
-            document["lsid"]["id"] = session.sessionId.id
-        }
-        
-        if let transaction = data.transaction {
-            document["txnNumber"] = transaction.id
-            document["autocommit"] = transaction.autocommit
-            
-            if transaction.startTransaction {
-                document["startTransaction"] = true
-            }
-        }
-        
-        let flags: OpMsgFlags = []
-        
-        var buffer = document.makeByteBuffer()
-        
-        // MongoDB supports messages up to 16MB
-        if buffer.writerIndex > 16_000_000 {
-            data.promise.fail(error: MongoKittenError(.commandFailure, reason: MongoKittenError.Reason.commandSizeTooLarge))
-            return
-        }
-        
-        let header = MessageHeader(
-            messageLength: MessageHeader.byteSize + 4 + 1 + Int32(buffer.readableBytes),
-            requestId: data.requestID,
-            responseTo: 0,
-            opCode: opCode
-        )
-        
-        out.write(header)
-        out.write(integer: flags.rawValue, endianness: .little)
-        out.write(integer: 0 as UInt8, endianness: .little) // section kind 0
-        
-        out.write(buffer: &buffer)
-    }
-    
-    func encodeQueryCommand(ctx: ChannelHandlerContext, data: MongoDBCommandContext, out: inout ByteBuffer) throws {
-        let opCode = MessageHeader.OpCode.query
-        
-        let encoder = BSONEncoder()
-        
-        var document = try encoder.encode(data.command)
-        
-        if includeSession, let session = data.session {
-            document["lsid"]["id"] = session.sessionId.id
-        }
-        
-        var flags: OpQueryFlags = []
-        
-        if slaveOk {
-            flags.insert(.slaveOk)
-        }
-        
-        var buffer = document.makeByteBuffer()
-        
-        // MongoDB supports messages up to 16MB
-        if buffer.writerIndex > 16_000_000 {
-            data.promise.fail(error: MongoKittenError(.commandFailure, reason: MongoKittenError.Reason.commandSizeTooLarge))
-            return
-        }
-        
-        let namespace = data.command.namespace.databaseName + ".$cmd"
-        let namespaceSize = Int32(namespace.utf8.count) + 1
-        
-        let header = MessageHeader(
-            messageLength: MessageHeader.byteSize + namespaceSize + 12 + Int32(buffer.readableBytes),
-            requestId: data.requestID,
-            responseTo: 0,
-            opCode: opCode
-        )
-        
-        out.write(header)
-        out.write(integer: flags.rawValue, endianness: .little)
-        out.write(string: namespace)
-        out.write(integer: 0 as UInt8) // null terminator for String
-        out.write(integer: 0 as Int32, endianness: .little) // Skip handled by query
-        out.write(integer: 1 as Int32, endianness: .little) // Number to return
-        
-        out.write(buffer: &buffer)
+        super.init()
     }
     
     func encode(ctx: ChannelHandlerContext, data: MongoDBCommandContext, out: inout ByteBuffer) throws {
-        if supportsOpMessage {
-            try encodeOpMessage(ctx: ctx, data: data, out: &out)
-        } else if supportsQueryCommand {
-            try encodeQueryCommand(ctx: ctx, data: data, out: &out)
-        } else {
-            throw MongoKittenError(.unsupportedProtocol, reason: nil)
-        }
+        try encode(data: data, into: &out)
     }
 }
 
-final class ClientConnectionParser: ByteToMessageDecoder {
+final class ClientConnectionParser: MongoDeserializer, ByteToMessageDecoder {
     typealias InboundOut = ServerReply
     var cumulationBuffer: ByteBuffer?
-    var header: MessageHeader?
     
     let context: ClientQueryContext
     
@@ -478,47 +390,17 @@ final class ClientConnectionParser: ByteToMessageDecoder {
     }
     
     func decode(ctx: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
-        let header: MessageHeader
+        let result = try parse(from: &buffer)
         
-        if let _header = self.header {
-            header = _header
-        } else {
-            if buffer.readableBytes < MessageHeader.byteSize {
-                return .needMoreData
+        if let reply = self.reply {
+            if let index = self.context.queries.firstIndex(where: { $0.requestID == reply.responseTo }) {
+                let query = self.context.queries[index]
+                self.context.queries.remove(at: index)
+                query.promise.succeed(result: reply)
             }
-            
-            header = try buffer.parseMessageHeader()
         }
         
-        guard numericCast(header.messageLength) &- MessageHeader.byteSize <= buffer.readableBytes else {
-            self.header = header
-            return .needMoreData
-        }
-        
-        self.header = nil
-        let reply: ServerReply
-        
-        switch header.opCode {
-        case .reply:
-            // <= Wire Version 5
-            reply = try ServerReply.reply(fromBuffer: &buffer, responseTo: header.responseTo)
-        case .message:
-            // >= Wire Version 6
-            reply = try ServerReply.message(fromBuffer: &buffer, responseTo: header.responseTo, header: header)
-        default:
-            throw MongoKittenError(.protocolParsingError, reason: .unsupportedOpCode)
-        }
-        
-        if let index = self.context.queries.firstIndex(where: { $0.requestID == reply.responseTo }) {
-            let query = self.context.queries[index]
-            self.context.queries.remove(at: index)
-            query.promise.succeed(result: reply)
-        }
-        
-        // TODO: Proper handling by passing the reply / error to the next handler
-        
-        self.header = nil
-        return .continue
+        return result
     }
     
     // TODO: this does not belong here but on the next handler
@@ -569,182 +451,4 @@ struct OpMsgFlags: OptionSet {
     ///
     /// This ensures that multiple replies are only sent when the network layer of the requester is prepared for them. MongoDB 3.6 ignores this flag.
     static let exhaustAllowed = OpMsgFlags(rawValue: 1 << 16)
-}
-
-struct ServerReply {
-    var responseTo: Int32
-    var cursorId: Int64 // 0 for OP_MSG
-    var documents: [Document]
-    
-    static func reply(fromBuffer buffer: inout ByteBuffer, responseTo: Int32) throws -> ServerReply {
-        // Skip responseFlags for now
-        buffer.moveReaderIndex(forwardBy: 4)
-        
-        let cursorId = try buffer.assertLittleEndian() as Int64
-        
-        // Skip startingFrom, we don't expose this (yet)
-        buffer.moveReaderIndex(forwardBy: 4)
-        
-        let numberReturned = try buffer.assertLittleEndian() as Int32
-        
-        let documents = try [Document](buffer: &buffer, count: numericCast(numberReturned))
-        
-        return ServerReply(responseTo: responseTo, cursorId: cursorId, documents: documents)
-    }
-    
-    static func message(fromBuffer buffer: inout ByteBuffer, responseTo: Int32, header: MessageHeader) throws -> ServerReply {
-        // Read flags
-        // TODO: The first 16 bits (0-15) are required and parsers MUST error if an unknown bit is set.
-        let rawFlags = try buffer.assertLittleEndian() as UInt32
-        let flags = OpMsgFlags(rawValue: rawFlags) // TODO: Handle flags, like checksum
-        
-        var documents: [Document] = []
-        
-        var sectionsSize = Int(header.messageLength - MessageHeader.byteSize - 4)
-        if flags.contains(.checksumPresent) {
-            sectionsSize -= 4
-        }
-        
-        let readerIndexAfterSectionParsing = buffer.readerIndex + sectionsSize
-        
-        // minimum BSON size is 5, checksum is 4 bytes, so this works
-        while buffer.readerIndex < readerIndexAfterSectionParsing {
-            let kind = try buffer.assertLittleEndian() as UInt8
-            switch kind {
-            case 0: // body
-                documents += try [Document](buffer: &buffer, count: 1)
-            case 1: // document sequence
-                let size = try buffer.assertLittleEndian() as Int32
-                let documentSequenceIdentifier = try buffer.readCString() // Document sequence identifier
-                // TODO: Handle document sequence identifier correctly
-                
-                let bsonObjectsSectionSize = Int(size) - 4 - documentSequenceIdentifier.utf8.count - 1
-                guard bsonObjectsSectionSize > 0 else {
-                    // TODO: Investigate why this error gets silienced
-                    throw MongoKittenError(.protocolParsingError, reason: .unexpectedValue)
-                }
-                
-                documents += try [Document](buffer: &buffer, consumeBytes: bsonObjectsSectionSize)
-            default:
-                // TODO: Investigate why this error gets silienced
-                throw MongoKittenError(.protocolParsingError, reason: .unexpectedValue)
-            }
-        }
-        
-        if flags.contains(.checksumPresent) {
-            // Checksum validation is unimplemented
-            // MongoDB 3.6 does not support validating the message checksum, but will correctly skip it if present.
-            buffer.moveReaderIndex(forwardBy: 4)
-        }
-        
-        return ServerReply(responseTo: responseTo, cursorId: 0, documents: documents)
-    }
-}
-
-extension Array where Element == Document {
-    init(buffer: inout ByteBuffer, count: Int) throws {
-        self = []
-        reserveCapacity(count)
-        
-        for _ in 0..<count {
-            let documentSize = try buffer.getInteger(
-                at: buffer.readerIndex,
-                endianness: .little,
-                as: Int32.self
-            ).assert()
-            
-            guard let bytes = buffer.readBytes(length: numericCast(documentSize)) else {
-                throw MongoKittenError(.protocolParsingError, reason: nil)
-            }
-            
-            append(Document(bytes: bytes))
-        }
-    }
-    
-    init(buffer: inout ByteBuffer, consumeBytes: Int) throws {
-        self = []
-        
-        var consumedBytes = 0
-        while consumedBytes < consumeBytes {
-            let documentSize = try buffer.getInteger(
-                at: buffer.readerIndex,
-                endianness: .little,
-                as: Int32.self
-                ).assert()
-            
-            consumedBytes += Int(documentSize)
-            
-            guard let bytes = buffer.readBytes(length: numericCast(documentSize)) else {
-                throw MongoKittenError(.protocolParsingError, reason: nil)
-            }
-            
-            append(Document(bytes: bytes))
-        }
-    }
-}
-
-fileprivate extension Optional {
-    func assert() throws -> Wrapped {
-        guard let `self` = self else {
-            throw MongoKittenError(.unexpectedNil, reason: nil)
-        }
-        
-        return self
-    }
-}
-
-fileprivate extension ByteBuffer {
-    mutating func assertLittleEndian<FWI: FixedWidthInteger>() throws -> FWI {
-        return try self.readInteger(endianness: .little, as: FWI.self).assert()
-    }
-    
-    mutating func assertOpCode() throws -> MessageHeader.OpCode {
-        return try MessageHeader.OpCode(rawValue: try assertLittleEndian()) .assert()
-    }
-    
-    mutating func parseMessageHeader() throws -> MessageHeader {
-        return try MessageHeader(
-            messageLength: assertLittleEndian(),
-            requestId: assertLittleEndian(),
-            responseTo: assertLittleEndian(),
-            opCode: assertOpCode()
-        )
-    }
-    
-    mutating func write(_ header: MessageHeader) {
-        write(integer: header.messageLength, endianness: .little)
-        write(integer: header.requestId, endianness: .little)
-        write(integer: header.responseTo, endianness: .little)
-        write(integer: header.opCode.rawValue, endianness: .little)
-    }
-    
-    mutating func readCString() throws -> String {
-        var bytes = Data()
-        while let byte = self.readInteger(endianness: .little, as: UInt8.self), byte != 0 {
-            bytes.append(byte)
-        }
-        
-        return try String(data: bytes, encoding: .utf8).assert()
-    }
-}
-
-struct MessageHeader {
-    static let byteSize: Int32 = 16
-    
-    enum OpCode: Int32 {
-        case reply = 1
-        case update = 2001
-        case insert = 2002
-        // Reserved = 2003
-        case query = 2004
-        case getMore = 2005
-        case delete = 2006
-        case killCursors = 2007
-        case message = 2013
-    }
-    
-    var messageLength: Int32
-    var requestId: Int32
-    var responseTo: Int32
-    var opCode: OpCode
 }

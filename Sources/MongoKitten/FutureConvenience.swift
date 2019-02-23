@@ -9,7 +9,7 @@ import NIO
 
 public protocol FutureConvenienceCallable {}
 
-extension EventLoopFuture where T == Collection {
+public extension EventLoopFuture where T == Collection {
 
     /// Convenience accessor that calls findOne(_:as:) on the collection after the future has completed.
     ///

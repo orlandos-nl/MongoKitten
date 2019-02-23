@@ -36,16 +36,18 @@ public class Database: FutureConvenienceCallable {
     
     /// The ObjectId generator tied to this datatabase
     public var objectIdGenerator: ObjectIdGenerator {
-        return session.cluster.sharedGenerator
+        return session.pool.sharedGenerator
     }
     
+    #if !os(iOS)
     public var cluster: Cluster {
-        return session.cluster
+        return session.cluster as! Cluster
     }
+    #endif
     
     /// The NIO event loop.
     public var eventLoop: EventLoop {
-        return session.cluster.eventLoop
+        return session.pool.eventLoop
     }
     
     internal init(named name: String, session: ClientSession) {
@@ -138,11 +140,11 @@ public class Database: FutureConvenienceCallable {
     /// The TransactionDatabase that is created can be used like a normal Database for queries within transactions _only_
     /// Creating a TransactionCollection is done the same way it's created with a normal Database.
     public func startTransaction(with options: SessionOptions, transactionOptions: TransactionOptions? = nil) throws -> TransactionDatabase {
-        guard session.cluster.wireVersion?.supportsReplicaTransactions == true else {
+        guard session.pool.wireVersion?.supportsReplicaTransactions == true else {
             throw MongoKittenError(.unsupportedFeatureByServer, reason: nil)
         }
         
-        let newSession = session.cluster.sessionManager.next(with: options, for: session.cluster)
+        let newSession = session.pool.sessionManager.next(with: options, for: session.pool)
         let transactionOptions = transactionOptions ?? options.defaultTransactionOptions ?? TransactionOptions()
         let transaction = Transaction(
             options: transactionOptions,
