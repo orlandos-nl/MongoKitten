@@ -4,6 +4,7 @@ import NIO
 // TODO: https://github.com/mongodb/specifications/tree/master/source/max-staleness
 // TODO: https://github.com/mongodb/specifications/tree/master/source/initial-dns-seedlist-discovery
 
+/// Any MongoDB server connection that's capable of sending queries
 public class _ConnectionPool {
     internal let eventLoop: EventLoop
     internal let sessionManager: SessionManager

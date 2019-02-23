@@ -1,12 +1,14 @@
 import BSON
 import NIO
 
+/// A type capable of serializing queries to MongoDB into a NIO ByteBuffer
 class MongoSerializer {
     var supportsOpMessage = false
     var slaveOk = false
     var includeSession = false
     let supportsQueryCommand = true
     
+    /// Encode a command specifically as OPMessage wire protocol message
     func encodeOpMessage(data: MongoDBCommandContext, into out: inout ByteBuffer) throws {
         let opCode = MessageHeader.OpCode.message
         
@@ -52,6 +54,7 @@ class MongoSerializer {
         out.write(buffer: &buffer)
     }
     
+    /// Encode a command specifically as OPQuery wire protocol message
     func encodeQueryCommand(data: MongoDBCommandContext, into out: inout ByteBuffer) throws {
         let opCode = MessageHeader.OpCode.query
         
@@ -97,6 +100,8 @@ class MongoSerializer {
         out.write(buffer: &buffer)
     }
     
+    /// Encodes the message dependent on the settings of this serializer.
+    /// Which can be determined via the connection handshake
     func encode(data: MongoDBCommandContext, into out: inout ByteBuffer) throws {
         if supportsOpMessage {
             try encodeOpMessage(data: data, into: &out)

@@ -2,6 +2,7 @@
 import mongo_embedded
 import NIO
 
+/// Initializes the MongoDB Mobile library
 fileprivate final class Library {
     static var _default: Library?
     static func `default`() throws -> Library {
@@ -40,6 +41,8 @@ enum MobileError: Error {
 }
 
 // TODO: https://github.com/mongodb/stitch-ios-sdk/blob/c9a0808c9af94d4f8bbfb5ad929b166e3df70d98/Darwin/Services/StitchLocalMongoDBService/StitchLocalMongoDBService/LocalMongoClient.swift#L138
+
+/// Creates an embedded database instance and connects to it allowing queries.
 public final class MobileDatabase: _ConnectionPool {
     private let library: Library
     private let database: OpaquePointer
@@ -51,6 +54,7 @@ public final class MobileDatabase: _ConnectionPool {
     private var writeBuffer: ByteBuffer
     private var invalid = false
     
+    /// Creates a new embedded database using the MobileConfiguration.
     public init(settings: MobileConfiguration, group: PlatformEventLoopGroup = PlatformEventLoopGroup(loopCount: 1, defaultQoS: .default)) throws {
         let dbPath = settings.storage.dbPath
         let fileManager = FileManager()
@@ -71,11 +75,14 @@ public final class MobileDatabase: _ConnectionPool {
         
         self.database = database
         self.client = client
+        
+        // Preallocate the maximum amount of bytes a MongoDB message can be
         self.writeBuffer = allocator.buffer(capacity: 16_000_000)
         
         super.init(eventLoop: group.next(), sessionManager: SessionManager())
     }
     
+    /// Sends a query to the mobile database and completed the command synchronously
     private func _send(context: MongoDBCommandContext, requestId: Int32) {
         do {
             if self.invalid {
@@ -88,7 +95,8 @@ public final class MobileDatabase: _ConnectionPool {
             let data = try writeBuffer.withUnsafeReadableBytes { writeBuffer -> Data in
                 var readPointer: UnsafeMutableRawPointer?
                 var readCount = 0
-                    
+                
+                // Sends the data to the MongoDB server and immediately fetches the reply into the readPointer and readCount
                 mongo_embedded_v1_client_invoke(
                     client,
                     writeBuffer.baseAddress!,
@@ -104,11 +112,15 @@ public final class MobileDatabase: _ConnectionPool {
                     throw MobileError.errorMessage(String(cString: mongo_embedded_v1_status_get_explanation(status)))
                 }
                 
+                // Constructs a `Data` blob from the read bytes
                 return Data(bytes: readPointer!, count: readCount)
             }
             
+            // Write the data into a ByteBuffer and decode it, making a second copy.
+            // TODO: This needs to be optimized
             var buffer = allocator.buffer(capacity: data.count)
             buffer.write(bytes: data)
+            
             guard
                 try deserializer.parse(from: &buffer) == .continue,
                 let reply = deserializer.reply

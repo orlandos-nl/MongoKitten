@@ -1,10 +1,19 @@
 import BSON
 import NIO
 
+/// A type capable of deserializing messages from MongoDB
 class MongoDeserializer {
     private var header: MessageHeader?
     private(set) var reply: ServerReply?
     
+    /// Parses a buffer into a server reply
+    ///
+    /// Returns `.continue` if enough data was read for a single reply
+    ///
+    /// Sets `reply` to a the found ServerReply when done parsing it.
+    /// It's replaced with a new reply the next successful iteration of the parser so needs to be extracted after each `parse` attempt
+    ///
+    /// Any remaining data left in the `buffer` needs to be left until the next interation, which NIO does by default
     func parse(from buffer: inout ByteBuffer) throws -> DecodingState {
         let header: MessageHeader
         
