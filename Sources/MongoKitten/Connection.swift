@@ -1,5 +1,4 @@
 import BSON
-import _MongoKittenCrypto
 import NIO
 
 #if canImport(NIOTransportServices)
@@ -9,6 +8,10 @@ public typealias _MKNIOEventLoopRequirement = NIOTSEventLoopGroup
 #else
 import NIOOpenSSL
 public typealias _MKNIOEventLoopRequirement = EventLoopGroup
+#endif
+
+#if canImport(_MongoKittenCrypto)
+import _MongoKittenCrypto
 #endif
 
 import Foundation

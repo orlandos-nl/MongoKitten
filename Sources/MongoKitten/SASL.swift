@@ -4,8 +4,11 @@
     import Darwin
 #endif
 
-import Foundation
+#if canImport(_MongoKittenCrypto)
 import _MongoKittenCrypto
+#endif
+
+import Foundation
 
 /// Used by the SCRAM helper to keep track of the current state and the previous state's relevant parameters
 fileprivate enum ProgressState {
