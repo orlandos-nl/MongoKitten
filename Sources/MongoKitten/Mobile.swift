@@ -176,5 +176,15 @@ public struct MobileConfiguration: Codable {
     public init(atPath dbPath: String) {
         self.storage = Storage(dbPath: dbPath)
     }
+    
+    public static func `default`() throws -> MobileConfiguration {
+        let dataDirectory = try FileManager.default.url(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: true
+        )
+        return MobileConfiguration(atPath: dataDirectory.path + "/local_mongodb/0/")
+    }
 }
 #endif
