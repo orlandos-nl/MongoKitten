@@ -41,7 +41,7 @@ public class Database: FutureConvenienceCallable {
     
     #if !os(iOS)
     public var cluster: Cluster {
-        return session.cluster as! Cluster
+        return session.pool as! Cluster
     }
     #endif
     
