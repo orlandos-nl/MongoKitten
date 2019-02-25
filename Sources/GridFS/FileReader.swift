@@ -1,6 +1,9 @@
-import MongoKitten
 import Foundation
 import NIO
+
+#if !os(iOS)
+import MongoKitten
+#endif
 
 public struct FileReader {
     

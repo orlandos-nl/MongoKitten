@@ -1,6 +1,9 @@
 import Foundation
 import NIO
+
+#if !os(iOS)
 import MongoKitten
+#endif
 
 final class FileWriter {
     

@@ -1,5 +1,8 @@
-import MongoKitten
 import Foundation
+
+#if !os(iOS)
+import MongoKitten
+#endif
 
 enum GridFSError: Error {
     case missingGridFSUserInfo

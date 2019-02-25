@@ -1,5 +1,8 @@
-import MongoKitten
 import Foundation
+
+#if !os(iOS)
+import MongoKitten
+#endif
 
 class Chunk: Codable {
     private enum CodingKeys: String, CodingKey {

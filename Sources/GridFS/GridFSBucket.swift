@@ -1,6 +1,9 @@
-import MongoKitten
 import NIO
 import Foundation
+
+#if !os(iOS)
+import MongoKitten
+#endif
 
 extension CodingUserInfoKey {
     static let gridFS = CodingUserInfoKey(rawValue: "GridFS")!

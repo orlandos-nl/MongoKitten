@@ -24,6 +24,9 @@ High and low level APIs for interacting with MongoDB databases. Supports codable
   s.social_media_url = 'https://twitter.com/joannisorlandos'
 
   s.dependency 'BSON', '>= 6.0.2'
+  s.dependency     'SwiftNIOTransportServices', '~> 0.5'
+  s.dependency     'SwiftNIO', '~> 1.13.0'
+  s.dependency     'mongo_embedded', '~> 4.0.4'
 
   s.subspec '_MongoKittenCrypto' do |sub|
     sub.source_files = 'Sources/_MongoKittenCrypto/*'
@@ -31,14 +34,11 @@ High and low level APIs for interacting with MongoDB databases. Supports codable
   
   s.subspec 'GridFS' do |sub|
     sub.source_files = 'Sources/GridFS/**/*'
-    sub.dependency     'SwiftNIOTransportServices', '~> 0.5'
-    sub.dependency     'SwiftNIO', '~> 1.13.0'
     sub.dependency     'MongoKitten/Core'
   end
   
   s.subspec 'Core' do |sub|
     sub.source_files = 'Sources/MongoKitten/**/*'
     sub.dependency     'MongoKitten/_MongoKittenCrypto'
-    sub.dependency     'mongo_embedded', '~> 4.0.4'
   end
 end
