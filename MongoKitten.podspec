@@ -9,7 +9,7 @@
 Pod::Spec.new do |s|
   s.ios.deployment_target = '12.0'
   s.name             = 'MongoKitten'
-  s.version          = '5.1.1'
+  s.version          = '5.1.2'
   s.summary          = 'A pure swift, native MongoDB driver'
 
   s.description      = <<-DESC

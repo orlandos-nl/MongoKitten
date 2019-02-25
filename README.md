@@ -36,9 +36,11 @@ MongoKitten supports the [Swift Package Manager](https://swift.org/getting-start
 
 Also, don't forget to add `"MongoKitten"` as a dependency for your target.
 
-### Mobile
+### Mobile [BETA]
 
-For MongoKitten mobile we support [Cocoapods](https://cocoapods.org/). Simply add this to your **Podfile**:
+MongoKitten now also supports embedded MongoDB databases in beta.
+
+For MongoKitten mobile we rely on [Cocoapods](https://cocoapods.org/). This is not officially supported for using MongoKitten yet, but you can get started by simply add this to your **Podfile**:
 
 `pod 'MongoKitten'`
 
