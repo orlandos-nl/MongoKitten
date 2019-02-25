@@ -4,14 +4,33 @@ import NIO
 // TODO: https://github.com/mongodb/specifications/tree/master/source/max-staleness
 // TODO: https://github.com/mongodb/specifications/tree/master/source/initial-dns-seedlist-discovery
 
-public final class Cluster {
-    let eventLoop: EventLoop
-    let settings: ConnectionSettings
-    let sessionManager: SessionManager
+/// Any MongoDB server connection that's capable of sending queries
+public class _ConnectionPool {
+    internal let eventLoop: EventLoop
+    internal let sessionManager: SessionManager
+    internal var wireVersion: WireVersion?
     
     /// The shared ObjectId generator for this cluster
     /// Using the shared generator is more efficient and correct than `ObjectId()`
     internal let sharedGenerator = ObjectIdGenerator()
+    
+    internal init(eventLoop: EventLoop, sessionManager: SessionManager) {
+        self.eventLoop = eventLoop
+        self.sessionManager = sessionManager
+    }
+    
+    internal func send<C: MongoDBCommand>(command: C, session: ClientSession? = nil, transaction: TransactionQueryOptions? = nil) -> EventLoopFuture<ServerReply> {
+        fatalError("Subclasses need to implement this")
+    }
+    
+    /// Returns the database named `database`, on this connection
+    public subscript(database: String) -> Database {
+        return Database(named: database, session: sessionManager.makeImplicitSession(for: self))
+    }
+}
+
+public final class Cluster: _ConnectionPool {
+    let settings: ConnectionSettings
     
     /// The interval at which cluster discovery is triggered, at a minimum of 500 milliseconds
     ///
@@ -35,50 +54,49 @@ public final class Cluster {
     
     private let isDiscovering: EventLoopPromise<Void>
     private var pool: [PooledConnection]
-    internal private(set) var wireVersion: WireVersion?
+    let group: PlatformEventLoopGroup
     private var newWireVersion: WireVersion?
     
     /// Used as a shortcut to not have to set a callback on `isDiscovering`
     private var completedInitialDiscovery = false
     
-    /// Returns the database named `database`, on this connection
-    public subscript(database: String) -> Database {
-        return Database(
-            named: database,
-            session: sessionManager.makeImplicitSession(for: self)
-        )
-    }
-    
-    private init(eventLoop: EventLoop, sessionManager: SessionManager, settings: ConnectionSettings) {
-        self.eventLoop = eventLoop
-        self.sessionManager = sessionManager
+    private init(group: PlatformEventLoopGroup, sessionManager: SessionManager, settings: ConnectionSettings) {
+        let eventLoop = group.next()
+        
+        self.group = group
         self.settings = settings
         self.isDiscovering = eventLoop.newPromise()
         self.pool = []
         self.hosts = Set(settings.hosts)
+    
+        super.init(eventLoop: eventLoop, sessionManager: sessionManager)
     }
     
     /// Connects to a cluster lazily, which means you don't know if the connection was successful until you start querying
     ///
     /// This is useful when you need a cluster synchronously to query asynchronously
-    public convenience init(lazyConnectingTo settings: ConnectionSettings, on group: EventLoopGroup) throws {
+    public convenience init(lazyConnectingTo settings: ConnectionSettings, on group: PlatformEventLoopGroup) throws {
         guard settings.hosts.count > 0 else {
             throw MongoKittenError(.unableToConnect, reason: .noHostSpecified)
         }
         
-        self.init(eventLoop: group.next(), sessionManager: SessionManager(), settings: settings)
+        self.init(group: group, sessionManager: SessionManager(), settings: settings)
         
         self._getConnection().then { _ in
             return self.rediscover()
         }.whenComplete {
-            self.completedInitialDiscovery = true
-            self.isDiscovering.succeed(result: ())
+            if self.pool.count > 0 {
+                self.completedInitialDiscovery = true
+                self.isDiscovering.succeed(result: ())
+            } else {
+                self.isDiscovering.fail(error: MongoKittenError(.unableToConnect, reason: .noAvailableHosts))
+            }
         }
         
         self.isDiscovering.futureResult.whenComplete(self.scheduleDiscovery)
     }
     
-    private func send(context: MongoDBCommandContext) -> EventLoopFuture<ServerReply> {
+    private func _send(context: MongoDBCommandContext) -> EventLoopFuture<ServerReply> {
         let future = self.getConnection().thenIfError { _ in
             return self.getConnection(writable: true)
             }.then { connection -> EventLoopFuture<Void> in
@@ -90,7 +108,7 @@ public final class Cluster {
         return future.then { context.promise.futureResult }
     }
     
-    func send<C: MongoDBCommand>(command: C, session: ClientSession? = nil, transaction: TransactionQueryOptions? = nil) -> EventLoopFuture<ServerReply> {
+    override func send<C: MongoDBCommand>(command: C, session: ClientSession? = nil, transaction: TransactionQueryOptions? = nil) -> EventLoopFuture<ServerReply> {
         let context = MongoDBCommandContext(
             command: command,
             requestID: 0,
@@ -100,13 +118,13 @@ public final class Cluster {
             promise: self.eventLoop.newPromise()
         )
         
-        return send(context: context)
+        return _send(context: context)
     }
     
     /// Connects to a cluster asynchronously
     ///
     /// You can query it using the Cluster returned from the future
-    public static func connect(on group: EventLoopGroup, settings: ConnectionSettings) -> EventLoopFuture<Cluster> {
+    public static func connect(on group: PlatformEventLoopGroup, settings: ConnectionSettings) -> EventLoopFuture<Cluster> {
         do {
             let cluster = try Cluster(lazyConnectingTo: settings, on: group)
             return cluster.isDiscovering.futureResult.map { cluster }
@@ -222,7 +240,7 @@ public final class Cluster {
             rediscovery.whenSuccess {
                 for query in queries {
                     // Retry the query
-                    _ = self.send(context: query)
+                    _ = self._send(context: query)
                 }
             }
             

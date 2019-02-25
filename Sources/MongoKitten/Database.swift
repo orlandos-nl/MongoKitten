@@ -9,6 +9,14 @@ import BSON
 import Foundation
 import NIO
 
+#if canImport(NIOTransportServices)
+import NIOTransportServices
+
+public typealias PlatformEventLoopGroup = NIOTSEventLoopGroup
+#else
+public typealias PlatformEventLoopGroup = EventLoopGroup
+#endif
+
 /// A reference to a MongoDB database, over a `Connection`.
 ///
 /// Databases hold collections of documents.
@@ -28,16 +36,23 @@ public class Database: FutureConvenienceCallable {
     
     /// The ObjectId generator tied to this datatabase
     public var objectIdGenerator: ObjectIdGenerator {
-        return session.cluster.sharedGenerator
+        return session.pool.sharedGenerator
     }
     
+    #if !os(iOS)
     public var cluster: Cluster {
-        return session.cluster
+        return session.pool as! Cluster
     }
+    #endif
     
     /// The NIO event loop.
     public var eventLoop: EventLoop {
-        return session.cluster.eventLoop
+        return session.pool.eventLoop
+    }
+    
+    internal init(named name: String, session: ClientSession) {
+        self.name = name
+        self.session = session
     }
     
     /// A helper method that uses the normal `connect` method and awaits it. It creates an event loop group for you.
@@ -48,9 +63,13 @@ public class Database: FutureConvenienceCallable {
     /// - throws: Can throw for a variety of reasons, including an invalid connection string, failure to connect to the MongoDB database, etcetera.
     /// - returns: A connected database instance
     public static func synchronousConnect(_ uri: String) throws -> Database {
+        #if canImport(NIOTransportServices)
+        let group = NIOTSEventLoopGroup(loopCount: 1, defaultQoS: .default)
+        #else
         let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+        #endif
         
-        return try self.connect(uri, on: group.next()).wait()
+        return try self.connect(uri, on: group).wait()
     }
     
     /// Connect to the database at the given `uri`
@@ -59,13 +78,13 @@ public class Database: FutureConvenienceCallable {
     ///
     /// - parameter uri: A MongoDB URI that contains at least a database component
     /// - parameter loop: An EventLoop from NIO. If you want to use MongoKitten in a synchronous / non-NIO environment, use the `synchronousConnect` method.
-    public static func connect(_ uri: String, on loop: EventLoop) -> EventLoopFuture<Database> {
+    public static func connect(_ uri: String, on group: PlatformEventLoopGroup) -> EventLoopFuture<Database> {
         do {
             let settings = try ConnectionSettings(uri)
             
-            return connect(settings: settings, on: loop)
+            return connect(settings: settings, on: group)
         } catch {
-            return loop.newFailedFuture(error: error)
+            return group.next().newFailedFuture(error: error)
         }
     }
     
@@ -73,7 +92,7 @@ public class Database: FutureConvenienceCallable {
     ///
     /// - parameter uri: A MongoDB URI that contains at least a database component
     /// - parameter loop: An EventLoop from NIO. If you want to use MongoKitten in a synchronous / non-NIO environment, use the `synchronousConnect` method.
-    public static func lazyConnect(_ uri: String, on loop: EventLoop) throws -> Database {
+    public static func lazyConnect(_ uri: String, on loop: PlatformEventLoopGroup) throws -> Database {
         let settings = try ConnectionSettings(uri)
         return try lazyConnect(settings: settings, on: loop)
     }
@@ -82,17 +101,17 @@ public class Database: FutureConvenienceCallable {
     ///
     /// - parameter settings: The connection settings, which must include a database name
     /// - parameter loop: An EventLoop from NIO. If you want to use MongoKitten in a synchronous / non-NIO environment, use the `synchronousConnect` method.
-    public static func connect(settings: ConnectionSettings, on loop: EventLoop) -> EventLoopFuture<Database> {
+    public static func connect(settings: ConnectionSettings, on group: PlatformEventLoopGroup) -> EventLoopFuture<Database> {
         do {
             guard let targetDatabase = settings.targetDatabase else {
                 throw MongoKittenError(.unableToConnect, reason: .noTargetDatabaseSpecified)
             }
             
-            return Cluster.connect(on: loop, settings: settings).map { cluster in
+            return Cluster.connect(on: group, settings: settings).map { cluster in
                 return cluster[targetDatabase]
             }
         } catch {
-            return loop.newFailedFuture(error: error)
+            return group.next().newFailedFuture(error: error)
         }
     }
     
@@ -102,17 +121,12 @@ public class Database: FutureConvenienceCallable {
     ///
     /// - parameter settings: The connection settings, which must include a database name
     /// - parameter loop: An EventLoop from NIO. If you want to use MongoKitten in a synchronous / non-NIO environment, use the `synchronousConnect` method.
-    public static func lazyConnect(settings: ConnectionSettings, on group: EventLoopGroup) throws -> Database {
+    public static func lazyConnect(settings: ConnectionSettings, on group: PlatformEventLoopGroup) throws -> Database {
         guard let targetDatabase = settings.targetDatabase else {
             throw MongoKittenError(.unableToConnect, reason: .noTargetDatabaseSpecified)
         }
         
         return try Cluster(lazyConnectingTo: settings, on: group)[targetDatabase]
-    }
-
-    internal init(named name: String, session: ClientSession) {
-        self.name = name
-        self.session = session
     }
     
     /// Stats a new session which can be used for retryable writes, transactions and more
@@ -126,11 +140,11 @@ public class Database: FutureConvenienceCallable {
     /// The TransactionDatabase that is created can be used like a normal Database for queries within transactions _only_
     /// Creating a TransactionCollection is done the same way it's created with a normal Database.
     public func startTransaction(with options: SessionOptions, transactionOptions: TransactionOptions? = nil) throws -> TransactionDatabase {
-        guard session.cluster.wireVersion?.supportsReplicaTransactions == true else {
+        guard session.pool.wireVersion?.supportsReplicaTransactions == true else {
             throw MongoKittenError(.unsupportedFeatureByServer, reason: nil)
         }
         
-        let newSession = session.cluster.sessionManager.next(with: options, for: session.cluster)
+        let newSession = session.pool.sessionManager.next(with: options, for: session.pool)
         let transactionOptions = transactionOptions ?? options.defaultTransactionOptions ?? TransactionOptions()
         let transaction = Transaction(
             options: transactionOptions,

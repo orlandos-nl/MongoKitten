@@ -8,13 +8,13 @@
 
 </p>
 
-A fast, pure swift [MongoDB](https://mongodb.com) driver based on [Swift NIO](https://github.com/apple/swift-nio) built for Server Side Swift. It features a great API and a battle-tested core.
+A fast, pure swift [MongoDB](https://mongodb.com) driver based on [Swift NIO](https://github.com/apple/swift-nio) built for Server Side Swift. It features a great API and a battle-tested core. Supporting both MongoDB in server and embedded environments.
 
 ⭐️ Please leave a star to support MongoKitten – it really helps!
 
 # 🕶 Installation
 
-## Set up MongoDB
+## Set up MongoDB server
 
 <details>
 <summary>If you haven't already, you should set up a MongoDB server to get started with MongoKitten</summary>
@@ -26,13 +26,21 @@ Install MongoDB for [Ubuntu](https://docs.mongodb.com/master/tutorial/install-mo
 Alternatively, make use of a DAAS (Database-as-a-service) like [MongoDB Atlas](https://cloud.mongodb.com), [MLab](https://mlab.com), [Bluemix](https://www.ibm.com/cloud-computing/bluemix/mongodb-hosting) or any other of the many services.
 </details>
 
+If you're aiming at using MongoKitten Mobile, scroll down!
+
 ## Add MongoKitten to your Swift project 🚀
 
-MongoKitten currently only supports the [Swift Package Manager](https://swift.org/getting-started/#using-the-package-manager). Add MongoKitten to your Package.swift file:
+MongoKitten supports the [Swift Package Manager](https://swift.org/getting-started/#using-the-package-manager) for server-side applications. Add MongoKitten to your dependencies in your **Package.swift** file:
 
 `.package(url: "https://github.com/OpenKitten/MongoKitten.git", from: "5.0.0")`
 
 Also, don't forget to add `"MongoKitten"` as a dependency for your target.
+
+### Mobile
+
+For MongoKitten mobile we support [Cocoapods](https://cocoapods.org/). Simply add this to your **Podfile**:
+
+`pod 'MongoKitten'`
 
 # 🚲 Basic usage
 
@@ -42,6 +50,13 @@ Also, don't forget to add `"MongoKitten"` as a dependency for your target.
 import MongoKitten
 
 let db = try Database.synchronousConnect("mongodb://localhost/my_database")
+```
+
+And for embedded databases:
+
+```swift
+// WARNING: Force unwrap will crash your application on failure
+let mongo = try! MobileDatabase(settings: .default())
 ```
 
 ## NIO Futures

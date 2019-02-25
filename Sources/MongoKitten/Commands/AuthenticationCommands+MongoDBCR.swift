@@ -1,5 +1,8 @@
 import BSON
+
+#if canImport(_MongoKittenCrypto)
 import _MongoKittenCrypto
+#endif
 
 struct GetNonce: MongoDBCommand {
     private enum CodingKeys: String, CodingKey {

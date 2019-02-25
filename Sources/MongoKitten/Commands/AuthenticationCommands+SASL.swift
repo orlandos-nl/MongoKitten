@@ -1,7 +1,10 @@
 import Foundation
 import BSON
 import NIO
+
+#if canImport(_MongoKittenCrypto)
 import _MongoKittenCrypto
+#endif
 
 /// A SASLStart message initiates a SASL conversation, in our case, used for SCRAM-SHA-xxx authentication.
 struct SASLStart: AdministrativeMongoDBCommand {

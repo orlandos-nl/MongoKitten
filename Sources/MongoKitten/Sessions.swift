@@ -32,7 +32,7 @@ struct SessionIdentifier: Codable {
 
 final class ClientSession {
     let serverSession: ServerSession
-    let cluster: Cluster
+    let pool: _ConnectionPool
     let sessionManager: SessionManager
     let clusterTime: Document?
     let options: SessionOptions
@@ -40,9 +40,9 @@ final class ClientSession {
         return serverSession.sessionId
     }
     
-    init(serverSession: ServerSession, cluster: Cluster, sessionManager: SessionManager, options: SessionOptions) {
+    init(serverSession: ServerSession, pool: _ConnectionPool, sessionManager: SessionManager, options: SessionOptions) {
         self.serverSession = serverSession
-        self.cluster = cluster
+        self.pool = pool
         self.sessionManager = sessionManager
         self.options = options
         self.clusterTime = nil
@@ -58,7 +58,7 @@ final class ClientSession {
     /// - parameter command: The `MongoDBCommand` to execute
     /// - returns: The reply to the command
     func execute<C: MongoDBCommand>(command: C, transaction: TransactionQueryOptions? = nil) -> EventLoopFuture<C.Reply> {
-        return cluster.send(command: command, session: self, transaction: transaction).thenThrowing { reply in
+        return pool.send(command: command, session: self, transaction: transaction).thenThrowing { reply in
             do {
                 return try C.Reply(reply: reply)
             } catch {
@@ -115,11 +115,11 @@ final class SessionManager {
     var availableSessions = [ServerSession]()
     private let implicitSession = ServerSession.random
     
-    func makeImplicitSession(for cluster: Cluster) -> ClientSession {
+    func makeImplicitSession(for pool: _ConnectionPool) -> ClientSession {
         return ClientSession(
-            serverSession: cluster.sessionManager.implicitSession,
-            cluster: cluster,
-            sessionManager: cluster.sessionManager,
+            serverSession: pool.sessionManager.implicitSession,
+            pool: pool,
+            sessionManager: pool.sessionManager,
             options: SessionOptions()
         )
     }
@@ -130,7 +130,7 @@ final class SessionManager {
         self.availableSessions.append(session)
     }
     
-    func next(with options: SessionOptions, for cluster: Cluster) -> ClientSession {
+    func next(with options: SessionOptions, for pool: _ConnectionPool) -> ClientSession {
         let serverSession: ServerSession
         
         if availableSessions.count > 0 {
@@ -139,7 +139,7 @@ final class SessionManager {
             serverSession = .random
         }
         
-        return ClientSession(serverSession: serverSession, cluster: cluster, sessionManager: self, options: options)
+        return ClientSession(serverSession: serverSession, pool: pool, sessionManager: self, options: options)
     }
 }
 
