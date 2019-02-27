@@ -1,15 +1,7 @@
-#
-# Be sure to run `pod lib lint Rockstar.podspec' to ensure this is a
-# valid spec before submitting.
-#
-# Any lines starting with a # are optional, but their use is encouraged
-# To learn more about a Podspec see https://guides.cocoapods.org/syntax/podspec.html
-#
-
 Pod::Spec.new do |s|
-  s.ios.deployment_target = '12.0'
+  s.ios.deployment_target = '10.0'
   s.name             = 'MongoKitten'
-  s.version          = '5.1.2'
+  s.version          = '5.1.3'
   s.summary          = 'A pure swift, native MongoDB driver'
 
   s.description      = <<-DESC
@@ -23,13 +15,11 @@ High and low level APIs for interacting with MongoDB databases. Supports codable
   s.source           = { :git => 'https://github.com/OpenKitten/MongoKitten.git', :tag => s.version.to_s }
   s.social_media_url = 'https://twitter.com/joannisorlandos'
 
-  s.dependency 'BSON', '>= 6.0.2'
-  s.dependency     'SwiftNIOTransportServices', '~> 0.5'
-  s.dependency     'SwiftNIO', '~> 1.13.0'
-  s.dependency     'mongo_embedded', '~> 4.0.4'
+  s.dependency     'BSON', '>= 6.0.3'
+  s.default_subspecs = 'Core', 'GridFS', 'Mobile'
 
   s.subspec '_MongoKittenCrypto' do |sub|
-    sub.source_files = 'Sources/_MongoKittenCrypto/*'
+    sub.source_files = 'Sources/_MongoKittenCrypto/**/*'
   end
   
   s.subspec 'GridFS' do |sub|
@@ -37,6 +27,17 @@ High and low level APIs for interacting with MongoDB databases. Supports codable
     sub.dependency     'MongoKitten/Core'
   end
   
+  s.subspec 'Networking' do |sub|
+    sub.ios.deployment_target = '12.0'
+    sub.dependency     'SwiftNIOTransportServices', '>= 0.5'
+    sub.dependency 'MongoKitten/Core'
+  end
+
+  s.subspec 'Mobile' do |sub|
+    sub.dependency     'mongo_embedded', '>= 4.0.4'
+    sub.dependency 'MongoKitten/Core'
+  end
+
   s.subspec 'Core' do |sub|
     sub.source_files = 'Sources/MongoKitten/**/*'
     sub.dependency     'MongoKitten/_MongoKittenCrypto'
