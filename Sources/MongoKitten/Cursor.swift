@@ -329,7 +329,9 @@ extension QueryCursor {
                 }.cascadeFailure(promise: promise)
             }
             
-            nextBatch()
+            if !finalizedCursor.closed {
+                nextBatch()
+            }
             
             return promise.futureResult
         }

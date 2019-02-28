@@ -51,7 +51,7 @@ internal final class Connection {
     }
     
     /// The current request ID, used to generate unique identifiers for MongoDB commands
-    var currentRequestId: Int32 = 0
+    private var currentRequestId: Int32 = 0
     
     private let clientConnectionSerializer: ClientConnectionSerializer
     
@@ -217,7 +217,7 @@ internal final class Connection {
         return promise.futureResult
     }
     
-    private func nextRequestId() -> Int32 {
+    public func nextRequestId() -> Int32 {
         defer { currentRequestId = currentRequestId &+ 1 }
         
         return currentRequestId

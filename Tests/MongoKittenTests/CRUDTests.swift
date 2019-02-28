@@ -194,6 +194,18 @@ class CRUDTests : XCTestCase {
         }
     }
     
+    func testDefaultOKDecoding() {
+        let doc: Document = [
+            "ok": 1.0
+        ]
+        
+        struct Ok: Codable {
+            let ok: Int
+        }
+        
+        XCTAssertEqual(try BSONDecoder().decode(Ok.self, from: doc).ok, 1)
+    }
+    
     func testBasicFind() throws {
         do {
             let collection = cluster[dbName]["test"]

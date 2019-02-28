@@ -116,7 +116,7 @@ public final class Cluster: _ConnectionPool {
         }.then { connection -> EventLoopFuture<Void> in
             let context = MongoDBCommandContext(
                 command: command,
-                requestID: connection.currentRequestId,
+                requestID: connection.nextRequestId(),
                 retry: true,
                 session: session,
                 transaction: transaction,
