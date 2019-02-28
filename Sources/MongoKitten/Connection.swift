@@ -2,16 +2,18 @@ import BSON
 import NIO
 
 #if canImport(NIOTransportServices)
-import NIOTransportServices
-import Network
-public typealias _MKNIOEventLoopRequirement = NIOTSEventLoopGroup
+    import NIOTransportServices
+    import Network
+    public typealias _MKNIOEventLoopRequirement = NIOTSEventLoopGroup
 #else
-import NIOOpenSSL
-public typealias _MKNIOEventLoopRequirement = EventLoopGroup
+    public typealias _MKNIOEventLoopRequirement = EventLoopGroup
+    #if canImport(NIOOpenSSL)
+        import NIOOpenSSL
+    #endif
 #endif
 
 #if canImport(_MongoKittenCrypto)
-import _MongoKittenCrypto
+    import _MongoKittenCrypto
 #endif
 
 import Foundation
@@ -146,7 +148,7 @@ internal final class Connection {
         
         var handlers: [ChannelHandler] = [ClientConnectionParser(context: context), serializer]
         
-        #if !canImport(NIOTransportServices)
+        #if canImport(NIOOpenSSL)
         if settings.useSSL {
             do {
                 let sslConfiguration = TLSConfiguration.forClient(
@@ -161,6 +163,10 @@ internal final class Connection {
                 promise.fail(error: error)
                 return promise.futureResult
             }
+        }
+        #elseif !canImport(NIOTransportServices)
+        if settings.useSSL {
+            promise.fail(error: MongoKittenError(.unableToConnect, reason: .sslNotAvailable))
         }
         #endif
         

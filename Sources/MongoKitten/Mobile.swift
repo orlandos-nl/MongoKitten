@@ -54,8 +54,19 @@ public final class MobileDatabase: _ConnectionPool {
     private var writeBuffer: ByteBuffer
     private var invalid = false
     
+    /// Creates a new embedded database using the default configuration
+    public convenience init(settings: MobileConfiguration) throws {
+        #if canImport(NIOTransportServices)
+        let group = PlatformEventLoopGroup(loopCount: 1, defaultQoS: .default)
+        #else
+        let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+        #endif
+        
+        try self.init(settings: settings, group: group)
+    }
+    
     /// Creates a new embedded database using the MobileConfiguration.
-    public init(settings: MobileConfiguration, group: PlatformEventLoopGroup = PlatformEventLoopGroup(loopCount: 1, defaultQoS: .default)) throws {
+    public init(settings: MobileConfiguration, group: PlatformEventLoopGroup) throws {
         let dbPath = settings.storage.dbPath
         let fileManager = FileManager()
         if !fileManager.fileExists(atPath: dbPath) {

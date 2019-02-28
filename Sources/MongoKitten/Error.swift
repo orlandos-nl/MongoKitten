@@ -142,6 +142,9 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         /// Cannot commit or abort an inactive transaction
         case inactiveTransaction
         
+        /// No SSL library available for this configuration of MongoKitten. If you're using Cocoapods, consider adding the 'Networking' subspec, which requires iOS 12
+        case sslNotAvailable
+        
         public var description: String {
             switch self {
             case .missingMongoDBScheme: return "The connection URI does not start with the 'mongodb://' scheme"
@@ -154,6 +157,7 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
             case .invalidPort: return "The given port number is invalid"
             case .noHostSpecified: return "No host was specified"
             case .hostNotWritable: return "The target server is not writable"
+            case .sslNotAvailable: return "No SSL library available for this configuration of MongoKitten. If you're using Cocoapods, consider adding the 'Networking' subspec, which requires iOS 12"
             case .commandSizeTooLarge: return "The operation exceeded the 16MB command limit"
             case .noTargetDatabaseSpecified: return "A target database was not specified"
             case .connectionClosed: return "The connection to MongoDB was closed"
