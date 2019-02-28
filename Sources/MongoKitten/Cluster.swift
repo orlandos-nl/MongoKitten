@@ -99,9 +99,9 @@ public final class Cluster: _ConnectionPool {
     private func _send(context: MongoDBCommandContext) -> EventLoopFuture<ServerReply> {
         let future = self.getConnection().thenIfError { _ in
             return self.getConnection(writable: true)
-            }.then { connection -> EventLoopFuture<Void> in
-                connection.context.queries.append(context)
-                return connection.channel.writeAndFlush(context)
+        }.then { connection -> EventLoopFuture<Void> in
+            connection.context.queries.append(context)
+            return connection.channel.writeAndFlush(context)
         }
         future.cascadeFailure(promise: context.promise)
         
@@ -109,16 +109,27 @@ public final class Cluster: _ConnectionPool {
     }
     
     override func send<C: MongoDBCommand>(command: C, session: ClientSession? = nil, transaction: TransactionQueryOptions? = nil) -> EventLoopFuture<ServerReply> {
-        let context = MongoDBCommandContext(
-            command: command,
-            requestID: 0,
-            retry: true,
-            session: session,
-            transaction: transaction,
-            promise: self.eventLoop.newPromise()
-        )
+        let promise = self.eventLoop.newPromise(of: ServerReply.self)
         
-        return _send(context: context)
+        let future = self.getConnection().thenIfError { _ in
+            return self.getConnection(writable: true)
+        }.then { connection -> EventLoopFuture<Void> in
+            let context = MongoDBCommandContext(
+                command: command,
+                requestID: connection.currentRequestId,
+                retry: true,
+                session: session,
+                transaction: transaction,
+                promise: promise
+            )
+            
+            connection.context.queries.append(context)
+            return connection.channel.writeAndFlush(context)
+        }
+        
+        future.whenFailure(promise.fail)
+        
+        return promise.futureResult
     }
     
     /// Connects to a cluster asynchronously

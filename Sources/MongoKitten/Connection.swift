@@ -218,7 +218,7 @@ internal final class Connection {
     }
     
     private func nextRequestId() -> Int32 {
-        defer { currentRequestId = currentRequestId &+ 1}
+        defer { currentRequestId = currentRequestId &+ 1 }
         
         return currentRequestId
     }
