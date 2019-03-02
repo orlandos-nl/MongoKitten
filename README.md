@@ -54,6 +54,16 @@ import MongoKitten
 let db = try Database.synchronousConnect("mongodb://localhost/my_database")
 ```
 
+Vapor users should register the database as a service.
+
+```swift
+let connectionURI = "mongodb://localhost"
+
+services.register { container -> MongoKitten.Database in
+    return try MongoKitten.Database.lazyConnect(connectionURI, on: container.eventLoop)
+}
+```
+
 And for embedded databases:
 
 ```swift
@@ -64,7 +74,7 @@ let mongo = try! MobileDatabase(settings: .default())
 ## NIO Futures
 
 <details>
-<summary>MongoKitten relies on [Swift NIO](https://github.com/apple/swift-nio) to provide support for asynchronous operations. All MongoKitten operations that talk to the server are asynchronous, and return an `EventLoopFuture<...>` of some kind.</summary>
+<summary>MongoKitten relies on [Swift NIO](https://github.com/apple/swift-nio) to provide support for asynchronous operations. All MongoKitten operations that talk to the server are asynchronous, and return an EventLoopFuture of some kind.</summary>
 
 You can learn all about NIO by reading [its readme](https://github.com/apple/swift-nio/blob/master/README.md) or [the article on RayWenderlich.com](https://www.raywenderlich.com/1124580-a-simple-guide-to-async-on-the-server), but here are the basics:
 
