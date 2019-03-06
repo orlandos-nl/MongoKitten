@@ -71,6 +71,12 @@ And for embedded databases:
 let mongo = try! MobileDatabase(settings: .default())
 ```
 
+### Note on URIs
+
+MongoKitten [does not yet support](https://github.com/OpenKitten/MongoKitten/issues/172#issuecomment-468302085) MongoDB v3.6 connection URIs. You'll need to use the old connection URI format.
+
+If you're unsure; the connection string starting with `mongodb+srv://` is a 3.6 connection URI, whereas URIs starting with `mongodb://` are an older format.
+
 ## NIO Futures
 
 <details>
