@@ -313,6 +313,10 @@ internal final class Connection {
                 
                 if let selectedAlgorithm = selectedAlgorithm {
                     self.settings.authentication = selectedAlgorithm
+                } else if reply.maxWireVersion.supportsScramSha1 {
+                    self.settings.authentication = .mongoDBCR(username: user, password: pass)
+                } else {
+                    self.settings.authentication = .scramSha1(username: user, password: pass)
                 }
             }
             
