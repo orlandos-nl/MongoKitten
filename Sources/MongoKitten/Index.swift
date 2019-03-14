@@ -89,6 +89,7 @@ public enum IndexType: Codable {
     /// Used by indexType for type-safety
     private enum _IndexTypeNames: String, Codable {
         case text
+        case sphere2d
     }
     
     /// Used by indexType for type-safety
@@ -112,12 +113,14 @@ public enum IndexType: Codable {
             switch try container.decode(_IndexTypeNames.self) {
             case .text:
                 self = .text
+            case .sphere2d:
+                self = .sphere2d
             }
         }
     }
     
     case ascending, descending
-    case text
+    case text, sphere2d
     
     /// Internal helper that translates the index type to a primitive
     var primitive: Primitive {
@@ -128,6 +131,8 @@ public enum IndexType: Codable {
             return -1 as Int32
         case .text:
             return "text"
+        case .sphere2d:
+            return "2dsphere"
         }
     }
     
@@ -144,6 +149,9 @@ public enum IndexType: Codable {
             try container.encode(value)
         case .text:
             let value = "text"
+            try container.encode(value)
+        case .sphere2d:
+            let value = "2dsphere"
             try container.encode(value)
         }
     }
