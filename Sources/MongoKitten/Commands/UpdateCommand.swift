@@ -176,15 +176,7 @@ public enum UpdateOperator: Encodable, PrimitiveConvertible {
 /// Modifiers that are available for use in array update operations.
 ///
 /// - see: https://docs.mongodb.com/manual/reference/operator/update-array/
-public enum ArrayUpdateOperator: Encodable {
-    
-    // These are primarly used within update operators and thus cannot be represented easily here.
-//    case matchFirst(Primitive)
-    
-//    case matchAll(Primitive)
-    
-//    case matchFiltered(Primitive)
-    
+public enum ArrayUpdateOperator: Encodable, PrimitiveConvertible {
     /// The $addToSet operator adds a value to an array unless the value is already present, in which case $addToSet does nothing to that array.
     case addToSet(field: String, Primitive)
     
@@ -224,16 +216,11 @@ public enum ArrayUpdateOperator: Encodable {
         case sortDescending(field: String?)
     }
     
-    public func encode(to encoder: Encoder) throws {
+    /// Converts the operator to a Document
+    private var document: Document {
         let document: Document
         
         switch self {
-//        case .matchFirst(let value):
-            
-//        case .matchAll(let value):
-            
-//        case .matchFiltered(let value):
-            
         case .addToSet(let field, let value):
             document = ["$addToSet": [field: value] as Document]
         case .popFirst(let field):
@@ -272,6 +259,14 @@ public enum ArrayUpdateOperator: Encodable {
             
             document = ["$push": [field: pushValue] as Document]
         }
+    }
+    
+    /// Converts the operator to a Primitive
+    public func makePrimitive() -> Primitive? {
+        return document
+    }
+    
+    public func encode(to encoder: Encoder) throws {
         try document.encode(to: encoder)
     }
 }
