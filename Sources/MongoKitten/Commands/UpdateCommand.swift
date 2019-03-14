@@ -107,7 +107,7 @@ public struct UpdateReply: ServerReplyDecodableResult {
 /// Modifiers that are available for use in update operations.
 ///
 /// - see: https://docs.mongodb.com/manual/reference/operator/update/
-public enum UpdateOperator: Encodable {
+public enum UpdateOperator: Encodable, PrimitiveConvertible {
     /// The $currentDate operator sets the value of a field to the current date, as a `Date`
     case currentDate(field: String)
     
@@ -135,7 +135,8 @@ public enum UpdateOperator: Encodable {
     /// A custom update operator
     case custom(document: Document)
     
-    public func encode(to encoder: Encoder) throws {
+    /// Converts the operator to a Document
+    private var document: Document {
         let document: Document
         
         switch self {
@@ -159,6 +160,15 @@ public enum UpdateOperator: Encodable {
             document = spec
         }
         
+        return document
+    }
+    
+    /// Converts the operator to a Primitive
+    public func makePrimitive() -> Primitive? {
+        return document
+    }
+    
+    public func encode(to encoder: Encoder) throws {
         try document.encode(to: encoder)
     }
 }
