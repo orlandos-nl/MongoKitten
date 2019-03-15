@@ -45,7 +45,7 @@ internal final class Connection {
     private(set) var handshakeResult: ConnectionHandshakeReply? = nil {
         didSet {
             if let handshakeResult = handshakeResult {
-                clientConnectionSerializer.includeSession = handshakeResult.maxWireVersion.supportsSessions
+                clientConnectionSerializer.serializer.includeSession = handshakeResult.maxWireVersion.supportsSessions
             }
         }
     }
@@ -60,10 +60,10 @@ internal final class Connection {
     /// If `true`, allows reading from this node if it's a slave node
     var slaveOk: Bool {
         get {
-            return clientConnectionSerializer.slaveOk
+            return clientConnectionSerializer.serializer.slaveOk
         }
         set {
-            clientConnectionSerializer.slaveOk = newValue
+            clientConnectionSerializer.serializer.slaveOk = newValue
         }
     }
     
@@ -147,8 +147,10 @@ internal final class Connection {
         let promise: EventLoopPromise<Void> = pipeline.eventLoop.makePromise()
         
         let parser = ClientConnectionParser(context: context)
+        
+        let serializerHandler = MessageToByteHandler(serializer)
         let parserHandler = ByteToMessageHandler(parser)
-        var handlers: [ChannelHandler] = [parserHandler, serializer]
+        var handlers: [ChannelHandler] = [parserHandler, serializerHandler]
         
         #if canImport(NIOOpenSSL)
         if settings.useSSL {
@@ -322,7 +324,7 @@ internal final class Connection {
                 }
             }
             
-            self.clientConnectionSerializer.supportsOpMessage = reply.maxWireVersion.supportsOpMessage
+            self.clientConnectionSerializer.serializer.supportsOpMessage = reply.maxWireVersion.supportsOpMessage
             
             return
         }
@@ -375,19 +377,18 @@ final class ClientQueryContext {
     }
 }
 
-final class ClientConnectionSerializer: MongoSerializer, MessageToByteEncoder {
+final class ClientConnectionSerializer: MessageToByteEncoder {
     typealias OutboundIn = MongoDBCommandContext
     
-    let context: ClientQueryContext
+    private let context: ClientQueryContext
+    var serializer = MongoSerializer()
     
     init(context: ClientQueryContext) {
         self.context = context
-        
-        super.init()
     }
     
-    func encode(ctx: ChannelHandlerContext, data: MongoDBCommandContext, out: inout ByteBuffer) throws {
-        try encode(data: data, into: &out)
+    func encode(data: MongoDBCommandContext, out: inout ByteBuffer) throws {
+        try serializer.encode(data: data, into: &out)
     }
 }
 
@@ -401,7 +402,7 @@ struct ClientConnectionParser: ByteToMessageDecoder {
         self.context = context
     }
     
-    mutating func decode(ctx: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
+    mutating func decode(context ctx: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
         let result = try deserializer.parse(from: &buffer)
         
         if let reply = deserializer.reply {
@@ -415,8 +416,8 @@ struct ClientConnectionParser: ByteToMessageDecoder {
         return result
     }
     
-    mutating func decodeLast(ctx: ChannelHandlerContext, buffer: inout ByteBuffer, seenEOF: Bool) throws -> DecodingState {
-        return try decode(ctx: ctx, buffer: &buffer)
+    mutating func decodeLast(context ctx: ChannelHandlerContext, buffer: inout ByteBuffer, seenEOF: Bool) throws -> DecodingState {
+        return try decode(context: ctx, buffer: &buffer)
     }
     
     // TODO: this does not belong here but on the next handler

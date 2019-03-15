@@ -2,7 +2,7 @@ import BSON
 import NIO
 
 /// A type capable of serializing queries to MongoDB into a NIO ByteBuffer
-class MongoSerializer {
+struct MongoSerializer {
     var supportsOpMessage = false
     var slaveOk = false
     var includeSession = false
