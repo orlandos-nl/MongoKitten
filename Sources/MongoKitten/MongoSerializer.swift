@@ -36,7 +36,7 @@ class MongoSerializer {
         
         // MongoDB supports messages up to 16MB
         if buffer.writerIndex > 16_000_000 {
-            data.promise.fail(error: MongoKittenError(.commandFailure, reason: MongoKittenError.Reason.commandSizeTooLarge))
+            data.promise.fail(MongoKittenError(.commandFailure, reason: MongoKittenError.Reason.commandSizeTooLarge))
             return
         }
         
@@ -48,10 +48,10 @@ class MongoSerializer {
         )
         
         out.write(header)
-        out.write(integer: flags.rawValue, endianness: .little)
-        out.write(integer: 0 as UInt8, endianness: .little) // section kind 0
+        out.writeInteger(flags.rawValue, endianness: .little)
+        out.writeInteger(0 as UInt8, endianness: .little) // section kind 0
         
-        out.write(buffer: &buffer)
+        out.writeBuffer(&buffer)
     }
     
     /// Encode a command specifically as OPQuery wire protocol message
@@ -76,7 +76,7 @@ class MongoSerializer {
         
         // MongoDB supports messages up to 16MB
         if buffer.writerIndex > 16_000_000 {
-            data.promise.fail(error: MongoKittenError(.commandFailure, reason: MongoKittenError.Reason.commandSizeTooLarge))
+            data.promise.fail(MongoKittenError(.commandFailure, reason: MongoKittenError.Reason.commandSizeTooLarge))
             return
         }
         
@@ -91,13 +91,13 @@ class MongoSerializer {
         )
         
         out.write(header)
-        out.write(integer: flags.rawValue, endianness: .little)
-        out.write(string: namespace)
-        out.write(integer: 0 as UInt8) // null terminator for String
-        out.write(integer: 0 as Int32, endianness: .little) // Skip handled by query
-        out.write(integer: 1 as Int32, endianness: .little) // Number to return
+        out.writeInteger(flags.rawValue, endianness: .little)
+        out.writeString(namespace)
+        out.writeInteger(0 as UInt8) // null terminator for String
+        out.writeInteger(0 as Int32, endianness: .little) // Skip handled by query
+        out.writeInteger(1 as Int32, endianness: .little) // Number to return
         
-        out.write(buffer: &buffer)
+        out.writeBuffer(&buffer)
     }
     
     /// Encodes the message dependent on the settings of this serializer.
@@ -115,9 +115,9 @@ class MongoSerializer {
 
 extension ByteBuffer {
     mutating func write(_ header: MessageHeader) {
-        write(integer: header.messageLength, endianness: .little)
-        write(integer: header.requestId, endianness: .little)
-        write(integer: header.responseTo, endianness: .little)
-        write(integer: header.opCode.rawValue, endianness: .little)
+        writeInteger(header.messageLength, endianness: .little)
+        writeInteger(header.requestId, endianness: .little)
+        writeInteger(header.responseTo, endianness: .little)
+        writeInteger(header.opCode.rawValue, endianness: .little)
     }
 }

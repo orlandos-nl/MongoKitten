@@ -151,12 +151,12 @@ extension Connection {
             
             // NO session must be used here: https://github.com/mongodb/specifications/blob/master/source/sessions/driver-sessions.rst#when-opening-and-authenticating-a-connection
             // Forced on the current connection
-            return self._execute(command: command, session: nil, transaction: nil).then { serverReply in
+            return self._execute(command: command, session: nil, transaction: nil).flatMap { serverReply in
                 do {
                     let reply = try SASLReply(reply: serverReply)
                     
                     if reply.done {
-                        return self.eventLoop.newSucceededFuture(result: ())
+                        return self.eventLoop.makeSucceededFuture(())
                     }
                     
                     let preppedPassword: String
@@ -179,7 +179,7 @@ extension Connection {
                         payload: response
                     )
                     
-                    return self._execute(command: next, session: nil, transaction: nil).then { serverReply in
+                    return self._execute(command: next, session: nil, transaction: nil).flatMap { serverReply in
                         do {
                             let reply = try SASLReply(reply: serverReply)
                             
@@ -187,7 +187,7 @@ extension Connection {
                             try context.completeAuthentication(withResponse: successReply)
                             
                             if reply.done {
-                                return self.eventLoop.newSucceededFuture(result: ())
+                                return self.eventLoop.makeSucceededFuture(())
                             } else {
                                 let final = SASLContinue(
                                     namespace: namespace,
@@ -195,7 +195,7 @@ extension Connection {
                                     payload: ""
                                 )
                                 
-                                return self._execute(command: final, session: nil, transaction: nil).thenThrowing { serverReply in
+                                return self._execute(command: final, session: nil, transaction: nil).flatMapThrowing { serverReply in
                                     let reply = try SASLReply(reply: serverReply)
                                     
                                     guard reply.done else {
@@ -204,15 +204,15 @@ extension Connection {
                                 }
                             }
                         } catch {
-                            return self.eventLoop.newFailedFuture(error: error)
+                            return self.eventLoop.makeFailedFuture(error)
                         }
                     }
                 } catch {
-                    return self.eventLoop.newFailedFuture(error: error)
+                    return self.eventLoop.makeFailedFuture(error)
                 }
             }
         } catch {
-            return self.eventLoop.newFailedFuture(error: error)
+            return self.eventLoop.makeFailedFuture(error)
         }
     }
 }

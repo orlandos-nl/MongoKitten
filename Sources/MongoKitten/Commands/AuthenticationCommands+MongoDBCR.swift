@@ -57,7 +57,7 @@ struct GetNonceResult: ServerReplyDecodableResult {
 
 extension Connection {
     func authenticateCR(_ username: String, password: String, namespace: Namespace) -> EventLoopFuture<Void> {
-        return self._execute(command: GetNonce(namespace: namespace), session: nil, transaction: nil).then { reply -> EventLoopFuture<Void> in
+        return self._execute(command: GetNonce(namespace: namespace), session: nil, transaction: nil).flatMap { reply -> EventLoopFuture<Void> in
             do {
                 let nonce = try GetNonceResult(reply: reply).nonce
                 
@@ -70,13 +70,13 @@ extension Connection {
                 
                 let authenticate = AuthenticateCR(namespace: namespace, nonce: nonce, user: username, key: keyDigest)
                 
-                return self._execute(command: authenticate, session: nil, transaction: nil).thenThrowing { reply in
+                return self._execute(command: authenticate, session: nil, transaction: nil).flatMapThrowing { reply in
                     guard try OK(reply: reply).isSuccessful else {
                         throw MongoKittenError(try GenericErrorReply(reply: reply))
                     }
                 }
             } catch {
-                return self.eventLoop.newFailedFuture(error: error)
+                return self.eventLoop.makeFailedFuture(error)
             }
         }
     }

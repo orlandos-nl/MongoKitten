@@ -26,7 +26,7 @@ public final class TransactionCollection: Collection {
         // Crash if the transaction is `nil`, this is a bad violation of the API
         guard let transactionQueryOptions = self.makeTransactionQueryOptions(), transaction!.active else {
             let error = MongoKittenError(.commandFailure, reason: .inactiveTransaction)
-            return eventLoop.newFailedFuture(error: error)
+            return eventLoop.makeFailedFuture(error)
         }
         
         return session.execute(command: CommitTransactionCommand(), transaction: transactionQueryOptions).mapToResult(for: self)
@@ -37,7 +37,7 @@ public final class TransactionCollection: Collection {
         // Crash if the transaction is `nil`, this is a bad violation of the API
         guard let transactionQueryOptions = self.makeTransactionQueryOptions(), transaction!.active else {
             let error = MongoKittenError(.commandFailure, reason: .inactiveTransaction)
-            return eventLoop.newFailedFuture(error: error)
+            return eventLoop.makeFailedFuture(error)
         }
         
         return session.execute(command: AbortTransactionCommand(), transaction: transactionQueryOptions).mapToResult(for: self)

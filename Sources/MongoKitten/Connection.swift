@@ -107,7 +107,7 @@ internal final class Connection {
                     settings: cluster.settings,
                     serializer: serializer
                 )
-            }.connect(host: host.hostname, port: Int(host.port)).then { channel in
+            }.connect(host: host.hostname, port: Int(host.port)).flatMap { channel in
                 let connection = Connection(
                     channel: channel,
                     context: context,
@@ -118,7 +118,7 @@ internal final class Connection {
                 )
                 
                 return connection.executeHandshake(withClientMetadata: true)
-                    .then { connection.authenticate() }
+                    .flatMap { connection.authenticate() }
                     .map { connection }
             }
     }
@@ -144,9 +144,11 @@ internal final class Connection {
     }
     
     static func initialize(pipeline: ChannelPipeline, group: PlatformEventLoopGroup, hostname: String?, context: ClientQueryContext, settings: ConnectionSettings, serializer: ClientConnectionSerializer) -> EventLoopFuture<Void> {
-        let promise: EventLoopPromise<Void> = pipeline.eventLoop.newPromise()
+        let promise: EventLoopPromise<Void> = pipeline.eventLoop.makePromise()
         
-        var handlers: [ChannelHandler] = [ClientConnectionParser(context: context), serializer]
+        let parser = ClientConnectionParser(context: context)
+        let parserHandler = ByteToMessageHandler(parser)
+        var handlers: [ChannelHandler] = [parserHandler, serializer]
         
         #if canImport(NIOOpenSSL)
         if settings.useSSL {
@@ -160,25 +162,25 @@ internal final class Connection {
                 
                 handlers.insert(sslHandler, at: 0)
             } catch {
-                promise.fail(error: error)
+                promise.fail(error)
                 return promise.futureResult
             }
         }
         #elseif !canImport(NIOTransportServices)
         if settings.useSSL {
-            promise.fail(error: MongoKittenError(.unableToConnect, reason: .sslNotAvailable))
+            promise.fail(MongoKittenError(.unableToConnect, reason: .sslNotAvailable))
         }
         #endif
         
         func addNext() {
             guard handlers.count > 0 else {
-                promise.succeed(result: ())
+                promise.succeed(())
                 return
             }
             
             let handler = handlers.removeFirst()
             
-            pipeline.add(handler: handler).whenSuccess {
+            pipeline.addHandler(handler).whenSuccess {
                 addNext()
             }
         }
@@ -190,7 +192,7 @@ internal final class Connection {
     
     func _execute<C: AnyMongoDBCommand>(command: C, session: ClientSession?, transaction: TransactionQueryOptions?) -> EventLoopFuture<ServerReply> {
         if self.context.isClosed {
-            return self.eventLoop.newFailedFuture(error: MongoKittenError(.commandFailure, reason: .connectionClosed))
+            return self.eventLoop.makeFailedFuture(MongoKittenError(.commandFailure, reason: .connectionClosed))
         }
         
         do {
@@ -198,10 +200,10 @@ internal final class Connection {
                 try command.checkValidity(for: handshakeResult.maxWireVersion)
             }
         } catch {
-            return self.eventLoop.newFailedFuture(error: error)
+            return self.eventLoop.makeFailedFuture(error)
         }
         
-        let promise: EventLoopPromise<ServerReply> = self.channel.eventLoop.newPromise()
+        let promise: EventLoopPromise<ServerReply> = self.channel.eventLoop.makePromise()
         let command = MongoDBCommandContext(
             command: command,
             requestID: nextRequestId(),
@@ -229,7 +231,7 @@ internal final class Connection {
         
         switch settings.authentication {
         case .unauthenticated:
-            return eventLoop.newSucceededFuture(result: ())
+            return eventLoop.makeSucceededFuture(())
         case .auto(let username, let password):
             if let mechanisms = handshakeResult!.saslSupportedMechs {
                 nextMechanism: for mechanism in mechanisms {
@@ -243,7 +245,7 @@ internal final class Connection {
                     }
                 }
                 
-                return eventLoop.newFailedFuture(error: MongoKittenError(.authenticationFailure, reason: .unsupportedAuthenticationMechanism))
+                return eventLoop.makeFailedFuture(MongoKittenError(.authenticationFailure, reason: .unsupportedAuthenticationMechanism))
             } else if handshakeResult!.maxWireVersion.supportsScramSha1 {
                 return self.authenticateSASL(hasher: SHA1(), namespace: namespace, username: username, password: password)
             } else {
@@ -284,7 +286,7 @@ internal final class Connection {
             clientDetails: withClientMetadata ? ConnectionHandshakeCommand.ClientDetails(application: app) : nil,
             userNamespace: userNamespace,
             collection: commandCollection
-        ), session: nil, transaction: nil).thenThrowing { serverReply in
+        ), session: nil, transaction: nil).flatMapThrowing { serverReply in
             let reply = try BSONDecoder().decode(
                 ConnectionHandshakeCommand.Reply.self,
                 from: try serverReply.documents.assertFirst()
@@ -355,7 +357,7 @@ final class ClientQueryContext {
             var query = queries[i]
             if !query.retry {
                 queries.remove(at: i)
-                query.promise.fail(error: MongoKittenError(.protocolParsingError, reason: nil))
+                query.promise.fail(MongoKittenError(.protocolParsingError, reason: nil))
             } else {
                 // TODO: This ensures only 1 retry, is that valid?
                 query.retry = false
@@ -368,7 +370,7 @@ final class ClientQueryContext {
     
     deinit {
         for query in queries {
-            query.promise.fail(error: MongoKittenError(.unableToConnect, reason: nil))
+            query.promise.fail(MongoKittenError(.unableToConnect, reason: nil))
         }
     }
 }
@@ -389,28 +391,32 @@ final class ClientConnectionSerializer: MongoSerializer, MessageToByteEncoder {
     }
 }
 
-final class ClientConnectionParser: MongoDeserializer, ByteToMessageDecoder {
+struct ClientConnectionParser: ByteToMessageDecoder {
     typealias InboundOut = ServerReply
-    var cumulationBuffer: ByteBuffer?
     
+    private var deserializer = MongoDeserializer()
     let context: ClientQueryContext
     
     init(context: ClientQueryContext) {
         self.context = context
     }
     
-    func decode(ctx: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
-        let result = try parse(from: &buffer)
+    mutating func decode(ctx: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
+        let result = try deserializer.parse(from: &buffer)
         
-        if let reply = self.reply {
+        if let reply = deserializer.reply {
             if let index = self.context.queries.firstIndex(where: { $0.requestID == reply.responseTo }) {
                 let query = self.context.queries[index]
                 self.context.queries.remove(at: index)
-                query.promise.succeed(result: reply)
+                query.promise.succeed(reply)
             }
         }
         
         return result
+    }
+    
+    mutating func decodeLast(ctx: ChannelHandlerContext, buffer: inout ByteBuffer, seenEOF: Bool) throws -> DecodingState {
+        return try decode(ctx: ctx, buffer: &buffer)
     }
     
     // TODO: this does not belong here but on the next handler

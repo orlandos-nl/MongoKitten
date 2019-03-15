@@ -4,7 +4,7 @@ import Foundation
 /// A reference to a collection in a `Database`.
 ///
 /// MongoDB stores documents in collections. Collections are analogous to tables in relational databases.
-public class Collection: FutureConvenienceCallable {
+public class Collection {
     // MARK: Properties
     internal var transaction: Transaction?
     
@@ -258,7 +258,7 @@ public class Collection: FutureConvenienceCallable {
     @discardableResult
     public func update(where query: Query, setting set: [String: Primitive?], multiple: Bool? = nil) -> EventLoopFuture<UpdateReply> {
         guard set.count > 0 else {
-            return eventLoop.newFailedFuture(error: MongoKittenError(.cannotFormCommand, reason: .nothingToDo))
+            return eventLoop.makeFailedFuture(MongoKittenError(.cannotFormCommand, reason: .nothingToDo))
         }
         
         var setQuery = Document()

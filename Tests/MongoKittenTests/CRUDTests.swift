@@ -81,10 +81,10 @@ class CRUDTests : XCTestCase {
     }
     
 //    func testRangeFind() throws {
-//        try connection.then { connection -> EventLoopFuture<Void> in
+//        try connection.flatMap { connection -> EventLoopFuture<Void> in
 //            let collection = connection["test"]["test"]
 //
-//            return self.createTestData(n: 128, in: collection).then {
+//            return self.createTestData(n: 128, in: collection).flatMap {
 //                let findRange = collection.find(inRange: 10..<22).testRange(count: 12)
 //                let findPartialRange = collection.find(inRange: 118...).testRange(startingAt: 118)
 //                let findClosedRange = collection.find(inRange: 10...20).testRange()
@@ -127,7 +127,7 @@ class CRUDTests : XCTestCase {
         var future = collection.insert(nextDocument(index: 0))
         
         for index in 1..<n {
-            future = future.then { _ in
+            future = future.flatMap { _ in
                 return collection.insert(nextDocument(index: index))
             }
         }
@@ -278,12 +278,12 @@ class CRUDTests : XCTestCase {
 //        let total = 152
 //        var n = 0
 //
-//        return try connection.then { connection -> EventLoopFuture<Void> in
+//        return try connection.flatMap { connection -> EventLoopFuture<Void> in
 //            let collection = connection["test"]["test"]
 //
-//            return self.createTestData(n: total, in: s).then {
+//            return self.createTestData(n: total, in: s).flatMap {
 //                return collection.find()
-//            }.then { cursor -> EventLoopFuture<Void> in
+//            }.flatMap { cursor -> EventLoopFuture<Void> in
 //                let future = cursor.forEach { doc in
 //                    n += 1
 //                }
@@ -293,13 +293,13 @@ class CRUDTests : XCTestCase {
 //                }
 //
 //                return future
-//            }.then {
+//            }.flatMap {
 //                return collection.count()
-//            }.then { count -> EventLoopFuture<Int> in
+//            }.flatMap { count -> EventLoopFuture<Int> in
 //                XCTAssertEqual(count, 152, "The count differred from the inserts")
 //
 //                return collection.deleteAll()
-//            }.then { deleted -> EventLoopFuture<Int> in
+//            }.flatMap { deleted -> EventLoopFuture<Int> in
 //                XCTAssertEqual(deleted, 152, "Not everything was deleted")
 //
 //                return collection.count()
@@ -310,7 +310,7 @@ class CRUDTests : XCTestCase {
 //    }
     
 //    func testDistinct() throws {
-//        let values = try connection.then { connection -> EventLoopFuture<[Primitive]> in
+//        let values = try connection.flatMap { connection -> EventLoopFuture<[Primitive]> in
 //            let pets = connection["test"]["pets"]
 //
 //            // TODO: Real pet names?
@@ -321,7 +321,7 @@ class CRUDTests : XCTestCase {
 //            let e = pets.addPet(named: "E", owner: "Test0")
 //            let f = pets.addPet(named: "F", owner: "Test1")
 //
-//            return a.and(b).and(c).and(d).and(e).and(f).then { _ in
+//            return a.and(b).and(c).and(d).and(e).and(f).flatMap { _ in
 //                return pets.distinct(onKey: "owner")
 //            }
 //        }.wait()
@@ -332,7 +332,7 @@ class CRUDTests : XCTestCase {
 //    }
     
 //    func testPipelineUsage() throws {
-//        let pets = try connection.then { connection -> EventLoopFuture<Int> in
+//        let pets = try connection.flatMap { connection -> EventLoopFuture<Int> in
 //            let pets = connection["test"]["pets"]
 //
 //            // TODO: Real pet names?
@@ -345,14 +345,14 @@ class CRUDTests : XCTestCase {
 //
 //            let inserts = a.and(b).and(c).and(d).and(e).and(f)
 //
-//            return inserts.then { _ in
+//            return inserts.flatMap { _ in
 //                do {
 //                    let query: Query = "owner" == "Joannis" || "owner" == "Robbert"
 //                    let pipeline = try Pipeline().match(query).count(writingInto: "pets")
 //
 //                    return pets.aggregate(pipeline)
 //                } catch {
-//                    return connection.eventLoop.newFailedFuture(error: error)
+//                    return connection.eventLoop.makeFailedFuture(error)
 //                }
 //            }
 //        }.wait()
@@ -373,7 +373,7 @@ class CRUDTests : XCTestCase {
 //
 //extension EventLoopFuture where T == Cursor<Document> {
 //    func testRange(startingAt start: Int64 = 10, count: Int64 = 10) -> EventLoopFuture<Void> {
-//        return self.then { cursor in
+//        return self.flatMap { cursor in
 //            var n: Int64 = start
 //
 //            return cursor.forEach { document in

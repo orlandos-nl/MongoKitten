@@ -225,7 +225,7 @@ extension AggregateCursor where Element == Document {
             .count(into: "count")
             .decode(CountResult.self)
             .getFirstResult()
-            .thenThrowing { result in
+            .flatMapThrowing { result in
                 guard let result = result else {
                     return 0
                 }

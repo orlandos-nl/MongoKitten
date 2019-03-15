@@ -3,7 +3,7 @@ import BSON
 import NIO
 
 /// A type capable of deserializing messages from MongoDB
-class MongoDeserializer {
+struct MongoDeserializer {
     private var header: MessageHeader?
     private(set) var reply: ServerReply?
     
@@ -15,7 +15,7 @@ class MongoDeserializer {
     /// It's replaced with a new reply the next successful iteration of the parser so needs to be extracted after each `parse` attempt
     ///
     /// Any remaining data left in the `buffer` needs to be left until the next interation, which NIO does by default
-    func parse(from buffer: inout ByteBuffer) throws -> DecodingState {
+    mutating func parse(from buffer: inout ByteBuffer) throws -> DecodingState {
         let header: MessageHeader
         
         if let _header = self.header {

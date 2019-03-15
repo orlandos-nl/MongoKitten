@@ -128,7 +128,7 @@ internal final class SCRAM<H: Hash> {
         )
         xor(&clientSignature, clientKey)
         
-        let proof = Data(bytes: clientSignature).base64EncodedString()
+        let proof = Data(clientSignature).base64EncodedString()
         
         let serverSignature = hmac.authenticate(authenticationMessage, withKey: serverKey)
         

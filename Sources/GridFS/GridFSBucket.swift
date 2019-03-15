@@ -31,7 +31,7 @@ public class GridFSBucket {
     
     public func upload(_ data: Data, filename: String, id: Primitive = ObjectId(), metadata: Document? = nil, chunkSize: Int32 = GridFSBucket.defaultChunkSize) -> EventLoopFuture<Void> {
         var buffer = FileWriter.allocator.buffer(capacity: data.count)
-        buffer.write(bytes: data)
+        buffer.writeBytes(data)
         
         let writer = FileWriter(fs: self, fileId: id, chunkSize: chunkSize, buffer: buffer)
         return writer.finalize(filename: filename, metadata: metadata)
@@ -59,10 +59,10 @@ public class GridFSBucket {
     }
     
     public func deleteFile(byId id: Primitive) -> EventLoopFuture<Void> {
-        return EventLoopFuture<Void>.andAll([
+        return EventLoopFuture<Void>.andAllSucceed([
             self.filesCollection.deleteAll(where: "_id" == id).map { _ in },
             self.chunksCollection.deleteAll(where: "files_id" == id).map { _ in }
-            ], eventLoop: eventLoop)
+        ], on: eventLoop)
     }
     
     // TODO: Cancellable, streaming writes & reads
@@ -70,7 +70,7 @@ public class GridFSBucket {
     
     internal func ensureIndexes() -> EventLoopFuture<Void> {
         guard !didEnsureIndexes else {
-            return eventLoop.newSucceededFuture(result: ())
+            return eventLoop.makeSucceededFuture(())
         }
         
         didEnsureIndexes = true
@@ -80,15 +80,15 @@ public class GridFSBucket {
             .project(["_id": .included])
             .limit(1)
             .getFirstResult()
-            .then { result in
+            .flatMap { result in
                 // Determine if the files collection is empty
                 guard result == nil else {
-                    return self.eventLoop.newSucceededFuture(result: ())
+                    return self.eventLoop.makeSucceededFuture(())
                 }
                 
                 // TODO: Drivers MUST check whether the indexes already exist before attempting to create them. This supports the scenario where an application is running with read-only authorizations.
                 
-                return EventLoopFuture<Void>.andAll([
+                return EventLoopFuture<Void>.andAllSucceed([
                     self.filesCollection.indexes.createCompound(named: "mongokitten_was_here", keys: [
                         "filename": .ascending,
                         "uploadDate": .ascending
@@ -97,7 +97,7 @@ public class GridFSBucket {
                         "files_id": .ascending,
                         "n": .ascending
                         ], options: [.unique])
-                    ], eventLoop: self.eventLoop)
+                    ], on: self.eventLoop)
         }
     }
     

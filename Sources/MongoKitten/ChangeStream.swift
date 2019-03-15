@@ -66,7 +66,7 @@ extension Collection {
             let document = try BSONEncoder().encode(stage)
             return self.aggregate().append(document).execute().map(ChangeStream.init)
         } catch {
-            return self.eventLoop.newFailedFuture(error: error)
+            return self.eventLoop.makeFailedFuture(error)
         }
     }
 }
@@ -86,7 +86,7 @@ extension AggregateCursor where Element == Document {
             self.operation.pipeline.insert(document, at: 0)
             return self.execute().map(ChangeStream.init)
         } catch {
-            return self.collection.eventLoop.newFailedFuture(error: error)
+            return self.collection.eventLoop.makeFailedFuture(error)
         }
     }
 }

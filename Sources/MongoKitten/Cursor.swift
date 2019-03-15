@@ -19,11 +19,11 @@ internal final class Cursor {
     func getMore(batchSize: Int) -> EventLoopFuture<CursorBatch<Document>> {
         if let initialBatch = self.initialBatch {
             self.initialBatch = nil
-            return collection.eventLoop.newSucceededFuture(result: CursorBatch(batch: initialBatch, isLast: self.drained))
+            return collection.eventLoop.makeSucceededFuture(CursorBatch(batch: initialBatch, isLast: self.drained))
         }
         
         guard !drained else {
-            return collection.eventLoop.newFailedFuture(error: MongoKittenError(.cannotGetMore, reason: .cursorDrained))
+            return collection.eventLoop.makeFailedFuture(MongoKittenError(.cannotGetMore, reason: .cursorDrained))
         }
         
         let command = GetMore(cursorId: self.id, batchSize: batchSize, on: collection)
@@ -48,11 +48,11 @@ internal final class Cursor {
         }
         
         func collectAll() -> EventLoopFuture<[Document]> {
-            return cursor.getMore(batchSize: 101).then { batch -> EventLoopFuture<[Document]> in
+            return cursor.getMore(batchSize: 101).flatMap { batch -> EventLoopFuture<[Document]> in
                 self.documents += batch.batch
                 
                 if batch.isLast {
-                    return self.cursor.collection.eventLoop.newSucceededFuture(result: self.documents)
+                    return self.cursor.collection.eventLoop.makeSucceededFuture(self.documents)
                 }
                 
                 return self.collectAll()
@@ -180,31 +180,31 @@ extension QueryCursor {
     public func forEachFuture<T>(
         handler: @escaping (T) -> Void
     ) -> EventLoopFuture<Void> where Element == EventLoopFuture<T> {
-        return execute().then { finalizedCursor in
+        return execute().flatMap { finalizedCursor in
             func nextBatch() -> EventLoopFuture<Void> {
-                return finalizedCursor.nextBatch().then { batch in
+                return finalizedCursor.nextBatch().flatMap { batch in
                     do {
                         var batch = batch
                         
                         guard let element = try batch.nextElement() else {
-                            return self.collection.eventLoop.newSucceededFuture(result: ())
+                            return self.collection.eventLoop.makeSucceededFuture(())
                         }
                         
                         var future = element.map(handler)
                         
                         while let element = try batch.nextElement() {
-                            future = future.then {
+                            future = future.flatMap {
                                 return element.map(handler)
                             }
                         }
                         
                         if batch.isLast {
-                            return self.collection.eventLoop.newSucceededFuture(result: ())
+                            return self.collection.eventLoop.makeSucceededFuture(())
                         }
                         
                         return nextBatch()
                     } catch {
-                        return self.collection.eventLoop.newFailedFuture(error: error)
+                        return self.collection.eventLoop.makeFailedFuture(error)
                     }
                 }
             }
@@ -221,9 +221,9 @@ extension QueryCursor {
     /// - returns: A future that resolves when the operation is complete, or fails if an error is thrown
     @discardableResult
     public func forEach(handler: @escaping (Element) throws -> Void) -> EventLoopFuture<Void> {
-        return execute().then { finalizedCursor in
+        return execute().flatMap { finalizedCursor in
             func nextBatch() -> EventLoopFuture<Void> {
-                return finalizedCursor.nextBatch().then { batch in
+                return finalizedCursor.nextBatch().flatMap { batch in
                     do {
                         var batch = batch
                         
@@ -232,12 +232,12 @@ extension QueryCursor {
                         }
                         
                         if batch.isLast || finalizedCursor.closed {
-                            return self.collection.eventLoop.newSucceededFuture(result: ())
+                            return self.collection.eventLoop.makeSucceededFuture(())
                         }
                         
                         return nextBatch()
                     } catch {
-                        return self.collection.eventLoop.newFailedFuture(error: error)
+                        return self.collection.eventLoop.makeFailedFuture(error)
                     }
                 }
             }
@@ -248,33 +248,33 @@ extension QueryCursor {
     
     @discardableResult
     public func sequentialForEach(handler: @escaping (Element) throws -> EventLoopFuture<Void>) -> EventLoopFuture<Void> {
-        return execute().then { finalizedCursor in
+        return execute().flatMap { finalizedCursor in
             func nextBatch() -> EventLoopFuture<Void> {
-                return finalizedCursor.nextBatch().then { batch in
+                return finalizedCursor.nextBatch().flatMap { batch in
                     do {
                         var batch = batch
                         
                         func next() throws -> EventLoopFuture<Void> {
                             guard let element = try batch.nextElement(), !finalizedCursor.closed else {
                                 if batch.isLast || finalizedCursor.closed {
-                                    return self.collection.eventLoop.newSucceededFuture(result: ())
+                                    return self.collection.eventLoop.makeSucceededFuture(())
                                 }
                                 
                                 return nextBatch()
                             }
                             
-                            return try handler(element).then {
+                            return try handler(element).flatMap {
                                 do {
                                     return try next()
                                 } catch {
-                                    return self.collection.eventLoop.newFailedFuture(error: error)
+                                    return self.collection.eventLoop.makeFailedFuture(error)
                                 }
                             }
                         }
                         
                         return try next()
                     } catch {
-                        return self.collection.eventLoop.newFailedFuture(error: error)
+                        return self.collection.eventLoop.makeFailedFuture(error)
                     }
                 }
             }
@@ -297,9 +297,9 @@ extension QueryCursor {
         setBatchSize(1)
         
         defer { setBatchSize(currentBatchSize) }
-        return execute().then { finalizedCursor in
+        return execute().flatMap { finalizedCursor in
             return finalizedCursor.nextBatch()
-            }.thenThrowing { batch in
+            }.flatMapThrowing { batch in
                 var batch = batch
                 return try batch.nextElement()
         }
@@ -308,12 +308,12 @@ extension QueryCursor {
     /// Executes the cursor and returns all results as an array
     /// Please be aware that this may consume a large amount of memory or time with a large number of results
     public func getAllResults() -> EventLoopFuture<[Element]> {
-        return execute().then { finalizedCursor in
-            var promise: EventLoopPromise<[Element]> = self.collection.eventLoop.newPromise()
+        return execute().flatMap { finalizedCursor in
+            var promise = self.collection.eventLoop.makePromise(of: [Element].self)
             var results = [Element]()
             
             func nextBatch() {
-                finalizedCursor.nextBatch().thenThrowing { batch in
+                finalizedCursor.nextBatch().flatMapThrowing { batch in
                     var batch = batch
                     
                     while let element = try batch.nextElement() {
@@ -321,12 +321,12 @@ extension QueryCursor {
                     }
                     
                     guard !batch.isLast else {
-                        promise.succeed(result: results)
+                        promise.succeed(results)
                         return
                     }
                     
                     nextBatch()
-                }.cascadeFailure(promise: promise)
+                }.cascadeFailure(to: promise)
             }
             
             if !finalizedCursor.closed {
@@ -400,10 +400,10 @@ public final class FinalizedCursor<Base: QueryCursor> {
     
     internal func nextBatch() -> EventLoopFuture<CursorBatch<Base.Element>> {
         if closed {
-            return cursor.collection.eventLoop.newFailedFuture(error: MongoKittenError(.cannotGetMore, reason: .cursorClosed))
+            return cursor.collection.eventLoop.makeFailedFuture(MongoKittenError(.cannotGetMore, reason: .cursorClosed))
         }
         
-        return cursor.getMore(batchSize: base.batchSize).thenThrowing { batch in
+        return cursor.getMore(batchSize: base.batchSize).flatMapThrowing { batch in
             return batch.map(self.base.transformElement)
         }
     }

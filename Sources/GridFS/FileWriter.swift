@@ -31,10 +31,10 @@ final class FileWriter {
         
         self.length += data.readableBytes
         var source = data
-        buffer.write(buffer: &source)
+        buffer.writeBuffer(&source)
         
         guard buffer.readableBytes >= chunkSize else {
-            return fs.eventLoop.newSucceededFuture(result: ())
+            return fs.eventLoop.makeSucceededFuture(())
         }
         
         return self.flush()
@@ -46,7 +46,7 @@ final class FileWriter {
         self.finalized = true
         
         return self.flush(finalize: true)
-            .then {
+            .flatMap {
                 let file = File(id: self.fileId,
                                 length: self.length,
                                 chunkSize: self.chunkSize,
@@ -59,7 +59,7 @@ final class FileWriter {
                     
                     return self.fs.filesCollection.insert(encoded).map { _ in }
                 } catch {
-                    return self.fs.eventLoop.newFailedFuture(error: error)
+                    return self.fs.eventLoop.makeFailedFuture(error)
                 }
         }
     }
@@ -68,7 +68,7 @@ final class FileWriter {
         let chunkSize = Int(self.chunkSize) // comparison here is always to int
         
         guard buffer.readableBytes > 0, finalize || buffer.readableBytes >= chunkSize else {
-            return fs.eventLoop.newSucceededFuture(result: ())
+            return fs.eventLoop.makeSucceededFuture(())
         }
         
         guard let slice = buffer.readSlice(length: buffer.readableBytes >= chunkSize ? chunkSize : buffer.readableBytes) else {
@@ -80,11 +80,11 @@ final class FileWriter {
             let chunk = Chunk(filesId: fileId, sequenceNumber: nextChunkNumber, data: .init(buffer: slice))
             let encoded = try FileWriter.encoder.encode(chunk)
             
-            return fs.chunksCollection.insert(encoded).then { _ in
+            return fs.chunksCollection.insert(encoded).flatMap { _ in
                 return self.flush(finalize: finalize)
             }
         } catch {
-            return fs.eventLoop.newFailedFuture(error: error)
+            return fs.eventLoop.makeFailedFuture(error)
         }
     }
     

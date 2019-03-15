@@ -51,9 +51,9 @@ extension MongoDBCommand {
     }
 }
 
-extension EventLoopFuture where T: ServerReplyInitializableResult {
-    internal func mapToResult(for collection: Collection) -> EventLoopFuture<T.Result> {
-        return self.thenThrowing { reply in
+extension EventLoopFuture where Value: ServerReplyInitializableResult {
+    internal func mapToResult(for collection: Collection) -> EventLoopFuture<Value.Result> {
+        return self.flatMapThrowing { reply in
             guard reply.isSuccessful else {
                 throw reply
             }

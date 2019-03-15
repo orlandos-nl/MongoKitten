@@ -143,7 +143,7 @@ public final class MobileDatabase: _ConnectionPool {
             return
         } catch let error {
             self.invalid = true
-            context.promise.fail(error: error)
+            context.promise.fail(error)
         }
     }
     

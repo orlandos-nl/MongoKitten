@@ -65,7 +65,7 @@ public final class Cluster: _ConnectionPool {
         
         self.group = group
         self.settings = settings
-        self.isDiscovering = eventLoop.newPromise()
+        self.isDiscovering = eventLoop.makePromise()
         self.pool = []
         self.hosts = Set(settings.hosts)
     
@@ -82,38 +82,38 @@ public final class Cluster: _ConnectionPool {
         
         self.init(group: group, sessionManager: SessionManager(), settings: settings)
         
-        self._getConnection().then { _ in
+        self._getConnection().flatMap { _ in
             return self.rediscover()
-        }.whenComplete {
+        }.whenComplete { _ in
             if self.pool.count > 0 {
                 self.completedInitialDiscovery = true
-                self.isDiscovering.succeed(result: ())
+                self.isDiscovering.succeed(())
             } else {
-                self.isDiscovering.fail(error: MongoKittenError(.unableToConnect, reason: .noAvailableHosts))
+                self.isDiscovering.fail(MongoKittenError(.unableToConnect, reason: .noAvailableHosts))
             }
         }
         
-        self.isDiscovering.futureResult.whenComplete(self.scheduleDiscovery)
+        self.isDiscovering.futureResult.whenComplete { _ in self.scheduleDiscovery() }
     }
     
     private func _send(context: MongoDBCommandContext) -> EventLoopFuture<ServerReply> {
-        let future = self.getConnection().thenIfError { _ in
+        let future = self.getConnection().flatMapError { _ in
             return self.getConnection(writable: true)
-        }.then { connection -> EventLoopFuture<Void> in
+        }.flatMap { connection -> EventLoopFuture<Void> in
             connection.context.queries.append(context)
             return connection.channel.writeAndFlush(context)
         }
-        future.cascadeFailure(promise: context.promise)
+        future.cascadeFailure(to: context.promise)
         
-        return future.then { context.promise.futureResult }
+        return future.flatMap { context.promise.futureResult }
     }
     
     override func send<C: MongoDBCommand>(command: C, session: ClientSession? = nil, transaction: TransactionQueryOptions? = nil) -> EventLoopFuture<ServerReply> {
-        let promise = self.eventLoop.newPromise(of: ServerReply.self)
+        let promise = self.eventLoop.makePromise(of: ServerReply.self)
         
-        let future = self.getConnection().thenIfError { _ in
+        let future = self.getConnection().flatMapError { _ in
             return self.getConnection(writable: true)
-        }.then { connection -> EventLoopFuture<Void> in
+        }.flatMap { connection -> EventLoopFuture<Void> in
             let context = MongoDBCommandContext(
                 command: command,
                 requestID: connection.nextRequestId(),
@@ -140,7 +140,7 @@ public final class Cluster: _ConnectionPool {
             let cluster = try Cluster(lazyConnectingTo: settings, on: group)
             return cluster.isDiscovering.futureResult.map { cluster }
         } catch {
-            return group.next().newFailedFuture(error: error)
+            return group.next().makeFailedFuture(error)
         }
     }
     
@@ -193,7 +193,7 @@ public final class Cluster: _ConnectionPool {
                 }
                 
                 let connectionId = ObjectIdentifier(connection)
-                connection.channel.closeFuture.whenComplete { [weak self] in
+                connection.channel.closeFuture.whenComplete { [weak self] _ in
                     guard let me = self else { return }
                     
                     me.remove(connectionId: connectionId)
@@ -230,8 +230,8 @@ public final class Cluster: _ConnectionPool {
         }
         
         self.timeoutHosts = []
-        let completedDiscovery = EventLoopFuture<Void>.andAll(handshakes, eventLoop: self.eventLoop)
-        completedDiscovery.whenComplete {
+        let completedDiscovery = EventLoopFuture<Void>.andAllComplete(handshakes, on: self.eventLoop)
+        completedDiscovery.whenComplete { _ in
             self.wireVersion = self.newWireVersion
         }
         
@@ -258,7 +258,7 @@ public final class Cluster: _ConnectionPool {
             rediscovery.whenFailure { error in
                 for query in queries {
                     // Retry the query
-                    query.promise.fail(error: error)
+                    query.promise.fail(error)
                 }
             }
             
@@ -296,18 +296,18 @@ public final class Cluster: _ConnectionPool {
             return self._getConnection(writable: writable)
         }
         
-        return isDiscovering.futureResult.then {
+        return isDiscovering.futureResult.flatMap {
             return self._getConnection(writable: writable)
         }
     }
     
     private func _getConnection(writable: Bool = true) -> EventLoopFuture<Connection> {
         if let matchingConnection = findMatchingConnection(writable: writable) {
-            return eventLoop.newSucceededFuture(result: matchingConnection.connection)
+            return eventLoop.makeSucceededFuture(matchingConnection.connection)
         }
         
         guard let host = undiscoveredHosts.first else {
-            return self.rediscover().thenThrowing { _ in
+            return self.rediscover().flatMapThrowing { _ in
                 guard let match = self.findMatchingConnection(writable: writable) else {
                     throw MongoKittenError(.unableToConnect, reason: .noAvailableHosts)
                 }
@@ -316,11 +316,11 @@ public final class Cluster: _ConnectionPool {
             }
         }
         
-        return makeConnection(to: host).then { pooledConnection in
+        return makeConnection(to: host).flatMap { pooledConnection in
             self.pool.append(pooledConnection)
             
             guard let handshake = pooledConnection.connection.handshakeResult else {
-                return self.eventLoop.newFailedFuture(error: MongoKittenError(.unableToConnect, reason: .handshakeFailed))
+                return self.eventLoop.makeFailedFuture(MongoKittenError(.unableToConnect, reason: .handshakeFailed))
             }
             
             let unwritable = writable && handshake.readOnly == true
@@ -329,7 +329,7 @@ public final class Cluster: _ConnectionPool {
             if unwritable || unreadable {
                 return self._getConnection(writable: writable)
             } else {
-                return self.eventLoop.newSucceededFuture(result: pooledConnection.connection)
+                return self.eventLoop.makeSucceededFuture(pooledConnection.connection)
             }
         }
     }

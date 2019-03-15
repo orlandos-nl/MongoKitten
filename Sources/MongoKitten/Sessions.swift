@@ -9,22 +9,22 @@ struct SessionIdentifier: Codable {
         let uuid = UUID().uuid
         
         var buffer = allocator.buffer(capacity: 16)
-        buffer.write(integer: uuid.0)
-        buffer.write(integer: uuid.1)
-        buffer.write(integer: uuid.2)
-        buffer.write(integer: uuid.3)
-        buffer.write(integer: uuid.4)
-        buffer.write(integer: uuid.5)
-        buffer.write(integer: uuid.6)
-        buffer.write(integer: uuid.7)
-        buffer.write(integer: uuid.8)
-        buffer.write(integer: uuid.9)
-        buffer.write(integer: uuid.10)
-        buffer.write(integer: uuid.11)
-        buffer.write(integer: uuid.12)
-        buffer.write(integer: uuid.13)
-        buffer.write(integer: uuid.14)
-        buffer.write(integer: uuid.15)
+        buffer.writeInteger(uuid.0)
+        buffer.writeInteger(uuid.1)
+        buffer.writeInteger(uuid.2)
+        buffer.writeInteger(uuid.3)
+        buffer.writeInteger(uuid.4)
+        buffer.writeInteger(uuid.5)
+        buffer.writeInteger(uuid.6)
+        buffer.writeInteger(uuid.7)
+        buffer.writeInteger(uuid.8)
+        buffer.writeInteger(uuid.9)
+        buffer.writeInteger(uuid.10)
+        buffer.writeInteger(uuid.11)
+        buffer.writeInteger(uuid.12)
+        buffer.writeInteger(uuid.13)
+        buffer.writeInteger(uuid.14)
+        buffer.writeInteger(uuid.15)
         
         self.id = Binary(subType: .uuid, buffer: buffer)
     }
@@ -58,7 +58,7 @@ final class ClientSession {
     /// - parameter command: The `MongoDBCommand` to execute
     /// - returns: The reply to the command
     func execute<C: MongoDBCommand>(command: C, transaction: TransactionQueryOptions? = nil) -> EventLoopFuture<C.Reply> {
-        return pool.send(command: command, session: self, transaction: transaction).thenThrowing { reply in
+        return pool.send(command: command, session: self, transaction: transaction).flatMapThrowing { reply in
             do {
                 return try C.Reply(reply: reply)
             } catch {

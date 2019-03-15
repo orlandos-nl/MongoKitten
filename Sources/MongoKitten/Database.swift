@@ -20,7 +20,7 @@ public typealias PlatformEventLoopGroup = EventLoopGroup
 /// A reference to a MongoDB database, over a `Connection`.
 ///
 /// Databases hold collections of documents.
-public class Database: FutureConvenienceCallable {
+public class Database {
     internal var transaction: Transaction!
     
     /// The name of the database
@@ -84,7 +84,7 @@ public class Database: FutureConvenienceCallable {
             
             return connect(settings: settings, on: group)
         } catch {
-            return group.next().newFailedFuture(error: error)
+            return group.next().makeFailedFuture(error)
         }
     }
     
@@ -111,7 +111,7 @@ public class Database: FutureConvenienceCallable {
                 return cluster[targetDatabase]
             }
         } catch {
-            return group.next().newFailedFuture(error: error)
+            return group.next().makeFailedFuture(error)
         }
     }
     
@@ -175,8 +175,8 @@ public class Database: FutureConvenienceCallable {
     ///
     /// Returns them as a MongoKitten Collection with you can query
     public func listCollections() -> EventLoopFuture<[Collection]> {
-        return ListCollections(inDatabase: self.name).execute(on: self["$cmd"]).then { cursor in
-            return cursor.drain().thenThrowing { documents in
+        return ListCollections(inDatabase: self.name).execute(on: self["$cmd"]).flatMap { cursor in
+            return cursor.drain().flatMapThrowing { documents in
                 let decoder = BSONDecoder()
                 return try documents.map { document -> Collection in
                     let description = try decoder.decode(CollectionDescription.self, from: document)
