@@ -4,7 +4,7 @@ import XCTest
 
 let dbName = "test"
 
-class CRUDTests : XCTestCase {
+class RemoteDatabaseCRUDTests : XCTestCase {
     let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     
 //    let settings = ConnectionSettings(
@@ -34,6 +34,10 @@ class CRUDTests : XCTestCase {
     }
     
     func testTransactions() throws {
+        guard cluster.wireVersion?.supportsReplicaTransactions == true && cluster.isCluster else {
+            return
+        }
+
         let db = cluster[dbName]
         let users = db["users"]
         _ = try db["users"].insert(["username": "Creating collection user"]).wait()
@@ -249,6 +253,10 @@ class CRUDTests : XCTestCase {
     }
     
     func testChangeStream() throws {
+        guard cluster.wireVersion?.supportsReplicaTransactions == true && cluster.isCluster else {
+            return
+        }
+        
         do {
             let collection = cluster[dbName]["test"]
             
