@@ -144,7 +144,8 @@ class RemoteDatabaseCRUDTests : XCTestCase {
         let owners = cluster[dbName]["owners"]
         
         let ownerId = owners.objectIdGenerator.generate()
-        dogs.insert(["_id": dogs.objectIdGenerator.generate(), "owner": ownerId])
+        let dogDoc: Dog = ["_id": dogs.objectIdGenerator.generate(), "owner": ownerId]
+        dogs.insert(dogDoc)
         owners.insert(["_id": ownerId])
         
         typealias Dog = Document
@@ -153,21 +154,26 @@ class RemoteDatabaseCRUDTests : XCTestCase {
         typealias Pair = (Dog, Owner?)
         struct NoOwnerFoundMeh: Error {}
         
-        try dogs.find().map { dog -> EventLoopFuture<(Dog, Owner?)> in
+        try dogs.find().map { dog -> EventLoopFuture<(Dog, Owner)> in
             guard let ownerId = dog["owner"] as? ObjectId else {
                 throw NoOwnerFoundMeh()
             }
             
-            return owners.findOne("_id" == ownerId).map { owner in
+            return owners.findOne("_id" == ownerId).thenThrowing { owner -> (Dog, Owner) in
+                guard let owner = owner else {
+                    struct OwnerUnavailable: Error {}
+                    throw NoOwnerFoundMeh()
+                }
+
                 return (dog, owner)
             }
         }.forEachFuture { dog, owner in
-            print("dog", dog)
-            print("owner", owner)
+            XCTAssertEqual(dog, dogDoc)
+            XCTAssertEqual(owner["_id"] as? ObjectId, ownerId)
         }.wait()
         
         try dogs.find().forEach { doc in
-            print(doc)
+            XCTAssertEqual(doc, dogDoc)
         }.wait()
     }
     
