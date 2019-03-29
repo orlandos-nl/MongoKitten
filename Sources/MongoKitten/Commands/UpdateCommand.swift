@@ -107,7 +107,7 @@ public struct UpdateReply: ServerReplyDecodableResult {
 /// Modifiers that are available for use in update operations.
 ///
 /// - see: https://docs.mongodb.com/manual/reference/operator/update/
-public enum UpdateOperator: Encodable {
+public enum UpdateOperator: Encodable, PrimitiveConvertible {
     /// The $currentDate operator sets the value of a field to the current date, as a `Date`
     case currentDate(field: String)
     
@@ -135,7 +135,8 @@ public enum UpdateOperator: Encodable {
     /// A custom update operator
     case custom(document: Document)
     
-    public func encode(to encoder: Encoder) throws {
+    /// Converts the operator to a Document
+    private var document: Document {
         let document: Document
         
         switch self {
@@ -159,6 +160,113 @@ public enum UpdateOperator: Encodable {
             document = spec
         }
         
+        return document
+    }
+    
+    /// Converts the operator to a Primitive
+    public func makePrimitive() -> Primitive? {
+        return document
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        try document.encode(to: encoder)
+    }
+}
+
+/// Modifiers that are available for use in array update operations.
+///
+/// - see: https://docs.mongodb.com/manual/reference/operator/update-array/
+public enum ArrayUpdateOperator: Encodable, PrimitiveConvertible {
+    /// The $addToSet operator adds a value to an array unless the value is already present, in which case $addToSet does nothing to that array.
+    case addToSet(field: String, Primitive)
+    
+    /// Remove the first element of an array.
+    case popFirst(field: String)
+    
+    /// Remove the first element of an array.
+    case popLast(field: String)
+    
+    /// The $pull operator removes from an existing array all instances of a value or values that match a specified condition.
+    case pull(field: String, filter: Query)
+    
+    /// The $pullAll operator removes elements that match the listed values.
+    case pullAll(field: String, elements: Primitive)
+    
+    /// The $push operator appends a specified value to an array.
+    case push(Primitive, to: String, modifier: [Modifier])
+    
+    /// Modifiers that are available for use with $push and $addToSet.
+    ///
+    /// - see: https://docs.mongodb.com/manual/reference/operator/update/each/
+    public enum Modifier {
+        
+        /// Use with the $addToSet operator to add multiple values to an array if the values do not exist yet. Use with the $push operator to append multiple values to an array.
+        case each
+        
+        /// The $position modifier specifies the location in the array at which the $push operator inserts elements. Without the $position modifier, the $push operator inserts elements to the end of the array. See $push modifiers for more information.
+        case position(Int)
+        
+        /// The $slice modifier limits the number of array elements during a $push operation. To project, or return, a specified number of array elements from a read operation, see the $slice projection operator instead.
+        case slice(Int)
+        
+        /// The $sort modifier orders the elements of an array during a $push operation.
+        case sortAscending(field: String?)
+        
+        /// The $sort modifier orders the elements of an array during a $push operation.
+        case sortDescending(field: String?)
+    }
+    
+    /// Converts the operator to a Document
+    private var document: Document {
+        let document: Document
+        
+        switch self {
+        case .addToSet(let field, let value):
+            document = ["$addToSet": [field: value] as Document]
+        case .popFirst(let field):
+            document = ["$pop": [field: -1]]
+        case .popLast(let field):
+            document = ["$pop": [field: 1]]
+        case .pull(let field, let filter):
+            document = ["$pull": [field: filter.document]]
+        case .pullAll(let field, let elements):
+            document = ["$pullAll" : [field: elements] as Document]
+        case .push(let value, let field, let modifiers):
+            var pushValue: Primitive
+            
+            if modifiers.isEmpty {
+                pushValue = value
+            } else {
+                var pushModifierDocument = Document()
+                for modifier in modifiers {
+                    switch modifier {
+                    case .each:
+                        pushModifierDocument["$each"] = value
+                    case .position(let index):
+                        pushModifierDocument["$position"] = index
+                    case .slice(let amount):
+                        pushModifierDocument["$slice"] = amount
+                    case .sortAscending(let field):
+                        let sortDescriptor = field != nil ? [field!: 1] as Document : 1 as Primitive
+                        pushModifierDocument["$sort"] = sortDescriptor
+                    case .sortDescending(let field):
+                        let sortDescriptor = field != nil ? [field!: -1] as Document : -1 as Primitive
+                        pushModifierDocument["$sort"] = sortDescriptor
+                    }
+                }
+                pushValue = pushModifierDocument
+            }
+            
+            document = ["$push": [field: pushValue] as Document]
+        }
+    }
+    
+    /// Converts the operator to a Primitive
+    public func makePrimitive() -> Primitive? {
+        return document
+    }
+    
+    public func encode(to encoder: Encoder) throws {
         try document.encode(to: encoder)
     }
 }
