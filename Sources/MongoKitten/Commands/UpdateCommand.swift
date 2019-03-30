@@ -259,6 +259,8 @@ public enum ArrayUpdateOperator: Encodable, PrimitiveConvertible {
             
             document = ["$push": [field: pushValue] as Document]
         }
+
+        return document
     }
     
     /// Converts the operator to a Primitive
