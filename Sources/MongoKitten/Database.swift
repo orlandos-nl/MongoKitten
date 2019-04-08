@@ -86,7 +86,7 @@ public class Database: FutureConvenienceCallable {
         let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
         #endif
         
-        return try self.connect(settings: settings, on: group.next()).wait()
+        return try self.connect(settings: settings, on: group).wait()
     }
     
     /// Connect to the database at the given `uri`

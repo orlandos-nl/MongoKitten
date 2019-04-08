@@ -9,7 +9,7 @@ import NIO
 
 public protocol FutureConvenienceCallable {}
 
-public extension EventLoopFuture where T == Collection {
+extension EventLoopFuture where T == Collection {
 
     /// Convenience accessor that calls findOne(_:as:) on the collection after the future has completed.
     ///
@@ -130,7 +130,7 @@ public extension EventLoopFuture where T == Collection {
 
 }
 
-public extension EventLoopFuture where T == Database {
+extension EventLoopFuture where T == Database {
 
     /// Convenience accessor that calls drop on the database after the future has completed.
     ///
@@ -152,7 +152,7 @@ public extension EventLoopFuture where T == Database {
 
 }
 
-public extension EventLoopFuture where T == TransactionCollection {
+extension EventLoopFuture where T == TransactionCollection {
 
     /// Convenience accessor that calls commit on the transactioncollection after the future has completed.
     ///
@@ -174,11 +174,11 @@ public extension EventLoopFuture where T == TransactionCollection {
 
 }
 
-public extension EventLoopFuture where T == TransactionDatabase {
+extension EventLoopFuture where T == TransactionDatabase {
 
 }
 
-public extension EventLoopFuture where T == Database {
+extension EventLoopFuture where T == Database {
     public subscript(collection: String) -> EventLoopFuture<MongoKitten.Collection> {
         return self.map { $0[collection] }
     }
