@@ -1,5 +1,6 @@
 Pod::Spec.new do |s|
   s.ios.deployment_target = '11.0'
+  s.osx.deployment_target = '10.14'
   s.name             = 'MongoKitten'
   s.version          = '5.1.10'
   s.summary          = 'A pure swift, native MongoDB driver'
@@ -29,17 +30,19 @@ High and low level APIs for interacting with MongoDB databases. Supports codable
   
   s.subspec 'Networking' do |sub|
     sub.ios.deployment_target = '12.0'
-    sub.dependency     'SwiftNIOTransportServices', '~> 0.5'
+    sub.ios.dependency     'SwiftNIOTransportServices', '~> 0.5'
+    sub.macos.dependency     'SwiftNIOTransportServices', '~> 0.5'
     sub.dependency     'MongoKitten/Core'
   end
 
   s.subspec 'Mobile' do |sub|
-    sub.dependency     'mongo_embedded', '~> 4.0'
+    sub.ios.dependency     'mongo_embedded', '~> 4.0'
     sub.dependency     'MongoKitten/Core'
   end
 
   s.subspec 'Core' do |sub|
     sub.source_files = 'Sources/MongoKitten/**/*'
     sub.dependency     'MongoKitten/_MongoKittenCrypto'
+    sub.osx.dependency 'SwiftNIOTLS', '~> 1.4'
   end
 end
