@@ -172,8 +172,11 @@ public final class Mobile: _ConnectionPool {
             transaction: transaction,
             promise: promise
         )
+
+        eventLoop.execute {
+            _send(context: context, requestId: requestId)
+        }
         
-        _send(context: context, requestId: requestId)
         return promise.futureResult
     }
     
