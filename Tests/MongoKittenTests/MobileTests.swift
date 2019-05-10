@@ -10,7 +10,7 @@ class EmbeddedDatabaseCRUDTests : XCTestCase {
     }
 
     func testInsert() {
-        db
+        
     }
 }
 #endif

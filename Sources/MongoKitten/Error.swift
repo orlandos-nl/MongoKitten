@@ -73,11 +73,17 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         /// The URI cannot be parsed because it is malformed
         case uriIsMalformed
         
+        /// MongoDB+SRV URIs are not allowed to specify a port
+        case srvCannotSpecifyPort
+        
         /// The authentication details in the URI are malformed and cannot be parsed
         case malformedAuthenticationDetails
         
         /// The given authentication mechanism is not supported by MongoKitten
         case unsupportedAuthenticationMechanism
+        
+        /// SRV URIs can only have one host, no more, no less
+        case srvNeedsOneHost
         
         /// The reason for the error was internal
         case internalError
@@ -171,8 +177,10 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
             case .indexCreationFailed: return "There was a failure whilst creating the index."
             case .readConcernUnsupported: return "The MongoDB server does not support read concerns"
             case .writeConcernUnsupported: return "The MongoDB server does not support read concerns"
+            case .srvCannotSpecifyPort: return "MongoDB+SRV URIs are not allowed to specify a port"
             case .noAvailableHosts: return "No host was newly known"
             case .handshakeFailed: return "The handshake was not completed"
+            case .srvNeedsOneHost: return "SRV URIs can only have one host, no more, no less"
             }
         }
     }

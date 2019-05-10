@@ -1,5 +1,6 @@
 import Foundation
 import NIO
+import NioDNS
 
 // TODO: https://github.com/mongodb/specifications/tree/master/source/max-staleness
 // TODO: https://github.com/mongodb/specifications/tree/master/source/initial-dns-seedlist-discovery
@@ -50,8 +51,13 @@ public enum ConnectionState {
 }
 
 public final class Cluster: _ConnectionPool {
-    let settings: ConnectionSettings
-    
+    private(set) var settings: ConnectionSettings {
+        didSet {
+            self.hosts = Set(settings.hosts)
+        }
+    }
+    private var dns: NioDNS?
+
     /// The interval at which cluster discovery is triggered, at a minimum of 500 milliseconds
     ///
     /// This is not thread safe outside of the cluster's eventloop
@@ -130,8 +136,13 @@ public final class Cluster: _ConnectionPool {
         
         self.init(group: group, sessionManager: SessionManager(), settings: settings)
         
-        self._getConnection().then { _ in
-            return self.rediscover()
+        Cluster.withResolvedSettings(settings, on: group.next()) { settings, dns -> EventLoopFuture<Void> in
+            self.settings = settings
+            self.dns = dns
+            
+            return self._getConnection().then { _ in
+                return self.rediscover()
+            }
         }.whenComplete {
             self.completedInitialDiscovery = true
 
@@ -220,9 +231,47 @@ public final class Cluster: _ConnectionPool {
         
         for host in hosts {
             do {
-                let host = try ConnectionSettings.Host(host)
+                let host = try ConnectionSettings.Host(host, srv: false)
                 self.hosts.insert(host)
             } catch { }
+        }
+    }
+    
+    private static func withResolvedSettings<T>(_ settings: ConnectionSettings, on loop: EventLoop, run: @escaping (ConnectionSettings, NioDNS?) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+        if !settings.isSRV {
+            return run(settings, nil)
+        }
+
+        let host = settings.hosts.first!
+
+        return NioDNS.connect(on: loop).then { client in
+            let srv = resolveSRV(host, on: client)
+            let txt = resolveTXT(host, on: client)
+            return srv.and(txt).then { hosts, query in
+                var settings = settings
+                // TODO: Use query
+                settings.hosts = hosts
+                return run(settings, client)
+            }
+        }
+    }
+
+    private static func resolveTXT(_ host: ConnectionSettings.Host, on client: NioDNS) -> EventLoopFuture<String?> {
+        return client.sendQuery(forHost: host.hostname, type: .txt).map { message -> String? in
+            guard let answer = message.answers.first else { return nil }
+            guard case .txt(let txt) = answer else { return nil }
+            return txt.resource.text
+        }
+    }
+
+    private static let prefix = "_mongodb._tcp."
+    private static func resolveSRV(_ host: ConnectionSettings.Host, on client: NioDNS) -> EventLoopFuture<[ConnectionSettings.Host]> {
+        let srvRecords = client.getSRVRecords(from: prefix + host.hostname)
+
+        return srvRecords.map { records in
+            return records.map { record in
+                return ConnectionSettings.Host(hostname: record.resource.domainName.string, port: host.port)
+            }
         }
     }
     

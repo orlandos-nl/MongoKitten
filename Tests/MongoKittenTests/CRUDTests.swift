@@ -22,13 +22,13 @@ class RemoteDatabaseCRUDTests : XCTestCase {
 //        applicationName: "Test MK5"
 //    )
     
-//    let settings = try! ConnectionSettings("mongodb://mongokitten:xrQqOYD28lvAOKXc@ok0-shard-00-00-xkvc1.mongodb.net:27017?ssl=true")
-    let settings = try! ConnectionSettings("mongodb://localhost")
-    
+    let settings = try! ConnectionSettings("mongodb+srv://mongokitten:xrQqOYD28lvAOKXc@ok0-xkvc1.mongodb.net/test?retryWrites=true")
+//    let settings = try! ConnectionSettings("mongodb://localhost")
+
     var cluster: Cluster!
     
     override func setUp() {
-        self.cluster = try! Cluster.connect(on: group, settings: settings).wait()
+        self.cluster = try! Cluster(lazyConnectingTo: settings, on: group)
         
         try! cluster[dbName].drop().wait()
     }
