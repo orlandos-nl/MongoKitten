@@ -3,7 +3,7 @@
 
 import PackageDescription
 
-let package = Package(
+var package = Package(
     name: "MongoKitten",
     products: [
         // Products define the executables and libraries produced by a package, and make them visible to other packages.
@@ -23,18 +23,12 @@ let package = Package(
         
         // 🔑
         .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "1.1.1"),
-        
-        // 📚
-        .package(url: "https://github.com/openkitten/NioDNS.git", .revision("b2686999b4611677d9016e879fa856853b0644d4")),
     ],
     targets: [
         .target(
             name: "_MongoKittenCrypto",
             dependencies: []
         ),
-        .target(
-            name: "MongoKitten",
-            dependencies: ["BSON", "_MongoKittenCrypto", "NIO", "NIOOpenSSL", "NioDNS"]),
         .target(
             name: "GridFS",
             dependencies: ["BSON", "MongoKitten", "NIO"]),
@@ -43,3 +37,21 @@ let package = Package(
             dependencies: ["MongoKitten"]),
     ]
 )
+
+#if swift(>=5.0)
+package.dependencies.append(
+     .package(url: "https://github.com/openkitten/NioDNS.git", .revision("3f9ed96afab3878d09737e18556110e528135099"))
+)
+package.targets.append(
+    .target(
+        name: "MongoKitten",
+        dependencies: ["BSON", "_MongoKittenCrypto", "NIO", "NIOOpenSSL", "NioDNS"])
+)
+#else
+package.targets.append(
+    .target(
+        name: "MongoKitten",
+        dependencies: ["BSON", "_MongoKittenCrypto", "NIO", "NIOOpenSSL"])
+)
+
+#endif
