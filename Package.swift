@@ -17,12 +17,14 @@ var package = Package(
     dependencies: [
         // 💾
         .package(url: "https://github.com/OpenKitten/BSON.git", from: "6.0.0"),
-        
+
         // 🚀
         .package(url: "https://github.com/apple/swift-nio.git", from: "1.8.0"),
         
         // 🔑
         .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "1.1.1"),
+
+        .package(url: "https://github.com/openkitten/NioDNS.git", .revision("7588592b3039449b2ddb0cf9e6223386053e65e6")),
     ],
     targets: [
         .target(
@@ -32,26 +34,11 @@ var package = Package(
         .target(
             name: "GridFS",
             dependencies: ["BSON", "MongoKitten", "NIO"]),
+        .target(
+            name: "MongoKitten",
+            dependencies: ["BSON", "_MongoKittenCrypto", "NIO", "NIOOpenSSL", "NioDNS"]),
         .testTarget(
             name: "MongoKittenTests",
             dependencies: ["MongoKitten"]),
     ]
 )
-
-#if swift(>=5.0)
-package.dependencies.append(
-     .package(url: "https://github.com/openkitten/NioDNS.git", .revision("3f9ed96afab3878d09737e18556110e528135099"))
-)
-package.targets.append(
-    .target(
-        name: "MongoKitten",
-        dependencies: ["BSON", "_MongoKittenCrypto", "NIO", "NIOOpenSSL", "NioDNS"])
-)
-#else
-package.targets.append(
-    .target(
-        name: "MongoKitten",
-        dependencies: ["BSON", "_MongoKittenCrypto", "NIO", "NIOOpenSSL"])
-)
-
-#endif

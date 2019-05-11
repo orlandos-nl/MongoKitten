@@ -1,6 +1,13 @@
 import Foundation
 import NIO
+
+#if canImport(NioDNS)
 import NioDNS
+
+typealias DNSClient = NioDNS
+#else
+typealias DNSClient = Void
+#endif
 
 // TODO: https://github.com/mongodb/specifications/tree/master/source/max-staleness
 // TODO: https://github.com/mongodb/specifications/tree/master/source/initial-dns-seedlist-discovery
@@ -56,7 +63,8 @@ public final class Cluster: _ConnectionPool {
             self.hosts = Set(settings.hosts)
         }
     }
-    private var dns: NioDNS?
+
+    private var dns: DNSClient?
 
     /// The interval at which cluster discovery is triggered, at a minimum of 500 milliseconds
     ///
@@ -237,7 +245,7 @@ public final class Cluster: _ConnectionPool {
         }
     }
     
-    private static func withResolvedSettings<T>(_ settings: ConnectionSettings, on loop: EventLoop, run: @escaping (ConnectionSettings, NioDNS?) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+    private static func withResolvedSettings<T>(_ settings: ConnectionSettings, on loop: EventLoop, run: @escaping (ConnectionSettings, DNSClient?) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
         if !settings.isSRV {
             return run(settings, nil)
         }
@@ -256,12 +264,16 @@ public final class Cluster: _ConnectionPool {
         }
     }
 
-    private static func resolveTXT(_ host: ConnectionSettings.Host, on client: NioDNS) -> EventLoopFuture<String?> {
+    private static func resolveTXT(_ host: ConnectionSettings.Host, on client: DNSClient) -> EventLoopFuture<String?> {
+        #if canImport(NioDNS)
         return client.sendQuery(forHost: host.hostname, type: .txt).map { message -> String? in
             guard let answer = message.answers.first else { return nil }
             guard case .txt(let txt) = answer else { return nil }
             return txt.resource.text
         }
+        #else
+        return eventLoop.newFailedFuture(error: MongoKittenError(kind: .unsupportedFeatureByClient, reason: .dnsClientNotAvailable))
+        #endif
     }
 
     private static let prefix = "_mongodb._tcp."

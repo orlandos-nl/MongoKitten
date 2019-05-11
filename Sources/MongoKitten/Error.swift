@@ -40,6 +40,9 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         
         /// A feature you're trying to use is unsupported by your version of MongoDB
         case unsupportedFeatureByServer
+
+        /// A feature you're trying to use is unsupported by MongoKitten
+        case unsupportedFeatureByClient
         
         /// A value was unexpectedly nil
         case unexpectedNil
@@ -61,6 +64,7 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
             case .cannotFormCommand: return "A command for the requested action could not be formed"
             case .unexpectedNil: return "A value was unexpectedly nil"
             case .unsupportedFeatureByServer: return "A feature you're trying to use is unsupported by your version of MongoDB"
+            case .unsupportedFeatureByClient: return "A feature you're trying to use is unsupported by MongoKitten"
             }
         }
     }
@@ -150,6 +154,9 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         
         /// No SSL library available for this configuration of MongoKitten. If you're using Cocoapods, consider adding the 'Networking' subspec, which requires iOS 12
         case sslNotAvailable
+
+        /// Our custom DNS client is not available and therefore an SRV request could not be made
+        case dnsClientNotAvailable
         
         public var description: String {
             switch self {
@@ -181,6 +188,7 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
             case .noAvailableHosts: return "No host was newly known"
             case .handshakeFailed: return "The handshake was not completed"
             case .srvNeedsOneHost: return "SRV URIs can only have one host, no more, no less"
+            case .dnsClientNotAvailable: return "Our custom DNS client is not available and therefore an SRV request could not be made"
             }
         }
     }
