@@ -250,9 +250,10 @@ public final class Cluster: _ConnectionPool {
             return run(settings, nil)
         }
 
+        #if canImport(NioDNS)
         let host = settings.hosts.first!
 
-        return NioDNS.connect(on: loop).then { client in
+        return DNSClient.connect(on: loop).then { client in
             let srv = resolveSRV(host, on: client)
             let txt = resolveTXT(host, on: client)
             return srv.and(txt).then { hosts, query in
@@ -262,22 +263,22 @@ public final class Cluster: _ConnectionPool {
                 return run(settings, client)
             }
         }
+        #else
+        return run(settings, nil)
+        #endif
     }
 
+    #if canImport(NioDNS)
     private static func resolveTXT(_ host: ConnectionSettings.Host, on client: DNSClient) -> EventLoopFuture<String?> {
-        #if canImport(NioDNS)
         return client.sendQuery(forHost: host.hostname, type: .txt).map { message -> String? in
             guard let answer = message.answers.first else { return nil }
             guard case .txt(let txt) = answer else { return nil }
             return txt.resource.text
         }
-        #else
-        return eventLoop.newFailedFuture(error: MongoKittenError(kind: .unsupportedFeatureByClient, reason: .dnsClientNotAvailable))
-        #endif
     }
 
     private static let prefix = "_mongodb._tcp."
-    private static func resolveSRV(_ host: ConnectionSettings.Host, on client: NioDNS) -> EventLoopFuture<[ConnectionSettings.Host]> {
+    private static func resolveSRV(_ host: ConnectionSettings.Host, on client: DNSClient) -> EventLoopFuture<[ConnectionSettings.Host]> {
         let srvRecords = client.getSRVRecords(from: prefix + host.hostname)
 
         return srvRecords.map { records in
@@ -286,6 +287,7 @@ public final class Cluster: _ConnectionPool {
             }
         }
     }
+    #endif
     
     private func makeConnection(to host: ConnectionSettings.Host) -> EventLoopFuture<PooledConnection> {
         if isClosed {

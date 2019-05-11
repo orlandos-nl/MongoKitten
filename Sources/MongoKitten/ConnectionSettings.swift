@@ -151,14 +151,17 @@ public struct ConnectionSettings: Equatable {
         let isSRV: Bool
         
         // First, remove the mongodb:// scheme
-        // TODO: Implement support for "mongodb+srv://" urls
         if uri.starts(with: "mongodb://") {
             uri.removeFirst("mongodb://".count)
             isSRV = false
         } else if uri.starts(with: "mongodb+srv://") {
+            #if canImport(NioDNS)
             uri.removeFirst("mongodb+srv://".count)
             isSRV = true
             useSSL = true
+            #else
+            throw MongoKittenError(.unsupportedFeatureByClient, reason: .dnsClientNotAvailable)
+            #endif
         } else {
             throw MongoKittenError(.invalidURI, reason: .missingMongoDBScheme)
         }
