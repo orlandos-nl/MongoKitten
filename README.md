@@ -319,7 +319,7 @@ users.find().decode(User.self).forEach { user in
 ### Backers
 
 <a href="https://opencollective.com/mongokitten/backer/0/website" target="_blank"><img src="https://opencollective.com/mongokitten/backer/0/avatar.svg"></a>
-<a href="https://opencollective.com/mongokitten/backer/1/website" target="_blank"><img src="https://opencollective.com/mongokitten/backer/1/avatar.svg"></a>
+<a href="twitter.com/DavidSights" target="_blank"><img src="https://opencollective.com/mongokitten/backer/1/avatar.svg"></a>
 
 
 ## Contribute to MongoKitten
