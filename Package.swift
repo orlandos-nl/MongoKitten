@@ -25,7 +25,7 @@ var package = Package(
         .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "1.1.1"),
 
         // 📚
-        .package(url: "https://github.com/openkitten/NioDNS.git", .revision("66933d4febeac1b5b7a1ecb24388dbbab3025baa")),
+        .package(url: "https://github.com/openkitten/NioDNS.git", .revision("4792abb7a762aa53cd223beaf3b7e3374e23c138")),
     ],
     targets: [
         .target(
