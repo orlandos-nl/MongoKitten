@@ -316,6 +316,12 @@ users.find().decode(User.self).forEach { user in
 
 [We're accepting donations for our project here](https://opencollective.com/mongokitten). We hope to set up a good test environment as well as many docs, tutorials and examples.
 
+### Backers
+
+<a href="https://opencollective.com/mongokitten/backer/0/website" target="_blank"><img src="https://opencollective.com/mongokitten/backer/0/avatar.svg"></a>
+<a href="https://opencollective.com/mongokitten/backer/1/website" target="_blank"><img src="https://opencollective.com/mongokitten/backer/1/avatar.svg"></a>
+
+
 ## Contribute to MongoKitten
 
 - See [CONTRIBUTING.md](CONTRIBUTING.md) for info on contributing to MongoKitten
