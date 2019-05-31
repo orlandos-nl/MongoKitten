@@ -127,7 +127,7 @@ To perform the following query in MongoDB:
 Use the following MongoKitten code:
 
 ```swift
-users.findOne("username" == "kitty").whenSuccess { user: Document? in
+users.findOne("username" == "kitty").whenSuccess { (user: Document?) in
 	// Do something with kitty
 }
 ```
@@ -146,7 +146,7 @@ To perform the following query in MongoDB:
 Use the following MongoKitten code:
 
 ```swift
-users.find("age" <= 16 || "age" == nil).forEach { user: Document in
+users.find("age" <= 16 || "age" == nil).forEach { (user: Document) in
 	// Print the user's name
 	print(user["username"] as? String)
 }
@@ -175,7 +175,7 @@ Note that this is potentially dangerous with very large result sets. Only use `g
 For more efficient handling of results, you can lazily iterate over a cursor:
 
 ```swift
-let doneIterating: EventLoopFuture<Void> = users.find().forEach { user: Document in
+let doneIterating: EventLoopFuture<Void> = users.find().forEach { (user: Document) in
 	// ...
 }
 ```
