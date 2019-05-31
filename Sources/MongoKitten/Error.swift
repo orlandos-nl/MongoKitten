@@ -40,6 +40,9 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         
         /// A feature you're trying to use is unsupported by your version of MongoDB
         case unsupportedFeatureByServer
+
+        /// A feature you're trying to use is unsupported by MongoKitten
+        case unsupportedFeatureByClient
         
         /// A value was unexpectedly nil
         case unexpectedNil
@@ -61,6 +64,7 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
             case .cannotFormCommand: return "A command for the requested action could not be formed"
             case .unexpectedNil: return "A value was unexpectedly nil"
             case .unsupportedFeatureByServer: return "A feature you're trying to use is unsupported by your version of MongoDB"
+            case .unsupportedFeatureByClient: return "A feature you're trying to use is unsupported by MongoKitten"
             }
         }
     }
@@ -73,11 +77,17 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         /// The URI cannot be parsed because it is malformed
         case uriIsMalformed
         
+        /// MongoDB+SRV URIs are not allowed to specify a port
+        case srvCannotSpecifyPort
+        
         /// The authentication details in the URI are malformed and cannot be parsed
         case malformedAuthenticationDetails
         
         /// The given authentication mechanism is not supported by MongoKitten
         case unsupportedAuthenticationMechanism
+        
+        /// SRV URIs can only have one host, no more, no less
+        case srvNeedsOneHost
         
         /// The reason for the error was internal
         case internalError
@@ -144,6 +154,9 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         
         /// No SSL library available for this configuration of MongoKitten. If you're using Cocoapods, consider adding the 'Networking' subspec, which requires iOS 12
         case sslNotAvailable
+
+        /// Our custom DNS client is not available and therefore an SRV request could not be made
+        case dnsClientNotAvailable
         
         public var description: String {
             switch self {
@@ -171,8 +184,11 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
             case .indexCreationFailed: return "There was a failure whilst creating the index."
             case .readConcernUnsupported: return "The MongoDB server does not support read concerns"
             case .writeConcernUnsupported: return "The MongoDB server does not support read concerns"
+            case .srvCannotSpecifyPort: return "MongoDB+SRV URIs are not allowed to specify a port"
             case .noAvailableHosts: return "No host was newly known"
             case .handshakeFailed: return "The handshake was not completed"
+            case .srvNeedsOneHost: return "SRV URIs can only have one host, no more, no less"
+            case .dnsClientNotAvailable: return "Our custom DNS client is not available and therefore an SRV request could not be made"
             }
         }
     }

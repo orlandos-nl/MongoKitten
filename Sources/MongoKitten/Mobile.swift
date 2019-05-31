@@ -42,8 +42,13 @@ enum MobileError: Error {
 
 // TODO: https://github.com/mongodb/stitch-ios-sdk/blob/c9a0808c9af94d4f8bbfb5ad929b166e3df70d98/Darwin/Services/StitchLocalMongoDBService/StitchLocalMongoDBService/LocalMongoClient.swift#L138
 
+@available(*, renamed: "Mobile")
+public typealias MobileDatabase = Mobile
+
 /// Creates an embedded database instance and connects to it allowing queries.
-public final class MobileDatabase: _ConnectionPool {
+///
+/// This needs to be a used as a singleton/global.
+public final class Mobile: _ConnectionPool {
     private let library: Library
     private let database: OpaquePointer
     private let client: OpaquePointer
@@ -167,8 +172,11 @@ public final class MobileDatabase: _ConnectionPool {
             transaction: transaction,
             promise: promise
         )
+
+        eventLoop.execute {
+            _send(context: context, requestId: requestId)
+        }
         
-        _send(context: context, requestId: requestId)
         return promise.futureResult
     }
     

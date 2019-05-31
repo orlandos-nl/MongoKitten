@@ -1,14 +1,27 @@
 import Foundation
 import NIO
 
+#if canImport(NioDNS)
+import NioDNS
+
+typealias DNSClient = NioDNS.DNSClient
+#else
+typealias DNSClient = Resolver
+#endif
+
 // TODO: https://github.com/mongodb/specifications/tree/master/source/max-staleness
-// TODO: https://github.com/mongodb/specifications/tree/master/source/initial-dns-seedlist-discovery
 
 /// Any MongoDB server connection that's capable of sending queries
 public class _ConnectionPool {
     internal let eventLoop: EventLoop
+
+    /// A session pool and gives out session handles with a FIFO policy
     internal let sessionManager: SessionManager
-    internal var wireVersion: WireVersion?
+
+    /// The protocol and feature set supported by the server
+    ///
+    /// This can change for remote databases, when databases are updated to new versions
+    public internal(set) var wireVersion: WireVersion?
     
     /// The shared ObjectId generator for this cluster
     /// Using the shared generator is more efficient and correct than `ObjectId()`
@@ -29,9 +42,29 @@ public class _ConnectionPool {
     }
 }
 
+public enum ConnectionState {
+    /// Busy attempting to connect
+    case connecting
+
+    /// Connected with <connectionCount> active connections
+    case connected(connectionCount: Int)
+
+    /// No connections are open to MongoDB
+    case disconnected
+
+    /// The cluster has been shut down
+    case closed
+}
+
 public final class Cluster: _ConnectionPool {
-    let settings: ConnectionSettings
-    
+    private(set) var settings: ConnectionSettings {
+        didSet {
+            self.hosts = Set(settings.hosts)
+        }
+    }
+
+    private var dns: DNSClient?
+
     /// The interval at which cluster discovery is triggered, at a minimum of 500 milliseconds
     ///
     /// This is not thread safe outside of the cluster's eventloop
@@ -42,6 +75,30 @@ public final class Cluster: _ConnectionPool {
             }
         }
     }
+
+    /// The current state of the cluster's connection pool
+    public var connectionState: ConnectionState {
+        if isClosed {
+            return .closed
+        }
+
+        if !completedInitialDiscovery {
+            return .connecting
+        }
+
+        let connectionCount = pool.count
+
+        if connectionCount == 0 {
+            return .disconnected
+        }
+
+        return .connected(connectionCount: connectionCount)
+    }
+
+    /// Reflects if MongoKitten finds the remote to be a multi-server cluster setup
+    public var isCluster: Bool {
+        return hosts.count > 1
+    }
     
     /// When set to true, read queries are also executed on slave instances of MongoDB
     public var slaveOk = false {
@@ -51,12 +108,16 @@ public final class Cluster: _ConnectionPool {
             }
         }
     }
-    
+
     private let isDiscovering: EventLoopPromise<Void>
+
     private var pool: [PooledConnection]
     let group: PlatformEventLoopGroup
     private var newWireVersion: WireVersion?
-    
+
+    /// If `true`, no connections will be opened and all existing connections will be shut down
+    private var isClosed = false
+
     /// Used as a shortcut to not have to set a callback on `isDiscovering`
     private var completedInitialDiscovery = false
     
@@ -81,12 +142,18 @@ public final class Cluster: _ConnectionPool {
         }
         
         self.init(group: group, sessionManager: SessionManager(), settings: settings)
-        
-        self._getConnection().flatMap { _ in
-            return self.rediscover()
+
+        Cluster.withResolvedSettings(settings, on: group.next()) { settings, dns -> EventLoopFuture<Void> in
+            self.settings = settings
+            self.dns = dns
+            
+            return self._getConnection().flatMap { _ in
+                return self.rediscover()
+            }
         }.whenComplete { _ in
+            self.completedInitialDiscovery = true
+
             if self.pool.count > 0 {
-                self.completedInitialDiscovery = true
                 self.isDiscovering.succeed(())
             } else {
                 self.isDiscovering.fail(MongoKittenError(.unableToConnect, reason: .noAvailableHosts))
@@ -146,9 +213,7 @@ public final class Cluster: _ConnectionPool {
     
     private func scheduleDiscovery() {
         _ = eventLoop.scheduleTask(in: heartbeatFrequency) { [weak self] in
-            guard let `self` = self else { return }
-            
-            self.rediscover().whenSuccess(self.scheduleDiscovery)
+            self?.rediscover().whenComplete { _ in self?.scheduleDiscovery() }
         }
     }
     
@@ -171,35 +236,84 @@ public final class Cluster: _ConnectionPool {
         
         for host in hosts {
             do {
-                let host = try ConnectionSettings.Host(host)
+                let host = try ConnectionSettings.Host(host, srv: false)
                 self.hosts.insert(host)
             } catch { }
         }
     }
     
+    private static func withResolvedSettings<T>(_ settings: ConnectionSettings, on loop: EventLoop, run: @escaping (ConnectionSettings, DNSClient?) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+        if !settings.isSRV {
+            return run(settings, nil)
+        }
+
+        #if canImport(NioDNS)
+        let host = settings.hosts.first!
+
+        return DNSClient.connect(on: loop).flatMap { client in
+            let srv = resolveSRV(host, on: client)
+            let txt = resolveTXT(host, on: client)
+            return srv.and(txt).flatMap { hosts, query in
+                var settings = settings
+                // TODO: Use query
+                settings.hosts = hosts
+                return run(settings, client)
+            }
+        }
+        #else
+        return run(settings, nil)
+        #endif
+    }
+
+    #if canImport(NioDNS)
+    private static func resolveTXT(_ host: ConnectionSettings.Host, on client: DNSClient) -> EventLoopFuture<String?> {
+        return client.sendQuery(forHost: host.hostname, type: .txt).map { message -> String? in
+            guard let answer = message.answers.first else { return nil }
+            guard case .txt(let txt) = answer else { return nil }
+            return txt.resource.text
+        }
+    }
+
+    private static let prefix = "_mongodb._tcp."
+    private static func resolveSRV(_ host: ConnectionSettings.Host, on client: DNSClient) -> EventLoopFuture<[ConnectionSettings.Host]> {
+        let srvRecords = client.getSRVRecords(from: prefix + host.hostname)
+
+        return srvRecords.map { records in
+            return records.map { record in
+                return ConnectionSettings.Host(hostname: record.resource.domainName.string, port: host.port)
+            }
+        }
+    }
+    #endif
+    
     private func makeConnection(to host: ConnectionSettings.Host) -> EventLoopFuture<PooledConnection> {
+        if isClosed {
+            return eventLoop.makeFailedFuture(MongoKittenError(.unableToConnect, reason: .connectionClosed))
+        }
+
         discoveredHosts.insert(host)
         
         // TODO: Failed to connect, different host until all hosts have been had
         let connection = Connection.connect(
             for: self,
-            host: host
-            ).map { connection -> PooledConnection in
-                connection.slaveOk = self.slaveOk
-                
-                /// Ensures we default to the cluster's lowest version
-                if let connectionHandshake = connection.handshakeResult {
-                    self.updateSDAM(from: connectionHandshake)
-                }
-                
-                let connectionId = ObjectIdentifier(connection)
-                connection.channel.closeFuture.whenComplete { [weak self] _ in
-                    guard let me = self else { return }
-                    
-                    me.remove(connectionId: connectionId)
-                }
-                
-                return PooledConnection(host: host, connection: connection)
+            host: host,
+            resolver: self.dns
+        ).map { connection -> PooledConnection in
+            connection.slaveOk = self.slaveOk
+
+            /// Ensures we default to the cluster's lowest version
+            if let connectionHandshake = connection.handshakeResult {
+                self.updateSDAM(from: connectionHandshake)
+            }
+
+            let connectionId = ObjectIdentifier(connection)
+            connection.channel.closeFuture.whenComplete { [weak self] _ in
+                guard let me = self else { return }
+
+                me.remove(connectionId: connectionId)
+            }
+
+            return PooledConnection(host: host, connection: connection)
         }
         
         connection.whenFailure { error in
@@ -212,6 +326,10 @@ public final class Cluster: _ConnectionPool {
     
     /// Checks all known hosts for isMaster and writability
     private func rediscover() -> EventLoopFuture<Void> {
+        if isClosed {
+            return eventLoop.makeFailedFuture(MongoKittenError(.unableToConnect, reason: .connectionClosed))
+        }
+
         self.newWireVersion = nil
         var handshakes = [EventLoopFuture<Void>]()
         
@@ -332,6 +450,27 @@ public final class Cluster: _ConnectionPool {
                 return self.eventLoop.makeSucceededFuture(pooledConnection.connection)
             }
         }
+    }
+
+    /// Closes all connections
+    @discardableResult
+    public func disconnect() -> EventLoopFuture<Void> {
+        self.isClosed = true
+        let connections = self.pool
+        self.pool = []
+
+        let closed = connections.map { remote in
+            return remote.connection.close()
+        }
+
+        return EventLoopFuture<Void>.andAllComplete(closed, on: eventLoop)
+    }
+
+    /// Prompts MongoKitten to connect to the remote again
+    public func reconnect() -> EventLoopFuture<Void> {
+        self.isClosed = false
+
+        return self.getConnection().map { _ in }
     }
 }
 

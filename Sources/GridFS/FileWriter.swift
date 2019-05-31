@@ -78,6 +78,7 @@ final class FileWriter {
         
         do {
             let chunk = Chunk(filesId: fileId, sequenceNumber: nextChunkNumber, data: .init(buffer: slice))
+            nextChunkNumber += 1
             let encoded = try FileWriter.encoder.encode(chunk)
             
             return fs.chunksCollection.insert(encoded).flatMap { _ in

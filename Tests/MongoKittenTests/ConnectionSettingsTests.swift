@@ -2,7 +2,6 @@ import XCTest
 import MongoKitten
 
 class ConnectionSettingsTests : XCTestCase {
-    
     struct ConnectionStringTest {
         enum Result {
             case throwsError

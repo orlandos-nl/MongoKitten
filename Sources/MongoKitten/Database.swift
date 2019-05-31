@@ -72,6 +72,23 @@ public class Database {
         return try self.connect(uri, on: group).wait()
     }
     
+    /// A helper method that uses the normal `connect` method with the given settings and awaits it. It creates an event loop group for you.
+    ///
+    /// It is not recommended to use `synchronousConnect` in a NIO environment (like Vapor 3), as it will create an event loop group for you.
+    ///
+    /// - parameter settings: The connection settings, which must include a database name
+    /// - throws: Can throw for a variety of reasons, including an invalid connection string, failure to connect to the MongoDB database, etcetera.
+    /// - returns: A connected database instance
+    public static func synchronousConnect(settings: ConnectionSettings) throws -> Database {
+        #if canImport(NIOTransportServices)
+        let group = NIOTSEventLoopGroup(loopCount: 1, defaultQoS: .default)
+        #else
+        let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+        #endif
+        
+        return try self.connect(settings: settings, on: group).wait()
+    }
+    
     /// Connect to the database at the given `uri`
     ///
     /// Will postpone queries until initial discovery is complete. Since the cluster is lazily initialized, you'll only know of a failure in connecting (such as wrong credentials) during queries
