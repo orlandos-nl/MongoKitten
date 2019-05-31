@@ -4,13 +4,12 @@ import NIO
 #if canImport(NioDNS)
 import NioDNS
 
-typealias DNSClient = NioDNS
+typealias DNSClient = NioDNS.DNSClient
 #else
-typealias DNSClient = Void
+typealias DNSClient = Resolver
 #endif
 
 // TODO: https://github.com/mongodb/specifications/tree/master/source/max-staleness
-// TODO: https://github.com/mongodb/specifications/tree/master/source/initial-dns-seedlist-discovery
 
 /// Any MongoDB server connection that's capable of sending queries
 public class _ConnectionPool {
@@ -299,7 +298,8 @@ public final class Cluster: _ConnectionPool {
         // TODO: Failed to connect, different host until all hosts have been had
         let connection = Connection.connect(
             for: self,
-            host: host
+            host: host,
+            resolver: self.dns
         ).map { connection -> PooledConnection in
             connection.slaveOk = self.slaveOk
 

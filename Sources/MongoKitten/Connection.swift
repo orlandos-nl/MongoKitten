@@ -81,7 +81,8 @@ internal final class Connection {
     
     internal static func connect(
         for cluster: Cluster,
-        host: ConnectionSettings.Host
+        host: ConnectionSettings.Host,
+        resolver: Resolver?
     ) -> EventLoopFuture<Connection> {
         let context = ClientQueryContext()
         let serializer = ClientConnectionSerializer(context: context)
@@ -97,6 +98,7 @@ internal final class Connection {
         #endif
         
         return bootstrap// Enable SO_REUSEADDR.
+            .resolver(resolver)
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             .channelInitializer { channel in
                 return Connection.initialize(
