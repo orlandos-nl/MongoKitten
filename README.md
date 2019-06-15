@@ -54,12 +54,13 @@ import MongoKitten
 let db = try Database.synchronousConnect("mongodb://localhost/my_database")
 ```
 
-Vapor users should register the database as a service.
-
+## Vapor 3 users should register the database as a service.
+In your `configure.swift`
 ```swift
+extension MongoKitten.Database: Service {}
 let connectionURI = "mongodb://localhost"
 
-services.register { container -> MongoKitten.Database in
+services.register(MongoKitten.Database.self) { container -> MongoKitten.Database in
     return try MongoKitten.Database.lazyConnect(connectionURI, on: container.eventLoop)
 }
 ```
