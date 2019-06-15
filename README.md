@@ -54,13 +54,32 @@ import MongoKitten
 let db = try Database.synchronousConnect("mongodb://localhost/my_database")
 ```
 
-Vapor users should register the database as a service.
-
+## Vapor 3 users should register the database as a service.
+In your `configure.swift`
 ```swift
+extension MongoKitten.Database: Service {}
+
 let connectionURI = "mongodb://localhost"
 
-services.register { container -> MongoKitten.Database in
+services.register(MongoKitten.Database.self) { container -> MongoKitten.Database in
     return try MongoKitten.Database.lazyConnect(connectionURI, on: container.eventLoop)
+}
+```
+Now in a route handler you have access to your database like any other service:
+```swift
+struct ServerLanguage: Content {
+   var language: String
+}
+
+func fetchTheBestServerLanguage(_ req: Request) throws -> EventLoopFuture<ServerLanguage> {
+    let db = try req.make(MongoKitten.Database.self)
+	
+    return db["server_languages"].findOne("language" == "swift").map { doucment in
+        guard let theBest = document else {
+            throw Abort(.internalServerError, reason: "Couldn't find the best, Node.JS is your future 🤢")
+	}
+	return try BSONDecoder().decode(ServerLanguage.self, from: theBest)
+    }
 }
 ```
 
