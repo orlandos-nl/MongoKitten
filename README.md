@@ -80,7 +80,7 @@ If you're unsure; the connection string starting with `mongodb+srv://` is a 3.6 
 ## NIO Futures
 
 <details>
-<summary>MongoKitten relies on [Swift NIO](https://github.com/apple/swift-nio) to provide support for asynchronous operations. All MongoKitten operations that talk to the server are asynchronous, and return an EventLoopFuture of some kind.</summary>
+<summary>MongoKitten relies on Swift NIO to provide support for asynchronous operations. All MongoKitten operations that talk to the server are asynchronous, and return an EventLoopFuture of some kind.</summary>
 
 You can learn all about NIO by reading [its readme](https://github.com/apple/swift-nio/blob/master/README.md) or [the article on RayWenderlich.com](https://www.raywenderlich.com/1124580-a-simple-guide-to-async-on-the-server), but here are the basics:
 
