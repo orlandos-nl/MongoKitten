@@ -54,6 +54,13 @@ import MongoKitten
 let db = try Database.synchronousConnect("mongodb://localhost/my_database")
 ```
 
+And for embedded databases:
+
+```swift
+// WARNING: Force unwrap will crash your application on failure
+let mongo = try! MobileDatabase(settings: .default())
+```
+
 ## Vapor 3 users should register the database as a service.
 In your `configure.swift`
 ```swift
@@ -81,13 +88,6 @@ func fetchTheBestServerLanguage(_ req: Request) throws -> EventLoopFuture<Server
 	return try BSONDecoder().decode(ServerLanguage.self, from: theBest)
     }
 }
-```
-
-And for embedded databases:
-
-```swift
-// WARNING: Force unwrap will crash your application on failure
-let mongo = try! MobileDatabase(settings: .default())
 ```
 
 ### Note on URIs
