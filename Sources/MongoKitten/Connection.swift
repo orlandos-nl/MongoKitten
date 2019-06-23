@@ -157,11 +157,7 @@ internal final class Connection {
         #if canImport(NIOSSL)
         if settings.useSSL {
             do {
-                let sslConfiguration = TLSConfiguration.forClient(
-                    certificateVerification: settings.verifySSLCertificates ? .fullVerification : .none
-                )
-                
-                let sslContext = try NIOSSLContext(configuration: sslConfiguration)
+                let sslContext = try NIOSSLContext(configuration: .clientDefault)
                 let sslHandler = try NIOSSLClientHandler(context: sslContext, serverHostname: hostname)
                 
                 handlers.insert(sslHandler, at: 0)
@@ -423,7 +419,7 @@ struct ClientConnectionParser: ByteToMessageDecoder {
     }
     
     // TODO: this does not belong here but on the next handler
-    func errorCaught(ctx: ChannelHandlerContext, error: Error) {
+    func errorCaught(context ctx: ChannelHandlerContext, error: Error) {
         self.context.prepareForResend()
         
         self.context.isClosed = true
