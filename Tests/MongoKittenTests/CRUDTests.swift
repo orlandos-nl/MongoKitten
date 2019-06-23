@@ -22,6 +22,7 @@ class RemoteDatabaseCRUDTests : XCTestCase {
 //        applicationName: "Test MK5"
 //    )
     
+    var clean = false
     let settings = try! ConnectionSettings("mongodb+srv://mongokitten:xrQqOYD28lvAOKXc@ok0-xkvc1.mongodb.net/test?retryWrites=true")
 //    let settings = try! ConnectionSettings("mongodb://localhost")
 
@@ -30,7 +31,9 @@ class RemoteDatabaseCRUDTests : XCTestCase {
     override func setUp() {
         self.cluster = try! Cluster(lazyConnectingTo: settings, on: group)
         
-        try! cluster[dbName].drop().wait()
+        if clean {
+            try! cluster[dbName].drop().wait()
+        }
     }
     
     func testTransactions() throws {
@@ -270,7 +273,7 @@ class RemoteDatabaseCRUDTests : XCTestCase {
             
             let changeStream = try collection.watch().wait()
             var count = 0
-            var names = ["Joannis" ,"Robbert"]
+            let names = ["Joannis" ,"Robbert"]
             
             changeStream.forEach { notification in
                 XCTAssertEqual(notification.fullDocument?["owner"] as? String, names[count])

@@ -154,15 +154,15 @@ internal final class Connection {
         let parserHandler = ByteToMessageHandler(parser)
         var handlers: [ChannelHandler] = [parserHandler, serializerHandler]
         
-        #if canImport(NIOOpenSSL)
+        #if canImport(NIOSSL)
         if settings.useSSL {
             do {
                 let sslConfiguration = TLSConfiguration.forClient(
                     certificateVerification: settings.verifySSLCertificates ? .fullVerification : .none
                 )
                 
-                let sslContext = try SSLContext(configuration: sslConfiguration)
-                let sslHandler = try OpenSSLClientHandler(context: sslContext, serverHostname: hostname)
+                let sslContext = try NIOSSLContext(configuration: sslConfiguration)
+                let sslHandler = try NIOSSLClientHandler(context: sslContext, serverHostname: hostname)
                 
                 handlers.insert(sslHandler, at: 0)
             } catch {
