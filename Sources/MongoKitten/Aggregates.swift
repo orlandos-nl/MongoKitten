@@ -1,6 +1,7 @@
 import MongoClient
 import NIO
 
+#if swift(>=5.1)
 @_functionBuilder
 public struct AggregateBuilder {
     /// If there are no children in an HTMLBuilder closure, then return an empty
@@ -175,3 +176,4 @@ extension AggregateBuilderPipeline {
         return pipeline.execute().map { _ in }
     }
 }
+#endif

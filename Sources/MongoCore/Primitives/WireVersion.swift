@@ -5,12 +5,12 @@ public struct WireVersion: Codable, Comparable, ExpressibleByIntegerLiteral {
     
     // protocol 1 and 2 are for mongoDB 2.6
     
-    public static let mongo3_0: Self = 3
-    public static let mongo3_2: Self = 4
-    public static let mongo3_4: Self = 5
-    public static let mongo3_6: Self = 6
-    public static let mongo4_0: Self = 7
-    public static let mongo4_2: Self = 8
+    public static let mongo3_0: WireVersion = 3
+    public static let mongo3_2: WireVersion = 4
+    public static let mongo3_4: WireVersion = 5
+    public static let mongo3_6: WireVersion = 6
+    public static let mongo4_0: WireVersion = 7
+    public static let mongo4_2: WireVersion = 8
 
     public let version: Int
 

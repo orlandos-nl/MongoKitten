@@ -17,15 +17,15 @@ public struct OpMessageFlags: OptionSet {
     }
     
     /// The message ends with 4 bytes containing a CRC-32C [1] checksum. See Checksum for details.
-    public static let checksumPresent = Self(rawValue: 1 << 0)
+    public static let checksumPresent = OpMessageFlags(rawValue: 1 << 0)
     
     /// Another message will follow this one without further action from the receiver. The receiver MUST NOT send another message until receiving one with moreToCome set to 0 as sends may block, causing deadlock. Requests with the moreToCome bit set will not receive a reply. Replies will only have this set in response to requests with the exhaustAllowed bit set.
-    public static let moreToCome = Self(rawValue: 1 << 1)
+    public static let moreToCome = OpMessageFlags(rawValue: 1 << 1)
     
     /// The client is prepared for multiple replies to this request using the moreToCome bit. The server will never produce replies with the moreToCome bit set unless the request has this bit set.
     ///
     /// This ensures that multiple replies are only sent when the network layer of the requester is prepared for them. MongoDB 3.6 ignores this flag.
-    public static let exhaustAllowed = Self(rawValue: 1 << 16)
+    public static let exhaustAllowed = OpMessageFlags(rawValue: 1 << 16)
 }
 
 

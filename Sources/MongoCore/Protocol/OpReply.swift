@@ -9,16 +9,16 @@ public struct OpReplyFlags: OptionSet {
     }
     
     /// A GET_MORE was sent with an invalid cursorID, possibly because the cursor expired
-    public static let cursorNotFound = Self(rawValue: 1 << 0)
+    public static let cursorNotFound = OpReplyFlags(rawValue: 1 << 0)
     
     /// Need I say more? The query failed.
-    public static let queryFailure = Self(rawValue: 1 << 1)
+    public static let queryFailure = OpReplyFlags(rawValue: 1 << 1)
     
     /// MongoS only
     //    public static let shardConfigStale = Self(rawValue: 1 << 1)
     
     /// The server supports the awaitData options
-    public static let awaitCapable = Self(rawValue: 1 << 3)
+    public static let awaitCapable = OpReplyFlags(rawValue: 1 << 3)
     
     // The rest is reserved (will likely be left unused)
 }

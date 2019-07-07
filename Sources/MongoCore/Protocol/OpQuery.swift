@@ -9,22 +9,22 @@ public struct OpQueryFlags: OptionSet {
     }
     
     /// Tailable cursors are not closed when the last data is received.
-    public static let tailableCursor = Self(rawValue: 1 << 1)
+    public static let tailableCursor = OpQueryFlags(rawValue: 1 << 1)
     
     /// This option allows querying a replica slave.
-    public static let slaveOk = Self(rawValue: 1 << 2)
+    public static let slaveOk = OpQueryFlags(rawValue: 1 << 2)
     
     /// Only for internal replication use
     // static let oplogReplay = Self(rawValue: 1 << 3)
     
     /// Normally cursors get closed after 10 minutes of inactivity. This option prevents that
-    public static let noCursorTimeout = Self(rawValue: 1 << 4)
+    public static let noCursorTimeout = OpQueryFlags(rawValue: 1 << 4)
     
     /// To be used with TailableCursor. When at the end of the data, block for a while rather than returning no data.
-    public static let awaitData = Self(rawValue: 1 << 5)
+    public static let awaitData = OpQueryFlags(rawValue: 1 << 5)
     
     /// Stream the data down into a full blast of 'more' packages
-    static let exhaust = Self(rawValue: 1 << 6)
+    static let exhaust = OpQueryFlags(rawValue: 1 << 6)
     
     //    static let partial = Self(rawValue: 1 << 7)
 }

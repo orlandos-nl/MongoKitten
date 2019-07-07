@@ -21,8 +21,8 @@ public final class MongoConnection {
         return channel.closeFuture
     }
 
-    public var eventLoop: EventLoop { channel.eventLoop }
-    public var allocator: ByteBufferAllocator { channel.allocator }
+    public var eventLoop: EventLoop { return channel.eventLoop }
+    public var allocator: ByteBufferAllocator { return channel.allocator }
 
     public var slaveOk = false
 
