@@ -22,8 +22,8 @@ public struct HMAC<H: Hash> {
             key += [UInt8](repeating: 0, count: chunkSize &- keyLength)
         }
         
-        xor(&op, key)
-        xor(&ip, key)
+        xor(&op, key, count: key.count)
+        xor(&ip, key, count: key.count)
         
         let hashedMessage = hasher.hash(bytes: ip + message)
         return hasher.hash(bytes: op + hashedMessage)

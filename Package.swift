@@ -11,8 +11,8 @@ var package = Package(
             name: "MongoKitten",
             targets: ["MongoKitten"]),
         .library(
-            name: "GridFS",
-            targets: ["GridFS"]),
+            name: "MongoClient",
+            targets: ["MongoClient"]),
     ],
     dependencies: [
         // 💾
@@ -24,19 +24,21 @@ var package = Package(
         .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.0.0"),
 
         // 📚
-        .package(url: "https://github.com/openkitten/NioDNS.git", .revision("4a31420564f371a74a1b6ec3a3cd60c72e04ef18")),
+        .package(url: "https://github.com/openkitten/NioDNS.git", .revision("master")),
     ],
     targets: [
         .target(
             name: "_MongoKittenCrypto",
-            dependencies: []
-        ),
+            dependencies: []),
         .target(
-            name: "GridFS",
-            dependencies: ["BSON", "MongoKitten", "NIO"]),
+            name: "MongoCore",
+            dependencies: ["BSON", "_MongoKittenCrypto", "NIO"]),
+        .target(
+            name: "MongoClient",
+            dependencies: ["MongoCore", "NIOSSL", "DNSClient"]),
         .target(
             name: "MongoKitten",
-            dependencies: ["BSON", "_MongoKittenCrypto", "NIO", "NIOSSL", "NioDNS"]),
+            dependencies: ["MongoClient"]),
         .testTarget(
             name: "MongoKittenTests",
             dependencies: ["MongoKitten"]),

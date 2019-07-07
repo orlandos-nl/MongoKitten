@@ -1,16 +1,10 @@
-struct ListCollections: AdministrativeMongoDBCommand {
-    typealias Reply = CursorReply
-    
-    var namespace: Namespace {
-        return listCollections.namespace
-    }
-    
-    let listCollections: AdministrativeNamespace
+import MongoClient
+
+struct ListCollections: Encodable {
+    let listCollections: Int32 = 1
     var filter: Document?
-    
-    init(inDatabase database: String) {
-        self.listCollections = AdministrativeNamespace(namespace: Namespace(to: "$cmd", inDatabase: database))
-    }
+
+    init() {}
 }
 
 struct CollectionDescription: Codable {

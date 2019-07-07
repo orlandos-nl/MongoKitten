@@ -1,25 +1,13 @@
-struct ListDatabases: AdministrativeMongoDBCommand {
-    typealias Reply = ListDatabasesResponse
-    
-    var namespace: Namespace {
-        return Namespace(to: "$cmd", inDatabase: "admin")
-    }
-    
+struct ListDatabases: Encodable {
     let listDatabases: Int32 = 1
     var filter: Document?
-    
+
     init() {}
 }
 
-struct ListDatabasesResponse: ServerReplyDecodableResult {
-    var isSuccessful: Bool { return true }
-    
+struct ListDatabasesResponse: Decodable {
     let databases: [DatabaseDescription]
-    let totalSize: Int
-    
-    func makeResult(on collection: Collection) throws -> [DatabaseDescription] {
-        return databases
-    }
+//    let totalSize: Int
 }
 
 struct DatabaseDescription: Codable {

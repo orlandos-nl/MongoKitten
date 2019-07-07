@@ -99,8 +99,8 @@ public final class PBKDF2 {
         var outerPadding = [UInt8](repeating: 0x5c, count: chunkSize)
         var innerPadding = [UInt8](repeating: 0x36, count: chunkSize)
         
-        xor(&innerPadding, password)
-        xor(&outerPadding, password)
+        xor(&innerPadding, password, count: chunkSize)
+        xor(&outerPadding, password, count: chunkSize)
         
         func authenticate(message: [UInt8]) -> [UInt8] {
             let innerPaddingHash = hash.hash(bytes: innerPadding + message)
@@ -121,7 +121,7 @@ public final class PBKDF2 {
             if iterations > 1 {
                 for _ in 1..<iterations {
                     ui = authenticate(message: ui)
-                    xor(&u1, ui)
+                    xor(&u1, ui, count: digestSize)
                 }
             }
             
@@ -146,11 +146,8 @@ public final class PBKDF2 {
 /// XORs the lhs bytes with the rhs bytes on the same index
 ///
 /// Requires lhs and rhs to have an equal count
-public func xor(_ lhs: inout [UInt8], _ rhs: [UInt8]) {
-    // These two must be equal for the PBKDF2 implementation to be correct
-    precondition(lhs.count == rhs.count)
-    
-    for i in 0..<lhs.count {
+public func xor(_ lhs: UnsafeMutablePointer<UInt8>, _ rhs: UnsafePointer<UInt8>, count: Int) {
+    for i in 0..<count {
         lhs[i] = lhs[i] ^ rhs[i]
     }
 }

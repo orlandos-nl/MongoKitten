@@ -10,9 +10,6 @@ fileprivate let k: [UInt32] = [
 ]
 
 public struct SHA256 : Hash {
-    
-    
-    
     public static let littleEndian = false
     public static let chunkSize = 64
     public static let digestSize = 32
