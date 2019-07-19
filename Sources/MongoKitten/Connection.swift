@@ -364,6 +364,14 @@ final class ClientQueryContext {
         }
     }
     
+    func cancel(byId requestId: Int32) {
+        if let index = self.queries.firstIndex(where: { $0.requestID == requestId }) {
+            let query = self.queries[index]
+            self.queries.remove(at: index)
+            query.promise.fail(error: MongoKittenError(.commandFailure, reason: .commandCancelled))
+        }
+    }
+    
     init() {}
     
     deinit {

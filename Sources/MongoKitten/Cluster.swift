@@ -9,6 +9,11 @@ typealias DNSClient = NioDNS
 typealias DNSClient = Void
 #endif
 
+internal struct Cancellable<T> {
+    let future: EventLoopFuture<T>
+    let cancel: () -> ()
+}
+
 // TODO: https://github.com/mongodb/specifications/tree/master/source/max-staleness
 // TODO: https://github.com/mongodb/specifications/tree/master/source/initial-dns-seedlist-discovery
 
@@ -34,6 +39,10 @@ public class _ConnectionPool {
     }
     
     internal func send<C: MongoDBCommand>(command: C, session: ClientSession? = nil, transaction: TransactionQueryOptions? = nil) -> EventLoopFuture<ServerReply> {
+        return sendCancellable(command: command, session: session, transaction: transaction).then { $0.future }
+    }
+    
+    internal func sendCancellable<C: MongoDBCommand>(command: C, session: ClientSession? = nil, transaction: TransactionQueryOptions? = nil) -> EventLoopFuture<Cancellable<ServerReply>> {
         fatalError("Subclasses need to implement this")
     }
     
@@ -176,15 +185,16 @@ public final class Cluster: _ConnectionPool {
         return future.then { context.promise.futureResult }
     }
     
-    override func send<C: MongoDBCommand>(command: C, session: ClientSession? = nil, transaction: TransactionQueryOptions? = nil) -> EventLoopFuture<ServerReply> {
-        let promise = self.eventLoop.newPromise(of: ServerReply.self)
-        
-        let future = self.getConnection().thenIfError { _ in
+    override func sendCancellable<C>(command: C, session: ClientSession? = nil, transaction: TransactionQueryOptions? = nil) -> EventLoopFuture<Cancellable<ServerReply>> where C : MongoDBCommand {
+        return self.getConnection().thenIfError { _ in
             return self.getConnection(writable: true)
-        }.then { connection -> EventLoopFuture<Void> in
+        }.then { connection -> EventLoopFuture<Cancellable<ServerReply>> in
+            let requestId = connection.nextRequestId()
+            let promise = self.eventLoop.newPromise(of: ServerReply.self)
+            
             let context = MongoDBCommandContext(
                 command: command,
-                requestID: connection.nextRequestId(),
+                requestID: requestId,
                 retry: true,
                 session: session,
                 transaction: transaction,
@@ -192,12 +202,13 @@ public final class Cluster: _ConnectionPool {
             )
             
             connection.context.queries.append(context)
-            return connection.channel.writeAndFlush(context)
+            
+            return connection.channel.writeAndFlush(context).map {
+                return Cancellable(future: promise.futureResult) {
+                    connection.context.cancel(byId: requestId)
+                }
+            }
         }
-        
-        future.whenFailure(promise.fail)
-        
-        return promise.futureResult
     }
     
     /// Connects to a cluster asynchronously

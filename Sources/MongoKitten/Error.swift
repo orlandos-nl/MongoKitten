@@ -74,6 +74,8 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         /// The connection URI does not start with the 'mongodb://' scheme
         case missingMongoDBScheme
         
+        case commandCancelled
+        
         /// The URI cannot be parsed because it is malformed
         case uriIsMalformed
         
@@ -160,6 +162,7 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         
         public var description: String {
             switch self {
+            case .commandCancelled: return "The command was cancelled"
             case .missingMongoDBScheme: return "The connection URI does not start with the 'mongodb://' scheme"
             case .uriIsMalformed: return "The URI cannot be parsed because it is malformed"
             case .scramFailure: return "SCRAM protocol failed, the communication was incorrect"

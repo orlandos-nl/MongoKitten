@@ -7,6 +7,7 @@ internal final class Cursor {
     var drained: Bool {
         return self.id == 0
     }
+    var cancel: (() -> ())?
     let collection: Collection
     
     init(reply: CursorReply, in collection: Collection) {
@@ -27,10 +28,12 @@ internal final class Cursor {
         }
         
         let command = GetMore(cursorId: self.id, batchSize: batchSize, on: collection)
-        return collection.database.session.execute(command: command).map { newCursor in
-            self.id = newCursor.cursor.id
+        return collection.database.session.executeCancellable(command: command).then { cancellableResult in
+            self.cancel = cancellableResult.cancel
             
-            return CursorBatch(batch: newCursor.cursor.nextBatch, isLast: self.drained)
+            return cancellableResult.future.map { newCursor in
+                return CursorBatch(batch: newCursor.cursor.nextBatch, isLast: self.drained)
+            }
         }
     }
     
@@ -411,7 +414,7 @@ public final class FinalizedCursor<Base: QueryCursor> {
     /// Closes the cursor stopping any further data from being read
     public func close() -> EventLoopFuture<Void> {
         closed = true
-        
+        self.cursor.cancel?()
         let command = KillCursorsCommand([self.cursor.id], in: base.collection.namespace)
         return command.execute(on: self.cursor.collection).map { _ in }
     }

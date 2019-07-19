@@ -67,6 +67,24 @@ final class ClientSession {
         }
     }
     
+    func executeCancellable<C: MongoDBCommand>(command: C, transaction: TransactionQueryOptions? = nil) -> EventLoopFuture<Cancellable<C.Reply>> {
+        return pool.sendCancellable(
+            command: command,
+            session: self,
+            transaction: transaction
+        ).map { cancellableResult in
+            let mapped = cancellableResult.future.thenThrowing { reply -> C.Reply in
+                do {
+                    return try C.Reply(reply: reply)
+                } catch {
+                    throw try C.ErrorReply(reply: reply)
+                }
+            }
+            
+            return Cancellable(future: mapped, cancel: cancellableResult.cancel)
+        }
+    }
+    
     subscript(namespace: Namespace) -> Collection {
         return Database(named: namespace.databaseName, session: self)[namespace.collectionName]
     }

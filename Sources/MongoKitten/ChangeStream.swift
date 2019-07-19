@@ -94,7 +94,7 @@ extension AggregateCursor where Element == Document {
 /// A ChangeStream can be used to watch changes within a collection or database.
 ///
 /// ChangeStream is only available to MongoDB 3.6+ users
-public final class ChangeStream<Notification: Decodable> {
+public struct ChangeStream<Notification: Decodable> {
     /// The aggregate cursor that is secretly being wrapped
     private let cursor: FinalizedCursor<AggregateCursor<Document>>
     
