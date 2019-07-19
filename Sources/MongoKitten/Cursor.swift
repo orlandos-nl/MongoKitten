@@ -64,6 +64,12 @@ internal final class Cursor {
     }
 }
 
+enum CursorType: String, Codable {
+    case nonTailable = "NON_TAILABLE"
+    case tailable = "TAILABLE"
+    case tailableAwait = "TAILABLE_AWAIT"
+}
+
 struct CursorBatch<Element> {
     typealias Transform = (Document) throws -> Element
     

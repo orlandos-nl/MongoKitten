@@ -64,7 +64,9 @@ extension Collection {
         
         do {
             let document = try BSONEncoder().encode(stage)
-            return self.aggregate().append(document).execute().map(ChangeStream.init)
+            let cursor = self.aggregate().append(document)
+            cursor.cursorType = .tailableAwait
+            return cursor.execute().map(ChangeStream.init)
         } catch {
             return self.eventLoop.newFailedFuture(error: error)
         }
@@ -84,6 +86,7 @@ extension AggregateCursor where Element == Document {
         do {
             let document = try BSONEncoder().encode(stage)
             self.operation.pipeline.insert(document, at: 0)
+            self.cursorType = .tailableAwait
             return self.execute().map(ChangeStream.init)
         } catch {
             return self.collection.eventLoop.newFailedFuture(error: error)
