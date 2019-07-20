@@ -32,9 +32,13 @@ internal final class Cursor {
             self.cancel = cancellableResult.cancel
             
             return cancellableResult.future.map { newCursor in
-                return CursorBatch(batch: newCursor.cursor.nextBatch, isLast: self.drained)
+                return CursorBatch(batch: newCursor.cursor.nextBatch, isLast: newCursor.cursor.id == 0)
             }
         }
+    }
+    
+    deinit {
+        cancel?()
     }
     
     func drain() -> EventLoopFuture<[Document]> {
@@ -62,12 +66,6 @@ internal final class Cursor {
             }
         }
     }
-}
-
-enum CursorType: String, Codable {
-    case nonTailable = "NON_TAILABLE"
-    case tailable = "TAILABLE"
-    case tailableAwait = "TAILABLE_AWAIT"
 }
 
 struct CursorBatch<Element> {

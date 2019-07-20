@@ -204,8 +204,8 @@ public final class Cluster: _ConnectionPool {
             connection.context.queries.append(context)
             
             return connection.channel.writeAndFlush(context).map {
-                return Cancellable(future: promise.futureResult) {
-                    connection.context.cancel(byId: requestId)
+                return Cancellable(future: promise.futureResult) { [weak connection] in
+                    connection?.context.cancel(byId: requestId)
                 }
             }
         }

@@ -71,7 +71,6 @@ public final class AggregateCursor<Element>: QueryCursor {
     private var transformer: (Document) -> Element
     public var batchSize: Int { return self.operation.cursor.batchSize ?? 101 }
     var operation: AggregateCommand
-    internal var cursorType: CursorType?
     
     init(on collection: Collection, transformer: @escaping (Document) -> Element) {
         self.collection = collection
