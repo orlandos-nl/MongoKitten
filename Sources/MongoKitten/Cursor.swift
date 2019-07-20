@@ -418,6 +418,7 @@ public final class FinalizedCursor<Base: QueryCursor> {
     /// Closes the cursor stopping any further data from being read
     public func close() -> EventLoopFuture<Void> {
         closed = true
+        self.cursor.id = 0
         self.cursor.cancel?()
         let command = KillCursorsCommand([self.cursor.id], in: base.collection.namespace)
         return command.execute(on: self.cursor.collection).map { _ in }
