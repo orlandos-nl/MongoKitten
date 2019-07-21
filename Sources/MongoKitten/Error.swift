@@ -76,8 +76,6 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         
         case commandCancelled
         
-        case timeout
-        
         /// The URI cannot be parsed because it is malformed
         case uriIsMalformed
         
@@ -164,7 +162,6 @@ public struct MongoKittenError: Codable, Error, CustomStringConvertible, Equatab
         
         public var description: String {
             switch self {
-            case .timeout: return "The command timed out"
             case .commandCancelled: return "The command was cancelled"
             case .missingMongoDBScheme: return "The connection URI does not start with the 'mongodb://' scheme"
             case .uriIsMalformed: return "The URI cannot be parsed because it is malformed"

@@ -202,9 +202,6 @@ public final class Cluster: _ConnectionPool {
             )
             
             connection.context.queries.append(context)
-            connection.eventLoop.scheduleTask(in: .seconds(30)) {
-                promise.fail(error: MongoKittenError(.commandFailure, reason: .timeout))
-            }
             
             return connection.channel.writeAndFlush(context).map {
                 return Cancellable(future: promise.futureResult) { [weak connection] in
