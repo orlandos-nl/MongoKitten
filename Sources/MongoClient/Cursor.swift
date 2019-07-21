@@ -8,6 +8,7 @@ public final class MongoCursor {
         return self.id == 0
     }
     public let namespace: MongoNamespace
+    public var maxTimeMS: Int32?
     public let connection: MongoConnection
 
     public init(reply: MongoCursorResponse.Cursor, in namespace: MongoNamespace, connection: MongoConnection) {
@@ -28,7 +29,13 @@ public final class MongoCursor {
             return connection.eventLoop.makeFailedFuture(MongoError(.cannotGetMore, reason: .cursorDrained))
         }
 
-        let command = GetMore(cursorId: self.id, batchSize: batchSize, collection: namespace.collectionName)
+        var command = GetMore(
+            cursorId: self.id,
+            batchSize: batchSize,
+            collection: namespace.collectionName
+        )
+        command.maxTimeMS = self.maxTimeMS
+        
         return connection.executeCodable(command, namespace: namespace).flatMapThrowing { reply in
             let newCursor = try GetMoreReply(reply: reply)
             self.id = newCursor.cursor.id

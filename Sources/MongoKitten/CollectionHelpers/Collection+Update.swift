@@ -32,9 +32,9 @@ extension MongoCollection {
         }.decode(UpdateReply.self)
     }
     
-    public func upsert(_ document: Document, filter: Document) -> EventLoopFuture<UpdateReply> {
+    public func upsert(_ document: Document, where query: Document) -> EventLoopFuture<UpdateReply> {
         return pool.next(for: .basic).flatMap { connection in
-            var request = UpdateCommand.UpdateRequest(where: filter, to: document)
+            var request = UpdateCommand.UpdateRequest(where: query, to: document)
             request.multi = false
             request.upsert = true
             

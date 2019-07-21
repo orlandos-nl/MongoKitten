@@ -4,6 +4,7 @@ internal struct GetMore: Encodable {
     internal let getMore: Int64
     internal let collection: String
     internal var batchSize: Int?
+    internal var maxTimeMS: Int32?
     internal var readConcern: ReadConcern?
 
     init(cursorId: Int64, batchSize: Int?, collection: String) {

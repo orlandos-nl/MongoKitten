@@ -48,69 +48,6 @@ public struct AggregateBuilder {
     }
 }
 
-public struct AggregateBuilderPipeline: QueryCursor {
-    public typealias Element = Document
-    fileprivate var collection: MongoCollection!
-    fileprivate var writing = false
-    
-    public var eventLoop: EventLoop { collection.eventLoop }
-    
-    private func makeCommand() -> AggregateCommand {
-        var documents = [Document]()
-        documents.reserveCapacity(stages.count * 2)
-    
-        for stage in stages {
-            documents.append(contentsOf: stage.stages)
-        }
-        
-        return AggregateCommand(inCollection: collection.name, pipeline: documents)
-    }
-    
-    public func getConnection() -> EventLoopFuture<MongoConnection> {
-        return collection.pool.next(for: MongoConnectionPoolRequest(writable: writing))
-    }
-    
-    public func execute() -> EventLoopFuture<FinalizedCursor<AggregateBuilderPipeline>> {
-        let command = makeCommand()
-        
-        return getConnection().flatMap { connection in
-            return connection.executeCodable(
-                command,
-                namespace: self.collection.database.commandNamespace
-            ).decode(CursorReply.self).map { cursor in
-                let cursor = MongoCursor(
-                    reply: cursor.cursor,
-                    in: self.collection.namespace,
-                    connection: connection
-                )
-                return FinalizedCursor(basedOn: self, cursor: cursor)
-            }
-        }
-    }
-    
-    public func transformElement(_ element: Document) throws -> Document {
-        return element
-    }
-    
-    var stages: [AggregateBuilderStage]
-    
-    internal init(stages: [AggregateBuilderStage]) {
-        self.stages = stages
-    }
-}
-
-public struct AggregateBuilderStage {
-    var stages: [Document]
-    
-    public init(document: Document) {
-        self.stages = [document]
-    }
-    
-    init(documents: [Document]) {
-        self.stages = documents
-    }
-}
-
 extension MongoCollection {
     public func buildAggregate(@AggregateBuilder build: () -> AggregateBuilderPipeline) -> AggregateBuilderPipeline {
         var pipeline = build()
@@ -120,39 +57,23 @@ extension MongoCollection {
 }
 
 public func match(_ query: Document) -> AggregateBuilderStage {
-    return AggregateBuilderStage(document: [
-        "$match": query
-    ])
+    return .match(query)
 }
 
 public func skip(_ n: Int) -> AggregateBuilderStage {
-    assert(n > 0)
-    
-    return AggregateBuilderStage(document: [
-        "$skip": n
-    ])
+    return .skip(n)
 }
 
 public func limit(_ n: Int) -> AggregateBuilderStage {
-    assert(n > 0)
-    
-    return AggregateBuilderStage(document: [
-        "$limit": n
-    ])
+    return .limit(n)
 }
 
 public func sample(_ n: Int) -> AggregateBuilderStage {
-    assert(n > 0)
-    
-    return AggregateBuilderStage(document: [
-        "$sample": n
-    ])
+    return .sample(n)
 }
 
 public func project(_ projection: Projection) -> AggregateBuilderStage {
-    return AggregateBuilderStage(document: [
-        "$project": projection.document
-    ])
+    return .project(projection)
 }
 
 public func paginateRange(_ range: Range<Int>) -> AggregateBuilderStage {
@@ -161,7 +82,6 @@ public func paginateRange(_ range: Range<Int>) -> AggregateBuilderStage {
         ["$limit": range.count]
     ])
 }
-
 
 extension AggregateBuilderPipeline {
     public func out(toCollection collectionName: String) -> EventLoopFuture<Void> {

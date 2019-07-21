@@ -11,6 +11,9 @@ var package = Package(
             name: "MongoKitten",
             targets: ["MongoKitten", "MongoClient"]),
         .library(
+            name: "Meow",
+            targets: ["Meow"]),
+        .library(
             name: "MongoClient",
             targets: ["MongoClient"]),
     ],
@@ -39,6 +42,9 @@ var package = Package(
         .target(
             name: "MongoKitten",
             dependencies: ["MongoClient"]),
+        .target(
+            name: "Meow",
+            dependencies: ["MongoKitten"]),
         .testTarget(
             name: "MongoKittenTests",
             dependencies: ["MongoKitten"]),
