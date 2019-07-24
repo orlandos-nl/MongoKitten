@@ -16,6 +16,9 @@ var package = Package(
         .library(
             name: "MongoClient",
             targets: ["MongoClient"]),
+        .library(
+            name: "MongoCore",
+            targets: ["MongoCore"]),
     ],
     dependencies: [
         // 💾

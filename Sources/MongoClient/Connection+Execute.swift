@@ -3,7 +3,12 @@ import MongoCore
 import NIO
 
 extension MongoConnection {
-    public func executeCodable<E: Encodable>(_ command: E, namespace: MongoNamespace) -> EventLoopFuture<MongoServerReply> {
+    public func executeCodable<E: Encodable>(
+        _ command: E,
+        namespace: MongoNamespace,
+        in transaction: MongoTransaction? = nil,
+        sessionId: SessionIdentifier? = nil
+    ) -> EventLoopFuture<MongoServerReply> {
         do {
             let request = try BSONEncoder().encode(command)
 
@@ -13,7 +18,12 @@ extension MongoConnection {
         }
     }
 
-    public func execute(_ command: Document, namespace: MongoNamespace) -> EventLoopFuture<MongoServerReply> {
+    public func execute(
+        _ command: Document,
+        namespace: MongoNamespace,
+        in transaction: MongoTransaction? = nil,
+        sessionId: SessionIdentifier? = nil
+    ) -> EventLoopFuture<MongoServerReply> {
         if
             let serverHandshake = serverHandshake,
             serverHandshake.maxWireVersion.supportsOpMessage
@@ -24,7 +34,11 @@ extension MongoConnection {
         }
     }
     
-    public func executeOpQuery(_ query: inout OpQuery) -> EventLoopFuture<OpReply> {
+    public func executeOpQuery(
+        _ query: inout OpQuery,
+        in transaction: MongoTransaction? = nil,
+        sessionId: SessionIdentifier? = nil
+    ) -> EventLoopFuture<OpReply> {
         query.header.requestId = nextRequestId()
         return executeMessage(query).flatMapThrowing { reply in
             guard case .reply(let reply) = reply else {
@@ -35,7 +49,11 @@ extension MongoConnection {
         }
     }
     
-    public func executeOpMessage(_ query: inout OpMessage) -> EventLoopFuture<OpMessage> {
+    public func executeOpMessage(
+        _ query: inout OpMessage,
+        in transaction: MongoTransaction? = nil,
+        sessionId: SessionIdentifier? = nil
+    ) -> EventLoopFuture<OpMessage> {
         query.header.requestId = nextRequestId()
         return executeMessage(query).flatMapThrowing { reply in
             guard case .message(let message) = reply else {
@@ -46,28 +64,46 @@ extension MongoConnection {
         }
     }
 
-    internal func executeOpQuery(_ command: Document, namespace: MongoNamespace) -> EventLoopFuture<MongoServerReply> {
-        // TODO: Sessions + Transactions
-//        document["lsid"]["id"] = session.sessionId.id
-        return executeMessage(OpQuery(query: command, requestId: nextRequestId(), fullCollectionName: namespace.fullCollectionName))
+    internal func executeOpQuery(
+        _ command: Document,
+        namespace: MongoNamespace,
+        sessionId: SessionIdentifier? = nil
+    ) -> EventLoopFuture<MongoServerReply> {
+        var document = command
+        document["lsid"]["id"] = sessionId?.id
+        
+        return executeMessage(
+            OpQuery(
+                query: command,
+                requestId: nextRequestId(),
+                fullCollectionName: namespace.fullCollectionName
+            )
+        )
     }
 
-    internal func executeOpMessage(_ command: Document, namespace: MongoNamespace) -> EventLoopFuture<MongoServerReply> {
+    internal func executeOpMessage(
+        _ command: Document,
+        namespace: MongoNamespace,
+        in transaction: MongoTransaction? = nil,
+        sessionId: SessionIdentifier? = nil
+    ) -> EventLoopFuture<MongoServerReply> {
         var command = command
         command["$db"] = namespace.databaseName
-        // TODO: Sessions + transactions
-//        if includeSession, let session = data.session {
-//            document["lsid"]["id"] = session.sessionId.id
-//        }
-//
-//        if let transaction = data.transaction {
-//            document["txnNumber"] = transaction.id
-//            document["autocommit"] = transaction.autocommit
-//
-//            if transaction.startTransaction {
-//                document["startTransaction"] = true
-//            }
-//        }
-        return executeMessage(OpMessage(body: command, requestId: self.nextRequestId()))
+        command["lsid"]["id"] = sessionId?.id
+
+        if let transaction = transaction {
+            command["txnNumber"] = transaction.id
+            command["autocommit"] = transaction.autocommit
+
+            if transaction.startTransaction {
+                command["startTransaction"] = true
+            }
+        }
+        return executeMessage(
+            OpMessage(
+                body: command,
+                requestId: self.nextRequestId()
+            )
+        )
     }
 }

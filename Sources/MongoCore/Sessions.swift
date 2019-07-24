@@ -49,6 +49,13 @@ public final class MongoClientSession {
         self.options = options
         self.clusterTime = nil
     }
+    
+    public func startTransaction(autocommit: Bool) -> MongoTransaction {
+        return MongoTransaction(
+            id: serverSession.nextTransactionNumber(),
+            autocommit: autocommit
+        )
+    }
 
     func advanceClusterTime(to time: Document) {
         // Increase if the new time is in the future
