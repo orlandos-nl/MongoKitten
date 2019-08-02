@@ -76,24 +76,14 @@ public func project(_ projection: Projection) -> AggregateBuilderStage {
     return .project(projection)
 }
 
+public func sort(_ sort: Sort) -> AggregateBuilderStage {
+    return .sort(sort)
+}
+
 public func paginateRange(_ range: Range<Int>) -> AggregateBuilderStage {
     return AggregateBuilderStage(documents: [
         ["$skip": range.lowerBound],
         ["$limit": range.count]
     ])
-}
-
-extension AggregateBuilderPipeline {
-    public func out(toCollection collectionName: String) -> EventLoopFuture<Void> {
-        var pipeline = self
-        pipeline.stages.append(
-            AggregateBuilderStage(document: [
-                "$out": collectionName
-            ])
-        )
-        pipeline.writing = true
-        
-        return pipeline.execute().map { _ in }
-    }
 }
 #endif

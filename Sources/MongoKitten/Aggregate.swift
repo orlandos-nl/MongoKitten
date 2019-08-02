@@ -58,52 +58,33 @@ public struct AggregateBuilderPipeline: QueryCursor {
     internal init(stages: [AggregateBuilderStage]) {
         self.stages = stages
     }
-}
-
-public struct AggregateBuilderStage {
-    var stages: [Document]
     
-    public init(document: Document) {
-        self.stages = [document]
-    }
-    
-    init(documents: [Document]) {
-        self.stages = documents
-    }
-    
-    public static func match(_ query: Document) -> AggregateBuilderStage {
-        return AggregateBuilderStage(document: [
-            "$match": query
-        ])
-    }
-    
-    public static func project(_ projection: Projection) -> AggregateBuilderStage {
-        return AggregateBuilderStage(document: [
-            "$project": projection.document
-        ])
-    }
-    
-    public static func skip(_ n: Int) -> AggregateBuilderStage {
-        assert(n > 0)
+    public func count() -> EventLoopFuture<Int> {
+        struct Count: Decodable {
+            let count: Int
+        }
         
-        return AggregateBuilderStage(document: [
-            "$skip": n
-        ])
+        var pipeline = self
+        pipeline.stages.append(.count(to: "count"))
+        pipeline.stages.append(.project("count"))
+        return pipeline.decode(Count.self).firstResult().flatMapThrowing { count in
+            guard let count = count else {
+                throw MongoError(.queryFailure, reason: .cursorDrained)
+            }
+            
+            return count.count
+        }
     }
     
-    public static func limit(_ n: Int) -> AggregateBuilderStage {
-        assert(n > 0)
+    public func out(toCollection collectionName: String) -> EventLoopFuture<Void> {
+        var pipeline = self
+        pipeline.stages.append(
+            AggregateBuilderStage(document: [
+                "$out": collectionName
+            ])
+        )
+        pipeline.writing = true
         
-        return AggregateBuilderStage(document: [
-            "$limit": n
-        ])
-    }
-    
-    public static func sample(_ n: Int) -> AggregateBuilderStage {
-        assert(n > 0)
-        
-        return AggregateBuilderStage(document: [
-            "$sample": n
-        ])
+        return pipeline.execute().map { _ in }
     }
 }

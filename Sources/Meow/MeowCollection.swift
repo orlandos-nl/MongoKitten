@@ -22,6 +22,14 @@ public struct MeowCollection<M: Model> {
         }
     }
     
+    public func find(where filter: Document = [:]) -> MappedCursor<FindQueryBuilder, M> {
+        return raw.find(filter).decode(M.self)
+    }
+    
+    public func find<Q: MongoKittenQuery>(where filter: Q) -> MappedCursor<FindQueryBuilder, M> {
+        return self.find(where: filter.makeDocument())
+    }
+    
     public func findOne(where filter: Document) -> EventLoopFuture<M?> {
         return raw.findOne(filter, as: M.self)
     }
@@ -72,5 +80,12 @@ public struct MeowCollection<M: Model> {
     
     public func watch() -> EventLoopFuture<ChangeStream<M>> {
         return raw.watch(as: M.self, using: M.decoder)
+    }
+}
+
+extension MeowCollection where M: KeyPathQueryableModel {
+    public func find(where matching: (QueryMatcher<M>) -> Document) -> MappedCursor<FindQueryBuilder, M> {
+        let query = matching(QueryMatcher<M>())
+        return self.find(where: query)
     }
 }

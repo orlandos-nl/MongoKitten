@@ -14,6 +14,10 @@ public final class MeowDatabase: EventLoopGroup {
         return MeowCollection<M>(database: self, named: M.collectionName)
     }
     
+    public subscript<M: Model>(type: M.Type) -> MeowCollection<M> {
+        return collection(for: type)
+    }
+    
     public func makeIterator() -> EventLoopIterator {
         return raw.eventLoop.makeIterator()
     }

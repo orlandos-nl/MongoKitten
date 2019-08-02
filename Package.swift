@@ -51,5 +51,8 @@ var package = Package(
         .testTarget(
             name: "MongoKittenTests",
             dependencies: ["MongoKitten"]),
+        .testTarget(
+            name: "MeowTests",
+            dependencies: ["Meow"]),
     ]
 )
