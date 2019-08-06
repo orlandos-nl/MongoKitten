@@ -3,28 +3,35 @@ import PackageDescription
 
 var package = Package(
     name: "MongoKitten",
-    targets: [
-        Target(name: "GeoJSON"),
-        Target(name: "MongoSocket"),
-        Target(name: "ExtendedJSON"),
-        Target(name: "MongoKitten", dependencies: ["GeoJSON", "MongoSocket", "ExtendedJSON"])
-        ],
+    products: [
+        .library(name: "MongoKitten", targets: ["MongoKitten"]),
+        .library(name: "GeoJSON", targets: ["GeoJSON"]),
+        .library(name: "ExtendedJSON", targets: ["ExtendedJSON"]),
+    ],
     dependencies: [
         // For MongoDB Documents
-        .Package(url: "https://github.com/OpenKitten/BSON.git", versions: Version(5, 2, 0) ..< Version(6, 0, 0)),
+        .package(url: "https://github.com/OpenKitten/BSON.git", .revision("5.2.7-swift5")),
         
         // For ExtendedJSON support
-        .Package(url: "https://github.com/OpenKitten/Cheetah.git", majorVersion: 2),
+        .package(url: "https://github.com/OpenKitten/Cheetah.git", .revision("2.0.3-swift5")),
 
         // Authentication
-        .Package(url: "https://github.com/OpenKitten/CryptoKitten.git", majorVersion: 0, minor: 2),
+        .package(url: "https://github.com/OpenKitten/CryptoKitten.git", .revision("0.2.4-swift5")),
 
         // Asynchronous behaviour
-        .Package(url: "https://github.com/OpenKitten/Schrodinger.git", majorVersion: 1),
+        .package(url: "https://github.com/OpenKitten/Schrodinger.git", .revision("1.0.3-swift5")),
+    ],
+    targets: [
+        .target(name: "CMongoSocket"),
+        .target(name: "MongoSocket", dependencies: ["CMongoSocket"]),
+        .target(name: "GeoJSON", dependencies: ["BSON"]),
+        .target(name: "ExtendedJSON", dependencies: ["BSON", "Cheetah", "CryptoKitten"]),
+        .target(name: "MongoKitten", dependencies: ["BSON", "CryptoKitten", "Schrodinger", "GeoJSON", "MongoSocket", "ExtendedJSON"]),
+        .testTarget(name: "MongoKittenTests", dependencies: ["MongoKitten"])
     ]
 )
 
 // Provides Sockets + SSL
-#if !os(macOS) && !os(iOS)
-package.dependencies.append(.Package(url: "https://github.com/OpenKitten/KittenCTLS.git", majorVersion: 1))
+#if os(macOS) && !os(iOS)
+package.dependencies.append(.package(url: "https://github.com/apple/swift-nio-ssl-support.git", from: "1.0.0"))
 #endif

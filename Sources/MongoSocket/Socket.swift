@@ -14,18 +14,15 @@ import Dispatch
 #if (os(macOS) || os(iOS))
     import Security
     import Darwin
-    #if OPENSSL
-    import KittenCTLS
-    #endif
 #else
-    import KittenCTLS
+    import CMongoSocket
     import Glibc
 #endif
 
 public final class MongoSocket: MongoTCP {
     public private(set) var plainClient: Int32
     
-    #if (os(macOS) || os(iOS)) && !OPENSSL
+    #if (os(macOS) || os(iOS))
     private let sslClient: SSLContext?
     #else
     fileprivate static var initialized: Bool = false
@@ -110,28 +107,27 @@ public final class MongoSocket: MongoTCP {
             }
         }
         
-        
         #if (os(macOS) || os(iOS)) && !OPENSSL
             var val = 1
             setsockopt(self.plainClient, SOL_SOCKET, SO_NOSIGPIPE, &val, socklen_t(MemoryLayout<Int>.stride))
-            
+
             if sslEnabled {
                 guard let context = SSLCreateContext(nil, .clientSide, .streamType) else {
                     throw Error.cannotCreateContext
                 }
-                
+
                 let i = SSLSetIOFuncs(context, { context, data, length in
                     let context = context.assumingMemoryBound(to: Int32.self).pointee
                     let lengthRequested = length.pointee
-                    
+
                     var readCount = Darwin.recv(context, data, lengthRequested, 0)
-                    
+
                     defer { length.initialize(to: readCount) }
                     if readCount == 0 {
                         return OSStatus(errSSLClosedGraceful)
                     } else if readCount < 0 {
                         readCount = 0
-                        
+
                         switch errno {
                         case ENOENT:
                             return OSStatus(errSSLClosedGraceful)
@@ -143,67 +139,67 @@ public final class MongoSocket: MongoTCP {
                             return OSStatus(errSecIO)
                         }
                     }
-                    
+
                     guard lengthRequested <= readCount else {
                         return OSStatus(errSSLWouldBlock)
                     }
-                    
+
                     return noErr
                 }, { context, data, length in
                     let context = context.bindMemory(to: Int32.self, capacity: 1).pointee
                     let toWrite = length.pointee
-                    
+
                     var writeCount = Darwin.send(context, data, toWrite, 0)
-                    
+
                     defer { length.initialize(to: writeCount) }
                     if writeCount == 0 {
                         return OSStatus(errSSLClosedGraceful)
                     } else if writeCount < 0 {
                         writeCount = 0
-                        
+
                         guard errno == EAGAIN else {
                             return OSStatus(errSecIO)
                         }
-                        
+
                         return OSStatus(errSSLWouldBlock)
                     }
-                    
+
                     guard toWrite <= writeCount else {
                         return Int32(errSSLWouldBlock)
                     }
-                    
+
                     return noErr
                 })
-                
+
                 guard SSLSetConnection(context, &self.plainClient) == 0 else {
                     throw Error.cannotConnect
                 }
-                
+
                 var hostname = [Int8](hostname.utf8.map { Int8($0) })
                 guard SSLSetPeerDomainName(context, &hostname, hostname.count) == 0 else {
                     throw Error.cannotConnect
                 }
-                
+
                 if let path = options["CAFile"] as? String, let data = FileManager.default.contents(atPath: path) {
                     let bytes = [UInt8](data)
-                    
+
                     if let certBytes = CFDataCreate(kCFAllocatorDefault, bytes, data.count), let cert = SecCertificateCreateWithData(kCFAllocatorDefault, certBytes) {
                         guard SSLSetCertificateAuthorities(context, cert, true) == 0 else {
                             throw Error.cannotConnect
                         }
                     }
                 }
-                
+
                 var result: Int32
-                
+
                 repeat {
                     result = SSLHandshake(context)
                 } while result == errSSLWouldBlock
-                
+
                 guard result == errSecSuccess || result == errSSLPeerAuthCompleted else {
                     throw Error.cannotConnect
                 }
-                
+
                 self.sslClient = context
             } else {
                 self.sslClient = nil
@@ -212,7 +208,7 @@ public final class MongoSocket: MongoTCP {
             if sslEnabled {
                 let verifyCertificate = !(options["invalidCertificateAllowed"] as? Bool ?? false)
 //                let verifyHost = !(options["invalidHostNameAllowed"] as? Bool ?? false)
-                
+
                 if !MongoSocket.initialized {
                     SSL_library_init()
                     SSL_load_error_strings()
@@ -220,41 +216,41 @@ public final class MongoSocket: MongoTCP {
                     OPENSSL_add_all_algorithms_conf()
                     MongoSocket.initialized = true
                 }
-                
+
                 let method = SSLv23_client_method()
-                
+
                 guard let ctx = SSL_CTX_new(method) else {
                     throw Error.cannotCreateContext
                 }
-                
+
                 self.sslContext = ctx
                 self.sslMethod = method
-                
+
                 SSL_CTX_ctrl(ctx, SSL_CTRL_MODE, SSL_MODE_AUTO_RETRY, nil)
-                SSL_CTX_ctrl(ctx, SSL_CTRL_OPTIONS, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_COMPRESSION, nil)
-                
+                SSL_CTX_ctrl(ctx, SSL_CTRL_OPTIONS, numericCast(SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_COMPRESSION), nil)
+
                 if !verifyCertificate {
                     SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, nil)
                 }
-                
+
                 guard  SSL_CTX_set_cipher_list(ctx, "DEFAULT") == 1 else {
                     throw Error.cannotCreateContext
                 }
-                
+
                 if let CAFile = options["CAFile"] as? String {
                     SSL_CTX_load_verify_locations(ctx, CAFile, nil)
                 }
-                
+
                 guard let ssl = SSL_new(ctx) else {
                     throw Error.cannotConnect
                 }
-                
+
                 self.sslClient = ssl
-                
+
                 guard SSL_set_fd(ssl, plainClient) == 1 else {
                     throw Error.cannotConnect
                 }
-                
+
                 // https://github.com/vapor/tls/issues/47
                 var cName = hostname.utf8CString
                 cName.withUnsafeMutableBytes { name in
@@ -266,7 +262,7 @@ public final class MongoSocket: MongoTCP {
                                  Int(TLSEXT_NAMETYPE_host_name),
                                  name.baseAddress)
                 }
-                
+
                 guard SSL_connect(ssl) == 1, SSL_do_handshake(ssl) == 1 else {
                     throw Error.cannotConnect
                 }
@@ -354,7 +350,7 @@ public final class MongoSocket: MongoTCP {
             #if (os(macOS) || os(iOS)) && !OPENSSL
                 var ditched = binary.count
                 SSLWrite(self.sslClient!, binary, binary.count, &ditched)
-                
+
                 guard ditched == binary.count else {
                     throw Error.cannotSendData
                 }

@@ -46,11 +46,11 @@ final class SCRAMClient {
                 
                 switch first {
                 case "r":
-                    nonce = data
+                    nonce = String(data)
                 case "i":
                     iterations = Int(data)
                 case "s":
-                    salt = data
+                    salt = String(data)
                 default:
                     break
                 }
@@ -82,7 +82,7 @@ final class SCRAMClient {
                 
                 switch first {
                 case "v":
-                    signature = Array(try Base64.decode(data))
+                    signature = Array(try Base64.decode(String(data)))
                 default:
                     break
                 }

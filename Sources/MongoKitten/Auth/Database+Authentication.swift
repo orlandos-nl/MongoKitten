@@ -49,11 +49,11 @@ extension Database {
     private func parse(response r: String) -> [String: String] {
         var parsedResponse = [String: String]()
         
-        for part in r.characters.split(separator: ",") where String(part).characters.count >= 3 {
+        for part in r.split(separator: ",") where part.count >= 3 {
             let part = String(part)
             
-            if let first = part.characters.first {
-                parsedResponse[String(first)] = part[part.index(part.startIndex, offsetBy: 2)..<part.endIndex]
+            if let first = part.first {
+                parsedResponse[String(first)] = String(part[part.index(part.startIndex, offsetBy: 2)..<part.endIndex])
             }
         }
         
