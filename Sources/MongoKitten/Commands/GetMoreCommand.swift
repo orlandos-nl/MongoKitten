@@ -12,7 +12,6 @@ internal struct GetMore: AdministrativeMongoDBCommand {
     internal let getMore: Int64
     let collection: Namespace
     var batchSize: Int?
-    var maxTimeMS: Int?
     var readConcern: ReadConcern?
     
     init(cursorId: Int64, batchSize: Int?, on collection: Collection) {

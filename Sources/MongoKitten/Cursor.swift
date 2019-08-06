@@ -7,7 +7,6 @@ internal final class Cursor {
     var drained: Bool {
         return self.id == 0
     }
-    var maxTimeMS: Int?
     var cancel: (() -> ())?
     let collection: Collection
     
@@ -28,9 +27,7 @@ internal final class Cursor {
             return collection.eventLoop.newFailedFuture(error: MongoKittenError(.cannotGetMore, reason: .cursorDrained))
         }
         
-        var command = GetMore(cursorId: self.id, batchSize: batchSize, on: collection)
-        command.maxTimeMS = self.maxTimeMS
-        
+        let command = GetMore(cursorId: self.id, batchSize: batchSize, on: collection)
         return collection.database.session.executeCancellable(command: command).then { cancellableResult in
             self.cancel = cancellableResult.cancel
             

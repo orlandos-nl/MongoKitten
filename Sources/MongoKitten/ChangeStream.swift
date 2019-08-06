@@ -65,6 +65,7 @@ extension Collection {
         do {
             let document = try BSONEncoder().encode(stage)
             let cursor = self.aggregate().append(document)
+            cursor.maxTimeMS = 25_000
             return cursor.execute().map(ChangeStream.init)
         } catch {
             return self.eventLoop.newFailedFuture(error: error)
@@ -84,6 +85,7 @@ extension AggregateCursor where Element == Document {
         
         do {
             let document = try BSONEncoder().encode(stage)
+            self.maxTimeMS = 25_000
             self.operation.pipeline.insert(document, at: 0)
             return self.execute().map(ChangeStream.init)
         } catch {
@@ -101,8 +103,6 @@ public struct ChangeStream<Notification: Decodable> {
     
     fileprivate init(cursor: FinalizedCursor<AggregateCursor<Document>>) {
         self.cursor = cursor
-    
-        cursor.cursor.maxTimeMS = 25_000 // < 30 seconds
     }
     
     public func close() -> EventLoopFuture<Void> {

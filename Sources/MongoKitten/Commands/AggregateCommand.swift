@@ -50,6 +50,8 @@ public struct AggregateCommand: ReadCommand {
     
     // writeConcern
     
+    public var maxTimeMS: Int?
+    
     static let writing = false
     static let emitsCursor = true
     
@@ -69,6 +71,14 @@ fileprivate struct CountResult: Decodable {
 public final class AggregateCursor<Element>: QueryCursor {
     public var collection: Collection
     private var transformer: (Document) -> Element
+    internal var maxTimeMS: Int? {
+        get {
+            return self.operation.maxTimeMS
+        }
+        set {
+            self.operation.maxTimeMS = newValue
+        }
+    }
     public var batchSize: Int { return self.operation.cursor.batchSize ?? 101 }
     var operation: AggregateCommand
     
