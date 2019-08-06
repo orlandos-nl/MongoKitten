@@ -14,5 +14,6 @@
 #include <openssl/x509v3.h>
 
 void COpenKittenSSL_init();
+const SSL_METHOD *COpenKittenSSL_client_method();
 
 #endif

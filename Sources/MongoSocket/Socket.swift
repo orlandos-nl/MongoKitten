@@ -26,9 +26,9 @@ public final class MongoSocket: MongoTCP {
     private let sslClient: SSLContext?
     #else
     fileprivate static var initialized: Bool = false
-    private let sslClient: UnsafeMutablePointer<SSL>?
-    private let sslMethod: UnsafePointer<SSL_METHOD>?
-    private let sslContext: UnsafeMutablePointer<SSL_CTX>?
+    private let sslClient: OpaquePointer?
+    private let sslMethod: OpaquePointer?
+    private let sslContext: OpaquePointer?
     #endif
     
     private var sslEnabled = false
@@ -220,8 +220,8 @@ public final class MongoSocket: MongoTCP {
                     throw Error.cannotCreateContext
                 }
 
-                self.sslContext = ctx
-                self.sslMethod = method
+                self.sslContext = .make(optional: ctx)
+                self.sslMethod = .make(optional: method)
 
                 SSL_CTX_ctrl(ctx, SSL_CTRL_MODE, SSL_MODE_AUTO_RETRY, nil)
 
@@ -241,7 +241,7 @@ public final class MongoSocket: MongoTCP {
                     throw Error.cannotConnect
                 }
 
-                self.sslClient = ssl
+                self.sslClient = .make(optional: ssl)
 
                 guard SSL_set_fd(ssl, plainClient) == 1 else {
                     throw Error.cannotConnect
@@ -281,7 +281,7 @@ public final class MongoSocket: MongoTCP {
                     #if (os(macOS) || os(iOS)) && !OPENSSL
                         SSLRead(self.sslClient!, incomingBuffer.pointer, Int(UInt16.max), &read)
                     #else
-                        read = Int(SSL_read(self.sslClient!, incomingBuffer.pointer, Int32(UInt16.max)))
+                    read = Int(SSL_read(.make(optional: self.sslClient), incomingBuffer.pointer, Int32(UInt16.max)))
                     #endif
                 } else {
                     #if (os(macOS) || os(iOS))
@@ -311,7 +311,7 @@ public final class MongoSocket: MongoTCP {
                     #endif
                     _ = Darwin.close(self.plainClient)
                 #else
-                    SSL_CTX_free(self.sslContext)
+                    SSL_CTX_free(.make(optional: self.sslContext))
                     _ = Glibc.close(self.plainClient)
                 #endif
             } else {
@@ -345,7 +345,7 @@ public final class MongoSocket: MongoTCP {
         if self.sslEnabled {
             #if (os(macOS) || os(iOS)) && !OPENSSL
                 var ditched = binary.count
-                SSLWrite(self.sslClient!, binary, binary.count, &ditched)
+                SSLWrite(.make(optional: self.sslClient), binary, binary.count, &ditched)
 
                 guard ditched == binary.count else {
                     throw Error.cannotSendData
@@ -357,7 +357,7 @@ public final class MongoSocket: MongoTCP {
                 }
                 
                 while total < binary.count {
-                    let sent = SSL_write(self.sslClient!, baseAddress.advanced(by: total), Int32(binary.count))
+                    let sent = SSL_write(.make(optional: self.sslClient), baseAddress.advanced(by: total), Int32(binary.count))
                     
                     total = total &+ numericCast(sent)
                     
