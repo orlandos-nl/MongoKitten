@@ -401,7 +401,14 @@ extension CursorBasedOnOtherCursor {
 public final class FinalizedCursor<Base: QueryCursor> {
     let base: Base
     let cursor: Cursor
-    private(set) var closed = false
+    var closed: Bool {
+        get {
+            return cursor.drained
+        }
+        set {
+            cursor.id = 0
+        }
+    }
     
     init(basedOn base: Base, cursor: Cursor) {
         self.base = base
