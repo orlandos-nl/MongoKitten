@@ -13,4 +13,6 @@
 #include <openssl/pkcs12.h>
 #include <openssl/x509v3.h>
 
+void COpenKittenSSL_init();
+
 #endif

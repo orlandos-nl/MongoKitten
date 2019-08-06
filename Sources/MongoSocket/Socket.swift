@@ -210,14 +210,11 @@ public final class MongoSocket: MongoTCP {
 //                let verifyHost = !(options["invalidHostNameAllowed"] as? Bool ?? false)
 
                 if !MongoSocket.initialized {
-                    SSL_library_init()
-                    SSL_load_error_strings()
-                    OPENSSL_config(nil)
-                    OPENSSL_add_all_algorithms_conf()
+                    COpenKittenSSL_init()
                     MongoSocket.initialized = true
                 }
 
-                let method = SSLv23_client_method()
+                let method = COpenKittenSSL_client_method()
 
                 guard let ctx = SSL_CTX_new(method) else {
                     throw Error.cannotCreateContext
@@ -227,7 +224,6 @@ public final class MongoSocket: MongoTCP {
                 self.sslMethod = method
 
                 SSL_CTX_ctrl(ctx, SSL_CTRL_MODE, SSL_MODE_AUTO_RETRY, nil)
-                SSL_CTX_ctrl(ctx, SSL_CTRL_OPTIONS, numericCast(SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_COMPRESSION), nil)
 
                 if !verifyCertificate {
                     SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, nil)

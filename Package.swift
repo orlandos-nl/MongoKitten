@@ -22,8 +22,6 @@ var package = Package(
         .package(url: "https://github.com/OpenKitten/Schrodinger.git", .revision("1.0.3-swift5")),
     ],
     targets: [
-        .target(name: "CMongoSocket"),
-        .target(name: "MongoSocket", dependencies: ["CMongoSocket"]),
         .target(name: "GeoJSON", dependencies: ["BSON"]),
         .target(name: "ExtendedJSON", dependencies: ["BSON", "Cheetah", "CryptoKitten"]),
         .target(name: "MongoKitten", dependencies: ["BSON", "CryptoKitten", "Schrodinger", "GeoJSON", "MongoSocket", "ExtendedJSON"]),
@@ -32,6 +30,10 @@ var package = Package(
 )
 
 // Provides Sockets + SSL
-#if os(macOS) && !os(iOS)
+#if os(macOS) || !os(iOS)
 package.dependencies.append(.package(url: "https://github.com/apple/swift-nio-ssl-support.git", from: "1.0.0"))
+package.targets.append(.target(name: "CMongoSocket"))
+package.targets.append(.target(name: "MongoSocket", dependencies: ["CMongoSocket"]))
+#else
+package.targets.append(.target(name: "MongoSocket"))
 #endif
