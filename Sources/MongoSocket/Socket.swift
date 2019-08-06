@@ -223,7 +223,7 @@ public final class MongoSocket: MongoTCP {
                 self.sslContext = .make(optional: ctx)
                 self.sslMethod = .make(optional: method)
 
-                SSL_CTX_ctrl(ctx, SSL_CTRL_MODE, SSL_MODE_AUTO_RETRY, nil)
+                SSL_CTX_ctrl(ctx, SSL_CTRL_MODE, numericCast(SSL_MODE_AUTO_RETRY), nil)
 
                 if !verifyCertificate {
                     SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, nil)
