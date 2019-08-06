@@ -231,6 +231,8 @@ extension QueryCursor {
     /// - returns: A future that resolves when the operation is complete, or fails if an error is thrown
     @discardableResult
     public func forEach(handler: @escaping (Element) throws -> Void) -> EventLoopFuture<Void> {
+        let loop = self.collection.eventLoop
+        
         return execute().then { finalizedCursor in
             func nextBatch() -> EventLoopFuture<Void> {
                 return finalizedCursor.nextBatch().then { batch in
@@ -241,13 +243,13 @@ extension QueryCursor {
                             try handler(element)
                         }
                         
-                        if batch.isLast || finalizedCursor.closed {
-                            return self.collection.eventLoop.newSucceededFuture(result: ())
+                        if batch.isLast || finalizedCursor.closed || finalizedCursor.cursor.drained {
+                            return loop.newSucceededFuture(result: ())
                         }
                         
                         return nextBatch()
                     } catch {
-                        return self.collection.eventLoop.newFailedFuture(error: error)
+                        return loop.newFailedFuture(error: error)
                     }
                 }
             }
@@ -258,6 +260,8 @@ extension QueryCursor {
     
     @discardableResult
     public func sequentialForEach(handler: @escaping (Element) throws -> EventLoopFuture<Void>) -> EventLoopFuture<Void> {
+        let loop = self.collection.eventLoop
+        
         return execute().then { finalizedCursor in
             func nextBatch() -> EventLoopFuture<Void> {
                 return finalizedCursor.nextBatch().then { batch in
@@ -266,8 +270,8 @@ extension QueryCursor {
                         
                         func next() throws -> EventLoopFuture<Void> {
                             guard let element = try batch.nextElement(), !finalizedCursor.closed else {
-                                if batch.isLast || finalizedCursor.closed {
-                                    return self.collection.eventLoop.newSucceededFuture(result: ())
+                                if batch.isLast || finalizedCursor.closed || finalizedCursor.cursor.drained {
+                                    return loop.newSucceededFuture(result: ())
                                 }
                                 
                                 return nextBatch()
@@ -277,14 +281,14 @@ extension QueryCursor {
                                 do {
                                     return try next()
                                 } catch {
-                                    return self.collection.eventLoop.newFailedFuture(error: error)
+                                    return loop.newFailedFuture(error: error)
                                 }
                             }
                         }
                         
                         return try next()
                     } catch {
-                        return self.collection.eventLoop.newFailedFuture(error: error)
+                        return loop.newFailedFuture(error: error)
                     }
                 }
             }
