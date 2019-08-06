@@ -103,6 +103,7 @@ public struct ChangeStream<Notification: Decodable> {
     
     fileprivate init(cursor: FinalizedCursor<AggregateCursor<Document>>) {
         self.cursor = cursor
+        cursor.cursor.maxTimeMS = 25_000
     }
     
     public func close() -> EventLoopFuture<Void> {
