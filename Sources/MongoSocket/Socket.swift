@@ -345,7 +345,7 @@ public final class MongoSocket: MongoTCP {
         if self.sslEnabled {
             #if (os(macOS) || os(iOS)) && !OPENSSL
                 var ditched = binary.count
-                SSLWrite(.make(optional: self.sslClient), binary, binary.count, &ditched)
+                SSLWrite(self.sslClient, binary, binary.count, &ditched)
 
                 guard ditched == binary.count else {
                     throw Error.cannotSendData
