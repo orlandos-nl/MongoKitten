@@ -1,7 +1,13 @@
 import BSON
 import MongoCore
 import NIO
+
+#if canImport(NIOTransportServices)
+import Network
+import NIOTransportServices
+#else
 import NIOSSL
+#endif
 
 public final class MongoConnection {
     /// The NIO channel
@@ -53,13 +59,14 @@ public final class MongoConnection {
         let context = MongoClientContext()
 
         #if canImport(NIOTransportServices)
-        var bootstrap = NIOTSConnectionBootstrap(group: cluster.group)
+        var bootstrap = NIOTSConnectionBootstrap(group: eventLoop)
 
-        if cluster.settings.useSSL {
+        if settings.useSSL {
             bootstrap = bootstrap.tlsOptions(NWProtocolTLS.Options())
         }
         #else
         let bootstrap = ClientBootstrap(group: eventLoop)
+            .resolver(resolver)
         #endif
 
         guard let host = settings.hosts.first else {
@@ -67,7 +74,6 @@ public final class MongoConnection {
         }
 
         return bootstrap
-            .resolver(resolver)
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             .channelInitializer { channel in
                 #if !canImport(NIOTransportServices)

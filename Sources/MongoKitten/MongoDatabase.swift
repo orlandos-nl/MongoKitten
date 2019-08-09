@@ -2,6 +2,10 @@ import MongoClient
 import Foundation
 import NIO
 
+#if canImport(NIOTransportServices)
+import NIOTransportServices
+#endif
+
 /// A reference to a MongoDB database, over a `Connection`.
 ///
 /// Databases hold collections of documents.
