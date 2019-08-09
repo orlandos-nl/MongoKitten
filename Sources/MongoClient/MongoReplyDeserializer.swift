@@ -62,25 +62,6 @@ public struct MongoServerReplyDeserializer {
     }
 }
 
-extension ByteBuffer {
-    mutating func assertLittleEndian<FWI: FixedWidthInteger>() throws -> FWI {
-        return try self.readInteger(endianness: .little, as: FWI.self).assert()
-    }
-    
-    mutating func assertOpCode() throws -> MongoMessageHeader.OpCode {
-        return try MongoMessageHeader.OpCode(rawValue: try assertLittleEndian()) .assert()
-    }
-    
-    mutating func assertReadMessageHeader() throws -> MongoMessageHeader {
-        return try MongoMessageHeader(
-            messageLength: assertLittleEndian(),
-            requestId: assertLittleEndian(),
-            responseTo: assertLittleEndian(),
-            opCode: assertOpCode()
-        )
-    }
-}
-
 fileprivate extension Optional {
     func assert() throws -> Wrapped {
         guard let `self` = self else {

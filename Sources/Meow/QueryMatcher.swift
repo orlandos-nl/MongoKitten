@@ -1,6 +1,7 @@
 import BSON
 import MongoKitten
 
+#if swift(>=5.1) && os(macOS)
 @dynamicMemberLookup
 public struct QueryMatcher<M: KeyPathQueryableModel> {
     internal init() {}
@@ -74,3 +75,11 @@ public func > <M: KeyPathQueryableModel, T: Primitive & Comparable>(lhs: QuerySu
 public func > <M: KeyPathQueryableModel, T: RawRepresentable>(lhs: QuerySubject<M, T>, rhs: T) -> Document where T.RawValue: Primitive & Comparable {
     return lhs.path > rhs.rawValue
 }
+
+extension MeowCollection where M: KeyPathQueryableModel {
+    public func find(where matching: (QueryMatcher<M>) -> Document) -> MappedCursor<FindQueryBuilder, M> {
+        let query = matching(QueryMatcher<M>())
+        return self.find(where: query)
+    }
+}
+#endif

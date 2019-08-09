@@ -39,7 +39,7 @@ extension MongoCollection {
     }
 }
 
-public struct ChangeStream<T: Codable> {
+public struct ChangeStream<T: Decodable> {
     typealias Notification = ChangeStreamNotification<T>
     typealias InputCursor = FinalizedCursor<MappedCursor<AggregateBuilderPipeline, Notification>>
     

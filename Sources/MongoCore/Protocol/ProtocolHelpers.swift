@@ -68,10 +68,23 @@ extension ByteBuffer {
 }
 
 extension ByteBuffer {
-    mutating func writeMongoHeader(_ header: MongoMessageHeader) {
+    public mutating func writeMongoHeader(_ header: MongoMessageHeader) {
         writeInteger(header.messageLength, endianness: .little)
         writeInteger(header.requestId, endianness: .little)
         writeInteger(header.responseTo, endianness: .little)
         writeInteger(header.opCode.rawValue, endianness: .little)
+    }
+    
+    mutating func assertOpCode() throws -> MongoMessageHeader.OpCode {
+        return try MongoMessageHeader.OpCode(rawValue: try assertLittleEndian()) .assert()
+    }
+    
+    public mutating func assertReadMessageHeader() throws -> MongoMessageHeader {
+        return try MongoMessageHeader(
+            messageLength: assertLittleEndian(),
+            requestId: assertLittleEndian(),
+            responseTo: assertLittleEndian(),
+            opCode: assertOpCode()
+        )
     }
 }

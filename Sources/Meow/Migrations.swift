@@ -53,7 +53,6 @@ public class Migrator<M: Model> {
     public func add(_ action: @escaping Action) {
         actions.append(action)
     }
-    
 }
 
 struct MeowMigration: Model {

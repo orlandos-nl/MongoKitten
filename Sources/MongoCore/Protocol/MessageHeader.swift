@@ -15,7 +15,7 @@ public struct MongoMessageHeader {
     
     public static let byteSize: Int32 = 16
     
-    public var messageLength: Int32
+    public let messageLength: Int32
     public var bodyLength: Int32 {
         return messageLength - MongoMessageHeader.byteSize
     }
@@ -23,9 +23,7 @@ public struct MongoMessageHeader {
     public var responseTo: Int32
     public var opCode: OpCode
     
-    public init(messageLength: Int32, requestId: Int32, responseTo: Int32, opCode: OpCode) {
-        assert(messageLength >= MongoMessageHeader.byteSize)
-        
+    internal init(messageLength: Int32, requestId: Int32, responseTo: Int32, opCode: OpCode) {
         self.messageLength = messageLength
         self.requestId = requestId
         self.responseTo = responseTo

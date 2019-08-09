@@ -14,7 +14,7 @@ public struct AggregateBuilderPipeline: QueryCursor {
     internal var collection: MongoCollection!
     internal var writing = false
     
-    public var eventLoop: EventLoop { collection.eventLoop }
+    public var eventLoop: EventLoop { return collection.eventLoop }
     
     private func makeCommand() -> AggregateCommand {
         var documents = [Document]()

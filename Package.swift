@@ -49,6 +49,12 @@ var package = Package(
             name: "Meow",
             dependencies: ["MongoKitten"]),
         .testTarget(
+            name: "MongoCoreTests",
+            dependencies: ["MongoCore"]),
+        .testTarget(
+            name: "MongoClientTests",
+            dependencies: ["MongoClient"]),
+        .testTarget(
             name: "MongoKittenTests",
             dependencies: ["MongoKitten"]),
         .testTarget(

@@ -1,7 +1,6 @@
 For the purpose of tracking copyright, this is the list of individuals and
 organizations who have contributed source code to MongoKitten.
 
-
 ## COPYRIGHT HOLDERS
 
 - Joannis Orlandos <joannis@orlandos.nl>

@@ -10,18 +10,6 @@ The best way to start contributing code is by reading the codebase. One way to a
 
 This way you're reading how the code at hand works and helps future contributors and users understand the code better, too.
 
-### Build script
-
-We use a few tools to aid in the development of MongoKitten, including SwiftLint and Sourcery. While not strictly neccesary to contribute to MongoKitten, they help keep some code up to date and ensure code quality on a few critical points.
-
-Because it is not possible to include these tools as a build phase with the Swift Package Manager, the MongoKitten repository contains a script, `GenerateXcodeproj.rb`, that does the following things:
-
-- It calls `swift package generate-xcodeproj`
-- It opens the generated Xcode project and adds some files to it that SPM doesn't (like this readme and configuration files)
-- It configures a build phase for SwiftLint and Sourcery
-
-To use the build script, first install the `xcodeproj` Rubygem by running `sudo gem install xcodeproj`. You can then generate the Xcode project by running `./GenerateXcodeproj.rb` from the project root directory.
-
 ### Related projects
 
 - [NIO](https://github.com/apple/swift-nio)

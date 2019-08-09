@@ -32,17 +32,9 @@ If you're aiming at using MongoKitten Mobile, scroll down!
 
 MongoKitten supports the [Swift Package Manager](https://swift.org/getting-started/#using-the-package-manager) for server-side applications. Add MongoKitten to your dependencies in your **Package.swift** file:
 
-`.package(url: "https://github.com/OpenKitten/MongoKitten.git", from: "5.0.0")`
+`.package(url: "https://github.com/OpenKitten/MongoKitten.git", .revision("master/6.0")`
 
 Also, don't forget to add `"MongoKitten"` as a dependency for your target.
-
-### Mobile [BETA]
-
-MongoKitten now also supports embedded MongoDB databases in beta.
-
-For MongoKitten mobile we rely on [Cocoapods](https://cocoapods.org/). This is not officially supported for using MongoKitten yet, but you can get started by simply add this to your **Podfile**:
-
-`pod 'MongoKitten'`
 
 # 🚲 Basic usage
 
@@ -51,7 +43,7 @@ For MongoKitten mobile we rely on [Cocoapods](https://cocoapods.org/). This is n
 ```swift
 import MongoKitten
 
-let db = try Database.synchronousConnect("mongodb://localhost/my_database")
+let db = try MongoDatabase.synchronousConnect("mongodb://localhost/my_database")
 ```
 
 Vapor users should register the database as a service.
@@ -60,15 +52,8 @@ Vapor users should register the database as a service.
 let connectionURI = "mongodb://localhost"
 
 services.register { container -> MongoKitten.Database in
-    return try MongoKitten.Database.lazyConnect(connectionURI, on: container.eventLoop)
+    return try MongoDatabase.lazyConnect(connectionURI, on: container.eventLoop)
 }
-```
-
-And for embedded databases:
-
-```swift
-// WARNING: Force unwrap will crash your application on failure
-let mongo = try! MobileDatabase(settings: .default())
 ```
 
 ### Note on URIs
