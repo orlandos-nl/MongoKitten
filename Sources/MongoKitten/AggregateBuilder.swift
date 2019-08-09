@@ -76,6 +76,16 @@ public func project(_ projection: Projection) -> AggregateBuilderStage {
     return .project(projection)
 }
 
+public func project(_ fields: String...) -> AggregateBuilderStage {
+    var projection = Projection()
+    
+    for field in fields {
+        projection.include(field)
+    }
+    
+    return .project(projection)
+}
+
 public func sort(_ sort: Sort) -> AggregateBuilderStage {
     return .sort(sort)
 }

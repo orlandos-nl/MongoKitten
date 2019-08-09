@@ -51,9 +51,9 @@ var package = Package(
         .testTarget(
             name: "MongoCoreTests",
             dependencies: ["MongoCore"]),
-        .testTarget(
-            name: "MongoClientTests",
-            dependencies: ["MongoClient"]),
+        //.testTarget(
+        //    name: "MongoClientTests",
+        //    dependencies: ["MongoClient"]),
         .testTarget(
             name: "MongoKittenTests",
             dependencies: ["MongoKitten"]),

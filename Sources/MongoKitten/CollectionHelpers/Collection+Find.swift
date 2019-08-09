@@ -59,6 +59,7 @@ public final class FindQueryBuilder: QueryCursor {
             }
         }
     }
+    
     public func transformElement(_ element: Document) throws -> Document {
         return element
     }

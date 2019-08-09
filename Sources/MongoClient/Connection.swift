@@ -32,8 +32,7 @@ public final class MongoConnection {
         return currentRequestId
     }
 
-    /// Creates a connection that can communicate with MongoDB over a channel.
-    ///
+    /// Creates a connection that can communicate with MongoDB over a channel
     public init(channel: Channel, context: MongoClientContext) {
         self.channel = channel
         self.context = context
