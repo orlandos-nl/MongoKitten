@@ -59,19 +59,19 @@ var package = Package(
     ]
 )
 
-#if canImport(Network)
-// 🔑
-package.dependencies.append(.package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "1.0.0"))
-let transport: Target.Dependency = "NIOTransportServices"
-package.platforms = [
-    .macOS(.v10_14),
-    .iOS(.v12),
-]
-#else
+//#if canImport(Network)
+//// 🔑
+//package.dependencies.append(.package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "1.0.0"))
+//let transport: Target.Dependency = "NIOTransportServices"
+//package.platforms = [
+//    .macOS(.v10_14),
+//    .iOS(.v12),
+//]
+//#else
 // 🔑
 package.dependencies.append(.package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.0.0"))
 let transport: Target.Dependency = "NIOSSL"
-#endif
+//#endif
 
 package.targets.append(
     .target(
