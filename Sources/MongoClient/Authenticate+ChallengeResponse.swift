@@ -26,7 +26,11 @@ fileprivate struct AuthenticateCR: Encodable {
 
 extension MongoConnection {
     func authenticateCR(_ username: String, password: String, namespace: MongoNamespace) -> EventLoopFuture<Void> {
-        return self.executeCodable(GetNonce(), namespace: namespace).flatMap { reply -> EventLoopFuture<Void> in
+        return self.executeCodable(
+            GetNonce(),
+            namespace: namespace,
+            sessionId: nil
+        ).flatMap { reply -> EventLoopFuture<Void> in
             do {
                 let reply = try GetNonceResult(reply: reply)
                 let nonce = reply.nonce
@@ -40,7 +44,11 @@ extension MongoConnection {
 
                 let authenticate = AuthenticateCR(nonce: nonce, user: username, key: keyDigest)
 
-                return self.executeCodable(authenticate, namespace: namespace).flatMapThrowing { reply in
+                return self.executeCodable(
+                    authenticate,
+                    namespace: namespace,
+                    sessionId: nil
+                ).flatMapThrowing { reply in
                     try reply.assertOK(or: MongoAuthenticationError(reason: .anyAuthenticationFailure))
                 }
             } catch {

@@ -33,7 +33,8 @@ extension MongoCollection {
             
             return connection.executeCodable(
                 command,
-                namespace: self.database.commandNamespace
+                namespace: self.database.commandNamespace,
+                sessionId: self.sessionId ?? connection.implicitSessionId
             )
         }.decode(InsertReply.self).flatMapThrowing { reply in
             if reply.ok == 1 {

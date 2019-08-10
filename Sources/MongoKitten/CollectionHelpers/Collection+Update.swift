@@ -7,8 +7,12 @@ extension MongoCollection {
             let request = UpdateCommand.UpdateRequest(where: query, to: document)
             let command = UpdateCommand(updates: [request], inCollection: self.name)
             
-            return connection.executeCodable(command, namespace: self.database.commandNamespace)
-            }.decode(UpdateReply.self)
+            return connection.executeCodable(
+                command,
+                namespace: self.database.commandNamespace,
+                sessionId: self.sessionId ?? connection.implicitSessionId
+            )
+        }.decode(UpdateReply.self)
     }
     
     public func updateMany(where query: Document, to document: Document) -> EventLoopFuture<UpdateReply> {
@@ -17,7 +21,11 @@ extension MongoCollection {
             request.multi = true
             let command = UpdateCommand(updates: [request], inCollection: self.name)
             
-            return connection.executeCodable(command, namespace: self.database.commandNamespace)
+            return connection.executeCodable(
+                command,
+                namespace: self.database.commandNamespace,
+                sessionId: self.sessionId ?? connection.implicitSessionId
+            )
         }.decode(UpdateReply.self)
     }
     
@@ -28,7 +36,11 @@ extension MongoCollection {
             
             let command = UpdateCommand(updates: [request], inCollection: self.name)
             
-            return connection.executeCodable(command, namespace: self.database.commandNamespace)
+            return connection.executeCodable(
+                command,
+                namespace: self.database.commandNamespace,
+                sessionId: self.sessionId ?? connection.implicitSessionId
+            )
         }.decode(UpdateReply.self)
     }
     
@@ -40,7 +52,11 @@ extension MongoCollection {
             
             let command = UpdateCommand(updates: [request], inCollection: self.name)
             
-            return connection.executeCodable(command, namespace: self.database.commandNamespace)
+            return connection.executeCodable(
+                command,
+                namespace: self.database.commandNamespace,
+                sessionId: self.sessionId ?? connection.implicitSessionId
+            )
         }.decode(UpdateReply.self)
     }
 }

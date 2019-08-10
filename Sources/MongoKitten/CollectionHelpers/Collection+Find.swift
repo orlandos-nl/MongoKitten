@@ -3,7 +3,14 @@ import MongoClient
 
 extension MongoCollection {
     public func find(_ query: Document = [:]) -> FindQueryBuilder {
-        return FindQueryBuilder(command: FindCommand(filter: query, inCollection: self.name), namespace: self.namespace, connection: pool.next(for: .basic))
+        return FindQueryBuilder(
+            command: FindCommand(
+                filter: query,
+                inCollection: self.name
+            ),
+            collection: self,
+            connection: pool.next(for: .basic)
+        )
     }
     
     public func find<Query: MongoKittenQuery>(_ query: Query) -> FindQueryBuilder {
@@ -32,15 +39,15 @@ public final class FindQueryBuilder: QueryCursor {
     /// The collection this cursor applies to
     private let connection: EventLoopFuture<MongoConnection>
     public var command: FindCommand
-    private let namespace: MongoNamespace
+    private let collection: MongoCollection
     public var isDrained: Bool { return false }
 
     public var eventLoop: EventLoop { return connection.eventLoop }
 
-    init(command: FindCommand, namespace: MongoNamespace, connection: EventLoopFuture<MongoConnection>, transaction: MongoTransaction? = nil) {
+    init(command: FindCommand, collection: MongoCollection, connection: EventLoopFuture<MongoConnection>, transaction: MongoTransaction? = nil) {
         self.command = command
         self.connection = connection
-        self.namespace = namespace
+        self.collection = collection
     }
 
     public func getConnection() -> EventLoopFuture<MongoConnection> {
@@ -51,10 +58,16 @@ public final class FindQueryBuilder: QueryCursor {
         return connection.flatMap { connection in
             connection.executeCodable(
                 self.command,
-                namespace: MongoNamespace(to: "$cmd", inDatabase: self.namespace.databaseName)
+                namespace: MongoNamespace(to: "$cmd", inDatabase: self.collection.database.name),
+                sessionId: self.collection.sessionId ?? connection.implicitSessionId
             ).flatMapThrowing { reply in
                 let response = try MongoCursorResponse(reply: reply)
-                let cursor = MongoCursor(reply: response.cursor, in: self.namespace, connection: connection)
+                let cursor = MongoCursor(
+                    reply: response.cursor,
+                    in: self.collection.namespace,
+                    connection: connection,
+                    session: connection.implicitSession
+                )
                 return FinalizedCursor(basedOn: self, cursor: cursor)
             }
         }

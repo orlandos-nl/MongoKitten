@@ -14,7 +14,13 @@ public final class MongoConnection {
     private let channel: Channel
 
     /// A LIFO (Last In, First Out) holder for sessions
-    private let sessionManager: MongoSessionManager
+    public let sessionManager: MongoSessionManager
+    public var implicitSession: MongoClientSession {
+        return sessionManager.makeImplicitClientSession()
+    }
+    public var implicitSessionId: SessionIdentifier {
+        return implicitSession.sessionId
+    }
 
     /// The current request ID, used to generate unique identifiers for MongoDB commands
     private var currentRequestId: Int32 = 0
@@ -121,7 +127,8 @@ public final class MongoConnection {
                 clientDetails: clientDetails,
                 userNamespace: userNamespace
             ),
-            namespace: .administrativeCommand
+            namespace: .administrativeCommand,
+            sessionId: nil
         ).flatMapThrowing { try ServerHandshake(reply: $0) }
     }
 

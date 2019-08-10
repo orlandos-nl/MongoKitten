@@ -8,14 +8,21 @@ public final class MongoCursor {
         return self.id == 0
     }
     public let namespace: MongoNamespace
+    public let session: MongoClientSession?
     public var maxTimeMS: Int32?
     public let connection: MongoConnection
 
-    public init(reply: MongoCursorResponse.Cursor, in namespace: MongoNamespace, connection: MongoConnection) {
+    public init(
+        reply: MongoCursorResponse.Cursor,
+        in namespace: MongoNamespace,
+        connection: MongoConnection,
+        session: MongoClientSession
+    ) {
         self.id = reply.id
         self.initialBatch = reply.firstBatch
         self.namespace = namespace
         self.connection = connection
+        self.session = session
     }
 
     /// Performs a `GetMore` command on the database, requesting the next batch of items
@@ -36,7 +43,11 @@ public final class MongoCursor {
         )
         command.maxTimeMS = self.maxTimeMS
         
-        return connection.executeCodable(command, namespace: namespace).flatMapThrowing { reply in
+        return connection.executeCodable(
+            command,
+            namespace: namespace,
+            sessionId: session?.sessionId
+        ).flatMapThrowing { reply in
             let newCursor = try GetMoreReply(reply: reply)
             self.id = newCursor.cursor.id
             return newCursor.cursor.nextBatch
@@ -47,7 +58,11 @@ public final class MongoCursor {
     public func close() -> EventLoopFuture<Void> {
         let command = KillCursorsCommand([self.id], inCollection: namespace.collectionName)
         self.id = 0
-        return connection.executeCodable(command, namespace: namespace).flatMapThrowing { reply -> Void in
+        return connection.executeCodable(
+            command,
+            namespace: namespace,
+            sessionId: session?.sessionId
+        ).flatMapThrowing { reply -> Void in
             try reply.assertOK()
         }
     }

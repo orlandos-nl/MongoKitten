@@ -37,12 +37,14 @@ public struct AggregateBuilderPipeline: QueryCursor {
         return getConnection().flatMap { connection in
             return connection.executeCodable(
                 command,
-                namespace: self.collection.database.commandNamespace
+                namespace: self.collection.database.commandNamespace,
+                sessionId: self.collection.sessionId ?? connection.implicitSessionId
             ).decode(CursorReply.self).map { cursor in
                 let cursor = MongoCursor(
                     reply: cursor.cursor,
                     in: self.collection.namespace,
-                    connection: connection
+                    connection: connection,
+                    session: connection.implicitSession
                 )
                 return FinalizedCursor(basedOn: self, cursor: cursor)
             }

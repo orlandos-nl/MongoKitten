@@ -8,6 +8,10 @@ import Foundation
 public class MongoCollection {
     // MARK: Properties
     internal var transaction: MongoTransaction?
+    public internal(set) var session: MongoClientSession?
+    public var sessionId: SessionIdentifier? {
+        return session?.sessionId
+    }
 
     /// The name of the collection
     public let name: String
@@ -52,7 +56,11 @@ public class MongoCollection {
     
     public func drop() -> EventLoopFuture<Void> {
         return pool.next(for: .writable).flatMap { connection in
-            return connection.executeCodable(DropCollectionCommand(named: self.name), namespace: self.database.commandNamespace)
+            return connection.executeCodable(
+                DropCollectionCommand(named: self.name),
+                namespace: self.database.commandNamespace,
+                sessionId: connection.implicitSessionId
+            )
         }.map { _ in }
     }
 }

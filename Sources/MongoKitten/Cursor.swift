@@ -12,7 +12,12 @@ struct CursorReply: Codable {
     private let ok: Int
 
     func makeCursor(collection: MongoNamespace, connection: MongoConnection) throws -> MongoCursor {
-        return MongoCursor(reply: cursor, in: collection, connection: connection)
+        return MongoCursor(
+            reply: cursor,
+            in: collection,
+            connection: connection,
+            session: connection.implicitSession
+        )
     }
 }
 

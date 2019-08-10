@@ -65,7 +65,6 @@ class ProtocolTests: XCTestCase {
         buffer.writeBuffer(&documentBuffer)
         
         let message = try OpMessage(reading: &buffer, header: header)
-        message.
     }
     
     func testOpMessageDeniesFirstUInt16Flags() throws {

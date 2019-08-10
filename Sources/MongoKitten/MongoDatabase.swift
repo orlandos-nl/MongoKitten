@@ -11,6 +11,10 @@ import NIOTransportServices
 /// Databases hold collections of documents.
 public class MongoDatabase {
     internal var transaction: Transaction!
+    public internal(set) var session: MongoClientSession?
+    public var sessionId: SessionIdentifier? {
+        return session?.sessionId
+    }
 
     /// The name of the database
     public let name: String
@@ -155,7 +159,9 @@ public class MongoDatabase {
     ///
     /// - returns: The requested collection in this database
     public subscript(collection: String) -> MongoCollection {
-        return MongoCollection(named: collection, in: self)
+        let collection = MongoCollection(named: collection, in: self)
+        collection.session = self.session
+        return collection
     }
 
     /// Drops the current database, deleting the associated data files
@@ -163,7 +169,11 @@ public class MongoDatabase {
     /// - see: https://docs.mongodb.com/manual/reference/command/dropDatabase
     public func drop() -> EventLoopFuture<Void> {
         return pool.next(for: .writable).flatMap { connection in
-            return connection.executeCodable(DropDatabaseCommand(), namespace: self.commandNamespace).flatMapThrowing { reply -> Void in
+            return connection.executeCodable(
+                DropDatabaseCommand(),
+                namespace: self.commandNamespace,
+                sessionId: connection.implicitSessionId
+            ).flatMapThrowing { reply -> Void in
                 try reply.assertOK()
             }
         }
@@ -174,10 +184,19 @@ public class MongoDatabase {
     /// Returns them as a MongoKitten Collection with you can query
     public func listCollections() -> EventLoopFuture<[MongoCollection]> {
         return pool.next(for: .basic).flatMap { connection in
-            return connection.executeCodable(ListCollections(), namespace: self.commandNamespace).flatMap { reply in
+            return connection.executeCodable(
+                ListCollections(),
+                namespace: self.commandNamespace,
+                sessionId: connection.implicitSessionId
+            ).flatMap { reply in
                 do {
                     let response = try MongoCursorResponse(reply: reply)
-                    let cursor = MongoCursor(reply: response.cursor, in: .administrativeCommand, connection: connection)
+                    let cursor = MongoCursor(
+                        reply: response.cursor,
+                        in: .administrativeCommand,
+                        connection: connection,
+                        session: connection.implicitSession
+                    )
                     return cursor.decode(CollectionDescription.self).allResults().map { descriptions in
                         return descriptions.map { description in
                             return MongoCollection(named: description.name, in: self)
@@ -220,7 +239,11 @@ extension MongoConnectionPool {
 
     public func listDatabases() -> EventLoopFuture<[MongoDatabase]> {
         return next(for: .basic).flatMap { connection in
-            return connection.executeCodable(ListDatabases(), namespace: .administrativeCommand).flatMapThrowing { reply in
+            return connection.executeCodable(
+                ListDatabases(),
+                namespace: .administrativeCommand,
+                sessionId: connection.implicitSessionId
+            ).flatMapThrowing { reply in
                 let response = try ListDatabasesResponse(reply: reply)
 
                 return response.databases.map { description in

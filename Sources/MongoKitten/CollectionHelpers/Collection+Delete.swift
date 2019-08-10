@@ -6,7 +6,8 @@ extension MongoCollection {
         return pool.next(for: .writable).flatMap { connection in
             return connection.executeCodable(
                 DeleteCommand(where: query, limit: .one, fromCollection: self.name),
-                namespace: self.database.commandNamespace
+                namespace: self.database.commandNamespace,
+                sessionId: self.sessionId ?? connection.implicitSessionId
             )
         }.decode(DeleteReply.self)
     }
@@ -15,7 +16,8 @@ extension MongoCollection {
         return pool.next(for: .writable).flatMap { connection in
             return connection.executeCodable(
                 DeleteCommand(where: query, limit: .all, fromCollection: self.name),
-                namespace: self.database.commandNamespace
+                namespace: self.database.commandNamespace,
+                sessionId: connection.implicitSessionId
             )
         }.decode(DeleteReply.self)
     }

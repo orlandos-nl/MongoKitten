@@ -6,7 +6,8 @@ extension MongoCollection {
         return pool.next(for: .basic).flatMap { connection in
             return connection.executeCodable(
                 CountCommand(on: self.name, where: query),
-                namespace: self.database.commandNamespace
+                namespace: self.database.commandNamespace,
+                sessionId: self.sessionId ?? connection.implicitSessionId
             )
         }.decode(CountReply.self).map { $0.count }
     }

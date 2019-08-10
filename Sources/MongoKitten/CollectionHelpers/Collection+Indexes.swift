@@ -8,7 +8,8 @@ extension MongoCollection {
                     collection: self.name,
                     indexes: [CreateIndexes.Index(named: name, keys: keys)]
                 ),
-                namespace: self.database.commandNamespace
+                namespace: self.database.commandNamespace,
+                sessionId: self.sessionId ?? connection.implicitSessionId
             )
         }.flatMapThrowing { reply in
             return try reply.assertOK()

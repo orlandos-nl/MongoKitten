@@ -7,7 +7,7 @@ extension MongoConnection {
         _ command: E,
         namespace: MongoNamespace,
         in transaction: MongoTransaction? = nil,
-        sessionId: SessionIdentifier? = nil
+        sessionId: SessionIdentifier?
     ) -> EventLoopFuture<MongoServerReply> {
         do {
             let request = try BSONEncoder().encode(command)
@@ -69,8 +69,11 @@ extension MongoConnection {
         namespace: MongoNamespace,
         sessionId: SessionIdentifier? = nil
     ) -> EventLoopFuture<MongoServerReply> {
-        var document = command
-        document["lsid"]["id"] = sessionId?.id
+        var command = command
+        
+        if let id = sessionId?.id {
+            command["lsid"]["id"] = id
+        }
         
         return executeMessage(
             OpQuery(
@@ -89,7 +92,10 @@ extension MongoConnection {
     ) -> EventLoopFuture<MongoServerReply> {
         var command = command
         command["$db"] = namespace.databaseName
-        command["lsid"]["id"] = sessionId?.id
+        
+        if let id = sessionId?.id {
+            command["lsid"]["id"] = id
+        }
 
         if let transaction = transaction {
             command["txnNumber"] = transaction.id

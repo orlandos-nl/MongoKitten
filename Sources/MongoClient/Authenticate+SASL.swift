@@ -148,7 +148,11 @@ extension MongoConnection {
 
         // NO session must be used here: https://github.com/mongodb/specifications/blob/master/source/sessions/driver-sessions.rst#when-opening-and-authenticating-a-connection
         // Forced on the current connection
-        return self.executeCodable(command, namespace: namespace).decode(SASLReply.self)
+        return self.executeCodable(
+            command,
+            namespace: namespace,
+            sessionId: nil
+        ).decode(SASLReply.self)
             .flatMap { reply in
             if reply.done {
                 return self.eventLoop.makeSucceededFuture(())
@@ -179,7 +183,11 @@ extension MongoConnection {
                 return self.eventLoop.makeFailedFuture(error)
             }
 
-            return self.executeCodable(next, namespace: namespace).decode(SASLReply.self).flatMap { reply in
+            return self.executeCodable(
+                next,
+                namespace: namespace,
+                sessionId: nil
+            ).decode(SASLReply.self).flatMap { reply in
                 do {
                     let successReply = try reply.payload.base64Decoded()
                     try context.completeAuthentication(withResponse: successReply)
@@ -195,8 +203,11 @@ extension MongoConnection {
                         payload: ""
                     )
 
-                    return self.executeCodable(final, namespace: namespace).decode(SASLReply.self).flatMapThrowing { reply in
-
+                    return self.executeCodable(
+                        final,
+                        namespace: namespace,
+                        sessionId: nil
+                    ).decode(SASLReply.self).flatMapThrowing { reply in
                         guard reply.done else {
                             throw MongoAuthenticationError(reason: .malformedAuthenticationDetails)
                         }
