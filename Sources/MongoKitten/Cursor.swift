@@ -1,26 +1,6 @@
 import NIO
 import MongoClient
 
-public struct CursorSettings: Encodable {
-    public var batchSize: Int?
-    
-    public init() {}
-}
-
-struct CursorReply: Codable {
-    internal let cursor: MongoCursorResponse.Cursor
-    private let ok: Int
-
-    func makeCursor(collection: MongoNamespace, connection: MongoConnection) throws -> MongoCursor {
-        return MongoCursor(
-            reply: cursor,
-            in: collection,
-            connection: connection,
-            session: connection.implicitSession
-        )
-    }
-}
-
 extension MongoCursor: QueryCursor {
     public var eventLoop: EventLoop {
         return connection.eventLoop

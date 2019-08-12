@@ -1,7 +1,7 @@
 import BSON
 
 public struct Projection: Encodable, ExpressibleByDictionaryLiteral {
-    var document: Document
+    public internal(set) var document: Document
 
     /// An expression that can be specified to either include or exclude a field (or some custom value)
     public enum ProjectionExpression: ExpressibleByBooleanLiteral, ExpressibleByStringLiteral, ExpressibleByDictionaryLiteral, PrimitiveConvertible {

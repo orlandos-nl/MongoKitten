@@ -71,7 +71,3 @@ fileprivate extension Optional {
         return self
     }
 }
-
-internal struct MongoOptionalUnwrapFailure: Error, CustomStringConvertible {
-    let description = "An optional was unwrapped but `nil` was found"
-}

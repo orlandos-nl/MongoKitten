@@ -14,7 +14,7 @@ public struct CountCommand: Encodable {
     public var readConcern: ReadConcern?
     public var collation: Collation?
     
-    init(on collection: String, where query: Document? = nil) {
+    public init(on collection: String, where query: Document? = nil) {
         self.count = collection
         self.query = query
     }
@@ -27,5 +27,5 @@ public struct CountReply: Decodable {
     }
     
     let ok: Int
-    let count: Int
+    public let count: Int
 }

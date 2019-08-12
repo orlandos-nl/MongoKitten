@@ -1,5 +1,6 @@
 import NIO
 import MongoClient
+import MongoKittenCore
 
 extension MongoCollection {
     public func find(_ query: Document = [:]) -> FindQueryBuilder {

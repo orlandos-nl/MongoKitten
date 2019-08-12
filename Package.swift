@@ -38,9 +38,12 @@ var package = Package(
         .target(
             name: "MongoCore",
             dependencies: ["BSON", "_MongoKittenCrypto", "NIO"]),
+            .target(
+                name: "MongoKittenCore",
+                dependencies: ["MongoClient"]),
         .target(
             name: "MongoKitten",
-            dependencies: ["MongoClient"]),
+            dependencies: ["MongoClient", "MongoKittenCore"]),
         .target(
             name: "Meow",
             dependencies: ["MongoKitten"]),
