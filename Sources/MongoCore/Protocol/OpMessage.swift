@@ -124,9 +124,10 @@ public struct OpMessage: MongoRequestMessage, MongoResponseMessage {
         if flags.contains(.checksumPresent) {
             sectionsSize -= 4
         }
+        let endReaderIndex = buffer.readerIndex + sectionsSize
         
         // minimum BSON size is 5, checksum is 4 bytes, so this works
-        while buffer.readableBytes > 0 {
+        while buffer.readableBytes > 0, buffer.readerIndex < endReaderIndex {
             let kind = try buffer.assertLittleEndian() as UInt8
             switch kind {
             case 0: // body
