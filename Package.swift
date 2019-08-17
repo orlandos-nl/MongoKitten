@@ -22,12 +22,12 @@ var package = Package(
     ],
     dependencies: [
         // 💾
-        .package(url: "https://github.com/OpenKitten/BSON.git", .revision("master/7.0")),
+        .package(url: "https://github.com/OpenKitten/BSON.git", from: "7.0.0"),
         // 🚀
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0"),
 
         // 📚
-        .package(url: "https://github.com/openkitten/NioDNS.git", .revision("master")),
+        .package(url: "https://github.com/openkitten/NioDNS.git", from: "2.0.0"),
         
         
     ],
