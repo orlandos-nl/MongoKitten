@@ -86,8 +86,7 @@ public final class MongoConnection {
                 if settings.useSSL {
                     do {
                         let handler = try NIOSSLClientHandler(context: NIOSSLContext(configuration: .clientDefault), serverHostname: host.hostname)
-                        return
-                            channel.pipeline.addHandler(handler).flatMap {
+                        return channel.pipeline.addHandler(handler).flatMap {
                             return MongoConnection.addHandlers(to: channel, context: context)
                         }
                     } catch {
@@ -100,7 +99,11 @@ public final class MongoConnection {
             }.connect(host: host.hostname, port: host.port).flatMap { channel in
                 let connection = MongoConnection(channel: channel, context: context)
 
-                return connection.authenticate(clientDetails: clientDetails, using: settings.authentication).map { connection}
+                return connection.authenticate(
+                    clientDetails: clientDetails,
+                    using: settings.authentication,
+                    to: settings.authenticationSource ?? "admin"
+                ).map { connection}
         }
     }
 
