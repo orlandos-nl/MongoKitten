@@ -9,6 +9,7 @@ internal struct MongoResponseContext {
 public final class MongoClientContext {
     private var queries = [MongoResponseContext]()
     internal var serverHandshake: ServerHandshake?
+    internal var didError = false
 
     public func handleReply(_ reply: MongoServerReply) -> Bool {
         guard let index = queries.firstIndex(where: { $0.requestId == reply.responseTo }) else {

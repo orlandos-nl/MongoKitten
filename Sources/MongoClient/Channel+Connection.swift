@@ -16,13 +16,19 @@ internal struct ClientConnectionParser: ByteToMessageDecoder {
     }
 
     mutating func decode(context ctx: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
-        let result = try parser.parse(from: &buffer)
+        do {
+            let result = try parser.parse(from: &buffer)
 
-        if let reply = parser.takeReply(), !context.handleReply(reply) {
-            print("Reply received from MongoDB, but no request was waiting for the result.")
+            if let reply = parser.takeReply(), !context.handleReply(reply) {
+                print("Reply received from MongoDB, but no request was waiting for the result.")
+            }
+
+            return result
+        } catch {
+            self.context.cancel(error)
+            self.context.didError = true
+            throw error
         }
-
-        return result
     }
 
     mutating func decodeLast(context ctx: ChannelHandlerContext, buffer: inout ByteBuffer, seenEOF: Bool) throws -> DecodingState {

@@ -148,6 +148,12 @@ public final class MongoConnection {
     }
 
     func executeMessage<Request: MongoRequestMessage>(_ message: Request) -> EventLoopFuture<MongoServerReply> {
+        if context.didError {
+            return self.close().flatMap {
+                return self.eventLoop.makeFailedFuture(MongoError(.queryFailure, reason: .connectionClosed))
+            }
+        }
+        
         let promise = eventLoop.makePromise(of: MongoServerReply.self)
         context.awaitReply(toRequestId: message.header.requestId, completing: promise)
 
