@@ -45,7 +45,7 @@ extension ReadCommand {
 }
 
 extension MongoDBCommand {
-    func execute(on collection: Collection) -> EventLoopFuture<Reply.Result> {
+    public func execute(on collection: Collection) -> EventLoopFuture<Reply.Result> {
         let transaction = collection.makeTransactionQueryOptions()
         return collection.session.execute(command: self, transaction: transaction).mapToResult(for: collection)
     }
