@@ -81,7 +81,7 @@ struct ServerLanguage: Content {
 func fetchTheBestServerLanguage(_ req: Request) throws -> EventLoopFuture<ServerLanguage> {
     let db = try req.make(MongoKitten.Database.self)
 	
-    return db["server_languages"].findOne("language" == "swift").map { doucment in
+    return db["server_languages"].findOne("language" == "swift").map { document in
         guard let theBest = document else {
             throw Abort(.internalServerError, reason: "Couldn't find the best, Node.JS is your future 🤢")
 	}
