@@ -112,5 +112,5 @@ MongoKitten provides a great aggregate builder, which you can use by calling `ag
 ```swift
 collection.aggregate()
     .match("status" == "A")
-    .group(id: "$cust_id", ["total": .sum("$amount"))
+    .group(id: "$cust_id", ["total": .sum("$amount")])
 ```
