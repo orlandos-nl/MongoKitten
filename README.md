@@ -10,6 +10,8 @@
 
 A fast, pure swift [MongoDB](https://mongodb.com) driver based on [Swift NIO](https://github.com/apple/swift-nio) built for Server Side Swift. It features a great API and a battle-tested core. Supporting both MongoDB in server and embedded environments.
 
+**If you need an ORM-Like environment, use [Meow](https://github.com/openkitten/meow) instead.**
+
 ⭐️ Please leave a star to support MongoKitten – it really helps!
 
 # 🕶 Installation
