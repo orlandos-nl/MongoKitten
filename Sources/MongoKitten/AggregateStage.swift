@@ -69,4 +69,30 @@ public struct AggregateBuilderStage {
             "$sample": n
         ])
     }
+    
+    public static func lookup(from: String, localField: String, foreignField: String, as newName: String) -> AggregateBuilderStage {
+        return AggregateBuilderStage(document: [
+            "$lookup": [
+                "from": from,
+                "localField": localField,
+                "foreignField": foreignField,
+                "as": newName
+            ]
+        ])
+    }
+    
+    public static func unwind(fieldPath: String, includeArrayIndex: String? = nil, preserveNullAndEmptyArrays: Bool? = nil) -> AggregateBuilderStage {
+        var d = Document()
+        d["path"] = fieldPath
+        
+        if let incl = includeArrayIndex {
+            d["includeArrayIndex"] = incl
+        }
+        
+        if let pres = preserveNullAndEmptyArrays {
+            d["preserveNullAndEmptyArrays"] = pres
+        }
+        
+        return AggregateBuilderStage(document: ["$unwind": d])
+    }
 }

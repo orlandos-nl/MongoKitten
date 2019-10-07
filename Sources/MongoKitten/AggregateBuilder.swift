@@ -86,6 +86,20 @@ public func project(_ fields: String...) -> AggregateBuilderStage {
     return .project(projection)
 }
 
+public func lookup(
+    from: String,
+    localField: String,
+    foreignField: String,
+    as newName: String
+) -> AggregateBuilderStage {
+    return .lookup(
+        from: from,
+        localField: localField,
+        foreignField: foreignField,
+        as: newName
+    )
+}
+
 public func sort(_ sort: Sort) -> AggregateBuilderStage {
     return .sort(sort)
 }
