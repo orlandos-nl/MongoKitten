@@ -3,6 +3,10 @@ import NIO
 
 extension MongoCollection {
     public func count(_ query: Document? = nil) -> EventLoopFuture<Int> {
+        guard transaction == nil else {
+            return makeTransactionError()
+        }
+        
         return pool.next(for: .basic).flatMap { connection in
             return connection.executeCodable(
                 CountCommand(on: self.name, where: query),

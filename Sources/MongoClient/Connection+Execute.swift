@@ -96,9 +96,10 @@ extension MongoConnection {
         if let id = sessionId?.id {
             command["lsid"]["id"] = id
         }
-
+        
+        // TODO: When retrying a write, don't resend transaction messages except commit & abort
         if let transaction = transaction {
-            command["txnNumber"] = transaction.id
+            command["txnNumber"] = transaction.number
             command["autocommit"] = transaction.autocommit
 
             if transaction.startTransaction {

@@ -34,7 +34,7 @@ public final class MongoClientSession {
     private let serverSession: MongoServerSession
     private weak var sessionManager: MongoSessionManager?
     internal let clusterTime: Document?
-    internal let options: SessionOptions
+    internal let options: MongoSessionOptions
     public var sessionId: SessionIdentifier {
         return serverSession.sessionId
     }
@@ -42,7 +42,7 @@ public final class MongoClientSession {
     init(
         serverSession: MongoServerSession,
         sessionManager: MongoSessionManager,
-        options: SessionOptions
+        options: MongoSessionOptions
     ) {
         self.serverSession = serverSession
         self.sessionManager = sessionManager
@@ -52,7 +52,7 @@ public final class MongoClientSession {
     
     public func startTransaction(autocommit: Bool) -> MongoTransaction {
         return MongoTransaction(
-            id: serverSession.nextTransactionNumber(),
+            number: serverSession.nextTransactionNumber(),
             autocommit: autocommit
         )
     }
@@ -111,7 +111,7 @@ public final class MongoSessionManager {
         return MongoClientSession(
             serverSession: implicitSession,
             sessionManager: self,
-            options: SessionOptions()
+            options: MongoSessionOptions()
         )
     }
 
@@ -123,7 +123,7 @@ public final class MongoSessionManager {
 
     /// Retains an existing or generates a new session to MongoDB.
     /// The session is returned to the pool when the ClientSession's `deinit` triggers
-    public func retainSession(with options: SessionOptions) -> MongoClientSession {
+    public func retainSession(with options: MongoSessionOptions) -> MongoClientSession {
         let serverSession: MongoServerSession
 
         if availableSessions.count > 0 {
@@ -145,7 +145,7 @@ public final class MongoSessionManager {
 /// https://github.com/mongodb/specifications/blob/master/source/retryable-writes/retryable-writes.rst#unsupported-write-operations
 /// TODO: Write commands
 /// In MongoDB 4.0 the only supported retryable write commands within a transaction are commitTransaction and abortTransaction. Therefore drivers MUST NOT retry write commands within transactions even when retryWrites has been enabled on the MongoClient. Drivers MUST retry the commitTransaction and abortTransaction commands even when retryWrites has been disabled on the MongoClient. commitTransaction and abortTransaction are retryable write commands and MUST be retried according to the Retryable Writes Specification.
-public struct SessionOptions {
+public struct MongoSessionOptions {
     public var casualConsistency: Bool?
     public var defaultTransactionOptions: MongoTransactionOptions?
 

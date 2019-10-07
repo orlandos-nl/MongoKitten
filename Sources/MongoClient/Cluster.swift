@@ -18,6 +18,7 @@ public final class MongoCluster: MongoConnectionPool {
     }
 
     private var dns: DNSClient?
+    public let sessionManager = MongoSessionManager()
 
     /// The interval at which cluster discovery is triggered, at a minimum of 500 milliseconds
     ///
@@ -74,7 +75,7 @@ public final class MongoCluster: MongoConnectionPool {
     /// Used as a shortcut to not have to set a callback on `isDiscovering`
     private var completedInitialDiscovery = false
 
-    private init(group: _MongoPlatformEventLoopGroup, sessionManager: MongoSessionManager, settings: ConnectionSettings) {
+    private init(group: _MongoPlatformEventLoopGroup, settings: ConnectionSettings) {
         self.eventLoop = group.next()
         self.group = group
         self.settings = settings
@@ -91,7 +92,7 @@ public final class MongoCluster: MongoConnectionPool {
             throw MongoError(.cannotConnect, reason: .noHostSpecified)
         }
 
-        self.init(group: group, sessionManager: MongoSessionManager(), settings: settings)
+        self.init(group: group, settings: settings)
 
         MongoCluster.withResolvedSettings(settings, on: group.next()) { settings, dns -> EventLoopFuture<Void> in
             self.settings = settings
@@ -207,7 +208,8 @@ public final class MongoCluster: MongoConnectionPool {
         let connection = MongoConnection.connect(
             settings: settings,
             on: eventLoop,
-            resolver: self.dns
+            resolver: self.dns,
+            sessionManager: sessionManager
         ).map { connection -> PooledConnection in
             connection.slaveOk = self.slaveOk
 
@@ -263,7 +265,7 @@ public final class MongoCluster: MongoConnectionPool {
             let pooledConnection = self.pool[index]
             self.pool.remove(at: index)
             self.discoveredHosts.remove(pooledConnection.host)
-            pooledConnection.connection.context.cancel(error)
+            pooledConnection.connection.context.cancelQueries(error)
         }
     }
 

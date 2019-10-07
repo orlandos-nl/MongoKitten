@@ -1,10 +1,10 @@
-public final class MongoTransaction {
-    public let id: Int
+public struct MongoTransaction {
+    public let number: Int
     public internal(set) var startTransaction = true
     public let autocommit: Bool
     
-    init(id: Int, autocommit: Bool) {
-        self.id = id
+    init(number: Int, autocommit: Bool) {
+        self.number = number
         self.autocommit = autocommit
     }
 }

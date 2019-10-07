@@ -5,7 +5,7 @@ import Foundation
 /// A reference to a collection in a `Database`.
 ///
 /// MongoDB stores documents in collections. Collections are analogous to tables in relational databases.
-public class MongoCollection {
+public final class MongoCollection {
     // MARK: Properties
     internal var transaction: MongoTransaction?
     public internal(set) var session: MongoClientSession?
@@ -21,6 +21,12 @@ public class MongoCollection {
 
     public var eventLoop: EventLoop {
         return pool.eventLoop
+    }
+    
+    internal func makeTransactionError<T>() -> EventLoopFuture<T> {
+        return eventLoop.makeFailedFuture(
+            MongoKittenError(.unsupportedFeatureByServer, reason: .transactionForUnsupportedQuery)
+        )
     }
 
 //    internal func makeTransactionQueryOptions() -> MongoTransactionOptions? {

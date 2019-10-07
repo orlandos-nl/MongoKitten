@@ -25,7 +25,7 @@ internal struct ClientConnectionParser: ByteToMessageDecoder {
 
             return result
         } catch {
-            self.context.cancel(error)
+            self.context.cancelQueries(error)
             self.context.didError = true
             throw error
         }

@@ -9,6 +9,8 @@ struct MongoKittenError: Error {
         case cursorClosed
 
         case noTargetDatabaseSpecified
+        
+        case transactionForUnsupportedQuery
     }
 
     let kind: Kind

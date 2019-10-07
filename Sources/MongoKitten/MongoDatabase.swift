@@ -9,8 +9,8 @@ import NIOTransportServices
 /// A reference to a MongoDB database, over a `Connection`.
 ///
 /// Databases hold collections of documents.
-public class MongoDatabase {
-    internal var transaction: Transaction!
+public final class MongoDatabase {
+    internal var transaction: MongoTransaction!
     public internal(set) var session: MongoClientSession?
     public var sessionId: SessionIdentifier? {
         return session?.sessionId
@@ -139,19 +139,29 @@ public class MongoDatabase {
     ///
     /// The TransactionDatabase that is created can be used like a normal Database for queries within transactions _only_
     /// Creating a TransactionCollection is done the same way it's created with a normal Database.
-//    public func startTransaction(with options: SessionOptions, transactionOptions: MongoTransactionOptions? = nil) throws -> TransactionDatabase {
-//        guard pool.wireVersion?.supportsReplicaTransactions == true else {
-//            throw MongoKittenError(.unsupportedFeatureByServer, reason: nil)
-//        }
-//
-//        let newSession = sessionManager.next(with: options, for: session.pool)
-//        let transactionOptions = transactionOptions ?? options.defaultTransactionOptions ?? MongoTransactionOptions()
-//        let transaction = Transaction(
-//            options: transactionOptions,
-//            transactionId: newSession.serverSession.nextTransactionNumber()
-//        )
-//        return TransactionDatabase(named: name, session: newSession, transaction: transaction)
-//    }
+    public func startTransaction(
+        autoCommitChanged autoCommit: Bool,
+        with options: MongoSessionOptions = .init(),
+        transactionOptions: MongoTransactionOptions? = nil
+    ) throws -> MongoDatabase {
+        guard pool.wireVersion?.supportsReplicaTransactions == true else {
+            throw MongoKittenError(.unsupportedFeatureByServer, reason: nil)
+        }
+
+        let newSession = self.pool.sessionManager.retainSession(with: options)
+        let transaction = newSession.startTransaction(autocommit: autoCommit)
+        
+        let db = MongoDatabase(named: self.name, pool: self.pool)
+        db.transaction = transaction
+        db.session = newSession
+        return db
+    }
+    
+    private func makeTransactionError<T>() -> EventLoopFuture<T> {
+        return eventLoop.makeFailedFuture(
+            MongoKittenError(.unsupportedFeatureByServer, reason: .transactionForUnsupportedQuery)
+        )
+    }
 
     /// Get a `Collection` by providing a collection name as a `String`
     ///
@@ -161,6 +171,7 @@ public class MongoDatabase {
     public subscript(collection: String) -> MongoCollection {
         let collection = MongoCollection(named: collection, in: self)
         collection.session = self.session
+        collection.transaction = transaction
         return collection
     }
 
@@ -168,6 +179,10 @@ public class MongoDatabase {
     ///
     /// - see: https://docs.mongodb.com/manual/reference/command/dropDatabase
     public func drop() -> EventLoopFuture<Void> {
+        guard transaction == nil else {
+            return makeTransactionError()
+        }
+        
         return pool.next(for: .writable).flatMap { connection in
             return connection.executeCodable(
                 DropDatabaseCommand(),
@@ -183,6 +198,10 @@ public class MongoDatabase {
     ///
     /// Returns them as a MongoKitten Collection with you can query
     public func listCollections() -> EventLoopFuture<[MongoCollection]> {
+        guard transaction == nil else {
+            return makeTransactionError()
+        }
+        
         return pool.next(for: .basic).flatMap { connection in
             return connection.executeCodable(
                 ListCollections(),
@@ -195,7 +214,8 @@ public class MongoDatabase {
                         reply: response.cursor,
                         in: .administrativeCommand,
                         connection: connection,
-                        session: connection.implicitSession
+                        session: connection.implicitSession,
+                        transaction: self.transaction
                     )
                     return cursor.decode(CollectionDescription.self).allResults().map { descriptions in
                         return descriptions.map { description in

@@ -27,10 +27,10 @@ public final class MongoClientContext {
     }
     
     deinit {
-        self.cancel(MongoError(.queryFailure, reason: .connectionClosed))
+        self.cancelQueries(MongoError(.queryFailure, reason: .connectionClosed))
     }
 
-    public func cancel(_ error: Error) {
+    public func cancelQueries(_ error: Error) {
         for query in queries {
             query.result.fail(error)
         }

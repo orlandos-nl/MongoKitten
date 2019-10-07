@@ -45,10 +45,10 @@ public final class MongoConnection {
     }
 
     /// Creates a connection that can communicate with MongoDB over a channel
-    public init(channel: Channel, context: MongoClientContext) {
+    public init(channel: Channel, context: MongoClientContext, sessionManager: MongoSessionManager = .init()) {
+        self.sessionManager = sessionManager
         self.channel = channel
         self.context = context
-        self.sessionManager = MongoSessionManager()
     }
 
     public static func addHandlers(to channel: Channel, context: MongoClientContext) -> EventLoopFuture<Void> {
@@ -60,7 +60,8 @@ public final class MongoConnection {
         settings: ConnectionSettings,
         on eventLoop: EventLoop,
         resolver: Resolver? = nil,
-        clientDetails: MongoClientDetails? = nil
+        clientDetails: MongoClientDetails? = nil,
+        sessionManager: MongoSessionManager = .init()
     ) -> EventLoopFuture<MongoConnection> {
         let context = MongoClientContext()
 
@@ -97,7 +98,11 @@ public final class MongoConnection {
                 
                 return MongoConnection.addHandlers(to: channel, context: context)
             }.connect(host: host.hostname, port: host.port).flatMap { channel in
-                let connection = MongoConnection(channel: channel, context: context)
+                let connection = MongoConnection(
+                    channel: channel,
+                    context: context,
+                    sessionManager: sessionManager
+                )
 
                 return connection.authenticate(
                     clientDetails: clientDetails,
@@ -122,7 +127,7 @@ public final class MongoConnection {
         } else {
             userNamespace = nil
         }
-
+            
         // NO session must be used here: https://github.com/mongodb/specifications/blob/master/source/sessions/driver-sessions.rst#when-opening-and-authenticating-a-connection
         // Forced on the current connection
         return self.executeCodable(

@@ -38,13 +38,15 @@ public struct AggregateBuilderPipeline: QueryCursor {
             return connection.executeCodable(
                 command,
                 namespace: self.collection.database.commandNamespace,
+                in: self.collection.transaction,
                 sessionId: self.collection.sessionId ?? connection.implicitSessionId
             ).decode(CursorReply.self).map { cursor in
                 let cursor = MongoCursor(
                     reply: cursor.cursor,
                     in: self.collection.namespace,
                     connection: connection,
-                    session: connection.implicitSession
+                    session: connection.implicitSession,
+                    transaction: self.collection.transaction
                 )
                 return FinalizedCursor(basedOn: self, cursor: cursor)
             }

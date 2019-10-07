@@ -2,6 +2,10 @@ import NIO
 
 extension MongoCollection {
     public func createIndex(named name: String, keys: Document) -> EventLoopFuture<Void> {
+        guard transaction == nil else {
+            return makeTransactionError()
+        }
+        
         return self.pool.next(for: .writable).flatMap { connection in
             return connection.executeCodable(
                 CreateIndexes(

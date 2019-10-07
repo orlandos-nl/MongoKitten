@@ -60,6 +60,7 @@ public final class FindQueryBuilder: QueryCursor {
             connection.executeCodable(
                 self.command,
                 namespace: MongoNamespace(to: "$cmd", inDatabase: self.collection.database.name),
+                in: self.collection.transaction,
                 sessionId: self.collection.sessionId ?? connection.implicitSessionId
             ).flatMapThrowing { reply in
                 let response = try MongoCursorResponse(reply: reply)
@@ -67,7 +68,8 @@ public final class FindQueryBuilder: QueryCursor {
                     reply: response.cursor,
                     in: self.collection.namespace,
                     connection: connection,
-                    session: connection.implicitSession
+                    session: connection.implicitSession,
+                    transaction: self.collection.transaction
                 )
                 return FinalizedCursor(basedOn: self, cursor: cursor)
             }

@@ -7,6 +7,7 @@ extension MongoCollection {
             return connection.executeCodable(
                 DeleteCommand(where: query, limit: .one, fromCollection: self.name),
                 namespace: self.database.commandNamespace,
+                in: self.transaction,
                 sessionId: self.sessionId ?? connection.implicitSessionId
             )
         }.decode(DeleteReply.self)
@@ -17,6 +18,7 @@ extension MongoCollection {
             return connection.executeCodable(
                 DeleteCommand(where: query, limit: .all, fromCollection: self.name),
                 namespace: self.database.commandNamespace,
+                in: self.transaction,
                 sessionId: connection.implicitSessionId
             )
         }.decode(DeleteReply.self)

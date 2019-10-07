@@ -13,6 +13,7 @@ public protocol MongoConnectionPool {
     func next(for request: MongoConnectionPoolRequest) -> EventLoopFuture<MongoConnection>
     var eventLoop: EventLoop { get }
     var wireVersion: WireVersion? { get }
+    var sessionManager: MongoSessionManager { get }
 }
 
 extension MongoConnection: MongoConnectionPool {

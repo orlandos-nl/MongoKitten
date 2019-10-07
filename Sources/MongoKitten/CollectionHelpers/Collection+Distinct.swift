@@ -8,6 +8,7 @@ extension MongoCollection {
             return connection.executeCodable(
                 command,
                 namespace: self.database.commandNamespace,
+                in: self.transaction,
                 sessionId: self.sessionId ?? connection.implicitSessionId
             )
         }.decode(DistinctReply.self).map { $0.distinctValues }

@@ -8,6 +8,7 @@ public final class MongoCursor {
         return self.id == 0
     }
     public let namespace: MongoNamespace
+    public let transaction: MongoTransaction?
     public let session: MongoClientSession?
     public var maxTimeMS: Int32?
     public let connection: MongoConnection
@@ -16,13 +17,15 @@ public final class MongoCursor {
         reply: MongoCursorResponse.Cursor,
         in namespace: MongoNamespace,
         connection: MongoConnection,
-        session: MongoClientSession
+        session: MongoClientSession,
+        transaction: MongoTransaction?
     ) {
         self.id = reply.id
         self.initialBatch = reply.firstBatch
         self.namespace = namespace
         self.connection = connection
         self.session = session
+        self.transaction = transaction
     }
 
     /// Performs a `GetMore` command on the database, requesting the next batch of items
@@ -46,6 +49,7 @@ public final class MongoCursor {
         return connection.executeCodable(
             command,
             namespace: namespace,
+            in: self.transaction,
             sessionId: session?.sessionId
         ).flatMapThrowing { reply in
             let newCursor = try GetMoreReply(reply: reply)
@@ -61,6 +65,7 @@ public final class MongoCursor {
         return connection.executeCodable(
             command,
             namespace: namespace,
+            in: self.transaction,
             sessionId: session?.sessionId
         ).flatMapThrowing { reply -> Void in
             try reply.assertOK()
