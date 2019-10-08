@@ -11,20 +11,23 @@ public struct AggregateBuilder {
     }
     
     /// If there is one child, return it directly.
-    public static func buildBlock(_ content: AggregateBuilderStage) -> AggregateBuilderPipeline {
-        return AggregateBuilderPipeline(stages: [content])
+    public static func buildBlock(_ content: AggregateBuilderStage) -> AggregateBuilderStage {
+        return AggregateBuilderStage(documents: content.stages)
     }
     
     /// If there are multiple children, return them all as a MultiNode.
-    public static func buildBlock(_ content: AggregateBuilderStage...) -> AggregateBuilderPipeline {
-        return AggregateBuilderPipeline(stages: content)
+    public static func buildBlock(_ content: AggregateBuilderStage...) -> AggregateBuilderStage {
+        return AggregateBuilderStage(documents: content.reduce([], { $0 + $1.stages }))
     }
     
     /// If the provided child is `nil`, build an empty MultiNode. Otherwise,
     /// return the wrapped value.
-    public static func buildIf(_ content: AggregateBuilderStage?) -> AggregateBuilderPipeline {
-        if let content = content { return AggregateBuilderPipeline(stages: [content]) }
-        return AggregateBuilderPipeline(stages: [])
+    public static func buildIf(_ content: AggregateBuilderStage?) -> AggregateBuilderStage {
+        if let content = content {
+            return AggregateBuilderStage(documents: content.stages)
+        }
+        
+        return AggregateBuilderStage(documents: [])
     }
     
     /// If the condition of an `if` statement is `true`, then this method will
@@ -33,8 +36,8 @@ public struct AggregateBuilder {
     /// - note: We do not need to preserve type information
     ///         from both the `true` and `false` blocks, so this function does
     ///         not wrap its passed value.
-    public static func buildEither(first: AggregateBuilderStage) -> AggregateBuilderPipeline {
-        return AggregateBuilderPipeline(stages: [first])
+    public static func buildEither(first: AggregateBuilderStage) -> AggregateBuilderStage {
+        return AggregateBuilderStage(documents: first.stages)
     }
     
     /// If the condition of an `if` statement is `false`, then this method will
@@ -43,14 +46,14 @@ public struct AggregateBuilder {
     /// - note: We do not need to preserve type information
     ///         from both the `true` and `false` blocks, so this function does
     ///         not wrap its passed value.
-    public static func buildEither(second: AggregateBuilderStage) -> AggregateBuilderPipeline {
-        return AggregateBuilderPipeline(stages: [second])
+    public static func buildEither(second: AggregateBuilderStage) -> AggregateBuilderStage {
+        return AggregateBuilderStage(documents: second.stages)
     }
 }
 
 extension MongoCollection {
-    public func buildAggregate(@AggregateBuilder build: () -> AggregateBuilderPipeline) -> AggregateBuilderPipeline {
-        var pipeline = build()
+    public func buildAggregate(@AggregateBuilder build: () -> AggregateBuilderStage) -> AggregateBuilderPipeline {
+        var pipeline = AggregateBuilderPipeline(stages: [build()])
         pipeline.collection = self
         return pipeline
     }
