@@ -166,7 +166,7 @@ public struct ConnectionSettings: Equatable {
         // Split the string in parts before and after the authentication details
         let parts = uri.split(separator: "@")
 
-        guard parts.count <= 2 else {
+        guard parts.count <= 2, parts.count > 0 else {
             throw MongoInvalidUriError(reason: .uriIsMalformed)
         }
 
