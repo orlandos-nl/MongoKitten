@@ -63,6 +63,10 @@ public func match(_ query: Document) -> AggregateBuilderStage {
     return .match(query)
 }
 
+public func match<Q: MongoKittenQuery>(_ query: Q) -> AggregateBuilderStage {
+    return .match(query.makeDocument())
+}
+
 public func addFields(_ query: Document) -> AggregateBuilderStage {
     return .addFields(query)
 }
@@ -91,6 +95,20 @@ public func project(_ fields: String...) -> AggregateBuilderStage {
     }
     
     return .project(projection)
+}
+
+public func lookup(
+    from: String,
+    localField: String,
+    foreignField: String,
+    as newName: String
+) -> AggregateBuilderStage {
+    return .lookup(
+        from: from,
+        localField: localField,
+        foreignField: foreignField,
+        as: newName
+    )
 }
 
 public func lookup(
