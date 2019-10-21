@@ -187,20 +187,20 @@ public struct ConnectionSettings: Equatable {
         }
 
         // Parse all queries
-        let queries: [Substring: Substring]
+        var queries = [Substring: Substring]()
+        queries.reserveCapacity(10)
+        
         if let queryString = queryString {
-            queries = Dictionary(uniqueKeysWithValues: queryString.split(separator: "&").map { queryItem in
+            queryString.split(separator: "&").forEach { queryItem in
                 // queryItem can be either like `someOption` or like `someOption=abc`
                 let queryItemParts = queryItem.split(separator: "=", maxSplits: 1)
                 let queryItemName = queryItemParts[0]
                 let queryItemValue = queryItemParts.count > 1 ? queryItemParts[1] : ""
 
-                return (queryItemName, queryItemValue)
-            })
-        } else {
-            queries = [:]
+                queries[queryItemName] = queryItemValue
+            }
         }
-
+        
         // Parse the authentication details, if included
         if uriContainsAuthenticationDetails {
             let authenticationString = parts[0]
