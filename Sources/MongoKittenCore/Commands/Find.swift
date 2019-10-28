@@ -12,6 +12,7 @@ public struct FindCommand: Encodable {
     public var limit: Int?
     public var batchSize: Int?
     public var readConcern: ReadConcern?
+    public var collation: Collation?
 
     public init(filter: Document?, inCollection collection: String) {
         self.filter = filter
