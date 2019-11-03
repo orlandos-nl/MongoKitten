@@ -47,9 +47,11 @@ If you're aiming at using MongoKitten Mobile, scroll down!
 
 ## Add MongoKitten to your Swift project 🚀
 
+If you're using a SwiftNIO 1.x framework such as Vapor 3, use [MongoKitten 5](https://github.com/OpenKitten/MongoKitten/tree/master/5.0) instead.
+
 MongoKitten supports the [Swift Package Manager](https://swift.org/getting-started/#using-the-package-manager) for server-side applications. Add MongoKitten to your dependencies in your **Package.swift** file:
 
-`.package(url: "https://github.com/OpenKitten/MongoKitten.git", .revision("master/6.0")`
+`.package(url: "https://github.com/OpenKitten/MongoKitten.git", from: 6.0.0")`
 
 Also, don't forget to add `"MongoKitten"` as a dependency for your target.
 
