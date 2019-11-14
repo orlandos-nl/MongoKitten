@@ -43,8 +43,8 @@ extension _Model {
         }
     }
     
-    @inlinable static var decoder: BSONDecoder { .init() }
-    @inlinable static var encoder: BSONEncoder { .init() }
+    @inlinable public static var decoder: BSONDecoder { .init() }
+    @inlinable public static var encoder: BSONEncoder { .init() }
     
     @inlinable
     public static func decode(from document: Document) throws -> Self {
