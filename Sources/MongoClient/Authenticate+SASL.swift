@@ -209,6 +209,7 @@ extension MongoConnection {
                         sessionId: nil
                     ).decode(SASLReply.self).flatMapThrowing { reply in
                         guard reply.done else {
+                            self.logger.error("Authentication to MongoDB failed")
                             throw MongoAuthenticationError(reason: .malformedAuthenticationDetails)
                         }
                     }

@@ -1,4 +1,5 @@
 import NIO
+import Logging
 import MongoCore
 
 internal struct MongoResponseContext {
@@ -8,10 +9,17 @@ internal struct MongoResponseContext {
 
 public final class MongoClientContext {
     private var queries = [MongoResponseContext]()
-    internal var serverHandshake: ServerHandshake?
+    internal var serverHandshake: ServerHandshake? {
+        didSet {
+            if let version = serverHandshake?.maxWireVersion, version.isDeprecated {
+                logger.warning("MongoDB server is outdated, please upgrade MongoDB")
+            }
+        }
+    }
     internal var didError = false
+    let logger: Logger
 
-    public func handleReply(_ reply: MongoServerReply) -> Bool {
+    internal func handleReply(_ reply: MongoServerReply) -> Bool {
         guard let index = queries.firstIndex(where: { $0.requestId == reply.responseTo }) else {
             return false
         }
@@ -22,7 +30,7 @@ public final class MongoClientContext {
         return true
     }
 
-    public func awaitReply(toRequestId requestId: Int32, completing result: EventLoopPromise<MongoServerReply>) {
+    internal func awaitReply(toRequestId requestId: Int32, completing result: EventLoopPromise<MongoServerReply>) {
         queries.append(MongoResponseContext(requestId: requestId, result: result))
     }
     
@@ -38,7 +46,9 @@ public final class MongoClientContext {
         queries = []
     }
 
-    public init() {}
+    public init(logger: Logger) {
+        self.logger = logger
+    }
 }
 
 struct MongoClientRequest<Request: MongoRequestMessage> {

@@ -3,7 +3,7 @@ import MongoKitten
 import NIO
 
 /// Reference to a Model
-public struct Reference<M: Model>: Resolvable {
+public struct Reference<M: _Model>: Resolvable {
     /// The referenced id
     public let reference: M.Identifier
     
@@ -86,21 +86,21 @@ public protocol Resolvable {
 }
 
 //public extension Resolvable where Result: QueryableModel {
-//    public func resolve(in context: Context, where query: ModelQuery<Result>) -> EventLoopFuture<Result> {
+//    public func resolve(in context: Context, where query: _ModelQuery<Result>) -> EventLoopFuture<Result> {
 //        return self.resolve(in: context, where: query.query)
 //    }
 //
-//    public func resolveIfPresent(in context: Context, where query: ModelQuery<Result>) -> EventLoopFuture<IfPresentResult> {
+//    public func resolveIfPresent(in context: Context, where query: _ModelQuery<Result>) -> EventLoopFuture<IfPresentResult> {
 //        return self.resolveIfPresent(in: context, where: query.query)
 //    }
 //}
 //
 //public extension Resolvable where Result: Sequence, Result.Element: QueryableModel {
-//    public func resolve(in context: Context, where query: ModelQuery<Result.Element>) -> EventLoopFuture<Result> {
+//    public func resolve(in context: Context, where query: _ModelQuery<Result.Element>) -> EventLoopFuture<Result> {
 //        return self.resolve(in: context, where: query.query)
 //    }
 //
-//    public func resolveIfPresent(in context: Context, where query: ModelQuery<Result.Element>) -> EventLoopFuture<IfPresentResult> {
+//    public func resolveIfPresent(in context: Context, where query: _ModelQuery<Result.Element>) -> EventLoopFuture<IfPresentResult> {
 //        return self.resolveIfPresent(in: context, where: query.query)
 //    }
 //}

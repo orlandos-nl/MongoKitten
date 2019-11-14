@@ -51,6 +51,7 @@ extension MongoConnection {
 
     public func selectAuthenticationAlgorithm(forUser user: String, password: String) throws -> ConnectionSettings.Authentication {
         guard let handshake = serverHandshake else {
+            logger.error("Inferring the authentication mechanism failed. Missing handshake with the server")
             throw MongoAuthenticationError(reason: .missingServerHandshake)
         }
         

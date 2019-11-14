@@ -1,7 +1,7 @@
 import MongoKitten
 
 /// Generic errors thrown by the generator
-public enum MeowModelError<M: Model>: Swift.Error {
+public enum MeowModelError<M: _Model>: Swift.Error {
     /// The value for the given key is missing, or invalid
     case missingOrInvalidValue(key: String, expected: Any.Type, got: Any?)
     

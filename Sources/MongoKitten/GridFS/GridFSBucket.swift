@@ -109,6 +109,7 @@ public final class GridFSBucket {
                 return EventLoopFuture.andAllSucceed([createFilesIndex, createChunksIndex], on: self.eventLoop)
             }.flatMapErrorThrowing { error in
                 self.didEnsureIndexes = false
+                self.filesCollection.pool.logger.warning("Could not ensure the indexes exists for GridFS")
                 throw error
             }
     }

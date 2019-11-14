@@ -2,7 +2,7 @@ import MongoKitten
 import MongoCore
 import NIO
 
-public struct MeowCollection<M: Model> {
+public struct MeowCollection<M: _Model> {
     public let database: MeowDatabase
     public let name: String
     public var raw: MongoCollection { return database.raw[name] }
@@ -15,7 +15,7 @@ public struct MeowCollection<M: Model> {
     
     public func insert(_ instance: M) -> EventLoopFuture<InsertReply> {
         do {
-            let document = try M.encoder.encode(instance)
+            let document = try instance.encode(to: Document.self)
             return raw.insert(document)
         } catch {
             return database.eventLoop.makeFailedFuture(error)
@@ -43,7 +43,7 @@ public struct MeowCollection<M: Model> {
     }
     
     public func count<Q: MongoKittenQuery>(where filter: Q) -> EventLoopFuture<Int> {
-        return raw.count(filter.makeDocument())
+        return self.count(where: filter.makeDocument())
     }
     
     public func deleteOne(where filter: Document) -> EventLoopFuture<DeleteReply> {
@@ -51,7 +51,7 @@ public struct MeowCollection<M: Model> {
     }
     
     public func deleteOne<Q: MongoKittenQuery>(where filter: Q) -> EventLoopFuture<DeleteReply> {
-        return raw.deleteOne(where: filter.makeDocument())
+        return self.deleteOne(where: filter.makeDocument())
     }
     
     public func deleteAll(where filter: Document) -> EventLoopFuture<DeleteReply> {
@@ -59,12 +59,12 @@ public struct MeowCollection<M: Model> {
     }
     
     public func deleteAll<Q: MongoKittenQuery>(where filter: Q) -> EventLoopFuture<DeleteReply> {
-        return raw.deleteAll(where: filter.makeDocument())
+        return self.deleteAll(where: filter.makeDocument())
     }
     
     public func upsert(_ instance: M) -> EventLoopFuture<UpdateReply> {
         do {
-            let document = try M.encoder.encode(instance)
+            let document = try instance.encode(to: Document.self)
             return raw.upsert(document, where: "_id" == instance._id)
         } catch {
             return database.eventLoop.makeFailedFuture(error)

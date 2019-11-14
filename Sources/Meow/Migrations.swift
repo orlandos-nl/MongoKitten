@@ -11,7 +11,7 @@ fileprivate struct EncodingHelper<V: Encodable>: Encodable {
     var boxedValue: V
 }
 
-public class Migrator<M: Model> {
+public class Migrator<M: _Model> {
     public typealias Action = (MeowCollection<M>) throws -> EventLoopFuture<Void>
     
     public let database: MeowDatabase
@@ -98,7 +98,7 @@ extension MeowDatabase {
         }
     }
     
-    public func migrate<M: Model>(_ description: String, on model: M.Type, migration: @escaping (Migrator<M>) throws -> Void) -> EventLoopFuture<Void> {
+    public func migrate<M: _Model>(_ description: String, on model: M.Type, migration: @escaping (Migrator<M>) throws -> Void) -> EventLoopFuture<Void> {
         let fullDescription = "\(M.self) - \(description)"
         
         return MeowMigration.count(

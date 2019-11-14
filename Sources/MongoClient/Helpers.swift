@@ -64,8 +64,8 @@ extension String {
         guard
             let data = Data(base64Encoded: self),
             let string = String(data: data, encoding: .utf8)
-            else {
-                throw MongoAuthenticationError(reason: .scramFailure)
+        else {
+            throw MongoAuthenticationError(reason: .scramFailure)
         }
 
         return string

@@ -21,8 +21,15 @@ var package = Package(
             targets: ["MongoCore"]),
     ],
     dependencies: [
+        // ✏️
+        .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0"),
+    
+        // 📈
+        .package(url: "https://github.com/apple/swift-metrics.git", from: "1.0.0"),
+        
         // 💾
         .package(url: "https://github.com/OpenKitten/BSON.git", from: "7.0.0"),
+        
         // 🚀
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0"),
 
@@ -37,7 +44,7 @@ var package = Package(
             dependencies: []),
         .target(
             name: "MongoCore",
-            dependencies: ["BSON", "_MongoKittenCrypto", "NIO"]),
+            dependencies: ["BSON", "_MongoKittenCrypto", "NIO", "Logging", "Metrics"]),
             .target(
                 name: "MongoKittenCore",
                 dependencies: ["MongoClient"]),

@@ -1,4 +1,5 @@
 import MongoClient
+import Logging
 import Foundation
 import NIO
 
@@ -99,13 +100,18 @@ public final class MongoDatabase {
     ///
     /// - parameter settings: The connection settings, which must include a database name
     /// - parameter loop: An EventLoop from NIO. If you want to use MongoKitten in a synchronous / non-NIO environment, use the `synchronousConnect` method.
-    public static func connect(settings: ConnectionSettings, on group: _MongoPlatformEventLoopGroup) -> EventLoopFuture<MongoDatabase> {
+    public static func connect(
+        settings: ConnectionSettings,
+        on group: _MongoPlatformEventLoopGroup,
+        logger: Logger = .defaultMongoCore
+    ) -> EventLoopFuture<MongoDatabase> {
         do {
             guard let targetDatabase = settings.targetDatabase else {
+                logger.critical("Cannot connect to MongoDB: No target database specified")
                 throw MongoKittenError(.cannotConnect, reason: .noTargetDatabaseSpecified)
             }
             
-            let cluster = try MongoCluster(lazyConnectingTo: settings, on: group)
+            let cluster = try MongoCluster(lazyConnectingTo: settings, on: group, logger: logger)
             return cluster.initialDiscovery.map {
                 return MongoDatabase(named: targetDatabase, pool: cluster)
             }
@@ -120,8 +126,13 @@ public final class MongoDatabase {
     ///
     /// - parameter settings: The connection settings, which must include a database name
     /// - parameter loop: An EventLoop from NIO. If you want to use MongoKitten in a synchronous / non-NIO environment, use the `synchronousConnect` method.
-    public static func lazyConnect(settings: ConnectionSettings, on group: _MongoPlatformEventLoopGroup) throws -> MongoDatabase {
+    public static func lazyConnect(
+        settings: ConnectionSettings,
+        on group: _MongoPlatformEventLoopGroup,
+        logger: Logger = .defaultMongoCore
+    ) throws -> MongoDatabase {
         guard let targetDatabase = settings.targetDatabase else {
+            logger.critical("Cannot connect to MongoDB: No target database specified")
             throw MongoKittenError(.cannotConnect, reason: .noTargetDatabaseSpecified)
         }
 
@@ -145,6 +156,7 @@ public final class MongoDatabase {
         transactionOptions: MongoTransactionOptions? = nil
     ) throws -> MongoDatabase {
         guard pool.wireVersion?.supportsReplicaTransactions == true else {
+            pool.logger.error("MongoDB transaction not supported by the server")
             throw MongoKittenError(.unsupportedFeatureByServer, reason: nil)
         }
 

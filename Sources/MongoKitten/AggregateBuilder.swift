@@ -63,6 +63,10 @@ public func match(_ query: Document) -> AggregateBuilderStage {
     return .match(query)
 }
 
+public func addFields(_ query: Document) -> AggregateBuilderStage {
+    return .addFields(query)
+}
+
 public func skip(_ n: Int) -> AggregateBuilderStage {
     return .skip(n)
 }

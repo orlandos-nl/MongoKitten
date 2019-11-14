@@ -12,6 +12,23 @@ A fast, pure swift [MongoDB](https://mongodb.com) driver based on [Swift NIO](ht
 
 ⭐️ Please leave a star to support MongoKitten – it really helps!
 
+# 🐈 Community
+
+[Join our slack here](https://slackpass.io/openkitten) and become a part of the welcoming community.
+
+# 🤝 How to help
+
+## Support MongoKitten development
+
+[You can sponsor us via GitHub.](https://github.com/sponsors/Joannis). This enables us to provide a higher quality and more documentation as well as building more tools.
+
+## Contribute to MongoKitten
+
+- See [CONTRIBUTING.md](CONTRIBUTING.md) for info on contributing to MongoKitten
+- You can help us out by resolving TODOs and replying on issues
+- Of course, all feedback, positive and negative, also really helps to improve the project
+
+
 # 🕶 Installation
 
 ## Set up MongoDB server
@@ -30,9 +47,11 @@ If you're aiming at using MongoKitten Mobile, scroll down!
 
 ## Add MongoKitten to your Swift project 🚀
 
+If you're using a SwiftNIO 1.x framework such as Vapor 3, use [MongoKitten 5](https://github.com/OpenKitten/MongoKitten/tree/master/5.0) instead.
+
 MongoKitten supports the [Swift Package Manager](https://swift.org/getting-started/#using-the-package-manager) for server-side applications. Add MongoKitten to your dependencies in your **Package.swift** file:
 
-`.package(url: "https://github.com/OpenKitten/MongoKitten.git", .revision("master/6.0")`
+`.package(url: "https://github.com/OpenKitten/MongoKitten.git", from: 6.0.0")`
 
 Also, don't forget to add `"MongoKitten"` as a dependency for your target.
 
@@ -55,12 +74,6 @@ services.register { container -> MongoKitten.Database in
     return try MongoDatabase.lazyConnect(connectionURI, on: container.eventLoop)
 }
 ```
-
-### Note on URIs
-
-MongoKitten [does not yet support](https://github.com/OpenKitten/MongoKitten/issues/172#issuecomment-468302085) MongoDB v3.6 connection URIs. You'll need to use the old connection URI format.
-
-If you're unsure; the connection string starting with `mongodb+srv://` is a 3.6 connection URI, whereas URIs starting with `mongodb://` are an older format.
 
 ## NIO Futures
 
@@ -290,22 +303,6 @@ users.find().decode(User.self).forEach { user in
 	print(user.username)
 }
 ```
-
-# 🐈 Community
-
-[Join our slack here](https://slackpass.io/openkitten) and become a part of the welcoming community.
-
-# 🤝 How to help
-
-## Support MongoKitten development
-
-[We're accepting donations for our project here](https://opencollective.com/mongokitten). We hope to set up a good test environment as well as many docs, tutorials and examples.
-
-## Contribute to MongoKitten
-
-- See [CONTRIBUTING.md](CONTRIBUTING.md) for info on contributing to MongoKitten
-- You can help us out by resolving TODOs and replying on issues
-- Of course, all feedback, positive and negative, also really helps to improve the project
 
 # ☠️ License
 

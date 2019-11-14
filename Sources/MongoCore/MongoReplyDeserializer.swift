@@ -1,11 +1,13 @@
 import Foundation
 import BSON
 import NIO
+import Logging
 
 /// A type capable of deserializing messages from MongoDB
 public struct MongoServerReplyDeserializer {
     private var header: MongoMessageHeader?
     private var reply: MongoServerReply?
+    let logger: Logger
 
     public mutating func takeReply() -> MongoServerReply? {
         if let reply = reply {
@@ -16,7 +18,9 @@ public struct MongoServerReplyDeserializer {
         return nil
     }
 
-    public init() {}
+    public init(logger: Logger) {
+        self.logger = logger
+    }
 
     /// Parses a buffer into a server reply
     ///
@@ -54,6 +58,7 @@ public struct MongoServerReplyDeserializer {
             // >= Wire Version 6
             self.reply = try .message(OpMessage(reading: &buffer, header: header))
         default:
+            logger.error("Mongo Protocol error: OpCode \(header.opCode) in reply is not supported")
             throw MongoProtocolParsingError(reason: .unsupportedOpCode)
         }
 
