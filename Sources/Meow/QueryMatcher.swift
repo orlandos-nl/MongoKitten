@@ -3,7 +3,7 @@ import MongoKitten
 
 #if swift(>=5.1) && os(macOS)
 @dynamicMemberLookup
-public struct QueryMatcher<M: _KeyPathQueryableModel> {
+public struct QueryMatcher<M: KeyPathQueryableModel> {
     internal init() {}
     
     public subscript<T>(dynamicMember keyPath: KeyPath<M, T>) -> QuerySubject<M, T> {
@@ -12,19 +12,11 @@ public struct QueryMatcher<M: _KeyPathQueryableModel> {
     }
 }
 
-public struct QuerySubject<M: _KeyPathQueryableModel, T> {
+public struct QuerySubject<M: KeyPathQueryableModel, T> {
     internal let path: String
 }
 
-public protocol _KeyPathQueryableModel: _Model {
-    static func makePathComponents<T>(forKeyPath keyPath: KeyPath<Self, T>) -> [String]
-}
-
-public protocol KeyPathQueryableModel: _KeyPathQueryableModel, Model {
-    static func makePathComponents<T>(forKeyPath keyPath: KeyPath<Self, T>) -> [String]
-}
-
-public protocol KeyPathQueryableSuperModel: _KeyPathQueryableModel, SuperModel {
+public protocol KeyPathQueryableModel: Model {
     static func makePathComponents<T>(forKeyPath keyPath: KeyPath<Self, T>) -> [String]
 }
 
@@ -36,55 +28,55 @@ fileprivate struct _DocumentQueryWrapper: MongoKittenQuery {
     }
 }
 
-public func == <M: _KeyPathQueryableModel, T: Primitive>(lhs: QuerySubject<M, T>, rhs: T) -> Document {
+public func == <M: KeyPathQueryableModel, T: Primitive>(lhs: QuerySubject<M, T>, rhs: T) -> Document {
     return lhs.path == rhs
 }
 
-public func == <M: _KeyPathQueryableModel, T: RawRepresentable>(lhs: QuerySubject<M, T>, rhs: T) -> Document where T.RawValue: Primitive {
+public func == <M: KeyPathQueryableModel, T: RawRepresentable>(lhs: QuerySubject<M, T>, rhs: T) -> Document where T.RawValue: Primitive {
     return lhs.path == rhs.rawValue
 }
 
-public func != <M: _KeyPathQueryableModel, T: Primitive>(lhs: QuerySubject<M, T>, rhs: T) -> Document {
+public func != <M: KeyPathQueryableModel, T: Primitive>(lhs: QuerySubject<M, T>, rhs: T) -> Document {
     return lhs.path != rhs
 }
 
-public func != <M: _KeyPathQueryableModel, T: RawRepresentable>(lhs: QuerySubject<M, T>, rhs: T) -> Document where T.RawValue: Primitive {
+public func != <M: KeyPathQueryableModel, T: RawRepresentable>(lhs: QuerySubject<M, T>, rhs: T) -> Document where T.RawValue: Primitive {
     return lhs.path != rhs.rawValue
 }
 
-public func <= <M: _KeyPathQueryableModel, T: Primitive & Comparable>(lhs: QuerySubject<M, T>, rhs: T) -> Document {
+public func <= <M: KeyPathQueryableModel, T: Primitive & Comparable>(lhs: QuerySubject<M, T>, rhs: T) -> Document {
     return lhs.path <= rhs
 }
 
-public func <= <M: _KeyPathQueryableModel, T: RawRepresentable>(lhs: QuerySubject<M, T>, rhs: T) -> Document where T.RawValue: Primitive & Comparable {
+public func <= <M: KeyPathQueryableModel, T: RawRepresentable>(lhs: QuerySubject<M, T>, rhs: T) -> Document where T.RawValue: Primitive & Comparable {
     return lhs.path <= rhs.rawValue
 }
 
-public func >= <M: _KeyPathQueryableModel, T: Primitive & Comparable>(lhs: QuerySubject<M, T>, rhs: T) -> Document {
+public func >= <M: KeyPathQueryableModel, T: Primitive & Comparable>(lhs: QuerySubject<M, T>, rhs: T) -> Document {
     return lhs.path >= rhs
 }
 
-public func >= <M: _KeyPathQueryableModel, T: RawRepresentable>(lhs: QuerySubject<M, T>, rhs: T) -> Document where T.RawValue: Primitive & Comparable {
+public func >= <M: KeyPathQueryableModel, T: RawRepresentable>(lhs: QuerySubject<M, T>, rhs: T) -> Document where T.RawValue: Primitive & Comparable {
     return lhs.path >= rhs.rawValue
 }
 
-public func < <M: _KeyPathQueryableModel, T: Primitive & Comparable>(lhs: QuerySubject<M, T>, rhs: T) -> Document {
+public func < <M: KeyPathQueryableModel, T: Primitive & Comparable>(lhs: QuerySubject<M, T>, rhs: T) -> Document {
     return lhs.path < rhs
 }
 
-public func < <M: _KeyPathQueryableModel, T: RawRepresentable>(lhs: QuerySubject<M, T>, rhs: T) -> Document where T.RawValue: Primitive & Comparable {
+public func < <M: KeyPathQueryableModel, T: RawRepresentable>(lhs: QuerySubject<M, T>, rhs: T) -> Document where T.RawValue: Primitive & Comparable {
     return lhs.path < rhs.rawValue
 }
 
-public func > <M: _KeyPathQueryableModel, T: Primitive & Comparable>(lhs: QuerySubject<M, T>, rhs: T) -> Document {
+public func > <M: KeyPathQueryableModel, T: Primitive & Comparable>(lhs: QuerySubject<M, T>, rhs: T) -> Document {
     return lhs.path > rhs
 }
 
-public func > <M: _KeyPathQueryableModel, T: RawRepresentable>(lhs: QuerySubject<M, T>, rhs: T) -> Document where T.RawValue: Primitive & Comparable {
+public func > <M: KeyPathQueryableModel, T: RawRepresentable>(lhs: QuerySubject<M, T>, rhs: T) -> Document where T.RawValue: Primitive & Comparable {
     return lhs.path > rhs.rawValue
 }
 
-extension MeowCollection where M: _KeyPathQueryableModel {
+extension MeowCollection where M: KeyPathQueryableModel {
     public func find(where matching: (QueryMatcher<M>) -> Document) -> MappedCursor<FindQueryBuilder, M> {
         let query = matching(QueryMatcher<M>())
         return self.find(where: query)

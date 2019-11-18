@@ -1,4 +1,4 @@
-public struct PartialModel<M: _Model> {
+public struct PartialModel<M: Model> {
     public private(set) var document: Document
     
     public init(document: Document = Document()) {

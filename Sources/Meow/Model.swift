@@ -2,7 +2,7 @@ import MongoKitten
 import MongoCore
 import NIO
 
-//public struct PartialChange<M: _Model> {
+//public struct PartialChange<M: Model> {
 //    public let entity: M.Identifier
 //    public let changedFields: Document
 //    public let removedFields: Document
@@ -10,50 +10,40 @@ import NIO
 
 public typealias MeowIdentifier = Primitive & Equatable
 
-public protocol _Model: Codable {
+public protocol BaseModel {
     associatedtype Identifier: MeowIdentifier
     
     /// The collection name instances of the model live in. A default implementation is provided.
     static var collectionName: String { get }
     
-    static func decode(from document: Document) throws -> Self
-    func encode(to document: Document.Type) throws -> Document
-    
-    static var decoder: BSONDecoder { get }
-    static var encoder: BSONEncoder { get }
-    
     /// The `_id` of the model. *This property MUST be encoded with `_id` as key*
     var _id: Identifier { get }
 }
 
-// MARK: - Default implementations
-extension _Model {
-    @available(*, renamed: "save")
-    public func create(in database: MeowDatabase) -> EventLoopFuture<MeowOperationResult> {
-        save(in: database)
+public protocol ReadableModel: BaseModel, Decodable {
+    static func decode(from document: Document) throws -> Self
+    static var decoder: BSONDecoder { get }
+}
+
+public protocol MutableModel: ReadableModel, Encodable {
+    func encode(to document: Document.Type) throws -> Document
+    static var encoder: BSONEncoder { get }
+}
+
+public typealias Model = MutableModel
+
+extension BaseModel {
+    public static var collectionName: String {
+        return String(describing: Self.self) // Will be the name of the type
     }
-    
-    public func save(in database: MeowDatabase) -> EventLoopFuture<MeowOperationResult> {
-        return database.collection(for: Self.self).upsert(self).map { reply in
-            return MeowOperationResult(
-                success: reply.updatedCount == 1,
-                n: reply.updatedCount,
-                writeErrors: reply.writeErrors
-            )
-        }
-    }
-    
+}
+
+extension ReadableModel {
     @inlinable public static var decoder: BSONDecoder { .init() }
-    @inlinable public static var encoder: BSONEncoder { .init() }
     
     @inlinable
     public static func decode(from document: Document) throws -> Self {
         try Self.decoder.decode(Self.self, from: document)
-    }
-    
-    @inlinable
-    public func encode(to document: Document.Type) throws -> Document {
-        try Self.encoder.encode(self)
     }
     
     public static func watch(in database: MeowDatabase) -> EventLoopFuture<ChangeStream<Self>> {
@@ -75,21 +65,32 @@ extension _Model {
     }
 }
 
-public protocol Model: _Model {
-    static var hooks: [MeowHook<Self>] { get }
-}
-
-extension Model {
-    public static var collectionName: String {
-        return String(describing: Self.self) // Will be the name of the type
+// MARK: - Default implementations
+extension MutableModel {
+    @available(*, renamed: "save")
+    public func create(in database: MeowDatabase) -> EventLoopFuture<MeowOperationResult> {
+        save(in: database)
     }
     
-    public static var hooks: [MeowHook<Self>] {
-        return []
+    public func save(in database: MeowDatabase) -> EventLoopFuture<MeowOperationResult> {
+        return database.collection(for: Self.self).upsert(self).map { reply in
+            return MeowOperationResult(
+                success: reply.updatedCount == 1,
+                n: reply.updatedCount,
+                writeErrors: reply.writeErrors
+            )
+        }
+    }
+    
+    @inlinable public static var encoder: BSONEncoder { .init() }
+    
+    @inlinable
+    public func encode(to document: Document.Type) throws -> Document {
+        try Self.encoder.encode(self)
     }
 }
 
-public enum MeowHook<M: _Model> {}
+public enum MeowHook<M: Model> {}
 
 public struct MeowOperationResult {
     public struct NotSuccessful: Error {}

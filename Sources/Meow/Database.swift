@@ -10,11 +10,11 @@ public final class MeowDatabase: EventLoopGroup {
         self.raw = database
     }
     
-    public func collection<M: _Model>(for model: M.Type) -> MeowCollection<M> {
+    public func collection<M: BaseModel>(for model: M.Type) -> MeowCollection<M> {
         return MeowCollection<M>(database: self, named: M.collectionName)
     }
     
-    public subscript<M: _Model>(type: M.Type) -> MeowCollection<M> {
+    public subscript<M: BaseModel>(type: M.Type) -> MeowCollection<M> {
         return collection(for: type)
     }
     

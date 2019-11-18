@@ -2,26 +2,20 @@ import MongoKitten
 import MongoCore
 import NIO
 
-public struct MeowCollection<M: _Model> {
+public struct MeowCollection<M: BaseModel> {
     public let database: MeowDatabase
     public let name: String
-    public var raw: MongoCollection { return database.raw[name] }
+    public let raw: MongoCollection
     public var eventLoop: EventLoop { return database.eventLoop }
     
     public init(database: MeowDatabase, named name: String) {
         self.database = database
+        self.raw = database.raw[name]
         self.name = name
     }
-    
-    public func insert(_ instance: M) -> EventLoopFuture<InsertReply> {
-        do {
-            let document = try instance.encode(to: Document.self)
-            return raw.insert(document)
-        } catch {
-            return database.eventLoop.makeFailedFuture(error)
-        }
-    }
-    
+}
+
+extension MeowCollection where M: ReadableModel {
     public func find(where filter: Document = [:]) -> MappedCursor<FindQueryBuilder, M> {
         return raw.find(filter).decode(M.self)
     }
@@ -46,6 +40,30 @@ public struct MeowCollection<M: _Model> {
         return self.count(where: filter.makeDocument())
     }
     
+    public func watch() -> EventLoopFuture<ChangeStream<M>> {
+        return raw.watch(as: M.self, using: M.decoder)
+    }
+}
+
+extension MeowCollection where M: MutableModel {
+    public func insert(_ instance: M) -> EventLoopFuture<InsertReply> {
+        do {
+            let document = try instance.encode(to: Document.self)
+            return raw.insert(document)
+        } catch {
+            return database.eventLoop.makeFailedFuture(error)
+        }
+    }
+    
+    public func upsert(_ instance: M) -> EventLoopFuture<UpdateReply> {
+        do {
+            let document = try instance.encode(to: Document.self)
+            return raw.upsert(document, where: "_id" == instance._id)
+        } catch {
+            return database.eventLoop.makeFailedFuture(error)
+        }
+    }
+    
     public func deleteOne(where filter: Document) -> EventLoopFuture<DeleteReply> {
         return raw.deleteOne(where: filter)
     }
@@ -62,23 +80,10 @@ public struct MeowCollection<M: _Model> {
         return self.deleteAll(where: filter.makeDocument())
     }
     
-    public func upsert(_ instance: M) -> EventLoopFuture<UpdateReply> {
-        do {
-            let document = try instance.encode(to: Document.self)
-            return raw.upsert(document, where: "_id" == instance._id)
-        } catch {
-            return database.eventLoop.makeFailedFuture(error)
-        }
-    }
-    
     //    public func saveChanges(_ changes: PartialChange<M>) -> EventLoopFuture<UpdateReply> {
     //        return raw.updateOne(where: "_id" == changes.entity, to: [
     //            "$set": changes.changedFields,
     //            "$unset": changes.removedFields
     //        ])
     //    }
-    
-    public func watch() -> EventLoopFuture<ChangeStream<M>> {
-        return raw.watch(as: M.self, using: M.decoder)
-    }
 }
