@@ -5,7 +5,7 @@ public struct UpdateCommand: Encodable {
         private enum CodingKeys: String, CodingKey {
             case query = "q"
             case update = "u"
-            case multi, collation, arrayFilters
+            case multi, upsert, collation, arrayFilters
         }
         
         public var query: Document
