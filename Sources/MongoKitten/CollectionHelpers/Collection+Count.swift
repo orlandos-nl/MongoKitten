@@ -13,7 +13,7 @@ extension MongoCollection {
                 namespace: self.database.commandNamespace,
                 sessionId: self.sessionId ?? connection.implicitSessionId
             )
-        }.decode(CountReply.self).map { $0.count }
+        }.decode(CountReply.self).map { $0.count }._mongoHop(to: hoppedEventLoop)
     }
     
     public func count<Query: MongoKittenQuery>(_ query: Query? = nil) -> EventLoopFuture<Int> {

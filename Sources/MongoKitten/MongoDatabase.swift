@@ -16,6 +16,10 @@ public final class MongoDatabase {
     public var sessionId: SessionIdentifier? {
         return session?.sessionId
     }
+    
+    public var isInTransaction: Bool {
+        return self.transaction != nil
+    }
 
     /// The name of the database
     public let name: String
@@ -26,6 +30,8 @@ public final class MongoDatabase {
     internal var commandNamespace: MongoNamespace {
         return MongoNamespace(to: "$cmd", inDatabase: self.name)
     }
+    
+    public private(set) var hoppedEventLoop: EventLoop?
 
     /// The NIO event loop.
     public var eventLoop: EventLoop {
@@ -35,6 +41,12 @@ public final class MongoDatabase {
     internal init(named name: String, pool: MongoConnectionPool) {
         self.name = name
         self.pool = pool
+    }
+    
+    public func hopped(to eventloop: EventLoop) -> MongoDatabase {
+        let database = MongoDatabase(named: self.name, pool: self.pool)
+        database.hoppedEventLoop = eventloop
+        return database
     }
 
     /// A helper method that uses the normal `connect` method and awaits it. It creates an event loop group for you.
@@ -183,7 +195,8 @@ public final class MongoDatabase {
     public subscript(collection: String) -> MongoCollection {
         let collection = MongoCollection(named: collection, in: self)
         collection.session = self.session
-        collection.transaction = transaction
+        collection.transaction = self.transaction
+        collection.hoppedEventLoop = self.hoppedEventLoop
         return collection
     }
 
@@ -203,7 +216,7 @@ public final class MongoDatabase {
             ).flatMapThrowing { reply -> Void in
                 try reply.assertOK()
             }
-        }
+        }._mongoHop(to: hoppedEventLoop)
     }
 
     /// Lists all collections your user has knowledge of
@@ -238,7 +251,17 @@ public final class MongoDatabase {
                     return connection.eventLoop.makeFailedFuture(error)
                 }
             }
+        }._mongoHop(to: hoppedEventLoop)
+    }
+}
+
+extension EventLoopFuture {
+    internal func _mongoHop(to eventLoop: EventLoop?) -> EventLoopFuture<Value> {
+        guard let eventLoop = eventLoop else {
+            return self
         }
+        
+        return self.hop(to: eventLoop)
     }
 }
 

@@ -44,6 +44,6 @@ extension MongoCollection {
 
             self.pool.logger.error("MongoDB Insert operation failed")
             throw reply
-        }
+        }._mongoHop(to: hoppedEventLoop)
     }
 }
