@@ -1,4 +1,5 @@
 import NIO
+import MongoKittenCore
 import MongoClient
 
 extension MongoCollection {
@@ -13,8 +14,36 @@ public struct AggregateBuilderPipeline: QueryCursor {
     public typealias Element = Document
     internal var collection: MongoCollection!
     internal var writing = false
+    internal var _comment: String?
+    internal var _allowDiskUse: Bool?
+    internal var _collation: Collation?
+    internal var _readConcern: ReadConcern?
     
     public var eventLoop: EventLoop { return collection.eventLoop }
+    
+    public func allowDiskUse(_ allowDiskUse: Bool? = true) -> AggregateBuilderPipeline {
+        var pipeline = self
+        pipeline._allowDiskUse = allowDiskUse
+        return pipeline
+    }
+    
+    public func comment(_ comment: String?) -> AggregateBuilderPipeline {
+        var pipeline = self
+        pipeline._comment = comment
+        return pipeline
+    }
+    
+    public func collation(_ collation: Collation?) -> AggregateBuilderPipeline {
+        var pipeline = self
+        pipeline._collation = collation
+        return pipeline
+    }
+    
+    public func readConcern(_ readConcern: ReadConcern?) -> AggregateBuilderPipeline {
+        var pipeline = self
+        pipeline._readConcern = readConcern
+        return pipeline
+    }
     
     private func makeCommand() -> AggregateCommand {
         var documents = [Document]()
@@ -24,7 +53,17 @@ public struct AggregateBuilderPipeline: QueryCursor {
             documents.append(contentsOf: stage.stages)
         }
         
-        return AggregateCommand(inCollection: collection.name, pipeline: documents)
+        var command = AggregateCommand(
+            inCollection: collection.name,
+            pipeline: documents
+        )
+        
+        command.comment = _comment
+        command.allowDiskUse = _allowDiskUse
+        command.collation = _collation
+        command.readConcern = _readConcern
+        
+        return command
     }
     
     public func getConnection() -> EventLoopFuture<MongoConnection> {
