@@ -94,6 +94,10 @@ public final class AggregateCursor<Element>: QueryCursor, AggregateBuilder {
         return self
     }
     
+    @discardableResult public func allowDiskUse(_ allowDiskUse: Bool?) -> AggregateCursor<Element> {
+        operation.allowDiskUse = allowDiskUse
+        return self
+    }
     
     @discardableResult public func append(_ stage: Document) -> Self {
         operation.pipeline.append(stage)
