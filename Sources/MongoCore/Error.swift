@@ -196,6 +196,10 @@ public struct MongoError: Error, CustomStringConvertible, CustomDebugStringConve
             - Check if your server is whitelisted when using MongoDB atlas
             - If using MongoDB atlas, make sure you're connecting with SRV
             """
+        case .internalError:
+            return """
+            - An internal MongoKitten error occurred, file a report on https://github.com/OpenKitten/MongoKitten/
+            """
         }
     }
     
