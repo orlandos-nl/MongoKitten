@@ -89,7 +89,7 @@ internal final class Connection {
         #if canImport(NIOTransportServices)
         var bootstrap = NIOTSConnectionBootstrap(group: cluster.group)
         
-        switch settings.ssl {
+        switch cluster.settings.ssl {
         case .none:
             break
         case .ssl, .sslCA:
