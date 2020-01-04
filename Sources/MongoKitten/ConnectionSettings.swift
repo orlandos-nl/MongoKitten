@@ -271,8 +271,8 @@ public struct ConnectionSettings: Equatable {
             self.authenticationSource = String(authSource)
         }
         
-        if let useSSL = Bool(queryValue: queries["ssl"]) {
-            self.ssl = useSSL
+        if Bool(queryValue: queries["ssl"]) == true {
+            self.ssl = .ssl
         }
         
         // TODO: Custom root cert for IBM bluemix
