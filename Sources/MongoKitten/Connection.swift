@@ -89,13 +89,9 @@ internal final class Connection {
         #if canImport(NIOTransportServices)
         var bootstrap = NIOTSConnectionBootstrap(group: cluster.group)
         
-        switch cluster.settings.ssl {
-        case .none:
-            break
-        case .ssl, .sslCA:
+        if cluster.settings.ssl.useSSL {
             bootstrap = bootstrap.tlsOptions(NWProtocolTLS.Options())
         }
-
         #else
         let bootstrap = ClientBootstrap(group: cluster.eventLoop)
         #endif
@@ -178,10 +174,7 @@ internal final class Connection {
             }
         }
         #elseif !canImport(NIOTransportServices)
-        switch settings.ssl {
-        case .none:
-            break
-        case .ssl, .sslCA:
+        if settings.ssl.useSSL {
             promise.fail(error: MongoKittenError(.unableToConnect, reason: .sslNotAvailable))
         }
         #endif

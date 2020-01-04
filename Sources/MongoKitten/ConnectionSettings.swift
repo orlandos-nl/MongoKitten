@@ -16,7 +16,7 @@ fileprivate extension Bool {
 /// Describes the settings for a MongoDB connection, most of which can be represented in a connection string
 public struct ConnectionSettings: Equatable {
     /// SSL
-    public enum SSL: Equatable {
+    public enum SSL: Equatable, ExpressibleByBooleanLiteral {
         /// No SSL
         case none
         
@@ -25,6 +25,19 @@ public struct ConnectionSettings: Equatable {
         
         /// SSL with trust root certificate ( --sslCA variable on mongo client)
         case sslCA(path: String)
+        
+        // ExpressibleByBooleanLiteral
+        public init(booleanLiteral value: Bool) {
+            self = value ? .ssl : .none
+        }
+        
+        /// if current setting has ssl enabled.
+        var useSSL: Bool {
+            switch self {
+            case .none: return false
+            case .ssl, .sslCA: return true
+            }
+        }
     }
 
     /// The authentication details to use with the database
@@ -96,7 +109,7 @@ public struct ConnectionSettings: Equatable {
     public var hosts: [Host]
 
     /// When .ssl, SSL will be used
-    public var ssl: SSL = .none
+    public var ssl: SSL = false
 
     /// When true, SSL certificates will be validated
     public var verifySSLCertificates: Bool = true
@@ -257,9 +270,9 @@ public struct ConnectionSettings: Equatable {
         if let authSource = queries["authSource"] {
             self.authenticationSource = String(authSource)
         }
-
-        if Bool(queryValue: queries["ssl"]) == true {
-            self.ssl = .ssl
+        
+        if let useSSL = Bool(queryValue: queries["ssl"]) {
+            self.ssl = useSSL
         }
         
         // TODO: Custom root cert for IBM bluemix
