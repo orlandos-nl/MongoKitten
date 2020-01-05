@@ -15,6 +15,31 @@ fileprivate extension Bool {
 
 /// Describes the settings for a MongoDB connection, most of which can be represented in a connection string
 public struct ConnectionSettings: Equatable {
+    /// SSL
+    public enum SSL: Equatable, ExpressibleByBooleanLiteral {
+        /// No SSL
+        case none
+        
+        /// Regualar SSL
+        case ssl
+        
+        /// SSL with trust root certificate ( --sslCA variable on mongo client)
+        case sslCA(path: String)
+        
+        // ExpressibleByBooleanLiteral
+        public init(booleanLiteral value: Bool) {
+            self = value ? .ssl : .none
+        }
+        
+        /// if current setting has ssl enabled.
+        var useSSL: Bool {
+            switch self {
+            case .none: return false
+            case .ssl, .sslCA: return true
+            }
+        }
+    }
+
     /// The authentication details to use with the database
     public enum Authentication: Equatable {
         /// Unauthenticated
@@ -82,10 +107,10 @@ public struct ConnectionSettings: Equatable {
     
     /// Hosts to connect to
     public var hosts: [Host]
-    
-    /// When true, SSL will be used
-    public var useSSL: Bool = false
-    
+
+    /// When .ssl, SSL will be used
+    public var ssl: SSL = false
+
     /// When true, SSL certificates will be validated
     public var verifySSLCertificates: Bool = true
     
@@ -113,18 +138,18 @@ public struct ConnectionSettings: Equatable {
     /// - parameter authenticationSource: See `ConnectionSettings.authenticationSource`
     /// - parameter hosts: Hosts to connect to
     /// - parameter targetDatabase: The target path
-    /// - parameter useSSL: When true, SSL will be used
+    /// - parameter ssl: When .ssl, SSL will be used, when .sslCA(path), provided certificate will be used
     /// - parameter verifySSLCertificates: When true, SSL certificates will be validated
     /// - parameter maximumNumberOfConnections: The maximum number of connections allowed
     /// - parameter connectTimeout: See `ConnectionSettings.connectTimeout`
     /// - parameter socketTimeout: See `ConnectionSettings.socketTimeout`
     /// - parameter applicationName: The application name is printed to the mongod logs upon establishing the connection. It is also recorded in the slow query logs and profile collections.
-    public init(authentication: Authentication, authenticationSource: String? = nil, hosts: [Host], targetDatabase: String? = nil, useSSL: Bool = false, verifySSLCertificates: Bool = true, maximumNumberOfConnections: Int = 1, connectTimeout: TimeInterval = 300, socketTimeout: TimeInterval = 300, applicationName: String? = nil) {
+    public init(authentication: Authentication, authenticationSource: String? = nil, hosts: [Host], targetDatabase: String? = nil, ssl: SSL = .none, verifySSLCertificates: Bool = true, maximumNumberOfConnections: Int = 1, connectTimeout: TimeInterval = 300, socketTimeout: TimeInterval = 300, applicationName: String? = nil) {
         self.authentication = authentication
         self.authenticationSource = authenticationSource
         self.hosts = hosts
         self.targetDatabase = targetDatabase
-        self.useSSL = useSSL
+        self.ssl = ssl
         self.verifySSLCertificates = verifySSLCertificates
         self.maximumNumberOfConnections = maximumNumberOfConnections
         self.connectTimeout = connectTimeout
@@ -158,7 +183,7 @@ public struct ConnectionSettings: Equatable {
             #if canImport(NioDNS)
             uri.removeFirst("mongodb+srv://".count)
             isSRV = true
-            useSSL = true
+            ssl = .ssl
             #else
             throw MongoKittenError(.unsupportedFeatureByClient, reason: .dnsClientNotAvailable)
             #endif
@@ -246,8 +271,8 @@ public struct ConnectionSettings: Equatable {
             self.authenticationSource = String(authSource)
         }
         
-        if let useSSL = Bool(queryValue: queries["ssl"]) {
-            self.useSSL = useSSL
+        if Bool(queryValue: queries["ssl"]) == true {
+            self.ssl = .ssl
         }
         
         // TODO: Custom root cert for IBM bluemix

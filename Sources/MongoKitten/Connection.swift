@@ -89,7 +89,7 @@ internal final class Connection {
         #if canImport(NIOTransportServices)
         var bootstrap = NIOTSConnectionBootstrap(group: cluster.group)
         
-        if cluster.settings.useSSL {
+        if cluster.settings.ssl.useSSL {
             bootstrap = bootstrap.tlsOptions(NWProtocolTLS.Options())
         }
         #else
@@ -149,12 +149,21 @@ internal final class Connection {
         var handlers: [ChannelHandler] = [ClientConnectionParser(context: context), serializer]
         
         #if canImport(NIOOpenSSL)
-        if settings.useSSL {
+        
+        let sslConfiguration: TLSConfiguration?
+        switch settings.ssl {
+        case .none:
+            sslConfiguration = nil
+        case .ssl:
+            sslConfiguration = TLSConfiguration.forClient(
+                certificateVerification: settings.verifySSLCertificates ? .fullVerification : .none
+            )
+        case .sslCA(let path):
+            sslConfiguration = TLSConfiguration.forClient(certificateVerification: .fullVerification, trustRoots: .file(path))
+        }
+        
+        if let sslConfiguration = sslConfiguration {
             do {
-                let sslConfiguration = TLSConfiguration.forClient(
-                    certificateVerification: settings.verifySSLCertificates ? .fullVerification : .none
-                )
-                
                 let sslContext = try SSLContext(configuration: sslConfiguration)
                 let sslHandler = try OpenSSLClientHandler(context: sslContext, serverHostname: hostname)
                 
@@ -165,7 +174,7 @@ internal final class Connection {
             }
         }
         #elseif !canImport(NIOTransportServices)
-        if settings.useSSL {
+        if settings.ssl.useSSL {
             promise.fail(error: MongoKittenError(.unableToConnect, reason: .sslNotAvailable))
         }
         #endif
