@@ -1,3 +1,5 @@
+import Foundation
+import Metrics
 import BSON
 import MongoCore
 import NIO
@@ -14,6 +16,7 @@ extension MongoConnection {
 
             return execute(request, namespace: namespace)
         } catch {
+            self.logger.error("Unable to encode MongoDB request")
             return eventLoop.makeFailedFuture(error)
         }
     }
@@ -24,14 +27,25 @@ extension MongoConnection {
         in transaction: MongoTransaction? = nil,
         sessionId: SessionIdentifier? = nil
     ) -> EventLoopFuture<MongoServerReply> {
+        let result: EventLoopFuture<MongoServerReply>
+        
         if
             let serverHandshake = serverHandshake,
             serverHandshake.maxWireVersion.supportsOpMessage
         {
-            return executeOpMessage(command, namespace: namespace)
+            result = executeOpMessage(command, namespace: namespace)
         } else {
-            return executeOpQuery(command, namespace: namespace)
+            result = executeOpQuery(command, namespace: namespace)
         }
+
+        if let queryTimer = queryTimer {
+            let date = Date()
+            result.whenComplete { _ in
+                queryTimer.record(-date.timeIntervalSinceNow)
+            }
+        }
+        
+        return result
     }
     
     public func executeOpQuery(
@@ -42,6 +56,7 @@ extension MongoConnection {
         query.header.requestId = nextRequestId()
         return executeMessage(query).flatMapThrowing { reply in
             guard case .reply(let reply) = reply else {
+                self.logger.error("Unexpected reply type, expected OpReply")
                 throw MongoError(.queryFailure, reason: .invalidReplyType)
             }
             
@@ -57,6 +72,7 @@ extension MongoConnection {
         query.header.requestId = nextRequestId()
         return executeMessage(query).flatMapThrowing { reply in
             guard case .message(let message) = reply else {
+                self.logger.error("Unexpected reply type, expected OpMessage")
                 throw MongoError(.queryFailure, reason: .invalidReplyType)
             }
             

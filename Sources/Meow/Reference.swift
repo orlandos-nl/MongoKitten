@@ -3,7 +3,7 @@ import MongoKitten
 import NIO
 
 /// Reference to a Model
-public struct Reference<M: Model>: Resolvable {
+public struct Reference<M: ReadableModel>: Resolvable {
     /// The referenced id
     public let reference: M.Identifier
     
@@ -46,7 +46,9 @@ public struct Reference<M: Model>: Resolvable {
             return context.collection(for: M.self).findOne(where: condition)
         }
     }
-    
+}
+
+extension Reference where M: MutableModel {
     /// Deletes the target of the reference (making it invalid)
     public func deleteTarget(in context: MeowDatabase) -> EventLoopFuture<MeowOperationResult> {
         return context.collection(for: M.self)

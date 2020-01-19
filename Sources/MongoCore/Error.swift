@@ -91,7 +91,7 @@ internal struct MongoOptionalUnwrapFailure: Error, CustomStringConvertible {
     let description = "An optional was unwrapped but `nil` was found"
 }
 
-public struct MongoError: Error {
+public struct MongoError: Error, CustomStringConvertible, CustomDebugStringConvertible {
     public enum Kind: String, Codable, CustomStringConvertible, Equatable {
         case authenticationFailure
         case cannotGetMore
@@ -106,8 +106,8 @@ public struct MongoError: Error {
             case .authenticationFailure: return "Authentication to MongoDB failed"
             case .invalidResponse: return "The response contained unexpected or no data"
             case .cannotCloseCursor: return "Unable to close the cursor"
-            case .cannotConnect: return ""
-            case .queryFailure: return ""
+            case .cannotConnect: return "No hosts could be connected with, therefore no queries can be sent at the moment"
+            case .queryFailure: return "The query sent failed"
             }
         }
     }
@@ -116,7 +116,6 @@ public struct MongoError: Error {
         case internalError
         case unexpectedSASLPhase
         case scramFailure
-        case missingReplyDocument
         case alreadyClosed
         case cursorDrained
         case noHostSpecified
@@ -132,12 +131,11 @@ public struct MongoError: Error {
             case .scramFailure: return "The SCRAM mechanism rejected the credentials, login failed."
             case .cursorDrained: return "The cursor is fully drained"
             case .alreadyClosed: return "The cursor was already closed"
-            case .missingReplyDocument: return ""
-            case .noHostSpecified: return ""
-            case .noAvailableHosts: return ""
-            case .handshakeFailed: return ""
-            case .connectionClosed: return ""
-            case .invalidReplyType: return ""
+            case .noHostSpecified: return "No hosts listed in the connection string"
+            case .noAvailableHosts: return "The connection string could not be used to connect to a host"
+            case .handshakeFailed: return "MongoDB never sent a handshake"
+            case .connectionClosed: return "The connection was closed, therefore errors could not be executed. This error may occur during rediscovery if the server isn't available"
+            case .invalidReplyType: return "A protocol reply error occurred, rendering the connection unstable. MongoKitten will shut this connection down."
             }
         }
     }
@@ -148,5 +146,65 @@ public struct MongoError: Error {
     public init(_ kind: Kind, reason: Reason?) {
         self.kind = kind
         self.reason = reason
+    }
+    
+    public var recommendedSolution: String {
+        guard let reason = reason else {
+            return "File a report on https://github.com/OpenKitten/MongoKitten/"
+        }
+        
+        switch reason {
+        case .unexpectedSASLPhase, .handshakeFailed, .invalidReplyType:
+            return """
+            - Check if SSL is enabled if required, MongoDB Atlas requires this
+            - Check if SRV is used for MongoDB atlas.
+            - When intentionally not using SRV, make sure that the hosts in the connection string are correct
+            - File a report on https://github.com/OpenKitten/MongoKitten/
+            """
+        case .scramFailure:
+            return """
+            - Check your credentials
+            - Check the used `authSource` . If it's not set, try adding `authSource=true` to your parameters
+            - Check the used `authMechanism` . MongoKitten can detect it automatically in most scenario's
+            """
+        case .connectionClosed:
+            return """
+            - MongoKitten will attempt to reconnect. If this keeps failing, file a report on https://github.com/OpenKitten/MongoKitten/
+            - Check if your host is still online and not undergoing maintenance
+            - Check if the SSL settings are enabled if needed
+            
+            Note:
+            This error may be meaningless if the maintenance is planned.
+            If other (primary) hosts are up, this error indicates that the connection is still down and may be safely ignored.
+            """
+        case .cursorDrained:
+            return """
+            - If you're trying to drain a cursor manually, make sure you check its `isDrained` property
+            """
+        case .alreadyClosed:
+            return """
+            - A cursor can only be closed once. Make sure you check the `isClosed` property on a cursor and don't call the function twice.
+            """
+        case .noHostSpecified:
+            return """
+            - Check if your connection string is correctly formatted. See: http://docs.mongodb.org/manual/reference/connection-string
+            """
+        case .noAvailableHosts:
+            return """
+            - Check if your hosts are online, not undergoing maintenance
+            - Check your connection strings for any errors in configuration
+            - Check if your server is whitelisted when using MongoDB atlas
+            - If using MongoDB atlas, make sure you're connecting with SRV
+            """
+        case .internalError:
+            return """
+            - An internal MongoKitten error occurred, file a report on https://github.com/OpenKitten/MongoKitten/
+            """
+        }
+    }
+    
+    public var debugDescription: String { description }
+    public var description: String {
+        "\(kind.description): \(reason?.description ?? "Unknown reason")\nSolution(s):\n\(recommendedSolution)"
     }
 }

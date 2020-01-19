@@ -218,7 +218,7 @@ extension QueryCursor {
     ///
     /// - parameter transform: A mapping closure. `transform` accepts an element of this cursor as its parameter and returns a transformed value of the same or of a different type.
     public func map<E>(transform: @escaping (Element) throws -> E) -> MappedCursor<Self, E> {
-        return MappedCursor(underlyingCursor: self, transform: transform)
+        return MappedCursor(underlyingCursor: self, transform: transform, failable: false)
     }
 
     /// Executes the cursor and returns the first result
@@ -233,13 +233,13 @@ extension QueryCursor {
 
     /// Executes the cursor and returns all results as an array
     /// Please be aware that this may consume a large amount of memory or time with a large number of results
-    public func allResults() -> EventLoopFuture<[Element]> {
+    public func allResults(failable: Bool = false) -> EventLoopFuture<[Element]> {
         return execute().flatMap { finalizedCursor in
             var promise = self.eventLoop.makePromise(of: [Element].self)
             var results = [Element]()
 
             func nextBatch() {
-                finalizedCursor.nextBatch().flatMapThrowing { batch in
+                finalizedCursor.nextBatch(failable: failable).flatMapThrowing { batch in
                     results.append(contentsOf: batch)
 
                     if finalizedCursor.isDrained {
@@ -270,9 +270,15 @@ public final class FinalizedCursor<Base: QueryCursor> {
         self.cursor = cursor
     }
 
-    public func nextBatch(batchSize: Int = 101) -> EventLoopFuture<[Base.Element]> {
+    public func nextBatch(batchSize: Int = 101, failable: Bool = false) -> EventLoopFuture<[Base.Element]> {
         return cursor.getMore(batchSize: batchSize).flatMapThrowing { batch in
-            return try batch.map(self.base.transformElement)
+            if failable {
+                return batch.compactMap { element in
+                    return try? self.base.transformElement(element)
+                }
+            } else {
+                return try batch.map(self.base.transformElement)
+            }
         }
     }
 
@@ -310,7 +316,7 @@ public struct MappedCursor<Base: QueryCursor, Element>: QueryCursor {
     private let underlyingCursor: Base
     private let transform: Transform<Element>
 
-    internal init(underlyingCursor cursor: Base, transform: @escaping Transform<Element>) {
+    internal init(underlyingCursor cursor: Base, transform: @escaping Transform<Element>, failable: Bool) {
         self.underlyingCursor = cursor
         self.transform = transform
     }

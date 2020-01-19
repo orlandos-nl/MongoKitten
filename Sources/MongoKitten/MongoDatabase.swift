@@ -1,4 +1,5 @@
 import MongoClient
+import Logging
 import Foundation
 import NIO
 
@@ -15,6 +16,10 @@ public final class MongoDatabase {
     public var sessionId: SessionIdentifier? {
         return session?.sessionId
     }
+    
+    public var isInTransaction: Bool {
+        return self.transaction != nil
+    }
 
     /// The name of the database
     public let name: String
@@ -25,6 +30,8 @@ public final class MongoDatabase {
     internal var commandNamespace: MongoNamespace {
         return MongoNamespace(to: "$cmd", inDatabase: self.name)
     }
+    
+    public private(set) var hoppedEventLoop: EventLoop?
 
     /// The NIO event loop.
     public var eventLoop: EventLoop {
@@ -34,6 +41,12 @@ public final class MongoDatabase {
     internal init(named name: String, pool: MongoConnectionPool) {
         self.name = name
         self.pool = pool
+    }
+    
+    public func hopped(to eventloop: EventLoop) -> MongoDatabase {
+        let database = MongoDatabase(named: self.name, pool: self.pool)
+        database.hoppedEventLoop = eventloop
+        return database
     }
 
     /// A helper method that uses the normal `connect` method and awaits it. It creates an event loop group for you.
@@ -99,13 +112,18 @@ public final class MongoDatabase {
     ///
     /// - parameter settings: The connection settings, which must include a database name
     /// - parameter loop: An EventLoop from NIO. If you want to use MongoKitten in a synchronous / non-NIO environment, use the `synchronousConnect` method.
-    public static func connect(settings: ConnectionSettings, on group: _MongoPlatformEventLoopGroup) -> EventLoopFuture<MongoDatabase> {
+    public static func connect(
+        settings: ConnectionSettings,
+        on group: _MongoPlatformEventLoopGroup,
+        logger: Logger = .defaultMongoCore
+    ) -> EventLoopFuture<MongoDatabase> {
         do {
             guard let targetDatabase = settings.targetDatabase else {
+                logger.critical("Cannot connect to MongoDB: No target database specified")
                 throw MongoKittenError(.cannotConnect, reason: .noTargetDatabaseSpecified)
             }
             
-            let cluster = try MongoCluster(lazyConnectingTo: settings, on: group)
+            let cluster = try MongoCluster(lazyConnectingTo: settings, on: group, logger: logger)
             return cluster.initialDiscovery.map {
                 return MongoDatabase(named: targetDatabase, pool: cluster)
             }
@@ -120,8 +138,13 @@ public final class MongoDatabase {
     ///
     /// - parameter settings: The connection settings, which must include a database name
     /// - parameter loop: An EventLoop from NIO. If you want to use MongoKitten in a synchronous / non-NIO environment, use the `synchronousConnect` method.
-    public static func lazyConnect(settings: ConnectionSettings, on group: _MongoPlatformEventLoopGroup) throws -> MongoDatabase {
+    public static func lazyConnect(
+        settings: ConnectionSettings,
+        on group: _MongoPlatformEventLoopGroup,
+        logger: Logger = .defaultMongoCore
+    ) throws -> MongoDatabase {
         guard let targetDatabase = settings.targetDatabase else {
+            logger.critical("Cannot connect to MongoDB: No target database specified")
             throw MongoKittenError(.cannotConnect, reason: .noTargetDatabaseSpecified)
         }
 
@@ -145,6 +168,7 @@ public final class MongoDatabase {
         transactionOptions: MongoTransactionOptions? = nil
     ) throws -> MongoDatabase {
         guard pool.wireVersion?.supportsReplicaTransactions == true else {
+            pool.logger.error("MongoDB transaction not supported by the server")
             throw MongoKittenError(.unsupportedFeatureByServer, reason: nil)
         }
 
@@ -171,7 +195,8 @@ public final class MongoDatabase {
     public subscript(collection: String) -> MongoCollection {
         let collection = MongoCollection(named: collection, in: self)
         collection.session = self.session
-        collection.transaction = transaction
+        collection.transaction = self.transaction
+        collection.hoppedEventLoop = self.hoppedEventLoop
         return collection
     }
 
@@ -191,7 +216,7 @@ public final class MongoDatabase {
             ).flatMapThrowing { reply -> Void in
                 try reply.assertOK()
             }
-        }
+        }._mongoHop(to: hoppedEventLoop)
     }
 
     /// Lists all collections your user has knowledge of
@@ -226,7 +251,17 @@ public final class MongoDatabase {
                     return connection.eventLoop.makeFailedFuture(error)
                 }
             }
+        }._mongoHop(to: hoppedEventLoop)
+    }
+}
+
+extension EventLoopFuture {
+    internal func _mongoHop(to eventLoop: EventLoop?) -> EventLoopFuture<Value> {
+        guard let eventLoop = eventLoop else {
+            return self
         }
+        
+        return self.hop(to: eventLoop)
     }
 }
 

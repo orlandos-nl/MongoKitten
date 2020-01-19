@@ -62,4 +62,9 @@ public struct WireVersion: Codable, Comparable, ExpressibleByIntegerLiteral {
     public func encode(to encoder: Encoder) throws {
         try version.encode(to: encoder)
     }
+    
+    public var isDeprecated: Bool {
+        // TODO: January 2020 version 5
+        return self <= .mongo3_2
+    }
 }

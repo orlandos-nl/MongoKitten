@@ -56,6 +56,8 @@ public class Migrator<M: Model> {
 }
 
 struct MeowMigration: Model {
+    typealias Referenced = Self
+    
     static let collectionName = "MeowMigrations"
     
     let _id: String

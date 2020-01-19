@@ -17,6 +17,6 @@ extension MongoCollection {
             )
         }.flatMapThrowing { reply in
             return try reply.assertOK()
-        }
+        }._mongoHop(to: hoppedEventLoop)
     }
 }

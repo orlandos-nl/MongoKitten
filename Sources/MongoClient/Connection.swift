@@ -1,6 +1,8 @@
 import BSON
 import MongoCore
 import NIO
+import Logging
+import Metrics
 
 #if canImport(NIOTransportServices)
 import Network
@@ -12,6 +14,18 @@ import NIOSSL
 public final class MongoConnection {
     /// The NIO channel
     private let channel: Channel
+    public var logger: Logger { context.logger }
+    var queryTimer: Timer?
+    
+    public var isMetricsEnabled = false {
+        didSet {
+            if isMetricsEnabled, !oldValue {
+                queryTimer = Timer(label: "org.openkitten.mongokitten.core.queries")
+            } else {
+                queryTimer = nil
+            }
+        }
+    }
 
     /// A LIFO (Last In, First Out) holder for sessions
     public let sessionManager: MongoSessionManager
@@ -59,11 +73,12 @@ public final class MongoConnection {
     public static func connect(
         settings: ConnectionSettings,
         on eventLoop: EventLoop,
+        logger: Logger = .defaultMongoCore,
         resolver: Resolver? = nil,
         clientDetails: MongoClientDetails? = nil,
         sessionManager: MongoSessionManager = .init()
     ) -> EventLoopFuture<MongoConnection> {
-        let context = MongoClientContext()
+        let context = MongoClientContext(logger: logger)
 
         #if canImport(NIOTransportServices)
         var bootstrap = NIOTSConnectionBootstrap(group: eventLoop)
@@ -77,6 +92,7 @@ public final class MongoConnection {
         #endif
 
         guard let host = settings.hosts.first else {
+            logger.critical("Cannot connect to MongoDB: No host specified")
             return eventLoop.makeFailedFuture(MongoError(.cannotConnect, reason: .noHostSpecified))
         }
 

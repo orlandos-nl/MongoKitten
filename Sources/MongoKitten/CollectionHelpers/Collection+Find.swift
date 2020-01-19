@@ -73,7 +73,7 @@ public final class FindQueryBuilder: QueryCursor {
                 )
                 return FinalizedCursor(basedOn: self, cursor: cursor)
             }
-        }
+        }._mongoHop(to: collection.hoppedEventLoop)
     }
     
     public func transformElement(_ element: Document) throws -> Document {

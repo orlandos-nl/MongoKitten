@@ -17,6 +17,12 @@ public struct AggregateBuilderStage {
         ])
     }
     
+    public static func addFields(_ query: Document) -> AggregateBuilderStage {
+        return AggregateBuilderStage(document: [
+            "$addFields": query
+        ])
+    }
+    
     public static func sort(_ sort: Sort) -> AggregateBuilderStage {
         return AggregateBuilderStage(document: [
             "$sort": sort.document

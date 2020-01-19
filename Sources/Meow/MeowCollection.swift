@@ -2,26 +2,20 @@ import MongoKitten
 import MongoCore
 import NIO
 
-public struct MeowCollection<M: Model> {
+public struct MeowCollection<M: BaseModel> {
     public let database: MeowDatabase
     public let name: String
-    public var raw: MongoCollection { return database.raw[name] }
+    public let raw: MongoCollection
     public var eventLoop: EventLoop { return database.eventLoop }
     
     public init(database: MeowDatabase, named name: String) {
         self.database = database
+        self.raw = database.raw[name]
         self.name = name
     }
-    
-    public func insert(_ instance: M) -> EventLoopFuture<InsertReply> {
-        do {
-            let document = try M.encoder.encode(instance)
-            return raw.insert(document)
-        } catch {
-            return database.eventLoop.makeFailedFuture(error)
-        }
-    }
-    
+}
+
+extension MeowCollection where M: ReadableModel {
     public func find(where filter: Document = [:]) -> MappedCursor<FindQueryBuilder, M> {
         return raw.find(filter).decode(M.self)
     }
@@ -43,7 +37,31 @@ public struct MeowCollection<M: Model> {
     }
     
     public func count<Q: MongoKittenQuery>(where filter: Q) -> EventLoopFuture<Int> {
-        return raw.count(filter.makeDocument())
+        return self.count(where: filter.makeDocument())
+    }
+    
+    public func watch() -> EventLoopFuture<ChangeStream<M>> {
+        return raw.watch(as: M.self, using: M.decoder)
+    }
+}
+
+extension MeowCollection where M: MutableModel {
+    public func insert(_ instance: M) -> EventLoopFuture<InsertReply> {
+        do {
+            let document = try instance.encode(to: Document.self)
+            return raw.insert(document)
+        } catch {
+            return database.eventLoop.makeFailedFuture(error)
+        }
+    }
+    
+    public func upsert(_ instance: M) -> EventLoopFuture<UpdateReply> {
+        do {
+            let document = try instance.encode(to: Document.self)
+            return raw.upsert(document, where: "_id" == instance._id)
+        } catch {
+            return database.eventLoop.makeFailedFuture(error)
+        }
     }
     
     public func deleteOne(where filter: Document) -> EventLoopFuture<DeleteReply> {
@@ -51,7 +69,7 @@ public struct MeowCollection<M: Model> {
     }
     
     public func deleteOne<Q: MongoKittenQuery>(where filter: Q) -> EventLoopFuture<DeleteReply> {
-        return raw.deleteOne(where: filter.makeDocument())
+        return self.deleteOne(where: filter.makeDocument())
     }
     
     public func deleteAll(where filter: Document) -> EventLoopFuture<DeleteReply> {
@@ -59,16 +77,7 @@ public struct MeowCollection<M: Model> {
     }
     
     public func deleteAll<Q: MongoKittenQuery>(where filter: Q) -> EventLoopFuture<DeleteReply> {
-        return raw.deleteAll(where: filter.makeDocument())
-    }
-    
-    public func upsert(_ instance: M) -> EventLoopFuture<UpdateReply> {
-        do {
-            let document = try M.encoder.encode(instance)
-            return raw.upsert(document, where: "_id" == instance._id)
-        } catch {
-            return database.eventLoop.makeFailedFuture(error)
-        }
+        return self.deleteAll(where: filter.makeDocument())
     }
     
     //    public func saveChanges(_ changes: PartialChange<M>) -> EventLoopFuture<UpdateReply> {
@@ -77,8 +86,4 @@ public struct MeowCollection<M: Model> {
     //            "$unset": changes.removedFields
     //        ])
     //    }
-    
-    public func watch() -> EventLoopFuture<ChangeStream<M>> {
-        return raw.watch(as: M.self, using: M.decoder)
-    }
 }

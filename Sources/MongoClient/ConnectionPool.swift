@@ -1,4 +1,5 @@
 import NIO
+import Logging
 import MongoCore
 
 public struct MongoConnectionPoolRequest {
@@ -14,6 +15,7 @@ public protocol MongoConnectionPool {
     var eventLoop: EventLoop { get }
     var wireVersion: WireVersion? { get }
     var sessionManager: MongoSessionManager { get }
+    var logger: Logger { get }
 }
 
 extension MongoConnection: MongoConnectionPool {

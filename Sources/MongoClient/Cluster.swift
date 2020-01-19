@@ -1,4 +1,5 @@
 import NIO
+import Logging
 import DNSClient
 import MongoCore
 
@@ -18,6 +19,7 @@ public final class MongoCluster: MongoConnectionPool {
     }
 
     private var dns: DNSClient?
+    public let logger: Logger
     public let sessionManager = MongoSessionManager()
 
     /// The interval at which cluster discovery is triggered, at a minimum of 500 milliseconds
@@ -75,24 +77,34 @@ public final class MongoCluster: MongoConnectionPool {
     /// Used as a shortcut to not have to set a callback on `isDiscovering`
     private var completedInitialDiscovery = false
 
-    private init(group: _MongoPlatformEventLoopGroup, settings: ConnectionSettings) {
+    private init(
+        group: _MongoPlatformEventLoopGroup,
+        settings: ConnectionSettings,
+        logger: Logger
+    ) {
         self.eventLoop = group.next()
         self.group = group
         self.settings = settings
         self.isDiscovering = eventLoop.makePromise()
         self.pool = []
         self.hosts = Set(settings.hosts)
+        self.logger = logger
     }
 
     /// Connects to a cluster lazily, which means you don't know if the connection was successful until you start querying
     ///
     /// This is useful when you need a cluster synchronously to query asynchronously
-    public convenience init(lazyConnectingTo settings: ConnectionSettings, on group: _MongoPlatformEventLoopGroup) throws {
+    public convenience init(
+        lazyConnectingTo settings: ConnectionSettings,
+        on group: _MongoPlatformEventLoopGroup,
+        logger: Logger = .defaultMongoCore
+    ) throws {
         guard settings.hosts.count > 0 else {
+            logger.error("No MongoDB servers were specified while creating a cluster")
             throw MongoError(.cannotConnect, reason: .noHostSpecified)
         }
 
-        self.init(group: group, settings: settings)
+        self.init(group: group, settings: settings, logger: logger)
 
         MongoCluster.withResolvedSettings(settings, on: group.next()) { settings, dns -> EventLoopFuture<Void> in
             self.settings = settings
@@ -208,6 +220,7 @@ public final class MongoCluster: MongoConnectionPool {
         let connection = MongoConnection.connect(
             settings: settings,
             on: eventLoop,
+            logger: logger,
             resolver: self.dns,
             sessionManager: sessionManager
         ).map { connection -> PooledConnection in
@@ -320,6 +333,7 @@ public final class MongoCluster: MongoConnectionPool {
         guard let host = undiscoveredHosts.first else {
             return self.rediscover().flatMapThrowing { _ in
                 guard let match = self.findMatchingConnection(writable: writable) else {
+                    self.logger.error("Couldn't find or create a connection to MongoDB with the requested specification")
                     throw emptyPoolError ?? MongoError(.cannotConnect, reason: .noAvailableHosts)
                 }
 

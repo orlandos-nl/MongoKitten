@@ -1,7 +1,7 @@
 import MongoKitten
 
 /// Generic errors thrown by the generator
-public enum MeowModelError<M: Model>: Swift.Error {
+public enum MeowModelError<M: BaseModel>: Swift.Error {
     /// The value for the given key is missing, or invalid
     case missingOrInvalidValue(key: String, expected: Any.Type, got: Any?)
     
@@ -25,4 +25,9 @@ public enum MeowModelError<M: Model>: Swift.Error {
     
     /// The file cannot be found in GridFS
     case brokenFileReference(ObjectId)
+}
+
+enum MeowError: Swift.Error {
+    /// A reference to `type` with id `id` cannot be resolved
+    case referenceError(id: Any, type: Any.Type)
 }
