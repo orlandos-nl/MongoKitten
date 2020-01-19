@@ -22,6 +22,10 @@ A fast, pure swift [MongoDB](https://mongodb.com) driver based on [Swift NIO](ht
 
 [You can sponsor us via GitHub.](https://github.com/sponsors/Joannis). This enables us to provide a higher quality and more documentation as well as building more tools.
 
+## The Company
+
+[Autimatisering](https://autimatisering.nl/) is the company currently backing MongoKitten. [Hire us](mailto:hoi@autimatisering.nl)
+
 ## Contribute to MongoKitten
 
 - See [CONTRIBUTING.md](CONTRIBUTING.md) for info on contributing to MongoKitten
