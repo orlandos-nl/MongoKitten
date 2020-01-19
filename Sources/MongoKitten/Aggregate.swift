@@ -111,12 +111,7 @@ public struct AggregateBuilderPipeline: QueryCursor {
         pipeline.stages.append(.count(to: "count"))
         pipeline.stages.append(.project("count"))
         return pipeline.decode(Count.self).firstResult().flatMapThrowing { count in
-            guard let count = count else {
-                self.collection.pool.logger.error("MongoDB Aggregate failed")
-                throw MongoError(.queryFailure, reason: .cursorDrained)
-            }
-            
-            return count.count
+            return count?.count ?? 0
         }
     }
     
