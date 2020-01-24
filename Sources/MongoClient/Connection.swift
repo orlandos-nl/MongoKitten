@@ -123,7 +123,7 @@ public final class MongoConnection {
                 return connection.authenticate(
                     clientDetails: clientDetails,
                     using: settings.authentication,
-                    to: settings.authenticationSource ?? "admin"
+                    to: settings.authenticationSource ?? settings.targetDatabase ?? "admin"
                 ).map { connection}
         }
     }
