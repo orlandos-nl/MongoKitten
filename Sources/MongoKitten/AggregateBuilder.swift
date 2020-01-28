@@ -123,10 +123,6 @@ public func unwind(
     )
 }
 
-public func replaceRoot(_ newRoot: Document) -> AggregateBuilderStage {
-    return .replaceRoot(newRoot)
-}
-
 public func sort(_ sort: Sort) -> AggregateBuilderStage {
     return .sort(sort)
 }

@@ -110,8 +110,4 @@ public struct AggregateBuilderStage {
         
         return AggregateBuilderStage(document: ["$unwind": d])
     }
-    
-    public static func replaceRoot(_ newRoot: Document) -> AggregateBuilderStage {
-        return AggregateBuilderStage(document: ["$replaceRoot": ["newRoot": newRoot]])
-    }
 }
