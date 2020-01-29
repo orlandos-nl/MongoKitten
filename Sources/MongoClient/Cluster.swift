@@ -176,11 +176,25 @@ public final class MongoCluster: MongoConnectionPool {
 
         let host = settings.hosts.first!
         
-        #if canImport(NIOTransportServices)
-        let client = DNSClient.connectTS(on: loop)
-        #else
-        let client = DNSClient.connect(on: loop)
-        #endif
+        let client: EventLoopFuture<DNSClient>
+        
+        do {
+            #if canImport(NIOTransportServices)
+                if let dnsServer = settings.dnsServer {
+                    client = try DNSClient.connectTS(on: loop, config: [SocketAddress(ipAddress: dnsServer, port: 53)])
+                } else {
+                    client = DNSClient.connectTS(on: loop)
+                }
+            #else
+                if let dnsServer = settings.dnsServer {
+                    client = try DNSClient.connect(on: loop, config: [SocketAddress(ipAddress: dnsServer, port: 53)])
+                } else {
+                    client = DNSClient.connect(on: loop)
+                }
+            #endif
+        } catch {
+            return loop.next().makeFailedFuture(error)
+        }
         
         return client.flatMap { client in
             let srv = resolveSRV(host, on: client)
