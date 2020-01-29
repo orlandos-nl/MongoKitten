@@ -198,8 +198,9 @@ public final class MongoCluster: MongoConnectionPool {
         
         return client.flatMap { client in
             let srv = resolveSRV(host, on: client)
-            let txt = resolveTXT(host, on: client)
-            return srv.and(txt).flatMap { hosts, query in
+//            let txt = resolveTXT(host, on: client)
+//            return srv.and(txt).flatMap { hosts, query in
+            return srv.flatMap { hosts in
                 var settings = settings
                 // TODO: Use query
                 settings.hosts = hosts
@@ -208,13 +209,13 @@ public final class MongoCluster: MongoConnectionPool {
         }
     }
 
-    private static func resolveTXT(_ host: ConnectionSettings.Host, on client: DNSClient) -> EventLoopFuture<String?> {
-        return client.sendQuery(forHost: host.hostname, type: .txt).map { message -> String? in
-            guard let answer = message.answers.first else { return nil }
-            guard case .txt(let txt) = answer else { return nil }
-            return txt.resource.text
-        }
-    }
+//    private static func resolveTXT(_ host: ConnectionSettings.Host, on client: DNSClient) -> EventLoopFuture<String?> {
+//        return client.sendQuery(forHost: host.hostname, type: .txt).map { message -> String? in
+//            guard let answer = message.answers.first else { return nil }
+//            guard case .txt(let txt) = answer else { return nil }
+//            return txt.resource.text
+//        }
+//    }
 
     private static let prefix = "_mongodb._tcp."
     private static func resolveSRV(_ host: ConnectionSettings.Host, on client: DNSClient) -> EventLoopFuture<[ConnectionSettings.Host]> {
