@@ -74,7 +74,7 @@ var package = Package(
 
 #if canImport(Network)
 // 🔑
-package.dependencies.append(.package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "1.0.0"))
+package.dependencies.append(.package(url: "https://github.com/joannis/swift-nio-transport-services.git", .revision("feature/udp-support")))
 let transport: Target.Dependency = "NIOTransportServices"
 package.platforms = [
     .macOS(.v10_14),

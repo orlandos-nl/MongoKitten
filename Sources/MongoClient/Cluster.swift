@@ -106,7 +106,7 @@ public final class MongoCluster: MongoConnectionPool {
 
         self.init(group: group, settings: settings, logger: logger)
 
-        MongoCluster.withResolvedSettings(settings, on: group.next()) { settings, dns -> EventLoopFuture<Void> in
+        MongoCluster.withResolvedSettings(settings, on: group) { settings, dns -> EventLoopFuture<Void> in
             self.settings = settings
             self.dns = dns
 
@@ -169,14 +169,20 @@ public final class MongoCluster: MongoConnectionPool {
         }
     }
 
-    private static func withResolvedSettings<T>(_ settings: ConnectionSettings, on loop: EventLoop, run: @escaping (ConnectionSettings, DNSClient?) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+    private static func withResolvedSettings<T>(_ settings: ConnectionSettings, on loop: _MongoPlatformEventLoopGroup, run: @escaping (ConnectionSettings, DNSClient?) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
         if !settings.isSRV {
             return run(settings, nil)
         }
 
         let host = settings.hosts.first!
-
-        return DNSClient.connect(on: loop).flatMap { client in
+        
+        #if canImport(NIOTransportServices)
+        let client = DNSClient.connectTS(on: loop)
+        #else
+        let client = DNSClient.connect(on: loop)
+        #endif
+        
+        return client.flatMap { client in
             let srv = resolveSRV(host, on: client)
             let txt = resolveTXT(host, on: client)
             return srv.and(txt).flatMap { hosts, query in
