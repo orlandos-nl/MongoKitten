@@ -39,14 +39,14 @@ As you can see, you can use normal comparison operators including `==`, `!=`, `>
 A few examples are below:
 
 ```swift
-let teenagerQuery: Query = "age" >= 10 && "age" < 20
+let teenagerQuery = "age" >= 10 && "age" < 20
 let notTeenagerQuery: Query = !teenagerQuery
 ```
 
 You can also combine a MongoKitten with a standard MongoDB query.
 
 ```swift
-let base: Query = [
+let base: Document = [
     "age": ["gte": 10]
 ]
 let notTeenagerQuery: Query = !(base && "age" < 20)

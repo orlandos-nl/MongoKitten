@@ -113,7 +113,7 @@ public final class MongoCluster: MongoConnectionPool {
             return self.makeConnectionRecursively(for: .init(writable: false), emptyPoolError: nil).flatMap { _ in
                 return self.rediscover()
             }
-        }.whenComplete { _ in
+        }.whenComplete { result in
             self.completedInitialDiscovery = true
 
             if self.pool.count > 0 {
