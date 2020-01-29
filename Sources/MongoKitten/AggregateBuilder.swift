@@ -111,6 +111,17 @@ public func lookup(
     )
 }
 
+public func unwind(
+    fieldPath: String,
+    includeArrayIndex: String? = nil,
+    preserveNullAndEmptyArrays: Bool? = nil
+) -> AggregateBuilderStage {
+    return .unwind(
+        fieldPath: fieldPath,
+        includeArrayIndex: includeArrayIndex,
+        preserveNullAndEmptyArrays: preserveNullAndEmptyArrays
+    )
+}
 
 public func sort(_ sort: Sort) -> AggregateBuilderStage {
     return .sort(sort)
