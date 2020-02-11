@@ -9,10 +9,11 @@ internal struct ClientConnectionParser: ByteToMessageDecoder {
     typealias InboundOut = MongoServerReply
 
     private let context: MongoClientContext
-    private var parser = MongoServerReplyDeserializer()
+    private var parser: MongoServerReplyDeserializer
 
     internal init(context: MongoClientContext) {
         self.context = context
+        self.parser = MongoServerReplyDeserializer(logger: context.logger)
     }
 
     mutating func decode(context ctx: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {

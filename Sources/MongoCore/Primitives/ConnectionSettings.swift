@@ -1,7 +1,7 @@
 import Foundation
 
 fileprivate extension Bool {
-    init?(queryValue: Substring?) {
+    init?(queryValue: String?) {
         switch queryValue {
         case nil:
             return nil
@@ -106,6 +106,10 @@ public struct ConnectionSettings: Equatable {
 
     /// Indicates that there is one host for which we'll need to do an query
     public let isSRV: Bool
+    
+    public var dnsServer: String?
+    
+    public var queryParameters: [String: String]
 
     /// Initializes a new connection settings instacen.
     ///
@@ -131,6 +135,7 @@ public struct ConnectionSettings: Equatable {
         self.socketTimeout = socketTimeout
         self.applicationName = applicationName
         self.isSRV = false
+        self.queryParameters = [:]
     }
 
     /// Parses the given `uri` into the ConnectionSettings
@@ -187,19 +192,21 @@ public struct ConnectionSettings: Equatable {
         }
 
         // Parse all queries
-        var queries = [Substring: Substring]()
+        var queries = [String: String]()
         queries.reserveCapacity(10)
         
         if let queryString = queryString {
             queryString.split(separator: "&").forEach { queryItem in
                 // queryItem can be either like `someOption` or like `someOption=abc`
                 let queryItemParts = queryItem.split(separator: "=", maxSplits: 1)
-                let queryItemName = queryItemParts[0]
-                let queryItemValue = queryItemParts.count > 1 ? queryItemParts[1] : ""
+                let queryItemName = String(queryItemParts[0])
+                let queryItemValue = queryItemParts.count > 1 ? String(queryItemParts[1]) : ""
 
                 queries[queryItemName] = queryItemValue
             }
         }
+        
+        self.queryParameters = queries
         
         // Parse the authentication details, if included
         if uriContainsAuthenticationDetails {
@@ -267,6 +274,9 @@ public struct ConnectionSettings: Equatable {
         if let appName = queries["appname"] {
             self.applicationName = String(appName)
         }
-    }
 
+        if let dnsServer = queries["dnsServer"] {
+            self.dnsServer = String(dnsServer)
+        }
+    }
 }

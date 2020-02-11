@@ -1,4 +1,5 @@
 import NIO
+import Logging
 import DNSClient
 import MongoCore
 
@@ -18,6 +19,7 @@ public final class MongoCluster: MongoConnectionPool {
     }
 
     private var dns: DNSClient?
+    public let logger: Logger
     public let sessionManager = MongoSessionManager()
 
     /// The interval at which cluster discovery is triggered, at a minimum of 500 milliseconds
@@ -75,33 +77,43 @@ public final class MongoCluster: MongoConnectionPool {
     /// Used as a shortcut to not have to set a callback on `isDiscovering`
     private var completedInitialDiscovery = false
 
-    private init(group: _MongoPlatformEventLoopGroup, settings: ConnectionSettings) {
+    private init(
+        group: _MongoPlatformEventLoopGroup,
+        settings: ConnectionSettings,
+        logger: Logger
+    ) {
         self.eventLoop = group.next()
         self.group = group
         self.settings = settings
         self.isDiscovering = eventLoop.makePromise()
         self.pool = []
         self.hosts = Set(settings.hosts)
+        self.logger = logger
     }
 
     /// Connects to a cluster lazily, which means you don't know if the connection was successful until you start querying
     ///
     /// This is useful when you need a cluster synchronously to query asynchronously
-    public convenience init(lazyConnectingTo settings: ConnectionSettings, on group: _MongoPlatformEventLoopGroup) throws {
+    public convenience init(
+        lazyConnectingTo settings: ConnectionSettings,
+        on group: _MongoPlatformEventLoopGroup,
+        logger: Logger = .defaultMongoCore
+    ) throws {
         guard settings.hosts.count > 0 else {
+            logger.error("No MongoDB servers were specified while creating a cluster")
             throw MongoError(.cannotConnect, reason: .noHostSpecified)
         }
 
-        self.init(group: group, settings: settings)
+        self.init(group: group, settings: settings, logger: logger)
 
-        MongoCluster.withResolvedSettings(settings, on: group.next()) { settings, dns -> EventLoopFuture<Void> in
+        MongoCluster.withResolvedSettings(settings, on: group) { settings, dns -> EventLoopFuture<Void> in
             self.settings = settings
             self.dns = dns
 
             return self.makeConnectionRecursively(for: .init(writable: false), emptyPoolError: nil).flatMap { _ in
                 return self.rediscover()
             }
-        }.whenComplete { _ in
+        }.whenComplete { result in
             self.completedInitialDiscovery = true
 
             if self.pool.count > 0 {
@@ -157,17 +169,38 @@ public final class MongoCluster: MongoConnectionPool {
         }
     }
 
-    private static func withResolvedSettings<T>(_ settings: ConnectionSettings, on loop: EventLoop, run: @escaping (ConnectionSettings, DNSClient?) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+    private static func withResolvedSettings<T>(_ settings: ConnectionSettings, on loop: _MongoPlatformEventLoopGroup, run: @escaping (ConnectionSettings, DNSClient?) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
         if !settings.isSRV {
             return run(settings, nil)
         }
 
         let host = settings.hosts.first!
-
-        return DNSClient.connect(on: loop).flatMap { client in
+        
+        let client: EventLoopFuture<DNSClient>
+        
+        do {
+            #if canImport(NIOTransportServices)
+                if let dnsServer = settings.dnsServer {
+                    client = try DNSClient.connectTS(on: loop, config: [SocketAddress(ipAddress: dnsServer, port: 53)])
+                } else {
+                    client = DNSClient.connectTS(on: loop)
+                }
+            #else
+                if let dnsServer = settings.dnsServer {
+                    client = try DNSClient.connect(on: loop, config: [SocketAddress(ipAddress: dnsServer, port: 53)])
+                } else {
+                    client = DNSClient.connect(on: loop)
+                }
+            #endif
+        } catch {
+            return loop.next().makeFailedFuture(error)
+        }
+        
+        return client.flatMap { client in
             let srv = resolveSRV(host, on: client)
-            let txt = resolveTXT(host, on: client)
-            return srv.and(txt).flatMap { hosts, query in
+//            let txt = resolveTXT(host, on: client)
+//            return srv.and(txt).flatMap { hosts, query in
+            return srv.flatMap { hosts in
                 var settings = settings
                 // TODO: Use query
                 settings.hosts = hosts
@@ -176,13 +209,13 @@ public final class MongoCluster: MongoConnectionPool {
         }
     }
 
-    private static func resolveTXT(_ host: ConnectionSettings.Host, on client: DNSClient) -> EventLoopFuture<String?> {
-        return client.sendQuery(forHost: host.hostname, type: .txt).map { message -> String? in
-            guard let answer = message.answers.first else { return nil }
-            guard case .txt(let txt) = answer else { return nil }
-            return txt.resource.text
-        }
-    }
+//    private static func resolveTXT(_ host: ConnectionSettings.Host, on client: DNSClient) -> EventLoopFuture<String?> {
+//        return client.sendQuery(forHost: host.hostname, type: .txt).map { message -> String? in
+//            guard let answer = message.answers.first else { return nil }
+//            guard case .txt(let txt) = answer else { return nil }
+//            return txt.resource.text
+//        }
+//    }
 
     private static let prefix = "_mongodb._tcp."
     private static func resolveSRV(_ host: ConnectionSettings.Host, on client: DNSClient) -> EventLoopFuture<[ConnectionSettings.Host]> {
@@ -208,6 +241,7 @@ public final class MongoCluster: MongoConnectionPool {
         let connection = MongoConnection.connect(
             settings: settings,
             on: eventLoop,
+            logger: logger,
             resolver: self.dns,
             sessionManager: sessionManager
         ).map { connection -> PooledConnection in
@@ -320,6 +354,7 @@ public final class MongoCluster: MongoConnectionPool {
         guard let host = undiscoveredHosts.first else {
             return self.rediscover().flatMapThrowing { _ in
                 guard let match = self.findMatchingConnection(writable: writable) else {
+                    self.logger.error("Couldn't find or create a connection to MongoDB with the requested specification")
                     throw emptyPoolError ?? MongoError(.cannotConnect, reason: .noAvailableHosts)
                 }
 

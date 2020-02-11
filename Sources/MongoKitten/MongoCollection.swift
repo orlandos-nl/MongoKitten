@@ -12,15 +12,27 @@ public final class MongoCollection {
     public var sessionId: SessionIdentifier? {
         return session?.sessionId
     }
+    
+    public var isInTransaction: Bool {
+        return self.transaction != nil
+    }
 
     /// The name of the collection
     public let name: String
 
     /// The database this collection resides in
     public let database: MongoDatabase
+    
+    public internal(set) var hoppedEventLoop: EventLoop?
 
     public var eventLoop: EventLoop {
         return pool.eventLoop
+    }
+    
+    public func hopped(to eventloop: EventLoop) -> MongoCollection {
+        let collection = MongoCollection(named: self.name, in: self.database)
+        collection.hoppedEventLoop = eventloop
+        return collection
     }
     
     internal func makeTransactionError<T>() -> EventLoopFuture<T> {

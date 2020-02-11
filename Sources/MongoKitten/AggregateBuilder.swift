@@ -63,6 +63,14 @@ public func match(_ query: Document) -> AggregateBuilderStage {
     return .match(query)
 }
 
+public func match<Q: MongoKittenQuery>(_ query: Q) -> AggregateBuilderStage {
+    return .match(query.makeDocument())
+}
+
+public func addFields(_ query: Document) -> AggregateBuilderStage {
+    return .addFields(query)
+}
+
 public func skip(_ n: Int) -> AggregateBuilderStage {
     return .skip(n)
 }
@@ -102,6 +110,7 @@ public func lookup(
         as: newName
     )
 }
+
 
 public func sort(_ sort: Sort) -> AggregateBuilderStage {
     return .sort(sort)

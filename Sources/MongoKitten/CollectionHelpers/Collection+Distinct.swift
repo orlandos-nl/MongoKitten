@@ -11,6 +11,6 @@ extension MongoCollection {
                 in: self.transaction,
                 sessionId: self.sessionId ?? connection.implicitSessionId
             )
-        }.decode(DistinctReply.self).map { $0.distinctValues }
+        }.decode(DistinctReply.self).map { $0.distinctValues }._mongoHop(to: hoppedEventLoop)
     }
 }
