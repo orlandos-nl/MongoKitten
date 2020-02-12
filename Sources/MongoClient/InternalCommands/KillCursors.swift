@@ -1,6 +1,6 @@
 import MongoCore
 
-internal struct KillCursorsCommand: Encodable {
+internal struct KillCursorsCommand: Codable {
     let killCursors: String
     var cursors: [Int64]
 

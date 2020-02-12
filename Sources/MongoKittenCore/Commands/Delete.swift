@@ -4,7 +4,7 @@ import NIO
 /// The delete command removes documents from a collection. A single delete command can contain multiple delete specifications. The command cannot operate on capped collections. The remove methods provided by the MongoDB drivers use this command internally.
 ///
 /// - see: https://docs.mongodb.com/manual/reference/command/delete/index.html
-public struct DeleteCommand: Encodable {
+public struct DeleteCommand: Codable {
     /// Specifies how many documents may be removed
     public enum Limit: Int, Codable {
         /// All documents that match the query may be removed
@@ -15,7 +15,7 @@ public struct DeleteCommand: Encodable {
     }
     
     /// A single delete statement
-    public struct Removal: Encodable {
+    public struct Removal: Codable {
         private enum CodingKeys: String, CodingKey {
             case query = "q"
             case limit

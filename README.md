@@ -47,8 +47,6 @@ Install MongoDB for [Ubuntu](https://docs.mongodb.com/master/tutorial/install-mo
 Alternatively, make use of a DAAS (Database-as-a-service) like [MongoDB Atlas](https://cloud.mongodb.com), [MLab](https://mlab.com), [IBM Cloud](https://cloud.ibm.com/catalog/services/databases-for-mongodb) or any other of the many services.
 </details>
 
-If you're aiming at using MongoKitten Mobile, scroll down!
-
 ## Add MongoKitten to your Swift project 🚀
 
 If you're using a SwiftNIO 1.x framework such as Vapor 3, use [MongoKitten 5](https://github.com/OpenKitten/MongoKitten/tree/master/5.0) instead.
