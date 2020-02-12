@@ -1,6 +1,6 @@
 import MongoCore
 
-public struct CountCommand: Encodable {
+public struct CountCommand: Codable {
     private let count: String
     
     /// Optional. A query that selects which documents to count in the collection or view.

@@ -1,6 +1,6 @@
 import MongoCore
 
-public struct DistinctCommand: Encodable {
+public struct DistinctCommand: Codable {
     private let distinct: String
     public var key: String
     public var query: Document?
