@@ -19,6 +19,7 @@ public final class MongoCluster: MongoConnectionPool {
     }
 
     private var dns: DNSClient?
+    public var didRediscover: (() -> ())?
     public let logger: Logger
     public let sessionManager = MongoSessionManager()
 
@@ -291,7 +292,12 @@ public final class MongoCluster: MongoConnectionPool {
         }
 
         self.timeoutHosts = []
-        return EventLoopFuture<Void>.andAllComplete(handshakes, on: self.eventLoop)
+        let done = EventLoopFuture<Void>.andAllComplete(handshakes, on: self.eventLoop)
+        if let didRediscover = self.didRediscover {
+            done.whenSuccess(didRediscover)
+        }
+        
+        return done
     }
 
     private func remove(connectionId: ObjectIdentifier, error: Error) {
