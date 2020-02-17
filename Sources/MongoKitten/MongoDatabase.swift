@@ -10,7 +10,7 @@ import NIOTransportServices
 /// A reference to a MongoDB database, over a `Connection`.
 ///
 /// Databases hold collections of documents.
-public final class MongoDatabase {
+public class MongoDatabase {
     internal var transaction: MongoTransaction!
     public internal(set) var session: MongoClientSession?
     public var sessionId: SessionIdentifier? {
@@ -158,15 +158,24 @@ public final class MongoDatabase {
     //        return Database(named: name, session: newSession)
     //    }
 
+    @available(*, deprecated, message: "Change `autoCommitChanged` to `autoCommitChanges`")
+    public func startTransaction(
+        autoCommitChanged autoCommit: Bool,
+        with options: MongoSessionOptions = .init(),
+        transactionOptions: MongoTransactionOptions? = nil
+    ) throws -> MongoTransactionDatabase {
+        return try startTransaction(autoCommitChanges: autoCommit, with: options, transactionOptions: transactionOptions)
+    }
+    
     /// Creates a new tranasction provided the SessionOptions and optional TransactionOptions
     ///
     /// The TransactionDatabase that is created can be used like a normal Database for queries within transactions _only_
     /// Creating a TransactionCollection is done the same way it's created with a normal Database.
     public func startTransaction(
-        autoCommitChanged autoCommit: Bool,
+        autoCommitChanges autoCommit: Bool,
         with options: MongoSessionOptions = .init(),
         transactionOptions: MongoTransactionOptions? = nil
-    ) throws -> MongoDatabase {
+    ) throws -> MongoTransactionDatabase {
         guard pool.wireVersion?.supportsReplicaTransactions == true else {
             pool.logger.error("MongoDB transaction not supported by the server")
             throw MongoKittenError(.unsupportedFeatureByServer, reason: nil)
@@ -175,7 +184,7 @@ public final class MongoDatabase {
         let newSession = self.pool.sessionManager.retainSession(with: options)
         let transaction = newSession.startTransaction(autocommit: autoCommit)
         
-        let db = MongoDatabase(named: self.name, pool: self.pool)
+        let db = MongoTransactionDatabase(named: self.name, pool: self.pool)
         db.transaction = transaction
         db.session = newSession
         return db
