@@ -23,4 +23,12 @@ extension MongoCollection {
             )
         }.decode(DeleteReply.self)._mongoHop(to: hoppedEventLoop)
     }
+    
+    public func deleteOne<Q: MongoKittenQuery>(where filter: Q) -> EventLoopFuture<DeleteReply> {
+        return self.deleteOne(where: filter.makeDocument())
+    }
+    
+    public func deleteAll<Q: MongoKittenQuery>(where filter: Q) -> EventLoopFuture<DeleteReply> {
+        return self.deleteAll(where: filter.makeDocument())
+    }
 }
