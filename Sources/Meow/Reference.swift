@@ -3,7 +3,7 @@ import MongoKitten
 import NIO
 
 /// Reference to a Model
-public struct Reference<M: ReadableModel>: Resolvable {
+public struct Reference<M: ReadableModel>: Resolvable, Equatable, PrimitiveConvertible {
     /// The referenced id
     public let reference: M.Identifier
     
@@ -45,6 +45,22 @@ public struct Reference<M: ReadableModel>: Resolvable {
             let condition = base && query
             return context.collection(for: M.self).findOne(where: condition)
         }
+    }
+    
+    public func exists(in db: MeowDatabase) -> EventLoopFuture<Bool> {
+        return db[M.self].count(where: "_id" == reference).map { $0 > 0 }
+    }
+    
+    public func exists(in db: MeowDatabase, where filter: Document) -> EventLoopFuture<Bool> {
+        return db[M.self].count(where: "_id" == reference && filter).map { $0 > 0 }
+    }
+    
+    public func exists<Query: MongoKittenQuery>(in db: MeowDatabase, where filter: Query) -> EventLoopFuture<Bool> {
+        return self.exists(in: db, where: filter.makeDocument())
+    }
+    
+    public func makePrimitive() -> Primitive? {
+        reference
     }
 }
 
@@ -141,31 +157,5 @@ extension Reference: LosslessStringConvertible where M.Identifier: LosslessStrin
         }
         
         self.init(unsafeTo: id)
-    }
-}
-
-extension Reference: PrimitiveConvertible {
-    public func makePrimitive() -> Primitive? {
-        reference
-    }
-}
-
-extension Reference: Equatable {
-    public static func ==(lhs: Reference<M>, rhs: Reference<M>) -> Bool {
-        return lhs.reference == rhs.reference
-    }
-}
-
-extension Reference {
-    public func exists(in db: MeowDatabase) -> EventLoopFuture<Bool> {
-        return db[M.self].count(where: "_id" == reference).map { $0 > 0 }
-    }
-    
-    public func exists(in db: MeowDatabase, where filter: Document) -> EventLoopFuture<Bool> {
-        return db[M.self].count(where: "_id" == reference && filter).map { $0 > 0 }
-    }
-    
-    public func exists<Query: MongoKittenQuery>(in db: MeowDatabase, where filter: Query) -> EventLoopFuture<Bool> {
-        return self.exists(in: db, where: filter.makeDocument())
     }
 }
