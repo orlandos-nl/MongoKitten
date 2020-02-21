@@ -72,10 +72,45 @@ Vapor users should register the database as a service.
 ```swift
 let connectionURI = "mongodb://localhost"
 
-services.register { container -> MongoKitten.Database in
-    return try MongoDatabase.lazyConnect(connectionURI, on: container.eventLoop)
+extension Request {
+    public var mongoDB: MongoDatabase {
+        return application.mongoDB.hopped(to: eventLoop)
+    }
+    
+    public var meow: MeowDatabase {
+        return MeowDatabase(mongoDB)
+    }
+    
+    public func meow<M: ReadableModel>(_ type: M.Type) -> MeowCollection<M> {
+        return meow[type]
+    }
+}
+
+private struct MongoDBStorageKey: StorageKey {
+    typealias Value = MongoDatabase
+}
+
+extension Application {
+    public var mongoDB: MongoDatabase {
+        get {
+            storage[MongoDBStorageKey.self]!
+        }
+        set {
+            storage[MongoDBStorageKey.self] = newValue
+        }
+    }
+    
+    public var meow: MeowDatabase {
+        MeowDatabase(mongoDB)
+    }
+    
+    public func initializeMongoDB(connectionString: String) throws {
+        self.mongoDB = try MongoDatabase.lazyConnect(connectionString, on: self.eventLoopGroup)
+    }
 }
 ```
+
+And make sure to call `app.initializeMongoDB`!
 
 ## NIO Futures
 
@@ -86,7 +121,7 @@ You can learn all about NIO by reading [its readme](https://github.com/apple/swi
 
 Asynchronous operations return a future. NIO implements futures in the [`EventLoopFuture<T>`](https://apple.github.io/swift-nio/docs/current/NIO/Classes/EventLoopFuture.html) type. An `EventLoopFuture` is a holder for a result that will be provided later. The result of the future can either be successful yielding a result of `T`, or unsuccessful with a result of a Swift `Error`. This is the asynchronous representation of a successful `return` or a thrown error.
 
-If you're using [Vapor](https://vapor.codes), please refer to their [Async documentation](https://docs.vapor.codes/3.0/async/overview/). Vapor's Async module provides additional helpers on top of NIO, that make working with instances of `EventLoopFuture<T>` easier.
+If you're using [Vapor 4](https://vapor.codes), please refer to their [Async documentation](https://docs.vapor.codes/4.0/async/overview/). Vapor's Async module provides additional helpers on top of NIO, that make working with instances of `EventLoopFuture<T>` easier.
 
 If you use Vapor or another Swift-NIO based web framework, *never* use the `wait()` function on `EventLoopFuture` instances.
 </details>
