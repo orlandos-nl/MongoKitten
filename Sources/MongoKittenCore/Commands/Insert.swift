@@ -1,6 +1,6 @@
 import MongoCore
 
-public struct InsertCommand: Encodable {
+public struct InsertCommand: Codable {
     /// This variable _must_ be the first encoded value, so keep it above all others
     private let insert: String
     public var collection: String { return insert }

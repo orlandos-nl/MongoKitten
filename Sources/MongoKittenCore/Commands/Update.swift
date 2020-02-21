@@ -1,7 +1,7 @@
 import MongoCore
 
-public struct UpdateCommand: Encodable {
-    public struct UpdateRequest: Encodable {
+public struct UpdateCommand: Codable {
+    public struct UpdateRequest: Codable {
         private enum CodingKeys: String, CodingKey {
             case query = "q"
             case update = "u"

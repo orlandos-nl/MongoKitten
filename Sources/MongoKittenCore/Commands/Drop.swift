@@ -1,12 +1,12 @@
 import MongoCore
 
-public struct DropDatabaseCommand: Encodable {
+public struct DropDatabaseCommand: Codable {
     private let dropDatabase: Int = 1
 
     public init() {}
 }
 
-public struct DropCollectionCommand: Encodable {
+public struct DropCollectionCommand: Codable {
     private enum CodingKeys: String, CodingKey {
         case collection = "drop"
         case writeConcern
