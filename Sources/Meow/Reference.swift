@@ -87,26 +87,6 @@ public protocol Resolvable {
     func resolveIfPresent(in context: MeowDatabase, where query: Document) -> EventLoopFuture<IfPresentResult>
 }
 
-//public extension Resolvable where Result: QueryableModel {
-//    public func resolve(in context: Context, where query: ModelQuery<Result>) -> EventLoopFuture<Result> {
-//        return self.resolve(in: context, where: query.query)
-//    }
-//
-//    public func resolveIfPresent(in context: Context, where query: ModelQuery<Result>) -> EventLoopFuture<IfPresentResult> {
-//        return self.resolveIfPresent(in: context, where: query.query)
-//    }
-//}
-//
-//public extension Resolvable where Result: Sequence, Result.Element: QueryableModel {
-//    public func resolve(in context: Context, where query: ModelQuery<Result.Element>) -> EventLoopFuture<Result> {
-//        return self.resolve(in: context, where: query.query)
-//    }
-//
-//    public func resolveIfPresent(in context: Context, where query: ModelQuery<Result.Element>) -> EventLoopFuture<IfPresentResult> {
-//        return self.resolveIfPresent(in: context, where: query.query)
-//    }
-//}
-
 extension Set: Resolvable where Element: Resolvable {}
 extension Array: Resolvable where Element: Resolvable {}
 extension Sequence where Element: Resolvable {
@@ -145,5 +125,47 @@ extension Optional: Resolvable where Wrapped: Resolvable {
         case .none: return database.eventLoop.makeSucceededFuture(nil)
         case .some(let value): return value.resolveIfPresent(in: database, where: query).map { $0 }
         }
+    }
+}
+
+extension Reference: CustomStringConvertible where M.Identifier: CustomStringConvertible {
+    public var description: String {
+        reference.description
+    }
+}
+
+extension Reference: LosslessStringConvertible where M.Identifier: LosslessStringConvertible {
+    public init?(_ description: String) {
+        guard let id = M.Identifier(description) else {
+            return nil
+        }
+        
+        self.init(unsafeTo: id)
+    }
+}
+
+extension Reference: PrimitiveConvertible {
+    public func makePrimitive() -> Primitive? {
+        reference
+    }
+}
+
+extension Reference: Equatable {
+    public static func ==(lhs: Reference<M>, rhs: Reference<M>) -> Bool {
+        return lhs.reference == rhs.reference
+    }
+}
+
+extension Reference {
+    public func exists(in db: MeowDatabase) -> EventLoopFuture<Bool> {
+        return db[M.self].count(where: "_id" == reference).map { $0 > 0 }
+    }
+    
+    public func exists(in db: MeowDatabase, where filter: Document) -> EventLoopFuture<Bool> {
+        return db[M.self].count(where: "_id" == reference && filter).map { $0 > 0 }
+    }
+    
+    public func exists<Query: MongoKittenQuery>(in db: MeowDatabase, where filter: Query) -> EventLoopFuture<Bool> {
+        return self.exists(in: db, where: filter.makeDocument())
     }
 }
