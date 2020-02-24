@@ -33,6 +33,7 @@ public final class MongoConnection {
     public var logger: Logger { context.logger }
     var queryTimer: Metrics.Timer?
     public internal(set) var lastHeartbeat: MongoHandshakeResult?
+    public var queryTimeout: TimeAmount = .seconds(30)
     
     public var isMetricsEnabled = false {
         didSet {
@@ -204,6 +205,10 @@ public final class MongoConnection {
         
         let promise = eventLoop.makePromise(of: MongoServerReply.self)
         context.awaitReply(toRequestId: message.header.requestId, completing: promise)
+        
+        eventLoop.scheduleTask(in: queryTimeout) {
+            promise.fail(MongoError(.queryTimeout, reason: nil))
+        }
 
         var buffer = channel.allocator.buffer(capacity: 4_096)
         message.write(to: &buffer)
