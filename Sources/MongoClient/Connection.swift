@@ -207,7 +207,8 @@ public final class MongoConnection {
         context.awaitReply(toRequestId: message.header.requestId, completing: promise)
         
         eventLoop.scheduleTask(in: queryTimeout) {
-            promise.fail(MongoError(.queryTimeout, reason: nil))
+            let error = MongoError(.queryTimeout, reason: nil)
+            self.context.failQuery(byRequestId: message.header.requestId, error: error)
         }
 
         var buffer = channel.allocator.buffer(capacity: 4_096)
