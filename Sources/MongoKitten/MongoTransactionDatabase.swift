@@ -3,7 +3,7 @@ public final class MongoTransactionDatabase: MongoDatabase {
         self.pool.next(for: .writable).flatMap { connection in
             connection.executeCodable(
                 CommitTransaction(),
-                namespace: self.commandNamespace,
+                namespace: .administrativeCommand,
                 sessionId: self.sessionId
             ).decode(OK.self).map { _ in }
         }
@@ -13,7 +13,7 @@ public final class MongoTransactionDatabase: MongoDatabase {
         self.pool.next(for: .writable).flatMap { connection in
             connection.executeCodable(
                 AbortTransaction(),
-                namespace: self.commandNamespace,
+                namespace: .administrativeCommand,
                 sessionId: self.sessionId
             ).decode(OK.self).map { _ in }
         }
