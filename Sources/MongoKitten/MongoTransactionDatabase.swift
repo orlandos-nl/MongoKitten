@@ -4,6 +4,7 @@ public final class MongoTransactionDatabase: MongoDatabase {
             connection.executeCodable(
                 CommitTransaction(),
                 namespace: .administrativeCommand,
+                in: self.transaction,
                 sessionId: self.sessionId
             ).decode(OK.self).map { _ in }
         }
@@ -14,6 +15,7 @@ public final class MongoTransactionDatabase: MongoDatabase {
             connection.executeCodable(
                 AbortTransaction(),
                 namespace: .administrativeCommand,
+                in: self.transaction,
                 sessionId: self.sessionId
             ).decode(OK.self).map { _ in }
         }

@@ -221,6 +221,7 @@ public class MongoDatabase {
             return connection.executeCodable(
                 DropDatabaseCommand(),
                 namespace: self.commandNamespace,
+                in: self.transaction,
                 sessionId: connection.implicitSessionId
             ).flatMapThrowing { reply -> Void in
                 try reply.assertOK()
@@ -240,6 +241,7 @@ public class MongoDatabase {
             return connection.executeCodable(
                 ListCollections(),
                 namespace: self.commandNamespace,
+                in: self.transaction,
                 sessionId: connection.implicitSessionId
             ).flatMap { reply in
                 do {
