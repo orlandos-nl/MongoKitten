@@ -37,6 +37,7 @@ public struct DeleteCommand: Codable {
     
     /// This variable _must_ be the first encoded value, so keep it above all others
     private let delete: String
+    public var collection: String { delete }
     
     /// An array of one or more delete statements to perform in the collection.
     public var deletes: [Removal]

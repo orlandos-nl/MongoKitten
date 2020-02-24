@@ -11,10 +11,10 @@ let loop = MultiThreadedEventLoopGroup(numberOfThreads: 1).next()
 
 class CRUDTests : XCTestCase {
     let settings = try! ConnectionSettings("mongodb://localhost:27017")
-    var db: MongoConnection!
+    var db: MongoCluster!
 
     override func setUp() {
-        db = try! MongoConnection.connect(settings: settings, on: loop).wait()
+        db = try! MongoCluster.connect(on: loop, settings: settings)
     }
     
     func testListDatabases() throws {
