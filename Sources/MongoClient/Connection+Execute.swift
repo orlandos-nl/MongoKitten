@@ -119,7 +119,7 @@ extension MongoConnection {
             command["txnNumber"] = transaction.number
             command["autocommit"] = transaction.autocommit
 
-            if transaction.startTransaction {
+            if transaction.startTransaction() {
                 command["startTransaction"] = true
             }
         }
