@@ -77,6 +77,7 @@ public final class MongoCollection {
             return connection.executeCodable(
                 DropCollectionCommand(named: self.name),
                 namespace: self.database.commandNamespace,
+                in: self.transaction,
                 sessionId: connection.implicitSessionId
             )
         }.map { _ in }

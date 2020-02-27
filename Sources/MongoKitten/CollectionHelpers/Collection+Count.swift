@@ -11,6 +11,7 @@ extension MongoCollection {
             return connection.executeCodable(
                 CountCommand(on: self.name, where: query),
                 namespace: self.database.commandNamespace,
+                in: self.transaction,
                 sessionId: self.sessionId ?? connection.implicitSessionId
             )
         }.decode(CountReply.self).map { $0.count }._mongoHop(to: hoppedEventLoop)

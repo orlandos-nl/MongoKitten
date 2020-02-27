@@ -14,7 +14,7 @@ extension MongoConnection {
         do {
             let request = try BSONEncoder().encode(command)
 
-            return execute(request, namespace: namespace)
+            return execute(request, namespace: namespace, in: transaction, sessionId: sessionId)
         } catch {
             self.logger.error("Unable to encode MongoDB request")
             return eventLoop.makeFailedFuture(error)
@@ -33,9 +33,9 @@ extension MongoConnection {
             let serverHandshake = serverHandshake,
             serverHandshake.maxWireVersion.supportsOpMessage
         {
-            result = executeOpMessage(command, namespace: namespace)
+            result = executeOpMessage(command, namespace: namespace, in: transaction, sessionId: sessionId)
         } else {
-            result = executeOpQuery(command, namespace: namespace)
+            result = executeOpQuery(command, namespace: namespace, in: transaction, sessionId: sessionId)
         }
 
         if let queryTimer = queryTimer {
@@ -83,6 +83,7 @@ extension MongoConnection {
     internal func executeOpQuery(
         _ command: Document,
         namespace: MongoNamespace,
+        in transaction: MongoTransaction? = nil,
         sessionId: SessionIdentifier? = nil
     ) -> EventLoopFuture<MongoServerReply> {
         var command = command
@@ -118,7 +119,7 @@ extension MongoConnection {
             command["txnNumber"] = transaction.number
             command["autocommit"] = transaction.autocommit
 
-            if transaction.startTransaction {
+            if transaction.startTransaction() {
                 command["startTransaction"] = true
             }
         }

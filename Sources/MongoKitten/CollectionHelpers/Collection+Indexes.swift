@@ -13,6 +13,7 @@ extension MongoCollection {
                     indexes: [CreateIndexes.Index(named: name, keys: keys)]
                 ),
                 namespace: self.database.commandNamespace,
+                in: self.transaction,
                 sessionId: self.sessionId ?? connection.implicitSessionId
             )
         }.flatMapThrowing { reply in
