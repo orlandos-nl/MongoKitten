@@ -4,9 +4,9 @@ import XCTest
 
 #if canImport(NIOTransportServices)
 import NIOTransportServices
-let loop = NIOTSEventLoopGroup(loopCount: 1, defaultQoS: .default).next()
+let loop = NIOTSEventLoopGroup(loopCount: 1, defaultQoS: .default)
 #else
-let loop = MultiThreadedEventLoopGroup(numberOfThreads: 1).next()
+let loop = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 #endif
 
 class CRUDTests : XCTestCase {
