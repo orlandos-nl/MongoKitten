@@ -40,13 +40,33 @@ extension MongoCollection {
 }
 
 public struct ChangeStream<T: Decodable> {
-    typealias Notification = ChangeStreamNotification<T>
+    public typealias Notification = ChangeStreamNotification<T>
     typealias InputCursor = FinalizedCursor<MappedCursor<AggregateBuilderPipeline, Notification>>
     
     internal let cursor: InputCursor
     
     internal init(_ cursor: InputCursor) {
         self.cursor = cursor
+    }
+    
+    public func forEach(handler: @escaping (Notification) -> Bool) {
+        func nextBatch() -> EventLoopFuture<Void> {
+            return cursor.nextBatch().flatMap { batch in
+                for element in batch {
+                    if !handler(element) {
+                        return self.cursor.base.eventLoop.makeSucceededFuture(())
+                    }
+                }
+
+                if self.cursor.isDrained {
+                    return self.cursor.base.eventLoop.makeSucceededFuture(())
+                }
+
+                return nextBatch()
+            }
+        }
+        
+        _ = nextBatch()
     }
 }
 
