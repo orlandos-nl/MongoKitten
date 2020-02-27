@@ -14,7 +14,7 @@ class CRUDTests : XCTestCase {
     var db: MongoCluster!
 
     override func setUp() {
-        db = try! MongoCluster.connect(on: loop, settings: settings)
+        db = try! MongoCluster.connect(on: loop, settings: settings).wait()
     }
     
     func testListDatabases() throws {
