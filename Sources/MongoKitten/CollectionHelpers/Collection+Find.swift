@@ -69,6 +69,7 @@ public final class FindQueryBuilder: QueryCursor {
                     reply: response.cursor,
                     in: self.collection.namespace,
                     connection: connection,
+                    hoppedEventLoop: self.collection.hoppedEventLoop,
                     session: connection.implicitSession,
                     transaction: self.collection.transaction
                 )
