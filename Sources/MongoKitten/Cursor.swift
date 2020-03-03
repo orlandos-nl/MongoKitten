@@ -2,9 +2,8 @@ import NIO
 import MongoClient
 
 extension MongoCursor: QueryCursor {
-    public var eventLoop: EventLoop {
-        return connection.eventLoop
-    }
+    public var eventLoop: EventLoop { connection.eventLoop }
+    public var hoppedEventLoop: EventLoop? { hoppedEventLoop }
 
     public func getConnection() -> EventLoopFuture<MongoConnection> {
         return connection.eventLoop.makeSucceededFuture(connection)
@@ -99,6 +98,7 @@ public protocol QueryCursor {
     associatedtype Element
 
     var eventLoop: EventLoop { get }
+    var hoppedEventLoop: EventLoop? { get }
 
     func getConnection() -> EventLoopFuture<MongoConnection>
 
@@ -143,7 +143,7 @@ extension QueryCursor {
             }
 
             return nextBatch()
-        }
+        }._mongoHop(to: self.hoppedEventLoop)
     }
 }
 
@@ -174,7 +174,7 @@ extension QueryCursor {
             }
 
             return nextBatch()
-        }
+        }._mongoHop(to: self.hoppedEventLoop)
     }
 
     @discardableResult
@@ -210,7 +210,7 @@ extension QueryCursor {
                 }
             }
 
-            return nextBatch()
+            return nextBatch()._mongoHop(to: self.hoppedEventLoop)
         }
     }
 
@@ -228,7 +228,7 @@ extension QueryCursor {
             return finalizedCursor.nextBatch(batchSize: 1)
         }.flatMapThrowing { batch in
             return batch.first
-        }
+        }._mongoHop(to: self.hoppedEventLoop)
     }
 
     /// Executes the cursor and returns all results as an array
@@ -252,7 +252,7 @@ extension QueryCursor {
 
             nextBatch()
 
-            return promise.futureResult
+            return promise.futureResult._mongoHop(to: self.hoppedEventLoop)
         }
     }
 }
@@ -271,7 +271,7 @@ public final class FinalizedCursor<Base: QueryCursor> {
     }
 
     public func nextBatch(batchSize: Int = 101, failable: Bool = false) -> EventLoopFuture<[Base.Element]> {
-        return cursor.getMore(batchSize: batchSize).flatMapThrowing { batch in
+        return cursor.getMore(batchSize: batchSize)._mongoHop(to: cursor.hoppedEventLoop).flatMapThrowing { batch in
             if failable {
                 return batch.compactMap { element in
                     return try? self.base.transformElement(element)
@@ -279,7 +279,7 @@ public final class FinalizedCursor<Base: QueryCursor> {
             } else {
                 return try batch.map(self.base.transformElement)
             }
-        }
+        }._mongoHop(to: cursor.hoppedEventLoop)
     }
 
     /// Closes the cursor stopping any further data from being read
@@ -288,7 +288,7 @@ public final class FinalizedCursor<Base: QueryCursor> {
             return cursor.connection.eventLoop.makeFailedFuture(MongoError(.cannotCloseCursor, reason: .alreadyClosed))
         }
 
-        return cursor.close()
+        return cursor.close()._mongoHop(to: cursor.hoppedEventLoop)
     }
 }
 
@@ -309,9 +309,8 @@ public struct MappedCursor<Base: QueryCursor, Element>: QueryCursor {
         return underlyingCursor.getConnection()
     }
 
-    public var eventLoop: EventLoop {
-        return underlyingCursor.eventLoop
-    }
+    public var eventLoop: EventLoop { underlyingCursor.eventLoop }
+    public var hoppedEventLoop: EventLoop? { underlyingCursor.hoppedEventLoop }
 
     private let underlyingCursor: Base
     private let transform: Transform<Element>
@@ -329,6 +328,6 @@ public struct MappedCursor<Base: QueryCursor, Element>: QueryCursor {
     public func execute() -> EventLoopFuture<FinalizedCursor<MappedCursor<Base, Element>>> {
         return self.underlyingCursor.execute().map { result in
             return FinalizedCursor(basedOn: self, cursor: result.cursor)
-        }
+        }._mongoHop(to: self.hoppedEventLoop)
     }
 }

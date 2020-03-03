@@ -41,9 +41,10 @@ public final class FindQueryBuilder: QueryCursor {
     private let connection: EventLoopFuture<MongoConnection>
     public var command: FindCommand
     private let collection: MongoCollection
-    public var isDrained: Bool { return false }
+    public var isDrained: Bool { false }
 
-    public var eventLoop: EventLoop { return connection.eventLoop }
+    public var eventLoop: EventLoop { collection.eventLoop }
+    public var hoppedEventLoop: EventLoop? { collection.hoppedEventLoop }
 
     init(command: FindCommand, collection: MongoCollection, connection: EventLoopFuture<MongoConnection>, transaction: MongoTransaction? = nil) {
         self.command = command

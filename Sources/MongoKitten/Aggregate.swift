@@ -19,7 +19,8 @@ public struct AggregateBuilderPipeline: QueryCursor {
     internal var _collation: Collation?
     internal var _readConcern: ReadConcern?
     
-    public var eventLoop: EventLoop { return collection.eventLoop }
+    public var eventLoop: EventLoop { collection.eventLoop }
+    public var hoppedEventLoop: EventLoop? { collection.hoppedEventLoop }
     
     public func allowDiskUse(_ allowDiskUse: Bool? = true) -> AggregateBuilderPipeline {
         var pipeline = self
@@ -84,12 +85,13 @@ public struct AggregateBuilderPipeline: QueryCursor {
                     reply: cursor.cursor,
                     in: self.collection.namespace,
                     connection: connection,
+                    hoppedEventLoop: self.hoppedEventLoop,
                     session: connection.implicitSession,
                     transaction: self.collection.transaction
                 )
                 return FinalizedCursor(basedOn: self, cursor: cursor)
             }
-        }
+        }._mongoHop(to: hoppedEventLoop)
     }
     
     public func transformElement(_ element: Document) throws -> Document {

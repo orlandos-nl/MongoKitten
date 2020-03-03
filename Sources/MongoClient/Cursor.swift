@@ -8,6 +8,7 @@ public final class MongoCursor {
         return self.id == 0
     }
     public let namespace: MongoNamespace
+    public var hoppedEventLoop: EventLoop?
     public let transaction: MongoTransaction?
     public let session: MongoClientSession?
     public var maxTimeMS: Int32?
@@ -17,12 +18,14 @@ public final class MongoCursor {
         reply: MongoCursorResponse.Cursor,
         in namespace: MongoNamespace,
         connection: MongoConnection,
+        hoppedEventLoop: EventLoop? = nil,
         session: MongoClientSession,
         transaction: MongoTransaction?
     ) {
         self.id = reply.id
         self.initialBatch = reply.firstBatch
         self.namespace = namespace
+        self.hoppedEventLoop = hoppedEventLoop
         self.connection = connection
         self.session = session
         self.transaction = transaction
