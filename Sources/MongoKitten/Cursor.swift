@@ -3,7 +3,6 @@ import MongoClient
 
 extension MongoCursor: QueryCursor {
     public var eventLoop: EventLoop { connection.eventLoop }
-    public var hoppedEventLoop: EventLoop? { hoppedEventLoop }
 
     public func getConnection() -> EventLoopFuture<MongoConnection> {
         return connection.eventLoop.makeSucceededFuture(connection)
