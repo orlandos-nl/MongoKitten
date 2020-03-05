@@ -22,6 +22,10 @@ A fast, pure swift [MongoDB](https://mongodb.com) driver based on [Swift NIO](ht
 
 [You can sponsor us via GitHub.](https://github.com/sponsors/Joannis). This enables us to provide a higher quality and more documentation as well as building more tools.
 
+## The App
+
+[MongoKitten App](https://apps.apple.com/us/app/mongokitten/id1484086700) can help you browse your dataset, support customers and debug complex aggregates.
+
 ## The Company
 
 [Autimatisering](https://autimatisering.nl/) is the company currently backing MongoKitten. [Hire us](mailto:hoi@autimatisering.nl)
@@ -31,7 +35,6 @@ A fast, pure swift [MongoDB](https://mongodb.com) driver based on [Swift NIO](ht
 - See [CONTRIBUTING.md](CONTRIBUTING.md) for info on contributing to MongoKitten
 - You can help us out by resolving TODOs and replying on issues
 - Of course, all feedback, positive and negative, also really helps to improve the project
-
 
 # 🕶 Installation
 
