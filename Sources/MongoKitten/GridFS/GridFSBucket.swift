@@ -15,7 +15,7 @@ public final class GridFSBucket {
     
     private var didEnsureIndexes = false
     
-    var eventLoop: EventLoop {
+    public var eventLoop: EventLoop {
         return filesCollection.database.eventLoop
     }
     
@@ -25,11 +25,16 @@ public final class GridFSBucket {
     }
     
     public func upload(_ data: Data, filename: String, id: Primitive = ObjectId(), metadata: Document? = nil, chunkSize: Int32 = GridFSBucket.defaultChunkSize) -> EventLoopFuture<Void> {
-        var buffer = GridFSWriter.allocator.buffer(capacity: data.count)
+        var buffer = GridFSFileWriter.allocator.buffer(capacity: data.count)
         buffer.writeBytes(data)
         
-        let writer = GridFSWriter(fs: self, fileId: id, chunkSize: chunkSize, buffer: buffer)
-        return writer.finalize(filename: filename, metadata: metadata)
+        let writer = GridFSFileWriter(fs: self, fileId: id, chunkSize: chunkSize, buffer: buffer)
+        return writer.finalize(filename: filename, metadata: metadata).map { _ in }
+    }
+    
+    public func upload(_ buffer: ByteBuffer, filename: String, id: Primitive = ObjectId(), metadata: Document? = nil, chunkSize: Int32 = GridFSBucket.defaultChunkSize) -> EventLoopFuture<Void> {
+        let writer = GridFSFileWriter(fs: self, fileId: id, chunkSize: chunkSize, buffer: buffer)
+        return writer.finalize(filename: filename, metadata: metadata).map { _ in }
     }
     
     public func find(_ query: Document) -> MappedCursor<FindQueryBuilder, GridFSFile> {
