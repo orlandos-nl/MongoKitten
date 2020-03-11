@@ -1,4 +1,5 @@
 import BSON
+import Foundation
 import MongoCore
 import NIO
 import Logging
@@ -11,16 +12,33 @@ import NIOTransportServices
 import NIOSSL
 #endif
 
+public struct MongoHandshakeResult {
+    public let sent: Date
+    public let received: Date
+    public let handshake: Result<ServerHandshake, Error>
+    public var interval: Double {
+        received.timeIntervalSince(sent)
+    }
+    
+    init(sentAt sent: Date, handshake: Result<ServerHandshake, Error>) {
+        self.sent = sent
+        self.received = Date()
+        self.handshake = handshake
+    }
+}
+
 public final class MongoConnection {
     /// The NIO channel
     private let channel: Channel
     public var logger: Logger { context.logger }
-    var queryTimer: Timer?
+    var queryTimer: Metrics.Timer?
+    public internal(set) var lastHeartbeat: MongoHandshakeResult?
+    public var queryTimeout: TimeAmount = .seconds(30)
     
     public var isMetricsEnabled = false {
         didSet {
             if isMetricsEnabled, !oldValue {
-                queryTimer = Timer(label: "org.openkitten.mongokitten.core.queries")
+                queryTimer = Metrics.Timer(label: "org.openkitten.mongokitten.core.queries")
             } else {
                 queryTimer = nil
             }
@@ -146,7 +164,8 @@ public final class MongoConnection {
             
         // NO session must be used here: https://github.com/mongodb/specifications/blob/master/source/sessions/driver-sessions.rst#when-opening-and-authenticating-a-connection
         // Forced on the current connection
-        return self.executeCodable(
+        let sent = Date()
+        let result = self.executeCodable(
             IsMaster(
                 clientDetails: clientDetails,
                 userNamespace: userNamespace
@@ -154,6 +173,12 @@ public final class MongoConnection {
             namespace: .administrativeCommand,
             sessionId: nil
         ).flatMapThrowing { try ServerHandshake(reply: $0) }
+        
+        result.whenComplete { result in
+            self.lastHeartbeat = MongoHandshakeResult(sentAt: sent, handshake: result)
+        }
+        
+        return result
     }
 
     public func authenticate(
@@ -180,6 +205,11 @@ public final class MongoConnection {
         
         let promise = eventLoop.makePromise(of: MongoServerReply.self)
         context.awaitReply(toRequestId: message.header.requestId, completing: promise)
+        
+        eventLoop.scheduleTask(in: queryTimeout) {
+            let error = MongoError(.queryTimeout, reason: nil)
+            self.context.failQuery(byRequestId: message.header.requestId, error: error)
+        }
 
         var buffer = channel.allocator.buffer(capacity: 4_096)
         message.write(to: &buffer)

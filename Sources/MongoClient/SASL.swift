@@ -17,35 +17,49 @@ fileprivate enum ProgressState {
 /// A thread-safe global cache that all MongoDB clients can use to reduce computational cost of authentication
 ///
 /// By caching the proof of being auhtenticated.
-fileprivate final class CredentialsCache {
-    static let `default` = CredentialsCache()
+public final class MongoCredentialsCache {
+    public static let `default` = MongoCredentialsCache()
 
     private init() {}
 
     private var _cache = [String: Credentials]()
     private let lock = NSRecursiveLock()
 
-    subscript(key: String) -> Credentials? {
+    internal subscript(password: String, iterations: Int32, salt: String) -> Credentials? {
         get {
             lock.lock()
             defer { lock.unlock() }
 
-            return _cache[key]
+            let key = "\(password)\(iterations)\(salt)"
+            var sha1 = SHA1()
+            let keuHash = sha1.hash(key, count: key.count).hexString
+            return _cache[keuHash]
         }
         set {
             lock.lock()
             defer { lock.unlock() }
-
-            self._cache[key] = newValue
+            
+            let key = "\(password)\(iterations)\(salt)"
+            var sha1 = SHA1()
+            let keuHash = sha1.hash(key, count: key.count).hexString
+            self._cache[keuHash] = newValue
         }
+    }
+    
+    public func saveCache() throws -> Document {
+        try BSONEncoder().encode(_cache)
+    }
+    
+    public func loadCache(from document: Document) throws {
+        _cache = try BSONDecoder().decode([String: Credentials].self, from: document)
     }
 }
 
 /// This type contains all information needed to reduce the computational weight of authentication
-struct Credentials {
-    let saltedPassword: [UInt8]
-    let clientKey: [UInt8]
-    let serverKey: [UInt8]
+struct Credentials: Codable {
+    let saltedPassword: Data
+    let clientKey: Data
+    let serverKey: Data
 }
 
 /// A helper that can authenticate with the SCRAM machanism.
@@ -85,18 +99,18 @@ internal final class SCRAM<H: Hash> {
         let clientKey: [UInt8]
         let serverKey: [UInt8]
 
-        if let credentials = CredentialsCache.default[password + challenge.salt] {
-            saltedPassword = credentials.saltedPassword
-            clientKey = credentials.clientKey
-            serverKey = credentials.serverKey
+        if let credentials = MongoCredentialsCache.default[password, challenge.iterations, challenge.salt] {
+            saltedPassword = Array(credentials.saltedPassword)
+            clientKey = Array(credentials.clientKey)
+            serverKey = Array(credentials.serverKey)
         } else {
             // Check for sensible iterations, too
             guard
                 let saltData = Data(base64Encoded: challenge.salt),
                 challenge.iterations > 0 && challenge.iterations < 50_000,
                 challenge.nonce.starts(with: nonce)
-                else {
-                    throw MongoAuthenticationError(reason: .scramFailure)
+            else {
+                throw MongoAuthenticationError(reason: .scramFailure)
             }
 
             let salt = Array(saltData)
@@ -111,8 +125,12 @@ internal final class SCRAM<H: Hash> {
             clientKey = hmac.authenticate(clientKeyBytes, withKey: saltedPassword)
             serverKey = hmac.authenticate(serverKeyBytes, withKey: saltedPassword)
 
-            let credentials = Credentials(saltedPassword: saltedPassword, clientKey: clientKey, serverKey: serverKey)
-            CredentialsCache.default[password + challenge.salt] = credentials
+            let credentials = Credentials(
+                saltedPassword: Data(saltedPassword),
+                clientKey: Data(clientKey),
+                serverKey: Data(serverKey)
+            )
+            MongoCredentialsCache.default[password, challenge.iterations, challenge.salt] = credentials
         }
 
         let storedKey = hasher.hash(bytes: clientKey)

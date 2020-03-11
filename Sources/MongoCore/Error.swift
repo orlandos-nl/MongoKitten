@@ -1,3 +1,5 @@
+import NIO
+
 public struct MongoProtocolParsingError: Error, Codable, CustomStringConvertible {
     public enum Reason: String, Codable, CustomStringConvertible, Equatable {
         case unsupportedOpCode
@@ -99,6 +101,7 @@ public struct MongoError: Error, CustomStringConvertible, CustomDebugStringConve
         case invalidResponse
         case cannotCloseCursor
         case queryFailure
+        case queryTimeout
 
         public var description: String {
             switch self {
@@ -108,6 +111,7 @@ public struct MongoError: Error, CustomStringConvertible, CustomDebugStringConve
             case .cannotCloseCursor: return "Unable to close the cursor"
             case .cannotConnect: return "No hosts could be connected with, therefore no queries can be sent at the moment"
             case .queryFailure: return "The query sent failed"
+            case .queryTimeout: return "The query timed out"
             }
         }
     }
