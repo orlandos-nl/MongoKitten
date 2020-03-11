@@ -37,7 +37,7 @@ var package = Package(
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0"),
 
         // 📚
-        .package(url: "https://github.com/openkitten/NioDNS.git", .revision("master")),
+        .package(url: "https://github.com/openkitten/NioDNS.git", from: "2.0.0"),
         
         
     ],
@@ -72,19 +72,19 @@ var package = Package(
     ]
 )
 
-#if canImport(Network)
-// 🔑
-package.dependencies.append(.package(url: "https://github.com/joannis/swift-nio-transport-services.git", .revision("feature/udp-networking-framework-support")))
-let transport: Target.Dependency = "NIOTransportServices"
-package.platforms = [
-    .macOS(.v10_14),
-    .iOS(.v12),
-]
-#else
+//#if canImport(Network)
+//// 🔑
+//package.dependencies.append(.package(url: "https://github.com/joannis/swift-nio-transport-services.git", .revision("feature/udp-networking-framework-support")))
+//let transport: Target.Dependency = "NIOTransportServices"
+//package.platforms = [
+//    .macOS(.v10_14),
+//    .iOS(.v12),
+//]
+//#else
 // 🔑
 package.dependencies.append(.package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.0.0"))
 let transport: Target.Dependency = "NIOSSL"
-#endif
+//#endif
 
 package.targets.append(
     .target(

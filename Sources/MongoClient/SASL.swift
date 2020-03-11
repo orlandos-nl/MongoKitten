@@ -17,8 +17,8 @@ fileprivate enum ProgressState {
 /// A thread-safe global cache that all MongoDB clients can use to reduce computational cost of authentication
 ///
 /// By caching the proof of being auhtenticated.
-public final class MongoCredentialsCache {
-    public static let `default` = MongoCredentialsCache()
+fileprivate final class MongoCredentialsCache {
+    fileprivate static let `default` = MongoCredentialsCache()
 
     private init() {}
 
