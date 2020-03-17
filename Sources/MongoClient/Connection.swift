@@ -5,7 +5,7 @@ import NIO
 import Logging
 import Metrics
 
-#if canImport(NIOTransportServices)
+#if canImport(NIOTransportServices) && os(iOS)
 import Network
 import NIOTransportServices
 #else
@@ -98,7 +98,7 @@ public final class MongoConnection {
     ) -> EventLoopFuture<MongoConnection> {
         let context = MongoClientContext(logger: logger)
 
-        #if canImport(NIOTransportServices)
+        #if canImport(NIOTransportServices) && os(iOS)
         var bootstrap = NIOTSConnectionBootstrap(group: eventLoop)
 
         if settings.useSSL {

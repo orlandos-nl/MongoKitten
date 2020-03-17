@@ -3,7 +3,7 @@ import Logging
 import DNSClient
 import MongoCore
 
-#if canImport(NIOTransportServices)
+#if canImport(NIOTransportServices) && os(iOS)
 import NIOTransportServices
 
 public typealias _MongoPlatformEventLoopGroup = NIOTSEventLoopGroup
@@ -180,7 +180,7 @@ public final class MongoCluster: MongoConnectionPool {
         let client: EventLoopFuture<DNSClient>
         
         do {
-            #if canImport(NIOTransportServices)
+            #if canImport(NIOTransportServices) && os(iOS)
                 if let dnsServer = settings.dnsServer {
                     client = try DNSClient.connectTS(on: loop, config: [SocketAddress(ipAddress: dnsServer, port: 53)])
                 } else {
