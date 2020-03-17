@@ -1,19 +1,32 @@
-name: Swift
-
+name: test
 on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
-
+- pull_request
 jobs:
-  build:
-
-    runs-on: macos-latest
-
+  mongokitten_xenial:
+    container: 
+      image: vapor/swift:5.2-xenial
+    services:
+      mongo:
+        image: mongo
+        ports:
+          - 27017:27017
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Build
-      run: swift build -v
-    - name: Run tests
-      run: swift test -v
+    - uses: actions/checkout@v1
+    - run: swift test --enable-test-discovery --sanitize=thread
+      env:
+        MONGO_HOSTNAME: mongo
+  fluent-mongo-driver_bionic:
+    container: 
+      image: vapor/swift:5.2-bionic
+    services:
+      mongo:
+        image: mongo
+        ports:
+          - 27017:27017
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: swift test --enable-test-discovery --sanitize=thread
+      env:
+        MONGO_HOSTNAME: mongo
