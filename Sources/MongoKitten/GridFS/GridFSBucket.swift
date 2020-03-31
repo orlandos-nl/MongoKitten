@@ -24,7 +24,7 @@ public final class GridFSBucket {
         self.chunksCollection = database[name + ".chunks"]
     }
     
-    public func upload(_ data: Data, filename: String?, id: Primitive = ObjectId(), metadata: Document? = nil, chunkSize: Int32 = GridFSBucket.defaultChunkSize) -> EventLoopFuture<Void> {
+    public func upload(_ data: Data, filename: String? = nil, id: Primitive = ObjectId(), metadata: Document? = nil, chunkSize: Int32 = GridFSBucket.defaultChunkSize) -> EventLoopFuture<Void> {
         var buffer = GridFSFileWriter.allocator.buffer(capacity: data.count)
         buffer.writeBytes(data)
         
@@ -32,7 +32,7 @@ public final class GridFSBucket {
         return writer.finalize(filename: filename, metadata: metadata).map { _ in }
     }
     
-    public func upload(_ buffer: ByteBuffer, filename: String?, id: Primitive = ObjectId(), metadata: Document? = nil, chunkSize: Int32 = GridFSBucket.defaultChunkSize) -> EventLoopFuture<Void> {
+    public func upload(_ buffer: ByteBuffer, filename: String? = nil, id: Primitive = ObjectId(), metadata: Document? = nil, chunkSize: Int32 = GridFSBucket.defaultChunkSize) -> EventLoopFuture<Void> {
         let writer = GridFSFileWriter(fs: self, fileId: id, chunkSize: chunkSize, buffer: buffer)
         return writer.finalize(filename: filename, metadata: metadata).map { _ in }
     }
