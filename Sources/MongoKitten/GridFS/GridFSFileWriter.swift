@@ -43,7 +43,7 @@ public final class GridFSFileWriter {
         return self.flush()
     }
     
-    public func finalize(filename: String, metadata: Document? = nil) -> EventLoopFuture<GridFSFile> {
+    public func finalize(filename: String?, metadata: Document? = nil) -> EventLoopFuture<GridFSFile> {
         assert(self.finalized == false, "Finalizing a finalized writer is an error")
         
         self.finalized = true
