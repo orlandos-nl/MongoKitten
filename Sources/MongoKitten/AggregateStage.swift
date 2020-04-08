@@ -16,6 +16,12 @@ public struct AggregateBuilderStage {
             "$match": query
         ])
     }
+	
+	public static func match<Q: MongoKittenQuery>(_ query: Q) -> AggregateBuilderStage {
+		return AggregateBuilderStage(document: [
+			"$match": query.makeDocument()
+		])
+	}
     
     public static func addFields(_ query: Document) -> AggregateBuilderStage {
         return AggregateBuilderStage(document: [
