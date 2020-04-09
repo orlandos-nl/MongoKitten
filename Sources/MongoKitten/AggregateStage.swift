@@ -84,7 +84,7 @@ public struct AggregateBuilderStage {
 	/// ```
 	///
 	/// - Parameter n: the maximum number of documents
-	/// - Returns: returns an `AggregateBuilderStage`
+	/// - Returns: an `AggregateBuilderStage`
     public static func limit(_ n: Int) -> AggregateBuilderStage {
         assert(n > 0)
         
@@ -117,7 +117,7 @@ public struct AggregateBuilderStage {
 	/// let pipeline = userCollection.aggregate([
 	///     .lookup(from: "userCategories", "localField": "categoryID", "foreignField": "_id", newName: "userCategory")
 	/// ])
-	/// 
+	///
 	/// pipeline.execute().whenComplete { result in
 	///    ...
 	/// }
@@ -138,7 +138,7 @@ public struct AggregateBuilderStage {
 	///   - localField: the name of the field in the input collection that shall match the `foreignField` in the `from` collection
 	///   - foreignField: the name of the field in the `fromCollection` that shall match the `localField` in the input collection
 	///   - newName: the collecting matches will be inserted as an array to the input collection, named as `newName`
-	/// - Returns: returns an `AggregateBuilderStage`
+	/// - Returns: an `AggregateBuilderStage`
     public static func lookup(
         from: String,
         localField: String,
@@ -187,7 +187,7 @@ public struct AggregateBuilderStage {
 	///   - fieldPath: the field path to an array field. You have to prefix the path with "$"
 	///   - includeArrayIndex: this parameter is optional. If given, the new documents will hold a new field with the name of `includeArrayIndex` and this field will contain the array index
 	///   - preserveNullAndEmptyArrays: this parameter is optional. If it is set to `true`, the aggregation will also include the documents, that don't have an array that can be unwinded. default is `false`, so the `unwind` aggregation will remove all documents, where there is no value or an empty array at `fieldPath`
-	/// - Returns: returns an `AggregateBuilderStage`
+	/// - Returns: an `AggregateBuilderStage`
     public static func unwind(
         fieldPath: String,
         includeArrayIndex: String? = nil,

@@ -13,7 +13,8 @@ extension MongoCollection {
 	/// ```
 	/// let pipeline = collection.aggregate([
 	///     .match("name" == "Superman"),
-	///     .unwind(fieldPath: "$arrayItem")
+	///     .lookup(from: "addresses", "localField": "_id", "foreignField": "superheroID", newName: "address"),
+	///     .unwind(fieldPath: "$address")
 	/// ])
 	///
 	/// pipeline.decode(SomeDecodableType.self).forEach { yourStruct in
@@ -33,7 +34,7 @@ extension MongoCollection {
 	/// ```
 	///
 	/// - Parameter stages: an array of `AggregateBuilderStage`.
-	/// - Returns: returns an `AggregateBuilderPipeline`
+	/// - Returns: an `AggregateBuilderPipeline` that should be executed to get results
     public func aggregate(_ stages: [AggregateBuilderStage]) -> AggregateBuilderPipeline {
         var pipeline = AggregateBuilderPipeline(stages: stages)
         pipeline.collection = self

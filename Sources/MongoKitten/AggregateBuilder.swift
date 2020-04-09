@@ -61,7 +61,8 @@ extension MongoCollection {
 	/// ```
 	/// let pipeline = collection.buildAggregate {
 	///    match("name" == "Superman")
-	///    unwind(fieldPath: "$arrayItem")
+	///    lookup(from: "addresses", "localField": "_id", "foreignField": "superheroID", newName: "address")
+	///    unwind(fieldPath: "$address")
 	/// }
 	///
 	/// pipeline.decode(SomeDecodableType.self).forEach { yourStruct in
@@ -72,7 +73,7 @@ extension MongoCollection {
 	/// ```
 	///
 	/// - Parameter build: the `AggregateBuilderStage` as function builders
-	/// - Returns: returns an `AggregateBuilderPipeline`
+	/// - Returns: an `AggregateBuilderPipeline` that should be executed to get results
     public func buildAggregate(@AggregateBuilder build: () -> AggregateBuilderStage) -> AggregateBuilderPipeline {
         var pipeline = AggregateBuilderPipeline(stages: [build()])
         pipeline.collection = self
@@ -114,7 +115,7 @@ public func skip(_ n: Int) -> AggregateBuilderStage {
 /// ```
 ///
 /// - Parameter n: the maximum number of documents
-/// - Returns: returns an `AggregateBuilderStage`
+/// - Returns: an `AggregateBuilderStage`
 public func limit(_ n: Int) -> AggregateBuilderStage {
     return .limit(n)
 }
@@ -174,7 +175,7 @@ public func project(_ fields: String...) -> AggregateBuilderStage {
 ///   - localField: the name of the field in the input collection that shall match the `foreignField` in the `from` collection
 ///   - foreignField: the name of the field in the `fromCollection` that shall match the `localField` in the input collection
 ///   - newName: the collecting matches will be inserted as an array to the input collection, named as `newName`
-/// - Returns: returns an `AggregateBuilderStage`
+/// - Returns: an `AggregateBuilderStage`
 public func lookup(
     from: String,
     localField: String,
@@ -221,7 +222,7 @@ public func lookup(
 ///   - fieldPath: the field path to an array field. You have to prefix the path with "$"
 ///   - includeArrayIndex: this parameter is optional. If given, the new documents will hold a new field with the name of `includeArrayIndex` and this field will contain the array index
 ///   - preserveNullAndEmptyArrays: this parameter is optional. If it is set to `true`, the aggregation will also include the documents, that don't have an array that can be unwinded. default is `false`, so the `unwind` aggregation will remove all documents, where there is no value or an empty array at `fieldPath`
-/// - Returns: returns an `AggregateBuilderStage`
+/// - Returns: an `AggregateBuilderStage`
 public func unwind(
     fieldPath: String,
     includeArrayIndex: String? = nil,
