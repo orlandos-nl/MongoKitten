@@ -10,7 +10,10 @@ extension CodingUserInfoKey {
 public final class GridFSBucket {
     public static let defaultChunkSize: Int32 = 261_120 // 255 kB
     
+    /// The collection in which `GridFSFile` metadata is stored
     public let filesCollection: MongoCollection
+    
+    /// The collection in which the chunks of binary data are stored
     public let chunksCollection: MongoCollection
     
     private var didEnsureIndexes = false

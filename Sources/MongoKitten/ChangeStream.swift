@@ -10,12 +10,14 @@ public struct ChangeStreamOptions: Codable {
 }
 
 extension MongoCollection {
+    /// Watches for all changes in this collection
     public func watch(
         options: ChangeStreamOptions = .init()
     ) -> EventLoopFuture<ChangeStream<Document>> {
         return watch(options: options, as: Document.self)
     }
     
+    /// Watches for all changes in this collection, and decodes entities to `T`
     public func watch<T: Decodable>(
         options: ChangeStreamOptions = .init(),
         as type: T.Type,
@@ -51,7 +53,7 @@ public struct ChangeStream<T: Decodable> {
     
     public func forEach(handler: @escaping (Notification) -> Bool) {
         func nextBatch() -> EventLoopFuture<Void> {
-            return cursor.nextBatch().flatMap { batch in
+            return cursor.nextBatch(failable: true).flatMap { batch in
                 for element in batch {
                     if !handler(element) {
                         return self.cursor.base.eventLoop.makeSucceededFuture(())
@@ -80,7 +82,10 @@ public struct ChangeStreamNotification<T: Decodable>: Decodable {
             case database = "db", collection = "coll"
         }
         
+        /// The name of the database where the notification occurrd
         public let database: String
+        
+        /// The name of the collection where the notification occurrd
         public let collection: String
     }
     
@@ -88,10 +93,10 @@ public struct ChangeStreamNotification<T: Decodable>: Decodable {
         public let updatedFields: Document
         public let removedFields: [String]
     }
-
     
     public let _id: Document
     public let operationType: OperationType
+    
     public let ns: ChangeStreamNamespace
     public let documentKey: Document?
     public let updateDescription: UpdateDescription?
