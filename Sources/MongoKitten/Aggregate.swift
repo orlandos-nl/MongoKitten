@@ -3,6 +3,37 @@ import MongoKittenCore
 import MongoClient
 
 extension MongoCollection {
+	/// The `aggregate` command will create an `AggregateBuilderPipeline` where data can be aggregated
+	/// and be transformed in multiple `AggregateStage` operations
+	///
+	/// # Hint:
+	/// With Swift > 5.1 you can also use the function builders. See the documentation at `buildAggregate`
+	///
+	/// # Example:
+	/// ```
+	/// let pipeline = collection.aggregate([
+	///     .match("name" == "Superman"),
+	///     .unwind(fieldPath: "$arrayItem")
+	/// ])
+	///
+	/// pipeline.decode(SomeDecodableType.self).forEach { yourStruct in
+	///	    // do sth. with your struct
+	///	}.whenFailure { error in
+	///	    // do sth. with the error
+	/// }
+	/// ```
+	///
+	/// The same example with function builders:
+	///
+	/// ```
+	/// let pipeline = collection.buildAggregate {
+	///    match("name" == "Superman")
+	///    unwind(fieldPath: "$arrayItem")
+	/// }
+	/// ```
+	///
+	/// - Parameter stages: an array of `AggregateBuilderStage`.
+	/// - Returns: returns an `AggregateBuilderPipeline`
     public func aggregate(_ stages: [AggregateBuilderStage]) -> AggregateBuilderPipeline {
         var pipeline = AggregateBuilderPipeline(stages: stages)
         pipeline.collection = self
