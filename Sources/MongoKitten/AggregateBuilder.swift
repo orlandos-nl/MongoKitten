@@ -103,9 +103,13 @@ public func skip(_ n: Int) -> AggregateBuilderStage {
 ///
 /// # Example:
 /// ```
-/// let pipeline = myCollection.aggregate([.match("myCondition" == true), .limit(5)])
+/// let pipeline = myCollection.aggregate([
+///     .match("myCondition" == true),
+///     .limit(5)
+/// ])
+///
 /// pipeline.execute().whenComplete { result in
-///    ...
+///    // ...
 /// }
 /// ```
 ///
@@ -146,9 +150,12 @@ public func project(_ fields: String...) -> AggregateBuilderStage {
 /// If you now want to aggregate all users and the corresponding user category, you can use the `$lookup` like this:
 ///
 /// ```
-/// let pipeline = userCollection.aggregate([.lookup(from: "userCategories", "localField": "categoryID", "foreignField": "_id", newName: "userCategory")])
+/// let pipeline = userCollection.aggregate([
+///     .lookup(from: "userCategories", "localField": "categoryID", "foreignField": "_id", newName: "userCategory")
+/// ])
+///
 /// pipeline.execute().whenComplete { result in
-///    ...
+///    // ...
 /// }
 /// ```
 ///
