@@ -79,7 +79,7 @@ public struct FindAndModifyCommand: Codable {
     }
 }
 
-public struct FindAndModifyReply: Codable {
+public struct FindAndModifyReply: Codable, Error {
     private enum CodingKeys: String, CodingKey {
         case ok
         case value
