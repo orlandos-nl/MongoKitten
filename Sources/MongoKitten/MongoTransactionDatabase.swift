@@ -23,13 +23,13 @@ public final class MongoTransactionDatabase: MongoDatabase {
 }
 
 struct CommitTransaction: Codable {
-    let commitTransaction = 1
+    var commitTransaction = 1
     
     init() {}
 }
 
 struct AbortTransaction: Codable {
-    let abortTransaction = 1
+    var abortTransaction = 1
     
     init() {}
 }

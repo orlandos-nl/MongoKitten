@@ -2,8 +2,11 @@ import MongoClient
 import NIO
 
 public struct ChangeStreamOptions: Codable {
+    /// The amount of entities to fetch per database call
     public var batchSize: Int32?
     public var collation: Collation?
+    
+    /// If set, this indicates the maximum time spent waiting on new results in the cursor.
     public var maxAwaitTimeMS: Int64?
     
     public init() {}

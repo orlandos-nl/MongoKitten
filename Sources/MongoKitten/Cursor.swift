@@ -2,24 +2,29 @@ import NIO
 import MongoClient
 
 extension MongoCursor: QueryCursor {
+    /// The `EventLoop` on which the query will be executed
     public var eventLoop: EventLoop { connection.eventLoop }
-
+    
+    /// Gets the connection on which the cursor will be executing GetMore and Close commands
     public func getConnection() -> EventLoopFuture<MongoConnection> {
         return connection.eventLoop.makeSucceededFuture(connection)
     }
 
     public typealias Element = Document
 
+    /// Executes the cursor, if that is needed, and returns a usable FinalizedCursor
     public func execute() -> EventLoopFuture<FinalizedCursor<MongoCursor>> {
         return connection.eventLoop.makeSucceededFuture(FinalizedCursor(basedOn: self, cursor: self))
     }
 
+    /// Any transforms tht will need to be applied to elements
     public func transformElement(_ element: Document) throws -> Document {
         return element
     }
 }
 
 extension MongoCursor {
+    /// Drains the entire cursor into an array, this can be a very memory-heavy process.
     public func drain() -> EventLoopFuture<[Document]> {
         return CursorDrainer(cursor: self).collectAll()
     }
@@ -95,10 +100,14 @@ fileprivate extension CursorBatch where Element == Document {
 public protocol QueryCursor {
     /// The Element type of the cursor
     associatedtype Element
-
+    
+    /// The `EventLoop` on which the query will be executed
     var eventLoop: EventLoop { get }
+
+    /// The `EventLoop` on which the resulting Future will be completed
     var hoppedEventLoop: EventLoop? { get }
 
+    /// The connection on which commands related to this cursor will be executed.
     func getConnection() -> EventLoopFuture<MongoConnection>
 
     /// Executes the cursor, returning a `FinalizedCursor` after the operation has completed.

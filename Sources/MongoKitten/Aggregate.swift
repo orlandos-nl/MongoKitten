@@ -19,7 +19,10 @@ public struct AggregateBuilderPipeline: QueryCursor {
     internal var _collation: Collation?
     internal var _readConcern: ReadConcern?
     
+    /// The `EventLoop` on which the query will be executed
     public var eventLoop: EventLoop { collection.eventLoop }
+    
+    /// The `EventLoop` on which the resulting Future will be completed
     public var hoppedEventLoop: EventLoop? { collection.hoppedEventLoop }
     
     public func allowDiskUse(_ allowDiskUse: Bool? = true) -> AggregateBuilderPipeline {

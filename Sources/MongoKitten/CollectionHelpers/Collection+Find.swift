@@ -39,11 +39,16 @@ extension MongoCollection {
 public final class FindQueryBuilder: QueryCursor {
     /// The collection this cursor applies to
     private let connection: EventLoopFuture<MongoConnection>
+    
+    /// The raw command that will be sent to the server. This can be modified if raw modification of the command is needed.
     public var command: FindCommand
     private let collection: MongoCollection
     public var isDrained: Bool { false }
-
+    
+    /// The `EventLoop` on which the query will be executed
     public var eventLoop: EventLoop { collection.eventLoop }
+    
+    /// The `EventLoop` on which the resulting Future will be completed
     public var hoppedEventLoop: EventLoop? { collection.hoppedEventLoop }
 
     init(command: FindCommand, collection: MongoCollection, connection: EventLoopFuture<MongoConnection>, transaction: MongoTransaction? = nil) {

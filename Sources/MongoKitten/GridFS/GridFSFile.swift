@@ -61,6 +61,7 @@ public struct GridFSFile: Codable {
         case _id, length, chunkSize, uploadDate, md5, filename, contentType, aliasses, metadata
     }
     
+    /// A helper type that reads the files chunks into a contiguous blob.
     public var reader: GridFSReader {
         return GridFSReader(file: self)
     }

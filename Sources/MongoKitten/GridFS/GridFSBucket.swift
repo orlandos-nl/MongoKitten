@@ -18,9 +18,13 @@ public final class GridFSBucket {
     
     private var didEnsureIndexes = false
     
+    /// The `EventLoop` on which the query will be executed
     public var eventLoop: EventLoop {
         return filesCollection.database.eventLoop
     }
+    
+    /// The `EventLoop` on which the resulting Future will be completed
+    public var hoppedEventLoop: EventLoop? { filesCollection.database.hoppedEventLoop }
     
     public init(named name: String = "fs", in database: MongoDatabase) {
         self.filesCollection = database[name + ".files"]
