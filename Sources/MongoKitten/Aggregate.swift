@@ -112,7 +112,7 @@ public struct AggregateBuilderPipeline: QueryCursor {
                 namespace: self.collection.database.commandNamespace,
                 in: self.collection.transaction,
                 sessionId: self.collection.sessionId ?? connection.implicitSessionId
-            ).decode(CursorReply.self).map { cursor in
+            ).decodeReply(CursorReply.self).map { cursor in
                 let cursor = MongoCursor(
                     reply: cursor.cursor,
                     in: self.collection.namespace,

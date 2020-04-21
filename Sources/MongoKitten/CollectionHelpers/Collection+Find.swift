@@ -18,6 +18,10 @@ extension MongoCollection {
         return find(query.makeDocument())
     }
 
+    public func find<D: Decodable>(_ query: Document = [:], as type: D.Type) -> MappedCursor<FindQueryBuilder, D> {
+        return find(query).decode(type)
+    }
+
     public func findOne<D: Decodable>(_ query: Document = [:], as type: D.Type) -> EventLoopFuture<D?> {
         return find(query).limit(1).decode(type).firstResult()
     }

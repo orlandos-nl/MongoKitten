@@ -293,10 +293,23 @@ internal extension Decodable {
 }
 
 extension EventLoopFuture where Value == MongoServerReply {
-    public func decode<D: Decodable>(_ type: D.Type) -> EventLoopFuture<D> {
+    public func decodeReply<D: Decodable>(_ type: D.Type) -> EventLoopFuture<D> {
         return flatMapThrowing(D.init(reply:))
     }
 }
+
+extension EventLoopFuture where Value == Optional<Document> {
+    public func decode<D: Decodable>(_ type: D.Type) -> EventLoopFuture<D?> {
+        return flatMapThrowing { document in
+            if let document = document {
+                return try BSONDecoder().decode(type, from: document)
+            } else {
+                return nil
+            }
+        }
+    }
+}
+
 
 extension MongoConnectionPool {
     public subscript(db: String) -> MongoDatabase {
