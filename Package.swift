@@ -3,7 +3,7 @@
 
 import PackageDescription
 
-var package = Package(
+let package = Package(
     name: "MongoKitten",
     platforms: [
         .macOS(.v10_14)
@@ -39,7 +39,8 @@ var package = Package(
         // 📚
         .package(url: "https://github.com/openkitten/NioDNS.git", from: "2.0.0"),
         
-        
+        // 🔑
+        .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.0.0")
     ],
     targets: [
         .target(
@@ -57,12 +58,13 @@ var package = Package(
         .target(
             name: "Meow",
             dependencies: ["MongoKitten"]),
+        .target(
+            name: "MongoClient",
+            dependencies: ["MongoCore", "NIOSSL", "DNSClient"]
+        ),
         .testTarget(
             name: "MongoCoreTests",
             dependencies: ["MongoCore"]),
-        //.testTarget(
-        //    name: "MongoClientTests",
-        //    dependencies: ["MongoClient"]),
         .testTarget(
             name: "MongoKittenTests",
             dependencies: ["MongoKitten"]),
@@ -70,25 +72,4 @@ var package = Package(
             name: "MeowTests",
             dependencies: ["Meow"]),
     ]
-)
-
-//#if canImport(Network)
-//// 🔑
-//package.dependencies.append(.package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "1.0.0"))
-//let transport: Target.Dependency = "NIOTransportServices"
-//package.platforms = [
-//    .macOS(.v10_14),
-//    .iOS(.v12),
-//]
-//#else
-// 🔑
-package.dependencies.append(.package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.0.0"))
-let transport: Target.Dependency = "NIOSSL"
-//#endif
-
-package.targets.append(
-    .target(
-        name: "MongoClient",
-        dependencies: ["MongoCore", transport, "DNSClient"]
-    )
 )

@@ -13,7 +13,7 @@ public final class GridFSFileWriter {
     var length: Int
     var finalized = false
     
-    public init(toBucket fs: GridFSBucket, fileId: Primitive, chunkSize: Int32) {
+    public init(toBucket fs: GridFSBucket, fileId: Primitive = ObjectId(), chunkSize: Int32 = GridFSBucket.defaultChunkSize) {
         self.fs = fs
         self.fileId = fileId
         self.chunkSize = chunkSize
@@ -21,7 +21,7 @@ public final class GridFSFileWriter {
         self.length = self.buffer.readableBytes
     }
     
-    internal init(fs: GridFSBucket, fileId: Primitive, chunkSize: Int32, buffer: ByteBuffer? = nil) {
+    internal init(fs: GridFSBucket, fileId: Primitive = ObjectId(), chunkSize: Int32 = GridFSBucket.defaultChunkSize, buffer: ByteBuffer? = nil) {
         self.fs = fs
         self.fileId = fileId
         self.chunkSize = chunkSize
@@ -43,7 +43,7 @@ public final class GridFSFileWriter {
         return self.flush()
     }
     
-    public func finalize(filename: String, metadata: Document? = nil) -> EventLoopFuture<GridFSFile> {
+    public func finalize(filename: String? = nil, metadata: Document? = nil) -> EventLoopFuture<GridFSFile> {
         assert(self.finalized == false, "Finalizing a finalized writer is an error")
         
         self.finalized = true

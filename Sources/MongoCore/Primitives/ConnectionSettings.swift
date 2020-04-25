@@ -107,6 +107,8 @@ public struct ConnectionSettings: Equatable {
     /// Indicates that there is one host for which we'll need to do an query
     public let isSRV: Bool
     
+    public var dnsServer: String?
+    
     public var queryParameters: [String: String]
 
     /// Initializes a new connection settings instacen.
@@ -271,6 +273,10 @@ public struct ConnectionSettings: Equatable {
 
         if let appName = queries["appname"] {
             self.applicationName = String(appName)
+        }
+
+        if let dnsServer = queries["dnsServer"] {
+            self.dnsServer = String(dnsServer)
         }
     }
 }
