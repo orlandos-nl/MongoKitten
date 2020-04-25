@@ -83,6 +83,14 @@ public func sample(_ n: Int) -> AggregateBuilderStage {
     return .sample(n)
 }
 
+public func replaceRoot(newRoot: String) -> AggregateBuilderStage {
+    AggregateBuilderStage(document: [
+        "$replaceRoot": [
+            "newRoot": newRoot
+        ]
+    ])
+}
+
 public func project(_ projection: Projection) -> AggregateBuilderStage {
     return .project(projection)
 }

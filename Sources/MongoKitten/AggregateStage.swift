@@ -72,7 +72,9 @@ public struct AggregateBuilderStage {
         assert(n > 0)
         
         return AggregateBuilderStage(document: [
-            "$sample": n
+            "$sample": [
+                "size": n
+            ]
         ])
     }
     
