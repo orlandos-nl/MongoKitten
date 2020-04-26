@@ -86,6 +86,10 @@ public struct ConnectionSettings: Equatable {
     /// When true, SSL will be used
     public var useSSL: Bool = false
 
+    /// When SSL is enabled, the CA certificate to use
+    /// If `nil`, don't use a custom CA
+    public var sslCaCertificatePath: String?
+    
     /// When true, SSL certificates will be validated
     public var verifySSLCertificates: Bool = true
 
@@ -162,7 +166,6 @@ public struct ConnectionSettings: Equatable {
         } else if uri.starts(with: "mongodb+srv://") {
             uri.removeFirst("mongodb+srv://".count)
             isSRV = true
-            useSSL = true
         } else {
             throw MongoInvalidUriError(reason: .missingMongoDBScheme)
         }
@@ -202,7 +205,7 @@ public struct ConnectionSettings: Equatable {
                 let queryItemName = String(queryItemParts[0])
                 let queryItemValue = queryItemParts.count > 1 ? String(queryItemParts[1]) : ""
 
-                queries[queryItemName] = queryItemValue
+                queries[queryItemName] = queryItemValue.removingPercentEncoding
             }
         }
         
@@ -245,12 +248,22 @@ public struct ConnectionSettings: Equatable {
         }
 
         // Parse various options
-        if let authSource = queries["authSource"] {
-            self.authenticationSource = String(authSource)
-        }
+        self.authenticationSource = queries["authSource"]
 
         if let useSSL = Bool(queryValue: queries["ssl"]) {
             self.useSSL = useSSL
+        } else if let useSSL = Bool(queryValue: queries["tls"]) {
+            self.useSSL = useSSL
+        } else if isSRV {
+            self.useSSL = true
+        }
+        
+        if useSSL {
+            self.sslCaCertificatePath = queries["tlsCAFile"]
+            
+//            if let insecure = Bool(queryValue: queries["tlsInsecure"]) {
+//                self.sslDisableValidation = insecure
+//            }
         }
 
         // TODO: Custom root cert for IBM bluemix
@@ -271,12 +284,7 @@ public struct ConnectionSettings: Equatable {
             self.socketTimeout = TimeInterval(socketTimeoutMSNumber) / 1000
         }
 
-        if let appName = queries["appname"] {
-            self.applicationName = String(appName)
-        }
-
-        if let dnsServer = queries["dnsServer"] {
-            self.dnsServer = String(dnsServer)
-        }
+        self.applicationName = queries["appname"]
+        self.dnsServer = queries["dnsServer"]
     }
 }
