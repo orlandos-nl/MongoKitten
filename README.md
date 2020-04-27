@@ -78,10 +78,12 @@ extension Request {
         return application.mongoDB.hopped(to: eventLoop)
     }
     
+    // For Meow users only
     public var meow: MeowDatabase {
         return MeowDatabase(mongoDB)
     }
     
+    // For Meow users only
     public func meow<M: ReadableModel>(_ type: M.Type) -> MeowCollection<M> {
         return meow[type]
     }
@@ -101,6 +103,7 @@ extension Application {
         }
     }
     
+    // For Meow users only
     public var meow: MeowDatabase {
         MeowDatabase(mongoDB)
     }

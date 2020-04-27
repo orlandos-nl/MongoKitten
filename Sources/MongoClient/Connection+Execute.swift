@@ -89,6 +89,7 @@ extension MongoConnection {
         var command = command
         
         if let id = sessionId?.id {
+            // TODO: This is memory heavy
             command["lsid"]["id"] = id
         }
         
@@ -111,6 +112,7 @@ extension MongoConnection {
         command["$db"] = namespace.databaseName
         
         if let id = sessionId?.id {
+            // TODO: This is memory heavy
             command["lsid"]["id"] = id
         }
         
