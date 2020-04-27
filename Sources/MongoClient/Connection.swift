@@ -217,7 +217,7 @@ public final class MongoConnection {
             self.context.failQuery(byRequestId: message.header.requestId, error: error)
         }
 
-        var buffer = channel.allocator.buffer(capacity: 4_096)
+        var buffer = channel.allocator.buffer(capacity: Int(message.header.messageLength))
         message.write(to: &buffer)
         return channel.writeAndFlush(buffer).flatMap { promise.futureResult }
     }
