@@ -235,6 +235,14 @@ public func unwind(
     )
 }
 
+public func replaceRoot(fieldPath: String) -> AggregateBuilderStage {
+    return AggregateBuilderStage(document: [
+        "$replaceRoot": [
+            "newRoot": "$\(fieldPath)"
+        ]
+    ])
+}
+
 public func sort(_ sort: Sort) -> AggregateBuilderStage {
     return .sort(sort)
 }
