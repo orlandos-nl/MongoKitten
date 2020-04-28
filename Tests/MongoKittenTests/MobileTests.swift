@@ -13,7 +13,12 @@ class CRUDTests : XCTestCase {
     }
     
     func testListDatabases() throws {
-        try XCTAssertTrue(db.listDatabases().wait().contains { $0.name == "admin" })
+        let databases = try db.listDatabases().wait()
+        XCTAssertTrue(databases.contains { $0.name == "admin" })
+        
+        for db in databases {
+            XCTAssertNoThrow(try db.listCollections().wait())
+        }
     }
 
     func testInsert() {

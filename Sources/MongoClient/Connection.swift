@@ -120,7 +120,13 @@ public final class MongoConnection {
                 #if !canImport(NIOTransportServices)
                 if settings.useSSL {
                     do {
-                        let handler = try NIOSSLClientHandler(context: NIOSSLContext(configuration: .clientDefault), serverHostname: host.hostname)
+                        var configuration = TLSConfiguration.clientDefault
+                        
+                        if let caCertPath = settings.sslCaCertificatePath {
+                            configuration.trustRoots = NIOSSLTrustRoots.file(caCertPath)
+                        }
+                        
+                        let handler = try NIOSSLClientHandler(context: NIOSSLContext(configuration: configuration), serverHostname: host.hostname)
                         return channel.pipeline.addHandler(handler).flatMap {
                             return MongoConnection.addHandlers(to: channel, context: context)
                         }
@@ -211,7 +217,7 @@ public final class MongoConnection {
             self.context.failQuery(byRequestId: message.header.requestId, error: error)
         }
 
-        var buffer = channel.allocator.buffer(capacity: 4_096)
+        var buffer = channel.allocator.buffer(capacity: Int(message.header.messageLength))
         message.write(to: &buffer)
         return channel.writeAndFlush(buffer).flatMap { promise.futureResult }
     }

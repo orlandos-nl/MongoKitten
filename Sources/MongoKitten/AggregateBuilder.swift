@@ -124,6 +124,14 @@ public func sample(_ n: Int) -> AggregateBuilderStage {
     return .sample(n)
 }
 
+public func replaceRoot(newRoot: String) -> AggregateBuilderStage {
+    AggregateBuilderStage(document: [
+        "$replaceRoot": [
+            "newRoot": newRoot
+        ]
+    ])
+}
+
 public func project(_ projection: Projection) -> AggregateBuilderStage {
     return .project(projection)
 }
@@ -233,6 +241,14 @@ public func unwind(
         includeArrayIndex: includeArrayIndex,
         preserveNullAndEmptyArrays: preserveNullAndEmptyArrays
     )
+}
+
+public func replaceRoot(fieldPath: String) -> AggregateBuilderStage {
+    return AggregateBuilderStage(document: [
+        "$replaceRoot": [
+            "newRoot": "$\(fieldPath)"
+        ]
+    ])
 }
 
 public func sort(_ sort: Sort) -> AggregateBuilderStage {
