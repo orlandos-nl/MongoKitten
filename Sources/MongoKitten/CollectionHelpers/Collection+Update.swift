@@ -16,7 +16,7 @@ extension MongoCollection {
                 in: self.transaction,
                 sessionId: self.sessionId ?? connection.implicitSessionId
             )
-        }.decode(UpdateReply.self)._mongoHop(to: hoppedEventLoop)
+        }.decodeReply(UpdateReply.self)._mongoHop(to: hoppedEventLoop)
     }
     
     public func updateOne<Query: MongoKittenQuery>(
@@ -44,7 +44,7 @@ extension MongoCollection {
                 in: self.transaction,
                 sessionId: self.sessionId ?? connection.implicitSessionId
             )
-        }.decode(UpdateReply.self)._mongoHop(to: hoppedEventLoop)
+        }.decodeReply(UpdateReply.self)._mongoHop(to: hoppedEventLoop)
     }
     
     public func updateMany<Query: MongoKittenQuery>(
@@ -74,7 +74,7 @@ extension MongoCollection {
                 in: self.transaction,
                 sessionId: self.sessionId ?? connection.implicitSessionId
             )
-        }.decode(UpdateReply.self)._mongoHop(to: hoppedEventLoop)
+        }.decodeReply(UpdateReply.self)._mongoHop(to: hoppedEventLoop)
     }
     
     public func upsert(_ document: Document, where query: Document) -> EventLoopFuture<UpdateReply> {
@@ -91,6 +91,6 @@ extension MongoCollection {
                 in: self.transaction,
                 sessionId: self.sessionId ?? connection.implicitSessionId
             )
-        }.decode(UpdateReply.self)._mongoHop(to: hoppedEventLoop)
+        }.decodeReply(UpdateReply.self)._mongoHop(to: hoppedEventLoop)
     }
 }
