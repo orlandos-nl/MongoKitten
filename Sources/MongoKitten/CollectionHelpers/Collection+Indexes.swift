@@ -2,6 +2,8 @@ import NIO
 import MongoClient
 
 extension MongoCollection {
+    /// Creates a new index by this name. If the index already exists, a new one is _not_ created.
+    /// - returns: A future indicating success or failure.
     public func createIndex(named name: String, keys: Document) -> EventLoopFuture<Void> {
         guard transaction == nil else {
             return makeTransactionError()
@@ -22,6 +24,8 @@ extension MongoCollection {
         }._mongoHop(to: hoppedEventLoop)
     }
     
+    /// Lists all indexes in this collection as a cursor.
+    /// - returns: A cursor pointing towards all Index documents.
     public func listIndexes() -> EventLoopFuture<MappedCursor<MongoCursor, MongoIndex>> {
         struct Request: Codable {
             let listIndexes: String
