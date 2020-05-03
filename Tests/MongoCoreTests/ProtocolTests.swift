@@ -56,7 +56,7 @@ class ProtocolTests: XCTestCase {
             responseTo: 0,
             opCode: .message
         )
-        var document = Document()
+        let document = Document()
         var buffer = allocator.buffer(capacity: 1_024)
         var documentBuffer = document.makeByteBuffer()
         
