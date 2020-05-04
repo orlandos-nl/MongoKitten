@@ -31,7 +31,6 @@ extension MongoCollection {
         }._mongoHop(to: hoppedEventLoop)
     }
     
-    
     /// Lists all indexes in this collection as a cursor.
     /// - returns: A cursor pointing towards all Index documents.
     public func listIndexes() -> EventLoopFuture<MappedCursor<MongoCursor, MongoIndex>> {
