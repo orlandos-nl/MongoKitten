@@ -4,16 +4,17 @@ import MongoClient
 extension MongoCollection {
     /// Creates a new index by this name. If the index already exists, a new one is _not_ created.
     /// - returns: A future indicating success or failure.
-    public func createIndex(named name: String, keys: Document) -> EventLoopFuture<Void> {
+    public func createIndex(named name: String, keys: Document, unique: Bool? = nil) -> EventLoopFuture<Void> {
         guard transaction == nil else {
             return makeTransactionError()
         }
-        
+        var index = CreateIndexes.Index(named: name, keys: keys)
+        index.unique = unique
         return self.pool.next(for: .writable).flatMap { connection in
             return connection.executeCodable(
                 CreateIndexes(
                     collection: self.name,
-                    indexes: [CreateIndexes.Index(named: name, keys: keys)]
+                    indexes: [index]
                 ),
                 namespace: self.database.commandNamespace,
                 in: self.transaction,
