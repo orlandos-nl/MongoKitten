@@ -11,7 +11,7 @@ extension MongoCollection {
     /// Create 1 or more indexes on the collection.
     /// - Parameter indexes: A collection of indexes to be created.
     /// - Returns: A future indicating success or failure.
-    public func createIndexs(_ indexes: [CreateIndexes.Index]) -> EventLoopFuture<Void> {
+    public func createIndexes(_ indexes: [CreateIndexes.Index]) -> EventLoopFuture<Void> {
         guard transaction == nil else {
             return makeTransactionError()
         }
