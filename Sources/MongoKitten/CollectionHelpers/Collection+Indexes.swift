@@ -5,7 +5,7 @@ extension MongoCollection {
     /// Creates a new index by this name. If the index already exists, a new one is _not_ created.
     /// - returns: A future indicating success or failure.
     public func createIndex(named name: String, keys: Document) -> EventLoopFuture<Void> {
-       return createIndexs([CreateIndexes.Index(named: name, keys: keys)])
+       return createIndexes([CreateIndexes.Index(named: name, keys: keys)])
     }
     
     /// Create 1 or more indexes on the collection.
