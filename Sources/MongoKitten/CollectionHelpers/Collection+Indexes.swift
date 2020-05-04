@@ -5,23 +5,7 @@ extension MongoCollection {
     /// Creates a new index by this name. If the index already exists, a new one is _not_ created.
     /// - returns: A future indicating success or failure.
     public func createIndex(named name: String, keys: Document) -> EventLoopFuture<Void> {
-        guard transaction == nil else {
-            return makeTransactionError()
-        }
-        
-        return self.pool.next(for: .writable).flatMap { connection in
-            return connection.executeCodable(
-                CreateIndexes(
-                    collection: self.name,
-                    indexes: [CreateIndexes.Index(named: name, keys: keys)]
-                ),
-                namespace: self.database.commandNamespace,
-                in: self.transaction,
-                sessionId: self.sessionId ?? connection.implicitSessionId
-            )
-        }.flatMapThrowing { reply in
-            return try reply.assertOK()
-        }._mongoHop(to: hoppedEventLoop)
+       return createIndexs([CreateIndexes.Index(named: name, keys: keys)])
     }
     
     /// Create 1 or more indexes on the collection.
