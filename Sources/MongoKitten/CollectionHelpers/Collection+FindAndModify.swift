@@ -133,7 +133,7 @@ public final class FindAndModifyBuilder {
                                       sessionId: self.collection.sessionId ?? connection.implicitSessionId)
             
         }
-        .decode(FindAndModifyReply.self)
+        .decodeReply(FindAndModifyReply.self)
         ._mongoHop(to: self.collection.hoppedEventLoop)
     }
     

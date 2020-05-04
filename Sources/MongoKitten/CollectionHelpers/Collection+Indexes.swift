@@ -40,7 +40,7 @@ extension MongoCollection {
                 request,
                 namespace: namespace,
                 sessionId: nil
-            ).decode(MongoCursorResponse.self).map { response in
+            ).decodeReply(MongoCursorResponse.self).map { response in
                 return MongoCursor(
                     reply: response.cursor,
                     in: namespace,
