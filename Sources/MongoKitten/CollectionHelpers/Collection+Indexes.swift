@@ -5,6 +5,13 @@ extension MongoCollection {
     /// Creates a new index by this name. If the index already exists, a new one is _not_ created.
     /// - returns: A future indicating success or failure.
     public func createIndex(named name: String, keys: Document) -> EventLoopFuture<Void> {
+       return createIndexes([CreateIndexes.Index(named: name, keys: keys)])
+    }
+    
+    /// Create 1 or more indexes on the collection.
+    /// - Parameter indexes: A collection of indexes to be created.
+    /// - Returns: A future indicating success or failure.
+    public func createIndexes(_ indexes: [CreateIndexes.Index]) -> EventLoopFuture<Void> {
         guard transaction == nil else {
             return makeTransactionError()
         }
@@ -13,7 +20,7 @@ extension MongoCollection {
             return connection.executeCodable(
                 CreateIndexes(
                     collection: self.name,
-                    indexes: [CreateIndexes.Index(named: name, keys: keys)]
+                    indexes: indexes
                 ),
                 namespace: self.database.commandNamespace,
                 in: self.transaction,
