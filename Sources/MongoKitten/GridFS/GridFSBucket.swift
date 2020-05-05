@@ -29,12 +29,12 @@ public final class GridFSBucket {
         buffer.writeBytes(data)
         
         let writer = GridFSFileWriter(fs: self, fileId: id, chunkSize: chunkSize, buffer: buffer)
-        return writer.finalize(filename: filename, metadata: metadata).map { _ in }
+        return writer.finalize(filename: filename, metadata: metadata).map { _ in }._mongoHop(to: filesCollection.hoppedEventLoop)
     }
     
     public func upload(_ buffer: ByteBuffer, filename: String? = nil, id: Primitive = ObjectId(), metadata: Document? = nil, chunkSize: Int32 = GridFSBucket.defaultChunkSize) -> EventLoopFuture<Void> {
         let writer = GridFSFileWriter(fs: self, fileId: id, chunkSize: chunkSize, buffer: buffer)
-        return writer.finalize(filename: filename, metadata: metadata).map { _ in }
+        return writer.finalize(filename: filename, metadata: metadata).map { _ in }._mongoHop(to: filesCollection.hoppedEventLoop)
     }
     
     public func find(_ query: Document) -> MappedCursor<FindQueryBuilder, GridFSFile> {
@@ -69,7 +69,7 @@ public final class GridFSBucket {
         return EventLoopFuture<Void>.andAllSucceed([
             self.filesCollection.deleteAll(where: ["_id": id]).map { _ in },
             self.chunksCollection.deleteAll(where: ["files_id": id]).map { _ in }
-        ], on: eventLoop)
+        ], on: eventLoop)._mongoHop(to: filesCollection.hoppedEventLoop)
     }
     
     // TODO: Cancellable, streaming writes & reads
@@ -77,7 +77,7 @@ public final class GridFSBucket {
     
     internal func ensureIndexes() -> EventLoopFuture<Void> {
         guard !didEnsureIndexes else {
-            return eventLoop.makeSucceededFuture(())
+            return eventLoop.makeSucceededFuture(())._mongoHop(to: filesCollection.hoppedEventLoop)
         }
         
         didEnsureIndexes = true
@@ -116,7 +116,7 @@ public final class GridFSBucket {
                 self.didEnsureIndexes = false
                 self.filesCollection.pool.logger.warning("Could not ensure the indexes exists for GridFS")
                 throw error
-            }
+            }._mongoHop(to: filesCollection.hoppedEventLoop)
     }
     
 }
