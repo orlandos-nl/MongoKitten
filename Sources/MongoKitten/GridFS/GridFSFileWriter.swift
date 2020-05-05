@@ -67,19 +67,18 @@ public final class GridFSFileWriter {
             } catch {
                 return self.fs.eventLoop.makeFailedFuture(error)
             }
-        }
+        }._mongoHop(to: fs.filesCollection.hoppedEventLoop)
     }
     
     public func flush(finalize: Bool = false) -> EventLoopFuture<Void> {
         let chunkSize = Int(self.chunkSize) // comparison here is always to int
         
         guard buffer.readableBytes > 0, finalize || buffer.readableBytes >= chunkSize else {
-            return fs.eventLoop.makeSucceededFuture(())
+            return fs.eventLoop.makeSucceededFuture(())._mongoHop(to: fs.filesCollection.hoppedEventLoop)
         }
         
         guard let slice = buffer.readSlice(length: buffer.readableBytes >= chunkSize ? chunkSize : buffer.readableBytes) else {
-            // TODO: Replace with error future
-            fatalError()
+            return fs.eventLoop.makeFailedFuture(MongoKittenError(.invalidGridFSChunk, reason: nil))._mongoHop(to: fs.filesCollection.hoppedEventLoop)
         }
         
         do {
@@ -91,7 +90,7 @@ public final class GridFSFileWriter {
                 return self.flush(finalize: finalize)
             }
         } catch {
-            return fs.eventLoop.makeFailedFuture(error)
+            return fs.eventLoop.makeFailedFuture(error)._mongoHop(to: fs.filesCollection.hoppedEventLoop)
         }
     }
     

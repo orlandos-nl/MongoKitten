@@ -3,6 +3,8 @@ struct MongoKittenError: Error {
         case unsupportedFeatureByServer
         
         case cannotConnect
+        
+        case invalidGridFSChunk
     }
 
     enum Reason {
