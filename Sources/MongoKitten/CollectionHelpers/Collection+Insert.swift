@@ -6,7 +6,7 @@ extension MongoCollection {
         return insertMany([document])
     }
     
-    public func insertManyEncoded<E: Encodable>(_ models: [E]) -> EventLoopFuture<InsertReply> {
+    public func insertMany<E: Encodable>(_ models: [E]) -> EventLoopFuture<InsertReply> {
         do {
             let documents = try models.map { model in
                 return try BSONEncoder().encode(model)
@@ -18,7 +18,7 @@ extension MongoCollection {
         }
     }
     
-    public func insertEncoded<E: Encodable>(_ model: E) -> EventLoopFuture<InsertReply> {
+    public func insert<E: Encodable>(_ model: E) -> EventLoopFuture<InsertReply> {
         do {
             let document = try BSONEncoder().encode(model)
             return insert(document)

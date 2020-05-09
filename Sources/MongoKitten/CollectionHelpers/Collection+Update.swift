@@ -18,6 +18,18 @@ extension MongoCollection {
             )
         }.decodeReply(UpdateReply.self)._mongoHop(to: hoppedEventLoop)
     }
+
+    public func updateOne<E: Encodable>(
+        where query: Document,
+        to model: E
+    ) -> EventLoopFuture<UpdateReply> {
+        do {
+            let document = try BSONEncoder().encode(model)
+            return updateOne(where: query, to: document)
+        } catch {
+            return eventLoop.makeFailedFuture(error)
+        }
+    }
     
     public func updateOne<Query: MongoKittenQuery>(
         where query: Query,
@@ -26,6 +38,16 @@ extension MongoCollection {
         return updateOne(
             where: query.makeDocument(),
             to: document
+        )
+    }
+
+    public func updateOne<Query: MongoKittenQuery, E: Encodable>(
+        where query: Query,
+        to model: E
+    ) -> EventLoopFuture<UpdateReply> {
+        return updateOne(
+            where: query.makeDocument(),
+            to: model
         )
     }
     
@@ -46,6 +68,18 @@ extension MongoCollection {
             )
         }.decodeReply(UpdateReply.self)._mongoHop(to: hoppedEventLoop)
     }
+
+    public func updateMany<E: Encodable>(
+        where query: Document,
+        to model: E
+    ) -> EventLoopFuture<UpdateReply> {
+        do {
+            let document = try BSONEncoder().encode(model)
+            return updateMany(where: query, to: document)
+        } catch {
+            return eventLoop.makeFailedFuture(error)
+        }
+    }
     
     public func updateMany<Query: MongoKittenQuery>(
         where query: Query,
@@ -54,6 +88,16 @@ extension MongoCollection {
         return updateMany(
             where: query.makeDocument(),
             to: document
+        )
+    }
+
+    public func updateMany<Query: MongoKittenQuery, E: Encodable>(
+        where query: Query,
+        to model: E
+    ) -> EventLoopFuture<UpdateReply> {
+        return updateMany(
+            where: query.makeDocument(),
+            to: model
         )
     }
     
@@ -93,4 +137,22 @@ extension MongoCollection {
             )
         }.decodeReply(UpdateReply.self)._mongoHop(to: hoppedEventLoop)
     }
+
+    public func upsert<E: Encodable>(_ model: E, where query: Document) -> EventLoopFuture<UpdateReply> {
+        do {
+            let document = try BSONEncoder().encode(model)
+            return upsert(document, where: query)
+        } catch {
+            return eventLoop.makeFailedFuture(error)
+        }
+    }
+
+    public func upsert<Query: MongoKittenQuery>(_ document: Document, where query: Query) -> EventLoopFuture<UpdateReply> {
+        return upsert(document, where: query.makeDocument())
+    }
+
+    public func upsert<Query: MongoKittenQuery, E: Encodable>(_ model: E, where query: Query) -> EventLoopFuture<UpdateReply> {
+        return upsert(model, where: query.makeDocument())
+    }
+
 }
