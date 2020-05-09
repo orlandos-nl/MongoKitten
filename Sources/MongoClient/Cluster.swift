@@ -3,7 +3,7 @@ import Logging
 import DNSClient
 import MongoCore
 
-#if canImport(NIOTransportServices) && os(iOS)
+#if canImport(NIOTransportServices)
 import NIOTransportServices
 
 public typealias _MongoPlatformEventLoopGroup = NIOTSEventLoopGroup

@@ -3,7 +3,7 @@ import Logging
 import Foundation
 import NIO
 
-#if canImport(NIOTransportServices) && os(iOS)
+#if canImport(NIOTransportServices)
 import NIOTransportServices
 #endif
 
@@ -57,7 +57,7 @@ public class MongoDatabase {
     /// - throws: Can throw for a variety of reasons, including an invalid connection string, failure to connect to the MongoDB database, etcetera.
     /// - returns: A connected database instance
     public static func synchronousConnect(_ uri: String) throws -> MongoDatabase {
-        #if canImport(NIOTransportServices) && os(iOS)
+        #if canImport(NIOTransportServices)
         let group = NIOTSEventLoopGroup(loopCount: 1, defaultQoS: .default)
         #else
         let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
@@ -74,7 +74,7 @@ public class MongoDatabase {
     /// - throws: Can throw for a variety of reasons, including an invalid connection string, failure to connect to the MongoDB database, etcetera.
     /// - returns: A connected database instance
     public static func synchronousConnect(settings: ConnectionSettings) throws -> MongoDatabase {
-        #if canImport(NIOTransportServices) && os(iOS)
+        #if canImport(NIOTransportServices)
         let group = NIOTSEventLoopGroup(loopCount: 1, defaultQoS: .default)
         #else
         let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
