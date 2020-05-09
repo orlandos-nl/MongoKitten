@@ -3,6 +3,38 @@ import MongoKittenCore
 import MongoClient
 
 extension MongoCollection {
+	/// The `aggregate` command will create an `AggregateBuilderPipeline` where data can be aggregated
+	/// and be transformed in multiple `AggregateStage` operations
+	///
+	/// # Hint:
+	/// With Swift > 5.1 you can also use the function builders. See the documentation at `buildAggregate`
+	///
+	/// # Example:
+	/// ```
+	/// let pipeline = collection.aggregate([
+	///     .match("name" == "Superman"),
+	///     .lookup(from: "addresses", "localField": "_id", "foreignField": "superheroID", newName: "address"),
+	///     .unwind(fieldPath: "$address")
+	/// ])
+	///
+	/// pipeline.decode(SomeDecodableType.self).forEach { yourStruct in
+	///	    // do sth. with your struct
+	///	}.whenFailure { error in
+	///	    // do sth. with the error
+	/// }
+	/// ```
+	///
+	/// The same example with function builders:
+	///
+	/// ```
+	/// let pipeline = collection.buildAggregate {
+	///    match("name" == "Superman")
+	///    unwind(fieldPath: "$arrayItem")
+	/// }
+	/// ```
+	///
+	/// - Parameter stages: an array of `AggregateBuilderStage`.
+	/// - Returns: an `AggregateBuilderPipeline` that should be executed to get results
     public func aggregate(_ stages: [AggregateBuilderStage]) -> AggregateBuilderPipeline {
         var pipeline = AggregateBuilderPipeline(stages: stages)
         pipeline.collection = self
@@ -19,7 +51,8 @@ public struct AggregateBuilderPipeline: QueryCursor {
     internal var _collation: Collation?
     internal var _readConcern: ReadConcern?
     
-    public var eventLoop: EventLoop { return collection.eventLoop }
+    public var eventLoop: EventLoop { collection.eventLoop }
+    public var hoppedEventLoop: EventLoop? { collection.hoppedEventLoop }
     
     public func allowDiskUse(_ allowDiskUse: Bool? = true) -> AggregateBuilderPipeline {
         var pipeline = self
@@ -79,17 +112,18 @@ public struct AggregateBuilderPipeline: QueryCursor {
                 namespace: self.collection.database.commandNamespace,
                 in: self.collection.transaction,
                 sessionId: self.collection.sessionId ?? connection.implicitSessionId
-            ).decode(CursorReply.self).map { cursor in
+            ).decodeReply(CursorReply.self).map { cursor in
                 let cursor = MongoCursor(
                     reply: cursor.cursor,
                     in: self.collection.namespace,
                     connection: connection,
+                    hoppedEventLoop: self.hoppedEventLoop,
                     session: connection.implicitSession,
                     transaction: self.collection.transaction
                 )
                 return FinalizedCursor(basedOn: self, cursor: cursor)
             }
-        }
+        }._mongoHop(to: hoppedEventLoop)
     }
     
     public func transformElement(_ element: Document) throws -> Document {

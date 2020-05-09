@@ -10,7 +10,7 @@ extension MongoCollection {
                 in: self.transaction,
                 sessionId: self.sessionId ?? connection.implicitSessionId
             )
-        }.decode(DeleteReply.self)._mongoHop(to: hoppedEventLoop)
+        }.decodeReply(DeleteReply.self)._mongoHop(to: hoppedEventLoop)
     }
     
     public func deleteAll(where query: Document) -> EventLoopFuture<DeleteReply> {
@@ -21,7 +21,7 @@ extension MongoCollection {
                 in: self.transaction,
                 sessionId: connection.implicitSessionId
             )
-        }.decode(DeleteReply.self)._mongoHop(to: hoppedEventLoop)
+        }.decodeReply(DeleteReply.self)._mongoHop(to: hoppedEventLoop)
     }
     
     public func deleteOne<Q: MongoKittenQuery>(where filter: Q) -> EventLoopFuture<DeleteReply> {

@@ -56,7 +56,7 @@ class ProtocolTests: XCTestCase {
             responseTo: 0,
             opCode: .message
         )
-        var document = Document()
+        let document = Document()
         var buffer = allocator.buffer(capacity: 1_024)
         var documentBuffer = document.makeByteBuffer()
         
@@ -64,11 +64,11 @@ class ProtocolTests: XCTestCase {
         buffer.writeInteger(0 as UInt8)
         buffer.writeBuffer(&documentBuffer)
         
-        let message = try OpMessage(reading: &buffer, header: header)
+        _ = try OpMessage(reading: &buffer, header: header)
     }
     
     func testOpMessageDeniesFirstUInt16Flags() throws {
-        
+        XCTAssertNoThrow(try OpMessage(reading: &buffer, header: header))
     }
 }
 

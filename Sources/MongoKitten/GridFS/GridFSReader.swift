@@ -18,7 +18,7 @@ public struct GridFSReader {
     }
     
     public func readByteBuffer() -> EventLoopFuture<ByteBuffer> {
-        var buffer = GridFSWriter.allocator.buffer(capacity: file.length)
+        var buffer = GridFSFileWriter.allocator.buffer(capacity: file.length)
         
         return file.fs.chunksCollection
             .find(["files_id": file._id])

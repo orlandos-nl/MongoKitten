@@ -6,7 +6,7 @@ public final class MongoTransactionDatabase: MongoDatabase {
                 namespace: .administrativeCommand,
                 in: self.transaction,
                 sessionId: self.sessionId
-            ).decode(OK.self).map { _ in }
+            ).decodeReply(OK.self).map { _ in }
         }
     }
     
@@ -17,7 +17,7 @@ public final class MongoTransactionDatabase: MongoDatabase {
                 namespace: .administrativeCommand,
                 in: self.transaction,
                 sessionId: self.sessionId
-            ).decode(OK.self).map { _ in }
+            ).decodeReply(OK.self).map { _ in }
         }
     }
 }

@@ -15,7 +15,7 @@ public final class GridFSBucket {
     
     private var didEnsureIndexes = false
     
-    var eventLoop: EventLoop {
+    public var eventLoop: EventLoop {
         return filesCollection.database.eventLoop
     }
     
@@ -24,12 +24,17 @@ public final class GridFSBucket {
         self.chunksCollection = database[name + ".chunks"]
     }
     
-    public func upload(_ data: Data, filename: String, id: Primitive = ObjectId(), metadata: Document? = nil, chunkSize: Int32 = GridFSBucket.defaultChunkSize) -> EventLoopFuture<Void> {
-        var buffer = GridFSWriter.allocator.buffer(capacity: data.count)
+    public func upload(_ data: Data, filename: String? = nil, id: Primitive = ObjectId(), metadata: Document? = nil, chunkSize: Int32 = GridFSBucket.defaultChunkSize) -> EventLoopFuture<Void> {
+        var buffer = GridFSFileWriter.allocator.buffer(capacity: data.count)
         buffer.writeBytes(data)
         
-        let writer = GridFSWriter(fs: self, fileId: id, chunkSize: chunkSize, buffer: buffer)
-        return writer.finalize(filename: filename, metadata: metadata)
+        let writer = GridFSFileWriter(fs: self, fileId: id, chunkSize: chunkSize, buffer: buffer)
+        return writer.finalize(filename: filename, metadata: metadata).map { _ in }._mongoHop(to: filesCollection.hoppedEventLoop)
+    }
+    
+    public func upload(_ buffer: ByteBuffer, filename: String? = nil, id: Primitive = ObjectId(), metadata: Document? = nil, chunkSize: Int32 = GridFSBucket.defaultChunkSize) -> EventLoopFuture<Void> {
+        let writer = GridFSFileWriter(fs: self, fileId: id, chunkSize: chunkSize, buffer: buffer)
+        return writer.finalize(filename: filename, metadata: metadata).map { _ in }._mongoHop(to: filesCollection.hoppedEventLoop)
     }
     
     public func find(_ query: Document) -> MappedCursor<FindQueryBuilder, GridFSFile> {
@@ -64,7 +69,7 @@ public final class GridFSBucket {
         return EventLoopFuture<Void>.andAllSucceed([
             self.filesCollection.deleteAll(where: ["_id": id]).map { _ in },
             self.chunksCollection.deleteAll(where: ["files_id": id]).map { _ in }
-        ], on: eventLoop)
+        ], on: eventLoop)._mongoHop(to: filesCollection.hoppedEventLoop)
     }
     
     // TODO: Cancellable, streaming writes & reads
@@ -72,7 +77,7 @@ public final class GridFSBucket {
     
     internal func ensureIndexes() -> EventLoopFuture<Void> {
         guard !didEnsureIndexes else {
-            return eventLoop.makeSucceededFuture(())
+            return eventLoop.makeSucceededFuture(())._mongoHop(to: filesCollection.hoppedEventLoop)
         }
         
         didEnsureIndexes = true
@@ -111,7 +116,7 @@ public final class GridFSBucket {
                 self.didEnsureIndexes = false
                 self.filesCollection.pool.logger.warning("Could not ensure the indexes exists for GridFS")
                 throw error
-            }
+            }._mongoHop(to: filesCollection.hoppedEventLoop)
     }
     
 }

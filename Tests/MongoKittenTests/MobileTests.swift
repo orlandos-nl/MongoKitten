@@ -2,12 +2,7 @@ import MongoKitten
 import NIO
 import XCTest
 
-#if canImport(NIOTransportServices)
-import NIOTransportServices
-let loop = NIOTSEventLoopGroup(loopCount: 1, defaultQoS: .default)
-#else
 let loop = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-#endif
 
 class CRUDTests : XCTestCase {
     let settings = try! ConnectionSettings("mongodb://localhost:27017")
@@ -18,7 +13,12 @@ class CRUDTests : XCTestCase {
     }
     
     func testListDatabases() throws {
-        try XCTAssertTrue(db.listDatabases().wait().contains { $0.name == "admin" })
+        let databases = try db.listDatabases().wait()
+        XCTAssertTrue(databases.contains { $0.name == "admin" })
+        
+        for db in databases {
+            XCTAssertNoThrow(try db.listCollections().wait())
+        }
     }
 
     func testInsert() {

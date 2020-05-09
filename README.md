@@ -22,6 +22,10 @@ A fast, pure swift [MongoDB](https://mongodb.com) driver based on [Swift NIO](ht
 
 [You can sponsor us via GitHub.](https://github.com/sponsors/Joannis). This enables us to provide a higher quality and more documentation as well as building more tools.
 
+## The App
+
+[MongoKitten App](https://apps.apple.com/us/app/mongokitten/id1484086700) can help you browse your dataset, support customers and debug complex aggregates.
+
 ## The Company
 
 [Autimatisering](https://autimatisering.nl/) is the company currently backing MongoKitten. [Hire us](mailto:hoi@autimatisering.nl)
@@ -32,20 +36,17 @@ A fast, pure swift [MongoDB](https://mongodb.com) driver based on [Swift NIO](ht
 - You can help us out by resolving TODOs and replying on issues
 - Of course, all feedback, positive and negative, also really helps to improve the project
 
-
 # 🕶 Installation
 
 ## Set up MongoDB server
 
-<details>
-<summary>If you haven't already, you should set up a MongoDB server to get started with MongoKitten</summary>
+If you haven't already, you should set up a MongoDB server to get started with MongoKitten
 
 For development, this can be on your local machine.
 
 Install MongoDB for [Ubuntu](https://docs.mongodb.com/master/tutorial/install-mongodb-on-ubuntu/), [macOS](https://docs.mongodb.com/master/tutorial/install-mongodb-on-os-x/) or [any other supported Linux Distro](https://docs.mongodb.com/master/administration/install-on-linux/).
 
 Alternatively, make use of a DAAS (Database-as-a-service) like [MongoDB Atlas](https://cloud.mongodb.com), [MLab](https://mlab.com), [IBM Cloud](https://cloud.ibm.com/catalog/services/databases-for-mongodb) or any other of the many services.
-</details>
 
 ## Add MongoKitten to your Swift project 🚀
 
@@ -77,10 +78,12 @@ extension Request {
         return application.mongoDB.hopped(to: eventLoop)
     }
     
+    // For Meow users only
     public var meow: MeowDatabase {
         return MeowDatabase(mongoDB)
     }
     
+    // For Meow users only
     public func meow<M: ReadableModel>(_ type: M.Type) -> MeowCollection<M> {
         return meow[type]
     }
@@ -100,6 +103,7 @@ extension Application {
         }
     }
     
+    // For Meow users only
     public var meow: MeowDatabase {
         MeowDatabase(mongoDB)
     }
@@ -114,8 +118,7 @@ And make sure to call `app.initializeMongoDB`!
 
 ## NIO Futures
 
-<details>
-<summary>MongoKitten relies on [Swift NIO](https://github.com/apple/swift-nio) to provide support for asynchronous operations. All MongoKitten operations that talk to the server are asynchronous, and return an EventLoopFuture of some kind.</summary>
+MongoKitten relies on [Swift NIO](https://github.com/apple/swift-nio) to provide support for asynchronous operations. All MongoKitten operations that talk to the server are asynchronous, and return an EventLoopFuture of some kind.
 
 You can learn all about NIO by reading [its readme](https://github.com/apple/swift-nio/blob/master/README.md) or [the article on RayWenderlich.com](https://www.raywenderlich.com/1124580-a-simple-guide-to-async-on-the-server), but here are the basics:
 
@@ -124,7 +127,6 @@ Asynchronous operations return a future. NIO implements futures in the [`EventLo
 If you're using [Vapor 4](https://vapor.codes), please refer to their [Async documentation](https://docs.vapor.codes/4.0/async/overview/). Vapor's Async module provides additional helpers on top of NIO, that make working with instances of `EventLoopFuture<T>` easier.
 
 If you use Vapor or another Swift-NIO based web framework, *never* use the `wait()` function on `EventLoopFuture` instances.
-</details>
 
 ## CRUD (Create, Read, Update, Delete)
 

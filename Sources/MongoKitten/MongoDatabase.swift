@@ -3,7 +3,7 @@ import Logging
 import Foundation
 import NIO
 
-#if canImport(NIOTransportServices)
+#if canImport(NIOTransportServices) && os(iOS)
 import NIOTransportServices
 #endif
 
@@ -57,7 +57,7 @@ public class MongoDatabase {
     /// - throws: Can throw for a variety of reasons, including an invalid connection string, failure to connect to the MongoDB database, etcetera.
     /// - returns: A connected database instance
     public static func synchronousConnect(_ uri: String) throws -> MongoDatabase {
-        #if canImport(NIOTransportServices)
+        #if canImport(NIOTransportServices) && os(iOS)
         let group = NIOTSEventLoopGroup(loopCount: 1, defaultQoS: .default)
         #else
         let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
@@ -74,7 +74,7 @@ public class MongoDatabase {
     /// - throws: Can throw for a variety of reasons, including an invalid connection string, failure to connect to the MongoDB database, etcetera.
     /// - returns: A connected database instance
     public static func synchronousConnect(settings: ConnectionSettings) throws -> MongoDatabase {
-        #if canImport(NIOTransportServices)
+        #if canImport(NIOTransportServices) && os(iOS)
         let group = NIOTSEventLoopGroup(loopCount: 1, defaultQoS: .default)
         #else
         let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
@@ -293,10 +293,23 @@ internal extension Decodable {
 }
 
 extension EventLoopFuture where Value == MongoServerReply {
-    public func decode<D: Decodable>(_ type: D.Type) -> EventLoopFuture<D> {
+    public func decodeReply<D: Decodable>(_ type: D.Type) -> EventLoopFuture<D> {
         return flatMapThrowing(D.init(reply:))
     }
 }
+
+extension EventLoopFuture where Value == Optional<Document> {
+    public func decode<D: Decodable>(_ type: D.Type) -> EventLoopFuture<D?> {
+        return flatMapThrowing { document in
+            if let document = document {
+                return try BSONDecoder().decode(type, from: document)
+            } else {
+                return nil
+            }
+        }
+    }
+}
+
 
 extension MongoConnectionPool {
     public subscript(db: String) -> MongoDatabase {

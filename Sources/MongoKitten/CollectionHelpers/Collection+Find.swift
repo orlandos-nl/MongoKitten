@@ -18,6 +18,10 @@ extension MongoCollection {
         return find(query.makeDocument())
     }
 
+    public func find<D: Decodable>(_ query: Document = [:], as type: D.Type) -> MappedCursor<FindQueryBuilder, D> {
+        return find(query).decode(type)
+    }
+
     public func findOne<D: Decodable>(_ query: Document = [:], as type: D.Type) -> EventLoopFuture<D?> {
         return find(query).limit(1).decode(type).firstResult()
     }
@@ -41,9 +45,10 @@ public final class FindQueryBuilder: QueryCursor {
     private let connection: EventLoopFuture<MongoConnection>
     public var command: FindCommand
     private let collection: MongoCollection
-    public var isDrained: Bool { return false }
+    public var isDrained: Bool { false }
 
-    public var eventLoop: EventLoop { return connection.eventLoop }
+    public var eventLoop: EventLoop { collection.eventLoop }
+    public var hoppedEventLoop: EventLoop? { collection.hoppedEventLoop }
 
     init(command: FindCommand, collection: MongoCollection, connection: EventLoopFuture<MongoConnection>, transaction: MongoTransaction? = nil) {
         self.command = command
@@ -68,6 +73,7 @@ public final class FindQueryBuilder: QueryCursor {
                     reply: response.cursor,
                     in: self.collection.namespace,
                     connection: connection,
+                    hoppedEventLoop: self.collection.hoppedEventLoop,
                     session: connection.implicitSession,
                     transaction: self.collection.transaction
                 )

@@ -37,7 +37,7 @@ extension MongoCollection {
                 in: self.transaction,
                 sessionId: self.sessionId ?? connection.implicitSessionId
             )
-        }.decode(InsertReply.self).flatMapThrowing { reply in
+        }.decodeReply(InsertReply.self).flatMapThrowing { reply in
             if reply.ok == 1 {
                 return reply
             }
