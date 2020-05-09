@@ -180,7 +180,7 @@ public final class MongoCluster: MongoConnectionPool {
         let client: EventLoopFuture<DNSClient>
         
         do {
-            #if canImport(NIOTransportServices) && os(iOS)
+            #if canImport(NIOTransportServices)
                 if let dnsServer = settings.dnsServer {
                     client = try DNSClient.connectTS(on: loop, config: [SocketAddress(ipAddress: dnsServer, port: 53)])
                 } else {
