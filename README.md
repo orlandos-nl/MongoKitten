@@ -20,7 +20,7 @@ A fast, pure swift [MongoDB](https://mongodb.com) driver based on [Swift NIO](ht
 
 A couple of MongoKitten based projects have arisen, check them out!
 
-- [Fleunt MongoDB](https://github.com/vapor/fluent-mongo-driver)
+- [Fluent MongoDB](https://github.com/vapor/fluent-mongo-driver)
 - [MongoDB Queues](https://github.com/vapor-community/queues-mongo-driver)
 
 # 🤝 How to help
