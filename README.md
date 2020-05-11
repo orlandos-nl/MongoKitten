@@ -16,6 +16,13 @@ A fast, pure swift [MongoDB](https://mongodb.com) driver based on [Swift NIO](ht
 
 [Join our slack here](https://slackpass.io/openkitten) and become a part of the welcoming community.
 
+### Projects
+
+A couple of MongoKitten based projects have arisen, check them out!
+
+- [Fleunt MongoDB](https://github.com/vapor/fluent-mongo-driver)
+- [MongoDB Queues](https://github.com/vapor-community/queues-mongo-driver)
+
 # 🤝 How to help
 
 ## Support MongoKitten development
