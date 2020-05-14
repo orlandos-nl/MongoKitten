@@ -242,33 +242,19 @@ public struct AggregateBuilderStage {
             geoNear["near"] = ["type": "Point", "coordinates": coordinates] as Document
         }
                 
-        if let maxDistance = maxDistance {
-            geoNear["maxDistance"] = maxDistance
-        }
+        geoNear["maxDistance"] = maxDistance
+
+        geoNear["query"] = query
         
-        if let query = query {
-            geoNear["query"] = query
-        }
+        geoNear["distanceMultiplier"] = distanceMultiplier
+
+        geoNear["includeLocs"] = includeLocs
         
-        if let distanceMultiplier = distanceMultiplier {
-            geoNear["distanceMultiplier"] = distanceMultiplier
-        }
+        geoNear["uniqueDocs"] = uniqueDocs
         
-        if let includeLocs = includeLocs {
-            geoNear["includeLocs"] = includeLocs
-        }
+        geoNear["minDistance"] = minDistance
         
-        if let uniqueDocs = uniqueDocs {
-            geoNear["uniqueDocs"] = uniqueDocs
-        }
-        
-        if let minDistance = minDistance {
-            geoNear["minDistance"] = minDistance
-        }
-        
-        if let key = key {
-            geoNear["key"] = key
-        }
+        geoNear["key"] = key
         
         return AggregateBuilderStage(document: [
             "$geoNear": geoNear
