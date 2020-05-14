@@ -241,7 +241,7 @@ users.find()
 ### Update
 
 ```swift
-users.update(where: "username" == "kitty", setting: ["age": 3]).whenSuccess { _ in
+users.updateMany(where: "username" == "kitty", setting: ["age": 3]).whenSuccess { _ in
 	print("🐈")
 }
 ```
