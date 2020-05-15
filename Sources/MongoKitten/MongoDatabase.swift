@@ -294,7 +294,13 @@ internal extension Decodable {
 
 extension EventLoopFuture where Value == MongoServerReply {
     public func decodeReply<D: Decodable>(_ type: D.Type) -> EventLoopFuture<D> {
-        return flatMapThrowing(D.init(reply:))
+        return flatMapThrowing { reply in
+            do {
+                return try D(reply: reply)
+            } catch {
+                throw try MongoGenericErrorReply(reply: reply)
+            }
+        }
     }
 }
 

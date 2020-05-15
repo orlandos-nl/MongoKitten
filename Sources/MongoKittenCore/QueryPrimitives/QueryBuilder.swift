@@ -58,6 +58,8 @@ public protocol MongoKittenQuery {
     func makeDocument() -> Document
 }
 
+// MARK: &&
+
 public struct AndQuery: MongoKittenQuery {
     private enum CodingKeys: String, CodingKey {
         case conditions = "$and"
@@ -110,6 +112,8 @@ public func && (lhs: Document, rhs: AndQuery) -> AndQuery {
     return AndQuery(conditions: [lhs] + rhs.conditions)
 }
 
+// MARK: ||
+
 public struct OrQuery: MongoKittenQuery {
     private enum CodingKeys: String, CodingKey {
         case conditions = "$or"
@@ -160,4 +164,32 @@ public func || (lhs: OrQuery, rhs: Document) -> OrQuery {
 
 public func || (lhs: Document, rhs: OrQuery) -> OrQuery {
     return OrQuery(conditions: [lhs] + rhs.conditions)
+}
+
+// MARK: &=
+
+public func &= (lhs: inout AndQuery, rhs: AndQuery) {
+    lhs.conditions.append(contentsOf: rhs.conditions)
+}
+
+public func &= (lhs: inout AndQuery, rhs: MongoKittenQuery) {
+    lhs.conditions.append(rhs.makeDocument())
+}
+
+public func &= (lhs: inout AndQuery, rhs: Document) {
+    lhs.conditions.append(rhs)
+}
+
+// MARK: |=
+
+public func |= (lhs: inout OrQuery, rhs: OrQuery) {
+    lhs.conditions.append(contentsOf: rhs.conditions)
+}
+
+public func |= (lhs: inout OrQuery, rhs: MongoKittenQuery) {
+    lhs.conditions.append(rhs.makeDocument())
+}
+
+public func |= (lhs: inout OrQuery, rhs: Document) {
+    lhs.conditions.append(rhs)
 }
