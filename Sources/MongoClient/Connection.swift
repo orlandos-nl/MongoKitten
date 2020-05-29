@@ -117,7 +117,7 @@ public final class MongoConnection {
         return bootstrap
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             .channelInitializer { channel in
-                #if !canImport(NIOTransportServices)
+                #if canImport(NIOTransportServices)
                 if settings.useSSL {
                     do {
                         var configuration = TLSConfiguration.clientDefault
