@@ -37,7 +37,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0"),
 
         // 📚
-        .package(url: "https://github.com/openkitten/NioDNS.git", .revision("32ceb697aa6e142166e2d85d591fcd644e78625f")),
+        .package(url: "https://github.com/openkitten/NioDNS.git", .revision("66bbe9d2ee2bb977d6788924dcbcab72150a45aa")),
         
         
         // 🔑
