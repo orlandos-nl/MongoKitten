@@ -53,8 +53,8 @@ extension MongoConnection {
         in transaction: MongoTransaction? = nil,
         sessionId: SessionIdentifier? = nil
     ) -> EventLoopFuture<OpReply> {
-        query.header.requestId = nextRequestId()
-        return executeMessage(query).flatMapThrowing { reply in
+        query.header.requestId = self.nextRequestId()
+        return self.executeMessage(query).flatMapThrowing { reply in
             guard case .reply(let reply) = reply else {
                 self.logger.error("Unexpected reply type, expected OpReply")
                 throw MongoError(.queryFailure, reason: .invalidReplyType)
@@ -69,8 +69,8 @@ extension MongoConnection {
         in transaction: MongoTransaction? = nil,
         sessionId: SessionIdentifier? = nil
     ) -> EventLoopFuture<OpMessage> {
-        query.header.requestId = nextRequestId()
-        return executeMessage(query).flatMapThrowing { reply in
+        query.header.requestId = self.nextRequestId()
+        return self.executeMessage(query).flatMapThrowing { reply in
             guard case .message(let message) = reply else {
                 self.logger.error("Unexpected reply type, expected OpMessage")
                 throw MongoError(.queryFailure, reason: .invalidReplyType)
@@ -93,10 +93,10 @@ extension MongoConnection {
             command["lsid"]["id"] = id
         }
         
-        return executeMessage(
+        return self.executeMessage(
             OpQuery(
                 query: command,
-                requestId: nextRequestId(),
+                requestId: self.nextRequestId(),
                 fullCollectionName: namespace.fullCollectionName
             )
         )
@@ -125,7 +125,7 @@ extension MongoConnection {
                 command["startTransaction"] = true
             }
         }
-        return executeMessage(
+        return self.executeMessage(
             OpMessage(
                 body: command,
                 requestId: self.nextRequestId()
