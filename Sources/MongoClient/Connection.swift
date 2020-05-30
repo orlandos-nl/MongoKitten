@@ -203,23 +203,25 @@ public final class MongoConnection {
     }
 
     func executeMessage<Request: MongoRequestMessage>(_ message: Request) -> EventLoopFuture<MongoServerReply> {
-        if context.didError {
-            return self.close().flatMap {
-                return self.eventLoop.makeFailedFuture(MongoError(.queryFailure, reason: .connectionClosed))
+        return self.eventLoop.flatSubmit {
+            if context.didError {
+                return self.close().flatMap {
+                    return self.eventLoop.makeFailedFuture(MongoError(.queryFailure, reason: .connectionClosed))
+                }
             }
-        }
-        
-        let promise = eventLoop.makePromise(of: MongoServerReply.self)
-        context.awaitReply(toRequestId: message.header.requestId, completing: promise)
-        
-        eventLoop.scheduleTask(in: queryTimeout) {
-            let error = MongoError(.queryTimeout, reason: nil)
-            self.context.failQuery(byRequestId: message.header.requestId, error: error)
-        }
+            
+            let promise = eventLoop.makePromise(of: MongoServerReply.self)
+            context.awaitReply(toRequestId: message.header.requestId, completing: promise)
+            
+            eventLoop.scheduleTask(in: queryTimeout) {
+                let error = MongoError(.queryTimeout, reason: nil)
+                self.context.failQuery(byRequestId: message.header.requestId, error: error)
+            }
 
-        var buffer = channel.allocator.buffer(capacity: Int(message.header.messageLength))
-        message.write(to: &buffer)
-        return channel.writeAndFlush(buffer).flatMap { promise.futureResult }
+            var buffer = channel.allocator.buffer(capacity: Int(message.header.messageLength))
+            message.write(to: &buffer)
+            return channel.writeAndFlush(buffer).flatMap { promise.futureResult }
+        }
     }
 
     public func close() -> EventLoopFuture<Void> {
