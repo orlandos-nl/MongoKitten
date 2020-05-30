@@ -2,6 +2,7 @@ import BSON
 import Foundation
 import MongoCore
 import NIO
+import NIOConcurrencyHelpers
 import Logging
 import Metrics
 
@@ -55,7 +56,7 @@ public final class MongoConnection {
     }
 
     /// The current request ID, used to generate unique identifiers for MongoDB commands
-    private var currentRequestId: Int32 = 0
+    private var currentRequestId: NIOAtomic<Int32> = .makeAtomic(value: 0)
     internal let context: MongoClientContext
     public var serverHandshake: ServerHandshake? {
         return context.serverHandshake
@@ -71,9 +72,7 @@ public final class MongoConnection {
     public var slaveOk = false
 
     internal func nextRequestId() -> Int32 {
-        defer { currentRequestId = currentRequestId &+ 1 }
-
-        return currentRequestId
+        return currentRequestId.add(1)
     }
 
     /// Creates a connection that can communicate with MongoDB over a channel
