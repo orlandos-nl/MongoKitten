@@ -1,4 +1,5 @@
 import NIO
+import NIOConcurrencyHelpers
 import Logging
 import MongoCore
 
@@ -8,6 +9,7 @@ internal struct MongoResponseContext {
 }
 
 public final class MongoClientContext {
+    private let queriesLock = Lock()
     private var queries = [MongoResponseContext]()
     internal var serverHandshake: ServerHandshake? {
         didSet {
@@ -20,18 +22,26 @@ public final class MongoClientContext {
     let logger: Logger
 
     internal func handleReply(_ reply: MongoServerReply) -> Bool {
-        guard let index = queries.firstIndex(where: { $0.requestId == reply.responseTo }) else {
+        if let query: MongoResponseContext = queriesLock.withLock({
+            guard let index = queries.firstIndex(where: { $0.requestId == reply.responseTo }) else {
+                return nil
+            }
+
+            let query = queries[index]
+            queries.remove(at: index)
+            return query
+        }) {
+            query.result.succeed(reply)
+            return true
+        } else {
             return false
         }
-
-        let query = queries[index]
-        queries.remove(at: index)
-        query.result.succeed(reply)
-        return true
     }
 
     internal func awaitReply(toRequestId requestId: Int32, completing result: EventLoopPromise<MongoServerReply>) {
-        queries.append(MongoResponseContext(requestId: requestId, result: result))
+        queriesLock.withLock {
+            queries.append(MongoResponseContext(requestId: requestId, result: result))
+        }
     }
     
     deinit {
@@ -39,21 +49,29 @@ public final class MongoClientContext {
     }
     
     public func failQuery(byRequestId requestId: Int32, error: Error) {
-        guard let index = queries.firstIndex(where: { $0.requestId == requestId }) else {
-            return
-        }
+        if let query: MongoResponseContext = queriesLock.withLock({
+            guard let index = queries.firstIndex(where: { $0.requestId == requestId }) else {
+                return nil
+            }
 
-        let query = queries[index]
-        queries.remove(at: index)
-        query.result.fail(error)
+            let query = queries[index]
+            queries.remove(at: index)
+            return query
+        }) {
+            query.result.fail(error)
+        }
     }
 
     public func cancelQueries(_ error: Error) {
-        for query in queries {
+        let stolenQueries: [MongoResponseContext] = queriesLock.withLock {
+            let stolenQueries = queries
+            queries.removeAll()
+            return stolenQueries
+        }
+    
+        for query in stolenQueries {
             query.result.fail(error)
         }
-
-        queries = []
     }
 
     public init(logger: Logger) {
