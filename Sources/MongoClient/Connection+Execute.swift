@@ -53,16 +53,14 @@ extension MongoConnection {
         in transaction: MongoTransaction? = nil,
         sessionId: SessionIdentifier? = nil
     ) -> EventLoopFuture<OpReply> {
-        return self.eventLoop.flatSubmit {
-            query.header.requestId = nextRequestId()
-            return executeMessage(query).flatMapThrowing { reply in
-                guard case .reply(let reply) = reply else {
-                    self.logger.error("Unexpected reply type, expected OpReply")
-                    throw MongoError(.queryFailure, reason: .invalidReplyType)
-                }
-                
-                return reply
+        query.header.requestId = self.nextRequestId()
+        return self.executeMessage(query).flatMapThrowing { reply in
+            guard case .reply(let reply) = reply else {
+                self.logger.error("Unexpected reply type, expected OpReply")
+                throw MongoError(.queryFailure, reason: .invalidReplyType)
             }
+            
+            return reply
         }
     }
     
@@ -71,16 +69,14 @@ extension MongoConnection {
         in transaction: MongoTransaction? = nil,
         sessionId: SessionIdentifier? = nil
     ) -> EventLoopFuture<OpMessage> {
-        return self.eventLoop.flatSubmit {
-            query.header.requestId = nextRequestId()
-            return executeMessage(query).flatMapThrowing { reply in
-                guard case .message(let message) = reply else {
-                    self.logger.error("Unexpected reply type, expected OpMessage")
-                    throw MongoError(.queryFailure, reason: .invalidReplyType)
-                }
-                
-                return message
+        query.header.requestId = self.nextRequestId()
+        return self.executeMessage(query).flatMapThrowing { reply in
+            guard case .message(let message) = reply else {
+                self.logger.error("Unexpected reply type, expected OpMessage")
+                throw MongoError(.queryFailure, reason: .invalidReplyType)
             }
+            
+            return message
         }
     }
 
@@ -90,22 +86,20 @@ extension MongoConnection {
         in transaction: MongoTransaction? = nil,
         sessionId: SessionIdentifier? = nil
     ) -> EventLoopFuture<MongoServerReply> {
-        return self.eventLoop.flatSubmit {
-            var command = command
-            
-            if let id = sessionId?.id {
-                // TODO: This is memory heavy
-                command["lsid"]["id"] = id
-            }
-            
-            return executeMessage(
-                OpQuery(
-                    query: command,
-                    requestId: nextRequestId(),
-                    fullCollectionName: namespace.fullCollectionName
-                )
-            )
+        var command = command
+        
+        if let id = sessionId?.id {
+            // TODO: This is memory heavy
+            command["lsid"]["id"] = id
         }
+        
+        return self.executeMessage(
+            OpQuery(
+                query: command,
+                requestId: self.nextRequestId(),
+                fullCollectionName: namespace.fullCollectionName
+            )
+        )
     }
 
     internal func executeOpMessage(
@@ -114,30 +108,28 @@ extension MongoConnection {
         in transaction: MongoTransaction? = nil,
         sessionId: SessionIdentifier? = nil
     ) -> EventLoopFuture<MongoServerReply> {
-        return self.eventLoop.flatSubmit {
-            var command = command
-            command["$db"] = namespace.databaseName
-            
-            if let id = sessionId?.id {
-                // TODO: This is memory heavy
-                command["lsid"]["id"] = id
-            }
-            
-            // TODO: When retrying a write, don't resend transaction messages except commit & abort
-            if let transaction = transaction {
-                command["txnNumber"] = transaction.number
-                command["autocommit"] = transaction.autocommit
-
-                if transaction.startTransaction() {
-                    command["startTransaction"] = true
-                }
-            }
-            return executeMessage(
-                OpMessage(
-                    body: command,
-                    requestId: self.nextRequestId()
-                )
-            )
+        var command = command
+        command["$db"] = namespace.databaseName
+        
+        if let id = sessionId?.id {
+            // TODO: This is memory heavy
+            command["lsid"]["id"] = id
         }
+        
+        // TODO: When retrying a write, don't resend transaction messages except commit & abort
+        if let transaction = transaction {
+            command["txnNumber"] = transaction.number
+            command["autocommit"] = transaction.autocommit
+
+            if transaction.startTransaction() {
+                command["startTransaction"] = true
+            }
+        }
+        return self.executeMessage(
+            OpMessage(
+                body: command,
+                requestId: self.nextRequestId()
+            )
+        )
     }
 }
