@@ -64,10 +64,6 @@ class ProtocolTests: XCTestCase {
         buffer.writeInteger(0 as UInt8)
         buffer.writeBuffer(&documentBuffer)
         
-        _ = try OpMessage(reading: &buffer, header: header)
-    }
-    
-    func testOpMessageDeniesFirstUInt16Flags() throws {
         XCTAssertNoThrow(try OpMessage(reading: &buffer, header: header))
     }
 }
