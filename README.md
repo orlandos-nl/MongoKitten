@@ -14,7 +14,7 @@ A fast, pure swift [MongoDB](https://mongodb.com) driver based on [Swift NIO](ht
 
 # 🐈 Community
 
-[Join our slack here](https://slackpass.io/openkitten) and become a part of the welcoming community.
+[Join our slack here](https://slackpass.io/openkitten) and become a part of the welcoming community. Or [join discord](https://discord.gg/H6799jh) if you prefer that. Slack is by far the biggest community.
 
 ### Projects
 
