@@ -39,6 +39,7 @@ A couple of MongoKitten based projects have arisen, check them out!
 
 ## Contribute to MongoKitten
 
+- [Donate](https://github.com/sponsors/Joannis) so that we can spend more time on improving the docs.
 - See [CONTRIBUTING.md](CONTRIBUTING.md) for info on contributing to MongoKitten
 - You can help us out by resolving TODOs and replying on issues
 - Of course, all feedback, positive and negative, also really helps to improve the project
