@@ -389,16 +389,18 @@ public final class MongoCluster: MongoConnectionPool {
     /// Closes all connections
     @discardableResult
     public func disconnect() -> EventLoopFuture<Void> {
-        self.wireVersion = nil
-        self.isClosed = true
-        let connections = self.pool
-        self.pool = []
+        return self.eventLoop.flatSubmit {
+            self.wireVersion = nil
+            self.isClosed = true
+            let connections = self.pool
+            self.pool = []
 
-        let closed = connections.map { remote in
-            return remote.connection.close()
+            let closed = connections.map { remote in
+                return remote.connection.close()
+            }
+
+            return EventLoopFuture<Void>.andAllComplete(closed, on: self.eventLoop)
         }
-
-        return EventLoopFuture<Void>.andAllComplete(closed, on: eventLoop)
     }
 
     /// Prompts MongoKitten to connect to the remote again

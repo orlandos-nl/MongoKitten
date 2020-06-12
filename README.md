@@ -78,8 +78,6 @@ let db = try MongoDatabase.synchronousConnect("mongodb://localhost/my_database")
 Vapor users should register the database as a service.
 
 ```swift
-let connectionURI = "mongodb://localhost"
-
 extension Request {
     public var mongoDB: MongoDatabase {
         return application.mongoDB.hopped(to: eventLoop)
