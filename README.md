@@ -31,7 +31,7 @@ A couple of MongoKitten based projects have arisen, check them out!
 
 #### Backers
 
-<a href="https://github.com/Andrewangeta"><img src="https://avatars2.githubusercontent.com/u/12012815?s=460&u=ed30851422c52b43608cf1b3d654c1c921006910&v=4" width="128" height="128" /></a> <a href="https://github.com/piers12"><img src="https://avatars1.githubusercontent.com/u/37227905?s=460&u=2f33baff0e70c4194c801e1bc9a2b416e8cf5909&v=4" width="128" height="128" /></a>
+<a href="https://github.com/Andrewangeta"><img src="https://avatars2.githubusercontent.com/u/12012815?s=460&u=ed30851422c52b43608cf1b3d654c1c921006910&v=4" width="128" height="128" /></a> <a href="https://github.com/piers12"><img src="https://avatars1.githubusercontent.com/u/37227905?s=460&u=2f33baff0e70c4194c801e1bc9a2b416e8cf5909&v=4" width="128" height="128" /></a> <a href="https://github.com/ultim8p"><img src="https://avatars3.githubusercontent.com/u/4804985?s=460&v=4" width="128" height="128" /></a>
 
 ## The App
 
