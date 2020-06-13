@@ -14,10 +14,19 @@ fileprivate enum ProgressState {
     case verify(signature: [UInt8])
 }
 
+struct CachedCredentials: Codable {
+    enum CachedCredentialsVersion: Int, Codable {
+        case first = 1
+    }
+    
+    let version: CachedCredentialsVersion = .first
+    let credentials: [String: Credentials]
+}
+
 /// A thread-safe global cache that all MongoDB clients can use to reduce computational cost of authentication
 ///
 /// By caching the proof of being auhtenticated.
-fileprivate final class MongoCredentialsCache {
+public final class MongoCredentialsCache {
     fileprivate static let `default` = MongoCredentialsCache()
 
     private init() {}
@@ -46,12 +55,16 @@ fileprivate final class MongoCredentialsCache {
         }
     }
     
-    public func saveCache() throws -> Document {
-        try BSONEncoder().encode(_cache)
+    public static func saveCache() throws -> Document {
+        return try BSONEncoder().encode(CachedCredentials(credentials: Self.default._cache))
     }
     
-    public func loadCache(from document: Document) throws {
-        _cache = try BSONDecoder().decode([String: Credentials].self, from: document)
+    public static func loadCache(from document: Document) throws {
+        Self.default._cache = try BSONDecoder().decode(CachedCredentials.self, from: document).credentials
+    }
+    
+    public static func clearCache() {
+        Self.default._cache.removeAll(keepingCapacity: true)
     }
 }
 
