@@ -14,7 +14,7 @@ fileprivate enum ProgressState {
     case verify(signature: [UInt8])
 }
 
-struct CachedCredentials: Codable {
+public struct CachedCredentials: Codable {
     enum CachedCredentialsVersion: Int, Codable {
         case first = 1
     }
@@ -55,12 +55,12 @@ public final class MongoCredentialsCache {
         }
     }
     
-    public static func saveCache() throws -> Document {
-        return try BSONEncoder().encode(CachedCredentials(credentials: Self.default._cache))
+    public static func saveCache() throws -> CachedCredentials {
+        CachedCredentials(credentials: Self.default._cache)
     }
     
-    public static func loadCache(from document: Document) throws {
-        Self.default._cache = try BSONDecoder().decode(CachedCredentials.self, from: document).credentials
+    public static func loadCache(from cache: CachedCredentials) throws {
+        Self.default._cache = cache.credentials
     }
     
     public static func clearCache() {
