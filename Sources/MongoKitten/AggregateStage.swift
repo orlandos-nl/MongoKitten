@@ -210,26 +210,28 @@ public struct AggregateBuilderStage {
     /// The point for which to find the closest documents.
     /// - Parameters:
     ///   - useLegacy: Wether or not to use the [legacy coordinate pair](https://docs.mongodb.com/manual/reference/glossary/#term-legacy-coordinate-pairs). `false` by default and uses a GeoJSON Point
-    ///   - coordinates: Coordinates in order `[longitude, latitude]`.
+    ///   - longitude: The longitude.
+    ///   - latitude: The latitude.
     ///   - distanceField: The output field that contains the calculated distance. To specify a field within an embedded document, use [dot notation](https://docs.mongodb.com/manual/reference/glossary/#term-dot-notation) .
     ///   - spherical: Determines how MongoDB calculates the distance between two points: When true, MongoDB uses $nearSphere semantics and calculates distances using spherical geometry. When false, MongoDB uses $near semantics: spherical geometry for 2dsphere indexes and planar geometry for 2d indexes.
     ///   - maxDistance: The maximum distance from the center point that the documents can be. MongoDB limits the results to those documents that fall within the specified distance from the center point. Specify the distance in meters if the specified point is GeoJSON and in radians if the specified point is legacy coordinate pairs.
     ///   - query: Optional. Limits the results to the documents that match the query. The query syntax is the usual MongoDB read operation query syntax. You cannot specify a $near predicate in the query field of the $geoNear stage.
     ///   - distanceMultiplier: Optional. The factor to multiply all distances returned by the query. For example, use the distanceMultiplier to convert radians, as returned by a spherical query, to kilometers by multiplying by the radius of the Earth.
     ///   - includeLocs: Optional. This specifies the output field that identifies the location used to calculate the distance. This option is useful when a location field contains multiple locations. To specify a field within an embedded document, use dot notation.
-    ///   - uniqueDocs: Optional. If this value is true, the query returns a matching document once, even if more than one of the document’s location fields match the query.
+    ///   - uniqueDocuments: Optional. If this value is true, the query returns a matching document once, even if more than one of the document’s location fields match the query.
     ///   - minDistance: Optional. The minimum distance from the center point that the documents can be. MongoDB limits the results to those documents that fall outside the specified distance from the center point.
     ///   - key: Specify the geospatial indexed field to use when calculating the distance. If your collection has multiple 2d and/or multiple 2dsphere indexes, you must use the key option to specify the indexed field path to use. Specify Which Geospatial Index to Use provides a full example. If there is more than one 2d index or more than one 2dsphere index and you do not specify a key, MongoDB will return an error. If you do not specify the key, and you have at most only one 2d index and/or only one 2dsphere index, MongoDB looks first for a 2d index to use. If a 2d index does not exists, then MongoDB looks for a 2dsphere index to use.
     public static func geoNear(
         useLegacy: Bool = false,
-        coordinates: [Double],
+        longitude: Double,
+        latitude: Double,
         distanceField: String,
         spherical: Bool = false,
         maxDistance: Int? = nil,
         query: Document? = nil,
         distanceMultiplier: Int? = nil,
         includeLocs: String? = nil,
-        uniqueDocs: Bool? = nil,
+        uniqueDocuments: Bool? = nil,
         minDistance: Int? = nil,
         key: String? = nil
     ) -> AggregateBuilderStage {
@@ -237,9 +239,9 @@ public struct AggregateBuilderStage {
                                  "spherical": spherical]
         
         if useLegacy {
-            geoNear["near"] = coordinates.makePrimitive()
+            geoNear["near"] = [longitude, latitude].makePrimitive()
         } else {
-            geoNear["near"] = ["type": "Point", "coordinates": coordinates] as Document
+            geoNear["near"] = ["type": "Point", "coordinates": [longitude, latitude]] as Document
         }
                 
         geoNear["maxDistance"] = maxDistance
@@ -250,7 +252,7 @@ public struct AggregateBuilderStage {
 
         geoNear["includeLocs"] = includeLocs
         
-        geoNear["uniqueDocs"] = uniqueDocs
+        geoNear["uniqueDocs"] = uniqueDocuments
         
         geoNear["minDistance"] = minDistance
         
