@@ -4,13 +4,7 @@ import MongoCore
 import NIO
 import Logging
 import Metrics
-
-#if canImport(NIOTransportServices)
-import Network
-import NIOTransportServices
-#else
 import NIOSSL
-#endif
 
 public struct MongoHandshakeResult {
     public let sent: Date
@@ -98,16 +92,8 @@ public final class MongoConnection {
     ) -> EventLoopFuture<MongoConnection> {
         let context = MongoClientContext(logger: logger)
 
-        #if canImport(NIOTransportServices)
-        var bootstrap = NIOTSConnectionBootstrap(group: eventLoop)
-
-        if settings.useSSL {
-            bootstrap = bootstrap.tlsOptions(NWProtocolTLS.Options())
-        }
-        #else
         let bootstrap = ClientBootstrap(group: eventLoop)
             .resolver(resolver)
-        #endif
 
         guard let host = settings.hosts.first else {
             logger.critical("Cannot connect to MongoDB: No host specified")
@@ -117,25 +103,6 @@ public final class MongoConnection {
         return bootstrap
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             .channelInitializer { channel in
-                #if !canImport(NIOTransportServices)
-                if settings.useSSL {
-                    do {
-                        var configuration = TLSConfiguration.clientDefault
-                        
-                        if let caCertPath = settings.sslCaCertificatePath {
-                            configuration.trustRoots = NIOSSLTrustRoots.file(caCertPath)
-                        }
-                        
-                        let handler = try NIOSSLClientHandler(context: NIOSSLContext(configuration: configuration), serverHostname: host.hostname)
-                        return channel.pipeline.addHandler(handler).flatMap {
-                            return MongoConnection.addHandlers(to: channel, context: context)
-                        }
-                    } catch {
-                        return channel.eventLoop.makeFailedFuture(error)
-                    }
-                }
-                #endif
-                
                 return MongoConnection.addHandlers(to: channel, context: context)
             }.connect(host: host.hostname, port: host.port).flatMap { channel in
                 let connection = MongoConnection(

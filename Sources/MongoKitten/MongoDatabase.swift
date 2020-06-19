@@ -3,10 +3,6 @@ import Logging
 import Foundation
 import NIO
 
-#if canImport(NIOTransportServices)
-import NIOTransportServices
-#endif
-
 /// A reference to a MongoDB database, over a `Connection`.
 ///
 /// Databases hold collections of documents.
@@ -57,13 +53,7 @@ public class MongoDatabase {
     /// - throws: Can throw for a variety of reasons, including an invalid connection string, failure to connect to the MongoDB database, etcetera.
     /// - returns: A connected database instance
     public static func synchronousConnect(_ uri: String) throws -> MongoDatabase {
-        #if canImport(NIOTransportServices)
-        let group = NIOTSEventLoopGroup(loopCount: 1, defaultQoS: .default)
-        #else
-        let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-        #endif
-
-        return try self.connect(uri, on: group).wait()
+        return try self.connect(uri, on: MultiThreadedEventLoopGroup(numberOfThreads: 1)).wait()
     }
 
     /// A helper method that uses the normal `connect` method with the given settings and awaits it. It creates an event loop group for you.
@@ -74,13 +64,7 @@ public class MongoDatabase {
     /// - throws: Can throw for a variety of reasons, including an invalid connection string, failure to connect to the MongoDB database, etcetera.
     /// - returns: A connected database instance
     public static func synchronousConnect(settings: ConnectionSettings) throws -> MongoDatabase {
-        #if canImport(NIOTransportServices)
-        let group = NIOTSEventLoopGroup(loopCount: 1, defaultQoS: .default)
-        #else
-        let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-        #endif
-
-        return try self.connect(settings: settings, on: group).wait()
+        return try self.connect(settings: settings, on: MultiThreadedEventLoopGroup(numberOfThreads: 1)).wait()
     }
 
     /// Connect to the database at the given `uri`

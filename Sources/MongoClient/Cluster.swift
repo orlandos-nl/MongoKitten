@@ -3,13 +3,7 @@ import Logging
 import DNSClient
 import MongoCore
 
-#if canImport(NIOTransportServices)
-import NIOTransportServices
-
-public typealias _MongoPlatformEventLoopGroup = NIOTSEventLoopGroup
-#else
 public typealias _MongoPlatformEventLoopGroup = EventLoopGroup
-#endif
 
 public final class MongoCluster: MongoConnectionPool {
     public private(set) var settings: ConnectionSettings {
@@ -107,9 +101,20 @@ public final class MongoCluster: MongoConnectionPool {
 
         self.init(group: group, settings: settings, logger: logger)
 
-        MongoCluster.withResolvedSettings(settings, on: group) { settings, dns -> EventLoopFuture<Void> in
-            self.settings = settings
+        let dns: EventLoopFuture<DNSClient>
+        
+        if let dnsServer = settings.dnsServer {
+            dns = DNSClient.connect(on: group, host: dnsServer)
+        } else {
+            dns = DNSClient.connect(on: group)
+        }
+        
+        dns.flatMap { dns -> EventLoopFuture<ConnectionSettings> in
             self.dns = dns
+            
+            return MongoCluster.resolveSettings(settings, on: group, client: dns)
+        }.flatMap { settings -> EventLoopFuture<Void> in
+            self.settings = settings
 
             return self.makeConnectionRecursively(for: .init(writable: false), emptyPoolError: nil).flatMap { _ in
                 return self.rediscover()
@@ -170,43 +175,25 @@ public final class MongoCluster: MongoConnectionPool {
         }
     }
 
-    private static func withResolvedSettings<T>(_ settings: ConnectionSettings, on loop: _MongoPlatformEventLoopGroup, run: @escaping (ConnectionSettings, DNSClient?) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+    private static func resolveSettings(
+        _ settings: ConnectionSettings,
+        on loop: _MongoPlatformEventLoopGroup,
+        client: DNSClient
+    ) -> EventLoopFuture<ConnectionSettings> {
         if !settings.isSRV {
-            return run(settings, nil)
+            return loop.next().makeSucceededFuture(settings)
         }
 
         let host = settings.hosts.first!
         
-        let client: EventLoopFuture<DNSClient>
-        
-        do {
-            #if canImport(NIOTransportServices)
-                if let dnsServer = settings.dnsServer {
-                    client = try DNSClient.connectTS(on: loop, config: [SocketAddress(ipAddress: dnsServer, port: 53)])
-                } else {
-                    client = DNSClient.connectTS(on: loop)
-                }
-            #else
-                if let dnsServer = settings.dnsServer {
-                    client = try DNSClient.connect(on: loop, config: [SocketAddress(ipAddress: dnsServer, port: 53)])
-                } else {
-                    client = DNSClient.connect(on: loop)
-                }
-            #endif
-        } catch {
-            return loop.next().makeFailedFuture(error)
-        }
-        
-        return client.flatMap { client in
-            let srv = resolveSRV(host, on: client)
-//            let txt = resolveTXT(host, on: client)
-//            return srv.and(txt).flatMap { hosts, query in
-            return srv.flatMap { hosts in
-                var settings = settings
-                // TODO: Use query
-                settings.hosts = hosts
-                return run(settings, client)
-            }
+        let srv = resolveSRV(host, on: client)
+//        let txt = resolveTXT(host, on: client)
+//        return srv.and(txt).flatMap { hosts, query in
+        return srv.map { hosts in
+            var settings = settings
+            // TODO: Use query
+            settings.hosts = hosts
+            return settings
         }
     }
 
