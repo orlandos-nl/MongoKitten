@@ -19,7 +19,7 @@ extension MongoCollection {
                 DeleteCommand(where: query, limit: .all, fromCollection: self.name),
                 namespace: self.database.commandNamespace,
                 in: self.transaction,
-                sessionId: connection.implicitSessionId
+                sessionId: self.sessionId ?? connection.implicitSessionId
             )
         }.decodeReply(DeleteReply.self)._mongoHop(to: hoppedEventLoop)
     }
