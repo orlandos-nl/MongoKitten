@@ -118,7 +118,7 @@ public struct AggregateBuilderPipeline: QueryCursor {
                     in: self.collection.namespace,
                     connection: connection,
                     hoppedEventLoop: self.hoppedEventLoop,
-                    session: self.collection.sessionId ?? connection.implicitSessionId,
+                    session: self.collection.session ?? connection.implicitSession,
                     transaction: self.collection.transaction
                 )
                 return FinalizedCursor(basedOn: self, cursor: cursor)
