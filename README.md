@@ -72,6 +72,8 @@ Also, don't forget to add `"MongoKitten"` as a dependency for your target.
 
 # 🚲 Basic usage
 
+Check out my [Ray Wenderlich Article](https://www.raywenderlich.com/10521463-server-side-swift-with-mongodb-getting-started) to learn the basics!
+
 ## Connect to your database
 
 ```swift
