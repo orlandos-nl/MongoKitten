@@ -67,9 +67,9 @@ class ProtocolTests: XCTestCase {
         _ = try OpMessage(reading: &buffer, header: header)
     }
     
-    func testOpMessageDeniesFirstUInt16Flags() throws {
-        XCTAssertNoThrow(try OpMessage(reading: &buffer, header: header))
-    }
+    // func testOpMessageDeniesFirstUInt16Flags() throws {
+    //     XCTAssertNoThrow(try OpMessage(reading: &buffer, header: header))
+    // }
 }
 
 extension ByteBuffer {
