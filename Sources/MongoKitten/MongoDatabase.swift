@@ -27,7 +27,7 @@ public class MongoDatabase {
     public let pool: MongoConnectionPool
 
     /// The collection to execute commands on
-    internal var commandNamespace: MongoNamespace {
+    public var commandNamespace: MongoNamespace {
         return MongoNamespace(to: "$cmd", inDatabase: self.name)
     }
     
