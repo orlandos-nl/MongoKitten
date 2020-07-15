@@ -8,17 +8,10 @@ class CrudTests : XCTestCase {
   struct DummyAccount: Codable {
     static let collectionName = "DummyAccounts"
 
-    let _id: ObjectId
+    let _id = ObjectId()
     var name: String
     var password: String
     var age: Int
-    
-    init (Name name: String, Password password: String, Age age: Int) {
-      self._id = ObjectId()
-      self.name = name
-      self.password = password
-      self.age = age
-    }
   }
   
   let settings = ConnectionSettings(
@@ -44,7 +37,7 @@ class CrudTests : XCTestCase {
     let schema = mongo[DummyAccount.collectionName]
     let startingCount = try schema.count().wait()
 
-    let dummyAccount = DummyAccount(Name: "Dum", Password: "my", Age: 69)
+    let dummyAccount = DummyAccount(name: "Dum", password: "my", age: 69)
     let _ = try schema.insertEncoded(dummyAccount).wait()
     XCTAssertEqual(try schema.count().wait(), startingCount+1)
   }
@@ -55,13 +48,13 @@ class CrudTests : XCTestCase {
     let startingCount = try schema.count().wait()
 
     let dummyAccounts = [
-      DummyAccount(Name: "Test", Password: "ing", Age: 77),
-      DummyAccount(Name: "To", Password: "see", Age: 8),
-      DummyAccount(Name: "If", Password: "bulk", Age: 10),
-      DummyAccount(Name: "Inserts", Password: "will", Age: 15),
-      DummyAccount(Name: "Work", Password: "as", Age: 19),
-      DummyAccount(Name: "I", Password: "expect", Age: 30),
-      DummyAccount(Name: "Them", Password: "to", Age: 82),
+      DummyAccount(name: "Test", password: "ing", age: 77),
+      DummyAccount(name: "To", password: "see", age: 8),
+      DummyAccount(name: "If", password: "bulk", age: 10),
+      DummyAccount(name: "Inserts", password: "will", age: 15),
+      DummyAccount(name: "Work", password: "as", age: 19),
+      DummyAccount(name: "I", password: "expect", age: 30),
+      DummyAccount(name: "Them", password: "to", age: 82),
     ]
     _ = schema.insertManyEncoded(dummyAccounts)
     XCTAssertEqual(try schema.count().wait(), startingCount+7)
@@ -78,7 +71,7 @@ class CrudTests : XCTestCase {
   func printDummyAccounts () throws {
     let schema = mongo[DummyAccount.collectionName]
     try schema.find().forEach{ dummy in 
-      print("\(dummy["_id"]!): Name - \(dummy["name"]!) | Password - \(dummy["password"]!) | Age - \(dummy["age"]!)")
+      print("\(dummy["_id"]!): Name - \(dummy["name"]!) | password - \(dummy["password"]!) | age - \(dummy["age"]!)")
     }.wait()
   }
 
@@ -90,6 +83,18 @@ class CrudTests : XCTestCase {
     } else {
       XCTFail("Retrieved a nil value")
     }
+  }
+
+  func testBulkReadDummyAccounts () throws {
+    try testBulkCreateDummyAccounts()
+    let schema = mongo[DummyAccount.collectionName]
+    var dummyCounter = 0
+
+    try schema.find().forEach{ dummy in 
+      XCTAssertNotNil(dummy)
+      dummyCounter+=1
+    }.wait()
+    XCTAssertEqual(dummyCounter, 7)
   }
 
   func testUpdateDummyAccounts () throws {
@@ -106,6 +111,17 @@ class CrudTests : XCTestCase {
     }
   }
 
+  func testBulkUpdateDummyAccounts() throws {
+    try testBulkCreateDummyAccounts()
+
+    let schema = mongo[DummyAccount.collectionName]
+    _ = try schema.updateMany(where: "age" < 18, to: ["$set" : ["name": "Underaged"]]).wait()
+    schema.find("age" < 18).forEach{dummy in 
+    
+      XCTAssertEqual(dummy["name"] as? String, "Underaged")
+    }
+  }
+
   func testDeleteDummyAccounts () throws {
     try testBulkCreateDummyAccounts()
 
@@ -118,14 +134,12 @@ class CrudTests : XCTestCase {
     }
   }
 
-  func testBulkUpdateDummyAccounts() throws {
+  func testBulkDeleteDummyAccounts () throws {
     try testBulkCreateDummyAccounts()
 
     let schema = mongo[DummyAccount.collectionName]
-    _ = try schema.updateMany(where: "age" < 18, to: ["$set" : ["name": "Underaged"]]).wait()
-    schema.find("age" < 18).forEach{dummy in 
-      //XCTAssert(dummy[])
-    }
+    _ = try schema.deleteAll(where: "age" < 18).wait()
+    XCTAssertEqual(try schema.count().wait(), 4)
   }
 }
 
