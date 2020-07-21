@@ -394,6 +394,7 @@ public final class MongoCluster: MongoConnectionPool {
             self.isClosed = true
             let connections = self.pool
             self.pool = []
+            self.discoveredHosts = []
 
             let closed = connections.map { remote in
                 return remote.connection.close()
