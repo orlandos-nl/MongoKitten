@@ -6,3 +6,4 @@ Package.pins
 Package.resolved
 docs/generated
 /.swiftpm
+/.vscode
