@@ -286,5 +286,22 @@ public struct ConnectionSettings: Equatable {
 
         self.applicationName = queries["appname"]
         self.dnsServer = queries["dnsServer"]
+
+        for key in [
+            "appname", 
+            "dnsServer", 
+            "sslVerify",
+            "maxConnections",
+            "connectTimeoutMS",
+            "socketTimeoutMS",
+            "tlsCAFile",
+            "authSource",
+            "ssl",
+            "tls",
+            "authMechanism",
+         ] {
+            self.queryParameters[key] = nil
+
+        }
     }
 }

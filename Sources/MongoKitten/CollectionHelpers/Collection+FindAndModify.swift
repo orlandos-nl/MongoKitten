@@ -126,7 +126,7 @@ public final class FindAndModifyBuilder {
     
     /// Executes the command
     public func execute() -> EventLoopFuture<FindAndModifyReply> {
-        return collection.pool.next(for: .basic).flatMap { connection in
+        return collection.pool.next(for: .writable).flatMap { connection in
             connection.executeCodable(self.command,
                                       namespace: self.collection.database.commandNamespace,
                                       in: self.collection.transaction,
