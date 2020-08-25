@@ -38,7 +38,7 @@ class CrudTests : XCTestCase {
         }
     }
     
-    let settings = try! ConnectionSettings("mongodb+srv://AMTester:Autimatisering1@amtestcluster.n5lfc.mongodb.net/\(dbName)?retryWrites=true&w=majority")
+    let settings = try! ConnectionSettings("mongodb://localhost/debug")
     
     //let settings = ConnectionSettings(
     //  authentication: .auto(username: "admin", password: "Autimatisering1"),
@@ -281,6 +281,8 @@ class CrudTests : XCTestCase {
             XCTAssertEqual(deleteReply.deletes, 1)
             XCTAssertNotEqual(deleteReply.writeErrors?.isEmpty, false)
 
+            sleep(5)
+          
             XCTAssertNil(try readDummyAccount(name: testDummyAccount.name))
         } else {
             XCTFail()
@@ -412,7 +414,7 @@ class CrudTests : XCTestCase {
         XCTAssertEqual(newAccount?.age, 111)
     }
 
-    func testFindOneAndDelete () throws {
+  func testFindOneAndDelete () throws {
         let originalAccounts = try testBulkCreateDummyAccounts()
         let schema: MongoCollection = mongo[DummyAccount.collectionName]
         let testDummyAccount = originalAccounts[Int.random(in: 0...originalAccounts.count)]

@@ -89,8 +89,9 @@ extension MongoConnection {
         var command = command
         
         if let id = sessionId?.id {
-            // TODO: This is memory heavy
-            command["lsid"]["id"] = id
+            command.appendValue([
+                "id": id
+            ] as Document, forKey: "lsid")
         }
         
         return self.executeMessage(
@@ -109,20 +110,21 @@ extension MongoConnection {
         sessionId: SessionIdentifier? = nil
     ) -> EventLoopFuture<MongoServerReply> {
         var command = command
-        command["$db"] = namespace.databaseName
+        command.appendValue(namespace.databaseName, forKey: "$db")
         
         if let id = sessionId?.id {
-            // TODO: This is memory heavy
-            command["lsid"]["id"] = id
+            command.appendValue([
+                "id": id
+            ] as Document, forKey: "lsid")
         }
         
         // TODO: When retrying a write, don't resend transaction messages except commit & abort
         if let transaction = transaction {
-            command["txnNumber"] = transaction.number
-            command["autocommit"] = transaction.autocommit
+            command.appendValue(transaction.number, forKey: "txnNumber")
+            command.appendValue(transaction.autocommit, forKey: "autocommit")
 
             if transaction.startTransaction() {
-                command["startTransaction"] = true
+                command.appendValue(true, forKey: "startTransaction")
             }
         }
         return self.executeMessage(
