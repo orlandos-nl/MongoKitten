@@ -1,5 +1,6 @@
 import MongoCore
 
+/// Implements https://docs.mongodb.com/manual/reference/command/findAndModify/
 public struct FindAndModifyCommand: Codable {
     /// The collection against which to run the command.
     public private(set) var findAndModify: String
@@ -19,7 +20,7 @@ public struct FindAndModifyCommand: Codable {
         * `$project` and its alias `$unset`
         * `$replaceRoot` and its alias `$replcaeWith`
      */
-    public var update: Document = []
+    public var update: Document?
     /// When true, returns the modified document rather than the original. The findAndModify method ignores the new option for remove operations.
     public var new: Bool?
     /// A subset of fields to return. The `fields` document specifies an inclusion of a field with `1`, as in: `fields: { <field1>: 1, <field2>: 1, ... }`. [See projection](https://docs.mongodb.com/manual/tutorial/project-fields-from-query-results/#read-operations-projection).
@@ -54,7 +55,7 @@ public struct FindAndModifyCommand: Codable {
                 query: Document? = nil,
                 sort: Document? = nil,
                 remove: Bool = false,
-                update: Document = [],
+                update: Document? = nil,
                 new: Bool? = nil,
                 fields: Document? = nil,
                 upsert: Bool? = nil,

@@ -41,6 +41,8 @@ internal struct OK: Decodable {
     
     private let ok: Int
 
+    public var isSuccessful: Bool { ok == 1 }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.ok = try container.decode(Int.self, forKey: .ok)

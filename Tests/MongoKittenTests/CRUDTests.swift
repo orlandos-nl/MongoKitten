@@ -38,7 +38,7 @@ class CrudTests : XCTestCase {
         }
     }
     
-    let settings = try! ConnectionSettings("mongodb://localhost:27018/debug")
+    let settings = try! ConnectionSettings("mongodb://localhost/debug")
     
     //let settings = ConnectionSettings(
     //  authentication: .auto(username: "admin", password: "Autimatisering1"),
@@ -77,7 +77,7 @@ class CrudTests : XCTestCase {
     }
     
     // is used repeatedly for all the tests that require dummy data
-    func testBackupBulkCreateDummyAccounts () throws -> [DummyAccount] {
+    func BackupBulkCreateDummyAccounts () throws -> [DummyAccount] {
         let dummyAccounts = [
             DummyAccount(name: "Test", password: "ing", age: 77),
             DummyAccount(name: "To", password: "see", age: 10),
@@ -106,7 +106,7 @@ class CrudTests : XCTestCase {
     func testBulkCreateDummyAccounts () throws -> [DummyAccount] {
         var dummyAccounts: [DummyAccount] = []
 
-        for index in 0...4 {
+        for index in 0...2 {
             for age in 1...100 {
                 dummyAccounts.append(DummyAccount(name: "Name-\(age + index * 100)", password: "Pass-\(age + index * 100)", age: age))
             }
@@ -132,10 +132,12 @@ class CrudTests : XCTestCase {
     }
 
     func testReadDummyAccounts () throws {
-        try _ = testBulkCreateDummyAccounts()
-        if let dummy: DummyAccount = try readDummyAccount(name: "Name-182") {
-            XCTAssertEqual(dummy.password, "Pass-182")
-            XCTAssertEqual(dummy.age, 82 )
+        let originalAccounts = try testBulkCreateDummyAccounts()
+        let testDummyAccount = originalAccounts[Int.random(in: 0...originalAccounts.count)]
+        
+        if let dummy: DummyAccount = try readDummyAccount(name: testDummyAccount.name) {
+            XCTAssertEqual(dummy.password, testDummyAccount.password)
+            XCTAssertEqual(dummy.age, testDummyAccount.age )
         } else {
             XCTFail("Retrieved a nil value")
         }
@@ -273,7 +275,7 @@ class CrudTests : XCTestCase {
             XCTAssertNotEqual(deleteReply.writeErrors?.isEmpty, false)
 
             sleep(5)
-
+          
             XCTAssertNil(try readDummyAccount(name: testDummyAccount.name))
         } else {
             XCTFail()
@@ -405,26 +407,88 @@ class CrudTests : XCTestCase {
         XCTAssertEqual(newAccount?.age, 111)
     }
 
-    // func testFindOneAndDelete () throws {
-    //     let originalAccounts = try testBulkCreateDummyAccounts()
-    //     let schema: MongoCollection = mongo[DummyAccount.collectionName]
+  func testFindOneAndDelete () throws {
+        let originalAccounts = try testBulkCreateDummyAccounts()
+        let schema: MongoCollection = mongo[DummyAccount.collectionName]
+        let testDummyAccount = originalAccounts[Int.random(in: 0...originalAccounts.count)]
 
-    //     let results = try schema.findOneAndDelete(where: ["age": 30]).execute().wait()
+        let results = try schema.findOneAndDelete(where: "name" == testDummyAccount.name).execute().wait()
         
-    //     guard let resultValue = results.value else{
-    //         XCTFail()
-    //         return
-    //     }
+        XCTAssertEqual(results.ok, 1)
 
-    //     let Account = try BSONDecoder().decode(DummyAccount.self, from: resultValue)
-    //     XCTAssert(originalAccounts.contains(Account))
-    //     schema.findOneAndDelete(where: ["age": 30]).execute().wait()
-    // }
+        guard let resultValue = results.value else{
+            XCTFail()
+            return
+        }
 
-    // TODO: Foreach future
-    // TODO: Change stream
-    // TODO: Find varieties
-    // TODO: Indexes
+        let account = try BSONDecoder().decode(DummyAccount.self, from: resultValue)
+        XCTAssert(originalAccounts.contains(account))
+
+        if let _ = try schema.findOne("_id" == account._id).decode(DummyAccount.self).wait() {
+            XCTFail("still found the document that was supposed to be deleted")
+        }
+    }
+
+    func testFindOneAndReplace () throws {
+        let originalAccounts = try testBulkCreateDummyAccounts()
+        let schema: MongoCollection = mongo[DummyAccount.collectionName]
+        let tempDummyAccount = originalAccounts[Int.random(in: 0...originalAccounts.count)]
+
+        guard var testDummyAccount = try schema.findOne("name" == tempDummyAccount.name).decode(DummyAccount.self).wait() else {
+            XCTFail()
+            return
+        }
+        
+        testDummyAccount.name = "repla"
+        testDummyAccount.password = "cement"
+        testDummyAccount.age = 111
+        let replacement = try BSONEncoder().encode(testDummyAccount)
+
+        let results = try schema.findOneAndReplace(where: "_id" == testDummyAccount._id, replacement: replacement).execute().wait()
+
+        XCTAssertEqual(results.ok, 1)
+
+        guard let replacedAccount = try schema.findOne("_id" == testDummyAccount._id).decode(DummyAccount.self).wait() else {
+            XCTFail()
+            return
+        }
+        XCTAssertEqual(replacedAccount, testDummyAccount)
+    }
+
+    func testFindOneAndUpdate () throws {
+        let originalAccounts = try testBulkCreateDummyAccounts()
+        let schema: MongoCollection = mongo[DummyAccount.collectionName]
+        let tempDummyAccount = originalAccounts[Int.random(in: 0...originalAccounts.count)]
+
+        guard let testDummyAccount = try schema.findOne("name" == tempDummyAccount.name).decode(DummyAccount.self).wait() else {
+            XCTFail()
+            return
+        }
+
+        let results = try schema.findOneAndUpdate(where: "_id" == testDummyAccount._id, to: ["$set": ["name": "updated"]]).execute().wait()
+
+        XCTAssertEqual(results.ok, 1)
+
+        guard let updatedAccount = try schema.findOne("_id" == testDummyAccount._id).decode(DummyAccount.self).wait() else {
+            XCTFail()
+            return
+        }
+        XCTAssertEqual(updatedAccount.name, "updated")
+    }
+
+    func testIndexes () throws {
+        _ = try testBulkCreateDummyAccounts()
+        let schema: MongoCollection = mongo[DummyAccount.collectionName]
+
+        try schema.createIndex(named: "nameIndex", keys: ["name": -1]).wait()
+        let result = try schema.listIndexes().wait().allResults().wait()
+
+        XCTAssertEqual(result.count, 2)
+        XCTAssertEqual(result[0].name, "_id_")
+        XCTAssertEqual(result[1].name, "nameIndex")
+    }
+
+    // TODO ON ICE: Foreach future
+    // TODO ON ICE: Change stream
     // TODO: Transactions
-
 }

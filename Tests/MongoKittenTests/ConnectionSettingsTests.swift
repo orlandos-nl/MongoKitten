@@ -35,5 +35,5 @@ class ConnectionSettingsTests : XCTestCase {
                 }
             }
         }
-    }
+    }   
 }

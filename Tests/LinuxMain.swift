@@ -9,6 +9,5 @@
 //
 
 import XCTest
-import MongoKittenTests
 
 XCTMain([])
