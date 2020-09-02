@@ -63,13 +63,6 @@ class CrudTests : XCTestCase {
         try mongo.drop().wait()
     }
     
-    func printDummyAccounts () throws {
-        let schema: MongoCollection = mongo[DummyAccount.collectionName]
-        try schema.find().forEach{ dummy in
-            print("\(dummy["_id"]!): Name - \(dummy["name"]!) | password - \(dummy["password"]!) | age - \(dummy["age"]!)")
-        }.wait()
-    }
-    
     // func executeCommand<E, R>(command: E, replyType: R.Type) -> EventLoopFuture<R> {
     //     <#function body#>
     // }
