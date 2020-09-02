@@ -19,7 +19,12 @@ public final class MongoCluster: MongoConnectionPool {
     }
 
     private var dns: DNSClient?
+    
+    /// Triggers every time the cluster rediscovers
+    ///
+    /// This is not thread safe outside of the cluster's eventloop
     public var didRediscover: (() -> ())?
+    
     public let logger: Logger
     public let sessionManager = MongoSessionManager()
 
@@ -35,6 +40,8 @@ public final class MongoCluster: MongoConnectionPool {
     }
 
     /// The current state of the cluster's connection pool
+    ///
+    /// This is not thread safe outside of the cluster's eventloop
     public var connectionState: MongoConnectionState {
         if isClosed {
             return .closed
@@ -54,6 +61,8 @@ public final class MongoCluster: MongoConnectionPool {
     }
 
     /// When set to true, read queries are also executed on slave instances of MongoDB
+    ///
+    /// This is not thread safe outside of the cluster's eventloop
     public var slaveOk = false {
         didSet {
             for connection in pool {
@@ -66,16 +75,27 @@ public final class MongoCluster: MongoConnectionPool {
     public var initialDiscovery: EventLoopFuture<Void> {
         return isDiscovering.futureResult
     }
-
+    
+    /// A list of currently open connections
+    ///
+    /// This is not thread safe outside of the cluster's eventloop
     private var pool: [PooledConnection]
     private let group: _MongoPlatformEventLoopGroup
     public let eventLoop: EventLoop
+    
+    /// The WireVersion used by this cluster's nodes
+    ///
+    /// This is not thread safe outside of the cluster's eventloop
     public private(set) var wireVersion: WireVersion?
 
     /// If `true`, no connections will be opened and all existing connections will be shut down
+    ///
+    /// This is not thread safe outside of the cluster's eventloop
     private var isClosed = false
 
     /// Used as a shortcut to not have to set a callback on `isDiscovering`
+    ///
+    /// This is not thread safe outside of the cluster's eventloop
     private var completedInitialDiscovery = false
 
     private init(
