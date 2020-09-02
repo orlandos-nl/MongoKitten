@@ -47,21 +47,15 @@ extension MeowCollection where M: ReadableModel {
 
 extension MeowCollection where M: MutableModel {
     public func insert(_ instance: M) -> EventLoopFuture<InsertReply> {
-        do {
-            let document = try instance.encode(to: Document.self)
-            return raw.insert(document)
-        } catch {
-            return database.eventLoop.makeFailedFuture(error)
-        }
+        return raw.insertEncoded(instance)
+    }
+    
+    public func insertMany(_ instances: [M]) -> EventLoopFuture<InsertReply> {
+        return raw.insertManyEncoded(instances)
     }
     
     public func upsert(_ instance: M) -> EventLoopFuture<UpdateReply> {
-        do {
-            let document = try instance.encode(to: Document.self)
-            return raw.upsert(document, where: "_id" == instance._id)
-        } catch {
-            return database.eventLoop.makeFailedFuture(error)
-        }
+        return raw.upsertEncoded(instance, where: "_id" == instance._id)
     }
     
     public func deleteOne(where filter: Document) -> EventLoopFuture<DeleteReply> {
