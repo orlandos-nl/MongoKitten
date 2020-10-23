@@ -39,9 +39,10 @@ public final class MongoClientSession {
         return serverSession.sessionId
     }
 
+    // Can be `nil` when the session is implicit
     init(
         serverSession: MongoServerSession,
-        sessionManager: MongoSessionManager,
+        sessionManager: MongoSessionManager?,
         options: MongoSessionOptions
     ) {
         self.serverSession = serverSession
@@ -107,15 +108,18 @@ internal final class MongoServerSession {
 public final class MongoSessionManager {
     private var availableSessions = [MongoServerSession]()
     private let implicitSession = MongoServerSession.random
+    private var implicitClientSession: MongoClientSession!
     public func makeImplicitClientSession() -> MongoClientSession {
-        return MongoClientSession(
+        return implicitClientSession
+    }
+
+    public init() {
+        implicitClientSession = MongoClientSession(
             serverSession: implicitSession,
-            sessionManager: self,
+            sessionManager: nil,
             options: MongoSessionOptions()
         )
     }
-
-    public init() {}
 
     internal func releaseSession(_ session: MongoServerSession) {
         self.availableSessions.append(session)
