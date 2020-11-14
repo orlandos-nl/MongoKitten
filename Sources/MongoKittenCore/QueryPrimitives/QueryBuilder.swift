@@ -72,7 +72,14 @@ public struct AndQuery: MongoKittenQuery {
     }
     
     public func makeDocument() -> Document {
-        return ["$and": Document(array: conditions)]
+        switch conditions.count {
+        case 0:
+            return [:]
+        case 1:
+            return conditions[0]
+        default:
+            return ["$and": Document(array: conditions)]
+        }
     }
 }
 
@@ -126,7 +133,14 @@ public struct OrQuery: MongoKittenQuery {
     }
     
     public func makeDocument() -> Document {
-        return ["$or": Document(array: conditions)]
+        switch conditions.count {
+        case 0:
+            return [:]
+        case 1:
+            return conditions[0]
+        default:
+            return ["$or": Document(array: conditions)]
+        }
     }
 }
 
