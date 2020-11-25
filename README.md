@@ -70,6 +70,15 @@ MongoKitten supports the [Swift Package Manager](https://swift.org/getting-start
 
 Also, don't forget to add `"MongoKitten"` as a dependency for your target.
 
+# FAQ
+
+<details>
+  <summary>I can't connect to MongoDB, authentication fails!</summary>
+  
+  1. Make sure you've specified `authSource=admin`, unless you know what your authSource is. MongoDB's default value is really confusing.
+  2. If you've specified an `authMechanism`, try removing it. MongoKitten can detect the correct one automatically.
+</details>
+
 # 🚲 Basic usage
 
 Check out my [Ray Wenderlich Article](https://www.raywenderlich.com/10521463-server-side-swift-with-mongodb-getting-started) to learn the basics!
