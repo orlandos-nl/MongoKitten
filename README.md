@@ -39,7 +39,7 @@ A couple of MongoKitten based projects have arisen, check them out!
 
 ## The Company
 
-[Autimatisering](https://autimatisering.nl/) is the company currently backing MongoKitten. [Hire us](mailto:hoi@autimatisering.nl)
+I'm a freelancer, actively improving the MongoKitten ecosystem. [Hire me!](mailto:joannis@orlandos.nl)
 
 ## Contribute to MongoKitten
 
