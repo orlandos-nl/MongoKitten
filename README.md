@@ -37,7 +37,7 @@ A couple of MongoKitten based projects have arisen, check them out!
 
 [MongoKitten App](https://apps.apple.com/us/app/mongokitten/id1484086700) can help you browse your dataset, support customers and debug complex aggregates.
 
-## The Company
+## The Person
 
 I'm a freelancer, actively improving the MongoKitten ecosystem. [Hire me!](mailto:joannis@orlandos.nl)
 
