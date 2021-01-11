@@ -10,6 +10,39 @@ public struct ChangeStreamOptions: Codable {
 }
 
 extension MongoCollection {
+    public func buildChangeStream(
+        options: ChangeStreamOptions = .init(),
+        using decoder: BSONDecoder = BSONDecoder(),
+        @AggregateBuilder build: () -> AggregateBuilderStage
+    ) -> EventLoopFuture<ChangeStream<Document>> {
+        buildChangeStream(options: options, as: Document.self, using: decoder, build: build)
+    }
+    
+    public func buildChangeStream<T: Decodable>(
+        options: ChangeStreamOptions = .init(),
+        as type: T.Type,
+        using decoder: BSONDecoder = BSONDecoder(),
+        @AggregateBuilder build: () -> AggregateBuilderStage
+    ) -> EventLoopFuture<ChangeStream<T>> {
+        do {
+            let options = try BSONEncoder().encode(options)
+            let changeStreamStage = AggregateBuilderStage(document: [
+                "$changeStream": options
+            ])
+            
+            var pipeline = AggregateBuilderPipeline(stages: [build()])
+            pipeline.stages.append(changeStreamStage)
+            pipeline.collection = self
+            
+            return pipeline
+                .decode(ChangeStreamNotification<T>.self, using: decoder)
+                .execute()
+                .map(ChangeStream.init)
+        } catch {
+            return eventLoop.makeFailedFuture(error)
+        }
+    }
+    
     public func watch(
         options: ChangeStreamOptions = .init()
     ) -> EventLoopFuture<ChangeStream<Document>> {

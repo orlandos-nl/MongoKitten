@@ -43,6 +43,10 @@ extension MeowCollection where M: ReadableModel {
     public func watch() -> EventLoopFuture<ChangeStream<M>> {
         return raw.watch(as: M.self, using: M.decoder)
     }
+    
+    public func buildChangeStream(@AggregateBuilder build: () -> AggregateBuilderStage) -> EventLoopFuture<ChangeStream<M>> {
+        return raw.buildChangeStream(as: M.self, build: build)
+    }
 }
 
 extension MeowCollection where M: MutableModel {
