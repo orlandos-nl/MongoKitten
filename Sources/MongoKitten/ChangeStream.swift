@@ -31,7 +31,7 @@ extension MongoCollection {
             ])
             
             var pipeline = AggregateBuilderPipeline(stages: [build()])
-            pipeline.stages.append(changeStreamStage)
+            pipeline.stages.insert(changeStreamStage, at: 0)
             pipeline.collection = self
             
             return pipeline

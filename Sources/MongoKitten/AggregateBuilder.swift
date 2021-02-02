@@ -282,12 +282,12 @@ public func geoNear(
     latitude: Double,
     distanceField: String,
     spherical: Bool = false,
-    maxDistance: Int? = nil,
+    maxDistance: Double? = nil,
     query: Document? = nil,
-    distanceMultiplier: Int? = nil,
+    distanceMultiplier: Double? = nil,
     includeLocs: String? = nil,
     uniqueDocuments: Bool? = nil,
-    minDistance: Int? = nil,
+    minDistance: Double? = nil,
     key: String? = nil
 ) -> AggregateBuilderStage {
     return .geoNear(
