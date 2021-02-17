@@ -7,7 +7,7 @@ public final class MongoTransactionDatabase: MongoDatabase {
                 in: self.transaction,
                 sessionId: self.sessionId
             ).decodeReply(OK.self).map { _ in }
-        }
+        }._mongoHop(to: self.hoppedEventLoop)
     }
     
     public func abort() -> EventLoopFuture<Void> {
@@ -18,7 +18,7 @@ public final class MongoTransactionDatabase: MongoDatabase {
                 in: self.transaction,
                 sessionId: self.sessionId
             ).decodeReply(OK.self).map { _ in }
-        }
+        }._mongoHop(to: self.hoppedEventLoop)
     }
 }
 
