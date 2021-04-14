@@ -186,6 +186,7 @@ public class MongoDatabase {
         
         let db = MongoTransactionDatabase(named: self.name, pool: self.pool)
         db.transaction = transaction
+        db.hoppedEventLoop = hoppedEventLoop
         db.session = newSession
         return db
     }
