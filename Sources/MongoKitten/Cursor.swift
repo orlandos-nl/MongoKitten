@@ -234,7 +234,7 @@ extension QueryCursor {
     /// Please be aware that this may consume a large amount of memory or time with a large number of results
     public func allResults(failable: Bool = false) -> EventLoopFuture<[Element]> {
         return execute().flatMap { finalizedCursor in
-            var promise = self.eventLoop.makePromise(of: [Element].self)
+            let promise = self.eventLoop.makePromise(of: [Element].self)
             var results = [Element]()
 
             func nextBatch() {

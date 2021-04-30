@@ -12,6 +12,7 @@ public final class MongoCursor {
     public let transaction: MongoTransaction?
     public let session: MongoClientSession?
     public var maxTimeMS: Int32?
+    public var readConcern: ReadConcern?
     public let connection: MongoConnection
 
     public init(
@@ -48,6 +49,7 @@ public final class MongoCursor {
             collection: namespace.collectionName
         )
         command.maxTimeMS = self.maxTimeMS
+        command.readConcern = readConcern
         
         return connection.executeCodable(
             command,

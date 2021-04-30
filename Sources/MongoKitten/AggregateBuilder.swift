@@ -1,27 +1,21 @@
 import MongoClient
 import NIO
 
-#if swift(>=5.1)
-@_functionBuilder
+#if swift(>=5.3)
+@resultBuilder
 public struct AggregateBuilder {
-    /// If there are no children in an HTMLBuilder closure, then return an empty
-    /// MultiNode.
     public static func buildBlock() -> AggregateBuilderPipeline {
         return AggregateBuilderPipeline(stages: [])
     }
     
-    /// If there is one child, return it directly.
     public static func buildBlock(_ content: AggregateBuilderStage) -> AggregateBuilderStage {
         return AggregateBuilderStage(documents: content.stages)
     }
     
-    /// If there are multiple children, return them all as a MultiNode.
     public static func buildBlock(_ content: AggregateBuilderStage...) -> AggregateBuilderStage {
         return AggregateBuilderStage(documents: content.reduce([], { $0 + $1.stages }))
     }
     
-    /// If the provided child is `nil`, build an empty MultiNode. Otherwise,
-    /// return the wrapped value.
     public static func buildIf(_ content: AggregateBuilderStage?) -> AggregateBuilderStage {
         if let content = content {
             return AggregateBuilderStage(documents: content.stages)
@@ -30,27 +24,48 @@ public struct AggregateBuilder {
         return AggregateBuilderStage(documents: [])
     }
     
-    /// If the condition of an `if` statement is `true`, then this method will
-    /// be called and the result of evaluating the expressions in the `true` block
-    /// will be returned unmodified.
-    /// - note: We do not need to preserve type information
-    ///         from both the `true` and `false` blocks, so this function does
-    ///         not wrap its passed value.
     public static func buildEither(first: AggregateBuilderStage) -> AggregateBuilderStage {
         return AggregateBuilderStage(documents: first.stages)
     }
     
-    /// If the condition of an `if` statement is `false`, then this method will
-    /// be called and the result of evaluating the expressions in the `false`
-    /// block will be returned unmodified.
-    /// - note: We do not need to preserve type information
-    ///         from both the `true` and `false` blocks, so this function does
-    ///         not wrap its passed value.
     public static func buildEither(second: AggregateBuilderStage) -> AggregateBuilderStage {
         return AggregateBuilderStage(documents: second.stages)
     }
 }
+#elseif swift(>=5.1)
+@_functionBuilder
+public struct AggregateBuilder {
+    public static func buildBlock() -> AggregateBuilderPipeline {
+        return AggregateBuilderPipeline(stages: [])
+    }
+    
+    public static func buildBlock(_ content: AggregateBuilderStage) -> AggregateBuilderStage {
+        return AggregateBuilderStage(documents: content.stages)
+    }
+    
+    public static func buildBlock(_ content: AggregateBuilderStage...) -> AggregateBuilderStage {
+        return AggregateBuilderStage(documents: content.reduce([], { $0 + $1.stages }))
+    }
+    
+    public static func buildIf(_ content: AggregateBuilderStage?) -> AggregateBuilderStage {
+        if let content = content {
+            return AggregateBuilderStage(documents: content.stages)
+        }
+        
+        return AggregateBuilderStage(documents: [])
+    }
+    
+    public static func buildEither(first: AggregateBuilderStage) -> AggregateBuilderStage {
+        return AggregateBuilderStage(documents: first.stages)
+    }
+    
+    public static func buildEither(second: AggregateBuilderStage) -> AggregateBuilderStage {
+        return AggregateBuilderStage(documents: second.stages)
+    }
+}
+#endif
 
+#if swift(>=5.1)
 extension MongoCollection {
 	/// The `aggregate` command will create an `AggregateBuilderPipeline` where data can be aggregated
 	/// and be transformed in multiple `AggregateStage` operations

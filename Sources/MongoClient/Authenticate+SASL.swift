@@ -55,7 +55,7 @@ enum BinaryOrString: Codable {
 
 /// A SASLStart message initiates a SASL conversation, in our case, used for SCRAM-SHA-xxx authentication.
 struct SASLStart: Codable {
-    private let saslStart: Int32 = 1
+    private var saslStart: Int32 = 1
     let mechanism: SASLMechanism
     let payload: BinaryOrString
 
@@ -108,7 +108,7 @@ struct SASLReply: Decodable {
 /// A SASLContinue message contains the previous conversationId (from the SASLReply to SASLStart).
 /// The payload must contian an answer to the SASLReply's challenge
 struct SASLContinue: Codable {
-    private let saslContinue: Int32 = 1
+    private var saslContinue: Int32 = 1
     let conversationId: Int
     let payload: BinaryOrString
 

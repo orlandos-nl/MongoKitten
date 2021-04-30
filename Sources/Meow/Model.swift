@@ -46,8 +46,8 @@ extension ReadableModel {
         try Self.decoder.decode(Self.self, from: document)
     }
     
-    public static func watch(in database: MeowDatabase) -> EventLoopFuture<ChangeStream<Self>> {
-        return database.collection(for: Self.self).watch()
+    public static func watch(options: ChangeStreamOptions = .init(), in database: MeowDatabase) -> EventLoopFuture<ChangeStream<Self>> {
+        return database.collection(for: Self.self).watch(options: options)
     }
     
     public static func count(

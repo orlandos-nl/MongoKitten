@@ -40,12 +40,12 @@ extension MeowCollection where M: ReadableModel {
         return self.count(where: filter.makeDocument())
     }
     
-    public func watch() -> EventLoopFuture<ChangeStream<M>> {
-        return raw.watch(as: M.self, using: M.decoder)
+    public func watch(options: ChangeStreamOptions = .init()) -> EventLoopFuture<ChangeStream<M>> {
+        return raw.watch(options: options, as: M.self, using: M.decoder)
     }
     
-    public func buildChangeStream(@AggregateBuilder build: () -> AggregateBuilderStage) -> EventLoopFuture<ChangeStream<M>> {
-        return raw.buildChangeStream(as: M.self, build: build)
+    public func buildChangeStream(options: ChangeStreamOptions = .init(), @AggregateBuilder build: () -> AggregateBuilderStage) -> EventLoopFuture<ChangeStream<M>> {
+        return raw.buildChangeStream(options: options, as: M.self, build: build)
     }
 }
 

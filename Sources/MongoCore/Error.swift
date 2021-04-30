@@ -19,7 +19,7 @@ public struct MongoProtocolParsingError: Error, Codable, CustomStringConvertible
     }
 
     public let reason: Reason
-    public let description = "An error occurred while parsing a MongoMessage"
+    public private(set) var description = "An error occurred while parsing a MongoMessage"
 
     public init(reason: Reason) {
         self.reason = reason
@@ -48,7 +48,7 @@ public struct MongoProtocolSerializationError: Error, Codable, CustomStringConve
     }
 
     public let reason: Reason
-    public let description = "An error occurred while serializing a MongoMessage"
+    public private(set) var description = "An error occurred while serializing a MongoMessage"
 
     public init(reason: Reason) {
         self.reason = reason
@@ -86,7 +86,7 @@ public struct MongoInvalidUriError: Error, Codable, CustomStringConvertible {
     }
 
     public let reason: Reason
-    public let description = "The given MongoDB connection URI is invalid"
+    public private(set) var description = "The given MongoDB connection URI is invalid"
 }
 
 internal struct MongoOptionalUnwrapFailure: Error, CustomStringConvertible {

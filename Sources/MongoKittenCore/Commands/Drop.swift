@@ -1,7 +1,7 @@
 import MongoCore
 
 public struct DropDatabaseCommand: Codable {
-    private let dropDatabase: Int = 1
+    private var dropDatabase: Int = 1
 
     public init() {}
 }
