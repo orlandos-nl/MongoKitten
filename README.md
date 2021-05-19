@@ -12,9 +12,11 @@ A fast, pure swift [MongoDB](https://mongodb.com) driver based on [Swift NIO](ht
 
 ⭐️ Please leave a star to support MongoKitten – it really helps!
 
-# 🐈 Community
+# 🐈 Community & Docs
 
-[Join our slack here](https://slackpass.io/openkitten) and become a part of the welcoming community. Or [join discord](https://discord.gg/H6799jh) if you prefer that. Slack is by far the biggest community.
+[Join our Discord](https://discord.gg/H6799jh) for any questions and friendly banter.
+
+[Read the Docs](https://orlandos.nl/docs/mongokitten/) at our sponsor's website.
 
 ### Projects
 
@@ -27,7 +29,7 @@ A couple of MongoKitten based projects have arisen, check them out!
 
 ## Support MongoKitten development
 
-[You can sponsor us via GitHub.](https://github.com/sponsors/Joannis). This enables us to provide a higher quality and more documentation as well as building more tools.
+[You can sponsor the creator via GitHub.](https://github.com/sponsors/Joannis). This enables us to provide a higher quality and more documentation as well as building more tools.
 
 #### Backers
 
@@ -37,9 +39,9 @@ A couple of MongoKitten based projects have arisen, check them out!
 
 [MongoKitten App](https://apps.apple.com/us/app/mongokitten/id1484086700) can help you browse your dataset, support customers and debug complex aggregates.
 
-## The Person
+## The Company
 
-I'm a freelancer, actively improving the MongoKitten ecosystem. [Hire me!](mailto:joannis@orlandos.nl)
+MongoKitten is developed by [Orlandos](https://orlandos.nl). [Hire us!](mailto:joannis@orlandos.nl)
 
 ## Contribute to MongoKitten
 
