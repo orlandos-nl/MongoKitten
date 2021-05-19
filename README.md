@@ -263,8 +263,8 @@ users.updateMany(where: "username" == "kitty", setting: ["age": 3]).whenSuccess 
 ### Delete
 
 ```swift
-users.deleteOne(where: "username" == "kitty").whenSuccess { amountDeleted in
-	print("Deleted \(amountDeleted) kitties 😿")
+users.deleteOne(where: "username" == "kitty").whenSuccess { reply in
+	print("Deleted \(reply.deletes) kitties 😿")
 }
 ```
 
