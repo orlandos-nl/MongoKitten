@@ -204,7 +204,7 @@ To perform the following query in MongoDB:
 Use the following MongoKitten code:
 
 ```swift
-users.find("age" <= 16 || "age" == nil).forEach { user: Document in
+users.find("age" <= 16 || "age" == nil).forEach { (user: Document) in
 	// Print the user's name
 	print(user["username"] as? String)
 }
