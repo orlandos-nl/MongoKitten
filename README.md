@@ -233,7 +233,7 @@ Note that this is potentially dangerous with very large result sets. Only use `g
 For more efficient handling of results, you can lazily iterate over a cursor:
 
 ```swift
-let doneIterating: EventLoopFuture<Void> = users.find().forEach { user: Document in
+let doneIterating: EventLoopFuture<Void> = users.find().forEach { (user: Document) in
 	// ...
 }
 ```
