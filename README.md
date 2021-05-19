@@ -185,7 +185,7 @@ To perform the following query in MongoDB:
 Use the following MongoKitten code:
 
 ```swift
-users.findOne("username" == "kitty").whenSuccess { user: Document? in
+users.findOne("username" == "kitty").whenSuccess { (user: Document?) in
 	// Do something with kitty
 }
 ```
