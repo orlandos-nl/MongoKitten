@@ -161,7 +161,7 @@ let users = db["users"]
 ```swift
 let myUser: Document = ["username": "kitty", "password": "meow"]
 
-let future: Future<InsertReply> = users.insert(myUser)
+let future: EventLoopFuture<InsertReply> = users.insert(myUser)
 
 future.whenSuccess { _ in
 	print("Inserted!")
