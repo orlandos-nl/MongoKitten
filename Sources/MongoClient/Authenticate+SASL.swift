@@ -61,7 +61,7 @@ struct SASLStart: Codable {
 
     init(mechanism: SASLMechanism, payload: String) {
         self.mechanism = mechanism
-        self.payload = .string(payload)
+        self.payload = .binary(Binary(buffer: ByteBuffer(string: payload)))
     }
 }
 
@@ -114,7 +114,7 @@ struct SASLContinue: Codable {
 
     init(conversation: Int, payload: String) {
         self.conversationId = conversation
-        self.payload = .string(payload)
+        self.payload = .binary(Binary(buffer: ByteBuffer(string: payload)))
     }
 }
 
@@ -139,8 +139,7 @@ extension MongoConnection {
 
         let command: SASLStart
         do {
-            let rawRequest = try context.authenticationString(forUser: username)
-            let request = Data(rawRequest.utf8).base64EncodedString()
+            let request = try context.authenticationString(forUser: username)
             command = SASLStart(mechanism: H.algorithm, payload: request)
         } catch {
             return eventLoop.makeFailedFuture(error)
@@ -152,8 +151,9 @@ extension MongoConnection {
             command,
             namespace: namespace,
             sessionId: nil
-        ).decode(SASLReply.self)
-            .flatMap { reply in
+        )
+        .decode(SASLReply.self)
+        .flatMap { reply in
             if reply.done {
                 return self.eventLoop.makeSucceededFuture(())
             }
@@ -171,9 +171,8 @@ extension MongoConnection {
             let next: SASLContinue
             
             do {
-                let challenge = try reply.payload.base64Decoded()
-                let rawResponse = try context.respond(toChallenge: challenge, password: preppedPassword)
-                let response = Data(rawResponse.utf8).base64EncodedString()
+                let challenge = try reply.payload.string ?? ""
+                let response = try context.respond(toChallenge: challenge, password: preppedPassword)
 
                 next = SASLContinue(
                     conversation: reply.conversationId,
@@ -189,7 +188,7 @@ extension MongoConnection {
                 sessionId: nil
             ).decode(SASLReply.self).flatMap { reply in
                 do {
-                    let successReply = try reply.payload.base64Decoded()
+                    let successReply = reply.payload.string ?? ""
                     try context.completeAuthentication(withResponse: successReply)
                 } catch {
                     return self.eventLoop.makeFailedFuture(error)

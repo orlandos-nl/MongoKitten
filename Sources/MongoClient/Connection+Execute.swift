@@ -29,14 +29,14 @@ extension MongoConnection {
     ) -> EventLoopFuture<MongoServerReply> {
         let result: EventLoopFuture<MongoServerReply>
         
-        if
-            let serverHandshake = serverHandshake,
-            serverHandshake.maxWireVersion.supportsOpMessage
-        {
-            result = executeOpMessage(command, namespace: namespace, in: transaction, sessionId: sessionId)
-        } else {
+//        if
+//            let serverHandshake = serverHandshake,
+//            serverHandshake.maxWireVersion.supportsOpMessage
+//        {
+//            result = executeOpMessage(command, namespace: namespace, in: transaction, sessionId: sessionId)
+//        } else {
             result = executeOpQuery(command, namespace: namespace, in: transaction, sessionId: sessionId)
-        }
+//        }
 
         if let queryTimer = queryTimer {
             let date = Date()
@@ -127,6 +127,7 @@ extension MongoConnection {
                 command.appendValue(true, forKey: "startTransaction")
             }
         }
+        
         return self.executeMessage(
             OpMessage(
                 body: command,

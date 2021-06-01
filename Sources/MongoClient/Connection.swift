@@ -170,6 +170,11 @@ public final class MongoConnection {
         // NO session must be used here: https://github.com/mongodb/specifications/blob/master/source/sessions/driver-sessions.rst#when-opening-and-authenticating-a-connection
         // Forced on the current connection
         let sent = Date()
+        
+        var decoder = BSONDecoder()
+        
+        // Needed for CosmosDB
+        decoder.settings.decodeDateFromTimestamp = true
         let result = self.executeCodable(
             IsMaster(
                 clientDetails: clientDetails,
@@ -177,7 +182,7 @@ public final class MongoConnection {
             ),
             namespace: .administrativeCommand,
             sessionId: nil
-        ).flatMapThrowing { try ServerHandshake(reply: $0) }
+        ).flatMapThrowing { try ServerHandshake(reply: $0, decoder: decoder) }
         
         result.whenComplete { result in
             self.lastHeartbeat = MongoHandshakeResult(sentAt: sent, handshake: result)
@@ -217,6 +222,7 @@ public final class MongoConnection {
                 self.context.failQuery(byRequestId: message.header.requestId, error: error)
             }
             
+            print(message)
             var buffer = self.channel.allocator.buffer(capacity: Int(message.header.messageLength))
             message.write(to: &buffer)
             return self.channel.writeAndFlush(buffer).flatMap { promise.futureResult }

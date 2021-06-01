@@ -288,8 +288,8 @@ internal extension MongoConnectionPoolRequest {
 }
 
 internal extension Decodable {
-    init(reply: MongoServerReply) throws {
-        self = try BSONDecoder().decode(Self.self, from: reply.getDocument())
+    init(reply: MongoServerReply, decoder: BSONDecoder = BSONDecoder()) throws {
+        self = try decoder.decode(Self.self, from: reply.getDocument())
     }
 }
 
