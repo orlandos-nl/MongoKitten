@@ -283,7 +283,9 @@ public final class MongoCluster: MongoConnectionPool {
             return PooledConnection(host: host, connection: connection)
         }
 
-        connection.whenFailure { error in
+        connection.whenFailure { [logger] error in
+            logger.error("Connection to \(host) disconnected with error \(error)")
+            
             self.timeoutHosts.insert(host)
             self.discoveredHosts.remove(host)
         }
@@ -294,6 +296,7 @@ public final class MongoCluster: MongoConnectionPool {
     /// Checks all known hosts for isMaster and writability
     private func rediscover() -> EventLoopFuture<Void> {
         if isClosed {
+            logger.info("Rediscovering, but the server is disconnected")
             return eventLoop.makeFailedFuture(MongoError(.cannotConnect, reason: .connectionClosed))
         }
 
@@ -311,6 +314,10 @@ public final class MongoCluster: MongoConnectionPool {
             })
         }
 
+        if !timeoutHosts.isEmpty {
+            logger.info("Resetting timeout for \(timeoutHosts.count) hosts")
+        }
+        
         self.timeoutHosts = []
         let done = EventLoopFuture<Void>.andAllComplete(handshakes, on: self.eventLoop)
         if let didRediscover = self.didRediscover {
@@ -388,6 +395,7 @@ public final class MongoCluster: MongoConnectionPool {
             }
         }
 
+        logger.info("No matching connection found with host: \(host) - creating new connection")
         return makeConnection(to: host).flatMap { pooledConnection in
             self.pool.append(pooledConnection)
 
@@ -409,6 +417,7 @@ public final class MongoCluster: MongoConnectionPool {
     /// Closes all connections
     @discardableResult
     public func disconnect() -> EventLoopFuture<Void> {
+        logger.debug("Disconnecting MongoDB Cluster")
         return self.eventLoop.flatSubmit {
             self.wireVersion = nil
             self.isClosed = true
@@ -426,6 +435,7 @@ public final class MongoCluster: MongoConnectionPool {
 
     /// Prompts MongoKitten to connect to the remote again
     public func reconnect() -> EventLoopFuture<Void> {
+        logger.debug("Reconnecting to MongoDB Cluster")
         return disconnect().flatMap {
             self.isClosed = false
 
