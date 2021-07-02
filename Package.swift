@@ -23,6 +23,9 @@ let package = Package(
         .library(
             name: "MongoCore",
             targets: ["MongoCore"]),
+        .library(
+          name: "MongoKittenAsync",
+          targets: ["MongoKittenAsync"]),
     ],
     dependencies: [
         // ✏️
@@ -56,6 +59,16 @@ let package = Package(
         .target(
             name: "MongoKitten",
             dependencies: ["MongoClient", "MongoKittenCore"]),
+        .target(
+          name: "MongoKittenAsync",
+          dependencies: ["MongoKitten", "_NIOConcurrency"],
+          swiftSettings: [
+            .unsafeFlags([
+                "-Xfrontend", "-enable-experimental-concurrency",
+                "-Xfrontend", "-disable-availability-checking",
+            ])
+          ]
+        ),
         .target(
             name: "Meow",
             dependencies: ["MongoKitten"]),
