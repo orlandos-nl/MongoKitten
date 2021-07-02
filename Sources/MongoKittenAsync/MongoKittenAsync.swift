@@ -22,6 +22,10 @@ extension MongoCluster {
             try await nio.initialDiscovery.get()
         }
         
+        init(nio: MongoCluster) {
+            self.nio = nio
+        }
+        
         public subscript(db: String) -> MongoDatabase.Async {
             MongoDatabase.Async(nio: nio[db])
         }
@@ -42,11 +46,19 @@ extension MongoCluster {
             return try await nio.listDatabases().get().map(MongoDatabase.Async.init)
         }
     }
+    
+    public var `async`: Async {
+        Async(nio: self)
+    }
 }
 
 extension MongoDatabase {
     public struct Async {
         public let nio: MongoDatabase
+        
+        init(nio: MongoDatabase) {
+            self.nio = nio
+        }
         
         public var name: String { nio.name }
         public var isInTransaction: Bool { nio.isInTransaction }
@@ -63,11 +75,19 @@ extension MongoDatabase {
             try await nio.drop().get()
         }
     }
+    
+    public var `async`: Async {
+        Async(nio: self)
+    }
 }
 
 extension MongoCollection {
     public struct Async {
         public let nio: MongoCollection
+        
+        init(nio: MongoCollection) {
+            self.nio = nio
+        }
         
         public var name: String { nio.name }
         public var isInTransaction: Bool { nio.isInTransaction }
@@ -232,6 +252,10 @@ extension MongoCollection {
         public func upsertEncoded<Query: MongoKittenQuery, E: Encodable>(_ model: E, where query: Query) async throws -> UpdateReply {
             try await nio.upsertEncoded(model, where: query).get()
         }
+    }
+    
+    public var `async`: Async {
+        Async(nio: self)
     }
 }
 
