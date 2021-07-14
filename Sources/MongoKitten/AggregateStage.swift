@@ -59,6 +59,8 @@ public struct AggregateBuilderStage {
     }
     
     public static func skip(_ n: Int) -> AggregateBuilderStage {
+        assert(n > -1)
+        
         return AggregateBuilderStage(document: [
             "$skip": n
         ])
