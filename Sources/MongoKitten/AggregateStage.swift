@@ -1,13 +1,13 @@
 import MongoClient
 
 public struct AggregateBuilderStage {
-    internal var stages: [Document]
+    public internal(set) var stages: [Document]
     
     public init(document: Document) {
         self.stages = [document]
     }
     
-    internal init(documents: [Document]) {
+    public init(documents: [Document]) {
         self.stages = documents
     }
     
