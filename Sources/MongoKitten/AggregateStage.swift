@@ -1,13 +1,13 @@
 import MongoClient
 
 public struct AggregateBuilderStage {
-    internal var stages: [Document]
+    public internal(set) var stages: [Document]
     
     public init(document: Document) {
         self.stages = [document]
     }
     
-    internal init(documents: [Document]) {
+    public init(documents: [Document]) {
         self.stages = documents
     }
     
@@ -59,7 +59,7 @@ public struct AggregateBuilderStage {
     }
     
     public static func skip(_ n: Int) -> AggregateBuilderStage {
-        assert(n > 0)
+        assert(n > -1)
         
         return AggregateBuilderStage(document: [
             "$skip": n

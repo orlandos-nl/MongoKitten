@@ -328,6 +328,33 @@ class CrudTests : XCTestCase {
             }
         }
     }
+    
+    func testAggregateBuilderStageCustom () throws {
+        func manyStages() -> AggregateBuilderStage {
+            let stages: [AggregateBuilderStage] = [
+                match("age" >= 18),
+                sort(["age": .ascending]),
+                limit(3)
+            ]
+            
+            return AggregateBuilderStage(documents: stages.reduce([], { $0 + $1.stages }))
+        }
+        
+        try _ = testBulkCreateDummyAccounts()
+        let schema: MongoCollection = mongo[DummyAccount.collectionName]
+        let results = try schema.buildAggregate{
+            manyStages()
+        }.decode(DummyAccount.self).allResults().wait()
+
+        XCTAssertEqual(results.count, 3)
+        XCTAssertEqual(results.filter{$0.age >= 18}.count, 3)
+        for index in 1 ..< results.count {
+            guard results[index-1].age <= results[index].age else {
+                XCTFail()
+                return
+            }
+        }
+    }
 
     func testListCollections () throws {
         _ = try testBulkCreateDummyAccounts()
