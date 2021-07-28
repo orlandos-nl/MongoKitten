@@ -481,6 +481,15 @@ class CrudTests : XCTestCase {
         }
         XCTAssertEqual(replacedAccount, testDummyAccount)
     }
+    
+    func testDistinctValues () throws {
+        let originalAccounts = try testBulkCreateDummyAccounts()
+        let schema: MongoCollection = mongo[DummyAccount.collectionName]
+        var results = try schema.distinctValues(forKey: "name").wait()
+        XCTAssertEqual(results.count, 300)
+        results = try schema.distinctValues(forKey: "name", where:  "age" > 50 ).wait()
+        XCTAssertEqual(results.count, 150)
+    }
 
     func testFindOneAndUpdate () throws {
         let originalAccounts = try testBulkCreateDummyAccounts()
