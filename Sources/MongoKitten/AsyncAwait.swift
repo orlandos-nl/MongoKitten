@@ -2,8 +2,8 @@
 import _NIOConcurrency
 import NIO
 import MongoClient
-import MongoKitten
 
+@available(macOS 12, iOS 15, *)
 extension MongoCluster {
     public struct Async {
         public let nio: MongoCluster
@@ -53,6 +53,7 @@ extension MongoCluster {
     }
 }
 
+@available(macOS 12, iOS 15, *)
 extension MongoDatabase {
     public struct Async {
         public let nio: MongoDatabase
@@ -82,6 +83,7 @@ extension MongoDatabase {
     }
 }
 
+@available(macOS 12, iOS 15, *)
 extension MongoCollection {
     public struct Async {
         public let nio: MongoCollection
@@ -260,6 +262,7 @@ extension MongoCollection {
     }
 }
 
+@available(macOS 12, iOS 15, *)
 extension FinalizedCursor: AsyncSequence {
     public typealias Element = Base.Element
     
