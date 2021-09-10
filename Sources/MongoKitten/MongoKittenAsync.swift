@@ -1,3 +1,4 @@
+#if compiler(>=5.5)
 import _NIOConcurrency
 import NIO
 import MongoClient
@@ -293,3 +294,4 @@ extension FinalizedCursor: AsyncSequence {
         AsyncIterator(cursor: self)
     }
 }
+#endif
