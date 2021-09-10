@@ -73,7 +73,7 @@ struct SASLStart: Codable {
 ///
 /// If no authentication is needed, SASLStart's reply may contain `done: true` meaning the SASL proceedure has ended
 struct SASLReply: Decodable {
-    let conversationId: Int
+    let conversationId: Int32
     let done: Bool
     let payload: BinaryOrString
 
@@ -82,9 +82,9 @@ struct SASLReply: Decodable {
         let doc = try reply.getDocument()
 
         if let conversationId = doc["conversationId"] as? Int {
-            self.conversationId = conversationId
+            self.conversationId = Int32(conversationId)
         } else if let conversationId = doc["conversationId"] as? Int32 {
-            self.conversationId = Int(conversationId)
+            self.conversationId = conversationId
         } else {
             throw try MongoGenericErrorReply(reply: reply)
         }
@@ -109,10 +109,10 @@ struct SASLReply: Decodable {
 /// The payload must contian an answer to the SASLReply's challenge
 struct SASLContinue: Codable {
     private var saslContinue: Int32 = 1
-    let conversationId: Int
+    let conversationId: Int32
     let payload: BinaryOrString
 
-    init(conversation: Int, payload: String) {
+    init(conversation: Int32, payload: String) {
         self.conversationId = conversation
         self.payload = .string(payload)
     }

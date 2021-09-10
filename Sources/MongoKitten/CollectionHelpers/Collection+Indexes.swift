@@ -75,7 +75,7 @@ public struct MongoIndex: Decodable {
     public let version: Int
     public let name: String
     public let key: Document
-    public let namespace: MongoNamespace
+    public let namespace: MongoNamespace?
     public let unique: Bool?
     public let sparse: Bool?
     public let expireAfterSeconds: Int32?
