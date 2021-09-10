@@ -78,4 +78,50 @@ extension MeowCollection.Async where M: ReadableModel {
         return try await nio.buildChangeStream(options: options, build: build).get()
     }
 }
+
+@available(macOS 12, iOS 15, *)
+extension MeowCollection.Async where M: MutableModel {
+    @discardableResult
+    public func insert(_ instance: M) async throws -> InsertReply {
+        return try await nio.insert(instance).get()
+    }
+    
+    @discardableResult
+    public func insertMany(_ instances: [M]) async throws -> InsertReply {
+        return try await nio.insertMany(instances).get()
+    }
+    
+    @discardableResult
+    public func upsert(_ instance: M) async throws -> UpdateReply {
+        return try await nio.upsert(instance).get()
+    }
+    
+    @discardableResult
+    public func deleteOne(where filter: Document) async throws -> DeleteReply {
+        return try await nio.deleteOne(where: filter).get()
+    }
+    
+    @discardableResult
+    public func deleteOne<Q: MongoKittenQuery>(where filter: Q) async throws -> DeleteReply {
+        return try await nio.deleteOne(where: filter).get()
+    }
+    
+    @discardableResult
+    public func deleteAll(where filter: Document) async throws -> DeleteReply {
+        return try await nio.deleteAll(where: filter).get()
+    }
+    
+    @discardableResult
+    public func deleteAll<Q: MongoKittenQuery>(where filter: Q) async throws -> DeleteReply {
+        return try await nio.deleteAll(where: filter).get()
+    }
+    
+    //    public func saveChanges(_ changes: PartialChange<M>) -> EventLoopFuture<UpdateReply> {
+    //        return raw.updateOne(where: "_id" == changes.entity, to: [
+    //            "$set": changes.changedFields,
+    //            "$unset": changes.removedFields
+    //        ])
+    //    }
+}
+
 #endif
