@@ -263,6 +263,48 @@ extension MongoCollection {
 }
 
 @available(macOS 12, iOS 15, *)
+extension MappedCursor: AsyncSequence {
+    public final class AsyncIterator: AsyncIteratorProtocol {
+        fileprivate let cursor: MappedCursor<Base, Element>
+        private var finalized: FinalizedCursor<MappedCursor<Base, Element>>?
+        private var results = [Element]()
+        
+        fileprivate init(cursor: MappedCursor<Base, Element>) {
+            self.cursor = cursor
+        }
+        
+        public func next() async throws -> Element? {
+            let cursor: FinalizedCursor<MappedCursor<Base, Element>>
+            
+            if let finalized = self.finalized {
+                cursor = finalized
+            } else {
+                cursor = try await self.cursor.execute().get()
+                self.finalized = cursor
+            }
+            
+            if results.isEmpty {
+                if cursor.isDrained {
+                    return nil
+                }
+                
+                try await results.append(contentsOf: cursor.nextBatch().get())
+            }
+            
+            if results.isEmpty {
+                return nil
+            }
+            
+            return results.removeFirst()
+        }
+    }
+    
+    public func makeAsyncIterator() -> AsyncIterator {
+        AsyncIterator(cursor: self)
+    }
+}
+
+@available(macOS 12, iOS 15, *)
 extension FinalizedCursor: AsyncSequence {
     public typealias Element = Base.Element
     
