@@ -255,6 +255,20 @@ extension MongoCollection {
         public func upsertEncoded<Query: MongoKittenQuery, E: Encodable>(_ model: E, where query: Query) async throws -> UpdateReply {
             try await nio.upsertEncoded(model, where: query).get()
         }
+        
+        public func watch(
+            options: ChangeStreamOptions = .init()
+        ) async throws -> ChangeStream<Document> {
+            return try await nio.watch(options: options).get()
+        }
+        
+        public func watch<T: Decodable>(
+            options: ChangeStreamOptions = .init(),
+            as type: T.Type,
+            using decoder: BSONDecoder = BSONDecoder()
+        ) async throws -> ChangeStream<T> {
+            return try await nio.watch(options: options, as: type, using: decoder).get()
+        }
     }
     
     public var `async`: Async {
