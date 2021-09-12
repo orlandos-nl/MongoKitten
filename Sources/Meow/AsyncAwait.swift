@@ -127,25 +127,25 @@ extension MeowCollection.Async where M: MutableModel {
 @available(macOS 12, iOS 15, *)
 extension Reference {
     /// Resolves a reference
-    public func resolve(in context: MeowDatabase, where query: Document = Document()) async throws -> M {
-        try await resolve(in: context, where: query).get()
+    public func resolve(in db: MeowDatabase.Async, where query: Document = Document()) async throws -> M {
+        try await resolve(in: db.nio, where: query).get()
     }
     
     /// Resolves a reference, returning `nil` if the referenced object cannot be found
-    public func resolveIfPresent(in context: MeowDatabase, where query: Document = Document()) async throws -> M? {
-        try await resolveIfPresent(in: context, where: query).get()
+    public func resolveIfPresent(in db: MeowDatabase.Async, where query: Document = Document()) async throws -> M? {
+        try await resolveIfPresent(in: db.nio, where: query).get()
     }
     
-    public func exists(in db: MeowDatabase) async throws -> Bool {
-        return try await exists(in: db).get()
+    public func exists(in db: MeowDatabase.Async) async throws -> Bool {
+        return try await exists(in: db.nio).get()
     }
     
-    public func exists(in db: MeowDatabase, where filter: Document) async throws -> Bool {
-        return try await exists(in: db, where: filter).get()
+    public func exists(in db: MeowDatabase.Async, where filter: Document) async throws -> Bool {
+        return try await exists(in: db.nio, where: filter).get()
     }
     
-    public func exists<Query: MongoKittenQuery>(in db: MeowDatabase, where filter: Query) async throws -> Bool {
-        return try await exists(in: db, where: filter).get()
+    public func exists<Query: MongoKittenQuery>(in db: MeowDatabase.Async, where filter: Query) async throws -> Bool {
+        return try await exists(in: db.nio, where: filter).get()
     }
 }
     
