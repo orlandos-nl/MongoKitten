@@ -136,6 +136,10 @@ public final class FindAndModifyBuilder {
         .decodeReply(FindAndModifyReply.self)
         ._mongoHop(to: self.collection.hoppedEventLoop)
     }
+
+    public func decode<D: Decodable>(_ type: D.Type) -> EventLoopFuture<D?> {
+        self.execute().map(\.value).decode(type)
+    }
     
     public func sort(_ sort: Sort) -> FindAndModifyBuilder {
         self.command.sort = sort.document
