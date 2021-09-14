@@ -370,6 +370,23 @@ extension MongoCollection {
         ) -> FindAndModifyBuilder.Async {
             nio.findOneAndUpdate(where: query, to: document, returnValue: returnValue).async
         }
+        
+        public func buildChangeStream(
+            options: ChangeStreamOptions = .init(),
+            using decoder: BSONDecoder = BSONDecoder(),
+            @AggregateBuilder build: () -> AggregateBuilderStage
+        ) async throws -> ChangeStream<Document> {
+            try await nio.buildChangeStream(options: options, using: decoder, build: build).get()
+        }
+        
+        public func buildChangeStream<T: Decodable>(
+            options: ChangeStreamOptions = .init(),
+            as type: T.Type,
+            using decoder: BSONDecoder = BSONDecoder(),
+            @AggregateBuilder build: () -> AggregateBuilderStage
+        ) async throws -> ChangeStream<T> {
+            try await nio.buildChangeStream(options: options, as: type, using: decoder, build: build).get()
+        }
     }
     
     public var `async`: Async {
