@@ -2,6 +2,7 @@
 import _NIOConcurrency
 import NIO
 import MongoClient
+import MongoKittenCore
 
 @available(macOS 12, iOS 15, *)
 extension MongoCluster {
@@ -269,9 +270,152 @@ extension MongoCollection {
         ) async throws -> ChangeStream<T> {
             return try await nio.watch(options: options, as: type, using: decoder).get()
         }
+        
+        /// Modifies and returns a single document.
+        /// - Parameters:
+        ///   - query: The selection criteria for the modification.
+        ///   - update: If passed a document with update operator expressions, performs the specified modification. If passed a replacement document performs a replacement.
+        ///   - remove: Removes the document specified in the query field. Defaults to `false`
+        ///   - returnValue: Wether to return the `original` or `modified` document.
+        public func findAndModify(
+            where query: Document,
+            update document: Document = [:],
+            remove: Bool = false,
+            returnValue: FindAndModifyReturnValue = .original
+        ) -> FindAndModifyBuilder.Async {
+            nio.findAndModify(where: query, update: document, remove: remove, returnValue: returnValue).async
+        }
+        
+        /// Deletes a single document based on the query, returning the deleted document.
+        /// - Parameters:
+        ///   - query: The selection criteria for the deletion.
+        public func findOneAndDelete(
+            where query: Document
+        ) -> FindAndModifyBuilder.Async {
+            nio.findOneAndDelete(where: query).async
+        }
+        
+        /// Replaces a single document based on the specified query.
+        /// - Parameters:
+        ///   - query: The selection criteria for the upate.
+        ///   - replacement: The replacement document.
+        ///   - returnValue: Wether to return the `original` or `modified` document.
+        public func findOneAndReplace(
+            where query: Document,
+            replacement document: Document,
+            returnValue: FindAndModifyReturnValue = .original
+        ) -> FindAndModifyBuilder.Async {
+            nio.findOneAndReplace(where: query, replacement: document, returnValue: returnValue).async
+        }
+        
+        /// Updates a single document based on the specified query.
+        /// - Parameters:
+        ///   - query: The selection criteria for the upate.
+        ///   - document: The update document.
+        ///   - returnValue: Wether to return the `original` or `modified` document.
+        public func findOneAndUpdate(
+            where query: Document,
+            to document: Document,
+            returnValue: FindAndModifyReturnValue = .original
+        ) -> FindAndModifyBuilder.Async {
+            nio.findOneAndUpdate(where: query, to: document, returnValue: returnValue).async
+        }
+        
+        /// Modifies and returns a single document.
+        /// - Parameters:
+        ///   - query: The selection criteria for the modification.
+        ///   - update: If passed a document with update operator expressions, performs the specified modification. If passed a replacement document performs a replacement.
+        ///   - remove: Removes the document specified in the query field. Defaults to `false`
+        ///   - returnValue: Wether to return the `original` or `modified` document.
+        public func findAndModify<Query: MongoKittenQuery>(
+            where query: Query,
+            update document: Document = [:],
+            remove: Bool = false,
+            returnValue: FindAndModifyReturnValue = .original
+        ) -> FindAndModifyBuilder.Async {
+            nio.findAndModify(where: query, update: document, remove: remove, returnValue: returnValue).async
+        }
+        
+        /// Deletes a single document based on the query, returning the deleted document.
+        /// - Parameters:
+        ///   - query: The selection criteria for the deletion.
+        public func findOneAndDelete<Query: MongoKittenQuery>(
+            where query: Query
+        ) -> FindAndModifyBuilder.Async {
+            nio.findOneAndDelete(where: query).async
+        }
+        
+        /// Replaces a single document based on the specified query.
+        /// - Parameters:
+        ///   - query: The selection criteria for the upate.
+        ///   - replacement: The replacement document.
+        ///   - returnValue: Wether to return the `original` or `modified` document.
+        public func findOneAndReplace<Query: MongoKittenQuery>(
+            where query: Query,
+            replacement document: Document,
+            returnValue: FindAndModifyReturnValue = .original
+        ) -> FindAndModifyBuilder.Async {
+            nio.findOneAndReplace(where: query, replacement: document, returnValue: returnValue).async
+        }
+        
+        /// Updates a single document based on the specified query.
+        /// - Parameters:
+        ///   - query: The selection criteria for the upate.
+        ///   - document: The update document.
+        ///   - returnValue: Wether to return the `original` or `modified` document.
+        public func findOneAndUpdate<Query: MongoKittenQuery>(
+            where query: Query,
+            to document: Document,
+            returnValue: FindAndModifyReturnValue = .original
+        ) -> FindAndModifyBuilder.Async {
+            nio.findOneAndUpdate(where: query, to: document, returnValue: returnValue).async
+        }
     }
     
     public var `async`: Async {
+        Async(nio: self)
+    }
+}
+
+@available(macOS 12, iOS 15, *)
+extension FindAndModifyBuilder {
+    public struct Async {
+        let nio: FindAndModifyBuilder
+        
+        public func execute() async throws -> FindAndModifyReply {
+            try await nio.execute().get()
+        }
+        
+        public func decode<D: Decodable>(_ type: D.Type) async throws -> D? {
+            try await nio.decode(type).get()
+        }
+        
+        public func sort(_ sort: Sort) -> FindAndModifyBuilder.Async {
+            nio.sort(sort).async
+        }
+        
+        public func sort(_ sort: Document) -> FindAndModifyBuilder.Async {
+            nio.sort(sort).async
+        }
+        
+        public func project(_ projection: Projection) -> FindAndModifyBuilder.Async {
+            nio.project(projection).async
+        }
+        
+        public func project(_ projection: Document) -> FindAndModifyBuilder.Async {
+            nio.project(projection).async
+        }
+        
+        public func writeConcern(_ concern: WriteConcern) -> FindAndModifyBuilder.Async {
+            nio.writeConcern(concern).async
+        }
+        
+        public func collation(_ collation: Collation) -> FindAndModifyBuilder.Async {
+            nio.collation(collation).async
+        }
+    }
+    
+    public var async: Async {
         Async(nio: self)
     }
 }
