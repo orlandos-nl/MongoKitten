@@ -80,6 +80,14 @@ extension MeowCollection.Async where M: ReadableModel {
 }
 
 @available(macOS 12, iOS 15, *)
+extension MutableModel {
+    @discardableResult
+    public func save(in database: MeowDatabase.Async) async throws -> MeowOperationResult {
+        try await self.save(in: database.nio).get()
+    }
+}
+
+@available(macOS 12, iOS 15, *)
 extension MeowCollection.Async where M: MutableModel {
     @discardableResult
     public func insert(_ instance: M) async throws -> InsertReply {
