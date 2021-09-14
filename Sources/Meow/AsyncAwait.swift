@@ -9,6 +9,10 @@ extension MeowDatabase {
     public struct Async {
         public let nio: MeowDatabase
         
+        public var raw: MongoDatabase.Async {
+            nio.raw.async
+        }
+        
         init(nio: MeowDatabase) {
             self.nio = nio
         }
@@ -36,6 +40,10 @@ extension MeowCollection {
         
         init(nio: MeowCollection<M>) {
             self.nio = nio
+        }
+        
+        public var raw: MongoCollection.Async {
+            nio.raw.async
         }
     }
     
