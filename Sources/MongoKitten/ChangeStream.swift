@@ -1,7 +1,12 @@
 import MongoClient
 import NIO
 
-public struct ChangeStreamOptions: Codable {
+public struct ChangeStreamOptions: Encodable {
+    private enum CodingKeys: String, CodingKey {
+        case batchSize
+        case collation
+    }
+    
     public var batchSize: Int32?
     public var collation: Collation?
     public var maxAwaitTimeMS: Int64?
