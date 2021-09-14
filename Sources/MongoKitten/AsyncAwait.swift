@@ -353,4 +353,30 @@ extension FinalizedCursor: AsyncSequence {
         AsyncIterator(cursor: self)
     }
 }
+
+@available(macOS 12, iOS 15, *)
+extension ChangeStream {
+    public var isClosed: Void {
+        get async throws {
+            try await cursor.isClosed
+        }
+    }
+}
+
+@available(macOS 12, iOS 15, *)
+extension FinalizedCursor {
+    public var isClosed: Void {
+        get async throws {
+            try await cursor.closeFuture.get()
+        }
+    }
+    
+    public func nextBatch(batchSize: Int = 101, failable: Bool = false) async throws -> [Base.Element] {
+        try await nextBatch(batchSize: batchSize, failable: failable).get()
+    }
+    
+    public func close() async throws {
+        try await close().get()
+    }
+}
 #endif

@@ -4,6 +4,8 @@ import MongoCore
 public final class MongoCursor {
     public private(set) var id: Int64
     private var initialBatch: [Document]?
+    internal let closePromise: EventLoopPromise<Void>
+    public var closeFuture: EventLoopFuture<Void> { closePromise.futureResult }
     public var isDrained: Bool {
         return self.id == 0
     }
@@ -30,6 +32,7 @@ public final class MongoCursor {
         self.connection = connection
         self.session = session
         self.transaction = transaction
+        self.closePromise = connection.eventLoop.makePromise()
     }
 
     /// Performs a `GetMore` command on the database, requesting the next batch of items
@@ -67,7 +70,7 @@ public final class MongoCursor {
     public func close() -> EventLoopFuture<Void> {
         let command = KillCursorsCommand([self.id], inCollection: namespace.collectionName)
         self.id = 0
-        return connection.executeCodable(
+        let closed = connection.executeCodable(
             command,
             namespace: namespace,
             in: self.transaction,
@@ -75,5 +78,15 @@ public final class MongoCursor {
         ).flatMapThrowing { reply -> Void in
             try reply.assertOK()
         }
+        
+        closed.whenComplete { [closePromise] _ in
+            closePromise.succeed(())
+        }
+        
+        return closed
+    }
+    
+    deinit {
+        _ = close()
     }
 }
