@@ -480,6 +480,13 @@ extension MappedCursor: AsyncSequence {
 }
 
 @available(macOS 12, iOS 15, *)
+extension QueryCursor {
+    public func allResults(failable: Bool = false) async throws -> [Element] {
+        try await allResults().get()
+    }
+}
+
+@available(macOS 12, iOS 15, *)
 extension FinalizedCursor: AsyncSequence {
     public typealias Element = Base.Element
     
