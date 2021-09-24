@@ -1,5 +1,5 @@
 #if compiler(>=5.5)
-import _NIOConcurrency
+import NIOCore
 import NIO
 import MongoClient
 import MongoKitten
