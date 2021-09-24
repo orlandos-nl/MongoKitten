@@ -1,7 +1,7 @@
 import MongoClient
 import NIO
 
-#if swift(>=5.3)
+#if swift(>=5.4)
 @resultBuilder
 public struct AggregateBuilder {
     public static func buildBlock() -> AggregateBuilderPipeline {
