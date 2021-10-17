@@ -1,10 +1,10 @@
-#if compiler(>=5.5)
+#if compiler(>=5.5) && canImport(_Concurrency)
 import NIOCore
 import NIO
 import MongoClient
 import MongoKitten
 
-@available(macOS 12, iOS 15, *)
+@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 extension MeowDatabase {
     public struct Async {
         public let nio: MeowDatabase
@@ -33,7 +33,7 @@ extension MeowDatabase {
     }
 }
 
-@available(macOS 12, iOS 15, *)
+@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 extension MeowCollection {
     public struct Async {
         public let nio: MeowCollection<M>
@@ -52,7 +52,7 @@ extension MeowCollection {
     }
 }
 
-@available(macOS 12, iOS 15, *)
+@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 extension MeowCollection.Async where M: ReadableModel {
     public func find(where filter: Document = [:]) -> MappedCursor<FindQueryBuilder, M> {
         return nio.find(where: filter)
@@ -87,7 +87,7 @@ extension MeowCollection.Async where M: ReadableModel {
     }
 }
 
-@available(macOS 12, iOS 15, *)
+@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 extension MutableModel {
     @discardableResult
     public func save(in database: MeowDatabase.Async) async throws -> MeowOperationResult {
@@ -95,7 +95,7 @@ extension MutableModel {
     }
 }
 
-@available(macOS 12, iOS 15, *)
+@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 extension MeowCollection.Async where M: MutableModel {
     @discardableResult
     public func insert(_ instance: M) async throws -> InsertReply {
@@ -140,7 +140,7 @@ extension MeowCollection.Async where M: MutableModel {
     //    }
 }
 
-@available(macOS 12, iOS 15, *)
+@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 extension Reference {
     /// Resolves a reference
     public func resolve(in db: MeowDatabase.Async, where query: Document = Document()) async throws -> M {
@@ -165,7 +165,7 @@ extension Reference {
     }
 }
     
-@available(macOS 12, iOS 15, *)
+@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 extension Reference where M: MutableModel {
     @discardableResult
     public func deleteTarget(in context: MeowDatabase) async throws -> MeowOperationResult {

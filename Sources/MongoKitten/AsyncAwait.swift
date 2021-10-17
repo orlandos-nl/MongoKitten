@@ -1,10 +1,10 @@
-#if compiler(>=5.5)
+#if compiler(>=5.5) && canImport(_Concurrency)
 import NIOCore
 import NIO
 import MongoClient
 import MongoKittenCore
 
-@available(macOS 12, iOS 15, *)
+@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 extension MongoCluster {
     public struct Async {
         public let nio: MongoCluster
@@ -54,7 +54,7 @@ extension MongoCluster {
     }
 }
 
-@available(macOS 12, iOS 15, *)
+@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 extension MongoDatabase {
     public struct Async {
         public let nio: MongoDatabase
@@ -84,7 +84,7 @@ extension MongoDatabase {
     }
 }
 
-@available(macOS 12, iOS 15, *)
+@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 extension MongoCollection {
     public struct Async {
         public let nio: MongoCollection
@@ -387,6 +387,10 @@ extension MongoCollection {
         ) async throws -> ChangeStream<T> {
             try await nio.buildChangeStream(options: options, as: type, using: decoder, build: build).get()
         }
+        
+        public func buildIndexes(@MongoIndexBuilder build: () -> _MongoIndexes) async throws {
+            return try await nio.createIndexes(build().indexes).get()
+        }
     }
     
     public var `async`: Async {
@@ -394,7 +398,7 @@ extension MongoCollection {
     }
 }
 
-@available(macOS 12, iOS 15, *)
+@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 extension FindAndModifyBuilder {
     public struct Async {
         let nio: FindAndModifyBuilder
@@ -437,7 +441,7 @@ extension FindAndModifyBuilder {
     }
 }
 
-@available(macOS 12, iOS 15, *)
+@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 extension MappedCursor: AsyncSequence {
     public final class AsyncIterator: AsyncIteratorProtocol {
         fileprivate let cursor: MappedCursor<Base, Element>
@@ -459,10 +463,6 @@ extension MappedCursor: AsyncSequence {
             }
             
             if results.isEmpty {
-                if cursor.isDrained {
-                    return nil
-                }
-                
                 try await results.append(contentsOf: cursor.nextBatch().get())
             }
             
@@ -479,14 +479,14 @@ extension MappedCursor: AsyncSequence {
     }
 }
 
-@available(macOS 12, iOS 15, *)
+@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 extension QueryCursor {
     public func allResults(failable: Bool = false) async throws -> [Element] {
         try await allResults().get()
     }
 }
 
-@available(macOS 12, iOS 15, *)
+@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 extension FinalizedCursor: AsyncSequence {
     public typealias Element = Base.Element
     
@@ -502,10 +502,6 @@ extension FinalizedCursor: AsyncSequence {
         
         public func next() async throws -> Element? {
             if results.isEmpty {
-                if cursor.isDrained {
-                    return nil
-                }
-                
                 try await results.append(contentsOf: cursor.nextBatch().get())
             }
             
@@ -522,14 +518,14 @@ extension FinalizedCursor: AsyncSequence {
     }
 }
 
-@available(macOS 12, iOS 15, *)
+@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 extension ChangeStream {
     public func awaitClose() async throws {
         try await cursor.awaitClose()
     }
 }
 
-@available(macOS 12, iOS 15, *)
+@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 extension FinalizedCursor {
     public func awaitClose() async throws {
         try await cursor.closeFuture.get()
