@@ -330,3 +330,25 @@ public struct MappedCursor<Base: QueryCursor, Element>: QueryCursor {
         }._mongoHop(to: self.hoppedEventLoop)
     }
 }
+
+extension MappedCursor where Base == FindQueryBuilder {
+    public func limit(_ limit: Int) -> Self {
+        underlyingCursor.command.limit = limit
+        return self
+    }
+
+    public func skip(_ skip: Int) -> Self {
+        underlyingCursor.command.skip = skip
+        return self
+    }
+
+    public func sort(_ sort: Sort) -> Self {
+        underlyingCursor.command.sort = sort.document
+        return self
+    }
+
+    public func sort(_ sort: Document) -> Self {
+        underlyingCursor.command.sort = sort
+        return self
+    }
+}

@@ -11,10 +11,12 @@ extension MongoCollection {
     ///   - update: If passed a document with update operator expressions, performs the specified modification. If passed a replacement document performs a replacement.
     ///   - remove: Removes the document specified in the query field. Defaults to `false`
     ///   - returnValue: Wether to return the `original` or `modified` document.
-    public func findAndModify(where query: Document,
-                              update document: Document = [:],
-                              remove: Bool = false,
-                              returnValue: FindAndModifyReturnValue = .original) -> FindAndModifyBuilder {
+    public func findAndModify(
+        where query: Document,
+        update document: Document = [:],
+        remove: Bool = false,
+        returnValue: FindAndModifyReturnValue = .original
+    ) -> FindAndModifyBuilder {
         var command = FindAndModifyCommand(collection: self.name, query: query)
         command.update = document
         command.remove = remove
@@ -36,9 +38,11 @@ extension MongoCollection {
     ///   - query: The selection criteria for the upate.
     ///   - replacement: The replacement document.
     ///   - returnValue: Wether to return the `original` or `modified` document.
-    public func findOneAndReplace(where query: Document,
-                                  replacement document: Document,
-                                  returnValue: FindAndModifyReturnValue = .original) -> FindAndModifyBuilder {
+    public func findOneAndReplace(
+        where query: Document,
+        replacement document: Document,
+        returnValue: FindAndModifyReturnValue = .original
+    ) -> FindAndModifyBuilder {
         var command = FindAndModifyCommand(collection: self.name, query: query)
         command.new = returnValue == .modified
         command.update = document
@@ -50,9 +54,11 @@ extension MongoCollection {
     ///   - query: The selection criteria for the upate.
     ///   - document: The update document.
     ///   - returnValue: Wether to return the `original` or `modified` document.
-    public func findOneAndUpdate(where query: Document,
-                                 to document: Document,
-                                 returnValue: FindAndModifyReturnValue = .original) -> FindAndModifyBuilder {
+    public func findOneAndUpdate(
+        where query: Document,
+        to document: Document,
+        returnValue: FindAndModifyReturnValue = .original
+    ) -> FindAndModifyBuilder {
         var command = FindAndModifyCommand(collection: self.name, query: query)
         command.new = returnValue == .modified
         command.update = document
@@ -65,10 +71,12 @@ extension MongoCollection {
     ///   - update: If passed a document with update operator expressions, performs the specified modification. If passed a replacement document performs a replacement.
     ///   - remove: Removes the document specified in the query field. Defaults to `false`
     ///   - returnValue: Wether to return the `original` or `modified` document.
-    public func findAndModify<Query: MongoKittenQuery>(where query: Query,
-                                                       update document: Document = [:],
-                                                       remove: Bool = false,
-                                                       returnValue: FindAndModifyReturnValue = .original) -> FindAndModifyBuilder {
+    public func findAndModify<Query: MongoKittenQuery>(
+        where query: Query,
+        update document: Document = [:],
+        remove: Bool = false,
+        returnValue: FindAndModifyReturnValue = .original
+    ) -> FindAndModifyBuilder {
         var command = FindAndModifyCommand(collection: self.name, query: query.makeDocument())
         command.update = document
         command.remove = remove
@@ -79,7 +87,9 @@ extension MongoCollection {
     /// Deletes a single document based on the query, returning the deleted document.
     /// - Parameters:
     ///   - query: The selection criteria for the deletion.
-    public func findOneAndDelete<Query: MongoKittenQuery>(where query: Query) -> FindAndModifyBuilder {
+    public func findOneAndDelete<Query: MongoKittenQuery>(
+        where query: Query
+    ) -> FindAndModifyBuilder {
         var command = FindAndModifyCommand(collection: self.name, query: query.makeDocument())
         command.remove = true
         return FindAndModifyBuilder(command: command, collection: self)
@@ -90,9 +100,11 @@ extension MongoCollection {
     ///   - query: The selection criteria for the upate.
     ///   - replacement: The replacement document.
     ///   - returnValue: Wether to return the `original` or `modified` document.
-    public func findOneAndReplace<Query: MongoKittenQuery>(where query: Query,
-                                                           replacement document: Document,
-                                                           returnValue: FindAndModifyReturnValue = .original) -> FindAndModifyBuilder {
+    public func findOneAndReplace<Query: MongoKittenQuery>(
+        where query: Query,
+        replacement document: Document,
+        returnValue: FindAndModifyReturnValue = .original
+    ) -> FindAndModifyBuilder {
         var command = FindAndModifyCommand(collection: self.name, query: query.makeDocument())
         command.new = returnValue == .modified
         command.update = document
@@ -104,9 +116,11 @@ extension MongoCollection {
     ///   - query: The selection criteria for the upate.
     ///   - document: The update document.
     ///   - returnValue: Wether to return the `original` or `modified` document.
-    public func findOneAndUpdate<Query: MongoKittenQuery>(where query: Query,
-                                                          to document: Document,
-                                                          returnValue: FindAndModifyReturnValue = .original) -> FindAndModifyBuilder {
+    public func findOneAndUpdate<Query: MongoKittenQuery>(
+        where query: Query,
+        to document: Document,
+        returnValue: FindAndModifyReturnValue = .original
+    ) -> FindAndModifyBuilder {
         var command = FindAndModifyCommand(collection: self.name, query: query.makeDocument())
         command.new = returnValue == .modified
         command.update = document
@@ -136,7 +150,7 @@ public final class FindAndModifyBuilder {
         .decodeReply(FindAndModifyReply.self)
         ._mongoHop(to: self.collection.hoppedEventLoop)
     }
-
+    
     public func decode<D: Decodable>(_ type: D.Type) -> EventLoopFuture<D?> {
         self.execute().map(\.value).decode(type)
     }
@@ -145,7 +159,7 @@ public final class FindAndModifyBuilder {
         self.command.sort = sort.document
         return self
     }
-
+    
     public func sort(_ sort: Document) -> FindAndModifyBuilder {
         self.command.sort = sort
         return self
@@ -155,7 +169,7 @@ public final class FindAndModifyBuilder {
         self.command.fields = projection.document
         return self
     }
-
+    
     public func project(_ projection: Document) -> FindAndModifyBuilder {
         self.command.fields = projection
         return self
