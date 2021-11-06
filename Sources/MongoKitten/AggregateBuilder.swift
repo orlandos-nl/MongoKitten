@@ -1,7 +1,7 @@
 import MongoClient
 import NIO
 
-#if swift(>=5.3)
+#if swift(>=5.4)
 @resultBuilder
 public struct AggregateBuilder {
     public static func buildBlock() -> AggregateBuilderPipeline {
@@ -9,7 +9,7 @@ public struct AggregateBuilder {
     }
     
     public static func buildBlock(_ content: AggregateBuilderStage) -> AggregateBuilderStage {
-        return AggregateBuilderStage(documents: content.stages)
+        return content
     }
     
     public static func buildBlock(_ content: AggregateBuilderStage...) -> AggregateBuilderStage {
@@ -18,18 +18,18 @@ public struct AggregateBuilder {
     
     public static func buildIf(_ content: AggregateBuilderStage?) -> AggregateBuilderStage {
         if let content = content {
-            return AggregateBuilderStage(documents: content.stages)
+            return content
         }
         
         return AggregateBuilderStage(documents: [])
     }
     
     public static func buildEither(first: AggregateBuilderStage) -> AggregateBuilderStage {
-        return AggregateBuilderStage(documents: first.stages)
+        return first
     }
     
     public static func buildEither(second: AggregateBuilderStage) -> AggregateBuilderStage {
-        return AggregateBuilderStage(documents: second.stages)
+        return second
     }
 }
 #elseif swift(>=5.1)

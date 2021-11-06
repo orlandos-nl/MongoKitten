@@ -16,7 +16,7 @@ public struct InsertCommand: Codable {
     }
 }
 
-public struct InsertReply: Decodable, Error {
+public struct InsertReply: Decodable, Error, CustomDebugStringConvertible {
     private enum CodingKeys: String, CodingKey {
         case ok, writeErrors, writeConcernError
         case insertCount = "n"
@@ -26,5 +26,13 @@ public struct InsertReply: Decodable, Error {
     public let insertCount: Int
     public let writeErrors: [MongoWriteError]?
     public let writeConcernError: WriteConcernError?
+    
+    public var debugDescription: String {
+        if ok == 1 {
+            return "InsertReply(insertCount: \(insertCount))"
+        } else {
+            return "InsertError"
+        }
+    }
 }
 

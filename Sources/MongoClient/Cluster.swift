@@ -304,7 +304,10 @@ public final class MongoCluster: MongoConnectionPool {
         var handshakes = [EventLoopFuture<Void>]()
 
         for pooledConnection in pool {
-            let handshake = pooledConnection.connection.doHandshake(clientDetails: nil, credentials: settings.authentication)
+            let handshake = pooledConnection.connection.doHandshake(
+                clientDetails: nil,
+                credentials: settings.authentication
+            )
             handshake.whenFailure { _ in
                 self.discoveredHosts.remove(pooledConnection.host)
             }

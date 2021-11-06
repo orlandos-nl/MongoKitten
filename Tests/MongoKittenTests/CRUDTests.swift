@@ -63,10 +63,6 @@ class CrudTests : XCTestCase {
         try mongo.drop().wait()
     }
     
-    // func executeCommand<E, R>(command: E, replyType: R.Type) -> EventLoopFuture<R> {
-    //     <#function body#>
-    // }
-    
     func testCreateDummyAccount () throws {
         let schema: MongoCollection = mongo[DummyAccount.collectionName]
         let startingCount: Int = try schema.count().wait()
@@ -522,6 +518,12 @@ class CrudTests : XCTestCase {
         XCTAssertEqual(result.count, 2)
         XCTAssertEqual(result[0].name, "_id_")
         XCTAssertEqual(result[1].name, "nameIndex")
+    }
+    
+    func testBuildIndexes() async throws {
+        mongo.async["test"].buildIndexes {
+            
+        }
     }
 
     // TODO ON ICE: Foreach future
