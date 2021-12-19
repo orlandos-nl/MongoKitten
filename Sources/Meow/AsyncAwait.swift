@@ -98,13 +98,13 @@ extension MutableModel {
 @available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 extension MeowCollection.Async where M: MutableModel {
     @discardableResult
-    public func insert(_ instance: M) async throws -> InsertReply {
-        return try await nio.insert(instance).get()
+    public func insert(_ instance: M, writeConcern: WriteConcern? = nil) async throws -> InsertReply {
+        return try await nio.insert(instance, writeConcern: writeConcern).get()
     }
     
     @discardableResult
-    public func insertMany(_ instances: [M]) async throws -> InsertReply {
-        return try await nio.insertMany(instances).get()
+    public func insertMany(_ instances: [M], writeConcern: WriteConcern? = nil) async throws -> InsertReply {
+        return try await nio.insertMany(instances, writeConcern: writeConcern).get()
     }
     
     @discardableResult

@@ -50,12 +50,12 @@ extension MeowCollection where M: ReadableModel {
 }
 
 extension MeowCollection where M: MutableModel {
-    public func insert(_ instance: M) -> EventLoopFuture<InsertReply> {
-        return raw.insertEncoded(instance)
+    public func insert(_ instance: M, writeConcern: WriteConcern? = nil) -> EventLoopFuture<InsertReply> {
+        return raw.insertEncoded(instance, writeConcern: writeConcern)
     }
     
-    public func insertMany(_ instances: [M]) -> EventLoopFuture<InsertReply> {
-        return raw.insertManyEncoded(instances)
+    public func insertMany(_ instances: [M], writeConcern: WriteConcern? = nil) -> EventLoopFuture<InsertReply> {
+        return raw.insertManyEncoded(instances, writeConcern: writeConcern)
     }
     
     public func upsert(_ instance: M) -> EventLoopFuture<UpdateReply> {
