@@ -62,20 +62,20 @@ extension MeowCollection where M: MutableModel {
         return raw.upsertEncoded(instance, where: "_id" == instance._id)
     }
     
-    public func deleteOne(where filter: Document) -> EventLoopFuture<DeleteReply> {
-        return raw.deleteOne(where: filter)
+    public func deleteOne(where filter: Document, writeConcern: WriteConcern? = nil) -> EventLoopFuture<DeleteReply> {
+        return raw.deleteOne(where: filter, writeConcern: writeConcern)
     }
     
-    public func deleteOne<Q: MongoKittenQuery>(where filter: Q) -> EventLoopFuture<DeleteReply> {
-        return self.deleteOne(where: filter.makeDocument())
+    public func deleteOne<Q: MongoKittenQuery>(where filter: Q, writeConcern: WriteConcern? = nil) -> EventLoopFuture<DeleteReply> {
+        return self.deleteOne(where: filter.makeDocument(), writeConcern: writeConcern)
     }
     
-    public func deleteAll(where filter: Document) -> EventLoopFuture<DeleteReply> {
-        return raw.deleteAll(where: filter)
+    public func deleteAll(where filter: Document, writeConcern: WriteConcern? = nil) -> EventLoopFuture<DeleteReply> {
+        return raw.deleteAll(where: filter, writeConcern: writeConcern)
     }
     
-    public func deleteAll<Q: MongoKittenQuery>(where filter: Q) -> EventLoopFuture<DeleteReply> {
-        return self.deleteAll(where: filter.makeDocument())
+    public func deleteAll<Q: MongoKittenQuery>(where filter: Q, writeConcern: WriteConcern? = nil) -> EventLoopFuture<DeleteReply> {
+        return self.deleteAll(where: filter.makeDocument(), writeConcern: writeConcern)
     }
     
     //    public func saveChanges(_ changes: PartialChange<M>) -> EventLoopFuture<UpdateReply> {

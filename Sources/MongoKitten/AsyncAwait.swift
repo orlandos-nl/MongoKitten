@@ -109,23 +109,23 @@ extension MongoCollection {
         }
         
         @discardableResult
-        public func deleteOne(where query: Document) async throws -> DeleteReply {
-            try await nio.deleteOne(where: query).get()
+        public func deleteOne(where query: Document, writeConcern: WriteConcern? = nil) async throws -> DeleteReply {
+            try await nio.deleteOne(where: query, writeConcern: writeConcern).get()
         }
         
         @discardableResult
-        public func deleteOne<Query: MongoKittenQuery>(where query: Query) async throws -> DeleteReply {
-            try await nio.deleteOne(where: query).get()
+        public func deleteOne<Query: MongoKittenQuery>(where query: Query, writeConcern: WriteConcern? = nil) async throws -> DeleteReply {
+            try await nio.deleteOne(where: query, writeConcern: writeConcern).get()
         }
         
         @discardableResult
-        public func deleteAll(where query: Document) async throws -> DeleteReply {
-            try await nio.deleteAll(where: query).get()
+        public func deleteAll(where query: Document, writeConcern: WriteConcern? = nil) async throws -> DeleteReply {
+            try await nio.deleteAll(where: query, writeConcern: writeConcern).get()
         }
         
         @discardableResult
-        public func deleteAll<Query: MongoKittenQuery>(where query: Query) async throws -> DeleteReply {
-            try await nio.deleteAll(where: query).get()
+        public func deleteAll<Query: MongoKittenQuery>(where query: Query, writeConcern: WriteConcern? = nil) async throws -> DeleteReply {
+            try await nio.deleteAll(where: query, writeConcern: writeConcern).get()
         }
         
         public func find(_ query: Document = [:]) -> FindQueryBuilder {
