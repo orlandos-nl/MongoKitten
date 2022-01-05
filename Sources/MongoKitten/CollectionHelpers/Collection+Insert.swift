@@ -2,35 +2,35 @@ import NIO
 import MongoCore
 
 extension MongoCollection {
-    public func insert(_ document: Document) -> EventLoopFuture<InsertReply> {
-        return insertMany([document])
+    public func insert(_ document: Document, writeConcern: WriteConcern? = nil) -> EventLoopFuture<InsertReply> {
+        return insertMany([document], writeConcern: writeConcern)
     }
     
-    public func insertManyEncoded<E: Encodable>(_ models: [E]) -> EventLoopFuture<InsertReply> {
+    public func insertManyEncoded<E: Encodable>(_ models: [E], writeConcern: WriteConcern? = nil) -> EventLoopFuture<InsertReply> {
         do {
             let documents = try models.map { model in
                 return try BSONEncoder().encode(model)
             }
             
-            return insertMany(documents)
+            return insertMany(documents, writeConcern: writeConcern)
         } catch {
             return eventLoop.makeFailedFuture(error)
         }
     }
     
-    public func insertEncoded<E: Encodable>(_ model: E) -> EventLoopFuture<InsertReply> {
+    public func insertEncoded<E: Encodable>(_ model: E, writeConcern: WriteConcern? = nil) -> EventLoopFuture<InsertReply> {
         do {
             let document = try BSONEncoder().encode(model)
-            return insert(document)
+            return insert(document, writeConcern: writeConcern)
         } catch {
             return eventLoop.makeFailedFuture(error)
         }
     }
     
-    public func insertMany(_ documents: [Document]) -> EventLoopFuture<InsertReply> {
+    public func insertMany(_ documents: [Document], writeConcern: WriteConcern? = nil) -> EventLoopFuture<InsertReply> {
         return pool.next(for: .writable).flatMap { connection in
-            let command = InsertCommand(documents: documents, inCollection: self.name)
-            
+            var command = InsertCommand(documents: documents, inCollection: self.name)
+            command.writeConcern = writeConcern
             return connection.executeCodable(
                 command,
                 namespace: self.database.commandNamespace,

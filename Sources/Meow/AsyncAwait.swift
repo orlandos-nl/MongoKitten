@@ -98,13 +98,13 @@ extension MutableModel {
 @available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
 extension MeowCollection.Async where M: MutableModel {
     @discardableResult
-    public func insert(_ instance: M) async throws -> InsertReply {
-        return try await nio.insert(instance).get()
+    public func insert(_ instance: M, writeConcern: WriteConcern? = nil) async throws -> InsertReply {
+        return try await nio.insert(instance, writeConcern: writeConcern).get()
     }
     
     @discardableResult
-    public func insertMany(_ instances: [M]) async throws -> InsertReply {
-        return try await nio.insertMany(instances).get()
+    public func insertMany(_ instances: [M], writeConcern: WriteConcern? = nil) async throws -> InsertReply {
+        return try await nio.insertMany(instances, writeConcern: writeConcern).get()
     }
     
     @discardableResult
@@ -113,23 +113,23 @@ extension MeowCollection.Async where M: MutableModel {
     }
     
     @discardableResult
-    public func deleteOne(where filter: Document) async throws -> DeleteReply {
-        return try await nio.deleteOne(where: filter).get()
+    public func deleteOne(where filter: Document, writeConcern: WriteConcern? = nil) async throws -> DeleteReply {
+        return try await nio.deleteOne(where: filter, writeConcern: writeConcern).get()
     }
     
     @discardableResult
-    public func deleteOne<Q: MongoKittenQuery>(where filter: Q) async throws -> DeleteReply {
-        return try await nio.deleteOne(where: filter).get()
+    public func deleteOne<Q: MongoKittenQuery>(where filter: Q, writeConcern: WriteConcern? = nil) async throws -> DeleteReply {
+        return try await nio.deleteOne(where: filter, writeConcern: writeConcern).get()
     }
     
     @discardableResult
-    public func deleteAll(where filter: Document) async throws -> DeleteReply {
-        return try await nio.deleteAll(where: filter).get()
+    public func deleteAll(where filter: Document, writeConcern: WriteConcern? = nil) async throws -> DeleteReply {
+        return try await nio.deleteAll(where: filter, writeConcern: writeConcern).get()
     }
     
     @discardableResult
-    public func deleteAll<Q: MongoKittenQuery>(where filter: Q) async throws -> DeleteReply {
-        return try await nio.deleteAll(where: filter).get()
+    public func deleteAll<Q: MongoKittenQuery>(where filter: Q, writeConcern: WriteConcern? = nil) async throws -> DeleteReply {
+        return try await nio.deleteAll(where: filter, writeConcern: writeConcern).get()
     }
     
     //    public func saveChanges(_ changes: PartialChange<M>) -> EventLoopFuture<UpdateReply> {

@@ -109,23 +109,23 @@ extension MongoCollection {
         }
         
         @discardableResult
-        public func deleteOne(where query: Document) async throws -> DeleteReply {
-            try await nio.deleteOne(where: query).get()
+        public func deleteOne(where query: Document, writeConcern: WriteConcern? = nil) async throws -> DeleteReply {
+            try await nio.deleteOne(where: query, writeConcern: writeConcern).get()
         }
         
         @discardableResult
-        public func deleteOne<Query: MongoKittenQuery>(where query: Query) async throws -> DeleteReply {
-            try await nio.deleteOne(where: query).get()
+        public func deleteOne<Query: MongoKittenQuery>(where query: Query, writeConcern: WriteConcern? = nil) async throws -> DeleteReply {
+            try await nio.deleteOne(where: query, writeConcern: writeConcern).get()
         }
         
         @discardableResult
-        public func deleteAll(where query: Document) async throws -> DeleteReply {
-            try await nio.deleteAll(where: query).get()
+        public func deleteAll(where query: Document, writeConcern: WriteConcern? = nil) async throws -> DeleteReply {
+            try await nio.deleteAll(where: query, writeConcern: writeConcern).get()
         }
         
         @discardableResult
-        public func deleteAll<Query: MongoKittenQuery>(where query: Query) async throws -> DeleteReply {
-            try await nio.deleteAll(where: query).get()
+        public func deleteAll<Query: MongoKittenQuery>(where query: Query, writeConcern: WriteConcern? = nil) async throws -> DeleteReply {
+            try await nio.deleteAll(where: query, writeConcern: writeConcern).get()
         }
         
         public func find(_ query: Document = [:]) -> FindQueryBuilder {
@@ -145,23 +145,23 @@ extension MongoCollection {
         }
         
         @discardableResult
-        public func insert(_ document: Document) async throws -> InsertReply {
-            try await nio.insert(document).get()
+        public func insert(_ document: Document, writeConcern: WriteConcern? = nil) async throws -> InsertReply {
+            try await nio.insert(document, writeConcern: writeConcern).get()
         }
         
         @discardableResult
-        public func insertMany(_ documents: [Document]) async throws -> InsertReply {
-            try await nio.insertMany(documents).get()
+        public func insertMany(_ documents: [Document], writeConcern: WriteConcern? = nil) async throws -> InsertReply {
+            try await nio.insertMany(documents, writeConcern: writeConcern).get()
         }
         
         @discardableResult
-        public func insertEncoded<E: Encodable>(_ document: E) async throws -> InsertReply {
-            try await nio.insertEncoded(document).get()
+        public func insertEncoded<E: Encodable>(_ document: E, writeConcern: WriteConcern? = nil) async throws -> InsertReply {
+            try await nio.insertEncoded(document, writeConcern: writeConcern).get()
         }
         
         @discardableResult
-        public func insertManyEncoded<E: Encodable>(_ documents: [E]) async throws -> InsertReply {
-            try await nio.insertManyEncoded(documents).get()
+        public func insertManyEncoded<E: Encodable>(_ documents: [E], writeConcern: WriteConcern? = nil) async throws -> InsertReply {
+            try await nio.insertManyEncoded(documents, writeConcern: writeConcern).get()
         }
         
         @discardableResult

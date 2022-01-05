@@ -50,32 +50,32 @@ extension MeowCollection where M: ReadableModel {
 }
 
 extension MeowCollection where M: MutableModel {
-    public func insert(_ instance: M) -> EventLoopFuture<InsertReply> {
-        return raw.insertEncoded(instance)
+    public func insert(_ instance: M, writeConcern: WriteConcern? = nil) -> EventLoopFuture<InsertReply> {
+        return raw.insertEncoded(instance, writeConcern: writeConcern)
     }
     
-    public func insertMany(_ instances: [M]) -> EventLoopFuture<InsertReply> {
-        return raw.insertManyEncoded(instances)
+    public func insertMany(_ instances: [M], writeConcern: WriteConcern? = nil) -> EventLoopFuture<InsertReply> {
+        return raw.insertManyEncoded(instances, writeConcern: writeConcern)
     }
     
     public func upsert(_ instance: M) -> EventLoopFuture<UpdateReply> {
         return raw.upsertEncoded(instance, where: "_id" == instance._id)
     }
     
-    public func deleteOne(where filter: Document) -> EventLoopFuture<DeleteReply> {
-        return raw.deleteOne(where: filter)
+    public func deleteOne(where filter: Document, writeConcern: WriteConcern? = nil) -> EventLoopFuture<DeleteReply> {
+        return raw.deleteOne(where: filter, writeConcern: writeConcern)
     }
     
-    public func deleteOne<Q: MongoKittenQuery>(where filter: Q) -> EventLoopFuture<DeleteReply> {
-        return self.deleteOne(where: filter.makeDocument())
+    public func deleteOne<Q: MongoKittenQuery>(where filter: Q, writeConcern: WriteConcern? = nil) -> EventLoopFuture<DeleteReply> {
+        return self.deleteOne(where: filter.makeDocument(), writeConcern: writeConcern)
     }
     
-    public func deleteAll(where filter: Document) -> EventLoopFuture<DeleteReply> {
-        return raw.deleteAll(where: filter)
+    public func deleteAll(where filter: Document, writeConcern: WriteConcern? = nil) -> EventLoopFuture<DeleteReply> {
+        return raw.deleteAll(where: filter, writeConcern: writeConcern)
     }
     
-    public func deleteAll<Q: MongoKittenQuery>(where filter: Q) -> EventLoopFuture<DeleteReply> {
-        return self.deleteAll(where: filter.makeDocument())
+    public func deleteAll<Q: MongoKittenQuery>(where filter: Q, writeConcern: WriteConcern? = nil) -> EventLoopFuture<DeleteReply> {
+        return self.deleteAll(where: filter.makeDocument(), writeConcern: writeConcern)
     }
     
     //    public func saveChanges(_ changes: PartialChange<M>) -> EventLoopFuture<UpdateReply> {

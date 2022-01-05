@@ -479,7 +479,7 @@ class CrudTests : XCTestCase {
     }
     
     func testDistinctValues () throws {
-        let originalAccounts = try testBulkCreateDummyAccounts()
+        _ = try testBulkCreateDummyAccounts()
         let schema: MongoCollection = mongo[DummyAccount.collectionName]
         var results = try schema.distinctValues(forKey: "name").wait()
         XCTAssertEqual(results.count, 300)
@@ -520,11 +520,11 @@ class CrudTests : XCTestCase {
         XCTAssertEqual(result[1].name, "nameIndex")
     }
     
-    func testBuildIndexes() async throws {
-        mongo.async["test"].buildIndexes {
-            
-        }
-    }
+//    func testBuildIndexes() async throws {
+//        mongo.async["test"].buildIndexes {
+//
+//        }
+//    }
 
     // TODO ON ICE: Foreach future
     // TODO ON ICE: Change stream
