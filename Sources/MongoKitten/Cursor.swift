@@ -4,14 +4,14 @@ import MongoClient
 extension MongoCursor: QueryCursor {
     public var eventLoop: EventLoop { connection.eventLoop }
 
-    public func getConnection() -> EventLoopFuture<MongoConnection> {
-        return connection.eventLoop.makeSucceededFuture(connection)
+    public func getConnection() async throws -> MongoConnection {
+        connection
     }
 
     public typealias Element = Document
 
-    public func execute() -> EventLoopFuture<FinalizedCursor<MongoCursor>> {
-        return connection.eventLoop.makeSucceededFuture(FinalizedCursor(basedOn: self, cursor: self))
+    public func execute() async throws -> FinalizedCursor<MongoCursor> {
+        return FinalizedCursor(basedOn: self, cursor: self)
     }
 
     public func transformElement(_ element: Document) throws -> Document {
@@ -20,29 +20,14 @@ extension MongoCursor: QueryCursor {
 }
 
 extension MongoCursor {
-    public func drain() -> EventLoopFuture<[Document]> {
-        return CursorDrainer(cursor: self).collectAll()
-    }
-
-    private final class CursorDrainer {
+    public func drain() async throws -> [Document] {
         var documents = [Document]()
-        let cursor: MongoCursor
-
-        init(cursor: MongoCursor) {
-            self.cursor = cursor
+        
+        while !isDrained {
+            documents += try await getMore(batchSize: 101)
         }
-
-        func collectAll() -> EventLoopFuture<[Document]> {
-            return cursor.getMore(batchSize: 101).flatMap { batch -> EventLoopFuture<[Document]> in
-                self.documents += batch
-
-                if self.cursor.isDrained {
-                    return self.cursor.connection.eventLoop.makeSucceededFuture(self.documents)
-                }
-
-                return self.collectAll()
-            }
-        }
+        
+        return documents
     }
 }
 
@@ -96,54 +81,13 @@ public protocol QueryCursor {
     /// The Element type of the cursor
     associatedtype Element
 
-    var eventLoop: EventLoop { get }
-    var hoppedEventLoop: EventLoop? { get }
-
-    func getConnection() -> EventLoopFuture<MongoConnection>
+    func getConnection() async throws -> MongoConnection
 
     /// Executes the cursor, returning a `FinalizedCursor` after the operation has completed.
-    func execute() -> EventLoopFuture<FinalizedCursor<Self>>
+    func execute() async throws -> FinalizedCursor<Self>
 
     /// Transforms a given `Document` to the cursor `Element` type
     func transformElement(_ element: Document) throws -> Element
-}
-
-extension QueryCursor {
-    /// Helper method for executing a closure on each element of a cursor whose element is itself a future.
-    ///
-    /// - parameter handler: A closure that will be executed on the result of every succeeded future
-    /// - returns: A future that succeeds when the operation is completed
-    @discardableResult
-    public func forEachFuture<T>(
-        handler: @escaping (T) -> Void
-    ) -> EventLoopFuture<Void> where Element == EventLoopFuture<T> {
-        return execute().flatMap { finalizedCursor in
-            func nextBatch() -> EventLoopFuture<Void> {
-                return finalizedCursor.nextBatch().flatMap { batch in
-                    guard let document = batch.first else {
-                        return self.eventLoop.makeSucceededFuture(())
-                    }
-
-                    var future = document.map(handler)
-
-                    for i in 1..<batch.count {
-                        let element = batch[i]
-                        future = future.flatMap {
-                            return element.map(handler)
-                        }
-                    }
-
-                    if finalizedCursor.isDrained {
-                        return self.eventLoop.makeSucceededFuture(())
-                    }
-
-                    return nextBatch()
-                }
-            }
-
-            return nextBatch()
-        }._mongoHop(to: self.hoppedEventLoop)
-    }
 }
 
 extension QueryCursor {
@@ -152,64 +96,17 @@ extension QueryCursor {
     /// - parameter handler: A handler to execute on every result
     /// - returns: A future that resolves when the operation is complete, or fails if an error is thrown
     @discardableResult
-    public func forEach(handler: @escaping (Element) throws -> Void) -> EventLoopFuture<Void> {
-        return execute().flatMap { finalizedCursor in
-            func nextBatch() -> EventLoopFuture<Void> {
-                return finalizedCursor.nextBatch().flatMap { batch in
-                    do {
-                        for element in batch {
-                            try handler(element)
-                        }
-
-                        if finalizedCursor.isDrained {
-                            return self.eventLoop.makeSucceededFuture(())
-                        }
-
-                        return nextBatch()
-                    } catch {
-                        return self.eventLoop.makeFailedFuture(error)
-                    }
+    public func forEach(failable: Bool = false, handler: @escaping (Element) async throws -> Void) -> Task<Void, Error> {
+        Task {
+            let finalizedCursor = try await execute()
+            
+            while !finalizedCursor.isDrained {
+                try Task.checkCancellation()
+                
+                for element in try await finalizedCursor.nextBatch(failable: failable) {
+                    try await handler(element)
                 }
             }
-
-            return nextBatch()
-        }._mongoHop(to: self.hoppedEventLoop)
-    }
-
-    @discardableResult
-    public func sequentialForEach(handler: @escaping (Element) throws -> EventLoopFuture<Void>) -> EventLoopFuture<Void> {
-        return execute().flatMap { finalizedCursor in
-            func nextBatch() -> EventLoopFuture<Void> {
-                return finalizedCursor.nextBatch().flatMap { batch in
-                    do {
-                        var batch = batch.makeIterator()
-
-                        func next() throws -> EventLoopFuture<Void> {
-                            guard let element = batch.next() else {
-                                if finalizedCursor.isDrained {
-                                    return self.eventLoop.makeSucceededFuture(())
-                                }
-
-                                return nextBatch()
-                            }
-
-                            return try handler(element).flatMap {
-                                do {
-                                    return try next()
-                                } catch {
-                                    return self.eventLoop.makeFailedFuture(error)
-                                }
-                            }
-                        }
-
-                        return try next()
-                    } catch {
-                        return self.eventLoop.makeFailedFuture(error)
-                    }
-                }
-            }
-
-            return nextBatch()._mongoHop(to: self.hoppedEventLoop)
         }
     }
 
@@ -222,37 +119,22 @@ extension QueryCursor {
 
     /// Executes the cursor and returns the first result
     /// Always uses a batch size of 1
-    public func firstResult() -> EventLoopFuture<Element?> {
-        return execute().flatMap { finalizedCursor in
-            return finalizedCursor.nextBatch(batchSize: 1)
-        }.flatMapThrowing { batch in
-            return batch.first
-        }._mongoHop(to: self.hoppedEventLoop)
+    public func firstResult() async throws -> Element? {
+        let finalizedCursor = try await execute()
+        return try await finalizedCursor.nextBatch(batchSize: 1).first
     }
 
     /// Executes the cursor and returns all results as an array
     /// Please be aware that this may consume a large amount of memory or time with a large number of results
-    public func allResults(failable: Bool = false) -> EventLoopFuture<[Element]> {
-        return execute().flatMap { finalizedCursor in
-            let promise = self.eventLoop.makePromise(of: [Element].self)
-            var results = [Element]()
-
-            func nextBatch() {
-                finalizedCursor.nextBatch(failable: failable).flatMapThrowing { batch in
-                    results.append(contentsOf: batch)
-
-                    if finalizedCursor.isDrained {
-                        promise.succeed(results)
-                    } else {
-                        nextBatch()
-                    }
-                }.cascadeFailure(to: promise)
-            }
-
-            nextBatch()
-
-            return promise.futureResult._mongoHop(to: self.hoppedEventLoop)
+    public func drain(failable: Bool = false) async throws -> [Element] {
+        let finalizedCursor = try await execute()
+        var results = [Element]()
+        
+        while !finalizedCursor.isDrained {
+            results += try await finalizedCursor.nextBatch()
         }
+        
+        return results
     }
 }
 
@@ -269,25 +151,25 @@ public final class FinalizedCursor<Base: QueryCursor> {
         self.cursor = cursor
     }
 
-    public func nextBatch(batchSize: Int = 101, failable: Bool = false) -> EventLoopFuture<[Base.Element]> {
-        return cursor.getMore(batchSize: batchSize)._mongoHop(to: cursor.hoppedEventLoop).flatMapThrowing { batch in
-            if failable {
-                return batch.compactMap { element in
-                    return try? self.base.transformElement(element)
-                }
-            } else {
-                return try batch.map(self.base.transformElement)
+    public func nextBatch(batchSize: Int = 101, failable: Bool = false) async throws -> [Base.Element] {
+        let batch = try await cursor.getMore(batchSize: batchSize)
+        
+        if failable {
+            return batch.compactMap { element in
+                return try? self.base.transformElement(element)
             }
-        }._mongoHop(to: cursor.hoppedEventLoop)
+        } else {
+            return try batch.map(self.base.transformElement)
+        }
     }
 
     /// Closes the cursor stopping any further data from being read
-    public func close() -> EventLoopFuture<Void> {
+    public func close() async throws {
         if isDrained {
-            return cursor.connection.eventLoop.makeFailedFuture(MongoError(.cannotCloseCursor, reason: .alreadyClosed))
+            throw MongoError(.cannotCloseCursor, reason: .alreadyClosed)
         }
 
-        return cursor.close()._mongoHop(to: cursor.hoppedEventLoop)
+        return try await cursor.close()
     }
 }
 
@@ -304,12 +186,9 @@ extension QueryCursor where Element == Document {
 public struct MappedCursor<Base: QueryCursor, Element>: QueryCursor {
     internal typealias Transform<E> = (Base.Element) throws -> E
 
-    public func getConnection() -> EventLoopFuture<MongoConnection> {
-        return underlyingCursor.getConnection()
+    public func getConnection() async throws -> MongoConnection {
+        return try await underlyingCursor.getConnection()
     }
-
-    public var eventLoop: EventLoop { underlyingCursor.eventLoop }
-    public var hoppedEventLoop: EventLoop? { underlyingCursor.hoppedEventLoop }
 
     private let underlyingCursor: Base
     private let transform: Transform<Element>
@@ -324,10 +203,9 @@ public struct MappedCursor<Base: QueryCursor, Element>: QueryCursor {
         return try transform(input)
     }
 
-    public func execute() -> EventLoopFuture<FinalizedCursor<MappedCursor<Base, Element>>> {
-        return self.underlyingCursor.execute().map { result in
-            return FinalizedCursor(basedOn: self, cursor: result.cursor)
-        }._mongoHop(to: self.hoppedEventLoop)
+    public func execute() async throws -> FinalizedCursor<MappedCursor<Base, Element>> {
+        let result = try await self.underlyingCursor.execute()
+        return FinalizedCursor(basedOn: self, cursor: result.cursor)
     }
 }
 

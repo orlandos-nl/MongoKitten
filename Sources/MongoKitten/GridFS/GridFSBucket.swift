@@ -15,26 +15,22 @@ public final class GridFSBucket {
     
     private var didEnsureIndexes = false
     
-    public var eventLoop: EventLoop {
-        return filesCollection.database.eventLoop
-    }
-    
     public init(named name: String = "fs", in database: MongoDatabase) {
         self.filesCollection = database[name + ".files"]
         self.chunksCollection = database[name + ".chunks"]
     }
     
-    public func upload(_ data: Data, filename: String? = nil, id: Primitive = ObjectId(), metadata: Document? = nil, chunkSize: Int32 = GridFSBucket.defaultChunkSize) -> EventLoopFuture<Void> {
+    public func upload(_ data: Data, filename: String? = nil, id: Primitive = ObjectId(), metadata: Document? = nil, chunkSize: Int32 = GridFSBucket.defaultChunkSize) async throws -> GridFSFile {
         var buffer = GridFSFileWriter.allocator.buffer(capacity: data.count)
         buffer.writeBytes(data)
         
-        let writer = GridFSFileWriter(fs: self, fileId: id, chunkSize: chunkSize, buffer: buffer)
-        return writer.finalize(filename: filename, metadata: metadata).map { _ in }._mongoHop(to: filesCollection.hoppedEventLoop)
+        let writer = try await GridFSFileWriter(fs: self, fileId: id, chunkSize: chunkSize, buffer: buffer)
+        return try await writer.finalize(filename: filename, metadata: metadata)
     }
     
-    public func upload(_ buffer: ByteBuffer, filename: String? = nil, id: Primitive = ObjectId(), metadata: Document? = nil, chunkSize: Int32 = GridFSBucket.defaultChunkSize) -> EventLoopFuture<Void> {
-        let writer = GridFSFileWriter(fs: self, fileId: id, chunkSize: chunkSize, buffer: buffer)
-        return writer.finalize(filename: filename, metadata: metadata).map { _ in }._mongoHop(to: filesCollection.hoppedEventLoop)
+    public func upload(_ buffer: ByteBuffer, filename: String? = nil, id: Primitive = ObjectId(), metadata: Document? = nil, chunkSize: Int32 = GridFSBucket.defaultChunkSize) async throws -> GridFSFile {
+        let writer = try await GridFSFileWriter(fs: self, fileId: id, chunkSize: chunkSize, buffer: buffer)
+        return try await writer.finalize(filename: filename, metadata: metadata)
     }
     
     public func find(_ query: Document) -> MappedCursor<FindQueryBuilder, GridFSFile> {
@@ -48,75 +44,61 @@ public final class GridFSBucket {
             .decode(GridFSFile.self, using: decoder)
     }
     
-    public func findFile(_ query: Document) -> EventLoopFuture<GridFSFile?> {
+    public func findFile(_ query: Document) async throws -> GridFSFile? {
         var decoder = BSONDecoder()
         decoder.userInfo = [
             .gridFS: self as Any
         ]
         
-        return filesCollection
+        return try await filesCollection
             .find(query)
             .limit(1)
             .decode(GridFSFile.self, using: decoder)
             .firstResult()
     }
     
-    public func findFile(byId id: Primitive) -> EventLoopFuture<GridFSFile?> {
-        return self.findFile(["_id": id])
+    public func findFile(byId id: Primitive) async throws -> GridFSFile? {
+        return try await self.findFile(["_id": id])
     }
     
-    public func deleteFile(byId id: Primitive) -> EventLoopFuture<Void> {
-        return EventLoopFuture<Void>.andAllSucceed([
-            self.filesCollection.deleteAll(where: ["_id": id]).map { _ in },
-            self.chunksCollection.deleteAll(where: ["files_id": id]).map { _ in }
-        ], on: eventLoop)._mongoHop(to: filesCollection.hoppedEventLoop)
+    public func deleteFile(byId id: Primitive) async throws {
+        try await self.filesCollection.deleteAll(where: ["_id": id])
+        try await self.chunksCollection.deleteAll(where: ["files_id": id])
     }
     
-    // TODO: Cancellable, streaming writes & reads
-    // TODO: Non-streaming writes & reads
-    
-    internal func ensureIndexes() -> EventLoopFuture<Void> {
-        guard !didEnsureIndexes else {
-            return eventLoop.makeSucceededFuture(())._mongoHop(to: filesCollection.hoppedEventLoop)
+    internal func ensureIndexes() async throws {
+        if didEnsureIndexes {
+            return
         }
         
         didEnsureIndexes = true
         
-        // TODO :List indexes to determine existence
-        return filesCollection
+        let findCollection = filesCollection
             .find()
             .project(["_id": .included])
             .limit(1)
-            .firstResult()
-            .flatMap { result in
-                // Determine if the files collection is empty
-                guard result == nil else {
-                    return self.eventLoop.makeSucceededFuture(())
-                }
-                
-                // TODO: Drivers MUST check whether the indexes already exist before attempting to create them. This supports the scenario where an application is running with read-only authorizations.
-                
-                let createFilesIndex = self.filesCollection.createIndex(
-                    named: "MongoKitten_GridFS",
-                    keys: [
-                        "filename": 1,
-                        "uploadDate": 1
-                    ]
-                )
-                let createChunksIndex = self.filesCollection.createIndex(
-                    named: "MongoKitten_GridFS",
-                    keys: [
-                        "files_id": 1,
-                        "n": 1
-                    ]
-                )
-                
-                return EventLoopFuture.andAllSucceed([createFilesIndex, createChunksIndex], on: self.eventLoop)
-            }.flatMapErrorThrowing { error in
-                self.didEnsureIndexes = false
-                self.filesCollection.pool.logger.warning("Could not ensure the indexes exists for GridFS")
-                throw error
-            }._mongoHop(to: filesCollection.hoppedEventLoop)
+        
+        // Determine if the files collection is empty
+        guard try await findCollection.firstResult() == nil else {
+            return
+        }
+        
+        // TODO: Drivers MUST check whether the indexes already exist before attempting to create them. This supports the scenario where an application is running with read-only authorizations.
+        
+        try await self.filesCollection.createIndex(
+            named: "MongoKitten_GridFS",
+            keys: [
+                "filename": 1,
+                "uploadDate": 1
+            ]
+        )
+        try await self.filesCollection.createIndex(
+            named: "MongoKitten_GridFS",
+            keys: [
+                "files_id": 1,
+                "n": 1
+            ]
+        )
     }
     
 }

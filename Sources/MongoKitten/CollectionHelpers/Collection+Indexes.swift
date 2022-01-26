@@ -4,36 +4,35 @@ import MongoClient
 extension MongoCollection {
     /// Creates a new index by this name. If the index already exists, a new one is _not_ created.
     /// - returns: A future indicating success or failure.
-    public func createIndex(named name: String, keys: Document) -> EventLoopFuture<Void> {
-       return createIndexes([CreateIndexes.Index(named: name, keys: keys)])
+    public func createIndex(named name: String, keys: Document) async throws {
+        return try await createIndexes([.init(named: name, keys: keys)])
     }
     
     /// Create 1 or more indexes on the collection.
     /// - Parameter indexes: A collection of indexes to be created.
     /// - Returns: A future indicating success or failure.
-    public func createIndexes(_ indexes: [CreateIndexes.Index]) -> EventLoopFuture<Void> {
+    public func createIndexes(_ indexes: [CreateIndexes.Index]) async throws {
         guard transaction == nil else {
-            return makeTransactionError()
+            throw MongoKittenError(.unsupportedFeatureByServer, reason: .transactionForUnsupportedQuery)
         }
         
-        return self.pool.next(for: .writable).flatMap { connection in
-            return connection.executeCodable(
-                CreateIndexes(
-                    collection: self.name,
-                    indexes: indexes
-                ),
-                namespace: self.database.commandNamespace,
-                in: self.transaction,
-                sessionId: self.sessionId ?? connection.implicitSessionId
-            )
-        }.flatMapThrowing { reply in
-            return try reply.assertOK()
-        }._mongoHop(to: hoppedEventLoop)
+        let connection = try await database.pool.next(for: .writable)
+        let reply = try await connection.executeEncodable(
+            CreateIndexes(
+                collection: self.name,
+                indexes: indexes
+            ),
+            namespace: self.database.commandNamespace,
+            in: self.transaction,
+            sessionId: self.sessionId ?? connection.implicitSessionId
+        )
+        
+        try reply.assertOK()
     }
     
     /// Lists all indexes in this collection as a cursor.
     /// - returns: A cursor pointing towards all Index documents.
-    public func listIndexes() -> EventLoopFuture<MappedCursor<MongoCursor, MongoIndex>> {
+    public func listIndexes() async throws -> MappedCursor<MongoCursor, MongoIndex> {
         struct Request: Codable {
             let listIndexes: String
         }
@@ -42,21 +41,21 @@ extension MongoCollection {
         let db = self.database
         let namespace = MongoNamespace(to: "$cmd", inDatabase: db.name)
         
-        return db.pool.next(for: .init(writable: false)).flatMap { connection in
-            return connection.executeCodable(
-                request,
-                namespace: namespace,
-                sessionId: nil
-            ).decodeReply(MongoCursorResponse.self).map { response in
-                return MongoCursor(
-                    reply: response.cursor,
-                    in: namespace,
-                    connection: connection,
-                    session: connection.implicitSession,
-                    transaction: nil
-                ).decode(MongoIndex.self)
-            }
-        }
+        let connection = try await db.pool.next(for: .basic)
+        let response = try await connection.executeCodable(
+            request,
+            decodeAs: MongoCursorResponse.self,
+            namespace: namespace,
+            sessionId: nil
+        )
+        
+        return MongoCursor(
+            reply: response.cursor,
+            in: namespace,
+            connection: connection,
+            session: self.session ?? connection.implicitSession,
+            transaction: nil
+        ).decode(MongoIndex.self)
     }
 }
 

@@ -139,20 +139,21 @@ public final class FindAndModifyBuilder {
     }
     
     /// Executes the command
-    public func execute() -> EventLoopFuture<FindAndModifyReply> {
-        return collection.pool.next(for: .writable).flatMap { connection in
-            connection.executeCodable(self.command,
-                                      namespace: self.collection.database.commandNamespace,
-                                      in: self.collection.transaction,
-                                      sessionId: self.collection.sessionId ?? connection.implicitSessionId)
-            
-        }
-        .decodeReply(FindAndModifyReply.self)
-        ._mongoHop(to: self.collection.hoppedEventLoop)
+    public func execute() async throws -> FindAndModifyReply {
+        let connection = try await collection.pool.next(for: .writable)
+        return try await connection.executeCodable(
+            self.command,
+            decodeAs: FindAndModifyReply.self,
+            namespace: self.collection.database.commandNamespace,
+            in: self.collection.transaction,
+            sessionId: self.collection.sessionId ?? connection.implicitSessionId
+        )
     }
     
-    public func decode<D: Decodable>(_ type: D.Type) -> EventLoopFuture<D?> {
-        self.execute().map(\.value).decode(type)
+    public func decode<D: Decodable>(_ type: D.Type) async throws -> D? {
+        try await self.execute().value.map { document in
+            try BSONDecoder().decode(D.self, from: document)
+        }
     }
     
     public func sort(_ sort: Sort) -> FindAndModifyBuilder {

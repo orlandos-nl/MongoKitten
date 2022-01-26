@@ -1,5 +1,3 @@
-import NIO
-
 public struct MongoProtocolParsingError: Error, Codable, CustomStringConvertible {
     public enum Reason: String, Codable, CustomStringConvertible, Equatable {
         case unsupportedOpCode

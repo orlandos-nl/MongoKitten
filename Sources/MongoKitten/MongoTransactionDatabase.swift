@@ -1,24 +1,22 @@
 public final class MongoTransactionDatabase: MongoDatabase {
-    public func commit() -> EventLoopFuture<Void> {
-        self.pool.next(for: .writable).flatMap { connection in
-            connection.executeCodable(
-                CommitTransaction(),
-                namespace: .administrativeCommand,
-                in: self.transaction,
-                sessionId: self.sessionId
-            ).decodeReply(OK.self).map { _ in }
-        }._mongoHop(to: self.hoppedEventLoop)
+    public func commit() async throws {
+        _ = try await pool.next(for: .writable).executeCodable(
+            CommitTransaction(),
+            decodeAs: OK.self,
+            namespace: .administrativeCommand,
+            in: self.transaction,
+            sessionId: self.sessionId
+        )
     }
     
-    public func abort() -> EventLoopFuture<Void> {
-        self.pool.next(for: .writable).flatMap { connection in
-            connection.executeCodable(
-                AbortTransaction(),
-                namespace: .administrativeCommand,
-                in: self.transaction,
-                sessionId: self.sessionId
-            ).decodeReply(OK.self).map { _ in }
-        }._mongoHop(to: self.hoppedEventLoop)
+    public func abort() async throws {
+        _ = try await pool.next(for: .writable).executeCodable(
+            AbortTransaction(),
+            decodeAs: OK.self,
+            namespace: .administrativeCommand,
+            in: self.transaction,
+            sessionId: self.sessionId
+        )
     }
 }
 

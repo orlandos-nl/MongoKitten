@@ -1,7 +1,7 @@
 import BSON
 import NIO
 
-public enum MongoServerReply {
+public enum MongoServerReply: Sendable {
     case reply(OpReply)
     case message(OpMessage)
     

@@ -4,57 +4,48 @@ import MongoCore
 import NIO
 
 extension MongoConnection {
-    func authenticate(to source: String, with credentials: ConnectionSettings.Authentication) -> EventLoopFuture<Void> {
+    func authenticate(to source: String, serverHandshake: ServerHandshake, with credentials: ConnectionSettings.Authentication) async throws {
         let namespace = MongoNamespace(to: "$cmd", inDatabase: source)
 
         var credentials = credentials
 
         if case .auto(let user, let pass) = credentials {
-            do {
-                credentials = try selectAuthenticationAlgorithm(forUser: user, password: pass)
-            } catch {
-                return eventLoop.makeFailedFuture(error)
-            }
+            credentials = try selectAuthenticationAlgorithm(forUser: user, password: pass, handshake: serverHandshake)
         }
 
         switch credentials {
         case .unauthenticated:
-            return eventLoop.makeSucceededFuture(())
+            return
         case .auto(let username, let password):
-            if let mechanisms = serverHandshake!.saslSupportedMechs {
+            if let mechanisms = serverHandshake.saslSupportedMechs {
                 nextMechanism: for mechanism in mechanisms {
                     switch mechanism {
                     case "SCRAM-SHA-1":
-                        return self.authenticateSASL(hasher: SHA1(), namespace: namespace, username: username, password: password)
+                        return try await self.authenticateSASL(hasher: SHA1(), namespace: namespace, username: username, password: password)
                     case "SCRAM-SHA-256":
                         // TODO: Enforce minimum 4096 iterations
-                        return self.authenticateSASL(hasher: SHA256(), namespace: namespace, username: username, password: password)
+                        return try await self.authenticateSASL(hasher: SHA256(), namespace: namespace, username: username, password: password)
                     default:
                         continue nextMechanism
                     }
                 }
 
-                return eventLoop.makeFailedFuture(MongoAuthenticationError(reason: .unsupportedAuthenticationMechanism))
-            } else if serverHandshake!.maxWireVersion.supportsScramSha1 {
-                return self.authenticateSASL(hasher: SHA1(), namespace: namespace, username: username, password: password)
+                throw MongoAuthenticationError(reason: .unsupportedAuthenticationMechanism)
+            } else if serverHandshake.maxWireVersion.supportsScramSha1 {
+                return try await self.authenticateSASL(hasher: SHA1(), namespace: namespace, username: username, password: password)
             } else {
-                return self.authenticateCR(username, password: password, namespace: namespace)
+                return try await self.authenticateCR(username, password: password, namespace: namespace)
             }
         case .scramSha1(let username, let password):
-            return self.authenticateSASL(hasher: SHA1(), namespace: namespace, username: username, password: password)
+            return try await self.authenticateSASL(hasher: SHA1(), namespace: namespace, username: username, password: password)
         case .scramSha256(let username, let password):
-            return self.authenticateSASL(hasher: SHA256(), namespace: namespace, username: username, password: password)
+            return try await self.authenticateSASL(hasher: SHA256(), namespace: namespace, username: username, password: password)
         case .mongoDBCR(let username, let password):
-            return self.authenticateCR(username, password: password, namespace: namespace)
+            return try await self.authenticateCR(username, password: password, namespace: namespace)
         }
     }
 
-    public func selectAuthenticationAlgorithm(forUser user: String, password: String) throws -> ConnectionSettings.Authentication {
-        guard let handshake = serverHandshake else {
-            logger.error("Inferring the authentication mechanism failed. Missing handshake with the server")
-            throw MongoAuthenticationError(reason: .missingServerHandshake)
-        }
-        
+    private func selectAuthenticationAlgorithm(forUser user: String, password: String, handshake: ServerHandshake) throws -> ConnectionSettings.Authentication {
         if let saslSupportedMechs = handshake.saslSupportedMechs {
             nextMechanism: for mech in saslSupportedMechs {
                 switch mech {

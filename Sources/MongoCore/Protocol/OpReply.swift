@@ -1,7 +1,7 @@
 import NIO
 import BSON
 
-public struct OpReplyFlags: OptionSet {
+public struct OpReplyFlags: OptionSet, Sendable {
     public var rawValue: UInt32
     
     public init(rawValue: UInt32) {
@@ -23,7 +23,7 @@ public struct OpReplyFlags: OptionSet {
     // The rest is reserved (will likely be left unused)
 }
 
-public struct OpReply: MongoResponseMessage {
+public struct OpReply: MongoResponseMessage, Sendable {
     public var header: MongoMessageHeader
     public var cursorId: Int64
     public var documents: [Document]

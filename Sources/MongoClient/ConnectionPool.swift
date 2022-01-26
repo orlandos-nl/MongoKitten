@@ -11,20 +11,19 @@ public struct MongoConnectionPoolRequest {
 }
 
 public protocol MongoConnectionPool {
-    func next(for request: MongoConnectionPoolRequest) -> EventLoopFuture<MongoConnection>
-    var eventLoop: EventLoop { get }
-    var wireVersion: WireVersion? { get }
+    func next(for request: MongoConnectionPoolRequest) async throws -> MongoConnection
+    var wireVersion: WireVersion? { get async }
     var sessionManager: MongoSessionManager { get }
     var logger: Logger { get }
 }
 
 extension MongoConnection: MongoConnectionPool {
-    public func next(for request: MongoConnectionPoolRequest) -> EventLoopFuture<MongoConnection> {
-        return eventLoop.makeSucceededFuture(self)
+    public func next(for request: MongoConnectionPoolRequest) async throws -> MongoConnection {
+        self
     }
     
     public var wireVersion: WireVersion? {
-        return serverHandshake?.maxWireVersion
+        get async { await serverHandshake?.maxWireVersion }
     }
 }
 

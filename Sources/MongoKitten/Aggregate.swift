@@ -51,9 +51,6 @@ public struct AggregateBuilderPipeline: QueryCursor {
     internal var _collation: Collation?
     internal var _readConcern: ReadConcern?
     
-    public var eventLoop: EventLoop { collection.eventLoop }
-    public var hoppedEventLoop: EventLoop? { collection.hoppedEventLoop }
-    
     public func allowDiskUse(_ allowDiskUse: Bool? = true) -> AggregateBuilderPipeline {
         var pipeline = self
         pipeline._allowDiskUse = allowDiskUse
@@ -99,31 +96,31 @@ public struct AggregateBuilderPipeline: QueryCursor {
         return command
     }
     
-    public func getConnection() -> EventLoopFuture<MongoConnection> {
-        return collection.pool.next(for: MongoConnectionPoolRequest(writable: writing))
+    public func getConnection() async throws -> MongoConnection {
+        return try await collection.pool.next(for: .writable)
     }
     
-    public func execute() -> EventLoopFuture<FinalizedCursor<AggregateBuilderPipeline>> {
+    public func execute() async throws -> FinalizedCursor<AggregateBuilderPipeline> {
         let command = makeCommand()
+        let connection = try await getConnection()
         
-        return getConnection().flatMap { connection in
-            return connection.executeCodable(
-                command,
-                namespace: self.collection.database.commandNamespace,
-                in: self.collection.transaction,
-                sessionId: self.collection.sessionId ?? connection.implicitSessionId
-            ).decodeReply(CursorReply.self).map { cursor in
-                let cursor = MongoCursor(
-                    reply: cursor.cursor,
-                    in: self.collection.namespace,
-                    connection: connection,
-                    hoppedEventLoop: self.hoppedEventLoop,
-                    session: self.collection.session ?? connection.implicitSession,
-                    transaction: self.collection.transaction
-                )
-                return FinalizedCursor(basedOn: self, cursor: cursor)
-            }
-        }._mongoHop(to: hoppedEventLoop)
+        let cursorReply = try await connection.executeCodable(
+            command,
+            decodeAs: CursorReply.self,
+            namespace: self.collection.database.commandNamespace,
+            in: self.collection.transaction,
+            sessionId: self.collection.sessionId ?? connection.implicitSessionId
+        )
+        
+        let cursor = MongoCursor(
+            reply: cursorReply.cursor,
+            in: self.collection.namespace,
+            connection: connection,
+            session: self.collection.session ?? connection.implicitSession,
+            transaction: self.collection.transaction
+        )
+        
+        return FinalizedCursor(basedOn: self, cursor: cursor)
     }
     
     public func transformElement(_ element: Document) throws -> Document {
@@ -136,7 +133,7 @@ public struct AggregateBuilderPipeline: QueryCursor {
         self.stages = stages
     }
     
-    public func count() -> EventLoopFuture<Int> {
+    public func count() async throws -> Int {
         struct Count: Decodable {
             let count: Int
         }
@@ -144,12 +141,10 @@ public struct AggregateBuilderPipeline: QueryCursor {
         var pipeline = self
         pipeline.stages.append(.count(to: "count"))
         pipeline.stages.append(.project("count"))
-        return pipeline.decode(Count.self).firstResult().flatMapThrowing { count in
-            return count?.count ?? 0
-        }
+        return try await pipeline.decode(Count.self).firstResult()?.count ?? 0
     }
     
-    public func out(toCollection collectionName: String) -> EventLoopFuture<Void> {
+    public func out(toCollection collectionName: String) async throws {
         var pipeline = self
         pipeline.stages.append(
             AggregateBuilderStage(document: [
@@ -158,6 +153,6 @@ public struct AggregateBuilderPipeline: QueryCursor {
         )
         pipeline.writing = true
         
-        return pipeline.execute().map { _ in }
+        _ = try await pipeline.execute()
     }
 }

@@ -1,7 +1,7 @@
 import BSON
 
-public struct MongoMessageHeader {
-    public enum OpCode: Int32 {
+public struct MongoMessageHeader: Sendable {
+    public enum OpCode: Int32, Sendable {
         case reply = 1
         case update = 2001
         case insert = 2002

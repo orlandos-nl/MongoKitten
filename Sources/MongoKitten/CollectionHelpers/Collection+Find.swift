@@ -10,7 +10,7 @@ extension MongoCollection {
                 inCollection: self.name
             ),
             collection: self,
-            connection: pool.next(for: .basic)
+            makeConnection: { [pool] in try await pool.next(for: .basic) }
         )
     }
     
@@ -22,64 +22,58 @@ extension MongoCollection {
         return find(query).decode(type)
     }
 
-    public func findOne<D: Decodable>(_ query: Document = [:], as type: D.Type) -> EventLoopFuture<D?> {
-        return find(query).limit(1).decode(type).firstResult()
+    public func findOne<D: Decodable>(_ query: Document = [:], as type: D.Type) async throws -> D? {
+        return try await find(query).limit(1).decode(type).firstResult()
     }
     
-    public func findOne<D: Decodable, Query: MongoKittenQuery>(_ query: Query, as type: D.Type) -> EventLoopFuture<D?> {
-        return findOne(query.makeDocument(), as: type)
+    public func findOne<D: Decodable, Query: MongoKittenQuery>(_ query: Query, as type: D.Type) async throws -> D? {
+        return try await findOne(query.makeDocument(), as: type)
     }
 
-    public func findOne(_ query: Document = [:]) -> EventLoopFuture<Document?> {
-        return find(query).limit(1).firstResult()
+    public func findOne(_ query: Document = [:]) async throws -> Document? {
+        return try await find(query).limit(1).firstResult()
     }
     
-    public func findOne<Query: MongoKittenQuery>(_ query: Query) -> EventLoopFuture<Document?> {
-        return findOne(query.makeDocument())
+    public func findOne<Query: MongoKittenQuery>(_ query: Query) async throws -> Document? {
+        return try await findOne(query.makeDocument())
     }
 }
 
 /// A builder that constructs a `FindCommand`
 public final class FindQueryBuilder: QueryCursor {
     /// The collection this cursor applies to
-    private let connection: EventLoopFuture<MongoConnection>
+    private let makeConnection: () async throws -> MongoConnection
     public var command: FindCommand
     private let collection: MongoCollection
     public var isDrained: Bool { false }
 
-    public var eventLoop: EventLoop { collection.eventLoop }
-    public var hoppedEventLoop: EventLoop? { collection.hoppedEventLoop }
-
-    init(command: FindCommand, collection: MongoCollection, connection: EventLoopFuture<MongoConnection>, transaction: MongoTransaction? = nil) {
+    init(command: FindCommand, collection: MongoCollection, makeConnection: @Sendable @escaping () async throws -> MongoConnection, transaction: MongoTransaction? = nil) {
         self.command = command
-        self.connection = connection
+        self.makeConnection = makeConnection
         self.collection = collection
     }
 
-    public func getConnection() -> EventLoopFuture<MongoConnection> {
-        return connection
+    public func getConnection() async throws  -> MongoConnection {
+        return try await makeConnection()
     }
 
-    public func execute() -> EventLoopFuture<FinalizedCursor<FindQueryBuilder>> {
-        return connection.flatMap { connection in
-            connection.executeCodable(
-                self.command,
-                namespace: MongoNamespace(to: "$cmd", inDatabase: self.collection.database.name),
-                in: self.collection.transaction,
-                sessionId: self.collection.sessionId ?? connection.implicitSessionId
-            ).flatMapThrowing { reply in
-                let response = try MongoCursorResponse(reply: reply)
-                let cursor = MongoCursor(
-                    reply: response.cursor,
-                    in: self.collection.namespace,
-                    connection: connection,
-                    hoppedEventLoop: self.collection.hoppedEventLoop,
-                    session: connection.implicitSession,
-                    transaction: self.collection.transaction
-                )
-                return FinalizedCursor(basedOn: self, cursor: cursor)
-            }
-        }._mongoHop(to: collection.hoppedEventLoop)
+    public func execute() async throws -> FinalizedCursor<FindQueryBuilder> {
+        let connection = try await getConnection()
+        let response = try await connection.executeCodable(
+            self.command,
+            decodeAs: MongoCursorResponse.self,
+            namespace: MongoNamespace(to: "$cmd", inDatabase: self.collection.database.name),
+            in: self.collection.transaction,
+            sessionId: self.collection.sessionId ?? connection.implicitSessionId
+        )
+        let cursor = MongoCursor(
+            reply: response.cursor,
+            in: self.collection.namespace,
+            connection: connection,
+            session: connection.implicitSession,
+            transaction: self.collection.transaction
+        )
+        return FinalizedCursor(basedOn: self, cursor: cursor)
     }
     
     public func transformElement(_ element: Document) throws -> Document {

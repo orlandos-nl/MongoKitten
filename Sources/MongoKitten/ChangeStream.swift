@@ -19,8 +19,8 @@ extension MongoCollection {
         options: ChangeStreamOptions = .init(),
         using decoder: BSONDecoder = BSONDecoder(),
         @AggregateBuilder build: () -> AggregateBuilderStage
-    ) -> EventLoopFuture<ChangeStream<Document>> {
-        buildChangeStream(options: options, as: Document.self, using: decoder, build: build)
+    ) async throws -> ChangeStream<Document> {
+        try await buildChangeStream(options: options, as: Document.self, using: decoder, build: build)
     }
     
     public func buildChangeStream<T: Decodable>(
@@ -28,58 +28,48 @@ extension MongoCollection {
         as type: T.Type,
         using decoder: BSONDecoder = BSONDecoder(),
         @AggregateBuilder build: () -> AggregateBuilderStage
-    ) -> EventLoopFuture<ChangeStream<T>> {
-        do {
-            let optionsDocument = try BSONEncoder().encode(options)
-            let changeStreamStage = AggregateBuilderStage(document: [
-                "$changeStream": optionsDocument
-            ])
-            
-            var pipeline = AggregateBuilderPipeline(stages: [build()])
-            pipeline.stages.insert(changeStreamStage, at: 0)
-            pipeline.collection = self
-            
-            return pipeline
-                .decode(ChangeStreamNotification<T>.self, using: decoder)
-                .execute()
-                .map { finalizedCursor in
-                    finalizedCursor.cursor.maxTimeMS = options.maxAwaitTimeMS.map(Int32.init)
-                    return ChangeStream(finalizedCursor, options: options)
-                }
-        } catch {
-            return eventLoop.makeFailedFuture(error)
-        }
+    ) async throws -> ChangeStream<T> {
+        let optionsDocument = try BSONEncoder().encode(options)
+        let changeStreamStage = AggregateBuilderStage(document: [
+            "$changeStream": optionsDocument
+        ])
+        
+        var pipeline = AggregateBuilderPipeline(stages: [build()])
+        pipeline.stages.insert(changeStreamStage, at: 0)
+        pipeline.collection = self
+        
+        let finalizedCursor = try await pipeline
+            .decode(ChangeStreamNotification<T>.self, using: decoder)
+            .execute()
+        
+        finalizedCursor.cursor.maxTimeMS = options.maxAwaitTimeMS.map(Int32.init)
+        return ChangeStream(finalizedCursor, options: options)
     }
     
     public func watch(
         options: ChangeStreamOptions = .init()
-    ) -> EventLoopFuture<ChangeStream<Document>> {
-        return watch(options: options, as: Document.self)
+    ) async throws -> ChangeStream<Document> {
+        return try await watch(options: options, as: Document.self)
     }
     
     public func watch<T: Decodable>(
         options: ChangeStreamOptions = .init(),
         as type: T.Type,
         using decoder: BSONDecoder = BSONDecoder()
-    ) -> EventLoopFuture<ChangeStream<T>> {
-        do {
-            let optionsDocument = try BSONEncoder().encode(options)
-            let stage = AggregateBuilderStage(document: [
-                "$changeStream": optionsDocument
-            ])
-            
-            let pipeline = self.aggregate([stage]).decode(
-                ChangeStreamNotification<T>.self,
-                using: decoder
-            )
-            
-            return pipeline.execute().map { finalizedCursor in
-                finalizedCursor.cursor.maxTimeMS = options.maxAwaitTimeMS.map(Int32.init)
-                return ChangeStream(finalizedCursor, options: options)
-            }
-        } catch {
-            return eventLoop.makeFailedFuture(error)
-        }
+    ) async throws -> ChangeStream<T> {
+        let optionsDocument = try BSONEncoder().encode(options)
+        let stage = AggregateBuilderStage(document: [
+            "$changeStream": optionsDocument
+        ])
+        
+        let pipeline = self.aggregate([stage]).decode(
+            ChangeStreamNotification<T>.self,
+            using: decoder
+        )
+        
+        let finalizedCursor = try await pipeline.execute()
+        finalizedCursor.cursor.maxTimeMS = options.maxAwaitTimeMS.map(Int32.init)
+        return ChangeStream(finalizedCursor, options: options)
     }
 }
 
@@ -96,34 +86,27 @@ public struct ChangeStream<T: Decodable> {
         self.options = options
     }
     
-    public mutating func setGetMoreInterval(to interval: TimeAmount) {
+    public mutating func setGetMoreInterval(to interval: TimeAmount? = nil) {
         self.getMoreInterval = interval
     }
     
-    public func forEach(handler: @escaping (Notification) -> Bool) {
-        func nextBatch() -> EventLoopFuture<Void> {
-            return cursor.nextBatch().flatMap { batch in
-                for element in batch {
-                    if !handler(element) {
-                        return self.cursor.base.eventLoop.makeSucceededFuture(())
+    @discardableResult
+    public func forEach(handler: @escaping (Notification) async throws -> Bool) -> Task<Void, Error> {
+        Task {
+            while !cursor.isDrained {
+                for element in try await cursor.nextBatch() {
+                    if try await !handler(element) {
+                        return
                     }
-                }
-
-                if self.cursor.isDrained {
-                    return self.cursor.base.eventLoop.makeSucceededFuture(())
                 }
                 
                 if let getMoreInterval = self.getMoreInterval {
-                    return self.cursor.cursor.eventLoop.flatScheduleTask(in: getMoreInterval) {
-                        nextBatch()
-                    }.futureResult
+                    try await Task.sleep(nanoseconds: UInt64(getMoreInterval.nanoseconds))
                 } else {
-                    return nextBatch()
+                    try Task.checkCancellation()
                 }
             }
         }
-        
-        _ = nextBatch()
     }
 }
 

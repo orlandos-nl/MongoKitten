@@ -25,38 +25,36 @@ public struct Reference<M: ReadableModel>: Resolvable, Equatable, PrimitiveConve
     }
     
     /// Resolves a reference
-    public func resolve(in context: MeowDatabase, where query: Document = Document()) -> EventLoopFuture<M> {
-        return resolveIfPresent(in: context, where: query).flatMapThrowing { referenced in
-            guard let referenced = referenced else {
-                throw MeowModelError.referenceError(id: self.reference, type: M.self)
-            }
-            
-            return referenced
+    public func resolve(in context: MeowDatabase, where query: Document = Document()) async throws -> M {
+        guard let referenced = try await resolveIfPresent(in: context, where: query) else {
+            throw MeowModelError.referenceError(id: self.reference, type: M.self)
         }
+        
+        return referenced
     }
     
     /// Resolves a reference, returning `nil` if the referenced object cannot be found
-    public func resolveIfPresent(in context: MeowDatabase, where query: Document = Document()) -> EventLoopFuture<M?> {
+    public func resolveIfPresent(in context: MeowDatabase, where query: Document = Document()) async throws -> M? {
         let base = "_id" == reference
         
         if query.isEmpty {
-            return context.collection(for: M.self).findOne(where: base)
+            return try await context.collection(for: M.self).findOne(where: base)
         } else {
             let condition = base && query
-            return context.collection(for: M.self).findOne(where: condition)
+            return try await context.collection(for: M.self).findOne(where: condition)
         }
     }
     
-    public func exists(in db: MeowDatabase) -> EventLoopFuture<Bool> {
-        return db[M.self].count(where: "_id" == reference).map { $0 > 0 }
+    public func exists(in db: MeowDatabase) async throws -> Bool {
+        return try await db[M.self].count(where: "_id" == reference) > 0
     }
     
-    public func exists(in db: MeowDatabase, where filter: Document) -> EventLoopFuture<Bool> {
-        return db[M.self].count(where: "_id" == reference && filter).map { $0 > 0 }
+    public func exists(in db: MeowDatabase, where filter: Document) async throws -> Bool {
+        return try await db[M.self].count(where: "_id" == reference && filter) > 0
     }
     
-    public func exists<Query: MongoKittenQuery>(in db: MeowDatabase, where filter: Query) -> EventLoopFuture<Bool> {
-        return self.exists(in: db, where: filter.makeDocument())
+    public func exists<Query: MongoKittenQuery>(in db: MeowDatabase, where filter: Query) async throws -> Bool {
+        return try await self.exists(in: db, where: filter.makeDocument())
     }
     
     public func makePrimitive() -> Primitive? {
@@ -66,16 +64,16 @@ public struct Reference<M: ReadableModel>: Resolvable, Equatable, PrimitiveConve
 
 extension Reference where M: MutableModel {
     /// Deletes the target of the reference (making it invalid)
-    public func deleteTarget(in context: MeowDatabase) -> EventLoopFuture<MeowOperationResult> {
-        return context.collection(for: M.self)
+    @discardableResult
+    public func deleteTarget(in context: MeowDatabase) async throws-> MeowOperationResult {
+        let result = try await context.collection(for: M.self)
             .deleteOne(where: "_id" == reference)
-            .map { result in
-            return MeowOperationResult(
-                success: result.deletes > 0,
-                n: result.deletes,
-                writeErrors: result.writeErrors
-            )
-        }
+            
+        return MeowOperationResult(
+            success: result.deletes > 0,
+            n: result.deletes,
+            writeErrors: result.writeErrors
+        )
     }
 }
 
@@ -99,8 +97,8 @@ public protocol Resolvable {
     associatedtype Result
     associatedtype IfPresentResult
     
-    func resolve(in context: MeowDatabase, where query: Document) -> EventLoopFuture<Result>
-    func resolveIfPresent(in context: MeowDatabase, where query: Document) -> EventLoopFuture<IfPresentResult>
+    func resolve(in context: MeowDatabase, where query: Document) async throws -> Result
+    func resolveIfPresent(in context: MeowDatabase, where query: Document) async throws -> IfPresentResult
 }
 
 extension Set: Resolvable where Element: Resolvable {}
@@ -110,18 +108,20 @@ extension Sequence where Element: Resolvable {
     ///
     /// - parameter context: The context to use for resolving the references
     /// - returns: An EventLoopFuture that completes with an array of
-    public func resolve(in database: MeowDatabase, where query: Document = Document()) -> EventLoopFuture<[Element.Result]> {
-        let futures = self.map { $0.resolve(in: database, where: query) }
-        return EventLoopFuture.reduce(into: [], futures, on: database.eventLoop) { array, resolved in
-            array.append(resolved)
+    public func resolve(in database: MeowDatabase, where query: Document = Document()) async throws -> [Element.Result] {
+        var results = [Element.Result]()
+        for reference in self {
+            try await results.append(reference.resolve(in: database, where: query))
         }
+        return results
     }
     
-    public func resolveIfPresent(in database: MeowDatabase, where query: Document = Document()) -> EventLoopFuture<[Element.IfPresentResult]> {
-        let futures = self.map { $0.resolveIfPresent(in: database, where: query) }
-        return EventLoopFuture.reduce(into: [], futures, on: database.eventLoop) { array, resolved in
-            array.append(resolved)
+    public func resolveIfPresent(in database: MeowDatabase, where query: Document = Document()) async throws -> [Element.IfPresentResult] {
+        var results = [Element.IfPresentResult]()
+        for reference in self {
+            try await results.append(reference.resolveIfPresent(in: database, where: query))
         }
+        return results
     }
 }
 
@@ -129,17 +129,17 @@ extension Optional: Resolvable where Wrapped: Resolvable {
     public typealias Result = Wrapped.Result?
     public typealias IfPresentResult = Wrapped.IfPresentResult?
     
-    public func resolve(in database: MeowDatabase, where query: Document) -> EventLoopFuture<Wrapped.Result?> {
+    public func resolve(in database: MeowDatabase, where query: Document) async throws -> Wrapped.Result? {
         switch self {
-        case .none: return database.eventLoop.makeSucceededFuture(nil)
-        case .some(let value): return value.resolve(in: database, where: query).map { $0 }
+        case .none: return nil
+        case .some(let value): return try await value.resolve(in: database, where: query)
         }
     }
     
-    public func resolveIfPresent(in database: MeowDatabase, where query: Document) -> EventLoopFuture<Wrapped.IfPresentResult?> {
+    public func resolveIfPresent(in database: MeowDatabase, where query: Document) async throws -> Wrapped.IfPresentResult? {
         switch self {
-        case .none: return database.eventLoop.makeSucceededFuture(nil)
-        case .some(let value): return value.resolveIfPresent(in: database, where: query).map { $0 }
+        case .none: return nil
+        case .some(let value): return try await value.resolveIfPresent(in: database, where: query)
         }
     }
 }

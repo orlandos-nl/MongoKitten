@@ -1,3 +1,4 @@
+import BSON
 import NIO
 import MongoCore
 
@@ -36,14 +37,14 @@ public final class MongoCursor {
     }
 
     /// Performs a `GetMore` command on the database, requesting the next batch of items
-    public func getMore(batchSize: Int) -> EventLoopFuture<[Document]> {
+    public func getMore(batchSize: Int) async throws -> [Document] {
         if let initialBatch = self.initialBatch {
             self.initialBatch = nil
-            return connection.eventLoop.makeSucceededFuture(initialBatch)
+            return initialBatch
         }
 
         guard !isDrained else {
-            return connection.eventLoop.makeFailedFuture(MongoError(.cannotGetMore, reason: .cursorDrained))
+            throw MongoError(.cannotGetMore, reason: .cursorDrained)
         }
 
         var command = GetMore(
@@ -54,39 +55,29 @@ public final class MongoCursor {
         command.maxTimeMS = self.maxTimeMS
         command.readConcern = readConcern
         
-        return connection.executeCodable(
+        let newCursor = try await connection.executeCodable(
             command,
+            decodeAs: GetMoreReply.self,
             namespace: namespace,
             in: self.transaction,
             sessionId: session?.sessionId
-        ).flatMapThrowing { reply in
-            let newCursor = try GetMoreReply(reply: reply)
-            self.id = newCursor.cursor.id
-            return newCursor.cursor.nextBatch
-        }
+        )
+        
+        self.id = newCursor.cursor.id
+        return newCursor.cursor.nextBatch
     }
 
     /// Closes the cursor stopping any further data from being read
-    public func close() -> EventLoopFuture<Void> {
+    public func close() async throws {
         let command = KillCursorsCommand([self.id], inCollection: namespace.collectionName)
         self.id = 0
-        let closed = connection.executeCodable(
+        defer { closePromise.succeed(()) }
+        let reply = try await connection.executeEncodable(
             command,
             namespace: namespace,
             in: self.transaction,
             sessionId: session?.sessionId
-        ).flatMapThrowing { reply -> Void in
-            try reply.assertOK()
-        }
-        
-        closed.whenComplete { [closePromise] _ in
-            closePromise.succeed(())
-        }
-        
-        return closed
-    }
-    
-    deinit {
-        _ = close()
+        )
+        try reply.assertOK()
     }
 }

@@ -20,14 +20,20 @@ internal struct ClientConnectionParser: ByteToMessageDecoder {
         do {
             let result = try parser.parse(from: &buffer)
 
-            if let reply = parser.takeReply(), !context.handleReply(reply) {
-                print("Reply received from MongoDB, but no request was waiting for the result.")
+            if let reply = parser.takeReply() {
+                Task { [context] in
+                    if await !context.handleReply(reply) {
+                        print("Reply received from MongoDB, but no request was waiting for the result.")
+                    }
+                }
             }
 
             return result
         } catch {
-            self.context.cancelQueries(error)
-            self.context.didError = true
+            Task { [context] in
+                await context.cancelQueries(error)
+            }
+            
             throw error
         }
     }

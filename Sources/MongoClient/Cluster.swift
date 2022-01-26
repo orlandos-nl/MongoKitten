@@ -71,42 +71,24 @@ public final class MongoCluster: MongoConnectionPool {
         }
     }
 
-    private let isDiscovering: EventLoopPromise<Void>
-    public var initialDiscovery: EventLoopFuture<Void> {
-        return isDiscovering.futureResult
-    }
-    
     /// A list of currently open connections
-    ///
-    /// This is not thread safe outside of the cluster's eventloop
     private var pool: [PooledConnection]
-    private let group: _MongoPlatformEventLoopGroup
-    public let eventLoop: EventLoop
     
     /// The WireVersion used by this cluster's nodes
-    ///
-    /// This is not thread safe outside of the cluster's eventloop
     public private(set) var wireVersion: WireVersion?
 
     /// If `true`, no connections will be opened and all existing connections will be shut down
-    ///
-    /// This is not thread safe outside of the cluster's eventloop
     private var isClosed = false
 
     /// Used as a shortcut to not have to set a callback on `isDiscovering`
-    ///
-    /// This is not thread safe outside of the cluster's eventloop
     private var completedInitialDiscovery = false
+    private var isDiscovering = false
 
     private init(
-        group: _MongoPlatformEventLoopGroup,
         settings: ConnectionSettings,
         logger: Logger
     ) {
-        self.eventLoop = group.next()
-        self.group = group
         self.settings = settings
-        self.isDiscovering = eventLoop.makePromise()
         self.pool = []
         self.hosts = Set(settings.hosts)
         self.logger = logger
@@ -117,51 +99,39 @@ public final class MongoCluster: MongoConnectionPool {
     /// This is useful when you need a cluster synchronously to query asynchronously
     public convenience init(
         lazyConnectingTo settings: ConnectionSettings,
-        on group: _MongoPlatformEventLoopGroup,
-        logger: Logger = .defaultMongoCore
-    ) throws {
+        allowFailure: Bool = false,
+        logger: Logger = Logger(label: "org.openkitten.mongokitten.cluster")
+    ) async throws {
         guard settings.hosts.count > 0 else {
             logger.error("No MongoDB servers were specified while creating a cluster")
             throw MongoError(.cannotConnect, reason: .noHostSpecified)
         }
 
-        self.init(group: group, settings: settings, logger: logger)
+        self.init(settings: settings, logger: logger)
 
-        MongoCluster.withResolvedSettings(settings, on: group) { settings, dns -> EventLoopFuture<Void> in
+        try await MongoCluster.withResolvedSettings(settings) { settings, dns in
             self.settings = settings
             self.dns = dns
-
-            return self.makeConnectionRecursively(for: .init(writable: false), emptyPoolError: nil).flatMap { _ in
-                return self.rediscover()
-            }
-        }.whenComplete { result in
-            self.completedInitialDiscovery = true
-
-            if self.pool.count > 0 {
-                self.isDiscovering.succeed(())
-            } else {
-                self.isDiscovering.fail(MongoError(.cannotConnect, reason: .noAvailableHosts))
-            }
         }
 
-        self.initialDiscovery.whenComplete { _ in self.scheduleDiscovery() }
-    }
-
-    /// Connects to a cluster asynchronously
-    ///
-    /// You can query it using the Cluster returned from the future
-    public static func connect(on group: _MongoPlatformEventLoopGroup, settings: ConnectionSettings) -> EventLoopFuture<MongoCluster> {
-        do {
-            let cluster = try MongoCluster(lazyConnectingTo: settings, on: group)
-            return cluster.initialDiscovery.map { cluster }
-        } catch {
-            return group.next().makeFailedFuture(error)
+        if self.pool.count == 0, !allowFailure {
+            throw MongoError(.cannotConnect, reason: .noAvailableHosts)
         }
+
+        scheduleDiscovery()
     }
 
-    private func scheduleDiscovery() {
-        _ = eventLoop.scheduleTask(in: heartbeatFrequency) { [weak self] in
-            self?.rediscover().whenComplete { _ in self?.scheduleDiscovery() }
+    @discardableResult
+    private func scheduleDiscovery() -> Task<Void, Never> {
+        return Task {
+            if isDiscovering { return }
+            
+            isDiscovering = true
+            defer { isDiscovering = false }
+            
+            while !isClosed {
+                await rediscover()
+            }
         }
     }
 
@@ -190,162 +160,124 @@ public final class MongoCluster: MongoConnectionPool {
         }
     }
 
-    private static func withResolvedSettings<T>(_ settings: ConnectionSettings, on loop: _MongoPlatformEventLoopGroup, run: @escaping (ConnectionSettings, DNSClient?) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+    private static func withResolvedSettings<T>(_ settings: ConnectionSettings, run: @Sendable @escaping (ConnectionSettings, DNSClient?) async throws -> T) async throws -> T {
         if !settings.isSRV {
-            return run(settings, nil)
+            return try await run(settings, nil)
         }
 
         let host = settings.hosts.first!
+        let client: DNSClient
         
-        let client: EventLoopFuture<DNSClient>
-        
-        do {
-            #if canImport(NIOTransportServices) && os(iOS)
-                if let dnsServer = settings.dnsServer {
-                    client = try DNSClient.connectTS(on: loop, config: [SocketAddress(ipAddress: dnsServer, port: 53)])
-                } else {
-                    client = DNSClient.connectTS(on: loop)
-                }
-            #else
-                if let dnsServer = settings.dnsServer {
-                    client = try DNSClient.connect(on: loop, config: [SocketAddress(ipAddress: dnsServer, port: 53)])
-                } else {
-                    client = DNSClient.connect(on: loop)
-                }
-            #endif
-        } catch {
-            return loop.next().makeFailedFuture(error)
+        if let dnsServer = settings.dnsServer {
+            client = try await DNSClient(servers: [SocketAddress(ipAddress: dnsServer, port: 53)])
+        } else {
+            client = try await DNSClient()
         }
         
-        return client.flatMap { client in
-            let srv = resolveSRV(host, on: client)
-//            let txt = resolveTXT(host, on: client)
-//            return srv.and(txt).flatMap { hosts, query in
-            return srv.flatMap { hosts in
-                var settings = settings
-                // TODO: Use query
-                settings.hosts = hosts
-                return run(settings, client)
-            }
-        }
+        var settings = settings
+        settings.hosts = try await resolveSRV(host, on: client)
+        return try await run(settings, client)
     }
-
-//    private static func resolveTXT(_ host: ConnectionSettings.Host, on client: DNSClient) -> EventLoopFuture<String?> {
-//        return client.sendQuery(forHost: host.hostname, type: .txt).map { message -> String? in
-//            guard let answer = message.answers.first else { return nil }
-//            guard case .txt(let txt) = answer else { return nil }
-//            return txt.resource.text
-//        }
-//    }
 
     private static let prefix = "_mongodb._tcp."
-    private static func resolveSRV(_ host: ConnectionSettings.Host, on client: DNSClient) -> EventLoopFuture<[ConnectionSettings.Host]> {
-        let srvRecords = client.getSRVRecords(from: prefix + host.hostname)
-
-        return srvRecords.map { records in
-            return records.map { record in
-                return ConnectionSettings.Host(hostname: record.resource.domainName.string, port: host.port)
-            }
+    private static func resolveSRV(_ host: ConnectionSettings.Host, on client: DNSClient) async throws -> [ConnectionSettings.Host] {
+        return try await client.getSRVRecords(from: prefix + host.hostname).get().map { record in
+            return ConnectionSettings.Host(hostname: record.resource.domainName.string, port: host.port)
         }
     }
+    
+    #if canImport(NIOTransportServices) && os(iOS)
+    let group = NIOTSEventLoopGroup(loopCount: 1)
+    #else
+    let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    #endif
 
-    private func makeConnection(to host: ConnectionSettings.Host) -> EventLoopFuture<PooledConnection> {
+    private func makeConnection(to host: ConnectionSettings.Host) async throws -> PooledConnection {
         if isClosed {
-            return eventLoop.makeFailedFuture(MongoError(.cannotConnect, reason: .connectionClosed))
+            throw MongoError(.cannotConnect, reason: .connectionClosed)
         }
 
         discoveredHosts.insert(host)
         var settings = self.settings
         settings.hosts = [host]
 
-        // TODO: Failed to connect, different host until all hosts have been had
-        let connection = MongoConnection.connect(
-            settings: settings,
-            on: eventLoop,
-            logger: logger,
-            resolver: self.dns,
-            sessionManager: sessionManager
-        ).map { connection -> PooledConnection in
+        do {
+            let connection = try await MongoConnection.connect(
+                settings: settings,
+                logger: logger,
+                onGroup: group,
+                resolver: self.dns,
+                sessionManager: sessionManager
+            )
             connection.slaveOk = self.slaveOk
 
             /// Ensures we default to the cluster's lowest version
-            if let connectionHandshake = connection.serverHandshake {
+            if let connectionHandshake = await connection.serverHandshake {
                 self.updateSDAM(from: connectionHandshake)
             }
 
-            let connectionId = ObjectIdentifier(connection)
-            connection.closeFuture.whenComplete { [weak self] _ in
+            connection.closeFuture.whenComplete { [weak self, connection] _ in
                 guard let me = self else { return }
 
-                me.remove(connectionId: connectionId, error: MongoError(.queryFailure, reason: .connectionClosed))
+                Task {
+                    await me.remove(connection: connection, error: MongoError(.queryFailure, reason: .connectionClosed))
+                }
             }
 
             return PooledConnection(host: host, connection: connection)
-        }
-
-        connection.whenFailure { [logger] error in
+        } catch {
             logger.error("Connection to \(host) disconnected with error \(error)")
             
             self.timeoutHosts.insert(host)
             self.discoveredHosts.remove(host)
+            throw error
         }
-
-        return connection
     }
 
     /// Checks all known hosts for isMaster and writability
-    private func rediscover() -> EventLoopFuture<Void> {
+    private func rediscover() async {
         if isClosed {
             logger.info("Rediscovering, but the server is disconnected")
-            return eventLoop.makeFailedFuture(MongoError(.cannotConnect, reason: .connectionClosed))
+            return
         }
 
         self.wireVersion = nil
-        var handshakes = [EventLoopFuture<Void>]()
 
         for pooledConnection in pool {
-            let handshake = pooledConnection.connection.doHandshake(
-                clientDetails: nil,
-                credentials: settings.authentication
-            )
-            handshake.whenFailure { _ in
-                self.discoveredHosts.remove(pooledConnection.host)
-            }
-
-            handshakes.append(handshake.map { handshake in
+            let connection = pooledConnection.connection
+            
+            do {
+                let handshake = try await connection.doHandshake(
+                    clientDetails: nil,
+                    credentials: settings.authentication
+                )
+                
                 self.updateSDAM(from: handshake)
-            })
-        }
-
-        if !timeoutHosts.isEmpty {
-            logger.info("Resetting timeout for \(timeoutHosts.count) hosts")
+            } catch {
+                await self.remove(connection: connection, error: error)
+            }
         }
         
         self.timeoutHosts = []
-        let done = EventLoopFuture<Void>.andAllComplete(handshakes, on: self.eventLoop)
-        if let didRediscover = self.didRediscover {
-            done.whenSuccess(didRediscover)
-        }
-        
-        return done
+        self.completedInitialDiscovery = true
     }
 
-    private func remove(connectionId: ObjectIdentifier, error: Error) {
-        if let index = self.pool.firstIndex(where: { ObjectIdentifier($0.connection) == connectionId }) {
+    private func remove(connection: MongoConnection, error: Error) async {
+        if let index = self.pool.firstIndex(where: { $0.connection === connection }) {
             let pooledConnection = self.pool[index]
             self.pool.remove(at: index)
             self.discoveredHosts.remove(pooledConnection.host)
-            pooledConnection.connection.context.cancelQueries(error)
+            await pooledConnection.connection.context.cancelQueries(error)
         }
     }
 
-    fileprivate func findMatchingConnection(writable: Bool) -> PooledConnection? {
+    fileprivate func findMatchingExistingConnection(writable: Bool) async -> PooledConnection? {
         var matchingConnection: PooledConnection?
 
         nextConnection: for pooledConnection in pool {
             let connection = pooledConnection.connection
 
-            guard let handshakeResult = connection.serverHandshake else {
+            guard let handshakeResult = await connection.serverHandshake else {
                 continue nextConnection
             }
 
@@ -362,88 +294,80 @@ public final class MongoCluster: MongoConnectionPool {
         return matchingConnection
     }
     
-    private func makeConnectionRecursively(for request: MongoConnectionPoolRequest, emptyPoolError: Error?, attempts: Int = 3) -> EventLoopFuture<MongoConnection> {
-        return self._getConnection(writable: request.writable).flatMapError { error in
-            if attempts <= 0 {
-                return self.eventLoop.makeFailedFuture(error)
+    private func makeConnectionRecursively(for request: MongoConnectionPoolRequest, attempts: Int = 3) async throws -> MongoConnection {
+        var attempts = attempts
+        while true {
+            do {
+                return try await self._getConnection(writable: request.writable)
+            } catch {
+                attempts -= 1
+                
+                if attempts < 0 {
+                    throw error
+                }
             }
-            
-            return self.makeConnectionRecursively(for: request, emptyPoolError: error, attempts: attempts - 1)
         }
     }
 
-    public func next(for request: MongoConnectionPoolRequest) -> EventLoopFuture<MongoConnection> {
-        if completedInitialDiscovery {
-            return makeConnectionRecursively(for: request, emptyPoolError: nil)
-        }
-
-        return isDiscovering.futureResult.flatMap {
-            return self.makeConnectionRecursively(for: request, emptyPoolError: nil)
-        }
+    public func next(for request: MongoConnectionPoolRequest) async throws -> MongoConnection {
+        return try await self.makeConnectionRecursively(for: request)
     }
 
-    private func _getConnection(writable: Bool = true, emptyPoolError: Error? = nil) -> EventLoopFuture<MongoConnection> {
-        if let matchingConnection = findMatchingConnection(writable: writable) {
-            return eventLoop.makeSucceededFuture(matchingConnection.connection)
+    private func _getConnection(writable: Bool = true, emptyPoolError: Error? = nil) async throws -> MongoConnection {
+        if let matchingConnection = await findMatchingExistingConnection(writable: writable) {
+            return matchingConnection.connection
         }
 
         guard let host = undiscoveredHosts.first else {
-            return self.rediscover().flatMapThrowing { _ in
-                guard let match = self.findMatchingConnection(writable: writable) else {
-                    self.logger.error("Couldn't find or create a connection to MongoDB with the requested specification")
-                    throw emptyPoolError ?? MongoError(.cannotConnect, reason: .noAvailableHosts)
-                }
-
-                return match.connection
+            await self.rediscover()
+            guard let match = await findMatchingExistingConnection(writable: writable) else {
+                self.logger.error("Couldn't find or create a connection to MongoDB with the requested specification")
+                throw emptyPoolError ?? MongoError(.cannotConnect, reason: .noAvailableHosts)
             }
+
+            return match.connection
         }
 
         logger.info("No matching connection found with host: \(host) - creating new connection")
-        return makeConnection(to: host).flatMap { pooledConnection in
-            self.pool.append(pooledConnection)
+        let pooledConnection = try await makeConnection(to: host)
+        self.pool.append(pooledConnection)
 
-            guard let handshake = pooledConnection.connection.serverHandshake else {
-                return self.eventLoop.makeFailedFuture(MongoError(.cannotConnect, reason: .handshakeFailed))
-            }
+        guard let handshake = await pooledConnection.connection.serverHandshake else {
+            throw MongoError(.cannotConnect, reason: .handshakeFailed)
+        }
 
-            let unwritable = writable && handshake.readOnly == true
-            let unreadable = !self.slaveOk && !handshake.ismaster
+        let unwritable = writable && handshake.readOnly == true
+        let unreadable = !self.slaveOk && !handshake.ismaster
 
-            if unwritable || unreadable {
-                return self._getConnection(writable: writable)
-            } else {
-                return self.eventLoop.makeSucceededFuture(pooledConnection.connection)
-            }
+        if unwritable || unreadable {
+            return try await self._getConnection(writable: writable)
+        } else {
+            return pooledConnection.connection
         }
     }
 
     /// Closes all connections
-    @discardableResult
-    public func disconnect() -> EventLoopFuture<Void> {
+    public func disconnect() async {
         logger.debug("Disconnecting MongoDB Cluster")
-        return self.eventLoop.flatSubmit {
-            self.wireVersion = nil
-            self.isClosed = true
-            let connections = self.pool
-            self.pool = []
-            self.discoveredHosts = []
+        self.wireVersion = nil
+        self.isClosed = true
+        let connections = self.pool
+        self.pool = []
+        self.discoveredHosts = []
 
-            let closed = connections.map { remote in
-                return remote.connection.close()
-            }
-
-            return EventLoopFuture<Void>.andAllComplete(closed, on: self.eventLoop)
+        for pooledConnection in connections {
+            await pooledConnection.connection.close()
         }
     }
 
     /// Prompts MongoKitten to connect to the remote again
-    public func reconnect() -> EventLoopFuture<Void> {
+    public func reconnect() async throws {
         logger.debug("Reconnecting to MongoDB Cluster")
-        return disconnect().flatMap {
-            self.isClosed = false
-
-            return self.next(for: MongoConnectionPoolRequest(writable: false)).map { _ in }
-        }
+        await disconnect()
+        self.isClosed = false
+        self.completedInitialDiscovery = false
+        _ = try await self.next(for: MongoConnectionPoolRequest(writable: true))
+        await rediscover()
     }
 }
 

@@ -4,7 +4,7 @@ import BSON
 fileprivate let knownBits: UInt32 = 0b11000000_00000001_00000000_00000000
 fileprivate let unknownBits: UInt32 = knownBits ^ .max
 
-public struct OpMessageFlags: OptionSet {
+public struct OpMessageFlags: OptionSet, Sendable {
     public var rawValue: UInt32
     
     /// [See spec](https://docs.mongodb.com/manual/reference/mongodb-wire-protocol/#flag-bits)
@@ -29,13 +29,13 @@ public struct OpMessageFlags: OptionSet {
 }
 
 
-public struct OpMessage: MongoRequestMessage, MongoResponseMessage {
-    public enum SectionType: Int32 {
+public struct OpMessage: MongoRequestMessage, MongoResponseMessage , Sendable{
+    public enum SectionType: Int32, Sendable {
         case body = 0
         case sequence = 1
     }
     
-    public struct Sequence {
+    public struct Sequence: Sendable {
         public var size: Int32
         public var sequenceIdentifier: String
         public var documents: [Document]
@@ -50,7 +50,7 @@ public struct OpMessage: MongoRequestMessage, MongoResponseMessage {
         }
     }
     
-    public enum Section {
+    public enum Section: Sendable {
         case body(Document)
         case sequence(Sequence)
     }

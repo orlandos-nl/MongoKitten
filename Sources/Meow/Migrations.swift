@@ -12,7 +12,7 @@ fileprivate struct EncodingHelper<V: Encodable>: Encodable {
 }
 
 public class Migrator<M: Model> {
-    public typealias Action = (MeowCollection<M>) throws -> EventLoopFuture<Void>
+    public typealias Action = (MeowCollection<M>) async throws -> ()
     
     public let database: MeowDatabase
     
@@ -22,32 +22,12 @@ public class Migrator<M: Model> {
     
     private var actions = [Action]()
     
-    func execute() -> EventLoopFuture<Void> {
+    func execute() async throws {
         let collection = self.database.collection(for: M.self)
-        let promise = self.database.eventLoop.makePromise(of: Void.self)
         
-        var actions = self.actions
-        func doNextAction() {
-            do {
-                guard actions.count > 0 else {
-                    promise.succeed(())
-                    return
-                }
-                
-                let action = actions.removeFirst()
-                let actionResult = try action(collection)
-                actionResult.cascadeFailure(to: promise)
-                actionResult.whenSuccess {
-                    doNextAction()
-                }
-            } catch {
-                promise.fail(error)
-            }
+        for action in actions {
+            try await action(collection)
         }
-        
-        doNextAction()
-        
-        return promise.futureResult
     }
     
     public func add(_ action: @escaping Action) {
@@ -70,66 +50,52 @@ extension MeowDatabase {
     /// The closure will be executed only once, because the migration is registered in the MeowMigrations collection
     public func migrateCustom(
         _ description: String,
-        migration: @escaping () throws -> EventLoopFuture<Void>
-    ) -> EventLoopFuture<Void> {
+        migration: @Sendable @escaping () async throws -> ()
+    ) async throws {
         let fullDescription = "Custom - \(description)"
         
-        return MeowMigration.count(
+        let count = try await MeowMigration.count(
             where: "_id" == fullDescription,
             in: self
-        ).flatMap { count in
-            if count > 0 {
-                // Migration not needed
-                return self.eventLoop.makeSucceededFuture(())
-            }
-            
-            print("🐈 Running migration \(description)")
-            
-            do {
-                let start = Date()
-                return try migration().flatMap {
-                    let end = Date()
-                    let duration = end.timeIntervalSince(start)
-                    let migration = MeowMigration(_id: fullDescription, date: start, duration: duration)
-                    
-                    return migration.create(in: self).assertCompleted()
-                }
-            } catch {
-                return self.eventLoop.makeFailedFuture(error)
-            }
+        )
+        
+        if count > 0 {
+            // Migration not needed
+            return
         }
+            
+        print("🐈 Running migration \(description)")
+        
+        let start = Date()
+        try await migration()
+        let end = Date()
+        let duration = end.timeIntervalSince(start)
+        let migration = MeowMigration(_id: fullDescription, date: start, duration: duration)
+        try await migration.save(in: self)
     }
     
-    public func migrate<M: Model>(_ description: String, on model: M.Type, migration: @escaping (Migrator<M>) throws -> Void) -> EventLoopFuture<Void> {
+    public func migrate<M: Model>(_ description: String, on model: M.Type, migration: @Sendable @escaping (Migrator<M>) async throws -> Void) async throws {
         let fullDescription = "\(M.self) - \(description)"
         
-        return MeowMigration.count(
+        let count = try await MeowMigration.count(
             where: "_id" == fullDescription,
             in: self
-        ).flatMap { count in
-            if count > 0 {
-                // Migration not needed
-                return self.eventLoop.makeSucceededFuture(())
-            }
-            
-            print("🐈 Running migration \(description) on \(M.self)")
-            
-            do {
-                let start = Date()
-                let migrator = Migrator<M>(database: self)
-                try migration(migrator)
-                
-                return migrator.execute().flatMap {
-                    let end = Date()
-                    let duration = end.timeIntervalSince(start)
-                    let migration = MeowMigration(_id: fullDescription, date: start, duration: duration)
-                    
-                    return migration.create(in: self).assertCompleted()
-                }
-            } catch {
-                return self.eventLoop.makeFailedFuture(error)
-            }
+        )
+        if count > 0 {
+            // Migration not needed
+            return
         }
+        
+        print("🐈 Running migration \(description) on \(M.self)")
+        
+        let start = Date()
+        let migrator = Migrator<M>(database: self)
+        try await migration(migrator)
+        try await migrator.execute()
+        let end = Date()
+        let duration = end.timeIntervalSince(start)
+        let migration = MeowMigration(_id: fullDescription, date: start, duration: duration)
+        
+        try await migration.save(in: self).assertCompleted()
     }
-    
 }

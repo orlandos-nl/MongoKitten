@@ -7,16 +7,11 @@ internal struct MongoResponseContext {
     let result: EventLoopPromise<MongoServerReply>
 }
 
-public final class MongoClientContext {
+public final actor MongoClientContext {
     private var queries = [MongoResponseContext]()
-    internal var serverHandshake: ServerHandshake? {
-        didSet {
-            if let version = serverHandshake?.maxWireVersion, version.isDeprecated {
-                logger.warning("MongoDB server is outdated, please upgrade MongoDB")
-            }
-        }
-    }
+    internal var serverHandshake: ServerHandshake?
     internal var didError = false
+    private var outdatedDB = false
     let logger: Logger
 
     internal func handleReply(_ reply: MongoServerReply) -> Bool {
@@ -24,13 +19,11 @@ public final class MongoClientContext {
             return false
         }
 
-        let query = queries[index]
-        queries.remove(at: index)
-        query.result.succeed(reply)
+        queries.remove(at: index).result.succeed(reply)
         return true
     }
 
-    internal func awaitReply(toRequestId requestId: Int32, completing result: EventLoopPromise<MongoServerReply>) {
+    internal func setReplyCallback(forRequestId requestId: Int32, completing result: EventLoopPromise<MongoServerReply>) {
         queries.append(MongoResponseContext(requestId: requestId, result: result))
     }
     
@@ -38,7 +31,16 @@ public final class MongoClientContext {
         self.cancelQueries(MongoError(.queryFailure, reason: .connectionClosed))
     }
     
-    public func failQuery(byRequestId requestId: Int32, error: Error) {
+    internal func setServerHandshake(to handshake: ServerHandshake?) {
+        self.serverHandshake = handshake
+        
+        if let version = handshake?.maxWireVersion, version.isDeprecated, !outdatedDB {
+            outdatedDB = true
+            logger.warning("MongoDB server is outdated, please upgrade MongoDB")
+        }
+    }
+    
+    internal func failQuery(byRequestId requestId: Int32, error: Error) {
         guard let index = queries.firstIndex(where: { $0.requestId == requestId }) else {
             return
         }
@@ -49,6 +51,7 @@ public final class MongoClientContext {
     }
 
     public func cancelQueries(_ error: Error) {
+        didError = true
         for query in queries {
             query.result.fail(error)
         }

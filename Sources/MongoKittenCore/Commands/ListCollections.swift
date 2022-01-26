@@ -1,3 +1,4 @@
+import BSON
 import MongoClient
 
 public struct ListCollections: Encodable {

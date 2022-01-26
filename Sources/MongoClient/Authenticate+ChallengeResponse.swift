@@ -25,35 +25,33 @@ fileprivate struct AuthenticateCR: Encodable {
 }
 
 extension MongoConnection {
-    func authenticateCR(_ username: String, password: String, namespace: MongoNamespace) -> EventLoopFuture<Void> {
-        return self.executeCodable(
+    internal func authenticateCR(_ username: String, password: String, namespace: MongoNamespace) async throws  {
+        let nonceReply = try await self.executeCodable(
             GetNonce(),
+            decodeAs: GetNonceResult.self,
             namespace: namespace,
             sessionId: nil
-        ).flatMap { reply -> EventLoopFuture<Void> in
-            do {
-                let reply = try GetNonceResult(reply: reply)
-                let nonce = reply.nonce
+        )
+        
+        let nonce = nonceReply.nonce
 
-                var md5 = MD5()
+        var md5 = MD5()
 
-                let credentials = username + ":mongo:" + password
-                let digest = md5.hash(bytes: Array(credentials.utf8)).hexString
-                let key = nonce + username + digest
-                let keyDigest = md5.hash(bytes: Array(key.utf8)).hexString
+        let credentials = username + ":mongo:" + password
+        let digest = md5.hash(bytes: Array(credentials.utf8)).hexString
+        let key = nonce + username + digest
+        let keyDigest = md5.hash(bytes: Array(key.utf8)).hexString
 
-                let authenticate = AuthenticateCR(nonce: nonce, user: username, key: keyDigest)
+        let authenticate = AuthenticateCR(nonce: nonce, user: username, key: keyDigest)
 
-                return self.executeCodable(
-                    authenticate,
-                    namespace: namespace,
-                    sessionId: nil
-                ).flatMapThrowing { reply in
-                    try reply.assertOK(or: MongoAuthenticationError(reason: .anyAuthenticationFailure))
-                }
-            } catch {
-                return self.eventLoop.makeFailedFuture(error)
-            }
-        }
+        let authenticationReply = try await self.executeEncodable(
+            authenticate,
+            namespace: namespace,
+            sessionId: nil
+        )
+        
+        try authenticationReply.assertOK(
+            or: MongoAuthenticationError(reason: .anyAuthenticationFailure)
+        )
     }
 }

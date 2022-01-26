@@ -16,12 +16,12 @@ import NIOSSL
 public struct MongoHandshakeResult {
     public let sent: Date
     public let received: Date
-    public let handshake: Result<ServerHandshake, Error>
+    public let handshake: ServerHandshake
     public var interval: Double {
         received.timeIntervalSince(sent)
     }
     
-    init(sentAt sent: Date, handshake: Result<ServerHandshake, Error>) {
+    init(sentAt sent: Date, handshake: ServerHandshake) {
         self.sent = sent
         self.received = Date()
         self.handshake = handshake
@@ -34,7 +34,7 @@ public final class MongoConnection {
     public var logger: Logger { context.logger }
     var queryTimer: Metrics.Timer?
     public internal(set) var lastHeartbeat: MongoHandshakeResult?
-    public var queryTimeout: TimeAmount = .seconds(30)
+    public var queryTimeout: TimeAmount? = .seconds(30)
     
     public var isMetricsEnabled = false {
         didSet {
@@ -59,7 +59,7 @@ public final class MongoConnection {
     private var currentRequestId: NIOAtomic<Int32> = .makeAtomic(value: 0)
     internal let context: MongoClientContext
     public var serverHandshake: ServerHandshake? {
-        return context.serverHandshake
+        get async { await context.serverHandshake }
     }
     
     public var closeFuture: EventLoopFuture<Void> {
@@ -89,31 +89,44 @@ public final class MongoConnection {
     
     public static func connect(
         settings: ConnectionSettings,
-        on eventLoop: EventLoop,
-        logger: Logger = .defaultMongoCore,
+        logger: Logger = Logger(label: "org.openkitten.mongokitten.connection"),
+        resolver: Resolver? = nil,
+        clientDetails: MongoClientDetails? = nil
+    ) async throws -> MongoConnection {
+        #if canImport(NIOTransportServices) && os(iOS)
+        return try await connect(settings: settings, logger: logger, onGroup: NIOTSEventLoopGroup(loopCount: 1), resolver: resolver, clientDetails: clientDetails)
+        #else
+        return try await connect(settings: settings, logger: logger, onGroup: MultiThreadedEventLoopGroup(numberOfThreads: 1), resolver: resolver, clientDetails: clientDetails)
+        #endif
+    }
+    
+    internal static func connect(
+        settings: ConnectionSettings,
+        logger: Logger = Logger(label: "org.openkitten.mongokitten.connection"),
+        onGroup group: _MongoPlatformEventLoopGroup,
         resolver: Resolver? = nil,
         clientDetails: MongoClientDetails? = nil,
         sessionManager: MongoSessionManager = .init()
-    ) -> EventLoopFuture<MongoConnection> {
+    ) async throws -> MongoConnection {
         let context = MongoClientContext(logger: logger)
         
         #if canImport(NIOTransportServices) && os(iOS)
-        var bootstrap = NIOTSConnectionBootstrap(group: eventLoop)
+        var bootstrap = NIOTSConnectionBootstrap(group: group)
         
         if settings.useSSL {
             bootstrap = bootstrap.tlsOptions(NWProtocolTLS.Options())
         }
         #else
-        let bootstrap = ClientBootstrap(group: eventLoop)
+        let bootstrap = ClientBootstrap(group: group)
             .resolver(resolver)
         #endif
         
         guard let host = settings.hosts.first else {
             logger.critical("Cannot connect to MongoDB: No host specified")
-            return eventLoop.makeFailedFuture(MongoError(.cannotConnect, reason: .noHostSpecified))
+            throw MongoError(.cannotConnect, reason: .noHostSpecified)
         }
         
-        return bootstrap
+        let channel = try await bootstrap
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             .channelInitializer { channel in
                 #if !(canImport(NIOTransportServices) && os(iOS))
@@ -136,19 +149,21 @@ public final class MongoConnection {
                 #endif
                 
                 return MongoConnection.addHandlers(to: channel, context: context)
-        }.connect(host: host.hostname, port: host.port).flatMap { channel in
-            let connection = MongoConnection(
-                channel: channel,
-                context: context,
-                sessionManager: sessionManager
-            )
-            
-            return connection.authenticate(
-                clientDetails: clientDetails,
-                using: settings.authentication,
-                to: settings.authenticationSource ?? "admin"
-            ).map { connection}
-        }
+            }.connect(host: host.hostname, port: host.port).get()
+        
+        let connection = MongoConnection(
+            channel: channel,
+            context: context,
+            sessionManager: sessionManager
+        )
+        
+        try await connection.authenticate(
+            clientDetails: clientDetails,
+            using: settings.authentication,
+            to: settings.authenticationSource ?? "admin"
+        )
+        
+        return connection
     }
     
     /// Executes a MongoDB `isMaster`
@@ -158,7 +173,7 @@ public final class MongoConnection {
         clientDetails: MongoClientDetails?,
         credentials: ConnectionSettings.Authentication,
         authenticationDatabase: String = "admin"
-    ) -> EventLoopFuture<ServerHandshake> {
+    ) async throws -> ServerHandshake {
         let userNamespace: String?
         
         if case .auto(let user, _) = credentials {
@@ -170,19 +185,18 @@ public final class MongoConnection {
         // NO session must be used here: https://github.com/mongodb/specifications/blob/master/source/sessions/driver-sessions.rst#when-opening-and-authenticating-a-connection
         // Forced on the current connection
         let sent = Date()
-        let result = self.executeCodable(
+        
+        let result = try await executeCodable(
             IsMaster(
                 clientDetails: clientDetails,
                 userNamespace: userNamespace
             ),
+            decodeAs: ServerHandshake.self,
             namespace: .administrativeCommand,
             sessionId: nil
-        ).flatMapThrowing { try ServerHandshake(reply: $0) }
+        )
         
-        result.whenComplete { result in
-            self.lastHeartbeat = MongoHandshakeResult(sentAt: sent, handshake: result)
-        }
-        
+        self.lastHeartbeat = MongoHandshakeResult(sentAt: sent, handshake: result)
         return result
     }
     
@@ -190,44 +204,45 @@ public final class MongoConnection {
         clientDetails: MongoClientDetails?,
         using credentials: ConnectionSettings.Authentication,
         to authenticationDatabase: String = "admin"
-    ) -> EventLoopFuture<Void> {
-        return doHandshake(
+    ) async throws {
+        let handshake = try await doHandshake(
             clientDetails: clientDetails,
             credentials: credentials,
             authenticationDatabase: authenticationDatabase
-        ).flatMap { handshake in
-            self.context.serverHandshake = handshake
-            return self.authenticate(to: authenticationDatabase, with: credentials)
-        }
+        )
+        
+        await self.context.setServerHandshake(to: serverHandshake)
+        try await self.authenticate(to: authenticationDatabase, serverHandshake: handshake, with: credentials)
     }
     
-    func executeMessage<Request: MongoRequestMessage>(_ message: Request) -> EventLoopFuture<MongoServerReply> {
-        return self.eventLoop.flatSubmit {
-            if self.context.didError {
-                return self.close().flatMap {
-                    return self.eventLoop.makeFailedFuture(MongoError(.queryFailure, reason: .connectionClosed))
-                }
-            }
-            
-            let promise = self.eventLoop.makePromise(of: MongoServerReply.self)
-            self.context.awaitReply(toRequestId: message.header.requestId, completing: promise)
-            
-            self.eventLoop.scheduleTask(in: self.queryTimeout) {
-                let error = MongoError(.queryTimeout, reason: nil)
-                self.context.failQuery(byRequestId: message.header.requestId, error: error)
-            }
-            
-            var buffer = self.channel.allocator.buffer(capacity: Int(message.header.messageLength))
-            message.write(to: &buffer)
-            return self.channel.writeAndFlush(buffer).flatMap { promise.futureResult }
+    func executeMessage<Request: MongoRequestMessage>(_ message: Request) async throws -> MongoServerReply {
+        if await self.context.didError {
+            channel.close(mode: .all, promise: nil)
+            throw MongoError(.queryFailure, reason: .connectionClosed)
         }
+        
+        let promise = self.eventLoop.makePromise(of: MongoServerReply.self)
+        await self.context.setReplyCallback(forRequestId: message.header.requestId, completing: promise)
+        
+        var buffer = self.channel.allocator.buffer(capacity: Int(message.header.messageLength))
+        message.write(to: &buffer)
+        try await self.channel.writeAndFlush(buffer)
+        
+        if let queryTimeout = queryTimeout {
+            Task {
+                try await Task.sleep(nanoseconds: UInt64(queryTimeout.nanoseconds))
+                promise.fail(MongoError(.queryTimeout, reason: nil))
+            }
+        }
+        
+        return try await promise.futureResult.get()
     }
     
-    public func close() -> EventLoopFuture<Void> {
-        return self.channel.close()
+    public func close() async {
+        _ = try? await self.channel.close()
     }
     
     deinit {
-        _ = close()
+        channel.close(mode: .all, promise: nil)
     }
 }

@@ -5,20 +5,25 @@ import MongoCore
 import NIO
 
 extension MongoConnection {
-    public func executeCodable<E: Encodable>(
+    public func executeCodable<E: Encodable, D: Decodable>(
+        _ command: E,
+        decodeAs: D.Type,
+        namespace: MongoNamespace,
+        in transaction: MongoTransaction? = nil,
+        sessionId: SessionIdentifier?
+    ) async throws -> D {
+        let reply = try await executeEncodable(command, namespace: namespace, in: transaction, sessionId: sessionId)
+        return try BSONDecoder().decode(D.self, from: reply.getDocument())
+    }
+    
+    public func executeEncodable<E: Encodable>(
         _ command: E,
         namespace: MongoNamespace,
         in transaction: MongoTransaction? = nil,
         sessionId: SessionIdentifier?
-    ) -> EventLoopFuture<MongoServerReply> {
-        do {
-            let request = try BSONEncoder().encode(command)
-
-            return execute(request, namespace: namespace, in: transaction, sessionId: sessionId)
-        } catch {
-            self.logger.error("Unable to encode MongoDB request")
-            return eventLoop.makeFailedFuture(error)
-        }
+    ) async throws -> MongoServerReply {
+        let request = try BSONEncoder().encode(command)
+        return try await execute(request, namespace: namespace, in: transaction, sessionId: sessionId)
     }
 
     public func execute(
@@ -26,23 +31,21 @@ extension MongoConnection {
         namespace: MongoNamespace,
         in transaction: MongoTransaction? = nil,
         sessionId: SessionIdentifier? = nil
-    ) -> EventLoopFuture<MongoServerReply> {
-        let result: EventLoopFuture<MongoServerReply>
+    ) async throws -> MongoServerReply {
+        let result: MongoServerReply
+        let startDate = Date()
         
         if
-            let serverHandshake = serverHandshake,
+            let serverHandshake = await serverHandshake,
             serverHandshake.maxWireVersion.supportsOpMessage
         {
-            result = executeOpMessage(command, namespace: namespace, in: transaction, sessionId: sessionId)
+            result = try await executeOpMessage(command, namespace: namespace, in: transaction, sessionId: sessionId)
         } else {
-            result = executeOpQuery(command, namespace: namespace, in: transaction, sessionId: sessionId)
+            result = try await executeOpQuery(command, namespace: namespace, in: transaction, sessionId: sessionId)
         }
 
         if let queryTimer = queryTimer {
-            let date = Date()
-            result.whenComplete { _ in
-                queryTimer.record(-date.timeIntervalSinceNow)
-            }
+            queryTimer.record(-startDate.timeIntervalSinceNow)
         }
         
         return result
@@ -52,32 +55,30 @@ extension MongoConnection {
         _ query: inout OpQuery,
         in transaction: MongoTransaction? = nil,
         sessionId: SessionIdentifier? = nil
-    ) -> EventLoopFuture<OpReply> {
+    ) async throws -> OpReply {
         query.header.requestId = self.nextRequestId()
-        return self.executeMessage(query).flatMapThrowing { reply in
-            guard case .reply(let reply) = reply else {
-                self.logger.error("Unexpected reply type, expected OpReply")
-                throw MongoError(.queryFailure, reason: .invalidReplyType)
-            }
-            
-            return reply
+        
+        guard case .reply(let reply) = try await self.executeMessage(query) else {
+            self.logger.error("Unexpected reply type, expected OpReply")
+            throw MongoError(.queryFailure, reason: .invalidReplyType)
         }
+        
+        return reply
     }
     
     public func executeOpMessage(
         _ query: inout OpMessage,
         in transaction: MongoTransaction? = nil,
         sessionId: SessionIdentifier? = nil
-    ) -> EventLoopFuture<OpMessage> {
+    ) async throws -> OpMessage {
         query.header.requestId = self.nextRequestId()
-        return self.executeMessage(query).flatMapThrowing { reply in
-            guard case .message(let message) = reply else {
-                self.logger.error("Unexpected reply type, expected OpMessage")
-                throw MongoError(.queryFailure, reason: .invalidReplyType)
-            }
-            
-            return message
+        
+        guard case .message(let message) = try await self.executeMessage(query) else {
+            self.logger.error("Unexpected reply type, expected OpMessage")
+            throw MongoError(.queryFailure, reason: .invalidReplyType)
         }
+        
+        return message
     }
 
     internal func executeOpQuery(
@@ -85,7 +86,7 @@ extension MongoConnection {
         namespace: MongoNamespace,
         in transaction: MongoTransaction? = nil,
         sessionId: SessionIdentifier? = nil
-    ) -> EventLoopFuture<MongoServerReply> {
+    ) async throws -> MongoServerReply {
         var command = command
         
         if let id = sessionId?.id {
@@ -94,7 +95,7 @@ extension MongoConnection {
             ] as Document, forKey: "lsid")
         }
         
-        return self.executeMessage(
+        return try await executeMessage(
             OpQuery(
                 query: command,
                 requestId: self.nextRequestId(),
@@ -108,7 +109,7 @@ extension MongoConnection {
         namespace: MongoNamespace,
         in transaction: MongoTransaction? = nil,
         sessionId: SessionIdentifier? = nil
-    ) -> EventLoopFuture<MongoServerReply> {
+    ) async throws -> MongoServerReply {
         var command = command
         command.appendValue(namespace.databaseName, forKey: "$db")
         
@@ -127,7 +128,8 @@ extension MongoConnection {
                 command.appendValue(true, forKey: "startTransaction")
             }
         }
-        return self.executeMessage(
+        
+        return try await executeMessage(
             OpMessage(
                 body: command,
                 requestId: self.nextRequestId()

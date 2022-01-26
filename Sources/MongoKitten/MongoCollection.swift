@@ -23,41 +23,6 @@ public final class MongoCollection {
     /// The database this collection resides in
     public let database: MongoDatabase
     
-    public internal(set) var hoppedEventLoop: EventLoop?
-
-    public var eventLoop: EventLoop {
-        return pool.eventLoop
-    }
-    
-    public func hopped(to eventloop: EventLoop) -> MongoCollection {
-        let collection = MongoCollection(named: self.name, in: self.database)
-        collection.hoppedEventLoop = eventloop
-        return collection
-    }
-    
-    internal func makeTransactionError<T>() -> EventLoopFuture<T> {
-        return eventLoop.makeFailedFuture(
-            MongoKittenError(.unsupportedFeatureByServer, reason: .transactionForUnsupportedQuery)
-        )
-    }
-
-//    internal func makeTransactionQueryOptions() -> MongoTransactionOptions? {
-//        guard let transaction = transaction else {
-//            return nil
-//        }
-//
-//        defer {
-//            transaction.started = true
-//            transaction.active = true
-//        }
-//
-//        return TransactionQueryOptions(
-//            id: transaction.id,
-//            startTransaction: !transaction.started,
-//            autocommit: transaction.autocommit ?? false
-//        )
-//    }
-
     internal var pool: MongoConnectionPool {
         return self.database.pool
     }
@@ -72,14 +37,14 @@ public final class MongoCollection {
         self.database = database
     }
     
-    public func drop() -> EventLoopFuture<Void> {
-        return pool.next(for: .writable).flatMap { connection in
-            return connection.executeCodable(
-                DropCollectionCommand(named: self.name),
-                namespace: self.database.commandNamespace,
-                in: self.transaction,
-                sessionId: connection.implicitSessionId
-            )
-        }.map { _ in }
+    public func drop() async throws {
+        let connection = try await pool.next(for: .writable)
+        let reply = try await connection.executeEncodable(
+            DropCollectionCommand(named: self.name),
+            namespace: self.database.commandNamespace,
+            in: self.transaction,
+            sessionId: connection.implicitSessionId
+        )
+        try reply.isOK()
     }
 }

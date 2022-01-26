@@ -1,3 +1,4 @@
+import BSON
 import MongoCore
 
 public struct CreateIndexes: Encodable {

@@ -1,3 +1,4 @@
+import BSON
 import MongoCore
 
 /// Implements https://docs.mongodb.com/manual/reference/command/findAndModify/

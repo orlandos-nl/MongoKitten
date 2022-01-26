@@ -1,9 +1,4 @@
-#if os(Linux)
-import Glibc
-#else
-import Darwin
-#endif
-
+import BSON
 import _MongoKittenCrypto
 import Foundation
 

@@ -1,3 +1,5 @@
+import BSON
+
 public struct MongoCursorResponse: Decodable {
     public struct Cursor: Codable {
         private enum CodingKeys: String, CodingKey {

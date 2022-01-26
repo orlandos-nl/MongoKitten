@@ -1,3 +1,5 @@
+import BSON
+
 internal struct GetMore: Encodable {
     /// This variable _must_ be the first encoded value, so keep it above all others
     /// The cursor id

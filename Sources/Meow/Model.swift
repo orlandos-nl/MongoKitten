@@ -46,40 +46,35 @@ extension ReadableModel {
         try Self.decoder.decode(Self.self, from: document)
     }
     
-    public static func watch(options: ChangeStreamOptions = .init(), in database: MeowDatabase) -> EventLoopFuture<ChangeStream<Self>> {
-        return database.collection(for: Self.self).watch(options: options)
+    public static func watch(options: ChangeStreamOptions = .init(), in database: MeowDatabase) async throws -> ChangeStream<Self> {
+        return try await database.collection(for: Self.self).watch(options: options)
     }
     
     public static func count(
         where filter: Document = Document(),
         in database: MeowDatabase
-    ) -> EventLoopFuture<Int> {
-        return database.collection(for: Self.self).count(where: filter)
+    ) async throws -> Int {
+        return try await database.collection(for: Self.self).count(where: filter)
     }
     
     public static func count<Q: MongoKittenQuery>(
         where filter: Q,
         in database: MeowDatabase
-    ) -> EventLoopFuture<Int> {
-        return database.collection(for: Self.self).count(where: filter)
+    ) async throws -> Int {
+        return try await database.collection(for: Self.self).count(where: filter)
     }
 }
 
 // MARK: - Default implementations
 extension MutableModel {
-    @available(*, renamed: "save")
-    public func create(in database: MeowDatabase) -> EventLoopFuture<MeowOperationResult> {
-        save(in: database)
-    }
-    
-    public func save(in database: MeowDatabase) -> EventLoopFuture<MeowOperationResult> {
-        return database.collection(for: Self.self).upsert(self).map { reply in
-            return MeowOperationResult(
-                success: reply.updatedCount == 1,
-                n: reply.updatedCount,
-                writeErrors: reply.writeErrors
-            )
-        }
+    @discardableResult
+    public func save(in database: MeowDatabase) async throws -> MeowOperationResult {
+        let reply = try await database.collection(for: Self.self).upsert(self)
+        return MeowOperationResult(
+            success: reply.updatedCount == 1,
+            n: reply.updatedCount,
+            writeErrors: reply.writeErrors
+        )
     }
     
     @inlinable public static var encoder: BSONEncoder { .init() }
@@ -98,14 +93,10 @@ public struct MeowOperationResult {
     public let success: Bool
     public let n: Int
     public let writeErrors: [MongoWriteError]?
-}
-
-extension EventLoopFuture where Value == MeowOperationResult {
-    public func assertCompleted() -> EventLoopFuture<Void> {
-        return flatMapThrowing { result in
-            guard result.success else {
-                throw MeowOperationResult.NotSuccessful()
-            }
+    
+    public func assertCompleted() throws {
+        guard success else {
+            throw MeowOperationResult.NotSuccessful()
         }
     }
 }
