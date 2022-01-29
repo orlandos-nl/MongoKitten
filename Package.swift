@@ -70,6 +70,7 @@ let package = Package(
             name: "MongoClient",
             dependencies: [
                 "MongoCore",
+                "_MongoKittenCrypto",
                 .product(name: "NIOSSL", package: "swift-nio-ssl"),
                 .product(name: "DNSClient", package: "DNSClient"),
             ]

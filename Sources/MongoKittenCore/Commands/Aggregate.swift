@@ -1,7 +1,7 @@
 import BSON
 import MongoCore
 
-public struct AggregateCommand: Encodable {
+public struct AggregateCommand: Encodable, Sendable {
     private let aggregate: EitherPrimitive<String, Int32>
     public var pipeline: [Document]
     public var explain: Bool?

@@ -100,7 +100,7 @@ public class MongoDatabase {
             throw MongoKittenError(.unsupportedFeatureByServer, reason: nil)
         }
 
-        let newSession = self.pool.sessionManager.retainSession(with: options)
+        let newSession = await self.pool.sessionManager.retainSession(with: options)
         let transaction = newSession.startTransaction(autocommit: autoCommit)
         
         let db = MongoTransactionDatabase(named: name, pool: pool)

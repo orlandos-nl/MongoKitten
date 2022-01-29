@@ -1,13 +1,13 @@
 import BSON
 
-public struct WriteConcern: Codable {
+public struct WriteConcern: Codable, Sendable {
     private enum CodingKeys: String, CodingKey {
         case journaled = "j"
         case acknowledgement = "w"
         case writeTimeoutMS = "wtimeout"
     }
 
-    public struct Acknowledgement: Codable, ExpressibleByStringLiteral, ExpressibleByIntegerLiteral {
+    public struct Acknowledgement: Codable, ExpressibleByStringLiteral, ExpressibleByIntegerLiteral, Sendable {
         let primitive: Primitive?
 
         public init(stringLiteral value: String) {

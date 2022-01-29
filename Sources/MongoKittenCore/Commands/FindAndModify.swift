@@ -2,7 +2,7 @@ import BSON
 import MongoCore
 
 /// Implements https://docs.mongodb.com/manual/reference/command/findAndModify/
-public struct FindAndModifyCommand: Codable {
+public struct FindAndModifyCommand: Codable, Sendable {
     /// The collection against which to run the command.
     public private(set) var findAndModify: String
     /// The selection criteria for the modification.
@@ -81,7 +81,7 @@ public struct FindAndModifyCommand: Codable {
     }
 }
 
-public struct FindAndModifyReply: Codable, Error {
+public struct FindAndModifyReply: Codable, Error, Sendable {
     private enum CodingKeys: String, CodingKey {
         case ok
         case value
@@ -109,7 +109,7 @@ public struct FindAndModifyReply: Codable, Error {
     public let lastErrorObject: Document?
 }
 
-public enum FindAndModifyReturnValue: String, Codable {
+public enum FindAndModifyReturnValue: String, Codable, Sendable {
     /// Return the modified Document.
     case modified
     /// Return the original Document.

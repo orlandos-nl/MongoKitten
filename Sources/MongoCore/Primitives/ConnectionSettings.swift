@@ -16,7 +16,7 @@ fileprivate extension Bool {
 /// Describes the settings for a MongoDB connection, most of which can be represented in a connection string
 public struct ConnectionSettings: Equatable {
     /// The authentication details to use with the database
-    public enum Authentication: Equatable {
+    public enum Authentication: Equatable, Sendable {
         /// Unauthenticated
         case unauthenticated
 

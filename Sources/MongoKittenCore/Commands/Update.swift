@@ -1,8 +1,8 @@
 import BSON
 import MongoCore
 
-public struct UpdateCommand: Codable {
-    public struct UpdateRequest: Codable {
+public struct UpdateCommand: Codable, Sendable {
+    public struct UpdateRequest: Codable, Sendable {
         private enum CodingKeys: String, CodingKey {
             case query = "q"
             case update = "u"
@@ -45,7 +45,7 @@ public struct UpdateCommand: Codable {
     }
 }
 
-public struct UpdateReply: Decodable, Error {
+public struct UpdateReply: Decodable, Error, Sendable {
     private enum CodingKeys: String, CodingKey {
         case ok, writeErrors, writeConcernError, upserted
         case updatableCount = "n"

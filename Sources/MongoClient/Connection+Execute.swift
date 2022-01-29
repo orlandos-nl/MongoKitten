@@ -124,7 +124,7 @@ extension MongoConnection {
             command.appendValue(transaction.number, forKey: "txnNumber")
             command.appendValue(transaction.autocommit, forKey: "autocommit")
 
-            if transaction.startTransaction() {
+            if await transaction.startTransaction() {
                 command.appendValue(true, forKey: "startTransaction")
             }
         }

@@ -1,16 +1,16 @@
 import MongoCore
 
-public struct MongoClientDetails: Encodable {
-    public struct ApplicationDetails: Encodable {
+public struct MongoClientDetails: Encodable, Sendable {
+    public struct ApplicationDetails: Encodable, Sendable {
         public var name: String
     }
 
-    public struct DriverDetails: Encodable {
+    public struct DriverDetails: Encodable, Sendable {
         public let name = "SwiftMongoClient"
         public let version = "1"
     }
 
-    public struct OSDetails: Encodable {
+    public struct OSDetails: Encodable, Sendable {
         #if os(Linux)
         public let type = "Linux"
         public let name: String? = nil // TODO: see if we can fill this in

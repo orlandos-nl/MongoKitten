@@ -1,6 +1,6 @@
 import BSON
 
-internal struct GetMore: Encodable {
+internal struct GetMore: Encodable, Sendable {
     /// This variable _must_ be the first encoded value, so keep it above all others
     /// The cursor id
     internal let getMore: Int64

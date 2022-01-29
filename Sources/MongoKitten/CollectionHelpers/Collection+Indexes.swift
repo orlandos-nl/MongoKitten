@@ -33,7 +33,7 @@ extension MongoCollection {
     /// Lists all indexes in this collection as a cursor.
     /// - returns: A cursor pointing towards all Index documents.
     public func listIndexes() async throws -> MappedCursor<MongoCursor, MongoIndex> {
-        struct Request: Codable {
+        struct Request: Codable, Sendable {
             let listIndexes: String
         }
         

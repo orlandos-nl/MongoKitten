@@ -1,4 +1,4 @@
-public struct MongoWriteError: Codable {
+public struct MongoWriteError: Codable, Sendable {
     private enum CodingKeys: String, CodingKey {
         case index, code
         case message = "errmsg"
@@ -15,7 +15,7 @@ public struct MongoWriteError: Codable {
     }
 }
 
-public struct WriteConcernError: Codable {
+public struct WriteConcernError: Codable, Sendable {
     private enum CodingKeys: String, CodingKey {
         case code
         case message = "errmsg"

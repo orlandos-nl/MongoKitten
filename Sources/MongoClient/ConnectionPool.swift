@@ -2,7 +2,7 @@ import NIO
 import Logging
 import MongoCore
 
-public struct MongoConnectionPoolRequest {
+public struct MongoConnectionPoolRequest: Sendable {
     public var writable: Bool
 
     public init(writable: Bool) {

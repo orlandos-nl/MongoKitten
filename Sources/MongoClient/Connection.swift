@@ -28,10 +28,10 @@ public struct MongoHandshakeResult {
     }
 }
 
-public final class MongoConnection {
+public final actor MongoConnection: @unchecked Sendable {
     /// The NIO channel
     private let channel: Channel
-    public var logger: Logger { context.logger }
+    public nonisolated var logger: Logger { context.logger }
     var queryTimer: Metrics.Timer?
     public internal(set) var lastHeartbeat: MongoHandshakeResult?
     public var queryTimeout: TimeAmount? = .seconds(30)
@@ -48,10 +48,10 @@ public final class MongoConnection {
     
     /// A LIFO (Last In, First Out) holder for sessions
     public let sessionManager: MongoSessionManager
-    public var implicitSession: MongoClientSession {
-        return sessionManager.makeImplicitClientSession()
+    public nonisolated var implicitSession: MongoClientSession {
+        return sessionManager.implicitClientSession
     }
-    public var implicitSessionId: SessionIdentifier {
+    public nonisolated var implicitSessionId: SessionIdentifier {
         return implicitSession.sessionId
     }
     
@@ -62,14 +62,14 @@ public final class MongoConnection {
         get async { await context.serverHandshake }
     }
     
-    public var closeFuture: EventLoopFuture<Void> {
+    public nonisolated var closeFuture: EventLoopFuture<Void> {
         return channel.closeFuture
     }
     
-    public var eventLoop: EventLoop { return channel.eventLoop }
+    public nonisolated var eventLoop: EventLoop { return channel.eventLoop }
     public var allocator: ByteBufferAllocator { return channel.allocator }
     
-    public var slaveOk = false
+    public let slaveOk = NIOAtomic<Bool>.makeAtomic(value: false)
     
     internal func nextRequestId() -> Int32 {
         return currentRequestId.add(1)
