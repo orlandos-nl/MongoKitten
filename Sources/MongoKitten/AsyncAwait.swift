@@ -4,7 +4,7 @@ import NIO
 import MongoClient
 import MongoKittenCore
 
-@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
+@available(macOS 10.15, iOS 13, watchOS 8, tvOS 15, *)
 extension MongoCluster {
     public struct Async {
         public let nio: MongoCluster
@@ -54,7 +54,7 @@ extension MongoCluster {
     }
 }
 
-@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
+@available(macOS 10.15, iOS 13, watchOS 8, tvOS 15, *)
 extension MongoDatabase {
     public struct Async {
         public let nio: MongoDatabase
@@ -84,7 +84,7 @@ extension MongoDatabase {
     }
 }
 
-@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
+@available(macOS 10.15, iOS 13, watchOS 8, tvOS 15, *)
 extension MongoCollection {
     public struct Async {
         public let nio: MongoCollection
@@ -398,7 +398,7 @@ extension MongoCollection {
     }
 }
 
-@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
+@available(macOS 10.15, iOS 13, watchOS 8, tvOS 15, *)
 extension FindAndModifyBuilder {
     public struct Async {
         let nio: FindAndModifyBuilder
@@ -441,7 +441,7 @@ extension FindAndModifyBuilder {
     }
 }
 
-@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
+@available(macOS 10.15, iOS 13, watchOS 8, tvOS 15, *)
 extension MappedCursor: AsyncSequence {
     public final class AsyncIterator: AsyncIteratorProtocol {
         fileprivate let cursor: MappedCursor<Base, Element>
@@ -479,14 +479,14 @@ extension MappedCursor: AsyncSequence {
     }
 }
 
-@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
+@available(macOS 10.15, iOS 13, watchOS 8, tvOS 15, *)
 extension QueryCursor {
     public func allResults(failable: Bool = false) async throws -> [Element] {
         try await allResults().get()
     }
 }
 
-@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
+@available(macOS 10.15, iOS 13, watchOS 8, tvOS 15, *)
 extension FinalizedCursor: AsyncSequence {
     public typealias Element = Base.Element
     
@@ -518,14 +518,14 @@ extension FinalizedCursor: AsyncSequence {
     }
 }
 
-@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
+@available(macOS 10.15, iOS 13, watchOS 8, tvOS 15, *)
 extension ChangeStream {
     public func awaitClose() async throws {
         try await cursor.awaitClose()
     }
 }
 
-@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
+@available(macOS 10.15, iOS 13, watchOS 8, tvOS 15, *)
 extension FinalizedCursor {
     public func awaitClose() async throws {
         try await cursor.closeFuture.get()

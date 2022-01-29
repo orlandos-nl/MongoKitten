@@ -131,5 +131,4 @@ extension MeowDatabase {
             }
         }
     }
-    
 }

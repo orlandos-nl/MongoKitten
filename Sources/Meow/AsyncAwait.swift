@@ -4,7 +4,7 @@ import NIO
 import MongoClient
 import MongoKitten
 
-@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
+@available(macOS 10.15, iOS 13, watchOS 8, tvOS 15, *)
 extension MeowDatabase {
     public struct Async {
         public let nio: MeowDatabase
@@ -33,7 +33,7 @@ extension MeowDatabase {
     }
 }
 
-@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
+@available(macOS 10.15, iOS 13, watchOS 8, tvOS 15, *)
 extension MeowCollection {
     public struct Async {
         public let nio: MeowCollection<M>
@@ -52,7 +52,7 @@ extension MeowCollection {
     }
 }
 
-@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
+@available(macOS 10.15, iOS 13, watchOS 8, tvOS 15, *)
 extension MeowCollection.Async where M: ReadableModel {
     public func find(where filter: Document = [:]) -> MappedCursor<FindQueryBuilder, M> {
         return nio.find(where: filter)
@@ -87,7 +87,7 @@ extension MeowCollection.Async where M: ReadableModel {
     }
 }
 
-@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
+@available(macOS 10.15, iOS 13, watchOS 8, tvOS 15, *)
 extension MutableModel {
     @discardableResult
     public func save(in database: MeowDatabase.Async) async throws -> MeowOperationResult {
@@ -95,7 +95,7 @@ extension MutableModel {
     }
 }
 
-@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
+@available(macOS 10.15, iOS 13, watchOS 8, tvOS 15, *)
 extension MeowCollection.Async where M: MutableModel {
     @discardableResult
     public func insert(_ instance: M, writeConcern: WriteConcern? = nil) async throws -> InsertReply {
@@ -140,7 +140,7 @@ extension MeowCollection.Async where M: MutableModel {
     //    }
 }
 
-@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
+@available(macOS 10.15, iOS 13, watchOS 8, tvOS 15, *)
 extension Reference {
     /// Resolves a reference
     public func resolve(in db: MeowDatabase.Async, where query: Document = Document()) async throws -> M {
@@ -165,11 +165,44 @@ extension Reference {
     }
 }
     
-@available(macOS 12, iOS 15, watchOS 8, tvOS 15, *)
+@available(macOS 10.15, iOS 13, watchOS 8, tvOS 15, *)
 extension Reference where M: MutableModel {
     @discardableResult
     public func deleteTarget(in context: MeowDatabase) async throws -> MeowOperationResult {
         try await deleteTarget(in: context).get()
+    }
+}
+
+@available(macOS 10.15, iOS 13, watchOS 8, tvOS 15, *)
+extension MeowDatabase.Async {
+    /// Runs a migration closure that is not tied to a certain model
+    /// The closure will be executed only once, because the migration is registered in the MeowMigrations collection
+    public func migrateCustom(
+        _ description: String,
+        migration: @escaping () throws -> EventLoopFuture<Void>
+    ) async throws {
+        try await nio.migrateCustom(description, migration: migration).get()
+    }
+    
+    public func migrate<M: Model>(_ description: String, on model: M.Type, migration: @escaping (Migrator<M>) throws -> Void) async throws {
+        try await nio.migrate(description, on: model, migration: migration).get()
+    }
+}
+
+@available(macOS 10.15, iOS 13, watchOS 8, tvOS 15, *)
+extension Migrator {
+    public func add(_ action: @escaping (MeowCollection<M>) async throws -> ()) {
+        add { collection in
+            let promise = collection.eventLoop.makePromise(of: Void.self)
+            promise.completeWithTask {
+                try await action(collection)
+            }
+            return promise.futureResult
+        }
+    }
+    
+    func execute() async throws {
+        try await execute().get()
     }
 }
 #endif
