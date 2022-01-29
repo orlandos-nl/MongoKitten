@@ -191,7 +191,7 @@ extension MeowDatabase.Async {
 
 @available(macOS 10.15, iOS 13, watchOS 8, tvOS 15, *)
 extension Migrator {
-    public func add(_ action: @escaping (MeowCollection<M>.Async) async throws -> ()) {
+    public func addAsync(_ action: @escaping (MeowCollection<M>.Async) async throws -> ()) {
         add { collection in
             let promise = collection.eventLoop.makePromise(of: Void.self)
             promise.completeWithTask {
