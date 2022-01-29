@@ -35,6 +35,13 @@ public class MongoDatabase {
         self.name = name
         self.pool = pool
     }
+    
+    /// Connect to the database at the given `uri`
+    ///
+    /// - parameter uri: A MongoDB URI that contains at least a database component
+    public static func lazyConnect(to uri: String) throws -> MongoDatabase {
+        try lazyConnect(to: ConnectionSettings(uri))
+    }
 
     /// Connect to the database at the given `uri`
     ///
@@ -42,8 +49,26 @@ public class MongoDatabase {
     public static func connect(to uri: String) async throws -> MongoDatabase {
         try await connect(to: ConnectionSettings(uri))
     }
+    
+    /// Connect to the database with the given settings _lazily_. You can also use `lazyConnect(_:on:)` to connect by using a connection string.
+    ///
+    /// Will postpone queries until initial discovery is complete. Since the cluster is lazily initialized, you'll only know of a failure in connecting (such as wrong credentials) during queries
+    ///
+    /// - parameter settings: The connection settings, which must include a database name
+    public static func lazyConnect(
+        to settings: ConnectionSettings
+    ) throws -> MongoDatabase {
+        let logger = Logger(label: "org.openkitten.mongokitten")
+        guard let targetDatabase = settings.targetDatabase else {
+            logger.critical("Cannot connect to MongoDB: No target database specified")
+            throw MongoKittenError(.cannotConnect, reason: .noTargetDatabaseSpecified)
+        }
+        
+        let cluster = try MongoCluster(lazyConnectingTo: settings, logger: logger)
+        return MongoDatabase(named: targetDatabase, pool: cluster)
+    }
 
-    /// Connect to the database with the given settings _lazily_. You can also use `connect(_:on:)` to connect by using a connection string.
+    /// Connect to the database with the given settings. You can also use `connect(_:on:)` to connect by using a connection string.
     ///
     /// Will postpone queries until initial discovery is complete. Since the cluster is lazily initialized, you'll only know of a failure in connecting (such as wrong credentials) during queries
     ///
@@ -57,7 +82,7 @@ public class MongoDatabase {
             throw MongoKittenError(.cannotConnect, reason: .noTargetDatabaseSpecified)
         }
 
-        let cluster = try await MongoCluster(lazyConnectingTo: settings, logger: logger)
+        let cluster = try await MongoCluster(connectingTo: settings, logger: logger)
         return MongoDatabase(named: targetDatabase, pool: cluster)
     }
     

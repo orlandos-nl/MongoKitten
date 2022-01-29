@@ -74,12 +74,12 @@ let package = Package(
                 .product(name: "DNSClient", package: "DNSClient"),
             ]
         ),
-//        .testTarget(
-//            name: "MongoCoreTests",
-//            dependencies: ["MongoCore"]),
-//        .testTarget(
-//            name: "MongoKittenTests",
-//            dependencies: ["MongoKitten"]),
+        .testTarget(
+            name: "MongoCoreTests",
+            dependencies: ["MongoCore"]),
+        .testTarget(
+            name: "MongoKittenTests",
+            dependencies: ["MongoKitten"]),
         // TODO: Reimplement these tests
 //        .testTarget(
 //            name: "MeowTests",

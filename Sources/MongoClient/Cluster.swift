@@ -93,12 +93,34 @@ public final class MongoCluster: MongoConnectionPool {
         self.hosts = Set(settings.hosts)
         self.logger = logger
     }
-
+    
     /// Connects to a cluster lazily, which means you don't know if the connection was successful until you start querying
     ///
     /// This is useful when you need a cluster synchronously to query asynchronously
     public convenience init(
         lazyConnectingTo settings: ConnectionSettings,
+        logger: Logger = Logger(label: "org.openkitten.mongokitten.cluster")
+    ) throws {
+        guard settings.hosts.count > 0 else {
+            logger.error("No MongoDB servers were specified while creating a cluster")
+            throw MongoError(.cannotConnect, reason: .noHostSpecified)
+        }
+        
+        self.init(settings: settings, logger: logger)
+        
+        Task {
+            // Kick off the connection process
+            try await MongoCluster.withResolvedSettings(settings) { settings, dns in
+                self.settings = settings
+                self.dns = dns
+            }
+            
+            scheduleDiscovery()
+        }
+    }
+
+    public convenience init(
+        connectingTo settings: ConnectionSettings,
         allowFailure: Bool = false,
         logger: Logger = Logger(label: "org.openkitten.mongokitten.cluster")
     ) async throws {

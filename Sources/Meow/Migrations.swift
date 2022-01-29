@@ -76,17 +76,12 @@ extension MeowDatabase {
     
     public func migrate<M: Model>(_ description: String, on model: M.Type, migration: @Sendable @escaping (Migrator<M>) async throws -> Void) async throws {
         let fullDescription = "\(M.self) - \(description)"
-        
-        let count = try await MeowMigration.count(
-            where: "_id" == fullDescription,
-            in: self
-        )
-        if count > 0 {
+        if try await Reference<MeowMigration>(unsafeTo: fullDescription).exists(in: self) {
             // Migration not needed
             return
         }
         
-        print("🐈 Running migration \(description) on \(M.self)")
+        raw.pool.logger.info("🐈 Running migration \(description) on \(M.self)")
         
         let start = Date()
         let migrator = Migrator<M>(database: self)
