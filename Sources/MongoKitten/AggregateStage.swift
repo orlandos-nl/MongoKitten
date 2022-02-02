@@ -2,15 +2,18 @@ import MongoClient
 
 public struct AggregateBuilderStage {
     public internal(set) var stages: [Document]
+    public internal(set) var minimalVersionRequired: WireVersion?
     
-    public init(document: Document) {
+    public init(document: Document, minimalVersionRequired: WireVersion? = nil) {
         self.stages = [document]
+        self.minimalVersionRequired = minimalVersionRequired
     }
     
-    public init(documents: [Document]) {
+    public init(documents: [Document], minimalVersionRequired: WireVersion? = nil) {
         self.stages = documents
+        self.minimalVersionRequired = minimalVersionRequired
     }
-    
+        
     public static func match(_ query: Document) -> AggregateBuilderStage {
         return AggregateBuilderStage(document: [
             "$match": query
@@ -26,7 +29,7 @@ public struct AggregateBuilderStage {
     public static func addFields(_ query: Document) -> AggregateBuilderStage {
         return AggregateBuilderStage(document: [
             "$addFields": query
-        ])
+        ], minimalVersionRequired: .mongo3_4)
     }
     
     public static func sort(_ sort: Sort) -> AggregateBuilderStage {
@@ -36,9 +39,26 @@ public struct AggregateBuilderStage {
     }
     
     public static func project(_ projection: Projection) -> AggregateBuilderStage {
+        func valueUnwrapper(_ value: Primitive) -> WireVersion?{
+            switch value {
+            case let value as Int32:
+                if value == 0 { return .mongo3_4 } // indicates excluded fields
+                return nil
+            case let value as String:
+                if value == "$$REMOVE" { return .mongo3_6 } // indicates conditionally excluded fields
+                return nil
+            case let value as Document:
+                return valueUnwrapper(value)
+            default:
+                return nil
+            }
+        }
+        
+        let minimalVersionRequired: WireVersion? = projection.document.values.compactMap{ valueUnwrapper($0) }.min()
+        
         return AggregateBuilderStage(document: [
             "$project": projection.document
-        ])
+        ], minimalVersionRequired: minimalVersionRequired)
     }
     
     public static func project(_ fields: String...) -> AggregateBuilderStage {
@@ -55,7 +75,7 @@ public struct AggregateBuilderStage {
     public static func count(to field: String) -> AggregateBuilderStage {
         return AggregateBuilderStage(document: [
             "$count": field
-        ])
+        ], minimalVersionRequired: .mongo3_4)
     }
     
     public static func skip(_ n: Int) -> AggregateBuilderStage {
@@ -98,7 +118,7 @@ public struct AggregateBuilderStage {
         
         return AggregateBuilderStage(document: [
             "$sample": ["size": n]
-        ])
+        ], minimalVersionRequired: .mongo3_2)
     }
     
 	/// The `lookup` aggregation performs a join from another collection in the same database. This aggregation will add a new array to
@@ -196,15 +216,19 @@ public struct AggregateBuilderStage {
         var d = Document()
         d["path"] = fieldPath
         
+        var minimalVersion: WireVersion? = nil
+        
         if let incl = includeArrayIndex {
             d["includeArrayIndex"] = incl
+            minimalVersion = .mongo3_2
         }
         
         if let pres = preserveNullAndEmptyArrays {
             d["preserveNullAndEmptyArrays"] = pres
+            minimalVersion = .mongo3_2
         }
         
-        return AggregateBuilderStage(document: ["$unwind": d])
+        return AggregateBuilderStage(document: ["$unwind": d], minimalVersionRequired: minimalVersion)
     }
     
     /// The point for which to find the closest documents.
