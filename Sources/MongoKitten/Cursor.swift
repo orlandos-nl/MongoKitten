@@ -220,7 +220,7 @@ extension MappedCursor where Base == FindQueryBuilder {
         return self
     }
 
-    public func sort(_ sort: Sort) -> Self {
+    public func sort(_ sort: Sorting) -> Self {
         underlyingCursor.command.sort = sort.document
         return self
     }

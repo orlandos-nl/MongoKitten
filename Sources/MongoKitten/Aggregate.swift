@@ -41,7 +41,7 @@ public struct AggregateBuilderPipeline: QueryCursor {
         documents.reserveCapacity(stages.count * 2)
         
         for stage in stages {
-            documents.append(contentsOf: stage.stages)
+            documents.append(stage.stage)
         }
         
         var command = AggregateCommand(
@@ -109,23 +109,19 @@ public struct AggregateBuilderPipeline: QueryCursor {
     }
     
     public func count() async throws -> Int {
-        struct Count: Decodable {
+        struct PipelineResultCount: Decodable {
             let count: Int
         }
         
         var pipeline = self
-        pipeline.stages.append(.count(to: "count"))
-        pipeline.stages.append(.project("count"))
-        return try await pipeline.decode(Count.self).firstResult()?.count ?? 0
+        pipeline.stages.append(Count(to: "count"))
+        pipeline.stages.append(Project("count"))
+        return try await pipeline.decode(PipelineResultCount.self).firstResult()?.count ?? 0
     }
     
     public func out(toCollection collectionName: String) async throws {
         var pipeline = self
-        pipeline.stages.append(
-            AggregateBuilderStage(document: [
-                "$out": collectionName
-            ])
-        )
+        pipeline.stages.append(Out(toCollection: collectionName))
         pipeline.writing = true
         
         _ = try await pipeline.execute()

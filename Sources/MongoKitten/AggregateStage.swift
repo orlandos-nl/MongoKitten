@@ -1,12 +1,12 @@
 import MongoClient
 import MongoKittenCore
 
-protocol AggregateBuilderStage {
+public protocol AggregateBuilderStage {
     var stage: Document { get }
     var minimalVersionRequired: WireVersion? { get }
 }
 
-struct Match: AggregateBuilderStage {
+public struct Match: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = nil
     
@@ -19,7 +19,7 @@ struct Match: AggregateBuilderStage {
     }
 }
 
-struct AddFields: AggregateBuilderStage {
+public struct AddFields: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = .mongo3_4
     
@@ -28,7 +28,7 @@ struct AddFields: AggregateBuilderStage {
     }
 }
 
-struct Project: AggregateBuilderStage {
+public struct Project: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion?
     
@@ -47,7 +47,7 @@ struct Project: AggregateBuilderStage {
     }
 }
 
-struct Sort: AggregateBuilderStage {
+public struct Sort: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = nil
     
@@ -56,7 +56,7 @@ struct Sort: AggregateBuilderStage {
     }
 }
 
-struct Count: AggregateBuilderStage {
+public struct Count: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = .mongo3_4
     
@@ -65,12 +65,38 @@ struct Count: AggregateBuilderStage {
     }
 }
 
-struct Skip: AggregateBuilderStage {
+public struct Skip: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = nil
     
     public init(_ n: Int) {
         self.stage = ["$skip": n]
+    }
+}
+
+public struct Out: AggregateBuilderStage {
+    public internal(set) var stage: Document
+    public internal(set) var minimalVersionRequired: WireVersion? = nil
+    
+    public init(toCollection collectionName: String, in database: String? = nil) {
+        if let db = database {
+            self.stage = ["$out": ["db": db, "coll": collectionName ]]
+            self.minimalVersionRequired = .mongo4_4
+        }
+        self.stage = ["$out": collectionName]
+    }
+}
+
+public struct ReplaceRoot: AggregateBuilderStage {
+    public internal(set) var stage: Document
+    public internal(set) var minimalVersionRequired: WireVersion? = .mongo3_4
+    
+    public init(with path: FieldPath) {
+        self.stage = [
+            "$replaceRoot": [
+                "newRoot": "$\(path)"
+            ]
+        ]
     }
 }
 
@@ -94,7 +120,7 @@ struct Skip: AggregateBuilderStage {
 ///
 /// - Parameter n: the maximum number of documents
 /// - Returns: an `AggregateBuilderStage`
-struct Limit: AggregateBuilderStage {
+public struct Limit: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = nil
     
@@ -103,7 +129,7 @@ struct Limit: AggregateBuilderStage {
     }
 }
 
-struct Sample: AggregateBuilderStage {
+public struct Sample: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = .mongo3_2
     
@@ -152,7 +178,7 @@ struct Sample: AggregateBuilderStage {
 ///   - foreignField: the name of the field in the `fromCollection` that shall match the `localField` in the input collection
 ///   - newName: the collecting matches will be inserted as an array to the input collection, named as `newName`
 /// - Returns: an `AggregateBuilderStage`
-struct Lookup: AggregateBuilderStage {
+public struct Lookup: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = nil
     
@@ -169,7 +195,7 @@ struct Lookup: AggregateBuilderStage {
     }
 }
 
-/// The `unwind` aggregation will deconstruct a field, that contains an array. It will return as many documents as are included
+/// The `unwind` aggregation will deconpublic struct a field, that contains an array. It will return as many documents as are included
 /// in the array and every output includes the original document with each item of the array
 ///
 /// # MongoDB-Documentation:
@@ -204,7 +230,7 @@ struct Lookup: AggregateBuilderStage {
 /// - Returns: an `AggregateBuilderStage`
 
 
-struct Unwind: AggregateBuilderStage {
+public struct Unwind: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = .mongo3_2
     
@@ -241,7 +267,7 @@ struct Unwind: AggregateBuilderStage {
 ///   - uniqueDocuments: Optional. If this value is true, the query returns a matching document once, even if more than one of the document’s location fields match the query.
 ///   - minDistance: Optional. The minimum distance from the center point that the documents can be. MongoDB limits the results to those documents that fall outside the specified distance from the center point.
 ///   - key: Specify the geospatial indexed field to use when calculating the distance. If your collection has multiple 2d and/or multiple 2dsphere indexes, you must use the key option to specify the indexed field path to use. Specify Which Geospatial Index to Use provides a full example. If there is more than one 2d index or more than one 2dsphere index and you do not specify a key, MongoDB will return an error. If you do not specify the key, and you have at most only one 2d index and/or only one 2dsphere index, MongoDB looks first for a 2d index to use. If a 2d index does not exists, then MongoDB looks for a 2dsphere index to use.
-struct GeoNear: AggregateBuilderStage {
+public struct GeoNear: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = nil
     
