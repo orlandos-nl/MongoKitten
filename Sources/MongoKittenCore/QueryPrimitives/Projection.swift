@@ -4,9 +4,13 @@ public struct Projection: Encodable, ExpressibleByDictionaryLiteral {
     public internal(set) var document: Document
 
     /// An expression that can be specified to either include or exclude a field (or some custom value)
-    public enum ProjectionExpression: ExpressibleByBooleanLiteral, ExpressibleByStringLiteral, ExpressibleByDictionaryLiteral, PrimitiveConvertible {
+    public enum ProjectionExpression: ExpressibleByBooleanLiteral, ExpressibleByStringLiteral, ExpressibleByDictionaryLiteral, PrimitiveEncodable {
         /// Creates a BSON.Primitive of this ProjectionExpression for easy embedding in Documents
-        public func makePrimitive() -> Primitive? {
+        public func encodePrimitive() throws -> Primitive {
+            primitive
+        }
+        
+        public var primitive: Primitive {
             switch self {
             case .custom(let convertible): return convertible
             case .included: return 1 as Int32
@@ -32,16 +36,24 @@ public struct Projection: Encodable, ExpressibleByDictionaryLiteral {
         public init(booleanLiteral value: Bool) {
             self = value ? .included : .excluded
         }
+        
+        public static func projection(ofField field: FieldPath) -> ProjectionExpression {
+            return .custom(field.projection)
+        }
 
         /// A dictionary literal that makes this a custom ProjectionExpression
-        public init(dictionaryLiteral elements: (String, PrimitiveConvertible)...) {
-            self = .custom(Document(elements: elements))
+        public init(dictionaryLiteral elements: (FieldPath, ProjectionExpression)...) {
+            self = .custom(Document(elements: elements.compactMap { (field, value) in
+                return (field.string, value.primitive)
+            }))
         }
     }
 
-    public init(dictionaryLiteral elements: (String, ProjectionExpression)...) {
+    public init(dictionaryLiteral elements: (FieldPath, ProjectionExpression)...) {
         // Mapping as a workarond for the compiler being unable to infer the compliance to a protocol
-        self.document = Document(elements: elements.map { $0 })
+        document = Document(elements: elements.compactMap { (field, value) in
+            return (field.string, value.primitive)
+        })
     }
 
     public init(document: Document) {

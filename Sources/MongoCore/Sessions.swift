@@ -80,7 +80,7 @@ public final class MongoClientSession: @unchecked Sendable {
     }
 }
 
-internal final class MongoServerSession: Sendable {
+internal final class MongoServerSession: @unchecked Sendable {
     internal let sessionId: SessionIdentifier
     internal let lastUse: Date
     private let transaction: NIOAtomic<Int> = .makeAtomic(value: 1)

@@ -1,7 +1,7 @@
 import BSON
 import MongoCore
 
-public struct CountCommand: Codable {
+public struct CountCommand: Codable, Sendable {
     private let count: String
     
     /// Optional. A query that selects which documents to count in the collection or view.
@@ -21,7 +21,7 @@ public struct CountCommand: Codable {
     }
 }
 
-public struct CountReply: Decodable {
+public struct CountReply: Sendable, Decodable {
     private enum CodingKeys: String, CodingKey {
         case ok
         case count = "n"

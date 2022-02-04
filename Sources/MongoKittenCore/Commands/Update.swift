@@ -23,10 +23,9 @@ public struct UpdateCommand: Codable, Sendable {
         
         public init(where query: Document, setting: Document?, unsetting: Document?) {
             self.query = query
-            self.update = [
-                "$set": setting,
-                "$unset": unsetting
-            ]
+            self.update = [:]
+            self.update["$set"] = setting
+            self.update["$unset"] = unsetting
         }
     }
     

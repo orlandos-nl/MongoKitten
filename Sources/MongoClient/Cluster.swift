@@ -312,11 +312,11 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         return matchingConnection
     }
     
-    private func makeConnectionRecursively(for request: MongoConnectionPoolRequest, attempts: Int = 3) async throws -> MongoConnection {
+    private func makeConnectionRecursively(for request: ConnectionPoolRequest, attempts: Int = 3) async throws -> MongoConnection {
         var attempts = attempts
         while true {
             do {
-                return try await self._getConnection(writable: request.writable)
+                return try await self._getConnection(writable: request.requirements.contains(.writable))
             } catch {
                 attempts -= 1
                 
@@ -327,7 +327,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         }
     }
 
-    public func next(for request: MongoConnectionPoolRequest) async throws -> MongoConnection {
+    public func next(for request: ConnectionPoolRequest) async throws -> MongoConnection {
         return try await self.makeConnectionRecursively(for: request)
     }
 
@@ -384,7 +384,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         await disconnect()
         self.isClosed = false
         self.completedInitialDiscovery = false
-        _ = try await self.next(for: MongoConnectionPoolRequest(writable: true))
+        _ = try await self.next(for: .writable)
         await rediscover()
     }
 }

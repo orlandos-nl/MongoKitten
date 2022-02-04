@@ -7,9 +7,17 @@ public struct ChangeStreamOptions: Encodable {
         case collation
     }
     
+    /// The maximum amount of entities to receive in a `getMore` reply
     public var batchSize: Int32?
     public var collation: Collation?
-    public var maxAwaitTimeMS: Int64?
+    
+    /// The amount of time that each `getMore` request should wait for more data before replying
+    ///
+    /// If `nil`, it'll wait until documents are available. In all known current MongoDB versions, this blocks the server's connection handle.
+    /// Therefore, only set this to `nil` if you're using a separate connection for this change stream
+    ///
+    /// Also note that MongoDB will block the connection for `maxAwaitTimeMS` for each `getMore` call
+    public var maxAwaitTimeMS: Int64? = 200
     
     public init() {}
 }
@@ -17,15 +25,14 @@ public struct ChangeStreamOptions: Encodable {
 extension MongoCollection {
     public func buildChangeStream(
         options: ChangeStreamOptions = .init(),
-        using decoder: BSONDecoder = BSONDecoder(),
         @AggregateBuilder build: () -> AggregateBuilderStage
     ) async throws -> ChangeStream<Document> {
-        try await buildChangeStream(options: options, as: Document.self, using: decoder, build: build)
+        try await buildChangeStream(options: options, ofType: Document.self, build: build)
     }
     
     public func buildChangeStream<T: Decodable>(
         options: ChangeStreamOptions = .init(),
-        as type: T.Type,
+        ofType type: T.Type,
         using decoder: BSONDecoder = BSONDecoder(),
         @AggregateBuilder build: () -> AggregateBuilderStage
     ) async throws -> ChangeStream<T> {
@@ -34,7 +41,10 @@ extension MongoCollection {
             "$changeStream": optionsDocument
         ])
         
+        let connection = try await pool.next(for: [.writable, .new])
+        
         var pipeline = AggregateBuilderPipeline(stages: [build()])
+        pipeline.connection = connection
         pipeline.stages.insert(changeStreamStage, at: 0)
         pipeline.collection = self
         
@@ -49,12 +59,15 @@ extension MongoCollection {
     public func watch(
         options: ChangeStreamOptions = .init()
     ) async throws -> ChangeStream<Document> {
-        return try await watch(options: options, as: Document.self)
+        try await watch(
+            options: options,
+            type: Document.self
+        )
     }
     
     public func watch<T: Decodable>(
         options: ChangeStreamOptions = .init(),
-        as type: T.Type,
+        type: T.Type,
         using decoder: BSONDecoder = BSONDecoder()
     ) async throws -> ChangeStream<T> {
         let optionsDocument = try BSONEncoder().encode(options)
@@ -62,12 +75,14 @@ extension MongoCollection {
             "$changeStream": optionsDocument
         ])
         
-        let pipeline = self.aggregate([stage]).decode(
-            ChangeStreamNotification<T>.self,
-            using: decoder
-        )
+        let connection = try await pool.next(for: [.writable, .new])
         
-        let finalizedCursor = try await pipeline.execute()
+        let finalizedCursor = try await _buildAggregate(on: connection) {
+            stage
+        }
+            .decode(ChangeStreamNotification<T>.self)
+            .execute()
+        
         finalizedCursor.cursor.maxTimeMS = options.maxAwaitTimeMS.map(Int32.init)
         return ChangeStream(finalizedCursor, options: options)
     }
@@ -86,6 +101,11 @@ public struct ChangeStream<T: Decodable> {
         self.options = options
     }
     
+    /// After each `getMore` request, `getMoreInterval` is used to delay the next `getMore` request
+    /// If `getMoreInterval` is configured with `maxAwaitTimeMS`, your connection gets the opportunity to send queries _during_ the `getMoreInterval` window.
+    ///
+    /// It's therefore adviced to limit use of Change Streams on a shared connection. If you're only using one change stream, you can configure `maxAwaitTimeMS` to a small number, during which no queries can be executed.
+    /// Then provide a window of `getMoreInterval` during which queries will be processed and no change events can be processed.
     public mutating func setGetMoreInterval(to interval: TimeAmount? = nil) {
         self.getMoreInterval = interval
     }
