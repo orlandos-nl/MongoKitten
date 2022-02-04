@@ -8,7 +8,7 @@ import NIO
 //    public let removedFields: Document
 //}
 
-public typealias MeowIdentifier = Primitive & Equatable
+public typealias MeowIdentifier = Codable & Hashable & PrimitiveEncodable
 
 public protocol BaseModel {
     associatedtype Identifier: MeowIdentifier
