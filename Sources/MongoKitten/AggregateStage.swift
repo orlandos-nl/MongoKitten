@@ -42,11 +42,9 @@ public struct AggregateBuilderStage {
         func valueUnwrapper(_ value: Primitive) -> WireVersion?{
             switch value {
             case let value as Int32:
-                if value == 0 { return .mongo3_4 } // indicates excluded fields
-                return nil
+                (value == 0) ? return .mongo3_4 : return nil // indicates excluded fields
             case let value as String:
-                if value == "$$REMOVE" { return .mongo3_6 } // indicates conditionally excluded fields
-                return nil
+                (value == "$$REMOVE") ? return .mongo3_6 : return nil // indicates conditionally excluded fields
             case let value as Document:
                 return valueUnwrapper(value)
             default:
