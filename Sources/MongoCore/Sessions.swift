@@ -1,8 +1,9 @@
 import Foundation
+import NIOConcurrencyHelpers
 import BSON
 import NIO
 
-public struct SessionIdentifier: Codable {
+public struct SessionIdentifier: Codable, Sendable {
     public let id: Binary
 
     init(allocator: ByteBufferAllocator) {
@@ -30,7 +31,7 @@ public struct SessionIdentifier: Codable {
     }
 }
 
-public final class MongoClientSession {
+public final class MongoClientSession: @unchecked Sendable {
     private let serverSession: MongoServerSession
     private weak var sessionManager: MongoSessionManager?
     internal let clusterTime: Document?
@@ -73,23 +74,25 @@ public final class MongoClientSession {
     //    }
 
     deinit {
-        sessionManager?.releaseSession(serverSession)
+        Task {
+            await sessionManager?.releaseSession(serverSession)
+        }
     }
 }
 
-internal final class MongoServerSession {
+internal final class MongoServerSession: Sendable {
     internal let sessionId: SessionIdentifier
     internal let lastUse: Date
-    private var transaction: Int = 1
+    private let transaction: NIOAtomic<Int> = .makeAtomic(value: 1)
 
     func nextTransactionNumber() -> Int {
         defer {
             // Overflow to negative will break new transactions
             // MongoDB has no solution other than using a different ServerSession
-            transaction = transaction &+ 1
+            transaction.add(1)
         }
 
-        return transaction
+        return transaction.load()
     }
 
     init(for sessionId: SessionIdentifier) {
@@ -105,16 +108,14 @@ internal final class MongoServerSession {
 
 /// A LIFO (Last In, First Out) pool of sessions with a MongoDB "cluster" of 1 or more hosts
 /// This pool is not thread safe.
-public final class MongoSessionManager {
+public final actor MongoSessionManager {
     private var availableSessions = [MongoServerSession]()
-    private let implicitSession = MongoServerSession.random
-    private var implicitClientSession: MongoClientSession!
-    public func makeImplicitClientSession() -> MongoClientSession {
-        return implicitClientSession
-    }
+    private let implicitSession: MongoServerSession
+    public nonisolated let implicitClientSession: MongoClientSession
 
     public init() {
-        implicitClientSession = MongoClientSession(
+        self.implicitSession = MongoServerSession.random
+        self.implicitClientSession = MongoClientSession(
             serverSession: implicitSession,
             sessionManager: nil,
             options: MongoSessionOptions()
@@ -149,7 +150,7 @@ public final class MongoSessionManager {
 /// https://github.com/mongodb/specifications/blob/master/source/retryable-writes/retryable-writes.rst#unsupported-write-operations
 /// TODO: Write commands
 /// In MongoDB 4.0 the only supported retryable write commands within a transaction are commitTransaction and abortTransaction. Therefore drivers MUST NOT retry write commands within transactions even when retryWrites has been enabled on the MongoClient. Drivers MUST retry the commitTransaction and abortTransaction commands even when retryWrites has been disabled on the MongoClient. commitTransaction and abortTransaction are retryable write commands and MUST be retried according to the Retryable Writes Specification.
-public struct MongoSessionOptions {
+public struct MongoSessionOptions: Sendable {
     public var casualConsistency: Bool?
     public var defaultTransactionOptions: MongoTransactionOptions?
 

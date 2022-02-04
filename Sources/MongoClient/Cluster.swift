@@ -1,4 +1,5 @@
 import NIO
+import NIOConcurrencyHelpers
 import Logging
 import DNSClient
 import MongoCore
@@ -11,7 +12,7 @@ public typealias _MongoPlatformEventLoopGroup = NIOTSEventLoopGroup
 public typealias _MongoPlatformEventLoopGroup = EventLoopGroup
 #endif
 
-public final class MongoCluster: MongoConnectionPool {
+public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
     public private(set) var settings: ConnectionSettings {
         didSet {
             self.hosts = Set(settings.hosts)
@@ -66,7 +67,7 @@ public final class MongoCluster: MongoConnectionPool {
     public var slaveOk = false {
         didSet {
             for connection in pool {
-                connection.connection.slaveOk = self.slaveOk
+                connection.connection.slaveOk.store(self.slaveOk)
             }
         }
     }
@@ -110,10 +111,7 @@ public final class MongoCluster: MongoConnectionPool {
         
         Task {
             // Kick off the connection process
-            try await MongoCluster.withResolvedSettings(settings) { settings, dns in
-                self.settings = settings
-                self.dns = dns
-            }
+            try await resolveSettings()
             
             scheduleDiscovery()
         }
@@ -131,10 +129,7 @@ public final class MongoCluster: MongoConnectionPool {
 
         self.init(settings: settings, logger: logger)
 
-        try await MongoCluster.withResolvedSettings(settings) { settings, dns in
-            self.settings = settings
-            self.dns = dns
-        }
+        try await resolveSettings()
 
         if self.pool.count == 0, !allowFailure {
             throw MongoError(.cannotConnect, reason: .noAvailableHosts)
@@ -182,9 +177,9 @@ public final class MongoCluster: MongoConnectionPool {
         }
     }
 
-    private static func withResolvedSettings<T>(_ settings: ConnectionSettings, run: @Sendable @escaping (ConnectionSettings, DNSClient?) async throws -> T) async throws -> T {
+    private func resolveSettings() async throws {
         if !settings.isSRV {
-            return try await run(settings, nil)
+            return
         }
 
         let host = settings.hosts.first!
@@ -198,11 +193,12 @@ public final class MongoCluster: MongoConnectionPool {
         
         var settings = settings
         settings.hosts = try await resolveSRV(host, on: client)
-        return try await run(settings, client)
+        self.settings = settings
+        self.dns = client
     }
 
-    private static let prefix = "_mongodb._tcp."
-    private static func resolveSRV(_ host: ConnectionSettings.Host, on client: DNSClient) async throws -> [ConnectionSettings.Host] {
+    private func resolveSRV(_ host: ConnectionSettings.Host, on client: DNSClient) async throws -> [ConnectionSettings.Host] {
+        let prefix = "_mongodb._tcp."
         return try await client.getSRVRecords(from: prefix + host.hostname).get().map { record in
             return ConnectionSettings.Host(hostname: record.resource.domainName.string, port: host.port)
         }
@@ -231,14 +227,14 @@ public final class MongoCluster: MongoConnectionPool {
                 resolver: self.dns,
                 sessionManager: sessionManager
             )
-            connection.slaveOk = self.slaveOk
+            connection.slaveOk.store(slaveOk)
 
             /// Ensures we default to the cluster's lowest version
             if let connectionHandshake = await connection.serverHandshake {
                 self.updateSDAM(from: connectionHandshake)
             }
 
-            connection.closeFuture.whenComplete { [weak self, connection] _ in
+            await connection.closeFuture.whenComplete { [weak self, connection] _ in
                 guard let me = self else { return }
 
                 Task {

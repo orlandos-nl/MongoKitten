@@ -61,7 +61,8 @@ extension MeowCollection where M: MutableModel {
     
     @discardableResult
     public func upsert(_ instance: M) async throws -> UpdateReply {
-        return try await raw.upsertEncoded(instance, where: "_id" == instance._id)
+        let _id = try instance._id.encodePrimitive()
+        return try await raw.upsertEncoded(instance, where: "_id" == _id)
     }
     
     @discardableResult

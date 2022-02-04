@@ -1,7 +1,7 @@
 import BSON
 
-public struct MongoCursorResponse: Decodable {
-    public struct Cursor: Codable {
+public struct MongoCursorResponse: Decodable, Sendable {
+    public struct Cursor: Codable, Sendable {
         private enum CodingKeys: String, CodingKey {
             case id, firstBatch
             case namespace = "ns"

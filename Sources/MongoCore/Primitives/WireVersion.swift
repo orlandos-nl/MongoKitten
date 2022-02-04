@@ -1,4 +1,4 @@
-public struct WireVersion: Codable, Comparable, ExpressibleByIntegerLiteral {
+public struct WireVersion: Codable, Comparable, ExpressibleByIntegerLiteral, Sendable {
     public static func < (lhs: WireVersion, rhs: WireVersion) -> Bool {
         return lhs.version < rhs.version
     }

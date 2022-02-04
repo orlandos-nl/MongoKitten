@@ -1,5 +1,5 @@
-public struct ReadConcern: Codable {
-    public enum Level: String, Codable {
+public struct ReadConcern: Codable, Sendable {
+    public enum Level: String, Codable, Sendable {
         case local, majority, linearizable, available
     }
 

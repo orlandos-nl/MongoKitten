@@ -1,8 +1,8 @@
 /// A specification is used as a specification to sort and compare strings in the database.
 ///
 /// [See more in the specification](https://github.com/mongodb/specifications/blob/master/source/collation/collation.rst#collation-document-model)
-public struct Collation: Codable {
-    public enum CaseFirstOptions: String, Codable {
+public struct Collation: Codable, Sendable {
+    public enum CaseFirstOptions: String, Codable, Sendable {
         /// Similar to lower. [Read more](http://userguide.icu-project.org/collation/customization)
         case off
 
@@ -14,7 +14,7 @@ public struct Collation: Codable {
     }
 
     /// Defines the level of comparison between two characters
-    public enum Strength: Int, Codable {
+    public enum Strength: Int, Codable, Sendable {
         /// Compares only on base characters, ignoring diadrics and case
         case primary = 1
 
@@ -31,7 +31,7 @@ public struct Collation: Codable {
     }
 
     /// Whether whitespace and punctuation are considered base characters
-    public enum Alternate: String, Codable {
+    public enum Alternate: String, Codable, Sendable {
         /// They're considered as base characters
         case nonIgnorable = "non-ignorable"
 
@@ -40,7 +40,7 @@ public struct Collation: Codable {
     }
 
     /// Determines which characters are considered ignorable when the alternate is shifted.
-    public enum MaxVariable: String, Codable {
+    public enum MaxVariable: String, Codable, Sendable {
         /// Whitespaces and punctuation are ignorable
         case punt
 

@@ -32,15 +32,15 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-metrics.git", "1.0.0" ..< "3.0.0"),        
         
         // 💾
-//        .package(url: "https://github.com/orlandos-nl/BSON.git", from: "7.0.0"),
-        .package(name: "BSON", path: "../BSON"),
+        .package(url: "https://github.com/orlandos-nl/BSON.git", .branch("master/8.0")),
+//        .package(name: "BSON", path: "../BSON"),
         
         // 🚀
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0"),
 
         // 📚
-//        .package(url: "https://github.com/orlandos-nl/NioDNS.git", from: "2.0.0"),
-        .package(name: "DNSClient", path: "../NioDNS"),
+        .package(url: "https://github.com/orlandos-nl/NioDNS.git", .branch("3.0")),
+//        .package(name: "DNSClient", path: "../NioDNS"),
         
         // 🔑
         .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.0.0")
@@ -70,8 +70,9 @@ let package = Package(
             name: "MongoClient",
             dependencies: [
                 "MongoCore",
+                "_MongoKittenCrypto",
                 .product(name: "NIOSSL", package: "swift-nio-ssl"),
-                .product(name: "DNSClient", package: "DNSClient"),
+                .product(name: "DNSClient", package: "NioDNS"),
             ]
         ),
         .testTarget(

@@ -1,4 +1,4 @@
-public struct MongoNamespace: Codable {
+public struct MongoNamespace: Codable, Sendable {
     public let collectionName: String
     public let databaseName: String
     public var fullCollectionName: String {

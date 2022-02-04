@@ -3,7 +3,7 @@ import BSON
 import Foundation
 
 /// - see: https://docs.mongodb.com/manual/reference/command/isMaster/index.html
-public struct ServerHandshake: Codable {
+public struct ServerHandshake: Codable, Sendable {
     public let ok: Int
     
     /// A boolean value that reports when this node is writable. If true, then this instance is a primary in a replica set, or a master in a master-slave configuration, or a mongos instance, or a standalone mongod.

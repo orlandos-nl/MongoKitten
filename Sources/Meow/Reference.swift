@@ -3,7 +3,7 @@ import MongoKitten
 import NIO
 
 /// Reference to a Model
-public struct Reference<M: ReadableModel>: Resolvable, Equatable, PrimitiveConvertible {
+public struct Reference<M: ReadableModel>: Resolvable, Equatable, PrimitiveEncodable {
     /// The referenced id
     public let reference: M.Identifier
     
@@ -35,7 +35,7 @@ public struct Reference<M: ReadableModel>: Resolvable, Equatable, PrimitiveConve
     
     /// Resolves a reference, returning `nil` if the referenced object cannot be found
     public func resolveIfPresent(in context: MeowDatabase, where query: Document = Document()) async throws -> M? {
-        let base = "_id" == reference
+        let base = try "_id" == reference.encodePrimitive()
         
         if query.isEmpty {
             return try await context.collection(for: M.self).findOne(where: base)
@@ -46,19 +46,21 @@ public struct Reference<M: ReadableModel>: Resolvable, Equatable, PrimitiveConve
     }
     
     public func exists(in db: MeowDatabase) async throws -> Bool {
-        return try await db[M.self].count(where: "_id" == reference) > 0
+        let _id = try reference.encodePrimitive()
+        return try await db[M.self].count(where: "_id" == _id) > 0
     }
     
     public func exists(in db: MeowDatabase, where filter: Document) async throws -> Bool {
-        return try await db[M.self].count(where: "_id" == reference && filter) > 0
+        let _id = try reference.encodePrimitive()
+        return try await db[M.self].count(where: "_id" == _id && filter) > 0
     }
     
     public func exists<Query: MongoKittenQuery>(in db: MeowDatabase, where filter: Query) async throws -> Bool {
         return try await self.exists(in: db, where: filter.makeDocument())
     }
     
-    public func makePrimitive() -> Primitive? {
-        reference
+    public func encodePrimitive() throws -> Primitive {
+        try reference.encodePrimitive()
     }
 }
 
@@ -66,8 +68,9 @@ extension Reference where M: MutableModel {
     /// Deletes the target of the reference (making it invalid)
     @discardableResult
     public func deleteTarget(in context: MeowDatabase) async throws-> MeowOperationResult {
+        let _id = try reference.encodePrimitive()
         let result = try await context.collection(for: M.self)
-            .deleteOne(where: "_id" == reference)
+            .deleteOne(where: "_id" == _id)
             
         return MeowOperationResult(
             success: result.deletes > 0,

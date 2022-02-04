@@ -1,7 +1,7 @@
-public final class MongoTransaction {
-    public let number: Int
+public final actor MongoTransaction: Sendable {
+    public nonisolated let number: Int
     private var _startTransaction = true
-    public let autocommit: Bool
+    public nonisolated let autocommit: Bool
     
     init(number: Int, autocommit: Bool) {
         self.number = number
@@ -15,7 +15,7 @@ public final class MongoTransaction {
     }
 }
 
-public struct MongoTransactionOptions {
+public struct MongoTransactionOptions: Sendable {
     // TODO: Read/Write concern and readPreference
 
     public init() {}
