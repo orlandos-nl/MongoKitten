@@ -66,9 +66,9 @@ public struct AggregateBuilderPipeline: QueryCursor {
         
         #if DEBUG
         
-        let minimalVersionRequired = stages.compactMap { \.minimalVersionRequired }.max()
+        let minimalVersionRequired = stages.compactMap(\.minimalVersionRequired).max()
         
-        if let actualVersion = connection.wireVersion, let minimalVersion = minimalVersionRequired, actualVersion < minimalVersion {
+        if let actualVersion = await connection.wireVersion, let minimalVersion = minimalVersionRequired, actualVersion < minimalVersion {
             connection.logger.warning("Aggregation might fail since one or more aggregation stages require a higher MongoDB version than provided by the current connection.")
         }
         

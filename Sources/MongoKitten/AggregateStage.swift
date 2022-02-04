@@ -39,24 +39,9 @@ public struct AggregateBuilderStage {
     }
     
     public static func project(_ projection: Projection) -> AggregateBuilderStage {
-        func valueUnwrapper(_ value: Primitive) -> WireVersion?{
-            switch value {
-            case let value as Int32:
-                (value == 0) ? return .mongo3_4 : return nil // indicates excluded fields
-            case let value as String:
-                (value == "$$REMOVE") ? return .mongo3_6 : return nil // indicates conditionally excluded fields
-            case let value as Document:
-                return valueUnwrapper(value)
-            default:
-                return nil
-            }
-        }
-        
-        let minimalVersionRequired: WireVersion? = projection.document.values.compactMap{ valueUnwrapper($0) }.min()
-        
         return AggregateBuilderStage(document: [
             "$project": projection.document
-        ], minimalVersion: minimalVersionRequired)
+        ], minimalVersion: projection.minimalVersion)
     }
     
     public static func project(_ fields: String...) -> AggregateBuilderStage {

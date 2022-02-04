@@ -2,9 +2,28 @@ import BSON
 
 public struct Projection: Encodable, ExpressibleByDictionaryLiteral {
     public internal(set) var document: Document
+    public internal(set) var minimalVersion: WireVersion? {
+        func valueUnwrapper(_ value: Primitive) -> WireVersion?{
+            switch value {
+            case let value as Int32:
+                return value == 0 ? .mongo3_4 : nil // indicates excluded fields
+            case let value as String:
+                return value == "$$REMOVE" ? .mongo3_6 : nil // indicates conditionally excluded fields
+            case let value as Document:
+                return value.values.compactMap(valueUnwrapper).max()
+            default:
+                return nil
+            }
+        }
+        
+        return self.document.values.compactMap(valueUnwrapper).max()
+    }
 
     /// An expression that can be specified to either include or exclude a field (or some custom value)
     public enum ProjectionExpression: ExpressibleByBooleanLiteral, ExpressibleByStringLiteral, ExpressibleByDictionaryLiteral, PrimitiveConvertible {
+        /// Conditional exclusion of a field from the projection
+        public static let remove = ProjectionExpression.custom("$$REMOVE")
+        
         /// Creates a BSON.Primitive of this ProjectionExpression for easy embedding in Documents
         public func makePrimitive() -> Primitive? {
             switch self {
