@@ -1,8 +1,9 @@
 import BSON
+import MongoClient
 
 public struct Projection: Encodable, ExpressibleByDictionaryLiteral {
     public internal(set) var document: Document
-    public internal(set) var minimalVersion: WireVersion? {
+    public var minimalVersion: WireVersion? {
         func valueUnwrapper(_ value: Primitive) -> WireVersion?{
             switch value {
             case let value as Int32:
@@ -18,6 +19,7 @@ public struct Projection: Encodable, ExpressibleByDictionaryLiteral {
         
         return self.document.values.compactMap(valueUnwrapper).max()
     }
+    
 
     /// An expression that can be specified to either include or exclude a field (or some custom value)
     public enum ProjectionExpression: ExpressibleByBooleanLiteral, ExpressibleByStringLiteral, ExpressibleByDictionaryLiteral, PrimitiveConvertible {
