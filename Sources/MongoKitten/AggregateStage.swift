@@ -4,14 +4,14 @@ public struct AggregateBuilderStage {
     public internal(set) var stages: [Document]
     public internal(set) var minimalVersionRequired: WireVersion?
     
-    public init(document: Document, _ minimalVersionRequired: WireVersion? = nil) {
+    public init(document: Document, minimalVersion: WireVersion? = nil) {
         self.stages = [document]
-        self.minimalVersionRequired = minimalVersionRequired
+        self.minimalVersionRequired = minimalVersion
     }
     
-    public init(documents: [Document], _ minimalVersionRequired: WireVersion? = nil) {
+    public init(documents: [Document], minimalVersion: WireVersion? = nil) {
         self.stages = documents
-        self.minimalVersionRequired = minimalVersionRequired
+        self.minimalVersionRequired = minimalVersion
     }
     
     public static func match(_ query: Document) -> AggregateBuilderStage {
@@ -29,7 +29,7 @@ public struct AggregateBuilderStage {
     public static func addFields(_ query: Document) -> AggregateBuilderStage {
         return AggregateBuilderStage(document: [
             "$addFields": query
-        ], .mongo3_4)
+        ], minimalVersion: .mongo3_4)
     }
     
     public static func sort(_ sort: Sort) -> AggregateBuilderStage {
@@ -58,7 +58,7 @@ public struct AggregateBuilderStage {
         
         return AggregateBuilderStage(document: [
             "$project": projection.document
-        ], minimalVersionRequired)
+        ], minimalVersion: minimalVersionRequired)
     }
     
     public static func project(_ fields: String...) -> AggregateBuilderStage {
@@ -75,7 +75,7 @@ public struct AggregateBuilderStage {
     public static func count(to field: String) -> AggregateBuilderStage {
         return AggregateBuilderStage(document: [
             "$count": field
-        ], .mongo3_4)
+        ], minimalVersion: .mongo3_4)
     }
     
     public static func skip(_ n: Int) -> AggregateBuilderStage {
@@ -118,7 +118,7 @@ public struct AggregateBuilderStage {
         
         return AggregateBuilderStage(document: [
             "$sample": ["size": n]
-        ], .mongo3_2)
+        ], minimalVersion: .mongo3_2)
     }
     
     /// The `lookup` aggregation performs a join from another collection in the same database. This aggregation will add a new array to
@@ -228,7 +228,7 @@ public struct AggregateBuilderStage {
             minimalVersion = .mongo3_2
         }
         
-        return AggregateBuilderStage(document: ["$unwind": d], minimalVersion)
+        return AggregateBuilderStage(document: ["$unwind": d], minimalVersion: minimalVersion)
     }
     
     /// The point for which to find the closest documents.
