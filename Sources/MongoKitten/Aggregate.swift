@@ -4,6 +4,7 @@ import MongoClient
 
 public struct AggregateBuilderPipeline: QueryCursor {
     public typealias Element = Document
+    internal var connection: MongoConnection?
     internal var collection: MongoCollection!
     internal var writing = false
     internal var _comment: String?
@@ -57,6 +58,10 @@ public struct AggregateBuilderPipeline: QueryCursor {
     }
     
     public func getConnection() async throws -> MongoConnection {
+        if let connection = connection {
+            return connection
+        }
+        
         return try await collection.pool.next(for: .writable)
     }
     

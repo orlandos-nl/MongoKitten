@@ -40,7 +40,7 @@ struct Project: AggregateBuilderStage {
     public init(_ fields: String...) {
         var document = Document()
         for field in fields {
-            document[field] = Projection.ProjectionExpression.included.makePrimitive()
+            document[field] = Projection.ProjectionExpression.included.primitive
         }
         
         self.stage = ["$project": document]
@@ -263,7 +263,7 @@ struct GeoNear: AggregateBuilderStage {
                                  "spherical": spherical]
         
         if useLegacy {
-            geoNear["near"] = [longitude, latitude].makePrimitive()
+            geoNear["near"] = [longitude, latitude]
         } else {
             geoNear["near"] = ["type": "Point", "coordinates": [longitude, latitude]] as Document
         }

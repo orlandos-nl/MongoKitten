@@ -94,6 +94,13 @@ extension MongoCollection {
         pipeline.collection = self
         return pipeline
     }
+    
+    internal func _buildAggregate(on connection: MongoConnection, @AggregateBuilder build: () -> AggregateBuilderStage) -> AggregateBuilderPipeline {
+        var pipeline = AggregateBuilderPipeline(stages: [build()])
+        pipeline.connection = connection
+        pipeline.collection = self
+        return pipeline
+    }
 }
 
 public func match(_ query: Document) -> AggregateBuilderStage {

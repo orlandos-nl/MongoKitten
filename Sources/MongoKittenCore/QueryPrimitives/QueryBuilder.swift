@@ -78,7 +78,7 @@ public struct AndQuery: MongoKittenQuery {
         case 1:
             return conditions[0]
         default:
-            return ["$and": Document(array: conditions)]
+            return ["$and": conditions]
         }
     }
 }
@@ -139,7 +139,7 @@ public struct OrQuery: MongoKittenQuery {
         case 1:
             return conditions[0]
         default:
-            return ["$or": Document(array: conditions)]
+            return ["$or": conditions]
         }
     }
 }

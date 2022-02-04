@@ -180,16 +180,6 @@ extension EventLoopFuture {
     }
 }
 
-internal extension MongoConnectionPoolRequest {
-    static var writable: MongoConnectionPoolRequest {
-        return MongoConnectionPoolRequest(writable: true)
-    }
-
-    static var basic: MongoConnectionPoolRequest {
-        return MongoConnectionPoolRequest(writable: false)
-    }
-}
-
 extension EventLoopFuture where Value == Optional<Document> {
     public func decode<D: Decodable>(_ type: D.Type) -> EventLoopFuture<D?> {
         return flatMapThrowing { document in

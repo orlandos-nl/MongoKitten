@@ -2,23 +2,37 @@ import NIO
 import Logging
 import MongoCore
 
-public struct MongoConnectionPoolRequest: Sendable {
-    public var writable: Bool
-
-    public init(writable: Bool) {
-        self.writable = writable
+public struct ConnectionPoolRequirement: Hashable, Sendable {
+    internal enum _Requirement: Hashable, Sendable {
+        case writable, new
     }
+    
+    let raw: _Requirement
+    
+    public static let writable = ConnectionPoolRequirement(raw: .writable)
+    public static let new = ConnectionPoolRequirement(raw: .new)
+}
+
+public struct ConnectionPoolRequest: Sendable, ExpressibleByArrayLiteral {
+    public let requirements: Set<ConnectionPoolRequirement>
+    
+    public init(arrayLiteral requirements: ConnectionPoolRequirement...) {
+        self.requirements = Set(requirements)
+    }
+    
+    public static let writable: ConnectionPoolRequest = [.writable]
+    public static let basic: ConnectionPoolRequest = []
 }
 
 public protocol MongoConnectionPool {
-    func next(for request: MongoConnectionPoolRequest) async throws -> MongoConnection
+    func next(for request: ConnectionPoolRequest) async throws -> MongoConnection
     var wireVersion: WireVersion? { get async }
     var sessionManager: MongoSessionManager { get }
     var logger: Logger { get }
 }
 
 extension MongoConnection: MongoConnectionPool {
-    public func next(for request: MongoConnectionPoolRequest) async throws -> MongoConnection {
+    public func next(for request: ConnectionPoolRequest) async throws -> MongoConnection {
         self
     }
     

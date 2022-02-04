@@ -10,7 +10,9 @@ extension MongoCollection {
                 inCollection: self.name
             ),
             collection: self,
-            makeConnection: { [pool] in try await pool.next(for: .basic) }
+            makeConnection: { [pool] in
+                return try await pool.next(for: .basic)
+            }
         )
     }
     
@@ -42,7 +44,7 @@ extension MongoCollection {
 /// A builder that constructs a `FindCommand`
 public final class FindQueryBuilder: QueryCursor {
     /// The collection this cursor applies to
-    private let makeConnection: () async throws -> MongoConnection
+    private let makeConnection: @Sendable () async throws -> MongoConnection
     public var command: FindCommand
     private let collection: MongoCollection
     public var isDrained: Bool { false }
