@@ -2,8 +2,15 @@ import NIO
 import Logging
 import MongoCore
 
-public enum ConnectionPoolRequirement: Hashable, Sendable {
-    case writable, new
+public struct ConnectionPoolRequirement: Hashable, Sendable {
+    internal enum _Requirement: Hashable, Sendable {
+        case writable, new
+    }
+    
+    let raw: _Requirement
+    
+    public static let writable = ConnectionPoolRequirement(raw: .writable)
+    public static let new = ConnectionPoolRequirement(raw: .new)
 }
 
 public struct ConnectionPoolRequest: Sendable, ExpressibleByArrayLiteral {

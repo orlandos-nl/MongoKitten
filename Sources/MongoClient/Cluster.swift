@@ -165,7 +165,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         } else {
             self.wireVersion = handshake.maxWireVersion
         }
-
+        
         var hosts = handshake.hosts ?? []
         hosts += handshake.passives ?? []
 
@@ -316,7 +316,11 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         var attempts = attempts
         while true {
             do {
-                return try await self._getConnection(writable: request.requirements.contains(.writable))
+                if request.requirements.contains(.new) {
+                    return try await self._createNewConnection(writable: request.requirements.contains(.writable))
+                } else {
+                    return try await self._getConnection(writable: request.requirements.contains(.writable))
+                }
             } catch {
                 attempts -= 1
                 
@@ -330,38 +334,53 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
     public func next(for request: ConnectionPoolRequest) async throws -> MongoConnection {
         return try await self.makeConnectionRecursively(for: request)
     }
-
-    private func _getConnection(writable: Bool = true, emptyPoolError: Error? = nil) async throws -> MongoConnection {
+    
+    private func _createNewConnection(writable: Bool = true, emptyPoolError: Error? = nil) async throws -> MongoConnection {
+        let pooledConnection = try await _getPooledConnection(writable: writable, emptyPoolError: emptyPoolError)
+        
+        let newPooledConnection = try await makeConnection(to: pooledConnection.host)
+        self.pool.append(newPooledConnection)
+        return newPooledConnection.connection
+    }
+    
+    private func _getPooledConnection(writable: Bool = true, emptyPoolError: Error? = nil) async throws -> PooledConnection {
         if let matchingConnection = await findMatchingExistingConnection(writable: writable) {
-            return matchingConnection.connection
+            return matchingConnection
         }
-
+        
         guard let host = undiscoveredHosts.first else {
             await self.rediscover()
             guard let match = await findMatchingExistingConnection(writable: writable) else {
                 self.logger.error("Couldn't find or create a connection to MongoDB with the requested specification")
                 throw emptyPoolError ?? MongoError(.cannotConnect, reason: .noAvailableHosts)
             }
-
-            return match.connection
+            
+            return match
         }
-
+        
         logger.info("No matching connection found with host: \(host) - creating new connection")
         let pooledConnection = try await makeConnection(to: host)
         self.pool.append(pooledConnection)
-
+        
         guard let handshake = await pooledConnection.connection.serverHandshake else {
             throw MongoError(.cannotConnect, reason: .handshakeFailed)
         }
-
+        
         let unwritable = writable && handshake.readOnly == true
         let unreadable = !self.slaveOk && !handshake.ismaster
-
+        
         if unwritable || unreadable {
-            return try await self._getConnection(writable: writable)
+            return try await self._getPooledConnection(writable: writable)
         } else {
-            return pooledConnection.connection
+            return pooledConnection
         }
+    }
+
+    private func _getConnection(writable: Bool = true, emptyPoolError: Error? = nil) async throws -> MongoConnection {
+        try await _getPooledConnection(
+            writable: writable,
+            emptyPoolError: emptyPoolError
+        ).connection
     }
 
     /// Closes all connections
