@@ -12,7 +12,7 @@ fileprivate struct EncodingHelper<V: Encodable>: Encodable {
 }
 
 public class Migrator<M: Model> {
-    public typealias Action = (MeowCollection<M>) async throws -> ()
+    public typealias Action = @Sendable (MeowCollection<M>) async throws -> ()
     
     public let database: MeowDatabase
     

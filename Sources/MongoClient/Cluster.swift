@@ -234,7 +234,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
                 self.updateSDAM(from: connectionHandshake)
             }
 
-            await connection.closeFuture.whenComplete { [weak self, connection] _ in
+            connection.closeFuture.whenComplete { [weak self, connection] _ in
                 guard let me = self else { return }
 
                 Task {

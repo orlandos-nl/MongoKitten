@@ -96,7 +96,7 @@ extension QueryCursor {
     /// - parameter handler: A handler to execute on every result
     /// - returns: A future that resolves when the operation is complete, or fails if an error is thrown
     @discardableResult
-    public func forEach(failable: Bool = false, handler: @escaping (Element) async throws -> Void) -> Task<Void, Error> {
+    public func forEach(failable: Bool = false, handler: @escaping @Sendable (Element) async throws -> Void) -> Task<Void, Error> {
         Task {
             let finalizedCursor = try await execute()
             

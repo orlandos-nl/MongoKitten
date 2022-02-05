@@ -111,7 +111,7 @@ public struct ChangeStream<T: Decodable> {
     }
     
     @discardableResult
-    public func forEach(handler: @escaping (Notification) async throws -> Bool) -> Task<Void, Error> {
+    public func forEach(handler: @escaping @Sendable (Notification) async throws -> Bool) -> Task<Void, Error> {
         Task {
             while !cursor.isDrained {
                 for element in try await cursor.nextBatch() {
