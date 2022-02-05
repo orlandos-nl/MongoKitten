@@ -11,6 +11,11 @@ public struct WireVersion: Codable, Comparable, ExpressibleByIntegerLiteral, Sen
     public static let mongo3_6: WireVersion = 6
     public static let mongo4_0: WireVersion = 7
     public static let mongo4_2: WireVersion = 8
+    public static let mongo4_4: WireVersion = 9
+    public static let mongo5_0: WireVersion = 13
+    public static let mongo5_1: WireVersion = 14
+    public static let mongo5_2: WireVersion = 15
+    public static let mongo5_3: WireVersion = 16
 
     public let version: Int
 
@@ -48,6 +53,9 @@ public struct WireVersion: Codable, Comparable, ExpressibleByIntegerLiteral, Sen
 
     // Wire version 8
     public var supportsShardedTransactions: Bool { return version >= 8 }
+    
+    // Wire version 13
+    public var supportsOutMergeOnSecondaries: Bool { return version >= 13}
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
