@@ -194,7 +194,7 @@ public struct Lookup: AggregateBuilderStage {
         ]
     }
     
-    public init(from: String, usedPipelineVariables: Document? = [:], pipeline: [AggregateBuilderStage], as newField: FieldPath) {
+    public init(from: String, usedPipelineVariables: Document = [:], pipeline: [AggregateBuilderStage], as newField: FieldPath) {
         let pipelineStages = pipeline.map(\.stage)
                 
         self.stage = [
@@ -204,7 +204,7 @@ public struct Lookup: AggregateBuilderStage {
                     "let": usedPipelineVariables,
                     "pipeline": pipelineStages,
                     "as": newField.string
-                ]
+                ] as Document
         ]
     }
 }
