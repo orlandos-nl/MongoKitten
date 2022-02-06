@@ -37,10 +37,10 @@ public struct Project: AggregateBuilderStage {
         self.minimalVersionRequired = projection.minimalVersion
     }
     
-    public init(_ fields: String...) {
+    public init(_ fields: FieldPath...) {
         var document = Document()
         for field in fields {
-            document[field] = Projection.ProjectionExpression.included.primitive
+            document[field.string] = Projection.ProjectionExpression.included.primitive
         }
         
         self.stage = ["$project": document]
@@ -94,7 +94,7 @@ public struct ReplaceRoot: AggregateBuilderStage {
     public init(with path: FieldPath) {
         self.stage = [
             "$replaceRoot": [
-                "newRoot": "$\(path)"
+                "newRoot": path.projection
             ]
         ]
     }
@@ -154,7 +154,7 @@ public struct Sample: AggregateBuilderStage {
 ///
 /// ```
 /// let pipeline = userCollection.aggregate([
-///     .lookup(from: "userCategories", "localField": "categoryID", "foreignField": "_id", newName: "userCategory")
+///     Lookup(from: "userCategories", "localField": "categoryID", "foreignField": "_id", newName: "userCategory")
 /// ])
 ///
 /// pipeline.execute().whenComplete { result in
@@ -182,14 +182,28 @@ public struct Lookup: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = nil
     
-    public init(from: String, localField: String, foreignField: String, as newName: String) {
+    public init(from: String, localField: FieldPath, foreignField: FieldPath, as newName: FieldPath) {
         self.stage = [
             "$lookup":
                 [
                     "from": from,
-                    "localField": localField,
-                    "foreignField": foreignField,
-                    "as": newName
+                    "localField": localField.string,
+                    "foreignField": foreignField.string,
+                    "as": newName.string
+                ]
+        ]
+    }
+    
+    public init(from: String, usedPipelineVariables: Document? = [:], pipeline: [AggregateBuilderStage], as newField: FieldPath) {
+        let pipelineStages = pipeline.map(\.stage)
+                
+        self.stage = [
+            "$lookup":
+                [
+                    "from": from,
+                    "let": usedPipelineVariables,
+                    "pipeline": pipelineStages,
+                    "as": newField.string
                 ]
         ]
     }
@@ -228,15 +242,13 @@ public struct Lookup: AggregateBuilderStage {
 ///   - includeArrayIndex: this parameter is optional. If given, the new documents will hold a new field with the name of `includeArrayIndex` and this field will contain the array index
 ///   - preserveNullAndEmptyArrays: this parameter is optional. If it is set to `true`, the aggregation will also include the documents, that don't have an array that can be unwinded. default is `false`, so the `unwind` aggregation will remove all documents, where there is no value or an empty array at `fieldPath`
 /// - Returns: an `AggregateBuilderStage`
-
-
 public struct Unwind: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = .mongo3_2
     
-    public init(fieldPath: String, includeArrayIndex: String? = nil, preserveNullAndEmptyArrays: Bool? = nil) {
+    public init(fieldPath: FieldPath, includeArrayIndex: String? = nil, preserveNullAndEmptyArrays: Bool? = nil) {
         var d = Document()
-        d["path"] = fieldPath
+        d["path"] = fieldPath.projection
         
         
         if let incl = includeArrayIndex {
