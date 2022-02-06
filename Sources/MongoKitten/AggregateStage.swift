@@ -193,18 +193,23 @@ public struct Lookup: AggregateBuilderStage {
         ]
     }
     
-    public init(from: String, using pipelineVariables: Document = [:], @AggregateBuilder pipeline: () -> [AggregateBuilderStage], as newField: FieldPath) {
+    public init(from: String, using pipelineVariables: Document? = nil, @AggregateBuilder pipeline: () -> [AggregateBuilderStage], as newField: FieldPath) {
         let pipelineStages = pipeline().map(\.stage)
                 
-        self.stage = [
+        var command: Document = [
             "$lookup":
                 [
                     "from": from,
-                    "let": pipelineVariables,
                     "pipeline": pipelineStages,
                     "as": newField.string
                 ] as Document
         ]
+        
+        if let variables = pipelineVariables {
+            command["$lookup"]["let"] = variables
+        }
+        
+        self.stage = command
     }
 }
 
