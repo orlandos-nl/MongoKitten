@@ -295,7 +295,7 @@ public struct GeoNear: AggregateBuilderStage {
         includeLocs: String? = nil,
         uniqueDocuments: Bool? = nil,
         minDistance: Double? = nil,
-        key: String? = nil
+        key: FieldPath? = nil
     ) {
         var geoNear: Document = ["distanceField": distanceField,
                                  "spherical": spherical]
@@ -318,7 +318,7 @@ public struct GeoNear: AggregateBuilderStage {
         
         geoNear["minDistance"] = minDistance
         
-        geoNear["key"] = key
+        geoNear["key"] = key?.string
         
         self.stage = ["$geoNear": geoNear]
     }
