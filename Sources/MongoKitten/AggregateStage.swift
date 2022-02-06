@@ -82,8 +82,7 @@ public struct Out: AggregateBuilderStage {
         if let db = database {
             self.stage = ["$out": ["db": db, "coll": collectionName ]]
             self.minimalVersionRequired = .mongo4_4
-        }
-        self.stage = ["$out": collectionName]
+        } else { self.stage = ["$out": collectionName] }
     }
 }
 
