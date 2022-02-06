@@ -108,8 +108,8 @@ public struct ReplaceRoot: AggregateBuilderStage {
 /// # Example:
 /// ```
 /// let pipeline = myCollection.aggregate([
-///     .match("myCondition" == true),
-///     .limit(5)
+///     Match("myCondition" == true),
+///     Limit(5)
 /// ])
 ///
 /// pipeline.execute().whenComplete { result in
@@ -166,8 +166,8 @@ public struct Sample: AggregateBuilderStage {
 ///
 /// ```
 /// let pipeline = myCollection.aggregate([
-///     .lookup(from: ..., newName: "newName"),
-///     .unwind(fieldPath: "$newName")
+///     Lookup(from: ..., newName: "newName"),
+///     Unwind(fieldPath: "$newName")
 /// ])
 /// ```
 ///
@@ -225,8 +225,8 @@ public struct Lookup: AggregateBuilderStage {
 ///
 /// ```
 /// let pipeline = collection.aggregate([
-///     .match("_id" == 1),
-///     .unwind(fieldPath: "$arrayItem")
+///     Match("_id" == 1),
+///     Unwind(fieldPath: "$arrayItem")
 /// ])
 /// ```
 ///
