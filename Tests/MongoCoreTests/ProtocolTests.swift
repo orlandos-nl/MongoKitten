@@ -1,5 +1,6 @@
 import XCTest
 import NIO
+import BSON
 @testable import MongoCore
 
 class ProtocolTests: XCTestCase {
