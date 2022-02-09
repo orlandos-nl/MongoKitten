@@ -22,6 +22,15 @@ public struct ChangeStreamOptions: Encodable {
     public init() {}
 }
 
+internal struct ChangeStreamAggregation: AggregateBuilderStage {
+    public internal(set) var stage: Document
+    public internal(set) var minimalVersionRequired: WireVersion? = .mongo3_6
+    
+    init(options document: Document) {
+        self.stage = ["$changeStream": document]
+    }
+}
+
 extension MongoCollection {
     public func buildChangeStream(
         options: ChangeStreamOptions = .init(),
@@ -37,9 +46,7 @@ extension MongoCollection {
         @AggregateBuilder build: () -> AggregateBuilderStage
     ) async throws -> ChangeStream<T> {
         let optionsDocument = try BSONEncoder().encode(options)
-        let changeStreamStage = AggregateBuilderStage(document: [
-            "$changeStream": optionsDocument
-        ])
+        let changeStreamStage = ChangeStreamAggregation(options: optionsDocument)
         
         let connection = try await pool.next(for: [.writable, .new])
         
@@ -71,9 +78,7 @@ extension MongoCollection {
         using decoder: BSONDecoder = BSONDecoder()
     ) async throws -> ChangeStream<T> {
         let optionsDocument = try BSONEncoder().encode(options)
-        let stage = AggregateBuilderStage(document: [
-            "$changeStream": optionsDocument
-        ])
+        let stage = ChangeStreamAggregation(options: optionsDocument)
         
         let connection = try await pool.next(for: [.writable, .new])
         

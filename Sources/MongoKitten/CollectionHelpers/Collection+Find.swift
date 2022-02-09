@@ -102,7 +102,7 @@ public final class FindQueryBuilder: QueryCursor {
         return self
     }
 
-    public func sort(_ sort: Sort) -> FindQueryBuilder {
+    public func sort(_ sort: Sorting) -> FindQueryBuilder {
         self.command.sort = sort.document
         return self
     }

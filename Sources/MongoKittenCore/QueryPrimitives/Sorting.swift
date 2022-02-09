@@ -20,7 +20,7 @@ public enum SortOrder: Encodable {
     }
 }
 
-public struct Sort: Encodable, ExpressibleByDictionaryLiteral {
+public struct Sorting: Encodable, ExpressibleByDictionaryLiteral {
     public var document: Document {
         var doc = Document()
 
@@ -45,11 +45,11 @@ public struct Sort: Encodable, ExpressibleByDictionaryLiteral {
         try self.document.encode(to: encoder)
     }
 
-    public static func + (lhs: Sort, rhs: Sort) -> Sort {
-        return Sort(lhs.spec + rhs.spec)
+    public static func + (lhs: Sorting, rhs: Sorting) -> Sorting {
+        return Sorting(lhs.spec + rhs.spec)
     }
 
-    public static func += (lhs: inout Sort, rhs: Sort) {
+    public static func += (lhs: inout Sorting, rhs: Sorting) {
         lhs = lhs + rhs
     }
 }

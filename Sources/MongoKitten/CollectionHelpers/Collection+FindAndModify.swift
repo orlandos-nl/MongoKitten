@@ -156,7 +156,7 @@ public final class FindAndModifyBuilder {
         }
     }
     
-    public func sort(_ sort: Sort) -> FindAndModifyBuilder {
+    public func sort(_ sort: Sorting) -> FindAndModifyBuilder {
         self.command.sort = sort.document
         return self
     }
