@@ -1,4 +1,4 @@
-public struct FieldPath: ExpressibleByStringLiteral, ExpressibleByArrayLiteral, Sendable {
+public struct FieldPath: ExpressibleByStringLiteral, ExpressibleByArrayLiteral, Sendable, Hashable {
     public var components = [String]()
     
     public var string: String {

@@ -4,6 +4,10 @@ import BSON
 import MongoCore
 import NIO
 
+public struct MongoServerError: Error {
+    public let document: Document
+}
+
 extension MongoConnection {
     public func executeCodable<E: Encodable, D: Decodable>(
         _ command: E,
@@ -13,7 +17,12 @@ extension MongoConnection {
         sessionId: SessionIdentifier?
     ) async throws -> D {
         let reply = try await executeEncodable(command, namespace: namespace, in: transaction, sessionId: sessionId)
-        return try BSONDecoder().decode(D.self, from: reply.getDocument())
+        let document = reply.getDocument()
+        do {
+            return try BSONDecoder().decode(D.self, from: document)
+        } catch {
+            throw MongoServerError(document: document)
+        }
     }
     
     public func executeEncodable<E: Encodable>(

@@ -82,44 +82,44 @@ public struct Projection: Encodable, ExpressibleByDictionaryLiteral {
         try document.encode(to: encoder)
     }
 
-    public mutating func include(_ field: String) {
-        self.document[field] = 1 as Int32
+    public mutating func include(_ field: FieldPath) {
+        self.document[field.string] = 1 as Int32
     }
 
-    public mutating func include(_ fields: Set<String>) {
+    public mutating func include(_ fields: Set<FieldPath>) {
         for field in fields {
-            self.document[field] = 1 as Int32
+            self.document[field.string] = 1 as Int32
         }
     }
 
-    public mutating func exclude(_ field: String) {
-        self.document[field] = 0 as Int32
+    public mutating func exclude(_ field: FieldPath) {
+        self.document[field.string] = 0 as Int32
     }
 
-    public mutating func exclude(_ fields: Set<String>) {
+    public mutating func exclude(_ fields: Set<FieldPath>) {
         for field in fields {
-            self.document[field] = 0 as Int32
+            self.document[field.string] = 0 as Int32
         }
     }
 
-    public mutating func rename(_ field: String, to newName: String) {
-        self.document[newName] = "$\(field)"
+    public mutating func rename(_ field: FieldPath, to newName: FieldPath) {
+        self.document[newName.string] = field.projection
     }
 
-    public mutating func projectFirstElement(forArray field: String) {
-        self.document[field + ".$"] = 1 as Int32
+    public mutating func projectFirstElement(forArray field: FieldPath) {
+        self.document[field.string + ".$"] = 1 as Int32
     }
 
-    public mutating func projectFirst(_ elements: Int, forArray field: String) {
-        self.document[field] = ["$slice": elements] as Document
+    public mutating func projectFirst(_ elements: Int, forArray field: FieldPath) {
+        self.document[field.string] = ["$slice": elements] as Document
     }
 
-    public mutating func projectLast(_ elements: Int, forArray field: String) {
-        self.document[field] = ["$slice": -elements] as Document
+    public mutating func projectLast(_ elements: Int, forArray field: FieldPath) {
+        self.document[field.string] = ["$slice": -elements] as Document
     }
 
-    public mutating func projectElements(inArray field: String, from offset: Int, count: Int) {
-        self.document[field] = [
+    public mutating func projectElements(inArray field: FieldPath, from offset: Int, count: Int) {
+        self.document[field.string] = [
             "$slice": [offset, count] as Document
             ] as Document
     }
