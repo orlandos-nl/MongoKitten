@@ -1,26 +1,27 @@
 import BSON
 
-public enum SortOrder: Encodable {
-    case ascending // 1
-    case descending // -1
-    case textScore // { $meta: "textScore" }
-    case custom(Primitive)
-
-    public var rawValue: Primitive {
-        switch self {
-        case .ascending: return 1 as Int32
-        case .descending: return -1 as Int32
-        case .textScore: return ["$meta": "textScore"] as Document
-        case .custom(let primitive): return primitive
+public struct Sorting: Encodable, ExpressibleByDictionaryLiteral {
+    public enum Order: Encodable {
+        case ascending // 1
+        case descending // -1
+        case textScore // { $meta: "textScore" }
+        case custom(Primitive)
+        
+        public var rawValue: Primitive {
+            switch self {
+            case .ascending: return 1 as Int32
+            case .descending: return -1 as Int32
+            case .textScore: return ["$meta": "textScore"] as Document
+            case .custom(let primitive): return primitive
+            }
+        }
+        
+        public func encode(to encoder: Encoder) throws {
+            try self.rawValue.encode(to: encoder)
         }
     }
 
-    public func encode(to encoder: Encoder) throws {
-        try self.rawValue.encode(to: encoder)
-    }
-}
-
-public struct Sorting: Encodable, ExpressibleByDictionaryLiteral {
+    
     public var document: Document {
         var doc = Document()
 
@@ -31,13 +32,13 @@ public struct Sorting: Encodable, ExpressibleByDictionaryLiteral {
         return doc
     }
 
-    private var spec: [(String, SortOrder)]
+    private var spec: [(String, Sorting.Order)]
 
-    public init(_ elements: [(String, SortOrder)]) {
+    public init(_ elements: [(String, Sorting.Order)]) {
         self.spec = elements
     }
 
-    public init(dictionaryLiteral elements: (String, SortOrder)...) {
+    public init(dictionaryLiteral elements: (String, Sorting.Order)...) {
         self.init(elements)
     }
 

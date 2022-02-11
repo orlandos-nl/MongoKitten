@@ -29,7 +29,7 @@ public struct CreateIndexes: Encodable {
             self.key = keys
         }
         
-        public init(named name: String, key: String, order: SortOrder) {
+        public init(named name: String, key: String, order: Sorting.Order) {
             self.name = name
             self.key = [
                 key: order.rawValue

@@ -1,5 +1,7 @@
 import MongoClient
+import MongoCore
 import MongoKittenCore
+import Foundation
 
 public protocol AggregateBuilderStage {
     var stage: Document { get }
@@ -10,12 +12,12 @@ public struct Match: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = nil
     
-    public init(document: Document) {
-        self.stage = document
+    public init(where conditions: Document) {
+        self.stage = ["$match": conditions]
     }
     
-    public init(query: MongoKittenQuery) {
-        self.stage = ["$match": query.makeDocument()]
+    public init(where conditions: MongoKittenQuery) {
+        self.stage = ["$match": conditions.makeDocument()]
     }
 }
 
@@ -23,8 +25,8 @@ public struct AddFields: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = .mongo3_4
     
-    public init(document: Document) {
-        self.stage = document
+    public init(_ fields: Document) {
+        self.stage = ["$addFields": fields]
     }
 }
 
@@ -51,8 +53,18 @@ public struct Sort: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = nil
     
-    public init(document: Document) {
-        self.stage = document
+    public init(by field: FieldPath, direction: Sorting.Order) {
+        self.stage = [
+            "$sort": [
+                field.string: direction.rawValue
+            ] as Document
+        ]
+    }
+    
+    public init(_ sort: Sorting) {
+        self.stage = [
+            "$sort": sort.document
+        ]
     }
 }
 
@@ -181,7 +193,12 @@ public struct Lookup: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = nil
     
-    public init(from: String, localField: FieldPath, foreignField: FieldPath, as newName: FieldPath) {
+    public init(
+        from: String,
+        localField: FieldPath,
+        foreignField: FieldPath,
+        as newName: FieldPath
+    ) {
         self.stage = [
             "$lookup":
                 [
@@ -193,16 +210,24 @@ public struct Lookup: AggregateBuilderStage {
         ]
     }
     
-    public init(from: String, using pipelineVariables: Document? = nil, @AggregateBuilder pipeline: () -> [AggregateBuilderStage], as newField: FieldPath) {
+    public init(
+        from: String,
+        localField: FieldPath,
+        foreignField: FieldPath,
+        using pipelineVariables: Document? = nil,
+        @AggregateBuilder pipeline: () -> [AggregateBuilderStage],
+        as newField: FieldPath
+    ) {
         let pipelineStages = pipeline().map(\.stage)
                 
         var command: Document = [
-            "$lookup":
-                [
-                    "from": from,
-                    "pipeline": pipelineStages,
-                    "as": newField.string
-                ] as Document
+            "$lookup": [
+                "from": from,
+                "localField": localField.string,
+                "foreignField": foreignField.string,
+                "pipeline": pipelineStages,
+                "as": newField.string
+            ] as Document
         ]
         
         if let variables = pipelineVariables {

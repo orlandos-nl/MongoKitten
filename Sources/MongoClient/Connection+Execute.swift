@@ -17,7 +17,7 @@ extension MongoConnection {
         sessionId: SessionIdentifier?
     ) async throws -> D {
         let reply = try await executeEncodable(command, namespace: namespace, in: transaction, sessionId: sessionId)
-        let document = reply.getDocument()
+        let document = try reply.getDocument()
         do {
             return try BSONDecoder().decode(D.self, from: document)
         } catch {

@@ -64,7 +64,7 @@ public struct _MongoIndex {
 public func SortedIndex(
     named name: String,
     field: String,
-    order: SortOrder = .ascending
+    order: Sorting.Order = .ascending
 ) -> _MongoIndex {
     // Ascending or descending doesn't matter on one index
     _MongoIndex(index: CreateIndexes.Index(named: name, key: field, order: order))
@@ -74,7 +74,7 @@ public func SortedIndex(
 public func UniqueIndex(
     named name: String,
     field: String,
-    order: SortOrder = .ascending
+    order: Sorting.Order = .ascending
 ) -> _MongoIndex {
     // Ascending or descending doesn't matter on one index
     _MongoIndex(index: CreateIndexes.Index(named: name, key: field, order: order))
