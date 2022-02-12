@@ -129,8 +129,15 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
 
         self.init(settings: settings, logger: logger)
 
+        // Resolve SRV hostnames
         try await resolveSettings()
+        
+        _ = try await _getConnection()
+        
+        // Establish initial connection
+        scheduleDiscovery()
 
+        // Check for connectivity
         if self.pool.count == 0, !allowFailure {
             throw MongoError(.cannotConnect, reason: .noAvailableHosts)
         }
@@ -139,7 +146,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
     }
 
     @discardableResult
-    private func scheduleDiscovery() -> Task<Void, Never> {
+    private func scheduleDiscovery() -> Task<Void, Error> {
         return Task {
             if isDiscovering { return }
             
@@ -148,6 +155,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
             
             while !isClosed {
                 await rediscover()
+                try await Task.sleep(nanoseconds: 1_000_000_000)
             }
         }
     }
@@ -319,7 +327,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
                 if request.requirements.contains(.new) {
                     return try await self._createNewConnection(writable: request.requirements.contains(.writable))
                 } else {
-                    return try await self._getConnection(writable: request.requirements.contains(.writable))
+                    return try await self._getConnection(writable: request.requirements.contains(.writable) || !slaveOk)
                 }
             } catch {
                 attempts -= 1

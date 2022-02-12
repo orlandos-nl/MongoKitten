@@ -26,7 +26,10 @@ extension MappedCursor: AsyncSequence {
                 self.finalized = cursor
             }
             
-            if results.isEmpty {
+            // Repeat fetching more results
+            // getMore can have 0 results while not drained
+            // Because failable decoding can fail decoding all (101) results
+            while !cursor.isDrained && results.isEmpty {
                 try await results.append(contentsOf: cursor.nextBatch())
             }
             
@@ -51,16 +54,24 @@ extension FinalizedCursor: AsyncSequence {
         
         fileprivate let cursor: FinalizedCursor<Base>
         private var results = [Element]()
+        let failable: Bool
         
-        fileprivate init(cursor: FinalizedCursor<Base>) {
+        internal init(cursor: FinalizedCursor<Base>, failable: Bool) {
             self.cursor = cursor
+            self.failable = failable
         }
         
         public func next() async throws -> Element? {
-            try Task.checkCancellation()
+            if !results.isEmpty {
+                return results.removeFirst()
+            }
             
-            if results.isEmpty {
-                try await results.append(contentsOf: cursor.nextBatch())
+            // Repeat fetching more results
+            // getMore can have 0 results while not drained
+            // Because failable decoding can fail decoding all (101) results
+            while !cursor.isDrained && results.isEmpty {
+                try Task.checkCancellation()
+                try await results.append(contentsOf: cursor.nextBatch(failable: failable))
             }
             
             if results.isEmpty {
@@ -72,6 +83,6 @@ extension FinalizedCursor: AsyncSequence {
     }
     
     public func makeAsyncIterator() -> AsyncIterator {
-        AsyncIterator(cursor: self)
+        AsyncIterator(cursor: self, failable: false)
     }
 }

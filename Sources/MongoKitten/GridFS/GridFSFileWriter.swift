@@ -11,7 +11,9 @@ public final class GridFSFileWriter {
     var buffer: ByteBuffer
     var nextChunkNumber = 0
     var length: Int
-    var finalized = false
+    
+    // Files start finalized because they haven't written chunks (yet)
+    private var finalized = true
     
     public init(toBucket fs: GridFSBucket, fileId: Primitive = ObjectId(), chunkSize: Int32 = GridFSBucket.defaultChunkSize) async throws {
         self.fs = fs
@@ -35,6 +37,7 @@ public final class GridFSFileWriter {
     
     public func write(data: ByteBuffer) async throws {
         assert(self.finalized == false, "Writing to a finalized writer is an error")
+        finalized = false
         
         self.length += data.readableBytes
         var source = data

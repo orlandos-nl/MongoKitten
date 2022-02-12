@@ -49,6 +49,11 @@ public struct ConnectionSettings: Equatable {
             self.hostname = hostname
             self.port = port
         }
+        
+        internal init(srvHost: String) {
+            self.hostname = srvHost
+            self.port = 27017
+        }
 
         public init<S: StringProtocol>(_ hostString: S, srv: Bool) throws {
             let splitHost = hostString.split(separator: ":", maxSplits: 1)
@@ -60,11 +65,8 @@ public struct ConnectionSettings: Equatable {
                 }
 
                 let specifiedPortString = splitHost[1]
-                guard let specifiedPort = Int(specifiedPortString) else {
-                    throw MongoInvalidUriError(reason: .invalidPort)
-                }
-
-                port = specifiedPort
+                
+                port = Int(specifiedPortString) ?? 27017
             } else {
                 port = 27017
             }
@@ -139,6 +141,33 @@ public struct ConnectionSettings: Equatable {
         self.socketTimeout = socketTimeout
         self.applicationName = applicationName
         self.isSRV = false
+        self.queryParameters = [:]
+    }
+    
+    /// Initializes a new connection settings instacen.
+    ///
+    /// - parameter authentication: See `ConnectionSettings.Authentication`
+    /// - parameter authenticationSource: See `ConnectionSettings.authenticationSource`
+    /// - parameter hosts: Hosts to connect to
+    /// - parameter targetDatabase: The target path
+    /// - parameter useSSL: When true, SSL will be used
+    /// - parameter verifySSLCertificates: When true, SSL certificates will be validated
+    /// - parameter maximumNumberOfConnections: The maximum number of connections allowed
+    /// - parameter connectTimeout: See `ConnectionSettings.connectTimeout`
+    /// - parameter socketTimeout: See `ConnectionSettings.socketTimeout`
+    /// - parameter applicationName: The application name is printed to the mongod logs upon establishing the connection. It is also recorded in the slow query logs and profile collections.
+    public init(authentication: Authentication, authenticationSource: String? = nil, srvHostname: String, targetDatabase: String? = nil, maximumNumberOfConnections: Int = 1, connectTimeout: TimeInterval = 300, socketTimeout: TimeInterval = 300, applicationName: String? = nil) {
+        self.authentication = authentication
+        self.authenticationSource = authenticationSource
+        self.hosts = [Host(srvHost: srvHostname)]
+        self.targetDatabase = targetDatabase
+        self.useSSL = true
+        self.verifySSLCertificates = true
+        self.maximumNumberOfConnections = maximumNumberOfConnections
+        self.connectTimeout = connectTimeout
+        self.socketTimeout = socketTimeout
+        self.applicationName = applicationName
+        self.isSRV = true
         self.queryParameters = [:]
     }
 
@@ -299,9 +328,9 @@ public struct ConnectionSettings: Equatable {
             "ssl",
             "tls",
             "authMechanism",
+            "dnsServer",
          ] {
             self.queryParameters[key] = nil
-
         }
     }
 }

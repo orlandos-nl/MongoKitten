@@ -8,7 +8,7 @@ public final class MongoCursor {
     internal let closePromise: EventLoopPromise<Void>
     public var closeFuture: EventLoopFuture<Void> { closePromise.futureResult }
     public var isDrained: Bool {
-        return self.id == 0
+        return self.id == 0 && initialBatch == nil
     }
     public let namespace: MongoNamespace
     public var hoppedEventLoop: EventLoop?
@@ -79,5 +79,9 @@ public final class MongoCursor {
             sessionId: session?.sessionId
         )
         try reply.assertOK()
+    }
+    
+    deinit {
+        closePromise.succeed(())
     }
 }

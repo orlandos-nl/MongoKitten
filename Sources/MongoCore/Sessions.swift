@@ -74,7 +74,7 @@ public final class MongoClientSession: @unchecked Sendable {
     //    }
 
     deinit {
-        Task {
+        Task { [sessionManager] in
             await sessionManager?.releaseSession(serverSession)
         }
     }

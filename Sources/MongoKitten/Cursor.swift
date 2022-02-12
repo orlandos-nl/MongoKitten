@@ -130,8 +130,13 @@ extension QueryCursor {
         let finalizedCursor = try await execute()
         var results = [Element]()
         
-        while !finalizedCursor.isDrained {
-            results += try await finalizedCursor.nextBatch()
+        let iterator = FinalizedCursor.AsyncIterator(
+            cursor: finalizedCursor,
+            failable: failable
+        )
+        
+        while let result = try await iterator.next() {
+            results.append(result)
         }
         
         return results

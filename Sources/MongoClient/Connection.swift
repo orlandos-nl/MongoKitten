@@ -211,7 +211,7 @@ public final actor MongoConnection: @unchecked Sendable {
             authenticationDatabase: authenticationDatabase
         )
         
-        await self.context.setServerHandshake(to: serverHandshake)
+        await self.context.setServerHandshake(to: handshake)
         try await self.authenticate(to: authenticationDatabase, serverHandshake: handshake, with: credentials)
     }
     

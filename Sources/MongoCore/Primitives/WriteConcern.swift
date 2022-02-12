@@ -43,4 +43,10 @@ public struct WriteConcern: Codable, Sendable {
     public var writeTimeoutMS: Int?
 
     public init() {}
+    
+    public static func majority() -> WriteConcern {
+        var concern = WriteConcern()
+        concern.acknowledgement = .majority
+        return concern
+    }
 }
