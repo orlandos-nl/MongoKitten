@@ -92,7 +92,7 @@ public final class GridFSBucket {
                 "uploadDate": 1
             ]
         )
-        try await self.filesCollection.createIndex(
+        try await self.chunksCollection.createIndex(
             named: "MongoKitten_GridFS",
             keys: [
                 "files_id": 1,
@@ -100,5 +100,4 @@ public final class GridFSBucket {
             ]
         )
     }
-    
 }

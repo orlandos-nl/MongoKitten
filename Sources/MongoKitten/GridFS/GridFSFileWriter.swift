@@ -12,8 +12,8 @@ public final class GridFSFileWriter {
     var nextChunkNumber = 0
     var length: Int
     
-    // Files start finalized because they haven't written chunks (yet)
-    private var finalized = true
+    private var started = false
+    private var finalized = false
     
     public init(toBucket fs: GridFSBucket, fileId: Primitive = ObjectId(), chunkSize: Int32 = GridFSBucket.defaultChunkSize) async throws {
         self.fs = fs
@@ -36,8 +36,9 @@ public final class GridFSFileWriter {
     }
     
     public func write(data: ByteBuffer) async throws {
-        assert(self.finalized == false, "Writing to a finalized writer is an error")
+        assert(!finalized, "Writing to a finalized writer is an error")
         finalized = false
+        started = true
         
         self.length += data.readableBytes
         var source = data
@@ -51,7 +52,7 @@ public final class GridFSFileWriter {
     }
     
     public func finalize(filename: String? = nil, metadata: Document? = nil) async throws -> GridFSFile {
-        assert(self.finalized == false, "Finalizing a finalized writer is an error")
+        assert(!finalized, "Finalizing a finalized writer is an error")
         
         self.finalized = true
         
@@ -88,9 +89,5 @@ public final class GridFSFileWriter {
         
         try await fs.chunksCollection.insert(encoded)
         try await self.flush(finalize: finalize)
-    }
-    
-    deinit {
-        assert(finalized == true || length == 0, "A GridFS FileWriter was deinitialized, while the writing has not been finalized. This will cause orphan chunks in the chunks collection in GridFS.")
     }
 }

@@ -223,6 +223,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
             throw MongoError(.cannotConnect, reason: .connectionClosed)
         }
 
+        logger.info("Creating new connection to \(host)")
         discoveredHosts.insert(host)
         var settings = self.settings
         settings.hosts = [host]
@@ -366,7 +367,6 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
             return match
         }
         
-        logger.info("No matching connection found with host: \(host) - creating new connection")
         let pooledConnection = try await makeConnection(to: host)
         self.pool.append(pooledConnection)
         
