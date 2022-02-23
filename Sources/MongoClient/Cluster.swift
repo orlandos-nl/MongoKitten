@@ -13,6 +13,8 @@ public typealias _MongoPlatformEventLoopGroup = EventLoopGroup
 #endif
 
 public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
+    public let serverApi: ServerApi?
+    
     public private(set) var settings: ConnectionSettings {
         didSet {
             self.hosts = Set(settings.hosts)
@@ -87,12 +89,14 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
 
     private init(
         settings: ConnectionSettings,
-        logger: Logger
+        logger: Logger,
+        api: ServerApi? = nil
     ) {
         self.settings = settings
         self.pool = []
         self.hosts = Set(settings.hosts)
         self.logger = logger
+        self.serverApi = api
     }
     
     /// Connects to a cluster lazily, which means you don't know if the connection was successful until you start querying
@@ -100,14 +104,15 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
     /// This is useful when you need a cluster synchronously to query asynchronously
     public convenience init(
         lazyConnectingTo settings: ConnectionSettings,
-        logger: Logger = Logger(label: "org.openkitten.mongokitten.cluster")
+        logger: Logger = Logger(label: "org.openkitten.mongokitten.cluster"),
+        api: ServerApi? = nil
     ) throws {
         guard settings.hosts.count > 0 else {
             logger.error("No MongoDB servers were specified while creating a cluster")
             throw MongoError(.cannotConnect, reason: .noHostSpecified)
         }
         
-        self.init(settings: settings, logger: logger)
+        self.init(settings: settings, logger: logger, api: api)
         
         Task {
             // Kick off the connection process
@@ -120,14 +125,15 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
     public convenience init(
         connectingTo settings: ConnectionSettings,
         allowFailure: Bool = false,
-        logger: Logger = Logger(label: "org.openkitten.mongokitten.cluster")
+        logger: Logger = Logger(label: "org.openkitten.mongokitten.cluster"),
+        api: ServerApi? = nil
     ) async throws {
         guard settings.hosts.count > 0 else {
             logger.error("No MongoDB servers were specified while creating a cluster")
             throw MongoError(.cannotConnect, reason: .noHostSpecified)
         }
 
-        self.init(settings: settings, logger: logger)
+        self.init(settings: settings, logger: logger, api: api)
 
         // Resolve SRV hostnames
         try await resolveSettings()
@@ -234,7 +240,8 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
                 logger: logger,
                 onGroup: group,
                 resolver: self.dns,
-                sessionManager: sessionManager
+                sessionManager: sessionManager,
+                api: serverApi
             )
             connection.slaveOk.store(slaveOk)
 

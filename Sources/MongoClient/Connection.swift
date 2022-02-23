@@ -29,6 +29,8 @@ public struct MongoHandshakeResult {
 }
 
 public final actor MongoConnection: @unchecked Sendable {
+    public let serverApi: ServerApi?
+    
     /// The NIO channel
     private let channel: Channel
     public nonisolated var logger: Logger { context.logger }
@@ -76,10 +78,11 @@ public final actor MongoConnection: @unchecked Sendable {
     }
     
     /// Creates a connection that can communicate with MongoDB over a channel
-    public init(channel: Channel, context: MongoClientContext, sessionManager: MongoSessionManager = .init()) {
+    public init(channel: Channel, context: MongoClientContext, sessionManager: MongoSessionManager = .init(), api: ServerApi? = nil) {
         self.sessionManager = sessionManager
         self.channel = channel
         self.context = context
+        self.serverApi = api
     }
     
     public static func addHandlers(to channel: Channel, context: MongoClientContext) -> EventLoopFuture<Void> {
@@ -91,12 +94,13 @@ public final actor MongoConnection: @unchecked Sendable {
         settings: ConnectionSettings,
         logger: Logger = Logger(label: "org.openkitten.mongokitten.connection"),
         resolver: Resolver? = nil,
-        clientDetails: MongoClientDetails? = nil
+        clientDetails: MongoClientDetails? = nil,
+        api: ServerApi? = nil
     ) async throws -> MongoConnection {
         #if canImport(NIOTransportServices) && os(iOS)
         return try await connect(settings: settings, logger: logger, onGroup: NIOTSEventLoopGroup(loopCount: 1), resolver: resolver, clientDetails: clientDetails)
         #else
-        return try await connect(settings: settings, logger: logger, onGroup: MultiThreadedEventLoopGroup(numberOfThreads: 1), resolver: resolver, clientDetails: clientDetails)
+        return try await connect(settings: settings, logger: logger, onGroup: MultiThreadedEventLoopGroup(numberOfThreads: 1), resolver: resolver, clientDetails: clientDetails, api: api)
         #endif
     }
     
@@ -106,7 +110,8 @@ public final actor MongoConnection: @unchecked Sendable {
         onGroup group: _MongoPlatformEventLoopGroup,
         resolver: Resolver? = nil,
         clientDetails: MongoClientDetails? = nil,
-        sessionManager: MongoSessionManager = .init()
+        sessionManager: MongoSessionManager = .init(),
+        api: ServerApi? = nil
     ) async throws -> MongoConnection {
         let context = MongoClientContext(logger: logger)
         
@@ -154,7 +159,8 @@ public final actor MongoConnection: @unchecked Sendable {
         let connection = MongoConnection(
             channel: channel,
             context: context,
-            sessionManager: sessionManager
+            sessionManager: sessionManager,
+            api: api
         )
         
         try await connection.authenticate(

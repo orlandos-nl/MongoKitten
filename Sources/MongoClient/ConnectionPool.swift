@@ -29,6 +29,7 @@ public protocol MongoConnectionPool {
     var wireVersion: WireVersion? { get async }
     var sessionManager: MongoSessionManager { get }
     var logger: Logger { get }
+    var serverApi: ServerApi? { get }
 }
 
 extension MongoConnection: MongoConnectionPool {

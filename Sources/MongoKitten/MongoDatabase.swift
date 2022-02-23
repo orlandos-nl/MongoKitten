@@ -39,15 +39,15 @@ public class MongoDatabase {
     /// Connect to the database at the given `uri`
     ///
     /// - parameter uri: A MongoDB URI that contains at least a database component
-    public static func lazyConnect(to uri: String) throws -> MongoDatabase {
-        try lazyConnect(to: ConnectionSettings(uri))
+    public static func lazyConnect(to uri: String, api: ServerApi? = nil) throws -> MongoDatabase {
+        try lazyConnect(to: ConnectionSettings(uri), api: api)
     }
 
     /// Connect to the database at the given `uri`
     ///
     /// - parameter uri: A MongoDB URI that contains at least a database component
-    public static func connect(to uri: String) async throws -> MongoDatabase {
-        try await connect(to: ConnectionSettings(uri))
+    public static func connect(to uri: String, api: ServerApi? = nil) async throws -> MongoDatabase {
+        try await connect(to: ConnectionSettings(uri), api: api)
     }
     
     /// Connect to the database with the given settings _lazily_. You can also use `lazyConnect(_:on:)` to connect by using a connection string.
@@ -56,7 +56,8 @@ public class MongoDatabase {
     ///
     /// - parameter settings: The connection settings, which must include a database name
     public static func lazyConnect(
-        to settings: ConnectionSettings
+        to settings: ConnectionSettings,
+        api: ServerApi? = nil
     ) throws -> MongoDatabase {
         let logger = Logger(label: "org.openkitten.mongokitten")
         guard let targetDatabase = settings.targetDatabase else {
@@ -64,7 +65,7 @@ public class MongoDatabase {
             throw MongoKittenError(.cannotConnect, reason: .noTargetDatabaseSpecified)
         }
         
-        let cluster = try MongoCluster(lazyConnectingTo: settings, logger: logger)
+        let cluster = try MongoCluster(lazyConnectingTo: settings, logger: logger, api: api)
         return MongoDatabase(named: targetDatabase, pool: cluster)
     }
 
@@ -74,7 +75,8 @@ public class MongoDatabase {
     ///
     /// - parameter settings: The connection settings, which must include a database name
     public static func connect(
-        to settings: ConnectionSettings
+        to settings: ConnectionSettings,
+        api: ServerApi? = nil
     ) async throws -> MongoDatabase {
         let logger = Logger(label: "org.openkitten.mongokitten")
         guard let targetDatabase = settings.targetDatabase else {
@@ -82,7 +84,7 @@ public class MongoDatabase {
             throw MongoKittenError(.cannotConnect, reason: .noTargetDatabaseSpecified)
         }
 
-        let cluster = try await MongoCluster(connectingTo: settings, logger: logger)
+        let cluster = try await MongoCluster(connectingTo: settings, logger: logger, api: api)
         return MongoDatabase(named: targetDatabase, pool: cluster)
     }
     
