@@ -2,7 +2,9 @@ import NIO
 import Logging
 import MongoCore
 
-public final actor MongoSingleConnectionPool: MongoConnectionPool {    
+public final actor MongoSingleConnectionPool: MongoConnectionPool {
+    public let serverApi: ServerApi?
+    
     public typealias BuildConnection = @Sendable () async throws -> MongoConnection
     
     public var wireVersion: WireVersion? {
@@ -21,11 +23,13 @@ public final actor MongoSingleConnectionPool: MongoConnectionPool {
     public init(
         authenticationSource: String = "admin",
         credentials: ConnectionSettings.Authentication = .unauthenticated,
-        buildConnection: @escaping BuildConnection
+        buildConnection: @escaping BuildConnection,
+        api: ServerApi? = nil
     ) {
         self.authenticationSource = authenticationSource
         self.credentials = credentials
         self.buildConnection = buildConnection
+        self.serverApi = api
     }
     
     public func next(for request: ConnectionPoolRequest) async throws -> MongoConnection {
