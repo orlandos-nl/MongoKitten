@@ -2,7 +2,7 @@ import NIO
 import Logging
 import MongoCore
 
-public final actor MongoSingleConnectionPool: MongoConnectionPool {
+public final actor MongoSingleConnectionPool: MongoConnectionPool {    
     public typealias BuildConnection = @Sendable () async throws -> MongoConnection
     
     public var wireVersion: WireVersion? {

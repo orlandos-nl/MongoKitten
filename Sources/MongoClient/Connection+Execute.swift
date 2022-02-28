@@ -95,6 +95,8 @@ extension MongoConnection {
             ] as Document, forKey: "lsid")
         }
         
+        if let serverVersion = serverApi { serverVersion.propagateCommand(&command)}
+        
         return try await executeMessage(
             OpQuery(
                 query: command,
@@ -118,6 +120,8 @@ extension MongoConnection {
                 "id": id
             ] as Document, forKey: "lsid")
         }
+        
+        if let serverVersion = serverApi { serverVersion.propagateCommand(&command)}
         
         // TODO: When retrying a write, don't resend transaction messages except commit & abort
         if let transaction = transaction {
