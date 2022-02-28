@@ -62,8 +62,8 @@ public final class GridFSBucket {
     }
     
     public func deleteFile(byId id: Primitive) async throws {
-        try await self.filesCollection.deleteAll(where: ["_id": id])
         try await self.chunksCollection.deleteAll(where: ["files_id": id])
+        try await self.filesCollection.deleteAll(where: ["_id": id])
     }
     
     internal func ensureIndexes() async throws {

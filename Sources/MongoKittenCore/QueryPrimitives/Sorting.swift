@@ -16,6 +16,19 @@ public struct Sorting: Encodable, ExpressibleByDictionaryLiteral {
             }
         }
         
+        public init(primitive: Primitive) {
+            switch primitive {
+            case 1 as Int, 1 as Int32, true as Bool:
+                self = .ascending
+            case 0 as Int, 0 as Int32, false as Bool:
+                self = .descending
+            case ["$meta": "textScore"] as Document:
+                self = .textScore
+            default:
+                self = .custom(primitive)
+            }
+        }
+        
         public func encode(to encoder: Encoder) throws {
             try self.rawValue.encode(to: encoder)
         }
@@ -30,6 +43,10 @@ public struct Sorting: Encodable, ExpressibleByDictionaryLiteral {
         }
 
         return doc
+    }
+    
+    public mutating func add(_ order: Order, forKey key: String) {
+        spec.append((key, order))
     }
 
     private var spec: [(String, Sorting.Order)]
