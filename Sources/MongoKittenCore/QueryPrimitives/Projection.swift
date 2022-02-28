@@ -105,6 +105,12 @@ public struct Projection: Encodable, ExpressibleByDictionaryLiteral {
     public mutating func rename(_ field: FieldPath, to newName: FieldPath) {
         self.document[newName.string] = field.projection
     }
+    
+    public mutating func addLiteral(_ literal: Primitive, at name: FieldPath) {
+        self.document[name.string] = [
+            "$literal": literal
+        ] as Document
+    }
 
     public mutating func projectFirstElement(forArray field: FieldPath) {
         self.document[field.string + ".$"] = 1 as Int32

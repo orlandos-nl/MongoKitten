@@ -41,17 +41,8 @@ extension MongoConnection {
         in transaction: MongoTransaction? = nil,
         sessionId: SessionIdentifier? = nil
     ) async throws -> MongoServerReply {
-        let result: MongoServerReply
         let startDate = Date()
-        
-        if
-            let serverHandshake = await serverHandshake,
-            serverHandshake.maxWireVersion.supportsOpMessage
-        {
-            result = try await executeOpMessage(command, namespace: namespace, in: transaction, sessionId: sessionId)
-        } else {
-            result = try await executeOpQuery(command, namespace: namespace, in: transaction, sessionId: sessionId)
-        }
+        let result = try await executeOpMessage(command, namespace: namespace, in: transaction, sessionId: sessionId)
 
         if let queryTimer = queryTimer {
             queryTimer.record(-startDate.timeIntervalSinceNow)

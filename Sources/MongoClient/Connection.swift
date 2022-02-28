@@ -30,7 +30,7 @@ public struct MongoHandshakeResult {
 
 public final actor MongoConnection: @unchecked Sendable {
     /// The NIO channel
-    private let channel: Channel
+    internal let channel: Channel
     public nonisolated var logger: Logger { context.logger }
     var queryTimer: Metrics.Timer?
     public internal(set) var lastHeartbeat: MongoHandshakeResult?
@@ -134,7 +134,9 @@ public final actor MongoConnection: @unchecked Sendable {
                     do {
                         var configuration = TLSConfiguration.clientDefault
                         
-                        if let caCertPath = settings.sslCaCertificatePath {
+                        if let caCert = settings.sslCaCertificate {
+                            configuration.trustRoots = NIOSSLTrustRoots.certificates([caCert])
+                        } else if let caCertPath = settings.sslCaCertificatePath {
                             configuration.trustRoots = NIOSSLTrustRoots.file(caCertPath)
                         }
                         
