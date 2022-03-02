@@ -27,23 +27,23 @@ let package = Package(
     dependencies: [
         // ✏️
         .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0"),
-    
+        
         // 📈
-        .package(url: "https://github.com/apple/swift-metrics.git", "1.0.0" ..< "3.0.0"),        
+        .package(url: "https://github.com/apple/swift-metrics.git", "1.0.0" ..< "3.0.0"),
         
         // 💾
         .package(url: "https://github.com/orlandos-nl/BSON.git", .branch("master/8.0")),
-//        .package(name: "BSON", path: "../BSON"),
+        //        .package(name: "BSON", path: "../BSON"),
         
         // 🚀
-        .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0"),
-
+            .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0"),
+        
         // 📚
         .package(url: "https://github.com/orlandos-nl/NioDNS.git", .branch("3.0")),
-//        .package(name: "DNSClient", path: "../NioDNS"),
+        //        .package(name: "DNSClient", path: "../NioDNS"),
         
         // 🔑
-        .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.0.0")
+            .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.0.0")
     ],
     targets: [
         .target(
@@ -77,13 +77,19 @@ let package = Package(
         ),
         .testTarget(
             name: "MongoCoreTests",
-            dependencies: ["MongoCore"]),
+            dependencies: [
+                "MongoCore",
+                .product(name: "NIOSSL", package: "swift-nio-ssl"),
+            ]),
         .testTarget(
             name: "MongoKittenTests",
-            dependencies: ["MongoKitten"]),
+            dependencies: [
+                "MongoKitten",
+                .product(name: "NIOSSL", package: "swift-nio-ssl"),
+            ]),
         // TODO: Reimplement these tests
-//        .testTarget(
-//            name: "MeowTests",
-//            dependencies: ["Meow"]),
+        //        .testTarget(
+        //            name: "MeowTests",
+        //            dependencies: ["Meow"]),
     ]
 )
