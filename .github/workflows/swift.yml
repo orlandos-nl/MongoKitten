@@ -1,11 +1,10 @@
 name: Swift
 
 on:
+  pull_request:
+  workflow_dispatch:
   push:
     branches:
-      - master/6.0
-      - master/7.0
-  pull_request:
       - master/6.0
       - master/7.0
 
