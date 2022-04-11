@@ -45,6 +45,9 @@ public final class MongoCollection {
             in: self.transaction,
             sessionId: connection.implicitSessionId
         )
-        try reply.isOK()
+        
+        guard try reply.isOK() else {
+            throw MongoError(.queryFailure, reason: nil)
+        }
     }
 }

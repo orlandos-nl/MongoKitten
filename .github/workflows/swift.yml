@@ -2,18 +2,32 @@ name: Swift
 
 on:
   push:
-    branches: [ master ]
+    branches:
+      - master/7.0
   pull_request:
-    branches: [ master ]
+      - master/7.0
 
 jobs:
-  build:
-
+  test-linux:
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - swift:5.3-focal
+          - swift:5.4-focal
+          - swift:5.5-focal
+    runs-on: ubuntu-latest
+    container: ${{ matrix.image }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v2
+      - name: Run tests
+        run: swift test
+  test-macos:
     runs-on: macos-latest
-
     steps:
     - uses: actions/checkout@v2
     - name: Build
-      run: swift build -v
+      run: swift build
     - name: Run tests
-      run: swift test -v
+      run: swift test

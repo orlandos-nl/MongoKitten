@@ -6,6 +6,7 @@ import MongoCore
 
 #if canImport(NIOTransportServices) && os(iOS)
 import NIOTransportServices
+import Foundation
 
 public typealias _MongoPlatformEventLoopGroup = NIOTSEventLoopGroup
 #else
@@ -194,9 +195,9 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         let client: DNSClient
         
         if let dnsServer = settings.dnsServer {
-            client = try await DNSClient(servers: [SocketAddress(ipAddress: dnsServer, port: 53)])
+            client = try await DNSClient.connect(on: MultiThreadedEventLoopGroup(numberOfThreads: 1), host: dnsServer).get()
         } else {
-            client = try await DNSClient()
+            client = try await DNSClient.connect(on: MultiThreadedEventLoopGroup(numberOfThreads: 1)).get()
         }
         
         var settings = settings
