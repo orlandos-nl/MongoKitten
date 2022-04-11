@@ -1,7 +1,7 @@
 import MongoCore
 import MongoKittenCore
 
-#if swift(>=5.3)
+#if swift(>=5.4)
 @resultBuilder
 public struct MongoIndexBuilder {
     public static func buildBlock() -> _MongoIndexes {
