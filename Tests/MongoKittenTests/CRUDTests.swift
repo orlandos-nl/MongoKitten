@@ -520,10 +520,22 @@ class CrudTests : XCTestCase {
         XCTAssertEqual(result[1].name, "nameIndex")
     }
     
-    func testBuildIndexes() async throws {
-        mongo.async["test"].buildIndexes {
+//    func testBuildIndexes() async throws {
+//        mongo.async["test"].buildIndexes {
+//            
+//        }
+//    }
+    
+    func test_dictionaryInsert() throws {
+         struct Demo: Codable {
+            var notes: Dictionary<ObjectId, String>
+            var bookings: Dictionary<ObjectId, Int>
+          }
             
-        }
+        let demo = Demo(notes: .init(), bookings: [ObjectId(): 22])
+        _ = try mongo["demo"].insertEncoded(demo).wait()
+        
+        let result = try mongo["demo"].find(as: Demo.self).execute().wait()
     }
 
     // TODO ON ICE: Foreach future
