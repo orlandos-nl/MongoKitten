@@ -39,7 +39,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0"),
 
         // 📚
-        .package(url: "https://github.com/orlandos-nl/NioDNS.git", .branch("3.0")),
+        .package(url: "https://github.com/orlandos-nl/NioDNS.git", from: "2.0.0"),
 //        .package(name: "DNSClient", path: "../NioDNS"),
         
         // 🔑
