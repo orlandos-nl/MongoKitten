@@ -34,7 +34,7 @@ internal struct ChangeStreamAggregation: AggregateBuilderStage {
 extension MongoCollection {
     public func buildChangeStream(
         options: ChangeStreamOptions = .init(),
-        @AggregateBuilder build: () -> AggregateBuilderStage
+        @AggregateBuilder build: () -> [AggregateBuilderStage]
     ) async throws -> ChangeStream<Document> {
         try await buildChangeStream(options: options, ofType: Document.self, build: build)
     }
@@ -43,14 +43,14 @@ extension MongoCollection {
         options: ChangeStreamOptions = .init(),
         ofType type: T.Type,
         using decoder: BSONDecoder = BSONDecoder(),
-        @AggregateBuilder build: () -> AggregateBuilderStage
+        @AggregateBuilder build: () -> [AggregateBuilderStage]
     ) async throws -> ChangeStream<T> {
         let optionsDocument = try BSONEncoder().encode(options)
         let changeStreamStage = ChangeStreamAggregation(options: optionsDocument)
         
         let connection = try await pool.next(for: [.writable, .new])
         
-        var pipeline = AggregateBuilderPipeline(stages: [build()])
+        var pipeline = AggregateBuilderPipeline(stages: build())
         pipeline.connection = connection
         pipeline.stages.insert(changeStreamStage, at: 0)
         pipeline.collection = self

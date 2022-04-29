@@ -43,7 +43,7 @@ extension MeowCollection where M: ReadableModel {
         return try await raw.watch(options: options, type: M.self, using: M.decoder)
     }
     
-    public func buildChangeStream(options: ChangeStreamOptions = .init(), @AggregateBuilder build: () -> AggregateBuilderStage) async throws -> ChangeStream<M> {
+    public func buildChangeStream(options: ChangeStreamOptions = .init(), @AggregateBuilder build: () -> [AggregateBuilderStage]) async throws -> ChangeStream<M> {
         return try await raw.buildChangeStream(options: options, ofType: M.self, using: M.decoder, build: build)
     }
 }
