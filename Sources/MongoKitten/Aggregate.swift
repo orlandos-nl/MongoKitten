@@ -36,7 +36,7 @@ public struct AggregateBuilderPipeline: QueryCursor {
         return pipeline
     }
     
-    private func makeCommand() -> AggregateCommand {
+    internal func makeCommand() -> AggregateCommand {
         var documents = [Document]()
         documents.reserveCapacity(stages.count * 2)
         
