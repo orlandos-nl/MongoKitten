@@ -1,4 +1,4 @@
-// swift-tools-version:5.5
+// swift-tools-version:5.6
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -27,23 +27,22 @@ let package = Package(
     dependencies: [
         // ✏️
         .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0"),
-    
+        
         // 📈
-        .package(url: "https://github.com/apple/swift-metrics.git", "1.0.0" ..< "3.0.0"),        
+        .package(url: "https://github.com/apple/swift-metrics.git", "1.0.0" ..< "3.0.0"),
         
         // 💾
-        .package(url: "https://github.com/orlandos-nl/BSON.git", .branch("master/8.0")),
-//        .package(name: "BSON", path: "../BSON"),
+        .package(url: "https://github.com/orlandos-nl/BSON.git", branch: "master/8.0"),
+        //        .package(name: "BSON", path: "../BSON"),
         
         // 🚀
-        .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0"),
-
+            .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0"),
+        
         // 📚
         .package(url: "https://github.com/orlandos-nl/NioDNS.git", from: "2.0.0"),
-//        .package(name: "DNSClient", path: "../NioDNS"),
         
         // 🔑
-        .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.0.0")
+        .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.0.0"),
     ],
     targets: [
         .target(
@@ -54,6 +53,7 @@ let package = Package(
             dependencies: [
                 .product(name: "BSON", package: "BSON"),
                 .product(name: "NIO", package: "swift-nio"),
+                .product(name: "NIOSSL", package: "swift-nio-ssl"),
                 .product(name: "NIOFoundationCompat", package: "swift-nio"),
                 .product(name: "Logging", package: "swift-log"),
                 .product(name: "Metrics", package: "swift-metrics"),
@@ -72,7 +72,6 @@ let package = Package(
             dependencies: [
                 "MongoCore",
                 "_MongoKittenCrypto",
-                .product(name: "NIOSSL", package: "swift-nio-ssl"),
                 .product(name: "DNSClient", package: "NioDNS"),
             ]
         ),
@@ -83,8 +82,8 @@ let package = Package(
             name: "MongoKittenTests",
             dependencies: ["MongoKitten"]),
         // TODO: Reimplement these tests
-//        .testTarget(
-//            name: "MeowTests",
-//            dependencies: ["Meow"]),
+        .testTarget(
+            name: "MeowTests",
+            dependencies: ["Meow"]),
     ]
 )

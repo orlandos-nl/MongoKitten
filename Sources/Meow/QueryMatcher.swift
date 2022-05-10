@@ -7,8 +7,7 @@ public struct QueryMatcher<M: KeyPathQueryableModel> {
     internal init() {}
     
     public subscript<T>(dynamicMember keyPath: KeyPath<M, T>) -> QuerySubject<M, T> {
-        let path = M.makeFieldPath(forKeyPath: keyPath).string
-        return QuerySubject<M, T>(path: path)
+        return QuerySubject<M, T>(path:  M.makeFieldPath(forKeyPath: keyPath))
     }
 }
 

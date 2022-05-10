@@ -7,9 +7,16 @@ public struct ChangeStreamOptions: Encodable {
         case collation
     }
     
+    public enum FullDocument: String, Encodable {
+        case `default`, updateLookup, whenAvailable, required
+    }
+    
+    
     /// The maximum amount of entities to receive in a `getMore` reply
     public var batchSize: Int32?
     public var collation: Collation?
+    
+    public var fullDocument: FullDocument?
     
     /// The amount of time that each `getMore` request should wait for more data before replying
     ///
