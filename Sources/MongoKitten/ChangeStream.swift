@@ -5,6 +5,7 @@ public struct ChangeStreamOptions: Encodable {
     private enum CodingKeys: String, CodingKey {
         case batchSize
         case collation
+        case fullDocument
     }
     
     public enum FullDocument: String, Encodable {
