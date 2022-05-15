@@ -97,6 +97,13 @@ public struct PartialUpdate<M: KeyPathQueryableModel & MutableModel> {
             throw error
         }
         
+        guard try await collection.raw.updateOne(
+            where: "_id" == model._id.encodePrimitive(),
+            to: ["$set": changes]
+        ).updatedCount == 1 else {
+            throw MeowModelError<M>.cannotUpdate(model._id)
+        }
+        
         return model
     }
 }
