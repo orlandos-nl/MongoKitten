@@ -68,9 +68,21 @@ If you're using a SwiftNIO 1.x framework such as Vapor 3, use [MongoKitten 5](ht
 
 MongoKitten supports the [Swift Package Manager](https://swift.org/getting-started/#using-the-package-manager) for server-side applications. Add MongoKitten to your dependencies in your **Package.swift** file:
 
-`.package(url: "https://github.com/OpenKitten/MongoKitten.git", from: "6.0.0")`
+`.package(url: "https://github.com/orlandos-nl/MongoKitten.git", from: "6.0.0")`
 
-Also, don't forget to add `"MongoKitten"` as a dependency for your target.
+Also, don't forget to add the product `"MongoKitten"` as a dependency for your target.
+
+```swift
+.product(name: "MongoKitten", package: "MongoKitten"),
+```
+
+### Add Meow (Optional)
+
+Meow is an ORM that resides in this same package.
+
+```swift
+.product(name: "Meow", package: "MongoKitten"),
+```
 
 # FAQ
 
@@ -90,7 +102,7 @@ Check out my [Ray Wenderlich Article](https://www.raywenderlich.com/10521463-ser
 ```swift
 import MongoKitten
 
-let db = try MongoDatabase.synchronousConnect("mongodb://localhost/my_database")
+let db = try await MongoDatabase.connect(to: "mongodb://localhost/my_database")
 ```
 
 Vapor users should register the database as a service.
@@ -98,7 +110,7 @@ Vapor users should register the database as a service.
 ```swift
 extension Request {
     public var mongoDB: MongoDatabase {
-        return application.mongoDB.hopped(to: eventLoop)
+        return application.mongoDB
     }
     
     // For Meow users only
@@ -132,24 +144,12 @@ extension Application {
     }
     
     public func initializeMongoDB(connectionString: String) throws {
-        self.mongoDB = try MongoDatabase.lazyConnect(connectionString, on: self.eventLoopGroup)
+        self.mongoDB = try MongoDatabase.lazyConnect(to: connectionStringeventLoopGroup)
     }
 }
 ```
 
 And make sure to call `app.initializeMongoDB`!
-
-## NIO Futures
-
-MongoKitten relies on [Swift NIO](https://github.com/apple/swift-nio) to provide support for asynchronous operations. All MongoKitten operations that talk to the server are asynchronous, and return an EventLoopFuture of some kind.
-
-You can learn all about NIO by reading [its readme](https://github.com/apple/swift-nio/blob/master/README.md) or [the article on RayWenderlich.com](https://www.raywenderlich.com/1124580-a-simple-guide-to-async-on-the-server), but here are the basics:
-
-Asynchronous operations return a future. NIO implements futures in the [`EventLoopFuture<T>`](https://apple.github.io/swift-nio/docs/current/NIO/Classes/EventLoopFuture.html) type. An `EventLoopFuture` is a holder for a result that will be provided later. The result of the future can either be successful yielding a result of `T`, or unsuccessful with a result of a Swift `Error`. This is the asynchronous representation of a successful `return` or a thrown error.
-
-If you're using [Vapor 4](https://vapor.codes), please refer to their [Async documentation](https://docs.vapor.codes/4.0/async/overview/). Vapor's Async module provides additional helpers on top of NIO, that make working with instances of `EventLoopFuture<T>` easier.
-
-If you use Vapor or another Swift-NIO based web framework, *never* use the `wait()` function on `EventLoopFuture` instances.
 
 ## CRUD (Create, Read, Update, Delete)
 
@@ -163,15 +163,7 @@ let users = db["users"]
 ```swift
 let myUser: Document = ["username": "kitty", "password": "meow"]
 
-let future: EventLoopFuture<InsertReply> = users.insert(myUser)
-
-future.whenSuccess { _ in
-	print("Inserted!")
-}
-
-future.whenFailure { error in
-	print("Insertion failed", error)
-}
+try await users.insert(myUser)
 ```
 
 ### Read (find) and the query builder
@@ -180,15 +172,15 @@ To perform the following query in MongoDB:
 
 ```json
 {
-	"username": "kitty"
+  "username": "kitty"
 }
 ```
 
 Use the following MongoKitten code:
 
 ```swift
-users.findOne("username" == "kitty").whenSuccess { (user: Document?) in
-	// Do something with kitty
+if let kitty = try await users.findOne("username" == "kitty") {
+  // We've found kitty!
 }
 ```
 
@@ -196,19 +188,18 @@ To perform the following query in MongoDB:
 
 ```json
 {
-	"$or": [
-		{ "age": { "$lte": 16 } },
-		{ "age": { "$exists": false } }
-	]
+  "$or": [
+    { "age": { "$lte": 16 } },
+    { "age": { "$exists": false } }
+  ]
 }
 ```
 
 Use the following MongoKitten code:
 
 ```swift
-users.find("age" <= 16 || "age" == nil).forEach { (user: Document) in
-	// Print the user's name
-	print(user["username"] as? String)
+for try await user in users.find("age" <= 16 || "age" == nil) {
+  // Asynchronously iterates over each user in the cursor
 }
 ```
 
@@ -222,52 +213,37 @@ users.findOne(["username": "kitty"])
 
 Find operations return a `Cursor`. A cursor is a pointer to the result set of a query. You can obtain the results from a cursor by iterating over the results, or by fetching one or all of the results.
 
+Cursors will close automatically if the enclosing `Task` is cancelled
+
 ##### Fetching results
 
 You can fetch all results as an array:
 
-`let results: EventLoopFuture<[Document]> = users.find().getAllResults()`
+`let users = try await users.find().drain()`
 
-Note that this is potentially dangerous with very large result sets. Only use `getAllResults()` when you are sure that the entire result set of your query fits comfortably in memory.
-
-##### Iterating over results
-
-For more efficient handling of results, you can lazily iterate over a cursor:
-
-```swift
-let doneIterating: EventLoopFuture<Void> = users.find().forEach { (user: Document) in
-	// ...
-}
-```
+Note that this is potentially dangerous with very large result sets. Only use `drain()` when you are sure that the entire result set of your query fits comfortably in memory.
 
 ##### Cursors are generic
 
-Find operations return a `FindCursor<Document>`. As you can see, `FindCursor` is a generic type. You can lazily transform the cursor into a different result type by using `map`, which works similar to `map` on arrays or documents:
+Find operations return a `FindQueryBuilder`. You can lazily transform this (and other) cursors into a different result type by using `map`, which works similar to `map` on arrays or documents. A simple commonly used helper based on map is `.decode(..)` which decodes each result Document into a `Decodable` entity of your choosing.
 
 ```swift
-users.find()
-	.map { document in
-		return document["username"] as? String
-	}
-	.forEach { username: String? in
-		print("user: \(username)")
-	}
+let users: [User] = try await users.find().decode(User.self).drain()
 ```
 
-### Update
+### Update & Delete
+
+You can do updateOne/many and deleteOne/many the same way you'd see in the MongoDB docs.
 
 ```swift
-users.updateMany(where: "username" == "kitty", setting: ["age": 3]).whenSuccess { _ in
-	print("🐈")
-}
+try await users.updateMany(where: "username" == "kitty", setting: ["age": 3])
 ```
 
-### Delete
+The result is implicitly discarded, but you can still get and use it.
 
 ```swift
-users.deleteOne(where: "username" == "kitty").whenSuccess { reply in
-	print("Deleted \(reply.deletes) kitties 😿")
-}
+let reply = try await users.deleteOne(where: "username" == "kitty")
+print("Deleted \(reply.deletes) kitties 😿")
 ```
 
 # 📦 About BSON & Documents
@@ -355,14 +331,93 @@ A few notes:
 	- Nested structs and classes are most often encoded as embedded documents
 - You can customize the representations using encoding/decoding strategies
 
-## Codable and cursors
+# Meow
 
-When doing a `find` query, the `Cursor`'s results can be transformed lazily. Lazy mapping is much more efficient than keeping the entire result set in memory as it allows for `forEach-` loops to be leveraged efficiently reducing the memory pressure of your application. You can leverage cursors using Codable as well.
+Meow works as a lightweight but powerful ORM layer around MongoKitten.
+
+## Models
+
+There are two main types of models in Meow, these docs will focus on the most common one.
+
+When creating a model, your type must implement the `Model` protocol.
 
 ```swift
-// Find all and decode each Document lazily as a `User` type
-users.find().decode(User.self).forEach { user in
-	print(user.username)
+import Meow
+
+struct User: Model {
+  ..
+}
+```
+
+Each Model has an `_id` field, as required by MongoDB. The type must be Codable and Hashable, the rest is up to you. You can therefore also make `_id` a compound key such as a `struct`. It must still be unique and hashable, but the resulting Document is acceptable for MongoDB.
+
+Each field must be marked with the `@Field` property wrapper:
+
+```swift
+import Meow
+
+struct User: Model {
+  @Field var _id: ObjectId
+  @Field var email: String
+}
+```
+
+You can also mark use nested types, as you'd expect of MongoDB. Each field in these nested types must also be makred with `@Field` to make it queryable.
+
+```swift
+import Meow
+
+struct UserProfile: Model {
+  @Field var firstName: String?
+  @Field var lastName: String?
+  @Field var age: Int
+}
+
+struct User: Model {
+  @Field var _id: ObjectId
+  @Field var email: String
+  @Field var profile: UserProfile
+}
+```
+
+### Queries
+
+Using the above model, we can query it from a MeowCollection. Get your instance from the MeowDatabase using a subscritp!
+
+```swift
+let users = meow[User.self]
+```
+
+Next, run a `find` or `count` query:
+
+```swift
+let adultCount = try await users.count(matching: { user in
+  user.$profile.$age >= 18
+})
+```
+
+As meow just recycles common MongoKitten types, you can use a find query cursor as you'd do in MongoKitten.
+
+```swift
+let kids = try await users.find(matching: { user in
+  user.$profile.$age < 18
+})
+
+for try await kid in kids {
+  // Send verificatin email to parents
+}
+```
+
+### References
+
+Meow has a helper type called `Reference`, you can use this in your model instead of copying the identifier over. This will give you some extra helpers when trying to resolve a models.
+
+Reference is also `Codable` and inherit's the identifier's `LosslessStringConvertible`. So it can be used in Vapor's JWT Tokens as a subject, or in a Vapor's Route Parameters.
+
+```swift
+app.get("users", ":id") { req async throws -> User in
+  let id: Reference<User> = req.parameters.require("id")
+  return try await id.resolve(in: req.meow)
 }
 ```
 
