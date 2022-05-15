@@ -81,9 +81,5 @@ let package = Package(
         .testTarget(
             name: "MongoKittenTests",
             dependencies: ["MongoKitten"]),
-        // TODO: Reimplement these tests
-        .testTarget(
-            name: "MeowTests",
-            dependencies: ["Meow"]),
     ]
 )

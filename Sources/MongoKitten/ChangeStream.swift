@@ -56,7 +56,7 @@ extension MongoCollection {
         let optionsDocument = try BSONEncoder().encode(options)
         let changeStreamStage = ChangeStreamAggregation(options: optionsDocument)
         
-        let connection = try await pool.next(for: [.writable, .new])
+        let connection = try await pool.next(for: [.writable, .new, .notPooled])
         
         var pipeline = AggregateBuilderPipeline(stages: build())
         pipeline.connection = connection
@@ -88,7 +88,7 @@ extension MongoCollection {
         let optionsDocument = try BSONEncoder().encode(options)
         let stage = ChangeStreamAggregation(options: optionsDocument)
         
-        let connection = try await pool.next(for: [.writable, .new])
+        let connection = try await pool.next(for: [.writable, .new, .notPooled])
         
         let finalizedCursor = try await _buildAggregate(on: connection) {
             stage

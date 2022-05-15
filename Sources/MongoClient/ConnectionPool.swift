@@ -4,13 +4,14 @@ import MongoCore
 
 public struct ConnectionPoolRequirement: Hashable, Sendable {
     internal enum _Requirement: Hashable, Sendable {
-        case writable, new
+        case writable, new, notPooled
     }
     
     let raw: _Requirement
     
     public static let writable = ConnectionPoolRequirement(raw: .writable)
     public static let new = ConnectionPoolRequirement(raw: .new)
+    public static let notPooled = ConnectionPoolRequirement(raw: .notPooled)
 }
 
 public struct ConnectionPoolRequest: Sendable, ExpressibleByArrayLiteral {

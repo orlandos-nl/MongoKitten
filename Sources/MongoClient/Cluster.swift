@@ -326,8 +326,8 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         var attempts = attempts
         while true {
             do {
-                if request.requirements.contains(.new) {
-                    return try await self._createNewConnection(writable: request.requirements.contains(.writable))
+                if request.requirements.contains(.new) || request.requirements.contains(.notPooled) {
+                    return try await self._createNewConnection(forRequest: request)
                 } else {
                     return try await self._getConnection(writable: request.requirements.contains(.writable) || !slaveOk)
                 }
@@ -345,11 +345,18 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         return try await self.makeConnectionRecursively(for: request)
     }
     
-    private func _createNewConnection(writable: Bool = true, emptyPoolError: Error? = nil) async throws -> MongoConnection {
-        let pooledConnection = try await _getPooledConnection(writable: writable, emptyPoolError: emptyPoolError)
+    private func _createNewConnection(forRequest request: ConnectionPoolRequest, emptyPoolError: Error? = nil) async throws -> MongoConnection {
+        let pooledConnection = try await _getPooledConnection(
+            writable: request.requirements.contains(.writable),
+            emptyPoolError: emptyPoolError
+        )
         
         let newPooledConnection = try await makeConnection(to: pooledConnection.host)
-        self.pool.append(newPooledConnection)
+        
+        if !request.requirements.contains(.notPooled) {
+            self.pool.append(newPooledConnection)
+        }
+        
         return newPooledConnection.connection
     }
     
