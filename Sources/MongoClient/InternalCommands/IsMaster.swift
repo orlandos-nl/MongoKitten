@@ -6,8 +6,8 @@ public struct MongoClientDetails: Encodable, Sendable {
     }
 
     public struct DriverDetails: Encodable, Sendable {
-        public let name = "SwiftMongoClient"
-        public let version = "1"
+        public let name = "MongoKitten"
+        public let version = "7"
     }
 
     public struct OSDetails: Encodable, Sendable {
@@ -41,19 +41,7 @@ public struct MongoClientDetails: Encodable, Sendable {
     public var driver = DriverDetails()
     public var os = OSDetails()
 
-    #if swift(>=5.2)
-    public let platform: String? = "Swift 5.2"
-    #elseif swift(>=5.1)
-    public let platform: String? = "Swift 5.1"
-    #elseif swift(>=5.0)
-    public let platform: String? = "Swift 5.0"
-    #elseif swift(>=4.2)
-    public let platform: String? = "Swift 4.2"
-    #elseif swift(>=4.1)
-    public let platform: String? = "Swift 4.1"
-    #else
-    public let platform: String?
-    #endif
+    public let platform: String? = "Swift"
 
     public init(application: ApplicationDetails?) {
         self.application = application

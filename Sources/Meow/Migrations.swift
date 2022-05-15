@@ -11,7 +11,7 @@ fileprivate struct EncodingHelper<V: Encodable>: Encodable {
     var boxedValue: V
 }
 
-public class Migrator<M: Model> {
+public class Migrator<M: BaseModel> {
     public typealias Action = @Sendable (MeowCollection<M>) async throws -> ()
     
     public let database: MeowDatabase
@@ -35,7 +35,7 @@ public class Migrator<M: Model> {
     }
 }
 
-struct MeowMigration: Model {
+struct MeowMigration: MutableModel {
     typealias Referenced = Self
     
     static let collectionName = "MeowMigrations"
@@ -74,7 +74,7 @@ extension MeowDatabase {
         try await migration.save(in: self)
     }
     
-    public func migrate<M: Model>(_ description: String, on model: M.Type, migration: @Sendable @escaping (Migrator<M>) async throws -> Void) async throws {
+    public func migrate<M: BaseModel>(_ description: String, on model: M.Type, migration: @Sendable @escaping (Migrator<M>) async throws -> Void) async throws {
         let fullDescription = "\(M.self) - \(description)"
         if try await Reference<MeowMigration>(unsafeTo: fullDescription).exists(in: self) {
             // Migration not needed

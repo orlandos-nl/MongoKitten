@@ -30,8 +30,6 @@ public protocol MutableModel: ReadableModel, Encodable {
     static var encoder: BSONEncoder { get }
 }
 
-public typealias Model = MutableModel
-
 extension BaseModel {
     public static var collectionName: String {
         return String(describing: Self.self) // Will be the name of the type
@@ -85,7 +83,7 @@ extension MutableModel {
     }
 }
 
-public enum MeowHook<M: Model> {}
+public enum MeowHook<M: BaseModel> {}
 
 public struct MeowOperationResult {
     public struct NotSuccessful: Error {}
