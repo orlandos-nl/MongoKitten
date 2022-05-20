@@ -32,7 +32,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-metrics.git", "1.0.0" ..< "3.0.0"),
         
         // 💾
-        .package(url: "https://github.com/orlandos-nl/BSON.git", branch: "master/8.0"),
+        .package(url: "https://github.com/orlandos-nl/BSON.git", from: "8.0.0"),
         //        .package(name: "BSON", path: "../BSON"),
         
         // 🚀
