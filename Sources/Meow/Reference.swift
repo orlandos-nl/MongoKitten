@@ -3,7 +3,7 @@ import MongoKitten
 import NIO
 
 /// Reference to a Model
-public struct Reference<M: ReadableModel>: Resolvable, Equatable, PrimitiveEncodable {
+public struct Reference<M: ReadableModel>: Resolvable, Hashable, PrimitiveEncodable {
     /// The referenced id
     public let reference: M.Identifier
     
