@@ -31,6 +31,38 @@ extension MeowCollection where M: KeyPathQueryableModel {
     }
 }
 
+extension Reference where M: KeyPathQueryableModel {
+    public func exists(in db: MeowDatabase, where matching: (QueryMatcher<M>) -> Document) async throws -> Bool {
+        let matcher = QueryMatcher<M>()
+        let filter = matching(matcher)
+        let _id = try reference.encodePrimitive()
+        return try await db[M.self].count(where: "_id" == _id && filter) > 0
+    }
+    
+    /// Resolves a reference
+    public func resolve(in context: MeowDatabase, where matching: (QueryMatcher<M>) -> Document) async throws -> M {
+        guard let referenced = try await resolveIfPresent(in: context, where: matching) else {
+            throw MeowModelError.referenceError(id: self.reference, type: M.self)
+        }
+        
+        return referenced
+    }
+    
+    /// Resolves a reference, returning `nil` if the referenced object cannot be found
+    public func resolveIfPresent(in context: MeowDatabase, where matching: (QueryMatcher<M>) -> Document) async throws -> M? {
+        let base = try "_id" == reference.encodePrimitive()
+        let matcher = QueryMatcher<M>()
+        let filter = matching(matcher)
+        
+        if filter.isEmpty {
+            return try await context.collection(for: M.self).findOne(where: base)
+        } else {
+            let condition = base && filter
+            return try await context.collection(for: M.self).findOne(where: condition)
+        }
+    }
+}
+
 extension MeowCollection where M: MutableModel & KeyPathQueryableModel {
     @discardableResult
     public func deleteOne(where filter: Document, writeConcern: WriteConcern? = nil) async throws -> DeleteReply {
