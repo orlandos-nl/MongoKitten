@@ -38,6 +38,14 @@ class MeowTests: XCTestCase {
         try XCTAssertEqual(User.resolveFieldPath(\.$profile.$firstName), ["profile", "firstName"])
     }
     
+    func testPartialUpdate() async throws {
+        try await meow[User.self].updateOne { user in
+            user.$email == "joannis@orlandos.nl"
+        } build: { update in
+            try update.setField(at: \.$password, to: "temporary")
+        }
+    }
+    
     func testModelUpdater() async throws {
         let user = User(email: "joannis@orlandos.nl", password: "test")
         try await user.save(in: meow)

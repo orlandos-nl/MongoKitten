@@ -49,6 +49,23 @@ extension MongoCollection {
         return FindAndModifyBuilder(command: command, collection: self)
     }
     
+    /// Replaces a single document based on the specified query.
+    /// - Parameters:
+    ///   - query: The selection criteria for the upate.
+    ///   - replacement: The replacement document.
+    ///   - returnValue: Wether to return the `original` or `modified` document.
+    public func findOneAndUpsert(
+        where query: Document,
+        replacement document: Document,
+        returnValue: FindAndModifyReturnValue = .original
+    ) -> FindAndModifyBuilder {
+        var command = FindAndModifyCommand(collection: self.name, query: query)
+        command.new = returnValue == .modified
+        command.update = document
+        command.upsert = true
+        return FindAndModifyBuilder(command: command, collection: self)
+    }
+    
     /// Updates a single document based on the specified query.
     /// - Parameters:
     ///   - query: The selection criteria for the upate.
