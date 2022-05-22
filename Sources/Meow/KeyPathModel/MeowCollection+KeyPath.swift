@@ -25,10 +25,6 @@ extension MeowCollection where M: KeyPathQueryableModel {
         let filter = matching(matcher)
         return try await raw.count(filter)
     }
-    
-    public func watch(options: ChangeStreamOptions = .init()) async throws -> ChangeStream<M> {
-        return try await raw.watch(options: options, type: M.self)
-    }
 }
 
 extension Reference where M: KeyPathQueryableModel {
@@ -112,6 +108,7 @@ extension MeowCollection where M: MutableModel & KeyPathQueryableModel {
 
 public struct ModelUpdateQuery<M: KeyPathQueryableModel & MutableModel> {
     var set = Document()
+    var unset = Document()
     var inc = Document()
     var error: Error?
     
@@ -120,6 +117,11 @@ public struct ModelUpdateQuery<M: KeyPathQueryableModel & MutableModel> {
     public mutating func setField<P: Primitive>(at keyPath: WritableKeyPath<M, QueryableField<P>>, to newValue: P) throws {
         let path = try M.resolveFieldPath(keyPath).joined(separator: ".")
         set[path] = newValue
+    }
+    
+    public mutating func unsetField<Value>(at keyPath: WritableKeyPath<M, QueryableField<Value?>>) throws {
+        let path = try M.resolveFieldPath(keyPath).joined(separator: ".")
+        unset[path] = ""
     }
     
     public mutating func increment<I: FixedWidthInteger & Primitive>(at keyPath: WritableKeyPath<M, QueryableField<I>>, to newValue: I = 1) throws {
@@ -132,6 +134,10 @@ public struct ModelUpdateQuery<M: KeyPathQueryableModel & MutableModel> {
         
         if !set.isEmpty {
             update["$set"] = set
+        }
+        
+        if !unset.isEmpty {
+            update["$unset"] = unset
         }
         
         if !inc.isEmpty {
