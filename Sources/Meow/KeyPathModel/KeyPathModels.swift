@@ -5,7 +5,7 @@ public struct QueryMatcher<M: KeyPathQueryableModel> {
     internal init() {}
 
     public subscript<T>(dynamicMember keyPath: KeyPath<M, QueryableField<T>>) -> QuerySubject<M, T> {
-        let path = try! M.resolveFieldPath(keyPath)
+        let path = M.resolveFieldPath(keyPath)
         return QuerySubject(path: FieldPath(components: path))
     }
 }
@@ -40,20 +40,20 @@ extension KeyPathQueryableModel {
         return field.parents + [field.key!]
     }
     
-    public static func resolveFieldPath<T>(_ field: KeyPath<Self, QueryableField<T>>) throws -> [String] {
-        let model = try Self(from: TestDecoder())
+    public static func resolveFieldPath<T>(_ field: KeyPath<Self, QueryableField<T>>) -> [String] {
+        let model = try! Self(from: TestDecoder())
         let field = model[keyPath: field]
         
         return resolveFieldPath(field)
     }
     
-    public static func resolveFieldPath<T>(_ field: KeyPath<Self, Field<T>>) throws -> [String] {
-        try resolveFieldPath(field.appending(path: \.projectedValue))
+    public static func resolveFieldPath<T>(_ field: KeyPath<Self, Field<T>>) -> [String] {
+        resolveFieldPath(field.appending(path: \.projectedValue))
     }
 }
 
 extension KeyPathQueryableModel where Self: MutableModel {
-    public func makePartialUpdate(_ mutate: (inout ModelUpdater<Self>) async throws -> Void) async throws -> PartialUpdate<Self> {
+    public func makePartialUpdate(_ mutate: (inout ModelUpdater<Self>) async throws -> Void) async rethrows -> PartialUpdate<Self> {
         var updater = ModelUpdater(model: self)
         try await mutate(&updater)
         return updater.update
@@ -77,12 +77,8 @@ public struct ModelUpdater<M: KeyPathQueryableModel & MutableModel> {
         set {
             update.model[keyPath: keyPath].value = newValue
             
-            do {
-                let path = try M.resolveFieldPath(keyPath)
-                update.changes[path] = newValue
-            } catch {
-                update.error = error
-            }
+            let path = M.resolveFieldPath(keyPath)
+            update.changes[path] = newValue
         }
     }
 }
@@ -90,13 +86,8 @@ public struct ModelUpdater<M: KeyPathQueryableModel & MutableModel> {
 public struct PartialUpdate<M: KeyPathQueryableModel & MutableModel> {
     var model: M
     var changes = Document()
-    var error: Error?
     
     public func apply(on collection: MeowCollection<M>) async throws -> M {
-        if let error = error {
-            throw error
-        }
-        
         guard try await collection.raw.updateOne(
             where: "_id" == model._id.encodePrimitive(),
             to: ["$set": changes]

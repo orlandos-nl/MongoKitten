@@ -13,12 +13,15 @@ struct User: Model {
     @Field var email: String
     @Field var password: String
     @Field var profile: UserProfile
+    @Field var friendIds: [Reference<User>]
+    @Field var friends: [User]?
     
     init(email: String, password: String, profile: UserProfile = UserProfile()) {
         self._id = ObjectId()
         self.email = email
         self.password = password
         self.profile = profile
+        self.friendIds = []
     }
 }
 
@@ -34,8 +37,24 @@ class MeowTests: XCTestCase {
         self.meow = MeowDatabase(mongo)
     }
     
+    func testAggregate() async throws {
+        let users = try await meow[User.self].buildAggregate {
+            Match<User> { user in
+                user.$email == "joannis@orlandos.nl"
+            }
+            
+            Sort<User>(by: \.$email, direction: .ascending)
+            
+            Lookup<User, User, _>(
+                from: User.self,
+                localIdentifier: \.$friendIds,
+                as: \.$friends
+            )
+        }.drain()
+    }
+    
     func testNestedModelQueries() throws {
-        try XCTAssertEqual(User.resolveFieldPath(\.$profile.$firstName), ["profile", "firstName"])
+        XCTAssertEqual(User.resolveFieldPath(\.$profile.$firstName), ["profile", "firstName"])
     }
     
     func testPartialUpdate() async throws {
@@ -50,7 +69,7 @@ class MeowTests: XCTestCase {
         let user = User(email: "joannis@orlandos.nl", password: "test")
         try await user.save(in: meow)
         
-        let update = try await user.makePartialUpdate { user in
+        let update = await user.makePartialUpdate { user in
             user.$password = "Hunter2"
         }
         
@@ -72,8 +91,8 @@ class MeowTests: XCTestCase {
     }
     
     func testTopLevelModelQueries() throws {
-        try XCTAssertEqual(User.resolveFieldPath(\User.$_id), ["_id"])
-        try XCTAssertEqual(User.resolveFieldPath(\User.$password), ["password"])
-        try XCTAssertEqual(User.resolveFieldPath(\User.$profile.$firstName), ["profile", "firstName"])
+        XCTAssertEqual(User.resolveFieldPath(\User.$_id), ["_id"])
+        XCTAssertEqual(User.resolveFieldPath(\User.$password), ["password"])
+        XCTAssertEqual(User.resolveFieldPath(\User.$profile.$firstName), ["profile", "firstName"])
     }
 }

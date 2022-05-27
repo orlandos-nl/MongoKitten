@@ -108,6 +108,14 @@ public struct AggregateBuilderPipeline: QueryCursor {
         self.stages = stages
     }
     
+    public init(
+        stages: [AggregateBuilderStage],
+        collection: MongoCollection
+    ) {
+        self.stages = stages
+        self.collection = collection
+    }
+    
     public func count() async throws -> Int {
         struct PipelineResultCount: Decodable {
             let count: Int

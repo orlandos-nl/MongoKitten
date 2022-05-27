@@ -56,9 +56,10 @@ extension MongoCollection {
 	/// - Parameter build: the `AggregateBuilderStage` as function builders
 	/// - Returns: an `AggregateBuilderPipeline` that should be executed to get results
     public func buildAggregate(@AggregateBuilder build: () -> [AggregateBuilderStage]) -> AggregateBuilderPipeline {
-        var pipeline = AggregateBuilderPipeline(stages: build())
-        pipeline.collection = self
-        return pipeline
+        return AggregateBuilderPipeline(
+            stages: build(),
+            collection: self
+        )
     }
     
     internal func _buildAggregate(on connection: MongoConnection, @AggregateBuilder build: () -> [AggregateBuilderStage]) -> AggregateBuilderPipeline {

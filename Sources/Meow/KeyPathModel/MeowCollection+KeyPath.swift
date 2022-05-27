@@ -114,18 +114,18 @@ public struct ModelUpdateQuery<M: KeyPathQueryableModel & MutableModel> {
     
     internal init() {}
     
-    public mutating func setField<P: Primitive>(at keyPath: WritableKeyPath<M, QueryableField<P>>, to newValue: P) throws {
-        let path = try M.resolveFieldPath(keyPath).joined(separator: ".")
+    public mutating func setField<P: Primitive>(at keyPath: WritableKeyPath<M, QueryableField<P>>, to newValue: P) {
+        let path = M.resolveFieldPath(keyPath).joined(separator: ".")
         set[path] = newValue
     }
     
-    public mutating func unsetField<Value>(at keyPath: WritableKeyPath<M, QueryableField<Value?>>) throws {
-        let path = try M.resolveFieldPath(keyPath).joined(separator: ".")
+    public mutating func unsetField<Value>(at keyPath: WritableKeyPath<M, QueryableField<Value?>>) {
+        let path = M.resolveFieldPath(keyPath).joined(separator: ".")
         unset[path] = ""
     }
     
-    public mutating func increment<I: FixedWidthInteger & Primitive>(at keyPath: WritableKeyPath<M, QueryableField<I>>, to newValue: I = 1) throws {
-        let path = try M.resolveFieldPath(keyPath).joined(separator: ".")
+    public mutating func increment<I: FixedWidthInteger & Primitive>(at keyPath: WritableKeyPath<M, QueryableField<I>>, to newValue: I = 1) {
+        let path = M.resolveFieldPath(keyPath).joined(separator: ".")
         inc[path] = newValue
     }
     

@@ -7,7 +7,7 @@ public func == <M: KeyPathQueryableModel, T: Primitive>(lhs: QuerySubject<M, T>,
     return lhs.path.string == rhs
 }
 
-public func == <M: KeyPathQueryableModel, BM: BaseModel>(lhs: QuerySubject<M, Reference<BM>>, rhs: Reference<BM>) -> Document where BM.Identifier: Primitive {
+public func == <M: KeyPathQueryableModel, BM>(lhs: QuerySubject<M, Reference<BM>>, rhs: Reference<BM>) -> Document where BM.Identifier: Primitive {
     return lhs.path.string == rhs.reference
 }
 
@@ -21,7 +21,7 @@ public func != <M: KeyPathQueryableModel, T: Primitive>(lhs: QuerySubject<M, T>,
     return lhs.path.string != rhs
 }
 
-public func != <M: KeyPathQueryableModel, BM: BaseModel>(lhs: QuerySubject<M, Reference<BM>>, rhs: Reference<BM>) -> Document where BM.Identifier: Primitive {
+public func != <M: KeyPathQueryableModel, BM>(lhs: QuerySubject<M, Reference<BM>>, rhs: Reference<BM>) -> Document where BM.Identifier: Primitive {
     return lhs.path.string != rhs.reference
 }
 
