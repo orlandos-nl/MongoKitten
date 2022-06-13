@@ -30,8 +30,6 @@ public protocol MutableModel: ReadableModel, Encodable {
     static var encoder: BSONEncoder { get }
 }
 
-public typealias Model = MutableModel
-
 extension BaseModel {
     public static var collectionName: String {
         return String(describing: Self.self) // Will be the name of the type
@@ -77,6 +75,28 @@ extension MutableModel {
         )
     }
     
+    @discardableResult
+    public func create(in database: MeowDatabase) async throws -> MeowOperationResult {
+        let reply = try await database.collection(for: Self.self).insert(self)
+        return MeowOperationResult(
+            success: reply.insertCount == 1,
+            n: reply.insertCount,
+            writeErrors: reply.writeErrors
+        )
+    }
+    
+    public func replaceModel(in database: MeowDatabase) async throws -> Self? {
+        try await database
+            .collection(for: Self.self)
+            .raw
+            .findOneAndUpsert(
+                where: "_id" == _id.encodePrimitive(),
+                replacement: try BSONEncoder().encode(self),
+                returnValue: .original
+            )
+            .decode(Self.self)
+    }
+    
     @inlinable public static var encoder: BSONEncoder { .init() }
     
     @inlinable
@@ -85,7 +105,7 @@ extension MutableModel {
     }
 }
 
-public enum MeowHook<M: Model> {}
+public enum MeowHook<M: BaseModel> {}
 
 public struct MeowOperationResult {
     public struct NotSuccessful: Error {}

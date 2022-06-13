@@ -1,7 +1,6 @@
 import MongoCore
 import MongoKittenCore
 
-#if swift(>=5.3)
 @resultBuilder
 public struct MongoIndexBuilder {
     public static func buildBlock() -> _MongoIndexes {
@@ -98,4 +97,3 @@ public func TextScoreIndex(
     // Ascending or descending doesn't matter on one index
     _MongoIndex(index: CreateIndexes.Index(named: name, key: field, order: .textScore))
 }
-#endif

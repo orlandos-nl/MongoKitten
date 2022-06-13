@@ -42,10 +42,6 @@ extension MeowCollection where M: ReadableModel {
     public func watch(options: ChangeStreamOptions = .init()) async throws -> ChangeStream<M> {
         return try await raw.watch(options: options, type: M.self, using: M.decoder)
     }
-    
-    public func buildChangeStream(options: ChangeStreamOptions = .init(), @AggregateBuilder build: () -> AggregateBuilderStage) async throws -> ChangeStream<M> {
-        return try await raw.buildChangeStream(options: options, ofType: M.self, using: M.decoder, build: build)
-    }
 }
 
 extension MeowCollection where M: MutableModel {
@@ -64,7 +60,9 @@ extension MeowCollection where M: MutableModel {
         let _id = try instance._id.encodePrimitive()
         return try await raw.upsertEncoded(instance, where: "_id" == _id)
     }
-    
+}
+
+extension MeowCollection where M: MutableModel & ReadableModel {
     @discardableResult
     public func deleteOne(where filter: Document, writeConcern: WriteConcern? = nil) async throws -> DeleteReply {
         return try await raw.deleteOne(where: filter, writeConcern: writeConcern)
@@ -84,11 +82,4 @@ extension MeowCollection where M: MutableModel {
     public func deleteAll<Q: MongoKittenQuery>(where filter: Q, writeConcern: WriteConcern? = nil) async throws -> DeleteReply {
         return try await self.deleteAll(where: filter.makeDocument(), writeConcern: writeConcern)
     }
-    
-    //    public func saveChanges(_ changes: PartialChange<M>) -> EventLoopFuture<UpdateReply> {
-    //        return raw.updateOne(where: "_id" == changes.entity, to: [
-    //            "$set": changes.changedFields,
-    //            "$unset": changes.removedFields
-    //        ])
-    //    }
 }

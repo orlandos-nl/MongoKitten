@@ -14,6 +14,8 @@ public enum MeowModelError<M: BaseModel>: Swift.Error {
     /// An object cannot be deleted, because of `reason`
     case undeletableObject(reason: String)
     
+    case cannotUpdate(M.Identifier)
+    
     /// A file cannot be stored because it exceeds the maximum size
     case fileTooLarge(size: Int, maximum: Int)
     
@@ -30,4 +32,6 @@ public enum MeowModelError<M: BaseModel>: Swift.Error {
 enum MeowError: Swift.Error {
     /// A reference to `type` with id `id` cannot be resolved
     case referenceError(id: Any, type: Any.Type)
+    
+    case entityMissing
 }

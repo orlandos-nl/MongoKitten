@@ -134,7 +134,7 @@ public final actor MongoConnection: @unchecked Sendable {
         let channel = try await bootstrap
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             .channelInitializer { channel in
-                #if !(canImport(NIOTransportServices) && os(iOS))
+                #if !canImport(NIOTransportServices) && !os(iOS)
                 if settings.useSSL {
                     do {
                         var configuration = TLSConfiguration.clientDefault

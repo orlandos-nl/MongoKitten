@@ -1,7 +1,4 @@
-#if os(macOS) || os(Linux)
 import NIOSSL
-#endif
-
 import Foundation
 
 fileprivate extension Bool {
@@ -96,9 +93,7 @@ public struct ConnectionSettings: Equatable {
     /// If `nil`, don't use a custom CA
     public var sslCaCertificatePath: String?
     
-    #if os(macOS) || os(Linux)
     public var sslCaCertificate: NIOSSLCertificate?
-    #endif
     
     /// When true, SSL certificates will be validated
     public var verifySSLCertificates: Bool = true

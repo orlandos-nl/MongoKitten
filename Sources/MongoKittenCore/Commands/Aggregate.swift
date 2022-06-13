@@ -2,7 +2,7 @@ import BSON
 import MongoCore
 
 public struct AggregateCommand: Encodable, Sendable {
-    private let aggregate: EitherPrimitive<String, Int32>
+    public let aggregate: String
     public var pipeline: [Document]
     public var explain: Bool?
     public var allowDiskUse: Bool?
@@ -19,7 +19,7 @@ public struct AggregateCommand: Encodable, Sendable {
     public var writeConcern: WriteConcern?
     
     public init(inCollection collection: String, pipeline: [Document]) {
-        self.aggregate = EitherPrimitive(collection)
+        self.aggregate = collection
         self.pipeline = pipeline
     }
 }

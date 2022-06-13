@@ -22,4 +22,8 @@ public struct FieldPath: ExpressibleByStringLiteral, ExpressibleByArrayLiteral, 
     public init(arrayLiteral elements: String...) {
         self.components = elements
     }
+    
+    public init(components: [String]) {
+        self.components = components
+    }
 }

@@ -36,7 +36,7 @@ public struct AggregateBuilderPipeline: QueryCursor {
         return pipeline
     }
     
-    private func makeCommand() -> AggregateCommand {
+    internal func makeCommand() -> AggregateCommand {
         var documents = [Document]()
         documents.reserveCapacity(stages.count * 2)
         
@@ -106,6 +106,14 @@ public struct AggregateBuilderPipeline: QueryCursor {
     
     internal init(stages: [AggregateBuilderStage]) {
         self.stages = stages
+    }
+    
+    public init(
+        stages: [AggregateBuilderStage],
+        collection: MongoCollection
+    ) {
+        self.stages = stages
+        self.collection = collection
     }
     
     public func count() async throws -> Int {
