@@ -1,7 +1,7 @@
 import BSON
 
 @dynamicMemberLookup
-public struct QueryMatcher<M: KeyPathQueryableModel> {
+public struct QueryMatcher<M: KeyPathQueryable> {
     internal init() {}
 
     public subscript<T>(dynamicMember keyPath: KeyPath<M, QueryableField<T>>) -> QuerySubject<M, T> {
@@ -10,20 +10,58 @@ public struct QueryMatcher<M: KeyPathQueryableModel> {
     }
 }
 
-public struct QuerySubject<M: KeyPathQueryableModel, T> {
+@dynamicMemberLookup
+public struct QuerySubject<M: KeyPathQueryable, T> {
     internal let path: FieldPath!
+    
+    public subscript<New>(dynamicMember keyPath: KeyPath<T, QueryableField<New>>) -> QuerySubject<M, New> where T: KeyPathQueryable {
+        let path = T.resolveFieldPath(keyPath)
+        return QuerySubject<M, New>(path: FieldPath(components: self.path.components + path))
+    }
 }
 
-public protocol KeyPathQueryableModel: BaseModel, Codable {
-//    static func makeFieldPath<T>(forKeyPath keyPath: KeyPath<Self, T>) -> FieldPath
-//    static func makePathComponents<T>(forKeyPath keyPath: KeyPath<Self, T>) -> [String]
+public protocol QuerySubjectComparator {
+    associatedtype Value: Primitive
+    
+    var path: FieldPath { get }
+    var comparator: QuerySubjectComparison { get }
 }
 
-extension KeyPathQueryableModel {
-//    public static func makeFieldPath<T>(forKeyPath keyPath: KeyPath<Self, T>) -> FieldPath {
-//        FieldPath(components: makePathComponents(forKeyPath: keyPath))
-//    }
+public struct QuerySubjectSizeComparator: QuerySubjectComparator {
+    public typealias Value = Int
+    
+    public let path: FieldPath
+    public var comparator: QuerySubjectComparison {
+        .init(key: .size)
+    }
 }
+
+public struct QuerySubjectComparison {
+    internal enum Key: String {
+        case size = "$size"
+    }
+    
+    let key: Key
+}
+
+extension QuerySubject where T: Sequence {
+    public var count: QuerySubjectSizeComparator {
+        QuerySubjectSizeComparator(path: path)
+    }
+}
+
+public protocol KeyPathQueryable: Codable {
+    //    static func makeFieldPath<T>(forKeyPath keyPath: KeyPath<Self, T>) -> FieldPath
+    //    static func makePathComponents<T>(forKeyPath keyPath: KeyPath<Self, T>) -> [String]
+}
+
+extension KeyPathQueryable {
+    //    public static func makeFieldPath<T>(forKeyPath keyPath: KeyPath<Self, T>) -> FieldPath {
+    //        FieldPath(components: makePathComponents(forKeyPath: keyPath))
+    //    }
+}
+
+public protocol KeyPathQueryableModel: ReadableModel, KeyPathQueryable {}
 
 extension CodingUserInfoKey {
     static let isDiscoveringQuery = CodingUserInfoKey(rawValue: "__meow__discovery_query")!
@@ -35,7 +73,7 @@ enum MeowModelDecodingError: Error {
 
 public typealias Model = KeyPathQueryableModel & MutableModel
 
-extension KeyPathQueryableModel {
+extension KeyPathQueryable {
     internal static func resolveFieldPath<T>(_ field: QueryableField<T>) -> [String] {
         return field.parents + [field.key!]
     }
@@ -199,6 +237,9 @@ public struct Field<C: Codable>: Codable {
         try _wrappedValue!.encode(to: encoder)
     }
 }
+
+extension Field: Equatable where C: Equatable {}
+extension Field: Hashable where C: Hashable {}
 
 @propertyWrapper
 public struct ID<Wrapped: MeowIdentifier>: Codable {

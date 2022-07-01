@@ -106,6 +106,10 @@ public struct Projection: Encodable, ExpressibleByDictionaryLiteral {
         self.document[newName.string] = field.projection
     }
     
+    public mutating func moveRoot(to field: FieldPath) {
+        self.document[field.string] = "$$ROOT"
+    }
+    
     public mutating func addLiteral(_ literal: Primitive, at name: FieldPath) {
         self.document[name.string] = [
             "$literal": literal
