@@ -64,11 +64,9 @@ Alternatively, make use of a DAAS (Database-as-a-service) like [MongoDB Atlas](h
 
 ## Add MongoKitten to your Swift project 🚀
 
-If you're using a SwiftNIO 1.x framework such as Vapor 3, use [MongoKitten 5](https://github.com/OpenKitten/MongoKitten/tree/master/5.0) instead.
-
 MongoKitten supports the [Swift Package Manager](https://swift.org/getting-started/#using-the-package-manager) for server-side applications. Add MongoKitten to your dependencies in your **Package.swift** file:
 
-`.package(url: "https://github.com/orlandos-nl/MongoKitten.git", from: "6.0.0")`
+`.package(url: "https://github.com/orlandos-nl/MongoKitten.git", from: "7.0.0")`
 
 Also, don't forget to add the product `"MongoKitten"` as a dependency for your target.
 
