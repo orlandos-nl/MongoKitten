@@ -28,8 +28,8 @@ jobs:
     steps:
       - name: Check out
         uses: actions/checkout@v3
-      - name: Run tests with Thread Sanitizer
-        run: swift test --sanitize=thread
+      - name: Run tests
+        run: swift test
         env:
           MONGO_HOSTNAME_A: mongo-a
           MONGO_HOSTNAME_B: mongo-b
