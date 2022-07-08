@@ -15,18 +15,19 @@ jobs:
       matrix:
         image:
           - swift:5.6-focal
-    runs-on: ubuntu-latest
+          - swiftlang/swift:nightly-main-focal
     container: ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    services:
+      mongo-a:
+        image: ${{ matrix.dbimage }}
+      mongo-b:
+        image: ${{ matrix.dbimage }}
     steps:
       - name: Check out
-        uses: actions/checkout@v2
-      - name: Run tests
-        run: swift test
-  test-macos:
-    runs-on: macos-12
-    steps:
-    - uses: actions/checkout@v2
-    - name: Build
-      run: swift build
-    - name: Run tests
-      run: swift test
+        uses: actions/checkout@v3
+      - name: Run tests with Thread Sanitizer
+        run: swift test --sanitize=thread
+        env:
+          MONGO_HOSTNAME_A: mongo-a
+          MONGO_HOSTNAME_B: mongo-b
