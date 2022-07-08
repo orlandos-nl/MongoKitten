@@ -37,8 +37,7 @@ class CrudTests : XCTestCase {
             self.age = age
         }
     }
-    
-    let settings = try! ConnectionSettings("mongodb://localhost/debug")
+    let settings = try! ConnectionSettings("mongodb://\(ProcessInfo.processInfo.environment["MONGO_HOSTNAME_A"] ?? "localhost")/mongokitten-tests")
     
     //let settings = ConnectionSettings(
     //  authentication: .auto(username: "admin", password: "Autimatisering1"),

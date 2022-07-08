@@ -358,7 +358,10 @@ extension Lookup {
             as: asField
         )
     }
-    
+}
+
+#if swift(>=5.7)
+extension Lookup {
     public init<Match, Field>(
         from type: Foreign.Type,
         localField: KeyPath<Base, QueryableField<Match>>,
@@ -405,3 +408,4 @@ extension Lookup {
         )
     }
 }
+#endif
