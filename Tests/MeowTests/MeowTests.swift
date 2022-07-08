@@ -27,7 +27,7 @@ struct User: Model {
 }
 
 class MeowTests: XCTestCase {
-    let settings = try! ConnectionSettings("mongodb://localhost/meow-tests")
+    let settings = try! ConnectionSettings("mongodb://\(ProcessInfo.processInfo.environment["MONGO_HOSTNAME_A"] ?? "localhost")/meow-tests")
     var meow: MeowDatabase!
     
     override func setUp() async throws {
