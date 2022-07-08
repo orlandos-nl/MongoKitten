@@ -1,6 +1,5 @@
 name: Swift
 
-
 on:
   push:
     branches:
