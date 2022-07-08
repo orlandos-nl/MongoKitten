@@ -1,10 +1,12 @@
 name: Swift
 
+
 on:
   push:
     branches:
       - master/7.0
   pull_request:
+    branches:
       - master/7.0
 
 jobs:
