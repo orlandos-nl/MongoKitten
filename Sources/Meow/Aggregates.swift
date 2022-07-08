@@ -26,21 +26,9 @@ public protocol MeowAggregateStage: AggregateBuilderStage {
 }
 #endif
 
-@resultBuilder public struct MeowUncheckedAggregateBuilder<M: KeyPathQueryableModel> {
-    public static func buildPartialBlock<Stage: AggregateBuilderStage>(
-        first stage: Stage
-    ) -> MeowAggregate<M, Document> {
-        MeowAggregate(stages: [stage])
-    }
-    
-    public static func buildPartialBlock<
-        PreviousResult,
-        Stage: AggregateBuilderStage
-    >(
-        accumulated base: MeowAggregate<M, PreviousResult>,
-        next: Stage
-    ) -> MeowAggregate<M, Document> {
-        MeowAggregate(stages: base.stages + [next])
+@resultBuilder public struct MeowUncheckedAggregateBuilder<M: ReadableModel> {
+    public static func buildBlock(_ components: AggregateBuilderStage...) -> MeowAggregate<M, Document> {
+        MeowAggregate(stages: components)
     }
 }
 
@@ -68,7 +56,7 @@ extension MeowCollection {
     }
 }
 
-public struct MeowAggregate<Model: KeyPathQueryableModel, Result: Codable> {
+public struct MeowAggregate<Model: ReadableModel, Result: Codable> {
     var stages: [AggregateBuilderStage]
 }
 
@@ -102,6 +90,8 @@ public struct Sort<Base: Codable>: AggregateBuilderStage {
         ]
     }
 }
+
+extension Sort: MeowAggregateStage where Base: KeyPathQueryable {}
 
 public struct Project<Base: Codable, Result: Codable>: AggregateBuilderStage {
     public internal(set) var stage: Document
