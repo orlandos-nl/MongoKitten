@@ -13,10 +13,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image:
+        dbimage:
+          - mongo
+        runner:
           - swift:5.6-focal
           - swiftlang/swift:nightly-main-focal
-    container: ${{ matrix.image }}
+    container: ${{ matrix.runner }}
     runs-on: ubuntu-latest
     services:
       mongo-a:
