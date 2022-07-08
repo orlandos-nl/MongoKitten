@@ -365,16 +365,19 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
             return matchingConnection
         }
         
+        // we grab the first undiscovered host
         guard let host = undiscoveredHosts.first else {
+            // if no undiscovered host exists we rediscover and update our list of undiscovered hosts
             await self.rediscover()
-            guard let match = await findMatchingExistingConnection(writable: writable) else {
-                self.logger.error("Couldn't find or create a connection to MongoDB with the requested specification")
-                throw emptyPoolError ?? MongoError(.cannotConnect, reason: .noAvailableHosts)
-            }
             
-            return match
+            // TODO: we can potentially populate a host value from the updated undiscovered host list and continue execution below the guard statement instead of throwing an error
+            
+            // we throw an error since we could not find a host to connect to
+            self.logger.error("Couldn't find or create a connection to MongoDB with the requested specification")
+            throw emptyPoolError ?? MongoError(.cannotConnect, reason: .noAvailableHosts)
         }
         
+        // make a connection to the provided host and add it to the pool
         let pooledConnection = try await makeConnection(to: host)
         self.pool.append(pooledConnection)
         
@@ -385,6 +388,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         let unwritable = writable && handshake.readOnly == true
         let unreadable = !self.slaveOk && !handshake.ismaster
         
+        // check if the connection matches our requirements, if not we recursively try again for the next undiscovered host in our list
         if unwritable || unreadable {
             return try await self._getPooledConnection(writable: writable)
         } else {

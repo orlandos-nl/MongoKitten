@@ -1,3 +1,4 @@
+#if swift(>=5.7)
 import XCTest
 @testable import Meow
 
@@ -38,14 +39,14 @@ class MeowTests: XCTestCase {
     }
     
     func testAggregate() async throws {
-        let users = try await meow[User.self].buildAggregate {
+        _ = try await meow[User.self].buildCheckedAggregate {
             Match<User> { user in
                 user.$email == "joannis@orlandos.nl"
             }
             
             Sort<User>(by: \.$email, direction: .ascending)
             
-            Lookup<User, User, _>(
+            Lookup<User, User, User>(
                 from: User.self,
                 localIdentifier: \.$friendIds,
                 as: \.$friends
@@ -61,7 +62,7 @@ class MeowTests: XCTestCase {
         try await meow[User.self].updateOne { user in
             user.$email == "joannis@orlandos.nl"
         } build: { update in
-            try update.setField(at: \.$password, to: "temporary")
+            update.setField(at: \.$password, to: "temporary")
         }
     }
     
@@ -96,3 +97,4 @@ class MeowTests: XCTestCase {
         XCTAssertEqual(User.resolveFieldPath(\User.$profile.$firstName), ["profile", "firstName"])
     }
 }
+#endif

@@ -55,7 +55,7 @@ public struct WireVersion: Codable, Comparable, ExpressibleByIntegerLiteral, Sen
     public var supportsShardedTransactions: Bool { return version >= 8 }
     
     // Wire version 13
-    public var supportsOutMergeOnSecondaries: Bool { return version >= 13}
+    public var supportsOutMergeOnSecondaries: Bool { return version >= 13 }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
