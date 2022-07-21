@@ -14,6 +14,14 @@ public typealias _MongoPlatformEventLoopGroup = EventLoopGroup
 #endif
 
 public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
+    public static func _newEventLoopGroup() -> _MongoPlatformEventLoopGroup {
+        #if canImport(NIOTransportServices) && os(iOS)
+        return NIOTSEventLoopGroup(loopCount: 1)
+        #else
+        return MultiThreadedEventLoopGroup(numberOfThreads: 1)
+        #endif
+    }
+    
     public private(set) var settings: ConnectionSettings {
         didSet {
             self.hosts = Set(settings.hosts)
@@ -88,12 +96,14 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
 
     private init(
         settings: ConnectionSettings,
-        logger: Logger
+        logger: Logger,
+        eventLoopGroup: _MongoPlatformEventLoopGroup
     ) {
         self.settings = settings
         self.pool = []
         self.hosts = Set(settings.hosts)
         self.logger = logger
+        self.group = eventLoopGroup
     }
     
     /// Connects to a cluster lazily, which means you don't know if the connection was successful until you start querying
@@ -101,14 +111,15 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
     /// This is useful when you need a cluster synchronously to query asynchronously
     public convenience init(
         lazyConnectingTo settings: ConnectionSettings,
-        logger: Logger = Logger(label: "org.openkitten.mongokitten.cluster")
+        logger: Logger = Logger(label: "org.openkitten.mongokitten.cluster"),
+        eventLoopGroup: _MongoPlatformEventLoopGroup = MongoCluster._newEventLoopGroup()
     ) throws {
         guard settings.hosts.count > 0 else {
             logger.error("No MongoDB servers were specified while creating a cluster")
             throw MongoError(.cannotConnect, reason: .noHostSpecified)
         }
         
-        self.init(settings: settings, logger: logger)
+        self.init(settings: settings, logger: logger, eventLoopGroup: eventLoopGroup)
         
         Task {
             // Kick off the connection process
@@ -121,14 +132,15 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
     public convenience init(
         connectingTo settings: ConnectionSettings,
         allowFailure: Bool = false,
-        logger: Logger = Logger(label: "org.openkitten.mongokitten.cluster")
+        logger: Logger = Logger(label: "org.openkitten.mongokitten.cluster"),
+        eventLoopGroup: _MongoPlatformEventLoopGroup = MongoCluster._newEventLoopGroup()
     ) async throws {
         guard settings.hosts.count > 0 else {
             logger.error("No MongoDB servers were specified while creating a cluster")
             throw MongoError(.cannotConnect, reason: .noHostSpecified)
         }
 
-        self.init(settings: settings, logger: logger)
+        self.init(settings: settings, logger: logger, eventLoopGroup: eventLoopGroup)
 
         // Resolve SRV hostnames
         try await resolveSettings()
@@ -194,11 +206,20 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         let host = settings.hosts.first!
         let client: DNSClient
         
+        #if canImport(NIOTransportServices) && os(iOS)
         if let dnsServer = settings.dnsServer {
-            client = try await DNSClient.connect(on: MultiThreadedEventLoopGroup(numberOfThreads: 1), host: dnsServer).get()
+            let address = try SocketAddress(ipAddress: dnsServer, port: 53)
+            client = try await DNSClient.connectTS(on: group, config: [address]).get()
         } else {
-            client = try await DNSClient.connect(on: MultiThreadedEventLoopGroup(numberOfThreads: 1)).get()
+            client = try await DNSClient.connectTS(on: group).get()
         }
+        #else
+        if let dnsServer = settings.dnsServer {
+            client = try await DNSClient.connect(on: group, host: dnsServer).get()
+        } else {
+            client = try await DNSClient.connect(on: group).get()
+        }
+        #endif
         
         var settings = settings
         settings.hosts = try await resolveSRV(host, on: client)
@@ -213,11 +234,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         }
     }
     
-    #if canImport(NIOTransportServices) && os(iOS)
-    let group = NIOTSEventLoopGroup(loopCount: 1)
-    #else
-    let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-    #endif
+    let group: _MongoPlatformEventLoopGroup
 
     private func makeConnection(to host: ConnectionSettings.Host) async throws -> PooledConnection {
         if isClosed {
