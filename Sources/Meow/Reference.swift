@@ -2,7 +2,17 @@ import Foundation
 import MongoKitten
 import NIO
 
-/// Reference to a Model
+/// Reference to a Model by wrapping it's `_id`. Supports wrapping models with any `MeowIdentifier`, including custom `Codable `types.
+///
+/// Can be used within Vapor's `req.parameters` APIs if `M.Identifier` is `CustomStringConvertible`, like for example `ObjectId`, `UUID` or `String`.
+///
+/// Example:
+///
+///     app.get("posts", ":postId") { req -> Post in
+///         let postRef: Reference<Post> = try req.parameters.require("postId")
+///         let post: Post = try await postRef.resolve(in: req.meow)
+///         return post
+///     }
 public struct Reference<M: ReadableModel>: Resolvable, Hashable, PrimitiveEncodable {
     /// The referenced id
     public let reference: M.Identifier
@@ -45,16 +55,19 @@ public struct Reference<M: ReadableModel>: Resolvable, Hashable, PrimitiveEncoda
         }
     }
     
+    /// Checks if the entity exists within `db`
     public func exists(in db: MeowDatabase) async throws -> Bool {
         let _id = try reference.encodePrimitive()
         return try await db[M.self].count(where: "_id" == _id) > 0
     }
     
+    /// Checks if the entity exists within `db`, while matching the provided `filter`
     public func exists(in db: MeowDatabase, where filter: Document) async throws -> Bool {
         let _id = try reference.encodePrimitive()
         return try await db[M.self].count(where: "_id" == _id && filter) > 0
     }
     
+    /// Checks if the entity exists within `db`, while matching the provided `filter`
     public func exists<Query: MongoKittenQuery>(in db: MeowDatabase, where filter: Query) async throws -> Bool {
         return try await self.exists(in: db, where: filter.makeDocument())
     }
@@ -80,6 +93,8 @@ extension Reference where M: MutableModel {
     }
 }
 
+/// A helper postfix operator that creates a `Reference` to `instance`.
+/// Similar, but not identifcal, to C-style the Pointer syntax
 public postfix func * <M>(instance: M) -> Reference<M> {
     return Reference(to: instance)
 }
@@ -96,6 +111,7 @@ extension Reference: Codable {
     }
 }
 
+/// A protocol that provides a uniform syntax for 'resolving' something
 public protocol Resolvable {
     associatedtype Result
     associatedtype IfPresentResult
@@ -104,13 +120,17 @@ public protocol Resolvable {
     func resolveIfPresent(in context: MeowDatabase, where query: Document) async throws -> IfPresentResult
 }
 
+/// Allows simultaneiously resolving all references in a Set
 extension Set: Resolvable where Element: Resolvable {}
+
+/// Allows simultaneiously resolving all references in an Array
 extension Array: Resolvable where Element: Resolvable {}
 extension Sequence where Element: Resolvable {
     /// Resolves the contained references
     ///
-    /// - parameter context: The context to use for resolving the references
-    /// - returns: An EventLoopFuture that completes with an array of
+    /// - Parameter context: The context to use for resolving the references
+    /// - Throws: When one or more entities fails to resolve
+    /// - Returns: All entities - resolved
     public func resolve(in database: MeowDatabase, where query: Document = Document()) async throws -> [Element.Result] {
         var results = [Element.Result]()
         for reference in self {
@@ -119,6 +139,7 @@ extension Sequence where Element: Resolvable {
         return results
     }
     
+    /// - returns: All entities - resolved or `nil`
     public func resolveIfPresent(in database: MeowDatabase, where query: Document = Document()) async throws -> [Element.IfPresentResult] {
         var results = [Element.IfPresentResult]()
         for reference in self {

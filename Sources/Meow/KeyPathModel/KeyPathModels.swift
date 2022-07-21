@@ -1,5 +1,12 @@
 import BSON
 
+/// A helper type used in keypath queries that is used as a "virtual model" for constructing type-checked mongodb queries.
+///
+/// For example, the following query drains all users with the username "Joannis" into an array
+///
+///     let users = try await meow[User.self].find { user in
+///        user.$username == "Joannis"
+///     }.drain()
 @dynamicMemberLookup
 public struct QueryMatcher<M: KeyPathQueryable> {
     internal init() {}
@@ -10,6 +17,9 @@ public struct QueryMatcher<M: KeyPathQueryable> {
     }
 }
 
+/// A type, similar to a Swift `KeyPath`, that refers to a value within the entity `M`, inside the database.
+///
+/// Used to construct type-checked queries
 @dynamicMemberLookup
 public struct QuerySubject<M: KeyPathQueryable, T> {
     internal let path: FieldPath!
@@ -20,6 +30,7 @@ public struct QuerySubject<M: KeyPathQueryable, T> {
     }
 }
 
+/// A comparator, exclusively to be internally implemented by Meow, to provide syntactically pleasing APIs on QuerySubjects
 public protocol QuerySubjectComparator {
     associatedtype Value: Primitive
     
@@ -27,6 +38,7 @@ public protocol QuerySubjectComparator {
     var comparator: QuerySubjectComparison { get }
 }
 
+/// A size comparator that counts the amount of entites in an array, and can compare the result of that against another value
 public struct QuerySubjectSizeComparator: QuerySubjectComparator {
     public typealias Value = Int
     
@@ -36,6 +48,7 @@ public struct QuerySubjectSizeComparator: QuerySubjectComparator {
     }
 }
 
+/// A public type, used internally by Meow to provide syntactically pleasing APIs on QuerySubjects
 public struct QuerySubjectComparison {
     internal enum Key: String {
         case size = "$size"
@@ -45,22 +58,13 @@ public struct QuerySubjectComparison {
 }
 
 extension QuerySubject where T: Sequence {
+    /// Produces a query expression that counts the amount of entities in this array
     public var count: QuerySubjectSizeComparator {
         QuerySubjectSizeComparator(path: path)
     }
 }
 
-public protocol KeyPathQueryable: Codable {
-    //    static func makeFieldPath<T>(forKeyPath keyPath: KeyPath<Self, T>) -> FieldPath
-    //    static func makePathComponents<T>(forKeyPath keyPath: KeyPath<Self, T>) -> [String]
-}
-
-extension KeyPathQueryable {
-    //    public static func makeFieldPath<T>(forKeyPath keyPath: KeyPath<Self, T>) -> FieldPath {
-    //        FieldPath(components: makePathComponents(forKeyPath: keyPath))
-    //    }
-}
-
+public protocol KeyPathQueryable: Codable {}
 public protocol KeyPathQueryableModel: ReadableModel, KeyPathQueryable {}
 
 extension CodingUserInfoKey {
@@ -71,6 +75,7 @@ enum MeowModelDecodingError: Error {
     case unknownDecodingKey
 }
 
+/// The default supported Model is a `KeyPathQueryableModel` that is also a `MutableModel`. Meaning it's a read-write capable entity that supports type checked APIs'
 public typealias Model = KeyPathQueryableModel & MutableModel
 
 extension KeyPathQueryable {
@@ -78,19 +83,35 @@ extension KeyPathQueryable {
         return field.parents + [field.key!]
     }
     
+    /// Resolves a QueryableField into `[String]` path.
+    ///
+    /// - Note: Crashes if the model does not implement Meow's `@Field` property wrapper on all properties
     public static func resolveFieldPath<T>(_ field: KeyPath<Self, QueryableField<T>>) -> [String] {
-        let model = try! Self(from: TestDecoder())
-        let field = model[keyPath: field]
-        
-        return resolveFieldPath(field)
+        // If you've arrived here, please add `@Field` to all your model's properties
+        do {
+            let model = try Self(from: TestDecoder())
+            let field = model[keyPath: field]
+            return resolveFieldPath(field)
+        } catch {
+            fatalError("If you've arrived here, please add `@Field` to all your \(Self.self) model's properties")
+        }
     }
     
+    /// Resolves a Field into `[String]` path.
+    ///
+    /// - Note: Crashes if the model does not implement Meow's `@Field` property wrapper on all properties
     public static func resolveFieldPath<T>(_ field: KeyPath<Self, Field<T>>) -> [String] {
         resolveFieldPath(field.appending(path: \.projectedValue))
     }
 }
 
 extension KeyPathQueryableModel where Self: MutableModel {
+    /// Constructs a partial (atomic) update to this model by allowing you to update individual values in this model
+    /// Each value that's been updated will be `$set` in the database
+    ///
+    /// Produces a `PartialUpdate` that can be executed as a query
+    ///
+    /// - Note:If the model is a class, the model will be updated before `PartialUpdate.apply` is called
     public func makePartialUpdate(_ mutate: (inout ModelUpdater<Self>) async throws -> Void) async rethrows -> PartialUpdate<Self> {
         var updater = ModelUpdater(model: self)
         try await mutate(&updater)
@@ -98,6 +119,7 @@ extension KeyPathQueryableModel where Self: MutableModel {
     }
 }
 
+/// A helper/proxy type that changes values on the subjected model, and keeps track of all changed fields
 @dynamicMemberLookup
 public struct ModelUpdater<M: KeyPathQueryableModel & MutableModel> {
     var update: PartialUpdate<M>
@@ -121,10 +143,16 @@ public struct ModelUpdater<M: KeyPathQueryableModel & MutableModel> {
     }
 }
 
+/// A partial update, as result of `Model.makePartialUpdate` that can be executed on a collection to atomically `$set` these changes
+///
+///     let updatedUser = try await user.makePartialUpdate { user in
+///         user.$password = newPasswordHash
+///     }.apply(on: meow[User.self])
 public struct PartialUpdate<M: KeyPathQueryableModel & MutableModel> {
     var model: M
     var changes = Document()
     
+    /// Applies the changes and returns an updated model
     public func apply(on collection: MeowCollection<M>) async throws -> M {
         guard try await collection.raw.updateOne(
             where: "_id" == model._id.encodePrimitive(),
@@ -172,6 +200,7 @@ fileprivate extension Document {
     }
 }
 
+/// A queryable field, that is aware of its parent KeyPath within the Model
 @dynamicMemberLookup
 public struct QueryableField<Value> {
     internal let parents: [String]
@@ -199,6 +228,7 @@ public struct QueryableField<Value> {
     }
 }
 
+/// The `@Field` property wrapper is used on all properties of a Meow `Model`s to allow key path based queries
 @propertyWrapper
 public struct Field<C: Codable>: Codable {
     public let key: String?
@@ -241,37 +271,7 @@ public struct Field<C: Codable>: Codable {
 extension Field: Equatable where C: Equatable {}
 extension Field: Hashable where C: Hashable {}
 
-@propertyWrapper
-public struct ID<Wrapped: MeowIdentifier>: Codable {
-    public var key: String { "_id" }
-    private var _wrappedValue: Wrapped?
-    
-    public var wrappedValue: Wrapped {
-        get { _wrappedValue! }
-        set { _wrappedValue = newValue }
-    }
-    
-    public var projectedValue: QueryableField<Wrapped> {
-        QueryableField(parents: [], key: key, value: _wrappedValue)
-    }
-    
-    public init(from decoder: Decoder) throws {
-        if decoder is TestDecoder {
-            self._wrappedValue = try? Wrapped(from: decoder)
-        } else {
-            self._wrappedValue = try Wrapped(from: decoder)
-        }
-    }
-    
-    public init(wrappedValue: Wrapped) {
-        self._wrappedValue = wrappedValue
-    }
-    
-    public func encode(to encoder: Encoder) throws {
-        try _wrappedValue!.encode(to: encoder)
-    }
-}
-
+/// A property wrapper helper type that holds a reference to another entity
 @propertyWrapper
 public struct ReferenceField<M: BaseModel>: Codable {
     public let key: String?

@@ -4,6 +4,14 @@ import MongoKitten
 import Dispatch
 import NIO
 
+/// A Meow wrapper around `MongoDatabase`, that allows subscripting with a `Model` type to get a `MeowCollection`
+/// A MeowDatabase can exist in a ransaction state, at which point it's actually a subclass names `MeowTransactionDatabase`.
+///
+/// Example usage:
+///
+///     let mongodb: MongoDatabase = mongoCluster["superapp"]
+///     let meow = MeowDatabase(mongodb)
+///     let users: MeowCollection<User> = meow[User.self]
 public class MeowDatabase {
     public let raw: MongoDatabase
     
@@ -19,6 +27,9 @@ public class MeowDatabase {
         return collection(for: type)
     }
     
+    /// Creates a transaction database, with which the same queries can be done with the same APis as this object.
+    /// If an error in thrown within `perform`, the transaction is aborted
+    /// It's automaticalyl committed if successful
     public func withTransaction<T>(
         with options: MongoSessionOptions = .init(),
         transactionOptions: MongoTransactionOptions? = nil,
@@ -38,6 +49,14 @@ public class MeowDatabase {
     }
 }
 
+/// A Meow wrapper around `MongoDatabase`, that allows subscripting with a `Model` type to get a `MeowCollection`.
+/// A MeowTransactionDatabase is used to do all operations within a transaction context
+///
+/// Example usage:
+///
+///     let mongodb: MongoDatabase = mongoCluster["superapp"]
+///     let meow = MeowDatabase(mongodb)
+///     let users: MeowCollection<User> = meow[User.self]
 public final class MeowTransactionDatabase: MeowDatabase {
     private let transaction: MongoTransactionDatabase
     
@@ -47,6 +66,7 @@ public final class MeowTransactionDatabase: MeowDatabase {
         super.init(transaction)
     }
     
+    /// Commits changes
     public func commit() async throws {
         try await transaction.commit()
     }

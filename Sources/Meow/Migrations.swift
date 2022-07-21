@@ -48,6 +48,10 @@ struct MeowMigration: MutableModel {
 extension MeowDatabase {
     /// Runs a migration closure that is not tied to a certain model
     /// The closure will be executed only once, because the migration is registered in the MeowMigrations collection
+    ///
+    /// Migrations are uniquely identified by their description.
+    ///
+    /// - Warning: DO NOT ALTER THE DESCRITIONS
     public func migrateCustom(
         _ description: String,
         migration: @Sendable @escaping () async throws -> ()
@@ -74,6 +78,12 @@ extension MeowDatabase {
         try await migration.save(in: self)
     }
     
+    /// Runs a migration closure that _is_ tied to a certain model
+    /// The closure will be executed only once, because the migration is registered in the MeowMigrations collection
+    ///
+    /// Migrations are uniquely identified by their description.
+    ///
+    /// - Warning: DO NOT ALTER THE DESCRITIONS
     public func migrate<M: BaseModel>(_ description: String, on model: M.Type, migration: @Sendable @escaping (Migrator<M>) async throws -> Void) async throws {
         let fullDescription = "\(M.self) - \(description)"
         if try await Reference<MeowMigration>(unsafeTo: fullDescription).exists(in: self) {

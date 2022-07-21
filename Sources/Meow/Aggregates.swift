@@ -45,7 +45,7 @@ extension MeowCollection where M: KeyPathQueryableModel {
 }
 #endif
 
-extension MeowCollection {
+extension MeowCollection where M: ReadableModel {
     public func buildAggregate<Result: Codable>(
         @MeowUncheckedAggregateBuilder<M> build: () throws -> MeowAggregate<M, Result>
     ) rethrows -> MappedCursor<AggregateBuilderPipeline, Result> {
