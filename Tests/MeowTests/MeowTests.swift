@@ -96,5 +96,31 @@ class MeowTests: XCTestCase {
         XCTAssertEqual(User.resolveFieldPath(\User.$password), ["password"])
         XCTAssertEqual(User.resolveFieldPath(\User.$profile.$firstName), ["profile", "firstName"])
     }
+    
+    func testMigration() async throws {
+        try await meow.migrate("Unique Usernames", on: User.self) { migrator in
+            migrator.add { users in
+                try await users.raw.buildIndexes {
+                    UniqueIndex(named: "unique-username", field: "email")
+                }
+            }
+        }
+        
+        let myEmail = "joannis@orlandos.nl"
+        
+        let user1 = User(email: myEmail, password: "test1")
+        let user2 = User(email: myEmail, password: "test2")
+        
+        let saveResult1 = try await user1.save(in: meow)
+        XCTAssertTrue(saveResult1.success)
+        let saveResult2 = try await user2.save(in: meow)
+        XCTAssertFalse(saveResult2.success)
+        
+        let count = try await meow[User.self].count { user in
+            user.$email == myEmail
+        }
+        
+        XCTAssertEqual(count, 1)
+    }
 }
 #endif

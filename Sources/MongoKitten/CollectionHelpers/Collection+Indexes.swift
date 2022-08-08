@@ -57,6 +57,10 @@ extension MongoCollection {
             transaction: nil
         ).decode(MongoIndex.self)
     }
+    
+    public func buildIndexes(@MongoIndexBuilder build: () -> _MongoIndexes) async throws {
+        return try await createIndexes(build().indexes)
+    }
 }
 
 public struct MongoIndex: Decodable {
