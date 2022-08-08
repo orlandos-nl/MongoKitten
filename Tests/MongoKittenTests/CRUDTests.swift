@@ -477,7 +477,7 @@ class CrudTests : XCTestCase {
         XCTAssertEqual(updatedAccount.name, "updated")
     }
     
-    func testIndexe () async throws {
+    func testIndexes () async throws {
         try await testBulkCreateDummyAccounts()
         let schema = mongo[DummyAccount.collectionName]
         
@@ -487,5 +487,26 @@ class CrudTests : XCTestCase {
         XCTAssertEqual(result.count, 2)
         XCTAssertEqual(result[0].name, "_id_")
         XCTAssertEqual(result[1].name, "nameIndex")
+    }
+    
+    func testIndexBuilder() async throws {
+        let schema = mongo[DummyAccount.collectionName]
+        
+        try await schema.buildIndexes {
+            UniqueIndex(named: "unique-name", field: "name")
+        }
+        
+        let dummyAccount1 = DummyAccount(name: "Dum", password: "test1", age: 1337)
+        let dummyAccount2 = DummyAccount(name: "Dum", password: "test2", age: 1338)
+               
+        let result1 = try await schema.insertEncoded(dummyAccount1)
+        XCTAssertEqual(result1.insertCount, 1)
+        
+        let result2 = try await schema.insertEncoded(dummyAccount2)
+        XCTAssertEqual(result2.insertCount, 0)
+        
+        let count = try await schema.count()
+        
+        XCTAssertEqual(count, 1)
     }
 }

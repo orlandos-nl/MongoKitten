@@ -98,10 +98,10 @@ class MeowTests: XCTestCase {
     }
     
     func testMigration() async throws {
-        try await meow.migrate("Unique Usernames", on: User.self) { migrator in
+        try await meow.migrate("Unique Email", on: User.self) { migrator in
             migrator.add { users in
-                try await users.raw.buildIndexes {
-                    UniqueIndex(named: "unique-username", field: "email")
+                try await users.buildIndexes { user in
+                    UniqueIndex(named: "unique-email", field: user.$email)
                 }
             }
         }
