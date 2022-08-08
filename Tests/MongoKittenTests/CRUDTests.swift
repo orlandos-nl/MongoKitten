@@ -520,11 +520,25 @@ class CrudTests : XCTestCase {
         XCTAssertEqual(result[1].name, "nameIndex")
     }
     
-//    func testBuildIndexes() async throws {
-//        mongo.async["test"].buildIndexes {
-//
-//        }
-//    }
+    func testBuildIndexes() async throws {
+        let async = mongo.async[DummyAccount.collectionName]
+        try await mongo.async[DummyAccount.collectionName].buildIndexes {
+            UniqueIndex(named: "unique-name", field: "name")
+        }
+        
+        let dummyAccount1 = DummyAccount(name: "Dum", password: "test1", age: 1337)
+        let dummyAccount2 = DummyAccount(name: "Dum", password: "test2", age: 1338)
+
+        let result1 = try await async.insertEncoded(dummyAccount1)
+        XCTAssertEqual(result1.insertCount, 1)
+
+        let result2 = try await async.insertEncoded(dummyAccount2)
+        XCTAssertEqual(result2.insertCount, 0)
+
+        let count = try await async.count()
+
+        XCTAssertEqual(count, 1)
+    }
 
     // TODO ON ICE: Foreach future
     // TODO ON ICE: Change stream

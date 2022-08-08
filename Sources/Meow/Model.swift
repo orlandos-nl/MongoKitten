@@ -75,7 +75,7 @@ extension MutableModel {
     public func save(in database: MeowDatabase) -> EventLoopFuture<MeowOperationResult> {
         return database.collection(for: Self.self).upsert(self).map { reply in
             return MeowOperationResult(
-                success: reply.updatedCount == 1,
+                success: reply.updatedCount == 1 || reply.upserted != nil,
                 n: reply.updatedCount,
                 writeErrors: reply.writeErrors
             )
