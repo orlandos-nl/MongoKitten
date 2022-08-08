@@ -33,7 +33,7 @@ public struct MongoIndexBuilder {
 }
 
 public struct _MongoIndexes {
-    internal var indexes: [CreateIndexes.Index]
+    public private(set) var indexes: [CreateIndexes.Index]
 }
 
 public struct _MongoIndex {

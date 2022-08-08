@@ -143,3 +143,10 @@ extension MeowCollection where M: MutableModel & ReadableModel {
         return try await self.deleteAll(where: filter.makeDocument(), writeConcern: writeConcern)
     }
 }
+
+extension MeowCollection where M: KeyPathQueryable {
+    public func buildIndexes(@MongoIndexBuilder build: (QueryMatcher<M>) -> _MongoIndexes) async throws {
+        let matcher = QueryMatcher<M>()
+        try await self.raw.createIndexes(build(matcher).indexes)
+    }
+}

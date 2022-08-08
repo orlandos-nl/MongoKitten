@@ -153,7 +153,7 @@ extension MutableModel {
     public func save(in database: MeowDatabase) async throws -> MeowOperationResult {
         let reply = try await database.collection(for: Self.self).upsert(self)
         return MeowOperationResult(
-            success: reply.updatedCount == 1,
+            success: reply.updatedCount == 1 || reply.upserted != nil,
             n: reply.updatedCount,
             writeErrors: reply.writeErrors
         )
