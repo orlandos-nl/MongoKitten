@@ -152,10 +152,8 @@ extension MutableModel {
     @discardableResult
     public func save(in database: MeowDatabase) async throws -> MeowOperationResult {
         let reply = try await database.collection(for: Self.self).upsert(self)
-        let updateSuccess = reply.updatedCount == 1 && reply.upserted == nil
-        let upsertSuccess = reply.updatedCount == 0 && reply.upserted != nil
         return MeowOperationResult(
-            success: updateSuccess || upsertSuccess,
+            success: reply.updatedCount == 1 || reply.upserted != nil,
             n: reply.updatedCount,
             writeErrors: reply.writeErrors
         )
