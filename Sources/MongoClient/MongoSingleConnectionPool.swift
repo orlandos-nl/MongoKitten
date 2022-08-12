@@ -33,7 +33,7 @@ public final actor MongoSingleConnectionPool: MongoConnectionPool {
             return connection
         }
         
-        let connection = try await self.buildConnection()
+        let connection = try await buildConnection()
         try await connection.authenticate(
             clientDetails: nil,
             using: self.credentials,
