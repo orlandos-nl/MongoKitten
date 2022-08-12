@@ -34,22 +34,11 @@ public final actor MongoSingleConnectionPool: MongoConnectionPool {
         }
         
         let connection = try await self.buildConnection()
-        // we must inline ``MongoConnection.authenticate(clientDetails:using:to:)`` 
-        // due to the llvm coroutine splitting issue `https://github.com/apple/swift/issues/60380`. 
-        // 
-        // this could also be accomplished by adding `@inline(never)` to 
-        // ``MongoConnection.authenticate(clientDetails:using:to:)``, but this 
-        // preserves the runtime behavior more closely.
-        let handshake = try await connection.doHandshake(
+        try await connection.authenticate(
             clientDetails: nil,
-            credentials: self.credentials,
-            authenticationDatabase: self.authenticationSource
+            using: self.credentials,
+            to: self.authenticationSource
         )
-        
-        await connection.context.setServerHandshake(to: handshake)
-        try await connection.authenticate(to: self.authenticationSource, 
-            serverHandshake: handshake, 
-            with: self.credentials)
         
         self.connection = connection
         
