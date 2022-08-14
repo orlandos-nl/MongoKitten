@@ -18,6 +18,8 @@ A fast, pure swift [MongoDB](https://mongodb.com) driver based on [Swift NIO](ht
 
 [Read the Docs](https://orlandos.nl/docs/mongokitten/) at our sponsor's website.
 
+[Browse the API reference](https://swiftinit.org/reference/mongokitten) on Swiftinit.
+
 ### Projects
 
 A couple of MongoKitten based projects have arisen, check them out!
