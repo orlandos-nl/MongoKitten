@@ -118,19 +118,15 @@ public struct ReplaceRoot: AggregateBuilderStage {
 /// [Link to the MongoDB-Documentation](https://docs.mongodb.com/manual/reference/operator/aggregation/limit/)
 ///
 /// # Example:
-/// ```
+/// ```swift
 /// let pipeline = myCollection.aggregate([
 ///     Match("myCondition" == true),
 ///     Limit(5)
 /// ])
-///
-/// pipeline.execute().whenComplete { result in
-///    ...
-/// }
 /// ```
 ///
 /// - Parameter n: the maximum number of documents
-/// - Returns: an `AggregateBuilderStage`
+/// - Returns: An ``AggregateBuilderStage``
 public struct Limit: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = nil
@@ -151,32 +147,29 @@ public struct Sample: AggregateBuilderStage {
     }
 }
 
-/// The `lookup` aggregation performs a join from another collection in the same database. This aggregation will add a new array to
+/// The `$lookup` aggregation performs a join from another collection in the same database. This aggregation will add a new array to
 /// your document including the matching documents.
 ///
-/// # MongoDB-Documentation:
-/// [Link to the MongoDB-Documentation](https://docs.mongodb.com/manual/reference/operator/aggregation/lookup/)
+/// [The MongoDB-Documentation](https://docs.mongodb.com/manual/reference/operator/aggregation/lookup/)
 ///
-/// # Example:
+/// **Example**
+///
 /// There are two collections, named `users` and `userCategories`. In the `users` collection there is a reference to the _id
 /// of the `userCategories`, because every user belongs to a category.
 ///
 /// If you now want to aggregate all users and the corresponding user category, you can use the `$lookup` like this:
 ///
-/// ```
+/// ```swift
 /// let pipeline = userCollection.aggregate([
 ///     Lookup(from: "userCategories", "localField": "categoryID", "foreignField": "_id", newName: "userCategory")
 /// ])
-///
-/// pipeline.execute().whenComplete { result in
-///    ...
-/// }
 /// ```
 ///
-/// # Hint:
+/// **Hint**
+///
 /// Because the matched documents will be inserted as an array no matter if there is only one item or more, you may want to unwind the joined documents:
 ///
-/// ```
+/// ```swift
 /// let pipeline = myCollection.aggregate([
 ///     Lookup(from: ..., newName: "newName"),
 ///     Unwind(fieldPath: "$newName")
@@ -188,7 +181,7 @@ public struct Sample: AggregateBuilderStage {
 ///   - localField: the name of the field in the input collection that shall match the `foreignField` in the `from` collection
 ///   - foreignField: the name of the field in the `fromCollection` that shall match the `localField` in the input collection
 ///   - newName: the collecting matches will be inserted as an array to the input collection, named as `newName`
-/// - Returns: an `AggregateBuilderStage`
+/// - Returns: an ``AggregateBuilderStage``
 public struct Lookup: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = nil
@@ -238,22 +231,22 @@ public struct Lookup: AggregateBuilderStage {
     }
 }
 
-/// The `unwind` aggregation will deconpublic struct a field, that contains an array. It will return as many documents as are included
+/// The `$unwind` aggregation will deconpublic struct a field, that contains an array. It will return as many documents as are included
 /// in the array and every output includes the original document with each item of the array
 ///
-/// # MongoDB-Documentation:
-/// [Link to the MongoDB-Documentation](https://docs.mongodb.com/manual/reference/operator/aggregation/unwind/)
+/// - [The MongoDB-Documentation](https://docs.mongodb.com/manual/reference/operator/aggregation/unwind/)
 ///
-/// # Example:
+/// **Example**
+///
 /// The original document:
 ///
-/// ```
+/// ```json
 /// { "_id": 1, "boolItem": true, "arrayItem": ["a", "b", "c"] }
 /// ```
 ///
 /// The command in Swift:
 ///
-/// ```
+/// ```swift
 /// let pipeline = collection.aggregate([
 ///     Match("_id" == 1),
 ///     Unwind(fieldPath: "$arrayItem")
@@ -261,16 +254,17 @@ public struct Lookup: AggregateBuilderStage {
 /// ```
 ///
 /// This will return three documents:
-/// ```
+/// ```json
 /// { "_id": 1, "boolItem": true, "arrayItem": "a" }
 /// { "_id": 1, "boolItem": true, "arrayItem": "b" }
 /// { "_id": 1, "boolItem": true, "arrayItem": "c" }
 /// ```
+///
 /// - Parameters:
 ///   - fieldPath: the field path to an array field. You have to prefix the path with "$"
 ///   - includeArrayIndex: this parameter is optional. If given, the new documents will hold a new field with the name of `includeArrayIndex` and this field will contain the array index
-///   - preserveNullAndEmptyArrays: this parameter is optional. If it is set to `true`, the aggregation will also include the documents, that don't have an array that can be unwinded. default is `false`, so the `unwind` aggregation will remove all documents, where there is no value or an empty array at `fieldPath`
-/// - Returns: an `AggregateBuilderStage`
+///   - preserveNullAndEmptyArrays: this parameter is optional. If it is set to `true`, the aggregation will also include the documents, that don't have an array that can be unwinded. default is `false`, so the `$unwind` aggregation will remove all documents, where there is no value or an empty array at `fieldPath`
+/// - Returns: an ``AggregateBuilderStage``
 public struct Unwind: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = .mongo3_2

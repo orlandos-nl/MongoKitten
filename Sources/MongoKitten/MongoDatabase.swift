@@ -7,7 +7,7 @@ import NIO
 import NIOTransportServices
 #endif
 
-/// A reference to a MongoDB database, over a `Connection`.
+/// A reference to a MongoDB database, over a ``MongoConnectionPool``.
 ///
 /// Databases hold collections of documents.
 public class MongoDatabase {
@@ -36,16 +36,34 @@ public class MongoDatabase {
         self.pool = pool
     }
     
-    /// Connect to the database at the given `uri`
+    /// Connect to the database at the given `uri` using ``MongoCluster``
     ///
     /// - parameter uri: A MongoDB URI that contains at least a database component
+    ///
+    /// - Note: LazyConnecting while failing to connect will still result in a usable object, though queries will fail.
+    ///
+    /// **Usage:**
+    ///
+    /// ```swift
+    /// let database = MongoDatabase.lazyConnect(
+    ///     to: "mongodb://localhost/myapp
+    /// )
+    /// ```
     public static func lazyConnect(to uri: String) throws -> MongoDatabase {
         try lazyConnect(to: ConnectionSettings(uri))
     }
 
-    /// Connect to the database at the given `uri`
+    /// Connect to the database at the given `uri` using ``MongoCluster``
     ///
     /// - parameter uri: A MongoDB URI that contains at least a database component
+    ///
+    /// **Usage:**
+    ///
+    /// ```swift
+    /// let database = MongoDatabase.lazyConnect(
+    ///     to: "mongodb://localhost/myapp
+    /// )
+    /// ```
     public static func connect(to uri: String) async throws -> MongoDatabase {
         try await connect(to: ConnectionSettings(uri))
     }
@@ -53,6 +71,8 @@ public class MongoDatabase {
     /// Connect to the database with the given settings _lazily_. You can also use `lazyConnect(_:on:)` to connect by using a connection string.
     ///
     /// Will postpone queries until initial discovery is complete. Since the cluster is lazily initialized, you'll only know of a failure in connecting (such as wrong credentials) during queries
+    ///
+    /// - Note: LazyConnecting while failing to connect will still result in a usable object, though queries will fail.
     ///
     /// - parameter settings: The connection settings, which must include a database name
     public static func lazyConnect(
@@ -90,6 +110,16 @@ public class MongoDatabase {
     ///
     /// The TransactionDatabase that is created can be used like a normal Database for queries within transactions _only_
     /// Creating a TransactionCollection is done the same way it's created with a normal Database.
+    ///
+    /// ```swift
+    /// let transaction = try await db.startTransaction(autoCommit: false)
+    /// // This users object is under the same transaction
+    /// let users = transaction["users"]
+    /// ```
+    ///
+    /// - returns: A ``MongoTransactionDatabase`` which works just like a regular MongoDatabase, except all queries are under Matransaction.
+    ///
+    /// - Note: `startTransaction` only affects queries made on the database object returned from the `startTransaction` call.
     public func startTransaction(
         autoCommitChanges autoCommit: Bool,
         with options: MongoSessionOptions = .init(),
@@ -109,7 +139,7 @@ public class MongoDatabase {
         return db
     }
 
-    /// Get a `Collection` by providing a collection name as a `String`
+    /// Get a `MongoCollection` by providing a collection name as a `String`
     ///
     /// - parameter collection: The collection/bucket to return
     ///

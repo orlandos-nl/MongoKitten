@@ -2,7 +2,7 @@ import NIO
 import MongoClient
 import Foundation
 
-/// A reference to a collection in a `Database`.
+/// A reference to a collection in a `MongoDatabase`.
 ///
 /// MongoDB stores documents in collections. Collections are analogous to tables in relational databases.
 public final class MongoCollection {

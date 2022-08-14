@@ -53,7 +53,7 @@ extension MongoCollection {
 	/// }
 	/// ```
 	///
-	/// - Parameter build: the `AggregateBuilderStage` as function builders
+	/// - Parameter build: the ``AggregateBuilderStage`` as function builders
 	/// - Returns: an `AggregateBuilderPipeline` that should be executed to get results
     public func buildAggregate(@AggregateBuilder build: () -> [AggregateBuilderStage]) -> AggregateBuilderPipeline {
         return AggregateBuilderPipeline(

@@ -28,7 +28,11 @@ public final actor MongoClientContext {
     }
     
     deinit {
-        self.cancelQueries(MongoError(.queryFailure, reason: .connectionClosed))
+        let error = MongoError(.queryFailure, reason: .connectionClosed)
+        for query in queries {
+            query.result.fail(error)
+        }
+        queries = []
     }
     
     internal func setServerHandshake(to handshake: ServerHandshake?) {

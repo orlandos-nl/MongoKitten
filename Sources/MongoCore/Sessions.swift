@@ -107,7 +107,6 @@ internal final class MongoServerSession: @unchecked Sendable {
 }
 
 /// A LIFO (Last In, First Out) pool of sessions with a MongoDB "cluster" of 1 or more hosts
-/// This pool is not thread safe.
 public final actor MongoSessionManager {
     private var availableSessions = [MongoServerSession]()
     private let implicitSession: MongoServerSession

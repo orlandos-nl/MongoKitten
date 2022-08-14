@@ -20,6 +20,7 @@ extension MongoCursor: QueryCursor {
 }
 
 extension MongoCursor {
+    /// Collects all results into an array, until the cursor is drained
     public func drain() async throws -> [Document] {
         var documents = [Document]()
         

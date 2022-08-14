@@ -321,3 +321,11 @@ public struct ModelProjector<Base: KeyPathQueryable, Result: KeyPathQueryable> {
         projection.moveRoot(to: path)
     }
 }
+
+extension MeowCollection where M: KeyPathQueryable {
+    /// Allows the construction of type-checked
+    public func buildIndexes(@MongoIndexBuilder build: (QueryMatcher<M>) -> _MongoIndexes) async throws {
+        let matcher = QueryMatcher<M>()
+        try await self.raw.createIndexes(build(matcher).indexes)
+    }
+}

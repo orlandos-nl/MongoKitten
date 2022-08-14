@@ -51,7 +51,7 @@ extension MeowDatabase {
     ///
     /// Migrations are uniquely identified by their description.
     ///
-    /// - Warning: DO NOT ALTER THE DESCRITIONS
+    /// - Warning: DO NOT ALTER THE DESCRIPTIONS
     public func migrateCustom(
         _ description: String,
         migration: @Sendable @escaping () async throws -> ()

@@ -2,12 +2,6 @@ import MongoKitten
 import MongoCore
 import NIO
 
-//public struct PartialChange<M: Model> {
-//    public let entity: M.Identifier
-//    public let changedFields: Document
-//    public let removedFields: Document
-//}
-
 /// All Meow models must have an identifier that is `Codable` and `Hashable`, as well as representable by a Primitive.
 ///
 /// When implementing `PrimitiveEncodable` using `BSONEncoder`, this allows you to use any `struct` as an `_id` so long as it's not an "unkeyedContainer". Array-like (sequence) types are rejected on insertion by MongoDB.

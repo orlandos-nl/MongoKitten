@@ -64,7 +64,7 @@ public struct DeleteCommand: Codable, Sendable {
     }
 }
 
-/// The reply to a `DeleteCommand`
+/// The reply to a ``DeleteCommand``
 public struct DeleteReply: Decodable, Sendable {
     private enum CodingKeys: String, CodingKey {
         case ok, writeErrors, writeConcernError

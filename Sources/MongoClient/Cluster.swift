@@ -13,6 +13,21 @@ public typealias _MongoPlatformEventLoopGroup = NIOTSEventLoopGroup
 public typealias _MongoPlatformEventLoopGroup = EventLoopGroup
 #endif
 
+/// A high level ``MongoConnectionPool`` type tha is capable of "Service Discovery and Monitoring", automatically connects to new hosts. Is aware of a change in primary/secondary allocation.
+///
+/// Use this type for connecting to MongoDB unless you have a very specific usecase.
+///
+/// The ``MongoCluster`` uses ``MongoConnection`` instances under the hood to connect to specific servers, and run specific queries.s
+///
+/// **Usage**
+///
+/// ```swift
+/// let cluster = try await MongoCluster(
+///     lazyConnectingTo: ConnectionSettings("mongodb://localhost")
+/// )
+/// let database = cluster["testapp"]
+/// let users = database["users"]
+/// ```
 public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
     public static func _newEventLoopGroup() -> _MongoPlatformEventLoopGroup {
         #if canImport(NIOTransportServices) && os(iOS)
@@ -22,6 +37,9 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         #endif
     }
     
+    /// The settings used to connect to MongoDB.
+    ///
+    /// - Note: Might differ from the originally provided settings, since Service Discovery and Monitoring might have discovered more nodes belonging to this MongoDB cluster.
     public private(set) var settings: ConnectionSettings {
         didSet {
             self.hosts = Set(settings.hosts)
@@ -32,7 +50,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
     
     /// Triggers every time the cluster rediscovers
     ///
-    /// This is not thread safe outside of the cluster's eventloop
+    /// - Note: This is not thread safe outside of the cluster's `eventloop`
     public var didRediscover: (() -> ())?
     
     public let logger: Logger
@@ -40,7 +58,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
 
     /// The interval at which cluster discovery is triggered, at a minimum of 500 milliseconds
     ///
-    /// This is not thread safe outside of the cluster's eventloop
+    /// - Note: This is not thread safe outside of the cluster's eventloop
     public var heartbeatFrequency = TimeAmount.seconds(10) {
         didSet {
             if heartbeatFrequency < .milliseconds(500) {
@@ -51,7 +69,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
 
     /// The current state of the cluster's connection pool
     ///
-    /// This is not thread safe outside of the cluster's eventloop
+    /// - Note: This is not thread safe outside of the cluster's eventloop
     public var connectionState: MongoConnectionState {
         if isClosed {
             return .closed
@@ -72,7 +90,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
 
     /// When set to true, read queries are also executed on slave instances of MongoDB
     ///
-    /// This is not thread safe outside of the cluster's eventloop
+    /// - Note: This is not thread safe outside of the cluster's eventloop
     public var slaveOk = false {
         didSet {
             for connection in pool {
@@ -106,9 +124,19 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         self.group = eventLoopGroup
     }
     
-    /// Connects to a cluster lazily, which means you don't know if the connection was successful until you start querying
+    /// Connects to a cluster lazily, which means you don't know if the connection was successful until you start querying. This is useful when you need a cluster synchronously to query asynchronously
     ///
-    /// This is useful when you need a cluster synchronously to query asynchronously
+    /// This initializer also does not need to be `await`ed, making it useful for setting up an application, even under unreliable network conditions.
+    ///
+    /// - Parameters:
+    ///     - settings: The details used to set up a connection to, and authenticate with MongoDB
+    ///     - eventLoopGroup: If provided, an existing ``EventLoopGroup`` can be reused. By default, a new one will be created
+    ///
+    /// ```swift
+    /// let cluster = try await MongoCluster(
+    ///     lazyConnectingTo: ConnectionSettings("mongodb://localhost")
+    /// )
+    /// ```
     public convenience init(
         lazyConnectingTo settings: ConnectionSettings,
         logger: Logger = Logger(label: "org.openkitten.mongokitten.cluster"),
@@ -129,6 +157,18 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         }
     }
 
+    /// Connects to a cluster immediately, and awaits connection readiness.
+    ///
+    /// - Parameters:
+    ///     - settings: The details used to set up a connection to, and authenticate with MongoDB
+    ///     - allowFailure: If `true`, this method will always succeed - unless your settings are malformed.
+    ///     - eventLoopGroup: If provided, an existing ``EventLoopGroup`` can be reused. By default, a new one will be created
+    ///
+    /// ```swift
+    /// let cluster = try await MongoCluster(
+    ///     connectingTo: ConnectionSettings("mongodb://localhost")
+    /// )
+    /// ```
     public convenience init(
         connectingTo settings: ConnectionSettings,
         allowFailure: Bool = false,
@@ -420,7 +460,9 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         ).connection
     }
 
-    /// Closes all connections
+    /// Closes all connections, and stops polling for cluster changes.
+    ///
+    /// - Warning: Any outstanding query results may be cancelled, but the sent query might still be executed.
     public func disconnect() async {
         logger.debug("Disconnecting MongoDB Cluster")
         self.wireVersion = nil
@@ -434,7 +476,11 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         }
     }
 
-    /// Prompts MongoKitten to connect to the remote again
+    /// Prompts ``MongoCluster`` to close all connections, and connect to the remote(s) again.
+    ///
+    /// - Warning: Any outstanding query results may be cancelled, but the sent query might still be executed.
+    ///
+    /// - Note: This will also trigger a rediscovery of the cluster.
     public func reconnect() async throws {
         logger.debug("Reconnecting to MongoDB Cluster")
         await disconnect()

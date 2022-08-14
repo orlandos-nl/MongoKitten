@@ -1,3 +1,5 @@
+/// A representation of a used - or usable - version of MongoDB's wire protocol.
+/// Contains computed properties that can protocol level support for features.
 public struct WireVersion: Codable, Comparable, ExpressibleByIntegerLiteral, Sendable {
     public static func < (lhs: WireVersion, rhs: WireVersion) -> Bool {
         return lhs.version < rhs.version
@@ -72,7 +74,6 @@ public struct WireVersion: Codable, Comparable, ExpressibleByIntegerLiteral, Sen
     }
     
     public var isDeprecated: Bool {
-        // TODO: January 2020 version 5
-        return self <= .mongo3_2
+        return self < .mongo4_2
     }
 }

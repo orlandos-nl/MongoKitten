@@ -75,17 +75,34 @@ enum MeowModelDecodingError: Error {
     case unknownDecodingKey
 }
 
-/// The default supported Model is a `KeyPathQueryableModel` that is also a `MutableModel`. Meaning it's a read-write capable entity that supports type checked APIs'
+/// The default supported Model is a ``KeyPathQueryableModel`` that is also a ``MutableModel``. Meaning it's a read-write capable entity that supports type checked APIs'.
+///
+/// This model type is type-checked, and requires all stored properties to be marked with the ``Field`` property wrapper.
+///
+/// **Example Model**
+///
+/// ```swift
+/// struct User: Model {
+///     @Field var _id: ObjectId
+///     @Field var username: String
+///     @Field var email: String
+///     @Field var createdAt: Date
+/// }
+/// ```
 public typealias Model = KeyPathQueryableModel & MutableModel
 
 extension KeyPathQueryable {
+    /// Resolves a ``QueryableField`` into `[String]` path.
+    ///
+    /// - Note: Crashes if the model does not implement Meow's @``Field`` property wrapper on all properties
     internal static func resolveFieldPath<T>(_ field: QueryableField<T>) -> [String] {
+        // If the app crashes here, it's most likely that you didn't properly implement the `@Field` property wrapper in your model
         return field.parents + [field.key!]
     }
     
-    /// Resolves a QueryableField into `[String]` path.
+    /// Resolves a ``QueryableField`` into `[String]` path.
     ///
-    /// - Note: Crashes if the model does not implement Meow's `@Field` property wrapper on all properties
+    /// - Note: Crashes if the model does not implement the @``Field`` property wrapper on all properties
     public static func resolveFieldPath<T>(_ field: KeyPath<Self, QueryableField<T>>) -> [String] {
         // If you've arrived here, please add `@Field` to all your model's properties
         do {
@@ -99,7 +116,7 @@ extension KeyPathQueryable {
     
     /// Resolves a Field into `[String]` path.
     ///
-    /// - Note: Crashes if the model does not implement Meow's `@Field` property wrapper on all properties
+    /// - Note: Crashes if the model does not implement the @``Field`` property wrapper on all properties
     public static func resolveFieldPath<T>(_ field: KeyPath<Self, Field<T>>) -> [String] {
         resolveFieldPath(field.appending(path: \.projectedValue))
     }
@@ -200,7 +217,7 @@ fileprivate extension Document {
     }
 }
 
-/// A queryable field, that is aware of its parent KeyPath within the Model
+/// A wrapper around a value, that can be aware of its full keypath within the Model
 @dynamicMemberLookup
 public struct QueryableField<Value> {
     internal let parents: [String]
@@ -228,7 +245,7 @@ public struct QueryableField<Value> {
     }
 }
 
-/// The `@Field` property wrapper is used on all properties of a Meow `Model`s to allow key path based queries
+/// The `@Field` property wrapper is used on all stored properties of a ``Model`` to allow key path based queries.
 @propertyWrapper
 public struct Field<C: Codable>: Codable {
     public let key: String?
@@ -272,6 +289,8 @@ extension Field: Equatable where C: Equatable {}
 extension Field: Hashable where C: Hashable {}
 
 /// A property wrapper helper type that holds a reference to another entity
+///
+/// Functions as an equivalent to @``Field``
 @propertyWrapper
 public struct ReferenceField<M: BaseModel>: Codable {
     public let key: String?
