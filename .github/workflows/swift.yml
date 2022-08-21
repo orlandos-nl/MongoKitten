@@ -18,7 +18,7 @@ jobs:
         
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Install Swift
+      - if: matrix.os == 'ubuntu-20.04'
         uses: slashmo/install-swift@v0.1.0
         with:
           version: ${{ matrix.swiftVersion }}
