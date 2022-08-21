@@ -10,12 +10,11 @@ on:
 
 jobs:
   test-linux:
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         swiftVersion: [5.6]
-        
-    runs-on: ubuntu-latest
     steps:
         uses: slashmo/install-swift@v0.1.0
         with:
@@ -30,11 +29,11 @@ jobs:
         run: swift test
         
   test-macos:
+    runs-on: macos-latest
     strategy:
       fail-fast: false
       matrix:
         mongodb-version: ['4,2', '4.4', '5.0']
-    runs-on: macos-latest
     steps:
       - name: Start MongoDB
         uses: supercharge/mongodb-github-action@1.7.0
