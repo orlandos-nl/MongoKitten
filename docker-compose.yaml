@@ -1,0 +1,48 @@
+version: "3"
+
+services:
+  mongo-1:
+    image: mongo:5.0
+    ports:
+      - "27017:27017"
+    container_name: mongo-1
+    hostname: mongo-1
+    networks: 
+      - mongo_cluster
+    command: mongod --replSet rs0
+
+  mongo-2:
+    image: mongo:5.0
+    ports:
+      - "27018:27017"
+    container_name: mongo-2
+    hostname: mongo-2
+    networks: 
+      - mongo_cluster
+    command: mongod --replSet rs0
+    depends_on:
+      - mongo-1
+
+  mongo-3:
+    image: mongo:5.0
+    ports:
+      - "27019:27017"
+    container_name: mongo-3
+    hostname: mongo-3
+    networks: 
+      - mongo_cluster
+    command: mongod --replSet rs0
+    depends_on:
+      - mongo-2  
+
+  mongosetup:
+    image: mongo:5.0
+    networks:
+    - mongo_cluster
+    volumes:
+    - ./scripts:/scripts
+    command: bash -c "chmod +x /scripts/setup.sh && /scripts/setup.sh"
+
+networks: 
+  mongo_cluster:
+    driver: bridge
