@@ -35,8 +35,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mongodb-version: ['4,2', '4.4', '5.0']
+        mongodb-version: ['4.2', '4.4', '5.0']
     steps:
+      - name: Install docker
+        run: |
+            brew install docker docker-machine docker-compose
+            
       - name: Check out  
         uses: actions/checkout@v3
         
