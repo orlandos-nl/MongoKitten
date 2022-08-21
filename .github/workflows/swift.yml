@@ -9,7 +9,7 @@ on:
       - master/7.0
 
 jobs:
-  test-linux:
+  linux:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -28,7 +28,7 @@ jobs:
       - name: Run tests
         run: swift test
         
-  test-macos:
+  macos:
     runs-on: macos-latest
     strategy:
       fail-fast: false
