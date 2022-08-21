@@ -13,23 +13,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        dbimage:
-          - mongo
         runner:
           - swift:5.6-focal
           - swiftlang/swift:nightly-main-focal
     container: ${{ matrix.runner }}
     runs-on: ubuntu-latest
-    services:
-      mongo-a:
-        image: ${{ matrix.dbimage }}
-      mongo-b:
-        image: ${{ matrix.dbimage }}
     steps:
       - name: Check out
         uses: actions/checkout@v3
+      - name: Setup Mongo
+        run: docker-compose up -d
       - name: Run tests
         run: swift test
-        env:
-          MONGO_HOSTNAME_A: mongo-a
-          MONGO_HOSTNAME_B: mongo-b
