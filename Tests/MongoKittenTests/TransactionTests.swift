@@ -20,11 +20,8 @@ class TransactionTests: XCTestCase {
     
     override func setUp() async throws {
         try await super.setUp()
-        let mongoSettings = try ConnectionSettings("mongodb://localhost:27017/transaction-test")
+        let mongoSettings = try ConnectionSettings("mongodb://\(ProcessInfo.processInfo.environment["MONGO_HOSTNAME_A"] ?? "localhost")/mongokitten-test")
         mongo = try await MongoDatabase.connect(to: mongoSettings)
-    }
-    
-    override func tearDown() async throws {
         try await mongo.drop()
     }
     
