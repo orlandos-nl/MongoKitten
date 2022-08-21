@@ -23,10 +23,9 @@ jobs:
         with:
           version: ${{ matrix.swiftVersion }}
           
-      - name: Install docker
-        uses: docker-practice/actions-setup-docker@master
-        if: matrix.os == 'macos-latest'
-        run: set -x
+      - if: matrix.os == 'macos-latest'
+      - uses: docker-practice/actions-setup-docker@master
+      - run: set -x
           
       - name: Check out
         uses: actions/checkout@v3
