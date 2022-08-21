@@ -31,6 +31,9 @@ let package = Package(
         // 📈
         .package(url: "https://github.com/apple/swift-metrics.git", "1.0.0" ..< "3.0.0"),
         
+        // ✅
+        .package(url: "https://github.com/apple/swift-atomics.git", from: "1.0.0"),
+        
         // 💾
         .package(url: "https://github.com/orlandos-nl/BSON.git", from: "8.0.0"),
         //        .package(name: "BSON", path: "../BSON"),
@@ -57,6 +60,7 @@ let package = Package(
                 .product(name: "NIOFoundationCompat", package: "swift-nio"),
                 .product(name: "Logging", package: "swift-log"),
                 .product(name: "Metrics", package: "swift-metrics"),
+                .product(name: "Atomics", package: "swift-atomics"),
             ]),
         .target(
             name: "MongoKittenCore",

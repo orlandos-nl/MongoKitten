@@ -125,15 +125,16 @@ public class MongoDatabase {
         with options: MongoSessionOptions = .init(),
         transactionOptions: MongoTransactionOptions? = nil
     ) async throws -> MongoTransactionDatabase {
-        guard await pool.wireVersion?.supportsReplicaTransactions == true else {
+        let connection = try await pool.next(for: .writable)
+        guard await connection.wireVersion?.supportsReplicaTransactions == true else {
             pool.logger.error("MongoDB transaction not supported by the server")
             throw MongoKittenError(.unsupportedFeatureByServer, reason: nil)
         }
 
-        let newSession = await self.pool.sessionManager.retainSession(with: options)
+        let newSession = self.pool.sessionManager.retainSession(with: options)
         let transaction = newSession.startTransaction(autocommit: autoCommit)
         
-        let db = MongoTransactionDatabase(named: name, pool: pool)
+        let db = MongoTransactionDatabase(named: name, pool: connection)
         db.transaction = transaction
         db.session = newSession
         return db

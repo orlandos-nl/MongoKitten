@@ -1,4 +1,5 @@
 import Foundation
+import Atomics
 import NIOConcurrencyHelpers
 import BSON
 import NIO
@@ -74,25 +75,17 @@ public final class MongoClientSession: @unchecked Sendable {
     //    }
 
     deinit {
-        Task { [sessionManager] in
-            await sessionManager?.releaseSession(serverSession)
-        }
+        sessionManager?.releaseSession(serverSession)
     }
 }
 
 internal final class MongoServerSession: @unchecked Sendable {
     internal let sessionId: SessionIdentifier
     internal let lastUse: Date
-    private let transaction: NIOAtomic<Int> = .makeAtomic(value: 1)
+    private let transaction = ManagedAtomic<Int>(0)
 
     func nextTransactionNumber() -> Int {
-        defer {
-            // Overflow to negative will break new transactions
-            // MongoDB has no solution other than using a different ServerSession
-            transaction.add(1)
-        }
-
-        return transaction.load()
+        transaction.loadThenWrappingIncrement(ordering: .relaxed)
     }
 
     init(for sessionId: SessionIdentifier) {
@@ -107,7 +100,8 @@ internal final class MongoServerSession: @unchecked Sendable {
 }
 
 /// A LIFO (Last In, First Out) pool of sessions with a MongoDB "cluster" of 1 or more hosts
-public final actor MongoSessionManager {
+public final class MongoSessionManager: @unchecked Sendable {
+    private let lock = NSLock()
     private var availableSessions = [MongoServerSession]()
     private let implicitSession: MongoServerSession
     public nonisolated let implicitClientSession: MongoClientSession
@@ -122,12 +116,16 @@ public final actor MongoSessionManager {
     }
 
     internal func releaseSession(_ session: MongoServerSession) {
+        lock.lock()
+        defer { lock.unlock() }
         self.availableSessions.append(session)
     }
 
     /// Retains an existing or generates a new session to MongoDB.
     /// The session is returned to the pool when the ClientSession's `deinit` triggers
     public func retainSession(with options: MongoSessionOptions) -> MongoClientSession {
+        lock.lock()
+        defer { lock.unlock() }
         let serverSession: MongoServerSession
 
         if availableSessions.count > 0 {

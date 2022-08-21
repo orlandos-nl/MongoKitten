@@ -94,7 +94,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
     public var slaveOk = false {
         didSet {
             for connection in pool {
-                connection.connection.slaveOk.store(self.slaveOk)
+                connection.connection.slaveOk.store(self.slaveOk, ordering: .relaxed)
             }
         }
     }
@@ -294,7 +294,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
                 resolver: self.dns,
                 sessionManager: sessionManager
             )
-            connection.slaveOk.store(slaveOk)
+            connection.slaveOk.store(slaveOk, ordering: .relaxed)
 
             /// Ensures we default to the cluster's lowest version
             if let connectionHandshake = await connection.serverHandshake {
