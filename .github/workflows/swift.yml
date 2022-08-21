@@ -14,24 +14,30 @@ jobs:
       fail-fast: false
       matrix:
         swiftVersion: [5.6]
-        os: [ubuntu-20.04, macos-latest]
         
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
-      - if: matrix.os == 'ubuntu-20.04'
         uses: slashmo/install-swift@v0.1.0
         with:
           version: ${{ matrix.swiftVersion }}
-          
-      - uses: docker-practice/actions-setup-docker@master
-      
-      - if: matrix.os == 'macos-latest'
-        run: set -x
-          
       - name: Check out
         uses: actions/checkout@v3
         
       - name: Setup Mongo
         run: docker-compose up -d
+        
       - name: Run tests
         run: swift test
+        
+  test-macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        mongodb-version: ['4,2', '4.4', '5.0']
+    runs-on: macos-latest
+    steps:
+      - name: Start MongoDB
+        uses: supercharge/mongodb-github-action@1.7.0
+        with:
+          mongodb-version: ${{ matrix.mongodb-version }}
+          mongodb-replica-set: mongo-rs
