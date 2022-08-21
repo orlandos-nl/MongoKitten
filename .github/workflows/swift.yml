@@ -39,6 +39,11 @@ jobs:
             mkdir -p ~/.docker/cli-plugins
             ln -sfn /usr/local/opt/docker-compose/bin/docker-compose ~/.docker/cli-plugins/docker-compose
             
+            brew install --cask virtualbox
+            docker-machine create --driver virtualbox default
+            eval "$(docker-machine env default)"
+            docker ps
+            
       - name: Check out  
         uses: actions/checkout@v3
         
