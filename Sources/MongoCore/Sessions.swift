@@ -82,7 +82,7 @@ public final class MongoClientSession: @unchecked Sendable {
 internal final class MongoServerSession: @unchecked Sendable {
     internal let sessionId: SessionIdentifier
     internal let lastUse: Date
-    private let transaction = ManagedAtomic<Int>(0)
+    private let transaction = ManagedAtomic<Int>(1)
 
     func nextTransactionNumber() -> Int {
         transaction.loadThenWrappingIncrement(ordering: .relaxed)
