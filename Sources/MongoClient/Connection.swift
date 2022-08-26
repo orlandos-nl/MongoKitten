@@ -2,6 +2,7 @@ import BSON
 import Foundation
 import MongoCore
 import NIO
+import Atomics
 import Logging
 import Metrics
 import NIOConcurrencyHelpers
@@ -56,7 +57,7 @@ public final actor MongoConnection: @unchecked Sendable {
     }
     
     /// The current request ID, used to generate unique identifiers for MongoDB commands
-    private var currentRequestId: NIOAtomic<Int32> = .makeAtomic(value: 0)
+    private var currentRequestId = ManagedAtomic<Int32>(0)
     internal let context: MongoClientContext
     public var serverHandshake: ServerHandshake? {
         get async { await context.serverHandshake }
@@ -69,10 +70,10 @@ public final actor MongoConnection: @unchecked Sendable {
     public nonisolated var eventLoop: EventLoop { return channel.eventLoop }
     public var allocator: ByteBufferAllocator { return channel.allocator }
     
-    public let slaveOk = NIOAtomic<Bool>.makeAtomic(value: false)
+    public let slaveOk = ManagedAtomic(false)
     
     internal func nextRequestId() -> Int32 {
-        return currentRequestId.add(1)
+        return currentRequestId.loadThenWrappingIncrement(ordering: .relaxed)
     }
     
     /// Creates a connection that can communicate with MongoDB over a channel

@@ -9,27 +9,42 @@ on:
       - master/7.0
 
 jobs:
-  test-linux:
+  linux:
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        dbimage:
-          - mongo
-        runner:
-          - swift:5.6-focal
-          - swiftlang/swift:nightly-main-focal
-    container: ${{ matrix.runner }}
-    runs-on: ubuntu-latest
-    services:
-      mongo-a:
-        image: ${{ matrix.dbimage }}
-      mongo-b:
-        image: ${{ matrix.dbimage }}
+        swiftVersion: [5.6]
+        mongodb-version: ['4.2', '4.4', '5.0']
     steps:
-      - name: Check out
+     - name: Check out  
+       uses: actions/checkout@v3
+        
+     - name: Install Swift
+       uses: slashmo/install-swift@v0.1.0
+       with:
+          version: ${{ matrix.swiftVersion }}
+        
+     - name: Start MongoDB
+       uses: supercharge/mongodb-github-action@1.7.0
+       with:
+         mongodb-version: ${{ matrix.mongodb-version }}
+         mongodb-replica-set: test-rs
+        
+     - name: Run tests
+       run: swift test
+        
+  macos:
+    runs-on: macos-12
+    steps:
+      - name: Install docker
+        uses: docker-practice/actions-setup-docker@master
+            
+      - name: Check out  
         uses: actions/checkout@v3
+        
+      - name: Start Mongo
+        run: docker-compose up -d
+          
       - name: Run tests
         run: swift test
-        env:
-          MONGO_HOSTNAME_A: mongo-a
-          MONGO_HOSTNAME_B: mongo-b
