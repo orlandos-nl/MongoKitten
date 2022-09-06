@@ -208,7 +208,8 @@ public struct ModelUpdateQuery<M: KeyPathQueryableModel & MutableModel> {
     
     public mutating func setField<P: Primitive>(at keyPath: WritableKeyPath<M, QueryableField<P?>>, to newValue: P?) {
         if let newValue = newValue {
-            setField(at: keyPath, to: newValue)
+            let path = M.resolveFieldPath(keyPath).joined(separator: ".")
+            set[path] = newValue
         } else {
             unsetField(at: keyPath)
         }
