@@ -38,6 +38,17 @@ class MeowTests: XCTestCase {
         self.meow = MeowDatabase(mongo)
     }
     
+    func testEncodeDate() throws {
+        struct Entity: Model {
+            @Field var _id: ObjectId
+            @Field var date: Date
+        }
+        
+        let entity = Entity(_id: ObjectId(), date: Date())
+        let document = try BSONEncoder().encode(entity)
+        XCTAssertTrue(document["date"] is Date)
+    }
+    
     func testAggregate() async throws {
         _ = try await meow[User.self].buildCheckedAggregate {
             Match<User> { user in

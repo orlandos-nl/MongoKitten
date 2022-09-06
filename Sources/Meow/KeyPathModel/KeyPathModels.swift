@@ -281,7 +281,8 @@ public struct Field<C: Codable>: Codable {
     }
     
     public func encode(to encoder: Encoder) throws {
-        try _wrappedValue!.encode(to: encoder)
+        var container = encoder.singleValueContainer()
+        try container.encode(_wrappedValue!)
     }
 }
 
