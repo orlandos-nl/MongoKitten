@@ -39,7 +39,7 @@ class MeowTests: XCTestCase {
     }
     
     func testEncodeDate() throws {
-        struct Entity: Model {
+        struct Entity: Model, Equatable {
             @Field var _id: ObjectId
             @Field var date: Date
         }
@@ -47,6 +47,9 @@ class MeowTests: XCTestCase {
         let entity = Entity(_id: ObjectId(), date: Date())
         let document = try BSONEncoder().encode(entity)
         XCTAssertTrue(document["date"] is Date)
+        let entity2 = try BSONDecoder().decode(Entity.self, from: document)
+        XCTAssertEqual(entity._id, entity2._id)
+        XCTAssertEqual(entity.date.timeIntervalSince1970, entity2.date.timeIntervalSince1970, accuracy: 0.001)
     }
     
     func testAggregate() async throws {

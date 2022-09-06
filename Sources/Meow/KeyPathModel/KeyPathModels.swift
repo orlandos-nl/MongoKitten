@@ -271,7 +271,8 @@ public struct Field<C: Codable>: Codable {
         if decoder is TestDecoder {
             self._wrappedValue = try? C(from: decoder)
         } else {
-            self._wrappedValue = try C(from: decoder)
+            let container = try decoder.singleValueContainer()
+            self._wrappedValue = try container.decode(C.self)
         }
     }
     
