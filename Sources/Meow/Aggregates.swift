@@ -360,6 +360,54 @@ extension Lookup {
     }
 }
 
+extension Lookup {
+    public init<Match, Field>(
+        from type: Foreign.Type,
+        localField: KeyPath<Base, QueryableField<Match>>,
+        foreignField: KeyPath<Foreign, QueryableField<Match>>,
+        @AggregateBuilder uncheckedPipeline: () throws -> [AggregateBuilderStage],
+        as asField: KeyPath<Result, QueryableField<Field>>
+    ) rethrows where Base: KeyPathQueryableModel {
+        let localField = FieldPath(components: Base.resolveFieldPath(localField))
+        let foreignField = FieldPath(components: Foreign.resolveFieldPath(foreignField))
+        let asField = FieldPath(components: Result.resolveFieldPath(asField))
+        let pipeline = try uncheckedPipeline()
+        
+        self.lookup = .init(
+            from: type.collectionName,
+            localField: localField,
+            foreignField: foreignField,
+            pipeline: {
+                return pipeline
+            },
+            as: asField
+        )
+    }
+    
+    public init<M, Field, Fields: Sequence>(
+        from type: Foreign.Type,
+        localField: KeyPath<Base, QueryableField<M.Identifier>>,
+        foreignField: KeyPath<Foreign, QueryableField<Reference<M>>>,
+        @AggregateBuilder uncheckedPipeline: () throws -> [AggregateBuilderStage],
+        as asField: KeyPath<Result, QueryableField<Fields>>
+    ) rethrows where Base: KeyPathQueryableModel, Fields.Element == Field {
+        let localField = FieldPath(components: Base.resolveFieldPath(localField))
+        let foreignField = FieldPath(components: Foreign.resolveFieldPath(foreignField))
+        let asField = FieldPath(components: Result.resolveFieldPath(asField))
+        let pipeline = try uncheckedPipeline()
+        
+        self.lookup = .init(
+            from: type.collectionName,
+            localField: localField,
+            foreignField: foreignField,
+            pipeline: {
+                return pipeline
+            },
+            as: asField
+        )
+    }
+}
+
 #if swift(>=5.7)
 extension Lookup {
     public init<Match, Field>(
