@@ -145,7 +145,7 @@ extension Application {
     }
     
     public func initializeMongoDB(connectionString: String) throws {
-        self.mongoDB = try MongoDatabase.lazyConnect(to: connectionStringeventLoopGroup)
+        self.mongoDB = try MongoDatabase.lazyConnect(to: connectionString)
     }
 }
 ```
