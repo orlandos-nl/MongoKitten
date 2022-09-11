@@ -200,9 +200,11 @@ public final actor MongoConnection: @unchecked Sendable {
             sessionId: nil
         )
         
+        await context.setServerHandshake(to: result)
         self.lastHeartbeat = MongoHandshakeResult(sentAt: sent, handshake: result)
         return result
     }
+    
     // `@inline(never)` needed due to the llvm coroutine splitting issue 
     // `https://github.com/apple/swift/issues/60380`.
     @inline(never)
