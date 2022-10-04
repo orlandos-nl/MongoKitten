@@ -215,6 +215,21 @@ public struct ModelUpdateQuery<M: KeyPathQueryableModel & MutableModel> {
         }
     }
     
+    /// Adds an atomic `$set` to the update query that updates the field corresponding to `keyPath` to the `newValue`
+    public mutating func setField<R: RawRepresentable>(at keyPath: WritableKeyPath<M, QueryableField<R>>, to newValue: R) where R.RawValue: Primitive {
+        let path = M.resolveFieldPath(keyPath).joined(separator: ".")
+        set[path] = newValue.rawValue
+    }
+    
+    public mutating func setField<R: RawRepresentable>(at keyPath: WritableKeyPath<M, QueryableField<R?>>, to newValue: R?) where R.RawValue: Primitive {
+        if let newValue = newValue {
+            let path = M.resolveFieldPath(keyPath).joined(separator: ".")
+            set[path] = newValue.rawValue
+        } else {
+            unsetField(at: keyPath)
+        }
+    }
+    
     /// Adds an atomic `$unset` to the update query that updates the field corresponding to `keyPath` to be removed
     public mutating func unsetField<Value>(at keyPath: WritableKeyPath<M, QueryableField<Value?>>) {
         let path = M.resolveFieldPath(keyPath).joined(separator: ".")
