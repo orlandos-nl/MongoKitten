@@ -69,7 +69,7 @@ Alternatively, make use of a DAAS (Database-as-a-service) like [MongoDB Atlas](h
 
 MongoKitten supports the [Swift Package Manager](https://swift.org/getting-started/#using-the-package-manager) for server-side applications. Add MongoKitten to your dependencies in your **Package.swift** file:
 
-`.package(url: "https://github.com/orlandos-nl/MongoKitten.git", from: "7.0.0")`
+`.package(url: "https://github.com/orlandos-nl/MongoKitten.git", from: "7.2.0")`
 
 Also, don't forget to add the product `"MongoKitten"` as a dependency for your target.
 
