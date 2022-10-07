@@ -30,10 +30,6 @@ A couple of MongoKitten based projects have arisen, check them out!
 
 # 🤝 How to help
 
-## Support MongoKitten development
-
-[You can sponsor the creator via GitHub.](https://github.com/sponsors/Joannis). This enables us to provide a higher quality and more documentation as well as building more tools.
-
 #### Backers
 
 <a href="https://github.com/Andrewangeta"><img src="https://avatars2.githubusercontent.com/u/12012815?s=460&u=ed30851422c52b43608cf1b3d654c1c921006910&v=4" width="128" height="128" /></a> <a href="https://github.com/piers12"><img src="https://avatars1.githubusercontent.com/u/37227905?s=460&u=2f33baff0e70c4194c801e1bc9a2b416e8cf5909&v=4" width="128" height="128" /></a> <a href="https://github.com/ultim8p"><img src="https://avatars3.githubusercontent.com/u/4804985?s=460&v=4" width="128" height="128" /></a>
@@ -45,13 +41,6 @@ A couple of MongoKitten based projects have arisen, check them out!
 ## The Company
 
 MongoKitten is developed by [Orlandos](https://orlandos.nl). [Hire us!](mailto:joannis@orlandos.nl)
-
-## Contribute to MongoKitten
-
-- [Donate](https://github.com/sponsors/Joannis) so that we can spend more time on improving the docs.
-- See [CONTRIBUTING.md](CONTRIBUTING.md) for info on contributing to MongoKitten
-- You can help us out by resolving TODOs and replying on issues
-- Of course, all feedback, positive and negative, also really helps to improve the project
 
 # 🕶 Installation
 
