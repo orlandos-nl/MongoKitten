@@ -25,6 +25,10 @@ public class MongoDatabase {
     public let name: String
 
     public let pool: MongoConnectionPool
+    
+    public var logger: Logger {
+        pool.logger
+    }
 
     /// The collection to execute commands on
     public var commandNamespace: MongoNamespace {
@@ -49,8 +53,8 @@ public class MongoDatabase {
     ///     to: "mongodb://localhost/myapp
     /// )
     /// ```
-    public static func lazyConnect(to uri: String) throws -> MongoDatabase {
-        try lazyConnect(to: ConnectionSettings(uri))
+    public static func lazyConnect(to uri: String, logger: Logger = Logger(label: "org.openkitten.mongokitten")) throws -> MongoDatabase {
+        try lazyConnect(to: ConnectionSettings(uri), logger: logger)
     }
 
     /// Connect to the database at the given `uri` using ``MongoCluster``
@@ -64,8 +68,8 @@ public class MongoDatabase {
     ///     to: "mongodb://localhost/myapp
     /// )
     /// ```
-    public static func connect(to uri: String) async throws -> MongoDatabase {
-        try await connect(to: ConnectionSettings(uri))
+    public static func connect(to uri: String, logger: Logger = Logger(label: "org.openkitten.mongokitten")) async throws -> MongoDatabase {
+        try await connect(to: ConnectionSettings(uri), logger: logger)
     }
     
     /// Connect to the database with the given settings _lazily_. You can also use `lazyConnect(_:on:)` to connect by using a connection string.
@@ -76,9 +80,9 @@ public class MongoDatabase {
     ///
     /// - parameter settings: The connection settings, which must include a database name
     public static func lazyConnect(
-        to settings: ConnectionSettings
+        to settings: ConnectionSettings,
+        logger: Logger = Logger(label: "org.openkitten.mongokitten")
     ) throws -> MongoDatabase {
-        let logger = Logger(label: "org.openkitten.mongokitten")
         guard let targetDatabase = settings.targetDatabase else {
             logger.critical("Cannot connect to MongoDB: No target database specified")
             throw MongoKittenError(.cannotConnect, reason: .noTargetDatabaseSpecified)
@@ -94,9 +98,9 @@ public class MongoDatabase {
     ///
     /// - parameter settings: The connection settings, which must include a database name
     public static func connect(
-        to settings: ConnectionSettings
+        to settings: ConnectionSettings,
+        logger: Logger = Logger(label: "org.openkitten.mongokitten")
     ) async throws -> MongoDatabase {
-        let logger = Logger(label: "org.openkitten.mongokitten")
         guard let targetDatabase = settings.targetDatabase else {
             logger.critical("Cannot connect to MongoDB: No target database specified")
             throw MongoKittenError(.cannotConnect, reason: .noTargetDatabaseSpecified)
@@ -222,7 +226,6 @@ extension EventLoopFuture where Value == Optional<Document> {
         }
     }
 }
-
 
 extension MongoConnectionPool {
     public subscript(db: String) -> MongoDatabase {
