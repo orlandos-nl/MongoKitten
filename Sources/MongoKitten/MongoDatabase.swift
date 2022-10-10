@@ -227,7 +227,6 @@ extension EventLoopFuture where Value == Optional<Document> {
     }
 }
 
-
 extension MongoConnectionPool {
     public subscript(db: String) -> MongoDatabase {
         return MongoDatabase(named: db, pool: self)
