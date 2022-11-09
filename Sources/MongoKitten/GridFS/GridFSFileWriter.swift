@@ -44,10 +44,6 @@ public final class GridFSFileWriter {
         var source = data
         buffer.writeBuffer(&source)
         
-        guard buffer.readableBytes >= chunkSize else {
-            return
-        }
-        
         try await self.flush()
     }
     
@@ -75,19 +71,19 @@ public final class GridFSFileWriter {
     public func flush(finalize: Bool = false) async throws {
         let chunkSize = Int(self.chunkSize) // comparison here is always to int
         
-        guard buffer.readableBytes > 0, finalize || buffer.readableBytes >= chunkSize else {
-            return
+        while buffer.readableBytes > 0, finalize || buffer.readableBytes >= chunkSize {
+            guard let slice = buffer.readSlice(length: buffer.readableBytes >= chunkSize ? chunkSize : buffer.readableBytes) else {
+                throw MongoKittenError(.invalidGridFSChunk, reason: nil)
+            }
+            
+            let chunk = GridFSChunk(filesId: fileId, sequenceNumber: nextChunkNumber, data: .init(buffer: slice))
+            nextChunkNumber += 1
+            let encoded = try GridFSFileWriter.encoder.encode(chunk)
+            
+            try await fs.chunksCollection.insert(encoded)
+            try await self.flush(finalize: finalize)
         }
         
-        guard let slice = buffer.readSlice(length: buffer.readableBytes >= chunkSize ? chunkSize : buffer.readableBytes) else {
-            throw MongoKittenError(.invalidGridFSChunk, reason: nil)
-        }
-        
-        let chunk = GridFSChunk(filesId: fileId, sequenceNumber: nextChunkNumber, data: .init(buffer: slice))
-        nextChunkNumber += 1
-        let encoded = try GridFSFileWriter.encoder.encode(chunk)
-        
-        try await fs.chunksCollection.insert(encoded)
-        try await self.flush(finalize: finalize)
+        buffer = buffer.slice()
     }
 }
