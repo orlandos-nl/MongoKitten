@@ -1,10 +1,8 @@
 <p align="center">
 
-![OpenKitten](assets/ReadmeHeader.svg)
+![](assets/ReadmeHeader.svg)
 
-![OpenKitten](assets/Descriptions.gif)
-
-[Installation](#-installation) | [Tutorial](https://www.raywenderlich.com/10521463-server-side-swift-with-mongodb-getting-started) | [Basic usage](#-basic-usage) | [About BSON](#-about-bson--documents) | [Codable](#-codable) | [Community](#-community) | [How to help](#-how-to-help)
+![](assets/Descriptions.gif)
 
 </p>
 
@@ -16,10 +14,6 @@ A fast, pure swift [MongoDB](https://mongodb.com) driver based on [Swift NIO](ht
 
 [Join our Discord](https://discord.gg/H6799jh) for any questions and friendly banter.
 
-[Read the Docs](https://orlandos.nl/docs/mongokitten/) at our sponsor's website.
-
-[Browse the API reference](https://swiftinit.org/reference/mongokitten) on Swiftinit.
-
 ### Projects
 
 A couple of MongoKitten based projects have arisen, check them out!
@@ -27,20 +21,6 @@ A couple of MongoKitten based projects have arisen, check them out!
 - [MongoQueue](https://github.com/orlandos-nl/MongoQueue)
 - [Vapor's Fluent + MongoDB](https://github.com/vapor/fluent-mongo-driver)
 - [MongoDB + Vapor Queues](https://github.com/vapor-community/queues-mongo-driver)
-
-# 🤝 How to help
-
-#### Backers
-
-<a href="https://github.com/Andrewangeta"><img src="https://avatars2.githubusercontent.com/u/12012815?s=460&u=ed30851422c52b43608cf1b3d654c1c921006910&v=4" width="128" height="128" /></a> <a href="https://github.com/piers12"><img src="https://avatars1.githubusercontent.com/u/37227905?s=460&u=2f33baff0e70c4194c801e1bc9a2b416e8cf5909&v=4" width="128" height="128" /></a> <a href="https://github.com/ultim8p"><img src="https://avatars3.githubusercontent.com/u/4804985?s=460&v=4" width="128" height="128" /></a>
-
-## The App
-
-[MongoKitten App](https://apps.apple.com/us/app/mongokitten/id1484086700) can help you browse your dataset, support customers and debug complex aggregates.
-
-## The Company
-
-MongoKitten is developed by [Orlandos](https://orlandos.nl). [Hire us!](mailto:joannis@orlandos.nl)
 
 # 🕶 Installation
 
@@ -50,13 +30,13 @@ If you haven't already, you should set up a MongoDB server to get started with M
 
 For development, this can be on your local machine.
 
-Install MongoDB for [Ubuntu](https://docs.mongodb.com/master/tutorial/install-mongodb-on-ubuntu/), [macOS](https://docs.mongodb.com/master/tutorial/install-mongodb-on-os-x/) or [any other supported Linux Distro](https://docs.mongodb.com/master/administration/install-on-linux/).
+Install MongoDB for [Ubuntu](https://www.mongodb.com/docs/v6.0/tutorial/install-mongodb-on-ubuntu/), [macOS](hhttps://www.mongodb.com/docs/v6.0/tutorial/install-mongodb-on-os-x/) or any other supported Linux Distro.
 
-Alternatively, make use of a DAAS (Database-as-a-service) like [MongoDB Atlas](https://cloud.mongodb.com), [MLab](https://mlab.com), [IBM Cloud](https://cloud.ibm.com/catalog/services/databases-for-mongodb) or any other of the many services.
+Alternatively, make use of a DAAS (Database-as-a-service) like [MongoDB Atlas](https://cloud.mongodb.com).
 
 ## Add MongoKitten to your Swift project 🚀
 
-MongoKitten supports the [Swift Package Manager](https://swift.org/getting-started/#using-the-package-manager) for server-side applications. Add MongoKitten to your dependencies in your **Package.swift** file:
+MongoKitten uses the [Swift Package Manager](https://swift.org/getting-started/#using-the-package-manager). Add MongoKitten to your dependencies in your **Package.swift** file:
 
 `.package(url: "https://github.com/orlandos-nl/MongoKitten.git", from: "7.2.0")`
 
@@ -85,9 +65,7 @@ Meow is an ORM that resides in this same package.
 
 # 🚲 Basic usage
 
-Check out my [Ray Wenderlich Article](https://www.raywenderlich.com/10521463-server-side-swift-with-mongodb-getting-started) to learn the basics!
-
-## Connect to your database
+First, connect to a database:
 
 ```swift
 import MongoKitten
@@ -142,6 +120,8 @@ extension Application {
 And make sure to call `app.initializeMongoDB`!
 
 ## CRUD (Create, Read, Update, Delete)
+
+Before doing operations, you need access to a collection where you store your models. This is MongoDB's equivalent to a table.
 
 ```swift
 // The collection "users" in your database
@@ -203,13 +183,15 @@ users.findOne(["username": "kitty"])
 
 Find operations return a `Cursor`. A cursor is a pointer to the result set of a query. You can obtain the results from a cursor by iterating over the results, or by fetching one or all of the results.
 
-Cursors will close automatically if the enclosing `Task` is cancelled
+Cursors will close automatically if the enclosing `Task` is cancelled.
 
 ##### Fetching results
 
 You can fetch all results as an array:
 
-`let users = try await users.find().drain()`
+```swift
+let users = try await users.find().drain()
+```
 
 Note that this is potentially dangerous with very large result sets. Only use `drain()` when you are sure that the entire result set of your query fits comfortably in memory.
 
@@ -414,3 +396,7 @@ app.get("users", ":id") { req async throws -> User in
 # ☠️ License
 
 MongoKitten is licensed under the MIT license.
+
+#### Backers
+
+<a href="https://github.com/ultim8p"><img src="https://avatars3.githubusercontent.com/u/4804985?s=460&v=4" width="128" height="128" /></a>
