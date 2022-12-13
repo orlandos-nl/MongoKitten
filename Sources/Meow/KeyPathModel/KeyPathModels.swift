@@ -287,8 +287,17 @@ public struct Field<C: Codable>: Codable {
     }
 }
 
-extension Field: Equatable where C: Equatable {}
-extension Field: Hashable where C: Hashable {}
+extension Field: Equatable where C: Equatable {
+    public static func ==(lhs: Self, rhs: Self) -> Bool {
+        lhs.wrappedValue == rhs.wrappedValue
+    }
+}
+
+extension Field: Hashable where C: Hashable {
+    public func hash(into hasher: inout Hasher) {
+        wrappedValue.hash(into: &hasher)
+    }
+}
 
 /// A property wrapper helper type that holds a reference to another entity
 ///

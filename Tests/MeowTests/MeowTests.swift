@@ -2,14 +2,14 @@
 import XCTest
 @testable import Meow
 
-struct UserProfile: Codable {
+struct UserProfile: Codable, Equatable {
     @Field var firstName: String?
     @Field var lastName: String?
     
     init() {}
 }
 
-struct User: Model {
+struct User: Model, Equatable {
     @Field var _id: ObjectId
     @Field var email: String
     @Field var password: String
@@ -99,7 +99,43 @@ class MeowTests: XCTestCase {
         
         XCTAssertEqual(count, 1)
     }
-    
+
+    /// Given a model, this test will insert it into the database and then fetch it again.
+    func testInsertModel() async throws {
+        let model = User(email: "joannis@orlandos.nl", password: "test")
+        try await model.save(in: meow)
+
+        let fetchedModel = try await meow[User.self].findOne { user in
+            user.$email == model.email
+        }
+
+        XCTAssertEqual(fetchedModel, model)
+    }
+
+    /// Given a model, this test will delete it from the database and then try to fetch it again.
+    func testDeleteModel() async throws {
+        let model: User = User(email: "joannis@orlandos.nl", password: "test")
+        try await model.save(in: meow)
+
+        // Check if the model is in the database
+        let fetchedModel = try await meow[User.self].findOne { user in
+            user.$email == model.email
+        }
+        
+        XCTAssertEqual(fetchedModel, model)
+
+        try await meow[User.self].deleteOne { user in
+            user.$email == model.email
+        }
+        
+        // Check if the model is not in the database
+        let fetchedModel2 = try await meow[User.self].findOne { user in
+            user.$email == model.email
+        }
+
+        XCTAssertNil(fetchedModel2)
+    }
+
     func testModelInstantiation() throws {
         let user = User(email: "joannis@orlandos.nl", password: "test")
         XCTAssertEqual(user.password, "test")

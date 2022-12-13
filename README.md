@@ -8,7 +8,7 @@
 
 A fast, pure swift [MongoDB](https://mongodb.com) driver based on [Swift NIO](https://github.com/apple/swift-nio) built for Server Side Swift. It features a great API and a battle-tested core. Supporting both MongoDB in server and embedded environments.
 
-⭐️ Please leave a star to support MongoKitten – it really helps!
+MongoKitten is a fully asynchronous driver, which means that it doesn't block any threads. This also means that it can be used in any asynchronous environment, such as Vapor.
 
 # 🐈 Community & Docs
 
@@ -26,7 +26,7 @@ A couple of MongoKitten based projects have arisen, check them out!
 
 ## Set up MongoDB server
 
-If you haven't already, you should set up a MongoDB server to get started with MongoKitten
+If you haven't already, you should set up a MongoDB server to get started with MongoKitten. MongoKitten supports MongoDB 3.6 and above.
 
 For development, this can be on your local machine.
 
@@ -239,7 +239,7 @@ From the example above, we can learn a few things:
 - BSON primitives include core Swift types like `Int`, `String`, `Double` and `Bool`, as well as `Date` from Foundation
 - BSON also features some unique types, like `ObjectId`
 
-## Just another collection
+## Just Another Collection
 
 Like normal arrays and dictionaries, `Document` conforms to the `Collection` protocol. Because of this, you can often directly work with your `Document`, using the APIs you already know from `Array` and `Dictionary`. For example, you can iterate over a document using a for loop:
 

@@ -215,7 +215,8 @@ class CrudTests : XCTestCase {
             }
         }
     }
-    
+
+    /// After creating a large number of dummy accounts, this test will iterate through the collection and confirm the count is correct
     func testBulkReadDummyAccounts() async throws {
         let dummyAccounts = try await testBulkCreateDummyAccounts()
         let schema = mongo[DummyAccount.collectionName]
@@ -237,7 +238,25 @@ class CrudTests : XCTestCase {
         let count = await counter.count
         XCTAssertEqual(count, dummyAccounts.count)
     }
-    
+
+    /// This test will create a collection for dummy accounts. It will ensure uniqueness of the name field by creating a unique index on the name field.
+    /// It will then create a number of dummy accounts and confirm the count is correct. It will then delete the collection.
+    func testIndexCreation() async throws {
+        let dummyAccounts = try await testBulkCreateDummyAccounts()
+        let schema = mongo[DummyAccount.collectionName]
+
+        try await schema.buildIndexes {
+            UniqueIndex(
+                named: "unique-name",
+                field: "name"
+            )
+        }
+        
+        let deleteReply = try await schema.deleteAll(where: [:])
+        XCTAssertEqual(deleteReply.ok, 1)
+        XCTAssertEqual(deleteReply.deletes, dummyAccounts.count)
+    }
+
     func testUpdateDummyAccounts() async throws {
         let testDummyAccounts = try await testBulkCreateDummyAccounts()
         let testDummyAccount = testDummyAccounts[Int.random(in: 0...testDummyAccounts.count)]
