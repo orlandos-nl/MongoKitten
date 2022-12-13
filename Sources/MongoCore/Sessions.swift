@@ -4,6 +4,7 @@ import NIOConcurrencyHelpers
 import BSON
 import NIO
 
+/// An identifier for a session that can be used to identify a session across multiple connections
 public struct SessionIdentifier: Codable, Sendable {
     public let id: Binary
 
@@ -32,6 +33,7 @@ public struct SessionIdentifier: Codable, Sendable {
     }
 }
 
+/// A MongoDB session that can be used to track causality across multiple connections
 public final class MongoClientSession: @unchecked Sendable {
     private let serverSession: MongoServerSession
     private weak var sessionManager: MongoSessionManager?
@@ -53,6 +55,7 @@ public final class MongoClientSession: @unchecked Sendable {
         self.clusterTime = nil
     }
     
+    /// Starts a transaction on this session with the given options
     public func startTransaction(autocommit: Bool) -> MongoTransaction {
         return MongoTransaction(
             number: serverSession.nextTransactionNumber(),
@@ -75,6 +78,7 @@ public final class MongoClientSession: @unchecked Sendable {
     //    }
 
     deinit {
+        // Release the session back to the pool
         sessionManager?.releaseSession(serverSession)
     }
 }

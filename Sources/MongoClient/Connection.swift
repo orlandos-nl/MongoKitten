@@ -14,10 +14,18 @@ import NIOTransportServices
 import NIOSSL
 #endif
 
+/// The result of a handshake, containing the handshake and the time it took to receive the reply.
 public struct MongoHandshakeResult {
+    /// The time the handshake was sent
     public let sent: Date
+
+    /// The time the handshake was received
     public let received: Date
+
+    /// The handshake
     public let handshake: ServerHandshake
+
+    /// The time it took to receive the handshake
     public var interval: Double {
         received.timeIntervalSince(sent)
     }
@@ -29,14 +37,21 @@ public struct MongoHandshakeResult {
     }
 }
 
+/// A connection to a MongoDB server. 
 public final actor MongoConnection: @unchecked Sendable {
-    /// The NIO channel
+    /// The NIO channel used for communication
     internal let channel: Channel
     public nonisolated var logger: Logger { context.logger }
+
     var queryTimer: Metrics.Timer?
+
+    /// The last heartbeat result received
     public internal(set) var lastHeartbeat: MongoHandshakeResult?
+
+    /// The timeout for queries, defaults to 30 seconds
     public var queryTimeout: TimeAmount? = .seconds(30)
     
+    /// Whether metrics are enabled. When enabled, metrics will be collected for queries using the `Metrics` library.
     public var isMetricsEnabled = false {
         didSet {
             if isMetricsEnabled, !oldValue {
@@ -49,9 +64,13 @@ public final actor MongoConnection: @unchecked Sendable {
     
     /// A LIFO (Last In, First Out) holder for sessions
     public let sessionManager: MongoSessionManager
+
+    /// The implicit session, used for operations that don't require a session
     public nonisolated var implicitSession: MongoClientSession {
         return sessionManager.implicitClientSession
     }
+
+    /// The implicit session ID, used for operations that don't require a session
     public nonisolated var implicitSessionId: SessionIdentifier {
         return implicitSession.sessionId
     }
@@ -59,6 +78,8 @@ public final actor MongoConnection: @unchecked Sendable {
     /// The current request ID, used to generate unique identifiers for MongoDB commands
     private var currentRequestId = ManagedAtomic<Int32>(0)
     internal let context: MongoClientContext
+
+    /// The handshake received from the server
     public var serverHandshake: ServerHandshake? {
         get async { await context.serverHandshake }
     }
@@ -70,6 +91,7 @@ public final actor MongoConnection: @unchecked Sendable {
     public nonisolated var eventLoop: EventLoop { return channel.eventLoop }
     public var allocator: ByteBufferAllocator { return channel.allocator }
     
+    /// Whether this connection is a slaveOk connection, meaning it can read from secondaries
     public let slaveOk = ManagedAtomic(false)
     
     internal func nextRequestId() -> Int32 {
@@ -83,11 +105,22 @@ public final actor MongoConnection: @unchecked Sendable {
         self.context = context
     }
     
+    /// Registers MongoKitten's handlers on the channel
     public static func addHandlers(to channel: Channel, context: MongoClientContext) -> EventLoopFuture<Void> {
         let parser = ClientConnectionParser(context: context)
         return channel.pipeline.addHandler(ByteToMessageHandler(parser))
     }
     
+    /// Connects to a MongoDB server using the given settings.
+    /// 
+    ///     let connection = try await MongoConnection.connect(to: ConnectionSettings("mongodb://localhost:27017"))
+    /// 
+    /// - Parameters:
+    /// - settings: The settings to use for connecting
+    /// - logger: The logger to use for logging
+    /// - resolver: The resolver to use for resolving hostnames
+    /// - clientDetails: The client details to use for the handshake
+    /// - Returns: A connection to the MongoDB server
     public static func connect(
         settings: ConnectionSettings,
         logger: Logger = Logger(label: "org.openkitten.mongokitten.connection"),
@@ -246,6 +279,7 @@ public final actor MongoConnection: @unchecked Sendable {
         return try await promise.futureResult.get()
     }
     
+    /// Close the connection to the MongoDB server
     public func close() async {
         _ = try? await self.channel.close()
     }

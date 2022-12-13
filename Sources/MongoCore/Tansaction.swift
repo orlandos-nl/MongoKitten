@@ -1,6 +1,11 @@
+/// A MongoDB transaction that can be used to execute multiple operations in a single transaction.
 public final actor MongoTransaction: Sendable {
+    /// The transaction number
     public nonisolated let number: Int
+
     private var _startTransaction = true
+
+    /// Whether the transaction should be automatically committed
     public nonisolated let autocommit: Bool
     
     init(number: Int, autocommit: Bool) {
@@ -8,6 +13,7 @@ public final actor MongoTransaction: Sendable {
         self.autocommit = autocommit
     }
     
+    /// Whether the transaction should be started
     public func startTransaction() -> Bool {
         let startTransaction = self._startTransaction
         self._startTransaction = false

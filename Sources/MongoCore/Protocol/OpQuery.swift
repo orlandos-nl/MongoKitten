@@ -1,6 +1,7 @@
 import NIO
 import BSON
 
+/// The flags for an OP_QUERY message
 public struct OpQueryFlags: OptionSet {
     public var rawValue: UInt32
     
@@ -29,15 +30,31 @@ public struct OpQueryFlags: OptionSet {
     //    static let partial = Self(rawValue: 1 << 7)
 }
 
+/// An OP_QUERY message is used to query a collection. The message contains a full collection name, a query document, and a projection document.
+/// The server will respond with an OP_REPLY message.
 public struct OpQuery: MongoRequestMessage {
+    /// The header for this message, see `MongoMessageHeader`
     public var header: MongoMessageHeader
+
+    /// The flags for this message, see `OpQueryFlags`
     public var flags: OpQueryFlags
+
+    /// The full collection name, including the database name and the collection name separated by a dot
     public var fullCollectionName: String
+
+    /// The number of documents to skip before returning results
     public var numberToSkip: Int32
+
+    /// The number of documents to return
     public var numberToReturn: Int32
+
+    /// The query document
     public var query: Document
+
+    /// The projection document, if any
     public var projection: Document?
     
+    /// Creates a new OP_QUERY message
     public init(
         header: MongoMessageHeader,
         flags: OpQueryFlags,
@@ -56,6 +73,7 @@ public struct OpQuery: MongoRequestMessage {
         self.projection = projection
     }
     
+    /// Creates a new OP_QUERY message
     public init(query: Document, requestId: Int32, fullCollectionName: String, flags: OpQueryFlags = []) {
         // TODO: Read query int32 header
         self.header = MongoMessageHeader(
@@ -72,6 +90,7 @@ public struct OpQuery: MongoRequestMessage {
         self.projection = nil
     }
     
+    /// Reads an OP_QUERY message from a byte buffer
     public init(reading buffer: inout ByteBuffer, header: MongoMessageHeader) throws {
         guard header.opCode == .query else {
             throw MongoProtocolParsingError(reason: .unsupportedOpCode)
@@ -104,6 +123,7 @@ public struct OpQuery: MongoRequestMessage {
         )
     }
     
+    /// Writes this message to a byte buffer
     public func write(to out: inout ByteBuffer) {
         out.writeMongoHeader(header)
         out.writeInteger(flags.rawValue, endianness: .little)

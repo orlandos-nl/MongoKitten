@@ -1,3 +1,4 @@
+/// An error that occurs when a connection fails during authentication
 public struct MongoAuthenticationError: Error, CustomStringConvertible {
     public enum Reason: String, Codable, CustomStringConvertible, Equatable {
         case missingServerHandshake
@@ -29,6 +30,8 @@ public struct MongoAuthenticationError: Error, CustomStringConvertible {
     }
 
     public let description = "An error occurred while connecting to MongoDB"
+    
+    /// The reason for the error
     public let reason: Reason
 
     internal init(reason: Reason) {

@@ -3,11 +3,17 @@ import MongoCore
 import MongoKittenCore
 import Foundation
 
+/// A stage in an aggregation pipeline
 public protocol AggregateBuilderStage {
+    /// The stage as a document to be sent to the server
     var stage: Document { get }
+
+    /// The minimal version required for this stage to work
     var minimalVersionRequired: WireVersion? { get }
 }
 
+/// A $match stage in an aggregation pipeline, used to filter documents
+/// - SeeAlso: https://docs.mongodb.com/manual/reference/operator/aggregation/match/
 public struct Match: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = nil
@@ -21,6 +27,8 @@ public struct Match: AggregateBuilderStage {
     }
 }
 
+/// An $addFields stage in an aggregation pipeline, used to add new fields to documents
+/// - SeeAlso: https://docs.mongodb.com/manual/reference/operator/aggregation/addFields/
 public struct AddFields: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = .mongo3_4
@@ -30,6 +38,8 @@ public struct AddFields: AggregateBuilderStage {
     }
 }
 
+/// A $group stage in an aggregation pipeline, used to group documents
+/// - SeeAlso: https://docs.mongodb.com/manual/reference/operator/aggregation/group/
 public struct Project: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion?
@@ -49,6 +59,8 @@ public struct Project: AggregateBuilderStage {
     }
 }
 
+/// A $sort stage in an aggregation pipeline, used to sort documents
+/// - SeeAlso: https://docs.mongodb.com/manual/reference/operator/aggregation/sort/
 public struct Sort: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = nil
@@ -68,6 +80,8 @@ public struct Sort: AggregateBuilderStage {
     }
 }
 
+/// A $count stage in an aggregation pipeline, used to count documents and add the count to a field
+/// - SeeAlso: https://docs.mongodb.com/manual/reference/operator/aggregation/count/
 public struct Count: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = .mongo3_4
@@ -77,6 +91,8 @@ public struct Count: AggregateBuilderStage {
     }
 }
 
+/// A $skip stage in an aggregation pipeline, used to skip a number of documents
+/// - SeeAlso: https://docs.mongodb.com/manual/reference/operator/aggregation/skip/
 public struct Skip: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = nil
@@ -86,6 +102,8 @@ public struct Skip: AggregateBuilderStage {
     }
 }
 
+/// An $out stage in an aggregation pipeline, used to write the results to a collection
+/// - SeeAlso: https://docs.mongodb.com/manual/reference/operator/aggregation/out/
 public struct Out: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = nil
@@ -98,6 +116,8 @@ public struct Out: AggregateBuilderStage {
     }
 }
 
+/// A $replaceRoot stage in an aggregation pipeline, used to replace the root document with a new one
+/// - SeeAlso: https://docs.mongodb.com/manual/reference/operator/aggregation/replaceRoot/
 public struct ReplaceRoot: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = .mongo3_4
@@ -136,6 +156,8 @@ public struct Limit: AggregateBuilderStage {
     }
 }
 
+/// The `sample` aggregation randomly selects the given number of documents
+/// - SeeAlso: https://docs.mongodb.com/manual/reference/operator/aggregation/sample/
 public struct Sample: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = .mongo3_2

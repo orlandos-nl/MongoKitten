@@ -4,6 +4,10 @@ import BSON
 fileprivate let knownBits: UInt32 = 0b11000000_00000001_00000000_00000000
 fileprivate let unknownBits: UInt32 = knownBits ^ .max
 
+/// The flags field is a bit vector. The following bits are defined:
+/// checksumPresent (0): The message ends with 4 bytes containing a CRC-32C [1] checksum. See Checksum for details.
+/// moreToCome (1): Another message will follow this one without further action from the receiver. The receiver MUST NOT send another message until receiving one with moreToCome set to 0 as sends may block, causing deadlock. Requests with the moreToCome bit set will not receive a reply. Replies will only have this set in response to requests with the exhaustAllowed bit set.
+/// exhaustAllowed (16): The client is prepared for multiple replies to this request using the moreToCome bit. The server will never produce replies with the moreToCome bit set unless the request has this bit set.
 public struct OpMessageFlags: OptionSet, Sendable {
     public var rawValue: UInt32
     
@@ -28,16 +32,28 @@ public struct OpMessageFlags: OptionSet, Sendable {
     public static let exhaustAllowed = OpMessageFlags(rawValue: 1 << 16)
 }
 
-
-public struct OpMessage: MongoRequestMessage, MongoResponseMessage , Sendable{
+/// The OP_MSG message is used to send a command to the database. It is used for all commands, including queries, getMore, insert, update, delete, killCursors, and commands introduced in the future.
+public struct OpMessage: MongoRequestMessage, MongoResponseMessage , Sendable {
+    /// The section type is a single integer that identifies the type of section. The following types are defined:
+    /// body (0): The body section contains a single document. The body section MUST be the first section in the message. The body section MUST NOT be followed by a second body section. The body section MUST NOT be empty.
+    /// sequence (1): The sequence section contains a sequence of documents. The sequence section MUST NOT be empty.
     public enum SectionType: Int32, Sendable {
+        /// The body section contains a single document. The body section MUST be the first section in the message. The body section MUST NOT be followed by a second body section. The body section MUST NOT be empty.
         case body = 0
+
+        /// The sequence section contains a sequence of documents. The sequence section MUST NOT be empty.
         case sequence = 1
     }
     
+    /// A sequence section contains a sequence of documents. The sequence section MUST NOT be empty.
     public struct Sequence: Sendable {
+        /// The size of the sequence section, including the size field, the sequence identifier, and the documents. The size field MUST be the first field in the sequence section.
         public var size: Int32
+
+        /// The sequence identifier is a string that identifies the sequence. The sequence identifier MUST be the second field in the sequence section.
         public var sequenceIdentifier: String
+
+        /// The documents are a sequence of documents. The documents MUST be the third field in the sequence section.
         public var documents: [Document]
         
         public init(size: Int32, sequenceIdentifier: String, documents: [Document]) {
@@ -51,13 +67,23 @@ public struct OpMessage: MongoRequestMessage, MongoResponseMessage , Sendable{
     }
     
     public enum Section: Sendable {
+        /// The body section contains a single document. The body section MUST be the first section in the message. The body section MUST NOT be followed by a second body section. The body section MUST NOT be empty.
         case body(Document)
+
+        /// The sequence section contains a sequence of documents. The sequence section MUST NOT be empty.
         case sequence(Sequence)
     }
     
+    /// The header is a standard message header. The opCode field MUST be set to 2013.
     public var header: MongoMessageHeader
+
+    /// The flags field is a bit vector.
     public var flags: OpMessageFlags
+
+    /// The sections field is a sequence of sections. The sections field MUST NOT be empty.
     public var sections: [Section]
+
+    /// The checksum field is a 32-bit unsigned integer. The checksum field MUST be the last field in the message. The checksum field MUST be present if the checksumPresent bit is set in the flags field.
     public var checksum: UInt32?
     
     public init(header: MongoMessageHeader, flags: OpMessageFlags, sections: [Section], checksum: UInt32?) {
@@ -168,6 +194,7 @@ public struct OpMessage: MongoRequestMessage, MongoResponseMessage , Sendable{
         try checkChecksum()
     }
     
+    /// Writes the message to the given buffer.
     public func write(to out: inout ByteBuffer) {
         out.writeMongoHeader(header)
         out.writeInteger(flags.rawValue, endianness: .little)

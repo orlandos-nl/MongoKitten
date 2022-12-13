@@ -1,25 +1,32 @@
 import NIO
 import Foundation
 
-
 extension CodingUserInfoKey {
     static let gridFS = CodingUserInfoKey(rawValue: "GridFS")!
 }
 
+/// A GridFS Bucket that can be used to upload and download files to and from GridFS in a MongoDB database.
+/// 
 /// [See the specification](https://github.com/mongodb/specifications/blob/master/source/gridfs/gridfs-spec.rst#indexes)
 public final class GridFSBucket {
-    public static let defaultChunkSize: Int32 = 261_120 // 255 kB
+    /// The default chunk size for GridFS files in bytes (255 kB)
+    public static let defaultChunkSize: Int32 = 261_120
     
+    /// The files collection for this GridFS bucket. This is where the file metadata is stored.
     public let filesCollection: MongoCollection
+
+    /// The chunks collection for this GridFS bucket. This is where the actual file data is stored.
     public let chunksCollection: MongoCollection
     
     private var didEnsureIndexes = false
     
+    /// Creates a new GridFSBucket for the given database and collection name (defaulting to "fs")
     public init(named name: String = "fs", in database: MongoDatabase) {
         self.filesCollection = database[name + ".files"]
         self.chunksCollection = database[name + ".chunks"]
     }
     
+    /// Uploads a file to GridFS and returns the GridFSFile that was created for it.
     public func upload(_ data: Data, filename: String? = nil, id: Primitive = ObjectId(), metadata: Document? = nil, chunkSize: Int32 = GridFSBucket.defaultChunkSize) async throws -> GridFSFile {
         var buffer = GridFSFileWriter.allocator.buffer(capacity: data.count)
         buffer.writeBytes(data)
@@ -28,11 +35,13 @@ public final class GridFSBucket {
         return try await writer.finalize(filename: filename, metadata: metadata)
     }
     
+    /// Uploads a file to GridFS and returns the GridFSFile that was created for it.
     public func upload(_ buffer: ByteBuffer, filename: String? = nil, id: Primitive = ObjectId(), metadata: Document? = nil, chunkSize: Int32 = GridFSBucket.defaultChunkSize) async throws -> GridFSFile {
         let writer = try await GridFSFileWriter(fs: self, fileId: id, chunkSize: chunkSize, buffer: buffer)
         return try await writer.finalize(filename: filename, metadata: metadata)
     }
     
+    /// Lists all files in this GridFS bucket that match the given query. The query is a MongoDB query document.
     public func find(_ query: Document) -> MappedCursor<FindQueryBuilder, GridFSFile> {
         var decoder = BSONDecoder()
         decoder.userInfo = [
@@ -44,6 +53,7 @@ public final class GridFSBucket {
             .decode(GridFSFile.self, using: decoder)
     }
     
+    /// Finds a single file in this GridFS bucket that matches the given query. The query is a MongoDB query document.
     public func findFile(_ query: Document) async throws -> GridFSFile? {
         var decoder = BSONDecoder()
         decoder.userInfo = [
@@ -57,10 +67,12 @@ public final class GridFSBucket {
             .firstResult()
     }
     
+    /// Finds a single file in this GridFS bucket that matches `_id == id``.
     public func findFile(byId id: Primitive) async throws -> GridFSFile? {
         return try await self.findFile(["_id": id])
     }
     
+    /// Deletes a file from GridFS and all of its chunks.
     public func deleteFile(byId id: Primitive) async throws {
         try await self.chunksCollection.deleteAll(where: ["files_id": id])
         try await self.filesCollection.deleteAll(where: ["_id": id])

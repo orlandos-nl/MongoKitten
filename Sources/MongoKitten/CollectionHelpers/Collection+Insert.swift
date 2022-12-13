@@ -2,11 +2,13 @@ import NIO
 import MongoCore
 
 extension MongoCollection {
+    /// Creates a new document in this collection with the given document.
     @discardableResult
     public func insert(_ document: Document, writeConcern: WriteConcern? = nil) async throws -> InsertReply {
         return try await insertMany([document], writeConcern: writeConcern)
     }
     
+    /// Creates new documents in this collection with the given documents.
     @discardableResult
     public func insertManyEncoded<E: Encodable>(_ models: [E], writeConcern: WriteConcern? = nil) async throws -> InsertReply {
         let documents = try models.map { model in
@@ -22,6 +24,7 @@ extension MongoCollection {
         return try await insert(document, writeConcern: writeConcern)
     }
     
+    /// Creates new documents in this collection with the given documents.
     @discardableResult
     public func insertMany(_ documents: [Document], writeConcern: WriteConcern? = nil) async throws -> InsertReply {
         let connection = try await pool.next(for: .writable)

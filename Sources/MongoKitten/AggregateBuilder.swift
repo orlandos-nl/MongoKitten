@@ -1,6 +1,7 @@
 import MongoClient
 import NIO
 
+/// A result builder for the `aggregate` command which allows you to create an `AggregateBuilderPipeline` with a fluent syntax
 @resultBuilder
 public struct AggregateBuilder {
     public static func buildBlock() -> AggregateBuilderPipeline {

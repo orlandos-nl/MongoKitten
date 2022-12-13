@@ -1,6 +1,7 @@
 import NIO
 import BSON
 
+/// The flags for an OpReply, used for legacy wire protocols
 public struct OpReplyFlags: OptionSet, Sendable {
     public var rawValue: UInt32
     
@@ -23,12 +24,24 @@ public struct OpReplyFlags: OptionSet, Sendable {
     // The rest is reserved (will likely be left unused)
 }
 
+/// A reply from the server, used for legacy wire protocols. This is the response to an OP_QUERY message.
 public struct OpReply: MongoResponseMessage, Sendable {
+    /// The header for this message, see `MongoMessageHeader`
     public var header: MongoMessageHeader
+
+    /// The cursor id, used for GET_MORE requests
     public var cursorId: Int64
+
+    /// The documents returned by the server
     public var documents: [Document]
+
+    /// The starting index of the documents returned by the server
     public var startingFrom: Int32
+
+    /// The number of documents returned by the server
     public var numberReturned: Int32
+
+    /// The flags for this reply, see `OpReplyFlags`
     public var flags: OpReplyFlags
     
     public init(

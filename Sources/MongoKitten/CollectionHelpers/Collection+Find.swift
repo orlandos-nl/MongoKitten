@@ -3,6 +3,9 @@ import MongoClient
 import MongoKittenCore
 
 extension MongoCollection {
+    /// Finds documents in this collection matching the given query. If no query is given, it returns all documents in the collection.
+    /// - Parameter query: The query to match documents against
+    /// - Returns: A cursor to iterate over the results
     public func find(_ query: Document = [:]) -> FindQueryBuilder {
         return FindQueryBuilder(
             command: FindCommand(
@@ -16,26 +19,44 @@ extension MongoCollection {
         )
     }
     
+    /// Finds documents in this collection matching the given query. If no query is given, it returns all documents in the collection.
+    /// - Parameter query: The query to match documents against
+    /// - Returns: A cursor to iterate over the results
     public func find<Query: MongoKittenQuery>(_ query: Query) -> FindQueryBuilder {
         return find(query.makeDocument())
     }
 
+    /// Finds documents in this collection matching the given query. If no query is given, it returns all documents in the collection. Decodes the results to the given type.
+    /// - Parameter query: The query to match documents against
+    /// - Returns: A cursor to iterate over the results
     public func find<D: Decodable>(_ query: Document = [:], as type: D.Type) -> MappedCursor<FindQueryBuilder, D> {
         return find(query).decode(type)
     }
 
+    /// Finds the first document in this collection matching the given query.
+    /// - Parameter query: The query to match documents against
+    /// - Parameter type: The type to decode the document to
+    /// - Returns: The first document matching the query
     public func findOne<D: Decodable>(_ query: Document = [:], as type: D.Type) async throws -> D? {
         return try await find(query).limit(1).decode(type).firstResult()
     }
     
+    /// Finds the first document in this collection matching the given query.
+    /// - Parameter query: The query to match documents against
+    /// - Parameter type: The type to decode the document to
+    /// - Returns: The first document matching the query
     public func findOne<D: Decodable, Query: MongoKittenQuery>(_ query: Query, as type: D.Type) async throws -> D? {
         return try await findOne(query.makeDocument(), as: type)
     }
 
+    /// Finds the first document in this collection matching the given query. If no query is given, it returns the first document in the collection.
+    /// - Parameter query: The query to match documents against
+    /// - Returns: The first document matching the query
     public func findOne(_ query: Document = [:]) async throws -> Document? {
         return try await find(query).limit(1).firstResult()
     }
     
+    /// Finds the first document in this collection matching the given query. If no query is given, it returns the first document in the collection.
     public func findOne<Query: MongoKittenQuery>(_ query: Query) async throws -> Document? {
         return try await findOne(query.makeDocument())
     }
@@ -82,31 +103,37 @@ public final class FindQueryBuilder: QueryCursor {
         return element
     }
 
+    /// Limits the amount of documents returned by this cursor
     public func limit(_ limit: Int) -> FindQueryBuilder {
         self.command.limit = limit
         return self
     }
 
+    /// Skips the given amount of documents before returning the rest
     public func skip(_ skip: Int) -> FindQueryBuilder {
         self.command.skip = skip
         return self
     }
 
+    /// Projects the documents returned by this cursor, limiting the fields returned.
     public func project(_ projection: Projection) -> FindQueryBuilder {
         self.command.projection = projection.document
         return self
     }
 
+    /// Projects the documents returned by this cursor, limiting the fields returned.
     public func project(_ projection: Document) -> FindQueryBuilder {
         self.command.projection = projection
         return self
     }
 
+    /// Sorts the documents returned by this cursor
     public func sort(_ sort: Sorting) -> FindQueryBuilder {
         self.command.sort = sort.document
         return self
     }
 
+    /// Sorts the documents returned by this cursor
     public func sort(_ sort: Document) -> FindQueryBuilder {
         self.command.sort = sort
         return self

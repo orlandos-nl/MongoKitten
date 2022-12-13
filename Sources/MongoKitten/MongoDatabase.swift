@@ -232,6 +232,7 @@ extension MongoConnectionPool {
         return MongoDatabase(named: db, pool: self)
     }
 
+    /// Lists all databases your user has knowledge of in this cluster
     public func listDatabases() async throws -> [MongoDatabase] {
         let connection = try await next(for: .basic)
         let response = try await connection.executeCodable(

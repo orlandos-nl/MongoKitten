@@ -1,4 +1,5 @@
 public final class MongoTransactionDatabase: MongoDatabase {
+    /// Commits the transaction and ends the session.
     public func commit() async throws {
         _ = try await pool.next(for: .writable).executeCodable(
             CommitTransaction(),
@@ -9,6 +10,7 @@ public final class MongoTransactionDatabase: MongoDatabase {
         )
     }
     
+    /// Aborts the transaction and ends the session.
     public func abort() async throws {
         _ = try await pool.next(for: .writable).executeCodable(
             AbortTransaction(),

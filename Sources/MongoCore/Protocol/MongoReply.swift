@@ -1,10 +1,15 @@
 import BSON
 import NIO
 
+/// A reply from the server
 public enum MongoServerReply: Sendable {
+    /// A reply from the server, used for legacy wire protocols
     case reply(OpReply)
+
+    /// A reply from the server, used for modern wire protocols
     case message(OpMessage)
     
+    /// The request id this reply is in response to, used to match replies to requests
     public var responseTo: Int32 {
         switch self {
         case .message(let message):
@@ -14,6 +19,7 @@ public enum MongoServerReply: Sendable {
         }
     }
     
+    /// The body of the reply
     public var documents: [Document] {
         switch self {
         case .message(let message):

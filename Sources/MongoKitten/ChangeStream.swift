@@ -1,6 +1,7 @@
 import MongoClient
 import NIO
 
+/// The options for a change stream
 public struct ChangeStreamOptions: Encodable {
     private enum CodingKeys: String, CodingKey {
         case batchSize
@@ -40,6 +41,7 @@ internal struct ChangeStreamAggregation: AggregateBuilderStage {
 }
 
 extension MongoCollection {
+    /// Creates a change stream for this collection using the given aggregation pipeline
     public func buildChangeStream(
         options: ChangeStreamOptions = .init(),
         @AggregateBuilder build: () -> [AggregateBuilderStage]
@@ -47,6 +49,12 @@ extension MongoCollection {
         try await buildChangeStream(options: options, ofType: Document.self, build: build)
     }
     
+    /// Creates a change stream for this collection using the given aggregation pipeline
+    /// - Parameters:
+    ///  - options: The options for this change stream
+    /// - type: The type to decode the change stream notifications into
+    /// - decoder: The decoder to use for decoding the change stream notifications
+    /// - build: The aggregation pipeline to use for this change stream
     public func buildChangeStream<T: Decodable>(
         options: ChangeStreamOptions = .init(),
         ofType type: T.Type,
@@ -71,6 +79,7 @@ extension MongoCollection {
         return ChangeStream(finalizedCursor, options: options)
     }
     
+    /// Creates a change stream for this collection using the given aggregation pipeline to watch for changes
     public func watch(
         options: ChangeStreamOptions = .init()
     ) async throws -> ChangeStream<Document> {
@@ -80,6 +89,11 @@ extension MongoCollection {
         )
     }
     
+    /// Creates a change stream for this collection using the given aggregation pipeline to watch for changes
+    /// - Parameters:
+    /// - options: The options for this change stream
+    /// - type: The type to decode the change stream notifications into
+    /// - decoder: The decoder to use for decoding the change stream notifications
     public func watch<T: Decodable>(
         options: ChangeStreamOptions = .init(),
         type: T.Type,
@@ -101,6 +115,7 @@ extension MongoCollection {
     }
 }
 
+/// A change stream is a stream of change notifications for a collection or database
 public struct ChangeStream<T: Decodable> {
     public typealias Notification = ChangeStreamNotification<T>
     typealias InputCursor = FinalizedCursor<MappedCursor<AggregateBuilderPipeline, Notification>>
@@ -123,6 +138,10 @@ public struct ChangeStream<T: Decodable> {
         self.getMoreInterval = interval
     }
     
+    /// Iterates over the change stream notifications and calls the given handler for each notification
+    /// - Parameter handler: The handler to call for each notification
+    /// - Returns: A task that will be completed when the change stream is drained. Can be cancelled to stop the change stream
+    /// - Throws: If the handler throws an error, the task will be failed with that error
     @discardableResult
     public func forEach(handler: @escaping @Sendable (Notification) async throws -> Bool) -> Task<Void, Error> {
         Task {
@@ -143,7 +162,9 @@ public struct ChangeStream<T: Decodable> {
     }
 }
 
+/// A change stream notification is a notification for a change in a collection or database
 public struct ChangeStreamNotification<T: Decodable>: Decodable {
+    /// The type of operation that caused this notification
     public enum OperationType: String, Codable {
         case insert, update, replace, delete, invalidate, drop, dropDatabase, rename
     }
@@ -153,20 +174,37 @@ public struct ChangeStreamNotification<T: Decodable>: Decodable {
             case database = "db", collection = "coll"
         }
         
+        /// The database of the collection or database that was changed
         public let database: String
+
+        /// The collection that was changed
         public let collection: String
     }
     
+    /// The update description for this change
     public struct UpdateDescription: Codable {
+        /// The fields that were updated
         public let updatedFields: Document
+
+        /// The fields that were removed
         public let removedFields: [String]
     }
 
-    
+    /// The id of the change stream notification
     public let _id: Document
+
+    /// The type of operation that caused this notification
     public let operationType: OperationType
+
+    /// The namespace of the collection or database that was changed
     public let ns: ChangeStreamNamespace
+
+    /// The id of the document that was changed
     public let documentKey: Document?
+
+    /// The update description for this change
     public let updateDescription: UpdateDescription?
+
+    /// The full document that was changed
     public let fullDocument: T?
 }

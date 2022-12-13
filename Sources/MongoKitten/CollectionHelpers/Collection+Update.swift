@@ -3,6 +3,7 @@ import MongoCore
 import MongoKittenCore
 
 extension MongoCollection {
+    /// Updates a single document in this collection matching the given query with the given document.
     @discardableResult
     public func updateOne(
         where query: Document,
@@ -21,6 +22,7 @@ extension MongoCollection {
         )
     }
 
+    /// Replaces a single document in this collection matching the given query with the document encoded from the given model.
     @discardableResult
     public func updateEncoded<E: Encodable>(
         where query: Document,
@@ -30,6 +32,7 @@ extension MongoCollection {
         return try await updateOne(where: query, to: document)
     }
     
+    /// Replaces a single document in this collection matching the given query with the given document.
     @discardableResult
     public func updateOne<Query: MongoKittenQuery>(
         where query: Query,
@@ -41,6 +44,7 @@ extension MongoCollection {
         )
     }
 
+    /// Updates a single document in this collection matching the given query with the document encoded from the given model.
     @discardableResult
     public func updateEncoded<Query: MongoKittenQuery, E: Encodable>(
         where query: Query,
@@ -52,6 +56,7 @@ extension MongoCollection {
         )
     }
     
+    /// Update all documents matching the given query with the given document.
     @discardableResult
     public func updateMany(
         where query: Document,
@@ -80,6 +85,7 @@ extension MongoCollection {
         return try await updateMany(where: query, to: document)
     }
     
+    /// Updates all documents matching the given query with the given document.
     @discardableResult
     public func updateMany<Query: MongoKittenQuery>(
         where query: Query,
@@ -91,6 +97,7 @@ extension MongoCollection {
         )
     }
 
+    /// Updates all documents matching the given query with the document encoded from the given model.
     @discardableResult
     public func updateManyEncoded<Query: MongoKittenQuery, E: Encodable>(
         where query: Query,
@@ -102,6 +109,10 @@ extension MongoCollection {
         )
     }
     
+    /// Updates all documents matching the given query.
+    /// - parameter query: The query to match documents with
+    /// - parameter setting: The values to set on the matched documents
+    /// - parameter unsetting: The values to unset on the matched documents
     @discardableResult
     public func updateMany(
         where query: Document,
@@ -123,6 +134,7 @@ extension MongoCollection {
         )
     }
     
+    /// Creates a new document in this collection if no document matches the given query. Otherwise, updates the first document matching the query.
     @discardableResult
     public func upsert(_ document: Document, where query: Document) async throws -> UpdateReply {
         let connection = try await pool.next(for: .writable)
@@ -141,17 +153,20 @@ extension MongoCollection {
         )
     }
 
+    /// Creates a new document in this collection if no document matches the given query. Otherwise, updates the first document matching the query.
     @discardableResult
     public func upsertEncoded<E: Encodable>(_ model: E, where query: Document) async throws -> UpdateReply {
         let document = try BSONEncoder().encode(model)
         return try await upsert(document, where: query)
     }
 
+    /// Creates a new document in this collection if no document matches the given query. Otherwise, updates the first document matching the query.
     @discardableResult
     public func upsert<Query: MongoKittenQuery>(_ document: Document, where query: Query) async throws -> UpdateReply {
         return try await upsert(document, where: query.makeDocument())
     }
 
+    /// Creates a new document in this collection if no document matches the given query. Otherwise, updates the first document matching the query.
     @discardableResult
     public func upsertEncoded<Query: MongoKittenQuery, E: Encodable>(_ model: E, where query: Query) async throws -> UpdateReply {
         return try await upsertEncoded(model, where: query.makeDocument())

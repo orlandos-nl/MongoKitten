@@ -1,3 +1,4 @@
+/// An error that occurs when a connection fails due to a protocol error.
 public struct MongoProtocolParsingError: Error, Codable, CustomStringConvertible {
     public enum Reason: String, Codable, CustomStringConvertible, Equatable {
         case unsupportedOpCode
@@ -16,15 +17,20 @@ public struct MongoProtocolParsingError: Error, Codable, CustomStringConvertible
         }
     }
 
+    /// The reason why the error occurred
     public let reason: Reason
+    
     public private(set) var description = "An error occurred while parsing a MongoMessage"
 
+    /// Creates a new MongoProtocolParsingError
     public init(reason: Reason) {
         self.reason = reason
     }
 }
 
+/// An error that occurs when a connection fails during protocol serialization
 public struct MongoProtocolSerializationError: Error, Codable, CustomStringConvertible {
+    /// The reason why the error occurred
     public enum Reason: String, Codable, CustomStringConvertible, Equatable {
         case commandSizeTooLarge
         case unexpectedOpCode
@@ -45,9 +51,11 @@ public struct MongoProtocolSerializationError: Error, Codable, CustomStringConve
         }
     }
 
+    /// The reason why the error occurred
     public let reason: Reason
     public private(set) var description = "An error occurred while serializing a MongoMessage"
 
+    /// Creates a new MongoProtocolSerializationError
     public init(reason: Reason) {
         self.reason = reason
     }
@@ -91,6 +99,7 @@ internal struct MongoOptionalUnwrapFailure: Error, CustomStringConvertible {
     let description = "An optional was unwrapped but `nil` was found"
 }
 
+/// A regular error that occurs when a query fails.
 public struct MongoError: Error, CustomStringConvertible, CustomDebugStringConvertible {
     public enum Kind: String, Codable, CustomStringConvertible, Equatable {
         case authenticationFailure
@@ -150,6 +159,7 @@ public struct MongoError: Error, CustomStringConvertible, CustomDebugStringConve
         self.reason = reason
     }
     
+    /// A list of possible solutions to the error in human readable form
     public var recommendedSolution: String {
         guard let reason = reason else {
             return "File a report on https://github.com/OpenKitten/MongoKitten/"

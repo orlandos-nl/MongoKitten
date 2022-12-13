@@ -202,11 +202,20 @@ public struct Limit<Base: Codable>: AggregateBuilderStage {
 
 extension Limit: MeowAggregateStage where Base: KeyPathQueryable {}
 
-public struct Unwind<Base: KeyPathQueryableModel, Result: KeyPathQueryableModel>: MeowAggregateStage {
+public struct Unwind<Base: Codable, Result: Codable>: MeowAggregateStage {
     let unwind: MongoKitten.Unwind
     public var stage: Document { unwind.stage }
     public var minimalVersionRequired: MongoCore.WireVersion? { unwind.minimalVersionRequired }
     
+}
+
+extension Unwind where Base == Document, Result == Document {
+    public init(fieldPath: FieldPath, includeArrayIndex: String? = nil, preserveNullAndEmptyArrays: Bool? = nil) {
+        self.unwind = .init(fieldPath: fieldPath, includeArrayIndex: includeArrayIndex, preserveNullAndEmptyArrays: preserveNullAndEmptyArrays)
+    }
+}
+
+extension Unwind where Base: KeyPathQueryable, Result: KeyPathQueryable {
     public init<Value, Values: Sequence>(
         from base: KeyPath<Base, QueryableField<Values>>,
         into result: KeyPath<Result, QueryableField<Value>>
@@ -252,6 +261,21 @@ extension Lookup {
     ) where Base: KeyPathQueryableModel, FieldValues: Sequence, FieldValues.Element == Foreign {
         let localIdentifier = FieldPath(components: Base.resolveFieldPath(localIdentifier))
         let asField = FieldPath(components: Result.resolveFieldPath(asField))
+        
+        self.lookup = .init(
+            from: type.collectionName,
+            localField: localIdentifier,
+            foreignField: "_id",
+            as: asField
+        )
+    }
+    
+    public init(
+        from type: Foreign.Type,
+        localIdentifier: KeyPath<Base, QueryableField<Reference<Foreign>>>,
+        as asField: FieldPath
+    ) where Base: KeyPathQueryableModel {
+        let localIdentifier = FieldPath(components: Base.resolveFieldPath(localIdentifier))
         
         self.lookup = .init(
             from: type.collectionName,

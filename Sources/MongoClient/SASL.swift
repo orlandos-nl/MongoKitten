@@ -69,6 +69,7 @@ internal final class SCRAM<H: Hash> {
         self.hmac = HMAC(hasher: hasher)
     }
 
+    /// The authentication string to send to the server, containing the username and a nonce
     public func authenticationString(forUser user: String) throws -> String {
         guard case .none = self.state else {
             throw MongoAuthenticationError(reason: .internalError)
@@ -81,6 +82,7 @@ internal final class SCRAM<H: Hash> {
         return "n,,n=\(user.normalized()),r=\(nonce)"
     }
 
+    /// Responds to a challenge from the server. This will return the proof of being authenticated.
     public func respond(toChallenge challengeString: String, password: String) throws -> String {
         guard case .challenge(let user, let nonce) = self.state else {
             throw MongoAuthenticationError(reason: .internalError)
@@ -147,6 +149,7 @@ internal final class SCRAM<H: Hash> {
         return "\(noProof),p=\(proof)"
     }
 
+    /// Completes the authentication process by verifying the server's signature, and throws if it is invalid. This should be called after `respond(toChallenge:password:)`
     public func completeAuthentication(withResponse response: String) throws {
         guard case .verify(let signature) = self.state else {
             throw MongoAuthenticationError(reason: .internalError)

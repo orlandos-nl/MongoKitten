@@ -1,6 +1,7 @@
 import MongoCore
 import MongoKittenCore
 
+/// A builder for indexes that can be used in the `createIndex` method
 @resultBuilder
 public struct MongoIndexBuilder {
     public static func buildBlock() -> _MongoIndexes {
@@ -60,6 +61,7 @@ public struct _MongoIndex {
     }
 }
 
+/// Creates an index with the given name and fields
 public func SortedIndex(
     named name: String,
     field: String,
@@ -70,6 +72,7 @@ public func SortedIndex(
         .unique()
 }
 
+/// Creates an index with the given name and fields that are unique
 public func UniqueIndex(
     named name: String,
     field: String,
@@ -80,6 +83,7 @@ public func UniqueIndex(
         .unique()
 }
 
+/// Creates a TTL index with the given name and fields. The `expireAfterSeconds` is the amount of seconds after which the document is removed
 public func TTLIndex(
     named name: String,
     field: String,
@@ -90,6 +94,8 @@ public func TTLIndex(
         .ttl(seconds: seconds)
 }
 
+/// Creates a text index with the given name and fields. Use this for full-text search queries
+/// - SeeAlso: https://docs.mongodb.com/manual/core/index-text/
 public func TextScoreIndex(
     named name: String,
     field: String

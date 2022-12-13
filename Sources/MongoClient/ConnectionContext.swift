@@ -7,8 +7,12 @@ internal struct MongoResponseContext {
     let result: EventLoopPromise<MongoServerReply>
 }
 
+/// A context for a connection to a MongoDB server. Keeps track of the server handshake and pending queries. One context is created per connection.
 public final actor MongoClientContext {
+    /// Pending queries
     private var queries = [MongoResponseContext]()
+
+    /// The server handshake
     internal var serverHandshake: ServerHandshake?
     internal var didError = false
     private var outdatedDB = false
@@ -54,6 +58,7 @@ public final actor MongoClientContext {
         query.result.fail(error)
     }
 
+    /// Cancels all pending queries with the given error
     public func cancelQueries(_ error: Error) {
         didError = true
         for query in queries {

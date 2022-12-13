@@ -1,13 +1,25 @@
 import Foundation
 
+/// A GridFS file that can be downloaded from GridFS or uploaded to GridFS.
 public struct GridFSFile: Codable {
     internal var fs: GridFSBucket
     
+    /// The file's ID
     public let _id: Primitive
+
+    /// The file's length in bytes
     public internal(set) var length: Int
+
+    /// The chunk size in bytes
     public private(set) var chunkSize: Int32
+
+    /// The date this file was uploaded
     public let uploadDate: Date
+
+    /// The MD5 hash of this file.
     public internal(set) var md5: String?
+
+    /// The filename of this file as it was uploaded.
     public var filename: String?
     
     @available(*, deprecated, message: "Applications wishing to store a contentType should add a contentType field to the metadata document instead.")
@@ -36,6 +48,7 @@ public struct GridFSFile: Codable {
     /// We use the getters and setters so we can decode and encode the aliasses without warnings, while providing a deprecation warning to users trying to use the property
     private var _aliasses: [String]?
     
+    /// The metadata of this file, to be used by applications. This is not used by GridFS itself.
     public var metadata: Document?
     
     internal init(id: Primitive, length: Int, chunkSize: Int32, metadata: Document?, filename: String?, fs: GridFSBucket) {
@@ -52,6 +65,7 @@ public struct GridFSFile: Codable {
         case _id, length, chunkSize, uploadDate, md5, filename, contentType, aliasses, metadata
     }
     
+    /// The reader for this file that can be used to download the file
     public var reader: GridFSReader {
         return GridFSReader(file: self)
     }

@@ -37,6 +37,7 @@ public final class MongoCollection {
         self.database = database
     }
     
+    /// Drops this collection from the database it's in and removes all documents from it.
     public func drop() async throws {
         let connection = try await pool.next(for: .writable)
         let reply = try await connection.executeEncodable(

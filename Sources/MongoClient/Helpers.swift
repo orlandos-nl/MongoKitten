@@ -4,6 +4,7 @@ import MongoCore
 import NIO
 
 extension MongoNamespace {
+    /// The namespace for administrative commands in the admin database
     public static let administrativeCommand = MongoNamespace(to: "$cmd", inDatabase: "admin")
 }
 

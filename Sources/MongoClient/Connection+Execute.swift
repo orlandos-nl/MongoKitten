@@ -9,6 +9,14 @@ public struct MongoServerError: Error {
 }
 
 extension MongoConnection {
+    /// Executes a command on the server and returns the reply, or throws an error if the command failed. Uses a different protocol depending on the connection.
+    /// - Parameters:
+    ///  - command: The command to execute on the server. Encoded as a BSON document.
+    /// - decodeAs: The type to decode the reply as, used to decode the reply into a codable type.
+    /// - namespace: The namespace to execute the command in. Defaults to the administrative command namespace.
+    /// - transaction: The transaction to execute the command in.
+    /// - sessionId: The session id to execute the command in, if any.
+    /// - Returns: The reply from the server, decoded as the specified type.
     public func executeCodable<E: Encodable, D: Decodable>(
         _ command: E,
         decodeAs: D.Type,
@@ -25,6 +33,13 @@ extension MongoConnection {
         }
     }
     
+    /// Executes a command on the server and returns the reply, or throws an error if the command failed. Uses a different protocol depending on the connection.
+    /// - Parameters:
+    ///   - command: The command to execute on the server. Encoded as a BSON document.
+    ///   - namespace:  The namespace to execute the command in. Defaults to the administrative command namespace.
+    ///   - transaction: The transaction to execute the command in.
+    ///   - sessionId: The session id to execute the command in, if any.
+    /// - Returns: The reply from the server.
     public func executeEncodable<E: Encodable>(
         _ command: E,
         namespace: MongoNamespace,
@@ -35,6 +50,13 @@ extension MongoConnection {
         return try await execute(request, namespace: namespace, in: transaction, sessionId: sessionId)
     }
 
+    /// Executes a command on the server and returns the reply, or throws an error if the command failed.
+    /// - Parameters:
+    ///  - command: The document to execute on the server.
+    /// - namespace: The namespace to execute the command in. Defaults to the administrative command namespace.
+    /// - transaction: The transaction to execute the command in.
+    /// - sessionId: The session id to execute the command in, if any.
+    /// - Returns: The reply from the server.
     public func execute(
         _ command: Document,
         namespace: MongoNamespace,
@@ -51,6 +73,12 @@ extension MongoConnection {
         return result
     }
     
+    /// Executes a command on the server and returns the reply, or throws an error if the command failed. This method is used for executing commands that are not encoded as BSON documents.
+    /// Always uses OP_QUERY.
+    /// - Parameters:
+    /// - command: The command to execute on the server. Updated with the next request id.
+    /// - namespace: The namespace to execute the command in. Defaults to the administrative command namespace.
+    /// - transaction: The transaction to execute the command in.
     public func executeOpQuery(
         _ query: inout OpQuery,
         in transaction: MongoTransaction? = nil,
@@ -66,6 +94,13 @@ extension MongoConnection {
         return reply
     }
     
+    /// Executes a command on the server and returns the reply, or throws an error if the command failed. This method is used for executing commands that are not encoded as BSON documents.
+    /// Always uses OP_MSG.
+    /// - Parameters:
+    /// - command: The command to execute on the server. Updated with the next request id.
+    /// - namespace: The namespace to execute the command in. Defaults to the administrative command namespace.
+    /// - transaction: The transaction to execute the command in.
+    /// - Returns: The reply from the server.
     public func executeOpMessage(
         _ query: inout OpMessage,
         in transaction: MongoTransaction? = nil,

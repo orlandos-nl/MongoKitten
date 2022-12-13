@@ -52,6 +52,8 @@ struct BSON2JSONSerializer {
             } else {
                 return "Date(\"\(ISO8601DateFormatter().string(from: date))\")"
             }
+        case let decimal as Decimal128:
+            return "NumberDecimal(\"\(decimal.)\")"
         default:
             return "unsupportedtype"
         }

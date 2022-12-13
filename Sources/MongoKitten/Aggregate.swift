@@ -2,8 +2,11 @@ import NIO
 import MongoKittenCore
 import MongoClient
 
+/// An aggregation pipeline, used to query a collection
 public struct AggregateBuilderPipeline: QueryCursor {
     public typealias Element = Document
+
+    /// The connection to use for this pipeline. If nil, the pipeline requests a connection from the pool
     internal var connection: MongoConnection?
     internal var collection: MongoCollection!
     internal var writing = false
@@ -18,18 +21,21 @@ public struct AggregateBuilderPipeline: QueryCursor {
         return pipeline
     }
     
+    /// Adds a comment to this pipeline, which will be logged in the server logs
     public func comment(_ comment: String?) -> AggregateBuilderPipeline {
         var pipeline = self
         pipeline._comment = comment
         return pipeline
     }
     
+    /// Sets the collation for this pipeline
     public func collation(_ collation: Collation?) -> AggregateBuilderPipeline {
         var pipeline = self
         pipeline._collation = collation
         return pipeline
     }
     
+    /// Sets the read concern for this pipeline
     public func readConcern(_ readConcern: ReadConcern?) -> AggregateBuilderPipeline {
         var pipeline = self
         pipeline._readConcern = readConcern
@@ -57,6 +63,7 @@ public struct AggregateBuilderPipeline: QueryCursor {
         return command
     }
     
+    /// Gets the connection to use for this pipeline
     public func getConnection() async throws -> MongoConnection {
         if let connection = connection {
             return connection
@@ -65,12 +72,13 @@ public struct AggregateBuilderPipeline: QueryCursor {
         return try await collection.pool.next(for: .writable)
     }
     
+    /// Executes the pipeline and returns a cursor
     public func execute() async throws -> FinalizedCursor<AggregateBuilderPipeline> {
         let command = makeCommand()
         let connection = try await getConnection()
         
         #if DEBUG
-        
+
         let minimalVersionRequired = stages.compactMap(\.minimalVersionRequired).max()
         
         if let actualVersion = await connection.wireVersion, let minimalVersion = minimalVersionRequired, actualVersion < minimalVersion {
@@ -102,12 +110,14 @@ public struct AggregateBuilderPipeline: QueryCursor {
         return element
     }
     
+    /// The stages of this pipeline
     var stages: [AggregateBuilderStage]
     
     internal init(stages: [AggregateBuilderStage]) {
         self.stages = stages
     }
     
+    /// Creates a new pipeline for the given collection and stages
     public init(
         stages: [AggregateBuilderStage],
         collection: MongoCollection
@@ -116,6 +126,7 @@ public struct AggregateBuilderPipeline: QueryCursor {
         self.collection = collection
     }
     
+    /// Counts the number of documents in this pipeline and returns the result
     public func count() async throws -> Int {
         struct PipelineResultCount: Decodable {
             let count: Int
@@ -127,6 +138,7 @@ public struct AggregateBuilderPipeline: QueryCursor {
         return try await pipeline.decode(PipelineResultCount.self).firstResult()?.count ?? 0
     }
     
+    /// Outputs the results of this pipeline to a collection with the given name
     public func out(toCollection collectionName: String) async throws {
         var pipeline = self
         pipeline.stages.append(Out(toCollection: collectionName))

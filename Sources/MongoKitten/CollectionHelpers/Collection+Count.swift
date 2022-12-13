@@ -2,6 +2,9 @@ import MongoCore
 import NIO
 
 extension MongoCollection {
+    /// Counts the amount of documents in this collection matching the given query. If no query is given, it counts all documents in the collection.
+    /// - Parameter query: The query to match documents against
+    /// - Returns: The amount of documents matching the query
     public func count(_ query: Document? = nil) async throws -> Int {
         guard transaction == nil else {
             throw MongoKittenError(.unsupportedFeatureByServer, reason: .transactionForUnsupportedQuery)
@@ -16,7 +19,10 @@ extension MongoCollection {
             sessionId: self.sessionId ?? connection.implicitSessionId
         ).count
     }
-    
+
+    /// Counts the amount of documents in this collection matching the given query. If no query is given, it counts all documents in the collection.
+    /// - Parameter query: The query to match documents against
+    /// - Returns: The amount of documents matching the query
     public func count<Query: MongoKittenQuery>(_ query: Query? = nil) async throws -> Int {
         return try await count(query?.makeDocument())
     }

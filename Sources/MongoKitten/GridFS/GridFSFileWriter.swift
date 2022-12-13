@@ -1,6 +1,7 @@
 import Foundation
 import NIO
 
+/// A GridFS file writer that can be used to upload a file to GridFS. This writer is not thread-safe.
 public final class GridFSFileWriter {
     static let allocator = ByteBufferAllocator()
     static let encoder = BSONEncoder()
@@ -15,6 +16,7 @@ public final class GridFSFileWriter {
     private var started = false
     private var finalized = false
     
+    /// Creates a new GridFSFileWriter that can be used to upload a file to GridFS.
     public init(toBucket fs: GridFSBucket, fileId: Primitive = ObjectId(), chunkSize: Int32 = GridFSBucket.defaultChunkSize) async throws {
         self.fs = fs
         self.fileId = fileId
@@ -35,6 +37,8 @@ public final class GridFSFileWriter {
         try await fs.ensureIndexes()
     }
     
+    /// Writes a chunk to the database.
+    /// Flushes the current buffer to the database if it's full enough.
     public func write(data: ByteBuffer) async throws {
         assert(!finalized, "Writing to a finalized writer is an error")
         finalized = false
@@ -47,6 +51,11 @@ public final class GridFSFileWriter {
         try await self.flush()
     }
     
+    /// Finalizes the file and returns the GridFSFile that was created.
+    /// - Parameters: 
+    ///   - filename: The filename of the file to be created
+    ///   - metadata: The metadata of the file to be created
+    /// - Returns: The GridFSFile that was created
     public func finalize(filename: String? = nil, metadata: Document? = nil) async throws -> GridFSFile {
         assert(!finalized, "Finalizing a finalized writer is an error")
         
@@ -68,6 +77,7 @@ public final class GridFSFileWriter {
         return file
     }
     
+    /// Flushes the current buffer to the database if it's full enough.
     public func flush(finalize: Bool = false) async throws {
         let chunkSize = Int(self.chunkSize) // comparison here is always to int
         

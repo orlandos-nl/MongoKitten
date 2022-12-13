@@ -215,6 +215,12 @@ public struct MappedCursor<Base: QueryCursor, Element>: QueryCursor {
     }
 }
 
+extension MappedCursor where Base == AggregateBuilderPipeline {
+    public func count() async throws -> Int {
+        return try await underlyingCursor.count()
+    }
+}
+
 extension MappedCursor where Base == FindQueryBuilder {
     public func limit(_ limit: Int) -> Self {
         underlyingCursor.command.limit = limit
