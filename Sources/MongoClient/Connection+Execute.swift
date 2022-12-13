@@ -11,7 +11,7 @@ public struct MongoServerError: Error {
 extension MongoConnection {
     /// Executes a command on the server and returns the reply, or throws an error if the command failed. Uses a different protocol depending on the connection.
     /// - Parameters:
-    ///  - command: The command to execute on the server. Encoded as a BSON document.
+    /// - command: The command to execute on the server. Encoded as a BSON document.
     /// - decodeAs: The type to decode the reply as, used to decode the reply into a codable type.
     /// - namespace: The namespace to execute the command in. Defaults to the administrative command namespace.
     /// - transaction: The transaction to execute the command in.
@@ -52,7 +52,7 @@ extension MongoConnection {
 
     /// Executes a command on the server and returns the reply, or throws an error if the command failed.
     /// - Parameters:
-    ///  - command: The document to execute on the server.
+    /// s- command: The document to execute on the server.
     /// - namespace: The namespace to execute the command in. Defaults to the administrative command namespace.
     /// - transaction: The transaction to execute the command in.
     /// - sessionId: The session id to execute the command in, if any.

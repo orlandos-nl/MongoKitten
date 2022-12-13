@@ -51,7 +51,7 @@ extension MongoCollection {
     
     /// Creates a change stream for this collection using the given aggregation pipeline
     /// - Parameters:
-    ///  - options: The options for this change stream
+    /// - options: The options for this change stream
     /// - type: The type to decode the change stream notifications into
     /// - decoder: The decoder to use for decoding the change stream notifications
     /// - build: The aggregation pipeline to use for this change stream
