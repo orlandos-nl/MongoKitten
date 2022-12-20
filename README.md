@@ -131,8 +131,11 @@ let users = db["users"]
 ### Create (insert)
 
 ```swift
+// Create a document to insert
 let myUser: Document = ["username": "kitty", "password": "meow"]
 
+// Insert the user into the collection
+// The _id is automatically generated if it's not present
 try await users.insert(myUser)
 ```
 
@@ -176,6 +179,7 @@ for try await user in users.find("age" <= 16 || "age" == nil) {
 You can also type out the queries yourself, without using the query builder, like this:
 
 ```swift
+// This is the same as the previous example
 users.findOne(["username": "kitty"])
 ```
 
@@ -190,6 +194,7 @@ Cursors will close automatically if the enclosing `Task` is cancelled.
 You can fetch all results as an array:
 
 ```swift
+// Fetch all results and collect them in an array
 let users = try await users.find().drain()
 ```
 
@@ -214,8 +219,71 @@ try await users.updateMany(where: "username" == "kitty", setting: ["age": 3])
 The result is implicitly discarded, but you can still get and use it.
 
 ```swift
-let reply = try await users.deleteOne(where: "username" == "kitty")
+try await users.deleteOne(where: "username" == "kitty")
+
+let reply = try await users.deleteAll(where: "furType" == "fluffy")
 print("Deleted \(reply.deletes) kitties 😿")
+```
+
+## Indexes
+
+You can create indexes on a collection using the `buildIndexes` method.
+
+```swift
+try await users.buildIndexes {
+  // Unique indexes ensure that no two documents have the same value for a field
+  // See https://docs.mongodb.com/manual/core/index-unique/s
+  UniqueIndex(
+    named: "unique-username", 
+    field: "username"  
+  )
+
+  // Text indexes allow you to search for documents using text
+  // See https://docs.mongodb.com/manual/text-search/
+  TextScoreIndex(
+    named: "search-description", 
+    field: "description"
+  )
+
+  // TTL Indexes expire documents after a certain amount of time
+  // See https://docs.mongodb.com/manual/core/index-ttl/
+  TTLIndex(
+    named: "expire-createdAt", 
+    field: "createdAt", 
+    expireAfterSeconds: 60 * 60 * 24 * 7 // 1 week
+  )
+}
+```
+
+## Aggregation
+
+MongoDB supports aggregation pipelines. You can use them like this:
+
+```swift
+let pipeline = try await users.buildAggregate {
+  // Match all users that are 18 or older
+  Match(where: "age" >= 18)
+
+  // Sort by age, ascending
+  Sort(by: "age", direction: .ascending)
+
+  // Limit the results to 3
+  Limit(3)
+}
+
+// Pipeline is a cursor, so you can iterate over it
+// This will iterate over the first 3 users that are 18 or older in ascending age order
+for try await user in pipeline {
+  // Do something with the user
+}
+```
+
+## Transactions
+
+```swift  
+try await db.transaction { transaction in
+  // Do something with the transaction
+}
 ```
 
 # 📦 About BSON & Documents
@@ -236,8 +304,8 @@ From the example above, we can learn a few things:
 - A BSON document can represent an array *or* a dictionary
 - You can initialize a document like you initialize normal dictionaries and arrays, using literals
 - The values in a Document (either the array elements or the values of a dictionary pair) can be of any BSON primitive type
-- BSON primitives include core Swift types like `Int`, `String`, `Double` and `Bool`, as well as `Date` from Foundation
-- BSON also features some unique types, like `ObjectId`
+- BSON primitives include core Swift types such as `Int`, `String`, `Double` and `Bool`, as well as `Date` from Foundation
+- BSON also features some unique types, such as `ObjectId`
 
 ## Just Another Collection
 
@@ -376,7 +444,7 @@ let kids = try await users.find(matching: { user in
 })
 
 for try await kid in kids {
-  // Send verificatin email to parents
+  // TODO: Send verification email to parents
 }
 ```
 
@@ -387,6 +455,7 @@ Meow has a helper type called `Reference`, you can use this in your model instea
 Reference is also `Codable` and inherit's the identifier's `LosslessStringConvertible`. So it can be used in Vapor's JWT Tokens as a subject, or in a Vapor's Route Parameters.
 
 ```swift
+// GET /users/:id using Vapor
 app.get("users", ":id") { req async throws -> User in
   let id: Reference<User> = req.parameters.require("id")
   return try await id.resolve(in: req.meow)
