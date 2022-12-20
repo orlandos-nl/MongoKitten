@@ -21,7 +21,7 @@ jobs:
        uses: actions/checkout@v3
         
      - name: Install Swift
-       uses: slashmo/install-swift@v0.1.0
+       uses: slashmo/install-swift@v0.3.0
        with:
           version: ${{ matrix.swiftVersion }}
         
