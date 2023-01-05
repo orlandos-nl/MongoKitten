@@ -37,12 +37,21 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         #endif
     }
     
+    private var _settings: ConnectionSettings {
+        didSet {
+            self._hosts = Set(_settings.hosts)
+        }
+    }
+    
     /// The settings used to connect to MongoDB.
     ///
     /// - Note: Might differ from the originally provided settings, since Service Discovery and Monitoring might have discovered more nodes belonging to this MongoDB cluster.
     public private(set) var settings: ConnectionSettings {
-        didSet {
-            self.hosts = Set(settings.hosts)
+        get { lock.withLock { _settings } }
+        set {
+            lock.withLockVoid {
+                self._settings = newValue
+            }
         }
     }
 
@@ -99,8 +108,14 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         }
     }
 
+    private let lock = NIOLock()
+    
     /// A list of currently open connections
-    private var pool: [PooledConnection]
+    private var _pool: [PooledConnection]
+    private var pool: [PooledConnection] {
+        get { lock.withLock { _pool } }
+        set { lock.withLockVoid { _pool = newValue } }
+    }
     
     /// The WireVersion used by this cluster's nodes
     public private(set) var wireVersion: WireVersion?
@@ -117,9 +132,9 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         logger: Logger,
         eventLoopGroup: _MongoPlatformEventLoopGroup
     ) {
-        self.settings = settings
-        self.pool = []
-        self.hosts = Set(settings.hosts)
+        self._settings = settings
+        self._pool = []
+        self._hosts = Set(settings.hosts)
         self.logger = logger
         self.group = eventLoopGroup
     }
@@ -213,12 +228,25 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         }
     }
 
-    private var hosts: Set<ConnectionSettings.Host>
-    private var discoveredHosts = Set<ConnectionSettings.Host>()
+    private var _hosts: Set<ConnectionSettings.Host>
+    private var hosts: Set<ConnectionSettings.Host> {
+        get { lock.withLock { _hosts } }
+        set { lock.withLockVoid { _hosts = newValue } }
+    }
+    
+    private var _discoveredHosts = Set<ConnectionSettings.Host>()
+    private var discoveredHosts: Set<ConnectionSettings.Host> {
+        get { lock.withLock { _discoveredHosts } }
+        set { lock.withLockVoid { _discoveredHosts = newValue } }
+    }
     private var undiscoveredHosts: Set<ConnectionSettings.Host> {
         return hosts.subtracting(discoveredHosts).subtracting(timeoutHosts)
     }
-    private var timeoutHosts = Set<ConnectionSettings.Host>()
+    private var _timeoutHosts = Set<ConnectionSettings.Host>()
+    private var timeoutHosts: Set<ConnectionSettings.Host> {
+        get { lock.withLock { _timeoutHosts } }
+        set { lock.withLockVoid { _timeoutHosts = newValue } }
+    }
 
     private func updateSDAM(from handshake: ServerHandshake) {
         if let wireVersion = wireVersion {
@@ -233,17 +261,18 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         for host in hosts {
             do {
                 let host = try ConnectionSettings.Host(host, srv: false)
-                self.hosts.insert(host)
+                lock.withLockVoid {
+                    self._hosts.insert(host)
+                }
             } catch { }
         }
     }
 
     private func resolveSettings() async throws {
-        if !settings.isSRV {
+        guard settings.isSRV, let host = settings.hosts.first else {
             return
         }
-
-        let host = settings.hosts.first!
+        
         let client: DNSClient
         
         #if canImport(NIOTransportServices) && os(iOS)
@@ -313,8 +342,10 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         } catch {
             logger.error("Connection to \(host) disconnected with error \(error)")
             
-            self.timeoutHosts.insert(host)
-            self.discoveredHosts.remove(host)
+            lock.withLockVoid {
+                self._timeoutHosts.insert(host)
+                self._discoveredHosts.remove(host)
+            }
             throw error
         }
     }
@@ -348,12 +379,17 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
     }
 
     private func remove(connection: MongoConnection, error: Error) async {
-        if let index = self.pool.firstIndex(where: { $0.connection === connection }) {
-            let pooledConnection = self.pool[index]
-            self.pool.remove(at: index)
-            self.discoveredHosts.remove(pooledConnection.host)
-            await pooledConnection.connection.context.cancelQueries(error)
+        let pooledConnection: PooledConnection? = lock.withLock {
+            if let index = self.pool.firstIndex(where: { $0.connection === connection }) {
+                let pooledConnection = self.pool[index]
+                self._discoveredHosts.remove(pooledConnection.host)
+                return self.pool.remove(at: index)
+            } else {
+                return nil
+            }
         }
+        
+        await pooledConnection?.connection.context.cancelQueries(error)
     }
 
     fileprivate func findMatchingExistingConnection(writable: Bool) async -> PooledConnection? {
@@ -411,7 +447,9 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         let newPooledConnection = try await makeConnection(to: pooledConnection.host)
         
         if !request.requirements.contains(.notPooled) {
-            self.pool.append(newPooledConnection)
+            lock.withLock {
+                self._pool.append(newPooledConnection)
+            }
         }
         
         return newPooledConnection.connection
@@ -436,7 +474,10 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         
         // make a connection to the provided host and add it to the pool
         let pooledConnection = try await makeConnection(to: host)
-        self.pool.append(pooledConnection)
+        
+        lock.withLock {
+            self._pool.append(pooledConnection)
+        }
         
         guard let handshake = await pooledConnection.connection.serverHandshake else {
             throw MongoError(.cannotConnect, reason: .handshakeFailed)
