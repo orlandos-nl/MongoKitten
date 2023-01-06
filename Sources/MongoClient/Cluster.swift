@@ -380,10 +380,10 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
 
     private func remove(connection: MongoConnection, error: Error) async {
         let pooledConnection: PooledConnection? = lock.withLock {
-            if let index = self.pool.firstIndex(where: { $0.connection === connection }) {
-                let pooledConnection = self.pool[index]
+            if let index = self._pool.firstIndex(where: { $0.connection === connection }) {
+                let pooledConnection = self._pool[index]
                 self._discoveredHosts.remove(pooledConnection.host)
-                return self.pool.remove(at: index)
+                return self._pool.remove(at: index)
             } else {
                 return nil
             }
