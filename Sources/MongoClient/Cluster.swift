@@ -468,7 +468,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
             // TODO: we can potentially populate a host value from the updated undiscovered host list and continue execution below the guard statement instead of throwing an error
             
             // we throw an error since we could not find a host to connect to
-            self.logger.error("Couldn't find or create a connection to MongoDB with the requested specification")
+            self.logger.error("Couldn't find or create a connection to MongoDB with the requested specification. \(timeoutHosts.count) out of \(hosts.count) hosts were in timeout because no TCP connection could be established.")
             throw emptyPoolError ?? MongoError(.cannotConnect, reason: .noAvailableHosts)
         }
         
