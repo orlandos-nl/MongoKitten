@@ -14,38 +14,37 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        swiftVersion: [5.7]
-        os: [ubuntu-18.04, ubuntu-20.04, macos-latest]
-        mongodb-version: ['4.2', '4.4', '5.0']
+        swift-version: ['5.7', '5.7.1', '5.7.2']
+        mongodb-version: ['4.2', '4.4', '5.0', '6.0']
     steps:
      - name: Check out  
        uses: actions/checkout@v3
         
      - name: Install Swift
-       uses: slashmo/install-swift@v0.3.0
+       uses: swift-actions/setup-swift@v1
        with:
-          version: ${{ matrix.swiftVersion }}
+         swift-version: ${{ matrix.swift-version }}
         
      - name: Start MongoDB
-       uses: supercharge/mongodb-github-action@1.7.0
+       uses: supercharge/mongodb-github-action@1.8.0
        with:
          mongodb-version: ${{ matrix.mongodb-version }}
-         mongodb-replica-set: test-rs
+         mongodb-replica-set: mk-rs
         
      - name: Run tests
        run: swift test
         
-  macos:
-    runs-on: macos-12
-    steps:
-      - name: Install docker
-        uses: docker-practice/actions-setup-docker@master
-            
-      - name: Check out  
-        uses: actions/checkout@v3
-        
-      - name: Start Mongo
-        run: docker-compose up -d
-          
-      - name: Run tests
-        run: swift test
+#  macos:
+#    runs-on: macos-12
+#    steps:
+#      - name: Install docker
+#        uses: docker-practice/actions-setup-docker@master
+#
+#      - name: Check out
+#        uses: actions/checkout@v3
+#
+#      - name: Start Mongo
+#        run: docker-compose up -d
+#
+#      - name: Run tests
+#        run: swift test
