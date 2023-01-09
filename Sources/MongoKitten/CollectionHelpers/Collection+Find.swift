@@ -64,6 +64,8 @@ extension MongoCollection {
 
 /// A builder that constructs a ``FindCommand``
 public final class FindQueryBuilder: QueryCursor {
+    public typealias Element = Document
+    
     /// The collection this cursor applies to
     private let makeConnection: @Sendable () async throws -> MongoConnection
     public var command: FindCommand
