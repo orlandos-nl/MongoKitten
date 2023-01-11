@@ -13,7 +13,7 @@ public final actor MongoSingleConnectionPool: MongoConnectionPool {
     }
 
     public let sessionManager = MongoSessionManager()
-    public let logger = Logger(label: "org.openkitten.mongokitten.single-connection-pool")
+    public let logger = Logger(label: "org.orlandos-nl.mongokitten.single-connection-pool")
     
     let buildConnection: BuildConnection
     let authenticationSource: String
