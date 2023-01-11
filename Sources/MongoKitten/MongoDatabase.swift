@@ -53,7 +53,7 @@ public class MongoDatabase {
     ///     to: "mongodb://localhost/myapp
     /// )
     /// ```
-    public static func lazyConnect(to uri: String, logger: Logger = Logger(label: "org.openkitten.mongokitten")) throws -> MongoDatabase {
+    public static func lazyConnect(to uri: String, logger: Logger = Logger(label: "org.orlandos-nl.mongokitten")) throws -> MongoDatabase {
         try lazyConnect(to: ConnectionSettings(uri), logger: logger)
     }
 
@@ -68,7 +68,7 @@ public class MongoDatabase {
     ///     to: "mongodb://localhost/myapp
     /// )
     /// ```
-    public static func connect(to uri: String, logger: Logger = Logger(label: "org.openkitten.mongokitten")) async throws -> MongoDatabase {
+    public static func connect(to uri: String, logger: Logger = Logger(label: "org.orlandos-nl.mongokitten")) async throws -> MongoDatabase {
         try await connect(to: ConnectionSettings(uri), logger: logger)
     }
     
@@ -81,7 +81,7 @@ public class MongoDatabase {
     /// - parameter settings: The connection settings, which must include a database name
     public static func lazyConnect(
         to settings: ConnectionSettings,
-        logger: Logger = Logger(label: "org.openkitten.mongokitten")
+        logger: Logger = Logger(label: "org.orlandos-nl.mongokitten")
     ) throws -> MongoDatabase {
         guard let targetDatabase = settings.targetDatabase else {
             logger.critical("Cannot connect to MongoDB: No target database specified")
@@ -99,7 +99,7 @@ public class MongoDatabase {
     /// - parameter settings: The connection settings, which must include a database name
     public static func connect(
         to settings: ConnectionSettings,
-        logger: Logger = Logger(label: "org.openkitten.mongokitten")
+        logger: Logger = Logger(label: "org.orlandos-nl.mongokitten")
     ) async throws -> MongoDatabase {
         guard let targetDatabase = settings.targetDatabase else {
             logger.critical("Cannot connect to MongoDB: No target database specified")
