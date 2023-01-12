@@ -154,7 +154,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
     /// ```
     public convenience init(
         lazyConnectingTo settings: ConnectionSettings,
-        logger: Logger = Logger(label: "org.openkitten.mongokitten.cluster"),
+        logger: Logger = Logger(label: "org.orlandos-nl.mongokitten.cluster"),
         eventLoopGroup: _MongoPlatformEventLoopGroup = MongoCluster._newEventLoopGroup()
     ) throws {
         guard settings.hosts.count > 0 else {
@@ -187,7 +187,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
     public convenience init(
         connectingTo settings: ConnectionSettings,
         allowFailure: Bool = false,
-        logger: Logger = Logger(label: "org.openkitten.mongokitten.cluster"),
+        logger: Logger = Logger(label: "org.orlandos-nl.mongokitten.cluster"),
         eventLoopGroup: _MongoPlatformEventLoopGroup = MongoCluster._newEventLoopGroup()
     ) async throws {
         guard settings.hosts.count > 0 else {

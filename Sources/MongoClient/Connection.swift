@@ -55,7 +55,7 @@ public final actor MongoConnection: @unchecked Sendable {
     public var isMetricsEnabled = false {
         didSet {
             if isMetricsEnabled, !oldValue {
-                queryTimer = Metrics.Timer(label: "org.openkitten.mongokitten.core.queries")
+                queryTimer = Metrics.Timer(label: "org.orlandos-nl.mongokitten.core.queries")
             } else {
                 queryTimer = nil
             }
@@ -123,7 +123,7 @@ public final actor MongoConnection: @unchecked Sendable {
     /// - Returns: A connection to the MongoDB server
     public static func connect(
         settings: ConnectionSettings,
-        logger: Logger = Logger(label: "org.openkitten.mongokitten.connection"),
+        logger: Logger = Logger(label: "org.orlandos-nl.mongokitten.connection"),
         resolver: Resolver? = nil,
         clientDetails: MongoClientDetails? = nil
     ) async throws -> MongoConnection {
@@ -136,7 +136,7 @@ public final actor MongoConnection: @unchecked Sendable {
     
     internal static func connect(
         settings: ConnectionSettings,
-        logger: Logger = Logger(label: "org.openkitten.mongokitten.connection"),
+        logger: Logger = Logger(label: "org.orlandos-nl.mongokitten.connection"),
         onGroup group: _MongoPlatformEventLoopGroup,
         resolver: Resolver? = nil,
         clientDetails: MongoClientDetails? = nil,
