@@ -39,7 +39,7 @@ let package = Package(
         //        .package(name: "BSON", path: "../BSON"),
         
         // 🚀
-            .package(url: "https://github.com/apple/swift-nio.git", from: "2.43.0"),
+        .package(url: "https://github.com/apple/swift-nio.git", from: "2.43.0"),
         
         // 📚
         .package(url: "https://github.com/orlandos-nl/NioDNS.git", from: "2.0.0"),

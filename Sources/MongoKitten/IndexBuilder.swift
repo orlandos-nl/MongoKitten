@@ -69,7 +69,15 @@ public func SortedIndex(
 ) -> _MongoIndex {
     // Ascending or descending doesn't matter on one index
     _MongoIndex(index: CreateIndexes.Index(named: name, key: field, order: order))
-        .unique()
+}
+
+/// Creates an index with the given name and fields
+public func SortedIndex(
+    by spec: Sorting,
+    named name: String
+) -> _MongoIndex {
+    // Ascending or descending doesn't matter on one index
+    _MongoIndex(index: CreateIndexes.Index(named: name, keys: spec.document))
 }
 
 /// Creates an index with the given name and fields that are unique
@@ -78,8 +86,7 @@ public func UniqueIndex(
     field: String,
     order: Sorting.Order = .ascending
 ) -> _MongoIndex {
-    // Ascending or descending doesn't matter on one index
-    _MongoIndex(index: CreateIndexes.Index(named: name, key: field, order: order))
+    SortedIndex(named: name, field: field, order: order)
         .unique()
 }
 
@@ -90,7 +97,7 @@ public func TTLIndex(
     expireAfterSeconds seconds: Int
 ) -> _MongoIndex {
     // Ascending or descending doesn't matter on one index
-    _MongoIndex(index: CreateIndexes.Index(named: name, key: field, order: .ascending))
+    SortedIndex(named: name, field: field)
         .ttl(seconds: seconds)
 }
 

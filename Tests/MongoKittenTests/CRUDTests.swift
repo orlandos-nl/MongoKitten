@@ -241,7 +241,7 @@ class CrudTests : XCTestCase {
 
     /// This test will create a collection for dummy accounts. It will ensure uniqueness of the name field by creating a unique index on the name field.
     /// It will then create a number of dummy accounts and confirm the count is correct. It will then delete the collection.
-    func testIndexCreation() async throws {
+    func testUniqueIndexCreation() async throws {
         let dummyAccounts = try await testBulkCreateDummyAccounts()
         let schema = mongo[DummyAccount.collectionName]
 
@@ -255,6 +255,79 @@ class CrudTests : XCTestCase {
         let deleteReply = try await schema.deleteAll(where: [:])
         XCTAssertEqual(deleteReply.ok, 1)
         XCTAssertEqual(deleteReply.deletes, dummyAccounts.count)
+        
+        let indexes = try await schema.listIndexes().drain()
+        
+        // _id and unique-name
+        XCTAssertEqual(indexes.count, 2)
+        
+        guard let index = indexes.first(where: { $0.name == "unique-name" }) else {
+            return XCTFail("Missing index")
+        }
+        
+        XCTAssertEqual(index.unique, true)
+        XCTAssertEqual(index.key.keys, ["name"])
+    }
+    
+    func testSortedIndexCreation() async throws {
+        let dummyAccounts = try await testBulkCreateDummyAccounts()
+        let schema = mongo[DummyAccount.collectionName]
+        
+        try await schema.buildIndexes {
+            SortedIndex(
+                named: "unique-name",
+                field: "name"
+            )
+        }
+        
+        let deleteReply = try await schema.deleteAll(where: [:])
+        XCTAssertEqual(deleteReply.ok, 1)
+        XCTAssertEqual(deleteReply.deletes, dummyAccounts.count)
+        
+        let indexes = try await schema.listIndexes().drain()
+        
+        // _id and unique-name
+        XCTAssertEqual(indexes.count, 2)
+        
+        guard let index = indexes.first(where: { $0.name == "unique-name" }) else {
+            return XCTFail("Missing index")
+        }
+        
+        XCTAssertEqual(index.unique, nil)
+        XCTAssertEqual(index.key.keys, ["name"])
+    }
+    
+    func testMultipleFieldsUniqueIndexCreation() async throws {
+        let dummyAccounts = try await testBulkCreateDummyAccounts()
+        let schema = mongo[DummyAccount.collectionName]
+        
+        let sort: Sorting = [
+            "name": .ascending,
+            "age": .descending
+        ]
+        
+        try await schema.buildIndexes {
+            SortedIndex(
+                by: sort,
+                named: "unique-name"
+            ).unique()
+        }
+        
+        let deleteReply = try await schema.deleteAll(where: [:])
+        XCTAssertEqual(deleteReply.ok, 1)
+        XCTAssertEqual(deleteReply.deletes, dummyAccounts.count)
+        
+        let indexes = try await schema.listIndexes().drain()
+        
+        // _id and unique-name
+        XCTAssertEqual(indexes.count, 2)
+        
+        guard let index = indexes.first(where: { $0.name == "unique-name" }) else {
+            return XCTFail("Missing index")
+        }
+        
+        XCTAssertEqual(index.unique, true)
+        XCTAssertEqual(index.key, sort.document)
     }
 
     func testUpdateDummyAccounts() async throws {

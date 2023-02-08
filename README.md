@@ -255,12 +255,6 @@ try await users.buildIndexes {
 }
 ```
 
-## GridFS
-
-```swift
-
-```
-
 ## Aggregation
 
 MongoDB supports aggregation pipelines. You can use them like this:
