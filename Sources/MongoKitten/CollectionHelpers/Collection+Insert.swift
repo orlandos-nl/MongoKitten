@@ -1,4 +1,5 @@
 import NIO
+import MongoClient
 import MongoCore
 
 extension MongoCollection {
@@ -35,14 +36,15 @@ extension MongoCollection {
             decodeAs: InsertReply.self,
             namespace: self.database.commandNamespace,
             in: self.transaction,
-            sessionId: self.sessionId ?? connection.implicitSessionId
+            sessionId: self.sessionId ?? connection.implicitSessionId,
+            logMetadata: database.logMetadata
         )
         
         if reply.ok == 1 {
             return reply
         }
 
-        self.pool.logger.error("MongoDB Insert operation failed")
+        self.pool.logger.error("MongoDB Insert operation failed with \(reply.writeErrors?.count ?? 0) write errors", metadata: database.logMetadata)
         throw reply
     }
 }

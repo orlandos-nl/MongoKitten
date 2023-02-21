@@ -89,8 +89,10 @@ public final class FindQueryBuilder: QueryCursor {
             decodeAs: MongoCursorResponse.self,
             namespace: MongoNamespace(to: "$cmd", inDatabase: self.collection.database.name),
             in: self.collection.transaction,
-            sessionId: self.collection.sessionId ?? connection.implicitSessionId
+            sessionId: self.collection.sessionId ?? connection.implicitSessionId,
+            logMetadata: self.collection.database.logMetadata
         )
+        
         let cursor = MongoCursor(
             reply: response.cursor,
             in: self.collection.namespace,

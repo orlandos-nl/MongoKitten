@@ -1,3 +1,4 @@
+import Logging
 import Foundation
 import Metrics
 import BSON
@@ -22,9 +23,10 @@ extension MongoConnection {
         decodeAs: D.Type,
         namespace: MongoNamespace,
         in transaction: MongoTransaction? = nil,
-        sessionId: SessionIdentifier?
+        sessionId: SessionIdentifier?,
+        logMetadata: Logger.Metadata? = nil
     ) async throws -> D {
-        let reply = try await executeEncodable(command, namespace: namespace, in: transaction, sessionId: sessionId)
+        let reply = try await executeEncodable(command, namespace: namespace, in: transaction, sessionId: sessionId, logMetadata: logMetadata)
         let document = try reply.getDocument()
         do {
             return try BSONDecoder().decode(D.self, from: document)
@@ -44,10 +46,11 @@ extension MongoConnection {
         _ command: E,
         namespace: MongoNamespace,
         in transaction: MongoTransaction? = nil,
-        sessionId: SessionIdentifier?
+        sessionId: SessionIdentifier?,
+        logMetadata: Logger.Metadata? = nil
     ) async throws -> MongoServerReply {
         let request = try BSONEncoder().encode(command)
-        return try await execute(request, namespace: namespace, in: transaction, sessionId: sessionId)
+        return try await execute(request, namespace: namespace, in: transaction, sessionId: sessionId, logMetadata: logMetadata)
     }
 
     /// Executes a command on the server and returns the reply, or throws an error if the command failed.
@@ -61,10 +64,11 @@ extension MongoConnection {
         _ command: Document,
         namespace: MongoNamespace,
         in transaction: MongoTransaction? = nil,
-        sessionId: SessionIdentifier? = nil
+        sessionId: SessionIdentifier? = nil,
+        logMetadata: Logger.Metadata? = nil
     ) async throws -> MongoServerReply {
         let startDate = Date()
-        let result = try await executeOpMessage(command, namespace: namespace, in: transaction, sessionId: sessionId)
+        let result = try await executeOpMessage(command, namespace: namespace, in: transaction, sessionId: sessionId, logMetadata: logMetadata)
 
         if let queryTimer = queryTimer {
             queryTimer.record(-startDate.timeIntervalSinceNow)
@@ -82,11 +86,12 @@ extension MongoConnection {
     public func executeOpQuery(
         _ query: inout OpQuery,
         in transaction: MongoTransaction? = nil,
-        sessionId: SessionIdentifier? = nil
+        sessionId: SessionIdentifier? = nil,
+        logMetadata: Logger.Metadata? = nil
     ) async throws -> OpReply {
         query.header.requestId = self.nextRequestId()
         
-        guard case .reply(let reply) = try await self.executeMessage(query) else {
+        guard case .reply(let reply) = try await self.executeMessage(query, logMetadata: logMetadata) else {
             self.logger.error("Unexpected reply type, expected OpReply")
             throw MongoError(.queryFailure, reason: .invalidReplyType)
         }
@@ -104,11 +109,12 @@ extension MongoConnection {
     public func executeOpMessage(
         _ query: inout OpMessage,
         in transaction: MongoTransaction? = nil,
-        sessionId: SessionIdentifier? = nil
+        sessionId: SessionIdentifier? = nil,
+        logMetadata: Logger.Metadata? = nil
     ) async throws -> OpMessage {
         query.header.requestId = self.nextRequestId()
         
-        guard case .message(let message) = try await self.executeMessage(query) else {
+        guard case .message(let message) = try await self.executeMessage(query, logMetadata: logMetadata) else {
             self.logger.error("Unexpected reply type, expected OpMessage")
             throw MongoError(.queryFailure, reason: .invalidReplyType)
         }
@@ -120,7 +126,8 @@ extension MongoConnection {
         _ command: Document,
         namespace: MongoNamespace,
         in transaction: MongoTransaction? = nil,
-        sessionId: SessionIdentifier? = nil
+        sessionId: SessionIdentifier? = nil,
+        logMetadata: Logger.Metadata? = nil
     ) async throws -> MongoServerReply {
         var command = command
         
@@ -135,7 +142,8 @@ extension MongoConnection {
                 query: command,
                 requestId: self.nextRequestId(),
                 fullCollectionName: namespace.fullCollectionName
-            )
+            ),
+            logMetadata: logMetadata
         )
     }
 
@@ -143,7 +151,8 @@ extension MongoConnection {
         _ command: Document,
         namespace: MongoNamespace,
         in transaction: MongoTransaction? = nil,
-        sessionId: SessionIdentifier? = nil
+        sessionId: SessionIdentifier? = nil,
+        logMetadata: Logger.Metadata? = nil
     ) async throws -> MongoServerReply {
         var command = command
         command.appendValue(namespace.databaseName, forKey: "$db")
@@ -168,7 +177,8 @@ extension MongoConnection {
             OpMessage(
                 body: command,
                 requestId: self.nextRequestId()
-            )
+            ),
+            logMetadata: logMetadata
         )
     }
 }

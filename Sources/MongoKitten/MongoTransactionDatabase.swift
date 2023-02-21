@@ -6,7 +6,8 @@ public final class MongoTransactionDatabase: MongoDatabase {
             decodeAs: OK.self,
             namespace: .administrativeCommand,
             in: self.transaction,
-            sessionId: self.sessionId
+            sessionId: self.sessionId,
+            logMetadata: logMetadata
         )
     }
     
@@ -17,7 +18,8 @@ public final class MongoTransactionDatabase: MongoDatabase {
             decodeAs: OK.self,
             namespace: .administrativeCommand,
             in: self.transaction,
-            sessionId: self.sessionId
+            sessionId: self.sessionId,
+            logMetadata: logMetadata
         )
     }
 }

@@ -78,7 +78,9 @@ Vapor users should register the database as a service.
 ```swift
 extension Request {
     public var mongoDB: MongoDatabase {
-        return application.mongoDB
+        return application.mongoDB.adoptingLogMetadata([
+            "request-id": .string(id)
+        ])
     }
     
     // For Meow users only
