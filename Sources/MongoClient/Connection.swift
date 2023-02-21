@@ -260,10 +260,8 @@ public final actor MongoConnection: @unchecked Sendable {
         _ message: Request,
         logMetadata: Logger.Metadata? = nil
     ) async throws -> MongoServerReply {
-        var logMetadata = logMetadata ?? [:]
-        logMetadata["query-id"] = .string(String(message.header.requestId))
-        
         if await self.context.didError {
+            logger.info("Query could not be executed on this connection because", metadata: logMetadata)
             channel.close(mode: .all, promise: nil)
             throw MongoError(.queryFailure, reason: .connectionClosed)
         }

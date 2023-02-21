@@ -91,8 +91,11 @@ extension MongoConnection {
     ) async throws -> OpReply {
         query.header.requestId = self.nextRequestId()
         
+        var logMetadata = logMetadata ?? [:]
+        logMetadata["query-id"] = .string(String(query.header.requestId))
+        
         guard case .reply(let reply) = try await self.executeMessage(query, logMetadata: logMetadata) else {
-            self.logger.error("Unexpected reply type, expected OpReply")
+            self.logger.error("Unexpected reply type, expected OpReply", metadata: logMetadata)
             throw MongoError(.queryFailure, reason: .invalidReplyType)
         }
         
@@ -114,6 +117,9 @@ extension MongoConnection {
     ) async throws -> OpMessage {
         query.header.requestId = self.nextRequestId()
         
+        var logMetadata = logMetadata ?? [:]
+        logMetadata["query-id"] = .string(String(query.header.requestId))
+        
         guard case .message(let message) = try await self.executeMessage(query, logMetadata: logMetadata) else {
             self.logger.error("Unexpected reply type, expected OpMessage")
             throw MongoError(.queryFailure, reason: .invalidReplyType)
@@ -131,7 +137,13 @@ extension MongoConnection {
     ) async throws -> MongoServerReply {
         var command = command
         
+        let requestId = nextRequestId()
+        var logMetadata = logMetadata ?? [:]
+        logMetadata["mongo-query-id"] = .string(String(requestId))
+        
         if let id = sessionId?.id {
+            logMetadata["mongo-session-id"] = .string(id.data.base64EncodedString())
+            
             command.appendValue([
                 "id": id
             ] as Document, forKey: "lsid")
@@ -140,7 +152,7 @@ extension MongoConnection {
         return try await executeMessage(
             OpQuery(
                 query: command,
-                requestId: self.nextRequestId(),
+                requestId: requestId,
                 fullCollectionName: namespace.fullCollectionName
             ),
             logMetadata: logMetadata
@@ -155,9 +167,15 @@ extension MongoConnection {
         logMetadata: Logger.Metadata? = nil
     ) async throws -> MongoServerReply {
         var command = command
+        
+        let requestId = nextRequestId()
+        var logMetadata = logMetadata ?? [:]
+        logMetadata["mongo-query-id"] = .string(String(requestId))
+        
         command.appendValue(namespace.databaseName, forKey: "$db")
         
         if let id = sessionId?.id {
+            logMetadata["mongo-session-id"] = .string(id.data.base64EncodedString())
             command.appendValue([
                 "id": id
             ] as Document, forKey: "lsid")
@@ -167,6 +185,8 @@ extension MongoConnection {
         if let transaction = transaction {
             command.appendValue(transaction.number, forKey: "txnNumber")
             command.appendValue(transaction.autocommit, forKey: "autocommit")
+            
+            logMetadata["mongo-transaction-id"] = .string(String(transaction.number))
 
             if await transaction.startTransaction() {
                 command.appendValue(true, forKey: "startTransaction")
@@ -176,7 +196,7 @@ extension MongoConnection {
         return try await executeMessage(
             OpMessage(
                 body: command,
-                requestId: self.nextRequestId()
+                requestId: requestId
             ),
             logMetadata: logMetadata
         )
