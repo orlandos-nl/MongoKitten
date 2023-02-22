@@ -31,7 +31,14 @@ extension MongoConnection {
         do {
             return try BSONDecoder().decode(D.self, from: document)
         } catch {
-            throw MongoServerError(document: document)
+            do {
+                let error = try BSONDecoder().decode(MongoGenericErrorReply.self, from: document)
+                logger.error("Failed to execute query id=\(reply.responseTo), errorCode=\(error.code.map(String.init) ?? "nil"), message='\(error.errorMessage ?? "-")'", metadata: logMetadata)
+                throw error
+            } catch {
+                logger.error("Failed to parse MongoDB reply, error format also unknown", metadata: logMetadata)
+                throw MongoServerError(document: document)
+            }
         }
     }
     
@@ -95,7 +102,7 @@ extension MongoConnection {
         logMetadata["query-id"] = .string(String(query.header.requestId))
         
         guard case .reply(let reply) = try await self.executeMessage(query, logMetadata: logMetadata) else {
-            self.logger.error("Unexpected reply type, expected OpReply", metadata: logMetadata)
+            self.logger.critical("Protocol Error: Unexpected reply type, expected OpReply format", metadata: logMetadata)
             throw MongoError(.queryFailure, reason: .invalidReplyType)
         }
         
@@ -121,7 +128,7 @@ extension MongoConnection {
         logMetadata["query-id"] = .string(String(query.header.requestId))
         
         guard case .message(let message) = try await self.executeMessage(query, logMetadata: logMetadata) else {
-            self.logger.error("Unexpected reply type, expected OpMessage")
+            self.logger.error("Protocol Error: Unexpected reply type, expected OpMessage")
             throw MongoError(.queryFailure, reason: .invalidReplyType)
         }
         
