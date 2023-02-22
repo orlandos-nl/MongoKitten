@@ -8,7 +8,7 @@
 
 A fast, pure swift [MongoDB](https://mongodb.com) driver based on [Swift NIO](https://github.com/apple/swift-nio) built for Server Side Swift. It features a great API and a battle-tested core. Supporting both MongoDB in server and embedded environments.
 
-MongoKitten is a fully asynchronous driver, which means that it doesn't block any threads. This also means that it can be used in any asynchronous environment, such as Vapor.
+MongoKitten is a fully asynchronous driver, which means that it doesn't block any threads. This also means that it can be used in any asynchronous environment, such as [Vapor](https://github.com/vapor/vapor) or [Hummingbird](https://github.com/hummingbird-project/hummingbird).
 
 # 🐈 Community & Docs
 
@@ -73,7 +73,7 @@ import MongoKitten
 let db = try await MongoDatabase.connect(to: "mongodb://localhost/my_database")
 ```
 
-Vapor users should register the database as a service.
+Vapor users should register the database as a service:
 
 ```swift
 extension Request {
@@ -81,16 +81,6 @@ extension Request {
         return application.mongoDB.adoptingLogMetadata([
             "request-id": logger[metadataKey: "request-id"] ?? "unknown"
         ])
-    }
-    
-    // For Meow users only
-    public var meow: MeowDatabase {
-        return MeowDatabase(mongoDB)
-    }
-    
-    // For Meow users only
-    public func meow<M: ReadableModel>(_ type: M.Type) -> MeowCollection<M> {
-        return meow[type]
     }
 }
 
@@ -106,11 +96,6 @@ extension Application {
         set {
             storage[MongoDBStorageKey.self] = newValue
         }
-    }
-    
-    // For Meow users only
-    public var meow: MeowDatabase {
-        MeowDatabase(mongoDB)
     }
     
     public func initializeMongoDB(connectionString: String) throws {
