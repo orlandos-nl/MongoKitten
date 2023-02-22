@@ -104,6 +104,25 @@ extension Application {
 }
 ```
 
+The same goes for Hummingbird users:
+
+```swift
+extension HBApplication {
+    public var mongo: MongoDatabase {
+        get { extensions.get(\.mongo) }
+        set { extensions.set(\.mongo, value: newValue) }
+    }
+}
+
+extension HBRequest {
+    public var mongo: MongoDatabase {
+        application.mongo.adoptingLogMetadata([
+            "hb_id": logger[metadataKey: "hb_id"] ?? "unknown"
+        ])
+    }
+}
+```
+
 And make sure to call `app.initializeMongoDB`!
 
 ## CRUD (Create, Read, Update, Delete)
@@ -362,6 +381,39 @@ A few notes:
 
 Meow works as a lightweight but powerful ORM layer around MongoKitten.
 
+## Setting up with Vapor
+
+```swift
+extension Application {
+    public var meow: MeowDatabase {
+        MeowDatabase(mongo)
+    }
+}
+
+extension Request {
+    public var meow: MeowDatabase {
+        MeowDatabase(mongo)
+    }
+}
+
+```
+
+## Setting up with Hummingbird
+
+```swift
+extension HBApplication {
+    public var meow: MeowDatabase {
+        MeowDatabase(mongo)
+    }
+}
+
+extension HBRequest {
+    public var meow: MeowDatabase {
+        MeowDatabase(mongo)
+    }
+}
+```
+
 ## Models
 
 There are two main types of models in Meow, these docs will focus on the most common one.
@@ -389,7 +441,7 @@ struct User: Model {
 }
 ```
 
-You can also mark use nested types, as you'd expect of MongoDB. Each field in these nested types must also be makred with `@Field` to make it queryable.
+You can also mark use nested types, as you'd expect of MongoDB. Each field in these nested types must also be marked with the `@Field` property wrapper to make it queryable.
 
 ```swift
 import Meow
@@ -409,13 +461,13 @@ struct User: Model {
 
 ### Queries
 
-Using the above model, we can query it from a MeowCollection. Get your instance from the MeowDatabase using a subscritp!
+Using the above model, we can query it from a MeowCollection. Get your instance from the MeowDatabase using a typed subscript!
 
 ```swift
 let users = meow[User.self]
 ```
 
-Next, run a `find` or `count` query:
+Next, run a `find` or `count` query, but using a type-checked syntax instead! Each portion of the path needs to be prefixed with `$` to access the `Field` property wrapper.
 
 ```swift
 let adultCount = try await users.count(matching: { user in
