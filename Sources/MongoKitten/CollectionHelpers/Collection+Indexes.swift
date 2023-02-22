@@ -24,7 +24,8 @@ extension MongoCollection {
             ),
             namespace: self.database.commandNamespace,
             in: self.transaction,
-            sessionId: self.sessionId ?? connection.implicitSessionId
+            sessionId: self.sessionId ?? connection.implicitSessionId,
+            logMetadata: database.logMetadata
         )
         
         try reply.assertOK()
@@ -46,7 +47,8 @@ extension MongoCollection {
             request,
             decodeAs: MongoCursorResponse.self,
             namespace: namespace,
-            sessionId: nil
+            sessionId: nil,
+            logMetadata: database.logMetadata
         )
         
         return MongoCursor(

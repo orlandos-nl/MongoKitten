@@ -82,7 +82,7 @@ public struct AggregateBuilderPipeline: QueryCursor {
         let minimalVersionRequired = stages.compactMap(\.minimalVersionRequired).max()
         
         if let actualVersion = await connection.wireVersion, let minimalVersion = minimalVersionRequired, actualVersion < minimalVersion {
-            connection.logger.warning("Aggregation might fail since one or more aggregation stages require a higher MongoDB version than provided by the current connection.")
+            connection.logger.warning("Aggregation might fail since one or more aggregation stages require a higher MongoDB version than provided by the current connection.", metadata: collection.database.logMetadata)
         }
         
         #endif
@@ -92,7 +92,8 @@ public struct AggregateBuilderPipeline: QueryCursor {
             decodeAs: CursorReply.self,
             namespace: self.collection.database.commandNamespace,
             in: self.collection.transaction,
-            sessionId: self.collection.sessionId ?? connection.implicitSessionId
+            sessionId: self.collection.sessionId ?? connection.implicitSessionId,
+            logMetadata: self.collection.database.logMetadata
         )
         
         let cursor = MongoCursor(

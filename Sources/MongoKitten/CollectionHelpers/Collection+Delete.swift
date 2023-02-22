@@ -16,7 +16,8 @@ extension MongoCollection {
             decodeAs: DeleteReply.self,
             namespace: self.database.commandNamespace,
             in: self.transaction,
-            sessionId: self.sessionId ?? connection.implicitSessionId
+            sessionId: self.sessionId ?? connection.implicitSessionId,
+            logMetadata: database.logMetadata
         )
     }
     
@@ -34,7 +35,8 @@ extension MongoCollection {
             decodeAs: DeleteReply.self,
             namespace: self.database.commandNamespace,
             in: self.transaction,
-            sessionId: self.sessionId ?? connection.implicitSessionId
+            sessionId: self.sessionId ?? connection.implicitSessionId,
+            logMetadata: database.logMetadata
         )
     }
     

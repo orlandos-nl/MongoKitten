@@ -2,6 +2,7 @@ import MongoClient
 import Logging
 import Foundation
 import NIO
+import NIOConcurrencyHelpers
 
 #if canImport(NIOTransportServices) && os(iOS)
 import NIOTransportServices
@@ -13,6 +14,14 @@ import NIOTransportServices
 public class MongoDatabase {
     internal var transaction: MongoTransaction!
     public internal(set) var session: MongoClientSession?
+    
+    private let lock = NIOLock()
+    private var _logMetadata: Logger.Metadata?
+    public var logMetadata: Logger.Metadata? {
+        get { lock.withLock { _logMetadata } }
+        set { lock.withLock { _logMetadata = newValue } }
+    }
+    
     public var sessionId: SessionIdentifier? {
         return session?.sessionId
     }
@@ -33,6 +42,12 @@ public class MongoDatabase {
     /// The collection to execute commands on
     public var commandNamespace: MongoNamespace {
         return MongoNamespace(to: "$cmd", inDatabase: self.name)
+    }
+    
+    public func adoptingLogMetadata(_ metadata: Logger.Metadata) -> MongoDatabase {
+        let copy = MongoDatabase(named: name, pool: pool)
+        copy.logMetadata = metadata
+        return copy
     }
 
     internal init(named name: String, pool: MongoConnectionPool) {
@@ -169,7 +184,8 @@ public class MongoDatabase {
             DropDatabaseCommand(),
             namespace: self.commandNamespace,
             in: self.transaction,
-            sessionId: connection.implicitSessionId
+            sessionId: connection.implicitSessionId,
+            logMetadata: logMetadata
         )
         try reply.assertOK()
     }
@@ -188,7 +204,8 @@ public class MongoDatabase {
             decodeAs: MongoCursorResponse.self,
             namespace: self.commandNamespace,
             in: self.transaction,
-            sessionId: connection.implicitSessionId
+            sessionId: connection.implicitSessionId,
+            logMetadata: logMetadata
         )
         
         let cursor = MongoCursor(

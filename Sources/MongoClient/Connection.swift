@@ -256,8 +256,12 @@ public final actor MongoConnection: @unchecked Sendable {
         try await self.authenticate(to: authenticationDatabase, serverHandshake: handshake, with: credentials)
     }
     
-    func executeMessage<Request: MongoRequestMessage>(_ message: Request) async throws -> MongoServerReply {
+    func executeMessage<Request: MongoRequestMessage>(
+        _ message: Request,
+        logMetadata: Logger.Metadata? = nil
+    ) async throws -> MongoServerReply {
         if await self.context.didError {
+            logger.info("Query could not be executed on this connection because", metadata: logMetadata)
             channel.close(mode: .all, promise: nil)
             throw MongoError(.queryFailure, reason: .connectionClosed)
         }

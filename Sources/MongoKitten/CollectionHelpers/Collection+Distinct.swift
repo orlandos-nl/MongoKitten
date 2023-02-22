@@ -10,7 +10,8 @@ extension MongoCollection {
             decodeAs: DistinctReply.self,
             namespace: self.database.commandNamespace,
             in: self.transaction,
-            sessionId: self.sessionId ?? connection.implicitSessionId
+            sessionId: self.sessionId ?? connection.implicitSessionId,
+            logMetadata: database.logMetadata
         ).distinctValues
     }
 }

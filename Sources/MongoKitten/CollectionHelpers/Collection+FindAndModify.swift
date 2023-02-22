@@ -163,7 +163,8 @@ public final class FindAndModifyBuilder {
             decodeAs: FindAndModifyReply.self,
             namespace: self.collection.database.commandNamespace,
             in: self.collection.transaction,
-            sessionId: self.collection.sessionId ?? connection.implicitSessionId
+            sessionId: self.collection.sessionId ?? connection.implicitSessionId,
+            logMetadata: self.collection.database.logMetadata
         )
     }
     

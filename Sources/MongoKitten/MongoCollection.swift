@@ -44,7 +44,8 @@ public final class MongoCollection {
             DropCollectionCommand(named: self.name),
             namespace: self.database.commandNamespace,
             in: self.transaction,
-            sessionId: connection.implicitSessionId
+            sessionId: connection.implicitSessionId,
+            logMetadata: database.logMetadata
         )
         
         guard try reply.isOK() else {
