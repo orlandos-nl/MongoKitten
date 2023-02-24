@@ -79,7 +79,7 @@ Vapor users should register the database as a service:
 extension Request {
     public var mongoDB: MongoDatabase {
         return application.mongoDB.adoptingLogMetadata([
-            "request-id": logger[metadataKey: "request-id"] ?? "unknown"
+            "request-id": .string(id)
         ])
     }
 }
@@ -117,7 +117,7 @@ extension HBApplication {
 extension HBRequest {
     public var mongo: MongoDatabase {
         application.mongo.adoptingLogMetadata([
-            "hb_id": logger[metadataKey: "hb_id"] ?? "unknown"
+            "hb_id": .string(id)
         ])
     }
 }
