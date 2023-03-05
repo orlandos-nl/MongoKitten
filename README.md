@@ -219,7 +219,7 @@ let users: [User] = try await users.find().decode(User.self).drain()
 You can do updateOne/many and deleteOne/many the same way you'd see in the MongoDB docs.
 
 ```swift
-try await users.updateMany(where: "username" == "kitty", setting: ["age": 3])
+try await users.updateMany(where: "username" == "kitty", setting: ["age": 3], unsetting: nil)
 ```
 
 The result is implicitly discarded, but you can still get and use it.
