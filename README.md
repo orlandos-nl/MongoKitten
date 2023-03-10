@@ -1,13 +1,12 @@
-# <img height="200px" style="float: left" src="https://user-images.githubusercontent.com/1951674/224332570-0b8f7c5c-5c24-4ea1-a6c4-0208cf3aab3b.png" /> MongoKitten
+# <img height="200px" style="float: right;" src="https://user-images.githubusercontent.com/1951674/224335889-c6345081-fef9-4b01-95ba-c3a718aa91e9.png" /> MongoKitten
 
-<br />
 A fast, pure swift [MongoDB](https://mongodb.com) driver based on [Swift NIO](https://github.com/apple/swift-nio) built for Server Side Swift. It features a great API and a battle-tested core. Supporting both MongoDB in server and embedded environments.
 
 MongoKitten is a fully asynchronous driver, which means that it doesn't block any threads. This also means that it can be used in any asynchronous environment, such as [Vapor](https://github.com/vapor/vapor) or [Hummingbird](https://github.com/hummingbird-project/hummingbird).
 
-[Join our Discord](https://discord.gg/H6799jh) for any questions and friendly banter.
+# Docs & Community
 
-# Docs
+[Join our Discord](https://discord.gg/H6799jh) for any questions and friendly banter.
 
 ### Projects
 
