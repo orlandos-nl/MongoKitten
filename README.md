@@ -119,7 +119,19 @@ extension HBRequest {
 }
 ```
 
-And make sure to call `app.initializeMongoDB`!
+Make sure to instantiate the database driver before starting your application.
+
+For Vapor:
+
+```swift
+try app.initializeMongoDB(connectionString: "mongodb://localhost/my-app")
+```
+
+For hummingbird:
+
+```swift
+app.mongo = try MongoDatabase.lazyConnect(to: "mongodb://localhost/my-app")
+```
 
 ## CRUD (Create, Read, Update, Delete)
 
