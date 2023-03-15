@@ -170,7 +170,7 @@ public final class FindAndModifyBuilder {
     
     public func decode<D: Decodable>(_ type: D.Type) async throws -> D? {
         try await self.execute().value.map { document in
-            try BSONDecoder().decode(D.self, from: document)
+            try FastBSONDecoder().decode(D.self, from: document)
         }
     }
     

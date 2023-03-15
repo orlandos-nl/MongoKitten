@@ -236,7 +236,7 @@ extension EventLoopFuture where Value == Optional<Document> {
     public func decode<D: Decodable>(_ type: D.Type) -> EventLoopFuture<D?> {
         return flatMapThrowing { document in
             if let document = document {
-                return try BSONDecoder().decode(type, from: document)
+                return try FastBSONDecoder().decode(type, from: document)
             } else {
                 return nil
             }

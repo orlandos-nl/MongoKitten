@@ -35,7 +35,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-atomics.git", from: "1.0.0"),
         
         // 💾
-        .package(url: "https://github.com/orlandos-nl/BSON.git", from: "8.0.0"),
+        .package(url: "https://github.com/orlandos-nl/BSON.git", from: "8.0.8"),
         //        .package(name: "BSON", path: "../BSON"),
         
         // 🚀
