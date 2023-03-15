@@ -55,7 +55,7 @@ internal extension Decodable {
             try reply.assertOK()
         }
         
-        self = try BSONDecoder().decode(Self.self, from: reply.getDocument())
+        self = try FastBSONDecoder().decode(Self.self, from: reply.getDocument())
     }
 }
 

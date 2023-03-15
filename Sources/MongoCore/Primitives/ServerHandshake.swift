@@ -45,7 +45,7 @@ public struct ServerHandshake: Codable, Sendable {
     public let setName: String?
 
     /// The current replica set config version.
-    public let setVersion: String?
+    public let setVersion: Int32?
 
     /// A boolean value that, when true, indicates if the mongod is a secondary member of a replica set.
     public let secondary: Bool?

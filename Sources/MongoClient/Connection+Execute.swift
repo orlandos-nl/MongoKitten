@@ -29,10 +29,10 @@ extension MongoConnection {
         let reply = try await executeEncodable(command, namespace: namespace, in: transaction, sessionId: sessionId, logMetadata: logMetadata)
         let document = try reply.getDocument()
         do {
-            return try BSONDecoder().decode(D.self, from: document)
+            return try FastBSONDecoder().decode(D.self, from: document)
         } catch {
             do {
-                let error = try BSONDecoder().decode(MongoGenericErrorReply.self, from: document)
+                let error = try FastBSONDecoder().decode(MongoGenericErrorReply.self, from: document)
                 logger.error("Failed to execute query id=\(reply.responseTo), errorCode=\(error.code.map(String.init) ?? "nil"), message='\(error.errorMessage ?? "-")'", metadata: logMetadata)
                 throw error
             } catch {

@@ -46,7 +46,7 @@ fileprivate final class MongoCredentialsCache {
     }
     
     public func loadCache(from document: Document) throws {
-        _cache = try BSONDecoder().decode([String: Credentials].self, from: document)
+        _cache = try FastBSONDecoder().decode([String: Credentials].self, from: document)
     }
 }
 
