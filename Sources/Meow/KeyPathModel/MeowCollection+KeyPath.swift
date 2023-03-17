@@ -163,19 +163,19 @@ extension MeowCollection where M: MutableModel & KeyPathQueryableModel {
         let filter = try matching(matcher)
         return try await self.deleteAll(where: filter, writeConcern: writeConcern)
     }
-    
+
     /// Updates one entity matching the filter constructed int the `matching` closure
     @discardableResult
     public func updateOne(matching: (QueryMatcher<M>) throws -> Document, build: (inout ModelUpdateQuery<M>) throws -> ()) async throws -> UpdateReply {
         let matcher = QueryMatcher<M>()
         let filter = try matching(matcher)
-        
+
         var update = ModelUpdateQuery<M>()
         try build(&update)
-        
+
         return try await raw.updateOne(where: filter, to: update.makeDocument())
     }
-    
+
     /// Updates one entity matching the filter constructed int the `matching` closure
     /// The update itself is constructed in the `build` closure using the `ModelUpdateQuery` tpye
     ///
@@ -184,11 +184,38 @@ extension MeowCollection where M: MutableModel & KeyPathQueryableModel {
     public func updateOne<MKQ: MongoKittenQuery>(matching: (QueryMatcher<M>) throws -> MKQ, build: (inout ModelUpdateQuery<M>) throws -> ()) async throws -> UpdateReply {
         let matcher = QueryMatcher<M>()
         let filter = try matching(matcher)
-        
+
         var update = ModelUpdateQuery<M>()
         try build(&update)
-        
+
         return try await raw.updateOne(where: filter, to: update.makeDocument())
+    }
+
+    /// Updates all entities matching the filter constructed int the `matching` closure
+    @discardableResult
+    public func updateAll(matching: (QueryMatcher<M>) throws -> Document, build: (inout ModelUpdateQuery<M>) throws -> ()) async throws -> UpdateReply {
+        let matcher = QueryMatcher<M>()
+        let filter = try matching(matcher)
+
+        var update = ModelUpdateQuery<M>()
+        try build(&update)
+
+        return try await raw.updateMany(where: filter, to: update.makeDocument())
+    }
+
+    /// Updates all entities matching the filter constructed int the `matching` closure
+    /// The update itself is constructed in the `build` closure using the `ModelUpdateQuery` tpye
+    ///
+    /// - See: `ModelUpdateQuery` for more information
+    @discardableResult
+    public func updateAll<MKQ: MongoKittenQuery>(matching: (QueryMatcher<M>) throws -> MKQ, build: (inout ModelUpdateQuery<M>) throws -> ()) async throws -> UpdateReply {
+        let matcher = QueryMatcher<M>()
+        let filter = try matching(matcher)
+
+        var update = ModelUpdateQuery<M>()
+        try build(&update)
+
+        return try await raw.updateMany(where: filter, to: update.makeDocument())
     }
 }
 
