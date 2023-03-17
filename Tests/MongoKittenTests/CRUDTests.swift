@@ -57,8 +57,7 @@ class CrudTests : XCTestCase {
         
         mongo = try await MongoDatabase.connect(to: settings)
         try await mongo.drop()
-        concern = WriteConcern()
-        concern.acknowledgement = .majority
+        concern = WriteConcern.majority()
     }
     
     func testCreateDummyAccount() async throws {
@@ -68,7 +67,7 @@ class CrudTests : XCTestCase {
         let dummyAccount = DummyAccount(name: "Dum", password: "my", age: 69)
         try await schema.insertEncoded(dummyAccount)
         let count = try await schema.count()
-        XCTAssertEqual(count, startingCount+1)
+        XCTAssertEqual(count, startingCount + 1)
     }
     
     // is used repeatedly for all the tests that require dummy data

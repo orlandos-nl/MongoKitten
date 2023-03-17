@@ -197,6 +197,7 @@ public struct ModelUpdateQuery<M: KeyPathQueryableModel & MutableModel> {
     var set = Document()
     var unset = Document()
     var inc = Document()
+    var addToSet = [String: [Primitive]]()
     
     internal init() {}
     
@@ -237,11 +238,41 @@ public struct ModelUpdateQuery<M: KeyPathQueryableModel & MutableModel> {
     }
     
     /// Adds an atomic `$unset` to the update query that increments the numeric field corresponding to `keyPath` with `newValue` (or 1 by default)
-    public mutating func increment<I: FixedWidthInteger & Primitive>(at keyPath: WritableKeyPath<M, QueryableField<I>>, to newValue: I = 1) {
+    @available(*, deprecated, message: "Use increment(at:by:) instead")
+    public mutating func increment<I: FixedWidthInteger & Primitive>(at keyPath: WritableKeyPath<M, QueryableField<I>>, to newValue: I) {
         let path = M.resolveFieldPath(keyPath).joined(separator: ".")
         inc[path] = newValue
     }
-    
+
+    /// Adds an atomic `$unset` to the update query that increments the numeric field corresponding to `keyPath` with `newValue` (or 1 by default)
+    public mutating func increment<I: FixedWidthInteger & Primitive>(at keyPath: WritableKeyPath<M, QueryableField<I>>, by newValue: I = 1) {
+        let path = M.resolveFieldPath(keyPath).joined(separator: ".")
+        inc[path] = newValue
+    }
+
+    /// Adds an atomic `$addToSet` to the update query that increments the numeric field corresponding to `keyPath` with `newValue` (or 1 by default)
+    public mutating func addToSet<Value: Hashable & Codable>(at keyPath: WritableKeyPath<M, QueryableField<Set<Value>>>, value: Value) throws {
+        let path = M.resolveFieldPath(keyPath).joined(separator: ".")
+        let value = try BSONEncoder().encodePrimitive(value) ?? Null()
+        if var values = addToSet[path] {
+            values.append(value)
+            addToSet[path] = values
+        } else {
+            addToSet[path] = [value]
+        }
+    }
+
+    /// Adds an atomic `$addToSet` to the update query that increments the numeric field corresponding to `keyPath` with `newValue` (or 1 by default)
+    public mutating func addToSet<Value: Primitive & Hashable>(at keyPath: WritableKeyPath<M, QueryableField<Set<Value>>>, value: Value) {
+        let path = M.resolveFieldPath(keyPath).joined(separator: ".")
+        if var values = addToSet[path] {
+            values.append(value)
+            addToSet[path] = values
+        } else {
+            addToSet[path] = [value]
+        }
+    }
+
     internal func makeDocument() -> Document {
         var update = Document()
         
@@ -255,6 +286,27 @@ public struct ModelUpdateQuery<M: KeyPathQueryableModel & MutableModel> {
         
         if !inc.isEmpty {
             update["$inc"] = inc
+        }
+
+        if !addToSet.isEmpty {
+            var addToSetDocument = Document()
+
+            for (key, values) in addToSet {
+                if values.count == 1 {
+                    addToSetDocument[key] = values[0]
+                } else {
+                    var each = Document(isArray: true)
+                    for value in values {
+                        each.append(value)
+                    }
+
+                    addToSetDocument[key] = [
+                        "$each": each
+                    ] as Document
+                }
+            }
+
+            update["$addToSet"] = addToSetDocument
         }
         
         return update

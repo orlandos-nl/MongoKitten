@@ -9,6 +9,16 @@ struct UserProfile: Codable, Equatable {
     init() {}
 }
 
+struct Count: Model {
+    @Field var _id: ObjectId
+    @Field var count: Int
+}
+
+struct UserTokens: Model {
+    @Field var _id: ObjectId
+    @Field var tokens: Set<String>
+}
+
 struct User: Model, Equatable {
     @Field var _id: ObjectId
     @Field var email: String
@@ -71,7 +81,7 @@ class MeowTests: XCTestCase {
     func testNestedModelQueries() throws {
         XCTAssertEqual(User.resolveFieldPath(\.$profile.$firstName), ["profile", "firstName"])
     }
-    
+
     func testPartialUpdate() async throws {
         try await meow[User.self].updateOne { user in
             user.$email == "joannis@orlandos.nl"
@@ -79,7 +89,86 @@ class MeowTests: XCTestCase {
             update.setField(at: \.$password, to: "temporary")
         }
     }
-    
+
+    func testIncrement() async throws {
+        let _id = ObjectId()
+
+        let count = Count(_id: _id, count: 10)
+        let ref = Reference(to: count)
+
+        try await meow[Count.self].insert(count)
+
+        do {
+            try await meow[Count.self].updateOne { user in
+                user.$_id == _id
+            } build: { update in
+                update.increment(at: \.$count)
+            }
+
+            let newCount = try await ref.resolve(in: meow)
+            XCTAssertEqual(count.count + 1, newCount.count)
+        }
+
+        do {
+            try await meow[Count.self].updateOne { user in
+                user.$_id == _id
+            } build: { update in
+                update.increment(at: \.$count, by: 9)
+            }
+
+            let newCount = try await ref.resolve(in: meow)
+            XCTAssertEqual(count.count + 10, newCount.count)
+        }
+    }
+
+    func testAddToSet() async throws {
+        let _id = ObjectId()
+
+        let tokens = UserTokens(_id: _id, tokens: ["a"])
+        let ref = Reference(to: tokens)
+
+        try await meow[UserTokens.self].insert(tokens)
+
+        do {
+            try await meow[UserTokens.self].updateOne { user in
+                user.$_id == _id
+            } build: { update in
+                update.addToSet(at: \.$tokens, value: "b")
+            }
+
+            let newTokens = try await ref.resolve(in: meow)
+            XCTAssertEqual(newTokens.tokens, ["a", "b"])
+        }
+
+        do {
+            try await meow[UserTokens.self].updateOne { user in
+                user.$_id == _id
+            } build: { update in
+                update.addToSet(at: \.$tokens, value: "b")
+                update.addToSet(at: \.$tokens, value: "c")
+                update.addToSet(at: \.$tokens, value: "d")
+                update.addToSet(at: \.$tokens, value: "e")
+            }
+
+            let newTokens = try await ref.resolve(in: meow)
+            XCTAssertEqual(newTokens.tokens, ["a", "b", "c", "d", "e"])
+        }
+
+        do {
+            try await meow[UserTokens.self].updateOne { user in
+                user.$_id == _id
+            } build: { update in
+                update.addToSet(at: \.$tokens, value: "b")
+                update.addToSet(at: \.$tokens, value: "c")
+                update.addToSet(at: \.$tokens, value: "d")
+                update.addToSet(at: \.$tokens, value: "e")
+            }
+
+            let newTokens = try await ref.resolve(in: meow)
+            XCTAssertEqual(newTokens.tokens, ["a", "b", "c", "d", "e"])
+        }
+    }
+
     func testModelUpdater() async throws {
         let user = User(email: "joannis@orlandos.nl", password: "test")
         try await user.save(in: meow)
