@@ -127,6 +127,18 @@ extension Reference where M: KeyPathQueryableModel {
         
         return referenced
     }
+
+    /// Resolves a reference, only if the entity matches the provided condition(s)
+    ///
+    /// - Throws: `MeowModelError.referenceError` if the model could not be found
+    /// - Returns: The model `M` if the entity with this `_id` exists _and_ matches the conditions provided in the `where:` clause
+    public func resolve<MKQ: MongoKittenQuery>(in context: MeowDatabase, where matching: (QueryMatcher<M>) -> MKQ) async throws -> M {
+        guard let referenced = try await resolveIfPresent(in: context, where: matching) else {
+            throw MeowModelError.referenceError(id: self.reference, type: M.self)
+        }
+
+        return referenced
+    }
     
     /// Resolves a reference, returning `nil` if the referenced object cannot be found
     public func resolveIfPresent(in context: MeowDatabase, where matching: (QueryMatcher<M>) throws -> Document) async throws -> M? {
@@ -134,6 +146,20 @@ extension Reference where M: KeyPathQueryableModel {
         let matcher = QueryMatcher<M>()
         let filter = try matching(matcher)
         
+        if filter.isEmpty {
+            return try await context.collection(for: M.self).findOne(where: base)
+        } else {
+            let condition = base && filter
+            return try await context.collection(for: M.self).findOne(where: condition)
+        }
+    }
+
+    /// Resolves a reference, returning `nil` if the referenced object cannot be found
+    public func resolveIfPresent<MKQ: MongoKittenQuery>(in context: MeowDatabase, where matching: (QueryMatcher<M>) throws -> MKQ) async throws -> M? {
+        let base = try "_id" == reference.encodePrimitive()
+        let matcher = QueryMatcher<M>()
+        let filter = try matching(matcher).makeDocument()
+
         if filter.isEmpty {
             return try await context.collection(for: M.self).findOne(where: base)
         } else {
