@@ -74,7 +74,7 @@ public final class MongoCluster: MongoConnectionPool {
     /// Whether to use NioDNS for A and AAA queries. This option does not affect SRV and TXT queries.
     ///
     /// This is not thread safe outside of the cluster's eventloop
-    public var useNioDNS = false
+    public var useNioDNS = true
 
     private let isDiscovering: EventLoopPromise<Void>
     public var initialDiscovery: EventLoopFuture<Void> {
