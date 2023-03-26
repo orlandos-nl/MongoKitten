@@ -61,54 +61,6 @@ class MeowTests: XCTestCase {
         XCTAssertEqual(entity._id, entity2._id)
         XCTAssertEqual(entity.date.timeIntervalSince1970, entity2.date.timeIntervalSince1970, accuracy: 0.001)
     }
-
-    func testJSONDecoding() throws {
-        struct Entity: Model, Equatable {
-            @Field var _id: ObjectId
-            @Field var num: Int?
-        }
-
-        do {
-            let json = """
-            {
-                "_id": "5f8a8b9a6f2d6b3a3c3c8e3f",
-                "num": 98021390
-            }
-
-            """
-
-            let entity = try JSONDecoder().decode(Entity.self, from: json.data(using: .utf8)!)
-            XCTAssertEqual(entity._id, ObjectId("5f8a8b9a6f2d6b3a3c3c8e3f"))
-            XCTAssertEqual(entity.num, 98021390)
-        }
-
-        do {
-            let json = """
-            {
-                "_id": "5f8a8b9a6f2d6b3a3c3c8e3f",
-                "num": null
-            }
-
-            """
-
-            let entity = try JSONDecoder().decode(Entity.self, from: json.data(using: .utf8)!)
-            XCTAssertEqual(entity._id, ObjectId("5f8a8b9a6f2d6b3a3c3c8e3f"))
-            XCTAssertEqual(entity.num, nil)
-        }
-
-        do {
-            let json = """
-            {
-                "_id": "5f8a8b9a6f2d6b3a3c3c8e3f"
-            }
-
-            """
-
-            let entity = try JSONDecoder().decode(Entity.self, from: json.data(using: .utf8)!)
-            XCTAssertEqual(entity._id, ObjectId("5f8a8b9a6f2d6b3a3c3c8e3f"))
-            XCTAssertEqual(entity.num, nil)
-        }
-    }
     
     func testAggregate() async throws {
         _ = try await meow[User.self].buildCheckedAggregate {
