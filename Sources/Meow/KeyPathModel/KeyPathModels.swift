@@ -245,6 +245,15 @@ public struct QueryableField<Value> {
     }
 }
 
+internal protocol OptionalProtocol {
+    static var _none: any OptionalProtocol { get }
+}
+extension Optional: OptionalProtocol {
+    static var _none: any OptionalProtocol {
+        Optional<Wrapped>.none as OptionalProtocol
+    }
+}
+
 /// The `@Field` property wrapper is used on all stored properties of a ``Model`` to allow key path based queries.
 @propertyWrapper
 public struct Field<C: Codable>: Codable {
@@ -271,8 +280,7 @@ public struct Field<C: Codable>: Codable {
         if decoder is TestDecoder {
             self._wrappedValue = try? C(from: decoder)
         } else {
-            let container = try decoder.singleValueContainer()
-            self._wrappedValue = try container.decode(C.self)
+            self._wrappedValue = try C.init(from: decoder)
         }
     }
     
