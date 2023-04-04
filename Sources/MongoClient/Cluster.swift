@@ -434,6 +434,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         }
     }
 
+    /// Gets a connection from the pool, or creates a new one if none are available. The returned connection matches the requirements of the request.
     public func next(for request: ConnectionPoolRequest) async throws -> MongoConnection {
         return try await self.makeConnectionRecursively(for: request)
     }

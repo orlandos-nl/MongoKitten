@@ -11,6 +11,10 @@ extension MongoCollection {
     ///   - update: If passed a document with update operator expressions, performs the specified modification. If passed a replacement document performs a replacement.
     ///   - remove: Removes the document specified in the query field. Defaults to `false`
     ///   - returnValue: Wether to return the `original` or `modified` document.
+    /// - Returns: A `FindAndModifyBuilder` to further configure the operation.
+    /// 
+    /// - Note: Call `execute` on the returned `FindAndModifyBuilder` to execute the operation.
+    /// - See Also: [MongoDB Documentation](https://docs.mongodb.com/manual/reference/command/findAndModify/)
     public func findAndModify(
         where query: Document,
         update document: Document = [:],
@@ -27,6 +31,10 @@ extension MongoCollection {
     /// Deletes a single document based on the query, returning the deleted document.
     /// - Parameters:
     ///   - query: The selection criteria for the deletion.
+    /// - Returns: A `FindAndModifyBuilder` to further configure the operation.
+    /// 
+    /// - Note: Call `execute` on the returned `FindAndModifyBuilder` to execute the operation.
+    /// - See Also: [MongoDB Documentation](https://docs.mongodb.com/manual/reference/command/findAndModify/)
     public func findOneAndDelete(where query: Document) -> FindAndModifyBuilder {
         var command = FindAndModifyCommand(collection: self.name, query: query)
         command.remove = true
@@ -38,6 +46,10 @@ extension MongoCollection {
     ///   - query: The selection criteria for the upate.
     ///   - replacement: The replacement document.
     ///   - returnValue: Wether to return the `original` or `modified` document.
+    /// - Returns: A `FindAndModifyBuilder` to further configure the operation.
+    /// 
+    /// - Note: Call `execute` on the returned `FindAndModifyBuilder` to execute the operation.
+    /// - See Also: [MongoDB Documentation](https://docs.mongodb.com/manual/reference/command/findAndModify/)
     public func findOneAndReplace(
         where query: Document,
         replacement document: Document,
@@ -54,6 +66,10 @@ extension MongoCollection {
     ///   - query: The selection criteria for the upate.
     ///   - replacement: The replacement document.
     ///   - returnValue: Wether to return the `original` or `modified` document.
+    /// - Returns: A `FindAndModifyBuilder` to further configure the operation.
+    /// 
+    /// - Note: Call `execute` on the returned `FindAndModifyBuilder` to execute the operation.
+    /// - See Also: [MongoDB Documentation](https://docs.mongodb.com/manual/reference/command/findAndModify/)
     public func findOneAndUpsert(
         where query: Document,
         replacement document: Document,
@@ -71,6 +87,10 @@ extension MongoCollection {
     ///   - query: The selection criteria for the upate.
     ///   - document: The update document.
     ///   - returnValue: Wether to return the `original` or `modified` document.
+    /// - Returns: A `FindAndModifyBuilder` to further configure the operation.
+    /// 
+    /// - Note: Call `execute` on the returned `FindAndModifyBuilder` to execute the operation.
+    /// - See Also: [MongoDB Documentation](https://docs.mongodb.com/manual/reference/command/findAndModify/)
     public func findOneAndUpdate(
         where query: Document,
         to document: Document,
@@ -88,6 +108,10 @@ extension MongoCollection {
     ///   - update: If passed a document with update operator expressions, performs the specified modification. If passed a replacement document performs a replacement.
     ///   - remove: Removes the document specified in the query field. Defaults to `false`
     ///   - returnValue: Wether to return the `original` or `modified` document.
+    /// - Returns: A `FindAndModifyBuilder` to further configure the operation.
+    /// 
+    /// - Note: Call `execute` on the returned `FindAndModifyBuilder` to execute the operation.
+    /// - See Also: [MongoDB Documentation](https://docs.mongodb.com/manual/reference/command/findAndModify/)
     public func findAndModify<Query: MongoKittenQuery>(
         where query: Query,
         update document: Document = [:],
@@ -104,6 +128,7 @@ extension MongoCollection {
     /// Deletes a single document based on the query, returning the deleted document.
     /// - Parameters:
     ///   - query: The selection criteria for the deletion.
+    /// - Returns: A `FindAndModifyBuilder` to further configure the operation.
     public func findOneAndDelete<Query: MongoKittenQuery>(
         where query: Query
     ) -> FindAndModifyBuilder {
@@ -117,6 +142,10 @@ extension MongoCollection {
     ///   - query: The selection criteria for the upate.
     ///   - replacement: The replacement document.
     ///   - returnValue: Wether to return the `original` or `modified` document.
+    /// - Returns: A `FindAndModifyBuilder` to further configure the operation.
+    /// 
+    /// - Note: Call `execute` on the returned `FindAndModifyBuilder` to execute the operation.
+    /// - See Also: [MongoDB Documentation](https://docs.mongodb.com/manual/reference/command/findAndModify/)
     public func findOneAndReplace<Query: MongoKittenQuery>(
         where query: Query,
         replacement document: Document,
@@ -133,6 +162,10 @@ extension MongoCollection {
     ///   - query: The selection criteria for the upate.
     ///   - document: The update document.
     ///   - returnValue: Wether to return the `original` or `modified` document.
+    /// - Returns: A `FindAndModifyBuilder` to further configure the operation.
+    /// 
+    /// - Note: Call `execute` on the returned `FindAndModifyBuilder` to execute the operation.
+    /// - See Also: [MongoDB Documentation](https://docs.mongodb.com/manual/reference/command/findAndModify/)
     public func findOneAndUpdate<Query: MongoKittenQuery>(
         where query: Query,
         to document: Document,
@@ -155,7 +188,7 @@ public final class FindAndModifyBuilder {
         self.collection = collection
     }
     
-    /// Executes the command
+    /// Executes the command, returning the reply.
     public func execute() async throws -> FindAndModifyReply {
         let connection = try await collection.pool.next(for: .writable)
         return try await connection.executeCodable(
@@ -174,21 +207,27 @@ public final class FindAndModifyBuilder {
         }
     }
     
+    /// Modifies the command to sort the documents
+    /// - Parameter sort: The sort specification
     public func sort(_ sort: Sorting) -> FindAndModifyBuilder {
         self.command.sort = sort.document
         return self
     }
     
+    /// Modifies the command to sort the documents
+    /// - Parameter sort: The sort specification
     public func sort(_ sort: Document) -> FindAndModifyBuilder {
         self.command.sort = sort
         return self
     }
     
+    /// Applies a projection to the command, limiting the fields returned or modifying the returned documents in some way.
     public func project(_ projection: Projection) -> FindAndModifyBuilder {
         self.command.fields = projection.document
         return self
     }
     
+    /// Applies a projection to the command, limiting the fields returned or modifying the returned documents in some way.
     public func project(_ projection: Document) -> FindAndModifyBuilder {
         self.command.fields = projection
         return self

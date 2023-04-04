@@ -300,6 +300,74 @@ try await db.transaction { transaction in
 }
 ```
 
+## GridFS
+
+MongoKitten supports GridFS. You can use it like this:
+
+```swift
+let database: MongoDatabase = ...
+let gridFS = GridFSBucket(in: database)
+```
+
+You can then use the GridFSBucket to upload and download files.
+
+```swift
+let blob: ByteBuffer = ...
+let file = try await gridFS.upload(
+  blob,
+  filename: "invoice.pdf",
+  metadata: [
+    "invoiceNumber": 1234,
+    "invoiceDate": Date(),
+    "invoiceAmount": 123.45
+  ]
+)
+```
+
+Optionally, you can define a custom chunk size. The default is 255kb.
+
+For chunked file uploads, you can use the `GridFSFileWriter`:
+
+```swift
+let writer = GridFSFileWriter(toBucket: gridFS)
+
+do {
+  // Stream the file from HTTP
+  for try await chunk in request.body {
+    // Assuming `chunk is ByteBuffer`
+    // Write each HTTP chunk to GridFS
+    try await writer.write(data: chunk)
+  }
+
+  // Finalize the file, making it available for reading
+  let file = try await writer.finalize(filename: "invoice.pdf", metadata: ["invoiceNumber": 1234])
+} catch {
+  // Clean up written chunks, as the file upload failed
+  try await writer.cancel()
+
+  // rethrow original error
+  throw error
+}
+```
+
+You can read the file back using the `GridFSReader` or by iterating over the `GridFSFile` as an `AsyncSequence`:
+
+```swift
+// Find your file in GridFS
+guard let file = try await gridFS.findFile("metadata.invoiceNumber" == 1234) else {
+  // File does not exist
+  throw Abort(.notFound)
+}
+
+// Get all bytes in one contiguous buffer
+let bytes = try await file.reader.readByteBuffer()
+
+// Stream the file
+for try await chunk in file {
+  // `chunk is ByteBuffer`, now do something with the chunk!
+}
+```
+
 # 📦 About BSON & Documents
 
 MongoDB is a document database that uses BSON under the hood to store JSON-like data. MongoKitten implements the [BSON specification](http://bsonspec.org) in its companion project, [OpenKitten/BSON](https://github.com/OpenKitten/BSON). You can find out more about our BSON implementation in the separate BSON repository, but here are the basics:

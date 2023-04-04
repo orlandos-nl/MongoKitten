@@ -3,13 +3,23 @@ import MongoClient
 import MongoCore
 
 extension MongoCollection {
-    /// Creates a new document in this collection with the given document.
+    /// Creates a new document in this collection with the given document. The document must have an `_id` field, or one will be generated.
+    /// - parameter document: The document to insert
+    /// - parameter writeConcern: The write concern to use for this operation
+    /// - returns: The reply from the server
+    /// 
+    /// See also: [Insert Command](https://docs.mongodb.com/manual/reference/command/insert/)
     @discardableResult
     public func insert(_ document: Document, writeConcern: WriteConcern? = nil) async throws -> InsertReply {
         return try await insertMany([document], writeConcern: writeConcern)
     }
     
-    /// Creates new documents in this collection with the given documents.
+    /// Creates new documents in this collection with the given models encoded to BSON Documents.
+    /// - parameter models: The models to insert
+    /// - parameter writeConcern: The write concern to use for this operation
+    /// - returns: The reply from the server
+    /// 
+    /// See also: [Insert Command](https://docs.mongodb.com/manual/reference/command/insert/)
     @discardableResult
     public func insertManyEncoded<E: Encodable>(_ models: [E], writeConcern: WriteConcern? = nil) async throws -> InsertReply {
         let documents = try models.map { model in
@@ -19,6 +29,11 @@ extension MongoCollection {
         return try await insertMany(documents, writeConcern: writeConcern)
     }
     
+    /// Creates a new document in this collection with the given model encoded to a BSON Document.
+    /// - parameter model: The model to insert
+    /// - parameter writeConcern: The write concern to use for this operation
+    /// 
+    /// See also: [Insert Command](https://docs.mongodb.com/manual/reference/command/insert/)
     @discardableResult
     public func insertEncoded<E: Encodable>(_ model: E, writeConcern: WriteConcern? = nil) async throws -> InsertReply {
         let document = try BSONEncoder().encode(model)
@@ -26,6 +41,11 @@ extension MongoCollection {
     }
     
     /// Creates new documents in this collection with the given documents.
+    /// - parameter documents: The documents to insert
+    /// - parameter writeConcern: The write concern to use for this operation
+    /// - returns: The reply from the server
+    /// 
+    /// See also: [Insert Command](https://docs.mongodb.com/manual/reference/command/insert/)
     @discardableResult
     public func insertMany(_ documents: [Document], writeConcern: WriteConcern? = nil) async throws -> InsertReply {
         let connection = try await pool.next(for: .writable)

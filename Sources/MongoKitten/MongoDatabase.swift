@@ -192,7 +192,9 @@ public class MongoDatabase {
 
     /// Lists all collections your user has knowledge of
     ///
-    /// Returns them as a MongoKitten Collection with you can query
+    /// - Returns: All MongoKitten Collection which you can query
+    /// 
+    /// See https://docs.mongodb.com/manual/reference/command/listCollections/
     public func listCollections() async throws -> [MongoCollection] {
         guard transaction == nil else {
             throw MongoKittenError(.unsupportedFeatureByServer, reason: .transactionForUnsupportedQuery)
@@ -233,6 +235,7 @@ extension EventLoopFuture {
 }
 
 extension EventLoopFuture where Value == Optional<Document> {
+    /// Decodes a `Decodable` type from the `Document` in this `EventLoopFuture`
     public func decode<D: Decodable>(_ type: D.Type) -> EventLoopFuture<D?> {
         return flatMapThrowing { document in
             if let document = document {

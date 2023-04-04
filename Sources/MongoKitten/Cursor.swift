@@ -157,6 +157,11 @@ public final class FinalizedCursor<Base: QueryCursor> {
         self.cursor = cursor
     }
 
+    /// Gets the next batch of results from the cursor, defaulting to a batch size of 101.
+    /// - parameter batchSize: The number of results to return
+    /// - parameter failable: Whether to ignore errors when transforming the results
+    /// 
+    /// If `failable` is `true`, the returned array will contain only the results that were successfully transformed.
     public func nextBatch(batchSize: Int = 101, failable: Bool = false) async throws -> [Base.Element] {
         let batch = try await cursor.getMore(batchSize: batchSize)
         
@@ -192,6 +197,7 @@ extension QueryCursor where Element == Document {
 public struct MappedCursor<Base: QueryCursor, Element>: QueryCursor {
     internal typealias Transform<E> = (Base.Element) throws -> E
 
+    /// Gets the connection associated with this cursor
     public func getConnection() async throws -> MongoConnection {
         return try await underlyingCursor.getConnection()
     }
@@ -204,11 +210,14 @@ public struct MappedCursor<Base: QueryCursor, Element>: QueryCursor {
         self.transform = transform
     }
 
+    /// Transforms a given `Document` to the cursor `Element` type
     public func transformElement(_ element: Document) throws -> Element {
         let input = try underlyingCursor.transformElement(element)
         return try transform(input)
     }
 
+    /// Executes the cursor, returning a `FinalizedCursor` after the operation has completed.
+    /// The returned cursor is used to iterate over the results of the query.
     public func execute() async throws -> FinalizedCursor<MappedCursor<Base, Element>> {
         let result = try await self.underlyingCursor.execute()
         return FinalizedCursor(basedOn: self, cursor: result.cursor)
@@ -216,27 +225,32 @@ public struct MappedCursor<Base: QueryCursor, Element>: QueryCursor {
 }
 
 extension MappedCursor where Base == AggregateBuilderPipeline {
+    /// Counts the number of results in the cursor
     public func count() async throws -> Int {
         return try await underlyingCursor.count()
     }
 }
 
 extension MappedCursor where Base == FindQueryBuilder {
+    /// Limits the number of results returned by the cursor
     public func limit(_ limit: Int) -> Self {
         underlyingCursor.command.limit = limit
         return self
     }
 
+    /// Skips the given number of results
     public func skip(_ skip: Int) -> Self {
         underlyingCursor.command.skip = skip
         return self
     }
 
+    /// Sorts the results of the cursor
     public func sort(_ sort: Sorting) -> Self {
         underlyingCursor.command.sort = sort.document
         return self
     }
 
+    /// Sorts the results of the cursor
     public func sort(_ sort: Document) -> Self {
         underlyingCursor.command.sort = sort
         return self

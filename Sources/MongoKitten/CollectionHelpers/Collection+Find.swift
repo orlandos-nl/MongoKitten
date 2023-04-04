@@ -142,4 +142,10 @@ public final class FindQueryBuilder: QueryCursor {
         self.command.sort = sort
         return self
     }
+    
+    /// Sets the batch size for this cursor, limiting the amount of documents returned per roundtrip
+    public func batchSize(_ batchSize: Int) -> FindQueryBuilder {
+        self.command.batchSize = batchSize
+        return self
+    }
 }

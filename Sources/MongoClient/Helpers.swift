@@ -40,6 +40,7 @@ extension MongoServerReply {
         }
     }
 
+    /// Gets the first response document in this reply
     public func getDocument() throws -> Document {
         guard documents.count == 1 else {
             throw OptionalUnwrapFailure()

@@ -62,11 +62,11 @@ extension MongoConnection {
 
     /// Executes a command on the server and returns the reply, or throws an error if the command failed.
     /// - Parameters:
-    /// s- command: The document to execute on the server.
-    /// - namespace: The namespace to execute the command in. Defaults to the administrative command namespace.
-    /// - transaction: The transaction to execute the command in.
-    /// - sessionId: The session id to execute the command in, if any.
-    /// - Returns: The reply from the server.
+    ///   - command: The document to execute on the server.
+    ///   - namespace: The namespace to execute the command in. Defaults to the administrative command namespace.
+    ///   - transaction: The transaction to execute the command in.
+    ///   - sessionId: The session id to execute the command in, if any.
+    ///   - Returns: The reply from the server.
     public func execute(
         _ command: Document,
         namespace: MongoNamespace,
@@ -87,9 +87,9 @@ extension MongoConnection {
     /// Executes a command on the server and returns the reply, or throws an error if the command failed. This method is used for executing commands that are not encoded as BSON documents.
     /// Always uses OP_QUERY.
     /// - Parameters:
-    /// - command: The command to execute on the server. Updated with the next request id.
-    /// - namespace: The namespace to execute the command in. Defaults to the administrative command namespace.
-    /// - transaction: The transaction to execute the command in.
+    ///   - command: The command to execute on the server. Updated with the next request id.
+    ///   - namespace: The namespace to execute the command in. Defaults to the administrative command namespace.
+    ///   - transaction: The transaction to execute the command in.
     public func executeOpQuery(
         _ query: inout OpQuery,
         in transaction: MongoTransaction? = nil,
@@ -112,10 +112,10 @@ extension MongoConnection {
     /// Executes a command on the server and returns the reply, or throws an error if the command failed. This method is used for executing commands that are not encoded as BSON documents.
     /// Always uses OP_MSG.
     /// - Parameters:
-    /// - command: The command to execute on the server. Updated with the next request id.
-    /// - namespace: The namespace to execute the command in. Defaults to the administrative command namespace.
-    /// - transaction: The transaction to execute the command in.
-    /// - Returns: The reply from the server.
+    ///   - command: The command to execute on the server. Updated with the next request id.
+    ///   - namespace: The namespace to execute the command in. Defaults to the administrative command namespace.
+    ///   - transaction: The transaction to execute the command in.
+    ///   - Returns: The reply from the server.
     public func executeOpMessage(
         _ query: inout OpMessage,
         in transaction: MongoTransaction? = nil,
