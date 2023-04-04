@@ -11,13 +11,13 @@ public struct GridFSReader {
         self.file = file
     }
     
-    /// Reads the file as a Foundation Data object
+    /// Reads the file as a contiguous Foundation Data object
     public func readData() async throws -> Data {
         var buffer = try await readByteBuffer()
         return buffer.readData(length: buffer.readableBytes)!
     }
     
-    /// Reads the file as a NIO ByteBuffer object
+    /// Reads the file as a contiguous NIO ByteBuffer object
     public func readByteBuffer() async throws -> ByteBuffer {
         var buffer = GridFSFileWriter.allocator.buffer(capacity: file.length)
         let cursor = file.fs.chunksCollection
@@ -31,5 +31,5 @@ public struct GridFSReader {
         }
     
         return buffer
-    } 
+    }
 }

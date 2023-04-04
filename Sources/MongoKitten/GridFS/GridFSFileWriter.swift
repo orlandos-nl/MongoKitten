@@ -50,12 +50,25 @@ public final class GridFSFileWriter {
         
         try await self.flush()
     }
+
+    /// Removes all written chunks from the database.
+    /// Finalizes the writer, meaning it cannot be used anymore
+    public func cancel() async throws {
+        assert(!finalized, "Finalizing a finalized writer is an error")
+
+        self.finalized = true
+
+        try await self.fs.chunksCollection.deleteAll(where: "files_id" == self.fileId)
+    }
     
-    /// Finalizes the file and returns the GridFSFile that was created.
+    /// Creates the file metadata in GridFS.
+    /// Finalizes the writer and returns the GridFSFile that was created.
+    ///
     /// - Parameters: 
     ///   - filename: The filename of the file to be created
     ///   - metadata: The metadata of the file to be created
     /// - Returns: The GridFSFile that was created
+    @discardableResult
     public func finalize(filename: String? = nil, metadata: Document? = nil) async throws -> GridFSFile {
         assert(!finalized, "Finalizing a finalized writer is an error")
         
@@ -78,6 +91,9 @@ public final class GridFSFileWriter {
     }
     
     /// Flushes the current buffer to the database if it's full enough.
+    /// - Parameters:
+    ///   - finalize: Whether or not to finalize the writer after flushing
+    /// - Throws: An error if the chunk(s) could not be writtens
     public func flush(finalize: Bool = false) async throws {
         let chunkSize = Int(self.chunkSize) // comparison here is always to int
         
@@ -94,6 +110,7 @@ public final class GridFSFileWriter {
             try await self.flush(finalize: finalize)
         }
         
+        // Trim the buffer to the current size
         buffer = buffer.slice()
     }
 }

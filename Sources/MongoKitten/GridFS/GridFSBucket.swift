@@ -41,7 +41,16 @@ public final class GridFSBucket {
         return try await writer.finalize(filename: filename, metadata: metadata)
     }
     
+    /// Lists all files in this GridFS bucket that match the given query.
+    /// - Parameter query: The query to match files with
+    /// - Returns: A cursor that can be used to iterate over all files that match the query
+    public func find<MKQ: MongoKittenQuery>(_ query: MKQ) -> MappedCursor<FindQueryBuilder, GridFSFile> {
+        try await find(query.makeDocument())
+    }
+    
     /// Lists all files in this GridFS bucket that match the given query. The query is a MongoDB query document.
+    /// - Parameter query: The query to match files with
+    /// - Returns: A cursor that can be used to iterate over all files that match the query
     public func find(_ query: Document) -> MappedCursor<FindQueryBuilder, GridFSFile> {
         var decoder = BSONDecoder()
         decoder.userInfo = [
@@ -53,7 +62,16 @@ public final class GridFSBucket {
             .decode(GridFSFile.self, using: decoder)
     }
     
+    /// Lists a single file in this GridFS bucket that match the given query.
+    /// - Parameter query: The query to match files with
+    /// - Returns: The first file that matches the query or `nil` if no file matches
+    public func findFile<MKQ: MongoKittenQuery>(_ query: MKQ) async throws -> GridFSFile? {
+        try await findFile(query.makeDocument())
+    }
+
     /// Finds a single file in this GridFS bucket that matches the given query. The query is a MongoDB query document.
+    /// - Parameter query: The query to match files with
+    /// - Returns: The first file that matches the query or `nil` if no file matches
     public func findFile(_ query: Document) async throws -> GridFSFile? {
         var decoder = BSONDecoder()
         decoder.userInfo = [
@@ -68,11 +86,14 @@ public final class GridFSBucket {
     }
     
     /// Finds a single file in this GridFS bucket that matches `_id == id``.
+    /// 
+    /// - Parameter id: The `_id` of the file to find
     public func findFile(byId id: Primitive) async throws -> GridFSFile? {
         return try await self.findFile(["_id": id])
     }
     
     /// Deletes a file from GridFS and all of its chunks.
+    /// - Parameter file: The `_id` of the file to delete
     public func deleteFile(byId id: Primitive) async throws {
         try await self.chunksCollection.deleteAll(where: ["files_id": id])
         try await self.filesCollection.deleteAll(where: ["_id": id])

@@ -1,7 +1,26 @@
 import Foundation
 
 /// A GridFS file that can be downloaded from GridFS or uploaded to GridFS.
-public struct GridFSFile: Codable {
+public struct GridFSFile: Codable, AsyncSequence {
+    public typealias Element = ByteBuffer
+    public struct AsyncIterator: AsyncIteratorProtocol {
+        private var cursor: QueryCursorAsyncIterator<MappedCursor<FindQueryBuilder, ByteBuffer>>
+        
+        init(file: GridFSFile) {
+            self.cursor = file.fs.chunksCollection
+                .find("files_id" == file._id)
+                .sort(["n": .ascending])
+                .map { document in
+                    try FastBSONDecoder().decode(GridFSChunk.self, from: document).data.storage
+                }
+                .makeAsyncIterator()
+        }
+        
+        public mutating func next() async throws -> ByteBuffer? {
+            try await cursor.next()
+        }
+    }
+
     internal var fs: GridFSBucket
     
     /// The file's ID
@@ -104,4 +123,7 @@ public struct GridFSFile: Codable {
         try container.encodeBSONPrimitive(self.metadata, forKey: .metadata)
     }
     
+    public func makeAsyncIterator() -> AsyncIterator {
+        AsyncIterator(file: self)
+    }
 }
