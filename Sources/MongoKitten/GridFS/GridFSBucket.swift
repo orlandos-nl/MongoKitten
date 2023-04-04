@@ -45,7 +45,7 @@ public final class GridFSBucket {
     /// - Parameter query: The query to match files with
     /// - Returns: A cursor that can be used to iterate over all files that match the query
     public func find<MKQ: MongoKittenQuery>(_ query: MKQ) -> MappedCursor<FindQueryBuilder, GridFSFile> {
-        try await find(query.makeDocument())
+        find(query.makeDocument())
     }
     
     /// Lists all files in this GridFS bucket that match the given query. The query is a MongoDB query document.
