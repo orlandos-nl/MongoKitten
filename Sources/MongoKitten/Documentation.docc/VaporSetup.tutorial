@@ -1,0 +1,49 @@
+@Tutorial(time: 2) {
+    @Intro(title: "MongoKitten with Vapor") {
+        When using MongoKitten with Vapor, you'll want to register MongoKitten in your application.
+    }
+    
+    @Section(title: "Registering the service") {
+        @ContentAndMedia {
+            In order to register MongoKitten in your application, you'll need to add the following code to your `MongoKitten+Vapor.swift` file.
+        }
+        
+        @Steps {
+            @Step {
+                First, create a StorageKey so that Vapor can store the MongoDatabase instance.
+                
+                @Code(name: "MongoKitten+Vapor.swift", file: "Vapor-StorageKey.swift")
+            }
+            
+            @Step {
+                Add an accessor for reading and writing MongoDatabase to your `Application`'s storage.
+                
+                @Code(name: "MongoKitten+Vapor.swift", file: "Vapor-Application.swift")
+            }
+            
+            @Step {
+                Optionally, add a helper to set up your Application with MongoKitten, based on your connection string.
+                
+                @Code(name: "MongoKitten+Vapor.swift", file: "Vapor-ApplicationInit.swift")
+            }
+            
+            @Step {
+                Finally, add a helper for request instances. This helper also injects the Vapor Request's ID into the logger. This will only affect queries sent from within this request's `mongoDB` instance.
+                
+                @Code(name: "MongoKitten+Vapor.swift", file: "Vapor-Request.swift")
+            }
+            
+            @Step {
+                Be sure to initialize MongoKitten on your Application, during app boot.
+                
+                @Code(name: "Connect.swift", file: "Vapor-Complete.swift")
+            }
+        }
+    }
+        
+    @Section(title: "Next Steps") {
+        The first step is to learn about CRUD operations: <doc:CRUD>
+        
+        Here, you'll learn how to Create, Read, Update and Delete entities.
+    }
+}

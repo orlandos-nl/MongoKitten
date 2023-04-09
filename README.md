@@ -26,7 +26,7 @@ If you haven't already, you should set up a MongoDB server to get started with M
 
 For development, this can be on your local machine.
 
-Install MongoDB for [Ubuntu](https://www.mongodb.com/docs/v6.0/tutorial/install-mongodb-on-ubuntu/), [macOS](hhttps://www.mongodb.com/docs/v6.0/tutorial/install-mongodb-on-os-x/) or any other supported Linux Distro.
+Install MongoDB for [Ubuntu](https://www.mongodb.com/docs/v6.0/tutorial/install-mongodb-on-ubuntu/), [macOS](https://www.mongodb.com/docs/v6.0/tutorial/install-mongodb-on-os-x/) or any other supported Linux Distro.
 
 Alternatively, make use of a DAAS (Database-as-a-service) like [MongoDB Atlas](https://cloud.mongodb.com).
 

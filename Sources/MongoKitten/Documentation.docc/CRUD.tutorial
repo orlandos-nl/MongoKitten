@@ -1,0 +1,111 @@
+@Tutorial(time: 6) {
+    @Intro(title: "CRUD Operations") {
+        CRUD operations are four broad categories of database operations.
+        
+        Create, Read, Update and Delete. These are represented in MongoDB as Insert, Find, Update and Delete.
+        
+        While there are more specific types alternatives to Find and Update, we'll stick to the basics for now.
+    }
+    
+    @Section(title: "Create") {
+        @ContentAndMedia {
+            Insert operations create new entities. When an entity is created, it is uniquely identifier by it's `_id` field. This is a mandatory key, therefore always present in your models. If you omit this key, one will be generated for you.
+        }
+        
+        @Steps {
+            @Step {
+                The first step in inserting an entity, is getting the database handle. This has already been described in previous tutorials, so visit those if you're unsure how to get a database handle.
+                
+                @Code(name: "Create.swift", file: "CRUD-01-Insert-Setup.swift")
+            }
+            
+            @Step {
+                Next, define a `Kitten` model, containing an identifer, name and age. Note that MongoKitten natively supports Date, and a new type - ObjectId.
+                
+                @Code(name: "Create.swift", file: "CRUD-02-Insert-Model.swift")
+            }
+            
+            @Step {
+                Create a new Kitten, calling the ObjectId initializer to generate a new id for your Kitten instance.
+                
+                @Code(name: "Create.swift", file: "CRUD-03-Insert-CreateInstance.swift")
+            }
+            
+            @Step {
+                Finally, perform an `insertEncoded` operation. This encodes your Codable model to BSON and inserts it into the database.
+                
+                @Code(name: "Create.swift", file: "CRUD-04-Insert-Perform.swift")
+            }
+        }
+    }
+    
+    @Section(title: "Read") {
+        @ContentAndMedia {
+            Find operations retrieve entities from the database. You can perform a find operation on a collection, or a single document.
+            
+            First, we'll try to retrieve a single entity - the one we just inserted.
+        }
+        
+        @Steps {
+            @Step {
+                The _findOne_ operation allows you to read one entity from the collection, matching your query.
+                
+                MongoKitten has its own operator overloads for helping you build readable queries. 
+                
+                @Code(name: "Read.swift", file: "CRUD-05-Find-Instance.swift", previousFile: "CRUD-04-Insert-Perform.swift")
+            }
+            
+            @Step {
+                You can also find all entities matching your query. You can provide a query, to filter entities of interest. Omitting a filter will return _all_ kittens.
+                
+                You'll need to decode kittens manually here. You can do so using the `decode()` function.
+                
+                @Code(name: "Read.swift", file: "CRUD-06-Find-Many.swift")
+            }
+            
+            @Step {
+                If you're only interested in the kittens' names, you can use the _map_ function to _lazily_ transform each value.
+                
+                The query will be executed _on demand_. Therefore, the cursor only executes once the first result is requested. 
+                
+                @Code(name: "Read.swift", file: "CRUD-07-Find-Transform.swift")
+            }
+        }
+    }
+        
+    @Section(title: "Update") {
+        @ContentAndMedia {
+            There are a couple of Update operations. Update queries can affect _part_ of the model, using the `$set` operator.
+            
+            Alternatively, they can _replace_ the whole model.
+        }
+        
+        @Steps {
+            @Step {
+                First, start the query by calling `updateMany` or `updateOne`, where _updateOne_ limits amount of updates that can take place to one.
+                
+                @Code(name: "Update.swift", file: "CRUD-08-Update-Set.swift")
+            }
+            
+            @Step {
+                Next, we'll need to specify the filter. Only documents that match this filter will be updated.
+                
+                @Code(name: "Update.swift", file: "CRUD-09-Update-SetQuery.swift")
+            }
+            
+            @Step {
+                Now, for updating _part of_ a Document, you can use the `setting` and `unset` arguments. In _setting_, only fields that are specified will be updated to their new value. You can use MongoDB's projection or update operators to perform more advanced operations.
+                
+                See the [Official Documentation](https://docs.mongodb.com/manual/reference/operator/update/) for more information.
+                
+                @Code(name: "Update.swift", file: "CRUD-10-Update-SetDocument.swift")
+            }
+            
+            @Step {
+                You can also replace the document as a whole, allowing you to change all values in the model at once.
+                
+                @Code(name: "Update.swift", file: "CRUD-11-Update-Replace.swift")
+            }
+        }
+    }
+}

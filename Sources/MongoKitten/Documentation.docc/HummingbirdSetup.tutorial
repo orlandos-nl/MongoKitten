@@ -1,0 +1,25 @@
+@Tutorial(time: 2) {
+    @Intro(title: "MongoKitten with Hummingbird") {
+        When using MongoKitten with Hummingbird, you'll want to register MongoKitten to your application's lifecycle'.
+    }
+        
+    @Section(title: "Registering the service") {
+        @ContentAndMedia {
+            
+        }
+        
+        @Steps {
+            @Step {
+                First, add an accessor for reading and writing MongoDatabase to your `HBApplication`.
+                
+                @Code(name: "MongoKitten+Hummingbird.swift", file: "Hummingbird-Extensions.swift")
+            }
+            
+            @Step {
+                Optionally, add a helper to set up your Application with MongoKitten, based on your connection string.
+                
+                @Code(name: "MongoKitten+Hummingbird.swift", file: "Hummingbird-ApplicationInit.swift")
+            }
+        }
+    }
+}

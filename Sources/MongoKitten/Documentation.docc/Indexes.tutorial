@@ -1,0 +1,41 @@
+@Tutorial(time: 5) {
+    @Intro(title: "Indexes") {
+        Indexes in MongoDB are special data structures that store a subset of a collection’s data set. The index stores the value of a specific field or set of fields, ordered by the value of the field.
+        
+        They function similar to the index of a book, which allows you to quickly find the specific pages that you need. Indexes in MongoDB are similar, in that they allow you to quickly find specific documents based on the value of a specific field or set of fields.
+    }
+    
+    @Section(title: "Creating Indexes") {
+        @ContentAndMedia {
+            There are multiple types of indexes in MongoDB. The siplest ones are single field indexes, which are used to index documents based on the value of a single field.
+            
+            However, MongoDB also supports compound indexes, geo-spatial indexes, and text indexes. For specific information about these indexes, visit the [MongoDB documentation](https://docs.mongodb.com/manual/indexes/).
+            
+            By default, MongoDB already provides a mandatory unique index on the `_id` field. This index ensures that all documents in a collection have a unique `_id` field.
+        }
+        
+        @Steps {
+            @Step {
+                To create indexes in MongoKit, you can use the `createIndexes` method on a _Collection_ instance.
+                
+                @Code(name: "Indexes.swift", file: "Indexes-01-Builder.swift")
+            }
+            
+            @Step {
+                To create a single field index, you can create a  `SortedIndex` within the `buildIndexes` block.
+                
+                This will enable you to quickly find documents based on the value of the `age` field, and rapidly sort results by _age_.
+                
+                @Code(name: "Indexes.swift", file: "Indexes-02-Sorted.swift")
+            }
+            
+            @Step {
+                A `UniqueIndex` is similar to a single field index, but it ensures that all documents in a collection have a unique value for the indexed field.
+                
+                This index on the 'name' field is unique, meaning that no two documents can have the same value on this field.
+                
+                @Code(name: "Indexes.swift", file: "Indexes-03-Unique.swift")
+            }
+        }
+    }
+}

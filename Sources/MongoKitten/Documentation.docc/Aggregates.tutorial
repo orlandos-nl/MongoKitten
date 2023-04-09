@@ -1,0 +1,49 @@
+@Tutorial(time: 5) {
+    @Intro(title: "Aggregates") {
+        MongoDB aggregates are a powerful way to process data in your database. In this tutorial, you will learn how to use the MongoDB aggregation framework in MongoKitten to analyze data.
+    }
+    
+    @Section(title: "Pipelines") {
+        @ContentAndMedia {
+            Aggregations are a series of stages that are executed one after the other. Each stage transforms the data in some way. The output of one stage is the input of the next stage.
+        }
+        
+        @Steps {
+            @Step {
+                When you create a new aggregation pipeline, you can add stages to it using MongoKitten's provided resultBuilder. The stages are executed in the order they are added.
+                
+                The input in the first stage is the collection you are aggregating. The output of the last stage is the result of the aggregation.
+                
+                @Code(name: "Aggregate.swift", file: "Aggregates-01-Setup.swift")
+            }
+            
+            @Step {
+                Using this result builder, we'll add some stages.
+                
+                First, we'll filtering for all adult dummy users, thereby **excluding kids from our results**.
+                
+                @Code(name: "Aggregate.swift", file: "Aggregates-02-MatchStage.swift")
+            }
+            
+            @Step {
+                Next, we'll sort by age in ascending order. Meaning we'll get the **younger users first**.
+                
+                @Code(name: "Aggregate.swift", file: "Aggregates-03-SortStage.swift")
+            }
+            
+            @Step {
+                Finally, we'll limit the result set to include a maximum of **3 dummy users**.
+                
+                @Code(name: "Aggregate.swift", file: "Aggregates-04-LimitStage.swift")
+            }
+            
+            @Step {
+                We can use the resulting pipeline like we can use a FindCursor. It will be executed on-demand.
+                
+                In this example, we'll iterate over each of the (up to 3) results.
+                
+                @Code(name: "Aggregate.swift", file: "Aggregates-05-Cursor.swift")
+            }
+        }
+    }
+}

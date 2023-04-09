@@ -1,0 +1,56 @@
+@Tutorials(name: "MongoKitten Basics") {
+    @Intro(title: "MongoKitten 7") {
+        Before you're able to use MongoKitten, you need a MongoDB server to connect with. For development, this can be on your local machine. MongoKitten supports MongoDB 3.6 and above.
+        
+        Install MongoDB for [Ubuntu](https://www.mongodb.com/docs/v6.0/tutorial/install-mongodb-on-ubuntu/), [macOS](https://www.mongodb.com/docs/v6.0/tutorial/install-mongodb-on-os-x/) or any other supported OS.
+        
+        Alternatively, make use of a DAAS (Database-as-a-service) like [MongoDB Atlas](https://cloud.mongodb.com).
+    }
+    
+    @Resources {
+        Explore more resources for MongoDB.
+        
+        @Documentation(destination: "https://www.mongodb.com/docs/manual/") {
+            Browse and search MongoDB's Documentation.
+            
+            ### Basics
+            
+            - [Connection Strings](https://www.mongodb.com/docs/v6.0/reference/connection-string/)
+            
+            
+            ### Hosting
+            
+            - [MongoDB Atlas](https://cloud.mongodb.com)
+        }
+        
+        @Forums(destination: "https://discord.gg/H6799jh") {
+            Visit our Discord server for support, questions and friendly banter.
+        }
+    }
+
+    @Chapter(name: "Setting Up") {
+        Add MongoKitten to your dependencies in your **Package.swift** file:
+        
+        ```swift
+        .package(url: "https://github.com/orlandos-nl/MongoKitten.git", from: "7.2.0")
+        ```
+        
+        Also, don't forget to add the product `"MongoKitten"` as a dependency for your target.
+        
+        ```swift
+        .product(name: "MongoKitten", package: "MongoKitten"),
+        ```
+        
+        Now that you've added MongoKitten to your project, it's time for the next step.
+
+        @TutorialReference(tutorial: "doc:Connecting")
+        @TutorialReference(tutorial: "doc:VaporSetup")
+        @TutorialReference(tutorial: "doc:HummingbirdSetup")
+    }
+    
+    @Chapter(name: "CRUD") {
+        @TutorialReference(tutorial: "doc:CRUD")
+        @TutorialReference(tutorial: "doc:Aggregates")
+        @TutorialReference(tutorial: "doc:Indexes")
+    }
+}

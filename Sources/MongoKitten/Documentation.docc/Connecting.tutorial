@@ -1,0 +1,65 @@
+@Tutorial(time: 2) {
+    @Intro(title: "Connecting to MongoDB") {
+        The first step of using MongoDB is to connect to it. This is done using the MongoDatabase object.
+        
+        This tutorial will help you get a hold of that object.
+    }
+    
+    @Section(title: "Establishing Connection") {
+        @ContentAndMedia {
+            In order to connect to MongoDB, you'll need a MongoDB Connection String. If you're unsure what that is, read the [Official Documentation](https://www.mongodb.com/docs/v6.0/reference/connection-string/).
+            
+            Connection Strings a string of text that contains information about the host, port, and database name. They also contain the credentials for the database, containing all information a driver needs to establish and maintain connectivity.
+            
+            Now, using that connection string, you can establish a connection.
+        }
+        
+        @Steps {
+            @Step {
+                Connect to MongoDB using the MongoDatabase object. This will establish one connection to each system in the cluster.
+                
+                @Code(name: "Connect.swift", file: "Connecting-Connect.swift")
+            }
+            
+            @Step {
+                You can now use this connection for all operations, such as inserting a new entity.
+                
+                The first step step is to get a handle to a collection. Collections represent a single type of entity, such as 'users'.
+                
+                @Code(name: "Connect.swift", file: "Connecting-Collection.swift")
+            }
+            
+            @Step {
+                Using this collection, you can insert any Codable entity. If you're more familiar with MongoDB, you can also work with raw `Document` types instead.
+                
+                @Code(name: "Connect.swift", file: "Connecting-Insert.swift")
+            }
+            
+            @Step {
+                All mutations in MongoKitten return a reply type. You can check this type, to check for writeErrors or a discrepancy in the number of inserted documents.
+                
+                @Code(name: "Connect.swift", file: "Connecting-InsertReply.swift")
+            }
+        }
+        
+        @ContentAndMedia {
+            Connect to MongoDB using the MongoDatabase object. This will establish one connection to each system in the cluster.
+            
+            Using this handle, you can do all operations in MongoKitten.
+            
+            @Code(name: "Connect.swift", file: "Connecting-Connect.swift")
+        }
+    }
+    
+    @Section(title: "Next Steps") {
+        @ContentAndMedia {
+            Now that you've got a connection, set up integrations with your framework.
+            
+            <doc:VaporSetup> will explain you the basics of setting up MongoKitten with Vapor 4.
+            
+            Alternatively, check out <doc:HummingbirdSetup>
+            
+            If you're looking to start from scratch, check out <doc:CRUD>
+        }
+    }
+}
