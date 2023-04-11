@@ -462,7 +462,7 @@ extension MappedCursor: AsyncSequence {
                 self.finalized = cursor
             }
             
-            if results.isEmpty {
+            if results.isEmpty && !cursor.isDrained {
                 try await results.append(contentsOf: cursor.nextBatch().get())
             }
             
