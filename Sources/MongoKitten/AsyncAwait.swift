@@ -459,6 +459,7 @@ extension MappedCursor: AsyncSequence {
                 cursor = finalized
             } else {
                 cursor = try await self.cursor.execute().get()
+                try await results.append(contentsOf: cursor.nextBatch().get())
                 self.finalized = cursor
             }
             
