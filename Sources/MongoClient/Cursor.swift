@@ -43,7 +43,7 @@ public final class MongoCursor {
         }
 
         guard !isDrained else {
-            return connection.eventLoop.makeFailedFuture(MongoError(.cannotGetMore, reason: .cursorDrained))
+            return connection.eventLoop.makeSucceededFuture([])
         }
 
         var command = GetMore(
