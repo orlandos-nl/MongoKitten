@@ -1,63 +1,98 @@
 import NIO
+import Logging
+import Tracing
+//import OtlpGRPCSpanExporting
+//import OpenTelemetry
 import MongoKitten
 import XCTest
 import MongoCore
 
 let dbName = "KittenTest"
+fileprivate var initialized = false
+
+func initializeLoggingTracing() async throws {
+    if initialized { return }
+
+//    LoggingSystem.bootstrap { label in
+//        var handler = StreamLogHandler.standardOutput(label: label)
+//        handler.logLevel = .trace
+//        return handler
+//    }
+//
+//    // ==== ----------------------------------------------------------------------------------------------------------------
+//    // MARK: - Configure OTel
+//
+//    let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+//    let exporter = OtlpGRPCSpanExporter(config: OtlpGRPCSpanExporter.Config(eventLoopGroup: group))
+//    let processor = OTel.SimpleSpanProcessor(exportingTo: exporter)
+//    let otel = OTel(serviceName: "DinnerService", eventLoopGroup: group, processor: processor)
+//
+//    let otelChopping1 = OTel(serviceName: "ChoppingService-1", eventLoopGroup: group, processor: processor)
+//    let otelChopping2 = OTel(serviceName: "ChoppingService-2", eventLoopGroup: group, processor: processor)
+//
+//    // First start `OTel`, then bootstrap the instrumentation system.
+//    // This makes sure that all components are ready to begin handling spans.
+//    try await otel.start().get()
+//    try await otelChopping1.start().get()
+//    try await otelChopping2.start().get()
+//
+//    // By bootstrapping the instrumentation system, our dependencies
+//    // compatible with "Swift Distributed Tracing" will also automatically
+//    // use the "OpenTelemetry Swift" Tracer 🚀.
+//    InstrumentationSystem.bootstrap(otel.tracer())
+    initialized = true
+}
+
+struct DummyAccount: Codable, Equatable {
+    static let collectionName = "DummyAccounts"
+
+    let _id: ObjectId
+    var name: String
+    var password: String
+    var age: Int
+
+    init(name: String, password: String, age: Int) {
+        self._id = ObjectId()
+        self.name = name
+        self.password = password
+        self.age = age
+    }
+}
+
+struct DummyAccountAlt: Codable, Equatable {
+    static let collectionName = "DummyAccounts"
+
+    let _id: ObjectId
+    var firstName: String
+    var lastName: String
+    var age: Int
+
+    init(firstName: String, lastName: String, age: Int) {
+        self._id = ObjectId()
+        self.firstName = firstName
+        self.lastName = lastName
+        self.age = age
+    }
+}
 
 class CrudTests : XCTestCase {
-    struct DummyAccount: Codable, Equatable {
-        static let collectionName = "DummyAccounts"
-        
-        let _id: ObjectId
-        var name: String
-        var password: String
-        var age: Int
-        
-        init(name: String, password: String, age: Int) {
-            self._id = ObjectId()
-            self.name = name
-            self.password = password
-            self.age = age
-        }
-    }
-    
-    struct DummyAccountAlt: Codable, Equatable {
-        static let collectionName = "DummyAccounts"
-        
-        let _id: ObjectId
-        var firstName: String
-        var lastName: String
-        var age: Int
-        
-        init(firstName: String, lastName: String, age: Int) {
-            self._id = ObjectId()
-            self.firstName = firstName
-            self.lastName = lastName
-            self.age = age
-        }
-    }
-    let settings = try! ConnectionSettings("mongodb://\(ProcessInfo.processInfo.environment["MONGO_HOSTNAME_A"] ?? "localhost")/mongokitten-tests")
-    
-    //let settings = ConnectionSettings(
-    //  authentication: .auto(username: "admin", password: "Autimatisering1"),
-    //  authenticationSource: "admin",
-    //  hosts: [
-    //      .init(hostname: "localhost", port: 27017)
-    //  ],
-    //  targetDatabase: dbName,
-    //  applicationName: "Test MK6"
-    //)
-    
     var mongo: MongoDatabase!
     var concern: WriteConcern!
     
     override func setUp() async throws {
         try await super.setUp()
-        
-        mongo = try await MongoDatabase.connect(to: settings)
+
+        let mongoSettings: ConnectionSettings
+        if let connectionString = ProcessInfo.processInfo.environment["MONGO_TEST_CONNECTIONSTRING"] {
+            mongoSettings = try ConnectionSettings(connectionString)
+        } else {
+            mongoSettings = try ConnectionSettings("mongodb://\(ProcessInfo.processInfo.environment["MONGO_HOSTNAME_A"] ?? "localhost")/mongokitten-test")
+        }
+        mongo = try await MongoDatabase.connect(to: mongoSettings)
         try await mongo.drop()
         concern = WriteConcern.majority()
+
+        try await initializeLoggingTracing()
     }
     
     func testCreateDummyAccount() async throws {

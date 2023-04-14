@@ -1,25 +1,37 @@
+import Tracing
+
 public final class MongoTransactionDatabase: MongoDatabase {
     /// Commits the transaction and ends the session.
     public func commit() async throws {
+        span?.addEvent(.init(name: "Commit Transaction"))
         _ = try await pool.next(for: .writable).executeCodable(
             CommitTransaction(),
             decodeAs: OK.self,
             namespace: .administrativeCommand,
             in: self.transaction,
             sessionId: self.sessionId,
-            logMetadata: logMetadata
+            logMetadata: logMetadata,
+            traceLabel: "CommitTransaction",
+            baggage: baggage
         )
     }
     
     /// Aborts the transaction and ends the session.
     public func abort() async throws {
+        if let span {
+            span.addEvent(.init(name: "Abort Transaction"))
+            span.end()
+            self.span = nil
+        }
+
         _ = try await pool.next(for: .writable).executeCodable(
             AbortTransaction(),
             decodeAs: OK.self,
             namespace: .administrativeCommand,
             in: self.transaction,
             sessionId: self.sessionId,
-            logMetadata: logMetadata
+            logMetadata: logMetadata,
+            traceLabel: "AbortTransaction"
         )
     }
 }

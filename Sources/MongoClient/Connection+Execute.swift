@@ -1,4 +1,5 @@
 import Logging
+import Tracing
 import Foundation
 import Metrics
 import BSON
@@ -24,9 +25,20 @@ extension MongoConnection {
         namespace: MongoNamespace,
         in transaction: MongoTransaction? = nil,
         sessionId: SessionIdentifier?,
-        logMetadata: Logger.Metadata? = nil
+        logMetadata: Logger.Metadata? = nil,
+        traceLabel: String = "executeCommand",
+        baggage: Baggage? = nil
     ) async throws -> D {
-        let reply = try await executeEncodable(command, namespace: namespace, in: transaction, sessionId: sessionId, logMetadata: logMetadata)
+        let reply = try await executeEncodable(
+            command,
+            namespace: namespace,
+            in: transaction,
+            sessionId: sessionId,
+            logMetadata: logMetadata,
+            traceLabel: traceLabel,
+            baggage: baggage
+        )
+
         let document = try reply.getDocument()
         do {
             return try FastBSONDecoder().decode(D.self, from: document)
@@ -54,10 +66,20 @@ extension MongoConnection {
         namespace: MongoNamespace,
         in transaction: MongoTransaction? = nil,
         sessionId: SessionIdentifier?,
-        logMetadata: Logger.Metadata? = nil
+        logMetadata: Logger.Metadata? = nil,
+        traceLabel: String = "executeCommand",
+        baggage: Baggage? = nil
     ) async throws -> MongoServerReply {
         let request = try BSONEncoder().encode(command)
-        return try await execute(request, namespace: namespace, in: transaction, sessionId: sessionId, logMetadata: logMetadata)
+        return try await execute(
+            request,
+            namespace: namespace,
+            in: transaction,
+            sessionId: sessionId,
+            logMetadata: logMetadata,
+            traceLabel: traceLabel,
+            baggage: baggage
+        )
     }
 
     /// Executes a command on the server and returns the reply, or throws an error if the command failed.
@@ -72,10 +94,20 @@ extension MongoConnection {
         namespace: MongoNamespace,
         in transaction: MongoTransaction? = nil,
         sessionId: SessionIdentifier? = nil,
-        logMetadata: Logger.Metadata? = nil
+        logMetadata: Logger.Metadata? = nil,
+        traceLabel: String = "executeCommand",
+        baggage: Baggage? = nil
     ) async throws -> MongoServerReply {
         let startDate = Date()
-        let result = try await executeOpMessage(command, namespace: namespace, in: transaction, sessionId: sessionId, logMetadata: logMetadata)
+        let result = try await executeOpMessage(
+            command,
+            namespace: namespace,
+            in: transaction,
+            sessionId: sessionId,
+            logMetadata: logMetadata,
+            traceLabel: traceLabel,
+            baggage: baggage
+        )
 
         if let queryTimer = queryTimer {
             queryTimer.record(-startDate.timeIntervalSinceNow)
@@ -94,14 +126,21 @@ extension MongoConnection {
         _ query: inout OpQuery,
         in transaction: MongoTransaction? = nil,
         sessionId: SessionIdentifier? = nil,
-        logMetadata: Logger.Metadata? = nil
+        logMetadata: Logger.Metadata? = nil,
+        traceLabel: String = "executeCommand",
+        baggage: Baggage? = nil
     ) async throws -> OpReply {
         query.header.requestId = self.nextRequestId()
         
         var logMetadata = logMetadata ?? [:]
         logMetadata["query-id"] = .string(String(query.header.requestId))
         
-        guard case .reply(let reply) = try await self.executeMessage(query, logMetadata: logMetadata) else {
+        guard case .reply(let reply) = try await self.executeMessage(
+            query,
+            logMetadata: logMetadata,
+            traceLabel: traceLabel,
+            baggage: baggage
+        ) else {
             self.logger.critical("Protocol Error: Unexpected reply type, expected OpReply format", metadata: logMetadata)
             throw MongoError(.queryFailure, reason: .invalidReplyType)
         }
@@ -120,14 +159,21 @@ extension MongoConnection {
         _ query: inout OpMessage,
         in transaction: MongoTransaction? = nil,
         sessionId: SessionIdentifier? = nil,
-        logMetadata: Logger.Metadata? = nil
+        logMetadata: Logger.Metadata? = nil,
+        traceLabel: String = "executeCommand",
+        baggage: Baggage? = nil
     ) async throws -> OpMessage {
         query.header.requestId = self.nextRequestId()
         
         var logMetadata = logMetadata ?? [:]
         logMetadata["query-id"] = .string(String(query.header.requestId))
         
-        guard case .message(let message) = try await self.executeMessage(query, logMetadata: logMetadata) else {
+        guard case .message(let message) = try await self.executeMessage(
+            query,
+            logMetadata: logMetadata,
+            traceLabel: traceLabel,
+            baggage: baggage
+        ) else {
             self.logger.error("Protocol Error: Unexpected reply type, expected OpMessage")
             throw MongoError(.queryFailure, reason: .invalidReplyType)
         }
@@ -140,29 +186,33 @@ extension MongoConnection {
         namespace: MongoNamespace,
         in transaction: MongoTransaction? = nil,
         sessionId: SessionIdentifier? = nil,
-        logMetadata: Logger.Metadata? = nil
+        logMetadata: Logger.Metadata? = nil,
+        traceLabel: String = "executeCommand",
+        baggage: Baggage? = nil
     ) async throws -> MongoServerReply {
         var command = command
-        
+
         let requestId = nextRequestId()
         var logMetadata = logMetadata ?? [:]
         logMetadata["mongo-query-id"] = .string(String(requestId))
-        
+
         if let id = sessionId?.id {
             logMetadata["mongo-session-id"] = .string(id.data.base64EncodedString())
-            
+
             command.appendValue([
                 "id": id
             ] as Document, forKey: "lsid")
         }
-        
+
         return try await executeMessage(
             OpQuery(
                 query: command,
                 requestId: requestId,
                 fullCollectionName: namespace.fullCollectionName
             ),
-            logMetadata: logMetadata
+            logMetadata: logMetadata,
+            traceLabel: traceLabel,
+            baggage: baggage
         )
     }
 
@@ -171,41 +221,45 @@ extension MongoConnection {
         namespace: MongoNamespace,
         in transaction: MongoTransaction? = nil,
         sessionId: SessionIdentifier? = nil,
-        logMetadata: Logger.Metadata? = nil
+        logMetadata: Logger.Metadata? = nil,
+        traceLabel: String = "executeCommand",
+        baggage: Baggage? = nil
     ) async throws -> MongoServerReply {
         var command = command
-        
+
         let requestId = nextRequestId()
         var logMetadata = logMetadata ?? [:]
         logMetadata["mongo-query-id"] = .string(String(requestId))
-        
+
         command.appendValue(namespace.databaseName, forKey: "$db")
-        
+
         if let id = sessionId?.id {
             logMetadata["mongo-session-id"] = .string(id.data.base64EncodedString())
             command.appendValue([
                 "id": id
             ] as Document, forKey: "lsid")
         }
-        
+
         // TODO: When retrying a write, don't resend transaction messages except commit & abort
         if let transaction = transaction {
             command.appendValue(transaction.number, forKey: "txnNumber")
             command.appendValue(transaction.autocommit, forKey: "autocommit")
-            
+
             logMetadata["mongo-transaction-id"] = .string(String(transaction.number))
 
             if await transaction.startTransaction() {
                 command.appendValue(true, forKey: "startTransaction")
             }
         }
-        
+
         return try await executeMessage(
             OpMessage(
                 body: command,
                 requestId: requestId
             ),
-            logMetadata: logMetadata
+            logMetadata: logMetadata,
+            traceLabel: traceLabel,
+            baggage: baggage
         )
     }
 }

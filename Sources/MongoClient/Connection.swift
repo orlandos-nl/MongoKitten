@@ -1,4 +1,5 @@
 import BSON
+import Tracing
 import Foundation
 import MongoCore
 import NIO
@@ -37,8 +38,8 @@ public struct MongoHandshakeResult {
     }
 }
 
-/// A connection to a MongoDB server.
-public final actor MongoConnection: @unchecked Sendable {
+/// A connection to a MongoDB server. 
+public final actor MongoConnection: Sendable {
     /// The NIO channel used for communication
     internal let channel: Channel
     public nonisolated var logger: Logger { context.logger }
@@ -249,7 +250,9 @@ public final actor MongoConnection: @unchecked Sendable {
             ),
             decodeAs: ServerHandshake.self,
             namespace: .administrativeCommand,
-            sessionId: nil
+            sessionId: nil,
+            traceLabel: "Handshake",
+            baggage: nil
         )
         
         await context.setServerHandshake(to: result)
@@ -277,26 +280,36 @@ public final actor MongoConnection: @unchecked Sendable {
     
     func executeMessage<Request: MongoRequestMessage>(
         _ message: Request,
-        logMetadata: Logger.Metadata? = nil
+        logMetadata: Logger.Metadata? = nil,
+        traceLabel: String,
+        baggage: Baggage? = nil
     ) async throws -> MongoServerReply {
         if await self.context.didError {
             logger.info("Query could not be executed on this connection because", metadata: logMetadata)
             channel.close(mode: .all, promise: nil)
             throw MongoError(.queryFailure, reason: .connectionClosed)
         }
-        
+
         let promise = self.eventLoop.makePromise(of: MongoServerReply.self)
         await self.context.setReplyCallback(forRequestId: message.header.requestId, completing: promise)
-        
-        var buffer = self.channel.allocator.buffer(capacity: Int(message.header.messageLength))
-        message.write(to: &buffer)
-        try await self.channel.writeAndFlush(buffer)
-        
-        if let queryTimeout = requestedQueryTimeout ?? queryTimeout {
-            Task {
-                try await Task.sleep(nanoseconds: UInt64(queryTimeout.nanoseconds))
-                promise.fail(MongoError(.queryTimeout, reason: nil))
+
+        return try await InstrumentationSystem.tracer.withSpan(
+            "MongoKitten.\(traceLabel)",
+            baggage: baggage ?? .current ?? .topLevel,
+            ofKind: .client
+        ) { span in
+            var buffer = self.channel.allocator.buffer(capacity: Int(message.header.messageLength))
+            message.write(to: &buffer)
+            try await self.channel.writeAndFlush(buffer)
+
+            if let queryTimeout = queryTimeout {
+                Task {
+                    try await Task.sleep(nanoseconds: UInt64(queryTimeout.nanoseconds))
+                    promise.fail(MongoError(.queryTimeout, reason: nil))
+                }
             }
+
+            return try await promise.futureResult.get()
         }
         
         let result = try await promise.futureResult.get()

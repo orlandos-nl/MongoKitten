@@ -1,3 +1,4 @@
+import Tracing
 import BSON
 import _MongoKittenCrypto
 import MongoCore
@@ -26,32 +27,38 @@ fileprivate struct AuthenticateCR: Encodable {
 
 extension MongoConnection {
     internal func authenticateCR(_ username: String, password: String, namespace: MongoNamespace) async throws  {
-        let nonceReply = try await self.executeCodable(
-            GetNonce(),
-            decodeAs: GetNonceResult.self,
-            namespace: namespace,
-            sessionId: nil
-        )
-        
-        let nonce = nonceReply.nonce
+        try await InstrumentationSystem.tracer.withSpan("MongoKitten.AuthenticateCR", ofKind: .client) { span in
+            let nonceReply = try await self.executeCodable(
+                GetNonce(),
+                decodeAs: GetNonceResult.self,
+                namespace: namespace,
+                sessionId: nil,
+                traceLabel: "AuthenticateCR.Initiate",
+                baggage: span.baggage
+            )
 
-        var md5 = MD5()
+            let nonce = nonceReply.nonce
 
-        let credentials = username + ":mongo:" + password
-        let digest = md5.hash(bytes: Array(credentials.utf8)).hexString
-        let key = nonce + username + digest
-        let keyDigest = md5.hash(bytes: Array(key.utf8)).hexString
+            var md5 = MD5()
 
-        let authenticate = AuthenticateCR(nonce: nonce, user: username, key: keyDigest)
+            let credentials = username + ":mongo:" + password
+            let digest = md5.hash(bytes: Array(credentials.utf8)).hexString
+            let key = nonce + username + digest
+            let keyDigest = md5.hash(bytes: Array(key.utf8)).hexString
 
-        let authenticationReply = try await self.executeEncodable(
-            authenticate,
-            namespace: namespace,
-            sessionId: nil
-        )
-        
-        try authenticationReply.assertOK(
-            or: MongoAuthenticationError(reason: .anyAuthenticationFailure)
-        )
+            let authenticate = AuthenticateCR(nonce: nonce, user: username, key: keyDigest)
+
+            let authenticationReply = try await self.executeEncodable(
+                authenticate,
+                namespace: namespace,
+                sessionId: nil,
+                traceLabel: "AuthenticateCR.Finalize",
+                baggage: span.baggage
+            )
+
+            try authenticationReply.assertOK(
+                or: MongoAuthenticationError(reason: .anyAuthenticationFailure)
+            )
+        }
     }
 }

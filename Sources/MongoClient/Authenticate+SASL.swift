@@ -2,6 +2,7 @@ import BSON
 import _MongoKittenCrypto
 import Foundation
 import MongoCore
+import Tracing
 import NIO
 
 enum SASLMechanism: String, Codable {
@@ -135,73 +136,81 @@ extension MongoConnection {
     ///
     /// The Hasher `H` specifies the hashing algorithm used with SCRAM.
     func authenticateSASL<H: SASLHash>(hasher: H, namespace: MongoNamespace, username: String, password: String) async throws {
-        let context = SCRAM<H>(hasher)
+        try await InstrumentationSystem.tracer.withSpan("MongoKitten.AuthenticateSASL", ofKind: .client) { span in
+            let context = SCRAM<H>(hasher)
 
-        let rawRequest = try context.authenticationString(forUser: username)
-        let request = Data(rawRequest.utf8).base64EncodedString()
-        let command = SASLStart(mechanism: H.algorithm, payload: request)
+            let rawRequest = try context.authenticationString(forUser: username)
+            let request = Data(rawRequest.utf8).base64EncodedString()
+            let command = SASLStart(mechanism: H.algorithm, payload: request)
 
-        // NO session must be used here: https://github.com/mongodb/specifications/blob/master/source/sessions/driver-sessions.rst#when-opening-and-authenticating-a-connection
-        // Forced on the current connection
-        var reply = try await self.executeCodable(
-            command,
-            decodeAs: SASLReply.self,
-            namespace: namespace,
-            sessionId: nil
-        )
-        
-        if reply.done {
-            return
-        }
+            // NO session must be used here: https://github.com/mongodb/specifications/blob/master/source/sessions/driver-sessions.rst#when-opening-and-authenticating-a-connection
+            // Forced on the current connection
+            var reply = try await self.executeCodable(
+                command,
+                decodeAs: SASLReply.self,
+                namespace: namespace,
+                sessionId: nil,
+                traceLabel: "SASL.Initiate",
+                baggage: span.baggage
+            )
 
-        let preppedPassword: String
+            if reply.done {
+                return
+            }
 
-        if H.algorithm.md5Digested {
-            var md5 = MD5()
-            let credentials = "\(username):mongo:\(password)"
-            preppedPassword = md5.hash(bytes: Array(credentials.utf8)).hexString
-        } else {
-            preppedPassword = password
-        }
+            let preppedPassword: String
 
-        let challenge = try reply.payload.base64Decoded()
-        let rawResponse = try context.respond(toChallenge: challenge, password: preppedPassword)
-        let response = Data(rawResponse.utf8).base64EncodedString()
+            if H.algorithm.md5Digested {
+                var md5 = MD5()
+                let credentials = "\(username):mongo:\(password)"
+                preppedPassword = md5.hash(bytes: Array(credentials.utf8)).hexString
+            } else {
+                preppedPassword = password
+            }
 
-        let next = SASLContinue(
-            conversation: reply.conversationId,
-            payload: response
-        )
+            let challenge = try reply.payload.base64Decoded()
+            let rawResponse = try context.respond(toChallenge: challenge, password: preppedPassword)
+            let response = Data(rawResponse.utf8).base64EncodedString()
 
-        reply = try await self.executeCodable(
-            next,
-            decodeAs: SASLReply.self,
-            namespace: namespace,
-            sessionId: nil
-        )
-        
-        let successReply = try reply.payload.base64Decoded()
-        try context.completeAuthentication(withResponse: successReply)
-        
-        if reply.done {
-            return
-        }
-        
-        let final = SASLContinue(
-            conversation: reply.conversationId,
-            payload: ""
-        )
+            let next = SASLContinue(
+                conversation: reply.conversationId,
+                payload: response
+            )
 
-        reply = try await self.executeCodable(
-            final,
-            decodeAs: SASLReply.self,
-            namespace: namespace,
-            sessionId: nil
-        )
-        
-        guard reply.done else {
-            self.logger.error("Authentication to MongoDB failed")
-            throw MongoAuthenticationError(reason: .malformedAuthenticationDetails)
+            reply = try await self.executeCodable(
+                next,
+                decodeAs: SASLReply.self,
+                namespace: namespace,
+                sessionId: nil,
+                traceLabel: "SASL.Continue",
+                baggage: span.baggage
+            )
+
+            let successReply = try reply.payload.base64Decoded()
+            try context.completeAuthentication(withResponse: successReply)
+
+            if reply.done {
+                return
+            }
+
+            let final = SASLContinue(
+                conversation: reply.conversationId,
+                payload: ""
+            )
+
+            reply = try await self.executeCodable(
+                final,
+                decodeAs: SASLReply.self,
+                namespace: namespace,
+                sessionId: nil,
+                traceLabel: "SASL.Finalize",
+                baggage: span.baggage
+            )
+
+            guard reply.done else {
+                self.logger.error("Authentication to MongoDB failed")
+                throw MongoAuthenticationError(reason: .malformedAuthenticationDetails)
+            }
         }
     }
 }

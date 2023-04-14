@@ -1,3 +1,4 @@
+import Tracing
 import NIO
 import MongoClient
 
@@ -29,7 +30,9 @@ extension MongoCollection {
             namespace: self.database.commandNamespace,
             in: self.transaction,
             sessionId: self.sessionId ?? connection.implicitSessionId,
-            logMetadata: database.logMetadata
+            logMetadata: database.logMetadata,
+            traceLabel: "CreateIndexes<\(namespace)>",
+            baggage: baggage
         )
         
         try reply.assertOK()
@@ -49,12 +52,20 @@ extension MongoCollection {
         let namespace = MongoNamespace(to: "$cmd", inDatabase: db.name)
         
         let connection = try await db.pool.next(for: .basic)
+        let listIndexesSpan: any Span
+        if let baggage {
+            listIndexesSpan = InstrumentationSystem.tracer.startAnySpan("ListIndexes<\(namespace)>", baggage: baggage)
+        } else {
+            listIndexesSpan = InstrumentationSystem.tracer.startAnySpan("ListIndexes<\(namespace)>")
+        }
         let response = try await connection.executeCodable(
             request,
             decodeAs: MongoCursorResponse.self,
             namespace: namespace,
             sessionId: nil,
-            logMetadata: database.logMetadata
+            logMetadata: database.logMetadata,
+            traceLabel: "ListIndexes<\(namespace)>",
+            baggage: listIndexesSpan.baggage
         )
         
         return MongoCursor(
@@ -62,7 +73,9 @@ extension MongoCollection {
             in: namespace,
             connection: connection,
             session: self.session ?? connection.implicitSession,
-            transaction: nil
+            transaction: nil,
+            traceLabel: "ListIndexes<\(namespace)>",
+            baggage: listIndexesSpan.baggage
         ).decode(MongoIndex.self)
     }
     

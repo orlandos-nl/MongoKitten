@@ -17,7 +17,9 @@ extension MongoCollection {
             namespace: self.database.commandNamespace,
             in: self.transaction,
             sessionId: self.sessionId ?? connection.implicitSessionId,
-            logMetadata: database.logMetadata
+            logMetadata: database.logMetadata,
+            traceLabel: "DeleteOne<\(namespace)>",
+            baggage: baggage
         )
     }
     
@@ -36,7 +38,9 @@ extension MongoCollection {
             namespace: self.database.commandNamespace,
             in: self.transaction,
             sessionId: self.sessionId ?? connection.implicitSessionId,
-            logMetadata: database.logMetadata
+            logMetadata: database.logMetadata,
+            traceLabel: "DeleteAll<\(namespace)>",
+            baggage: baggage
         )
     }
     

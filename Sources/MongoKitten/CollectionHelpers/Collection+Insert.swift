@@ -57,7 +57,9 @@ extension MongoCollection {
             namespace: self.database.commandNamespace,
             in: self.transaction,
             sessionId: self.sessionId ?? connection.implicitSessionId,
-            logMetadata: database.logMetadata
+            logMetadata: database.logMetadata,
+            traceLabel: "Insert<\(namespace)>",
+            baggage: baggage
         )
         
         if reply.ok == 1 {

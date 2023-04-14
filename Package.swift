@@ -46,6 +46,9 @@ let package = Package(
         
         // 🔑
         .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.0.0"),
+
+        // 🔍
+        .package(url: "https://github.com/apple/swift-distributed-tracing.git", from: "1.0.0-beta.2"),
     ],
     targets: [
         .target(
@@ -76,7 +79,8 @@ let package = Package(
             dependencies: [
                 "MongoCore",
                 "_MongoKittenCrypto",
-                .product(name: "DNSClient", package: "DNSClient"),
+                .product(name: "DNSClient", package: "NioDNS"),
+                .product(name: "Tracing", package: "swift-distributed-tracing")
             ]
         ),
         .testTarget(

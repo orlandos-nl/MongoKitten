@@ -4,31 +4,38 @@ import XCTest
 import MongoCore
 
 class TransactionTests: XCTestCase {
-    struct ModelA: Codable {
-        static let collection = "model_a"
-        let _id: ObjectId
-        let value: String
-    }
-    
-    struct ModelB: Codable {
-        static let collection = "model_b"
-        let _id: ObjectId
-        let value: String
-    }
-    
     var mongo: MongoDatabase!
     
     override func setUp() async throws {
         try await super.setUp()
-        let mongoSettings = try ConnectionSettings("mongodb://\(ProcessInfo.processInfo.environment["MONGO_HOSTNAME_A"] ?? "localhost")/mongokitten-test")
+        let mongoSettings: ConnectionSettings
+        if let connectionString = ProcessInfo.processInfo.environment["MONGO_TEST_CONNECTIONSTRING"] {
+            mongoSettings = try ConnectionSettings(connectionString)
+        } else {
+            mongoSettings = try ConnectionSettings("mongodb://\(ProcessInfo.processInfo.environment["MONGO_HOSTNAME_A"] ?? "localhost")/mongokitten-test")
+        }
         mongo = try await MongoDatabase.connect(to: mongoSettings)
+        try await initializeLoggingTracing()
     }
     
     override func tearDown() async throws {
         try await super.tearDown()
         try await mongo.drop()
     }
-    
+
+    func testTransactionInsert() async throws {
+        let startingCount: Int = try await mongo[DummyAccount.collectionName].count()
+
+        try await mongo.transaction { db in
+            let schema = db[DummyAccount.collectionName]
+
+            let dummyAccount = DummyAccount(name: "Dum", password: "my", age: 69)
+            try await schema.insertEncoded(dummyAccount)
+        }
+
+        let count = try await mongo[DummyAccount.collectionName].count()
+        XCTAssertEqual(count, startingCount + 1)
+    }
     //TODO: this test is failing
 //    func test_transaction() async throws {
 //        try await mongo.transaction { db in
