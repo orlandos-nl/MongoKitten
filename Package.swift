@@ -1,4 +1,4 @@
-// swift-tools-version:5.6
+// swift-tools-version:5.7
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "MongoKitten",
     platforms: [
-        .macOS(.v10_15),
+        .macOS(.v13),
         .iOS(.v13)
     ],
     products: [
@@ -48,7 +48,10 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.0.0"),
 
         // 🔍
-        .package(url: "https://github.com/apple/swift-distributed-tracing.git", from: "1.0.0-beta.2"),
+        .package(url: "https://github.com/apple/swift-distributed-tracing.git", from: "1.0.0-beta.1"),
+
+        // Temporary
+        .package(url: "https://github.com/slashmo/swift-otel", revision: "feature/tracing-1.0"),
     ],
     targets: [
         .target(
@@ -88,7 +91,11 @@ let package = Package(
             dependencies: ["MongoCore"]),
         .testTarget(
             name: "MongoKittenTests",
-            dependencies: ["MongoKitten"]),
+            dependencies: [
+                "MongoKitten",
+                .product(name: "OpenTelemetry", package: "swift-otel"),
+                .product(name: "OtlpGRPCSpanExporting", package: "swift-otel"),
+            ]),
         .testTarget(
             name: "MeowTests",
             dependencies: ["Meow"]),
