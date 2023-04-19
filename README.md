@@ -74,7 +74,7 @@ Vapor users should register the database as a service:
 ```swift
 extension Request {
     public var mongo: MongoDatabase {
-        return application.mongoDB.adoptingLogMetadata([
+        return application.mongo.adoptingLogMetadata([
             "request-id": .string(id)
         ])
     }
