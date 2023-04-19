@@ -73,7 +73,7 @@ Vapor users should register the database as a service:
 
 ```swift
 extension Request {
-    public var mongoDB: MongoDatabase {
+    public var mongo: MongoDatabase {
         return application.mongoDB.adoptingLogMetadata([
             "request-id": .string(id)
         ])
@@ -85,7 +85,7 @@ private struct MongoDBStorageKey: StorageKey {
 }
 
 extension Application {
-    public var mongoDB: MongoDatabase {
+    public var mongo: MongoDatabase {
         get {
             storage[MongoDBStorageKey.self]!
         }
@@ -95,7 +95,7 @@ extension Application {
     }
     
     public func initializeMongoDB(connectionString: String) throws {
-        self.mongoDB = try MongoDatabase.lazyConnect(to: connectionString)
+        self.mongo = try MongoDatabase.lazyConnect(to: connectionString)
     }
 }
 ```
