@@ -11,7 +11,7 @@ import BSON
 public struct QueryMatcher<M: KeyPathQueryable> {
     internal init() {}
 
-    public subscript<T>(dynamicMember keyPath: KeyPath<M, QueryableField<T>>) -> QuerySubject<M, T> {
+    public subscript<T: Codable>(dynamicMember keyPath: KeyPath<M, QueryableField<T>>) -> QuerySubject<M, T> {
         let path = M.resolveFieldPath(keyPath)
         return QuerySubject(path: FieldPath(components: path))
     }
@@ -21,7 +21,7 @@ public struct QueryMatcher<M: KeyPathQueryable> {
 ///
 /// Used to construct type-checked queries
 @dynamicMemberLookup
-public struct QuerySubject<M: KeyPathQueryable, T> {
+public struct QuerySubject<M: KeyPathQueryable, T: Codable> {
     internal let path: FieldPath!
     
     public subscript<New>(dynamicMember keyPath: KeyPath<T, QueryableField<New>>) -> QuerySubject<M, New> where T: KeyPathQueryable {
@@ -95,7 +95,7 @@ extension KeyPathQueryable {
     /// Resolves a ``QueryableField`` into `[String]` path.
     ///
     /// - Note: Crashes if the model does not implement Meow's @``Field`` property wrapper on all properties
-    internal static func resolveFieldPath<T>(_ field: QueryableField<T>) -> [String] {
+    internal static func _resolveFieldPath<T>(_ field: QueryableField<T>) -> [String] {
         // If the app crashes here, it's most likely that you didn't properly implement the `@Field` property wrapper in your model
         return field.parents + [field.key!]
     }
@@ -103,22 +103,31 @@ extension KeyPathQueryable {
     /// Resolves a ``QueryableField`` into `[String]` path.
     ///
     /// - Note: Crashes if the model does not implement the @``Field`` property wrapper on all properties
-    public static func resolveFieldPath<T>(_ field: KeyPath<Self, QueryableField<T>>) -> [String] {
-        // If you've arrived here, please add `@Field` to all your model's properties
-        do {
-            let model = try Self(from: TestDecoder())
-            let field = model[keyPath: field]
-            return resolveFieldPath(field)
-        } catch {
-            fatalError("If you've arrived here, please add `@Field` to all your \(Self.self) model's properties")
-        }
+    public static func resolveFieldPath<T: Codable>(_ field: KeyPath<Self, QueryableField<T>>) -> [String] {
+        resolveFieldPath(field.appending(path: \.wrapper))
     }
     
     /// Resolves a Field into `[String]` path.
     ///
     /// - Note: Crashes if the model does not implement the @``Field`` property wrapper on all properties
-    public static func resolveFieldPath<T>(_ field: KeyPath<Self, Field<T>>) -> [String] {
-        resolveFieldPath(field.appending(path: \.projectedValue))
+    public static func resolveFieldPath<T: Codable>(_ field: KeyPath<Self, Field<T>>) -> [String] {
+        resolveFieldPath(field.appending(path: \.projectedValue.wrapper))
+    }
+
+    internal static func resolveFieldPath<T>(_ field: KeyPath<Self, _QueryableFieldWrapper<T>>) -> [String] {
+        // If you've arrived here, please add `@Field` to all your model's propertiess
+        do {
+            let model = try Self(from: TestDecoder())
+            let field = model[keyPath: field]
+            switch field.wrapped {
+            case .field(let field):
+                return _resolveFieldPath(field.projectedValue)
+            case .queryableField(let field):
+                return _resolveFieldPath(field)
+            }
+        } catch {
+            fatalError("If you've arrived here, please add `@Field` to all your \(Self.self) model's properties")
+        }
     }
 }
 
@@ -217,6 +226,43 @@ fileprivate extension Document {
     }
 }
 
+extension KeyPath: FieldPathRepresentable where Root: KeyPathQueryable, Value: _QueryableFieldRepresentable {
+    public func makeFieldPath() -> FieldPath {
+        FieldPath(components: Root.resolveFieldPath(self.appending(path: \.wrapper)))
+    }
+}
+
+extension String: FieldPathRepresentable {
+    public func makeFieldPath() -> FieldPath {
+        FieldPath(stringLiteral: self)
+    }
+}
+
+extension FieldPath: FieldPathRepresentable {
+    public func makeFieldPath() -> FieldPath {
+        self
+    }
+}
+
+public struct _QueryableFieldWrapper<Value: Codable> {
+    internal enum _Wrapper {
+        case queryableField(QueryableField<Value>)
+        case field(Field<Value>)
+    }
+
+    let wrapped: _Wrapper
+}
+
+public protocol _QueryableFieldRepresentable {
+    associatedtype Value: Codable
+    
+    var wrapper: _QueryableFieldWrapper<Value> { get }
+}
+
+public protocol FieldPathRepresentable {
+    func makeFieldPath() -> FieldPath
+}
+
 /// A wrapper around a value, that can be aware of its full keypath within the Model
 @dynamicMemberLookup
 public struct QueryableField<Value> {
@@ -245,9 +291,16 @@ public struct QueryableField<Value> {
     }
 }
 
+extension QueryableField: _QueryableFieldRepresentable where Value: Codable {
+    public var wrapper: _QueryableFieldWrapper<Value> {
+        .init(wrapped: .queryableField(self))
+    }
+}
+
 /// The `@Field` property wrapper is used on all stored properties of a ``Model`` to allow key path based queries.
 @propertyWrapper
-public struct Field<C: Codable>: Codable {
+public struct Field<C: Codable>: Codable, _QueryableFieldRepresentable {
+    public typealias Value = C
     public let key: String?
     private var _wrappedValue: C?
     
@@ -259,6 +312,10 @@ public struct Field<C: Codable>: Codable {
     public var projectedValue: QueryableField<C> {
         get { QueryableField(parents: [], key: key, value: _wrappedValue) }
         set { _wrappedValue = newValue.value }
+    }
+
+    public var wrapper: _QueryableFieldWrapper<Value> {
+        .init(wrapped: .field(self))
     }
     
     public init(from decoder: Decoder) throws {

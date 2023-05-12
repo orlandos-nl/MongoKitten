@@ -270,12 +270,12 @@ public struct ModelUpdateQuery<M: KeyPathQueryableModel & MutableModel> {
     }
     
     /// Adds an atomic `$set` to the update query that updates the field corresponding to `keyPath` to the `newValue`
-    public mutating func setField<R: RawRepresentable>(at keyPath: WritableKeyPath<M, QueryableField<R>>, to newValue: R) where R.RawValue: Primitive {
+    public mutating func setField<R: RawRepresentable & Codable>(at keyPath: WritableKeyPath<M, QueryableField<R>>, to newValue: R) where R.RawValue: Primitive {
         let path = M.resolveFieldPath(keyPath).joined(separator: ".")
         set[path] = newValue.rawValue
     }
     
-    public mutating func setField<R: RawRepresentable>(at keyPath: WritableKeyPath<M, QueryableField<R?>>, to newValue: R?) where R.RawValue: Primitive {
+    public mutating func setField<R: RawRepresentable & Codable>(at keyPath: WritableKeyPath<M, QueryableField<R?>>, to newValue: R?) where R.RawValue: Primitive {
         if let newValue = newValue {
             let path = M.resolveFieldPath(keyPath).joined(separator: ".")
             set[path] = newValue.rawValue
@@ -285,7 +285,7 @@ public struct ModelUpdateQuery<M: KeyPathQueryableModel & MutableModel> {
     }
     
     /// Adds an atomic `$unset` to the update query that updates the field corresponding to `keyPath` to be removed
-    public mutating func unsetField<Value>(at keyPath: WritableKeyPath<M, QueryableField<Value?>>) {
+    public mutating func unsetField<Value: Codable>(at keyPath: WritableKeyPath<M, QueryableField<Value?>>) {
         let path = M.resolveFieldPath(keyPath).joined(separator: ".")
         unset[path] = ""
     }
@@ -379,7 +379,7 @@ public struct ModelGrouper<Base: KeyPathQueryable, Result: KeyPathQueryable> {
     }
     
     /// Takes the `$avg` of the values in `field`, and accumulates into `result`
-    public mutating func setAverage<T>(of field: KeyPath<Base, QueryableField<T>>, to result: KeyPath<Result, QueryableField<T>>) {
+    public mutating func setAverage<T: Codable>(of field: KeyPath<Base, QueryableField<T>>, to result: KeyPath<Result, QueryableField<T>>) {
         let field = FieldPath(components: Base.resolveFieldPath(field))
         let result = FieldPath(components: Result.resolveFieldPath(result))
         document[field.string] = [ "$avg": result.projection ] as Document
@@ -387,11 +387,50 @@ public struct ModelGrouper<Base: KeyPathQueryable, Result: KeyPathQueryable> {
 }
 
 /// Used for projecting the values in `Base` into `Result`
-public struct ModelProjector<Base: KeyPathQueryable, Result: KeyPathQueryable> {
+public struct ModelProjector<Base: Codable, Result: Codable> {
     var projection = Projection()
     
     internal init() {}
-    
+}
+
+extension ModelProjector {
+    /// Moves the entire `Base` entity into a value inside `Result`
+    public mutating func moveRoot<Path: FieldPathRepresentable>(to path: Path) {
+        projection.moveRoot(to: path.makeFieldPath())
+    }
+
+    /// Includes the field at `path` in the projection, using the same key as before the projection
+    public mutating func includeField<Path: FieldPathRepresentable>(at path: Path) {
+        projection.include(path.makeFieldPath())
+    }
+
+    /// Explicitly excludes the field at `path` from being projected, used most commonly for `_id`
+    public mutating func excludeField<Path: FieldPathRepresentable>(at path: Path) {
+        projection.exclude(path.makeFieldPath())
+    }
+}
+
+extension ModelProjector where Base: KeyPathQueryable {
+    /// Moves a field from the `base` KeyPath into the `new` location
+    public mutating func moveField<Value: Codable>(from base: KeyPath<Base, QueryableField<Value>>, to new: FieldPath) {
+        let base = FieldPath(components: Base.resolveFieldPath(base))
+        projection.rename(base, to: new)
+    }
+
+    /// Includes the field at `keyPath` in the projection, using the same key as before the projection
+    public mutating func includeField<Value: Codable>(at keyPath: KeyPath<Base, QueryableField<Value>>) {
+        let path = FieldPath(components: Base.resolveFieldPath(keyPath))
+        projection.include(path)
+    }
+
+    /// Explicitly excludes the field at `keyPath` from being projected, used most commonly for `_id`
+    public mutating func excludeField<Value: Codable>(at keyPath: KeyPath<Base, QueryableField<Value?>>) {
+        let path = FieldPath(components: Base.resolveFieldPath(keyPath))
+        projection.exclude(path)
+    }
+}
+
+extension ModelProjector where Result: KeyPathQueryable {
     /// Sets the `Result`'s `keyPath` to a constant `newValue`
     public mutating func setField<P: Primitive>(at keyPath: KeyPath<Result, QueryableField<P>>, to newValue: P) {
         let path = FieldPath(components: Result.resolveFieldPath(keyPath))
@@ -399,26 +438,34 @@ public struct ModelProjector<Base: KeyPathQueryable, Result: KeyPathQueryable> {
     }
     
     /// Sets the `Result`'s `keyPath` to a constant `newValue`
-    public mutating func setField<PE: PrimitiveEncodable>(at keyPath: KeyPath<Result, QueryableField<PE>>, to newValue: PE) throws {
+    public mutating func setField<PE: PrimitiveEncodable & Codable>(at keyPath: KeyPath<Result, QueryableField<PE>>, to newValue: PE) throws {
         let path = FieldPath(components: Result.resolveFieldPath(keyPath))
         let newValue = try newValue.encodePrimitive()
         projection.addLiteral(newValue, at: path)
     }
     
     /// Explicitly excludes the field at `keyPath` from being projected, used most commonly for `_id`
-    public mutating func excludeField<Value>(at keyPath: KeyPath<Result, QueryableField<Value?>>) {
+    public mutating func excludeField<Value: Codable>(at keyPath: KeyPath<Result, QueryableField<Value?>>) {
         let path = FieldPath(components: Result.resolveFieldPath(keyPath))
         projection.exclude(path)
     }
     
     /// Includes the field at `keyPath` in the projection, using the same key as before the projection
-    public mutating func includeField<Value>(at keyPath: KeyPath<Result, QueryableField<Value?>>) {
+    public mutating func includeField<Value: Codable>(at keyPath: KeyPath<Result, QueryableField<Value?>>) {
         let path = FieldPath(components: Result.resolveFieldPath(keyPath))
         projection.include(path)
     }
-    
+
+    /// Moves the entire `Base` entity into a value inside `Result`
+    public mutating func moveRoot(to path: KeyPath<Result, QueryableField<Base>>) {
+        let path = FieldPath(components: Result.resolveFieldPath(path))
+        projection.moveRoot(to: path)
+    }
+}
+
+extension ModelProjector where Base: KeyPathQueryable, Result: KeyPathQueryable {
     /// Moves a field from the `base` KeyPath into the `new` KeyPath found in the `Result` entity
-    public mutating func moveField<Value>(from base: KeyPath<Base, QueryableField<Value>>, to new: KeyPath<Result, QueryableField<Value>>) {
+    public mutating func moveField<Value: Codable>(from base: KeyPath<Base, QueryableField<Value>>, to new: KeyPath<Result, QueryableField<Value>>) {
         let base = FieldPath(components: Base.resolveFieldPath(base))
         let new = FieldPath(components: Result.resolveFieldPath(new))
         projection.rename(base, to: new)
@@ -437,13 +484,7 @@ public struct ModelProjector<Base: KeyPathQueryable, Result: KeyPathQueryable> {
         let new = FieldPath(components: Result.resolveFieldPath(new))
         projection.rename(base, to: new)
     }
-    
-    /// Moves the entire `Base` entity into a value inside `Result`
-    public mutating func moveRoot(to path: KeyPath<Result, QueryableField<Base>>) {
-        let path = FieldPath(components: Result.resolveFieldPath(path))
-        projection.moveRoot(to: path)
-    }
-    
+
     /// Moves the entire `Base` entity into a value inside `Result`
     public mutating func moveRoot(to path: KeyPath<Result, QueryableField<Base?>>) {
         let path = FieldPath(components: Result.resolveFieldPath(path))
