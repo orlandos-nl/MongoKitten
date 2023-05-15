@@ -32,13 +32,13 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-metrics.git", "1.0.0" ..< "3.0.0"),        
         
         // 💾
-        .package(url: "https://github.com/OpenKitten/BSON.git", from: "7.0.28"),
+        .package(url: "https://github.com/orlandos-nl/BSON.git", from: "7.0.28"),
         
         // 🚀
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0"),
 
         // 📚
-        .package(url: "https://github.com/OpenKitten/NioDNS.git", from: "2.0.0"),
+        .package(url: "https://github.com/orlandos-nl/DNSClient.git", from: "2.0.0"),
         
         // 🔑
         .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.0.0")
@@ -49,19 +49,31 @@ let package = Package(
             dependencies: []),
         .target(
             name: "MongoCore",
-            dependencies: ["BSON", "_MongoKittenCrypto", "NIO", "Logging", "Metrics"]),
-            .target(
-                name: "MongoKittenCore",
-                dependencies: ["MongoClient"]),
+            dependencies: [
+                .product(name: "BSON", package: "BSON"),
+                "_MongoKittenCrypto",
+                .product(name: "NIO", package: "swift-nio"),
+                .product(name: "Logging", package: "swift-log"),
+                .product(name: "Metrics", package: "swift-metrics"),
+            ]),
+        .target(
+            name: "MongoKittenCore",
+            dependencies: ["MongoClient"]
+        ),
         .target(
             name: "MongoKitten",
-            dependencies: ["MongoClient", "MongoKittenCore", "NIOCore"]),
+            dependencies: ["MongoClient", "MongoKittenCore", .product(name: "NIOCore", package: "swift-nio")]
+        ),
         .target(
             name: "Meow",
             dependencies: ["MongoKitten"]),
         .target(
             name: "MongoClient",
-            dependencies: ["MongoCore", "NIOSSL", "DNSClient"]
+            dependencies: [
+                "MongoCore",
+                .product(name: "NIOSSL", package: "swift-nio-ssl"),
+                .product(name: "DNSClient", package: "DNSClient")
+            ]
         ),
         .testTarget(
             name: "MongoCoreTests",
