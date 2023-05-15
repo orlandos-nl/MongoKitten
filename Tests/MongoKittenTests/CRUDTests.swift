@@ -519,7 +519,8 @@ class CrudTests : XCTestCase {
         XCTAssertEqual(result[0].name, "_id_")
         XCTAssertEqual(result[1].name, "nameIndex")
     }
-    
+
+#if compiler(>=5.5) && canImport(_Concurrency)
     func testBuildIndexes() async throws {
         let async = mongo.async[DummyAccount.collectionName]
         try await mongo.async[DummyAccount.collectionName].buildIndexes {
@@ -539,6 +540,7 @@ class CrudTests : XCTestCase {
 
         XCTAssertEqual(count, 1)
     }
+#endif
 
     // TODO ON ICE: Foreach future
     // TODO ON ICE: Change stream
