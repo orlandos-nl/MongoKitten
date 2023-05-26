@@ -3,7 +3,7 @@ import MongoKittenCore
 import MongoClient
 
 /// An aggregation pipeline, used to query a collection
-public struct AggregateBuilderPipeline: QueryCursor {
+public struct AggregateBuilderPipeline: CountableCursor {
     public typealias Element = Document
 
     /// The connection to use for this pipeline. If nil, the pipeline requests a connection from the pool
