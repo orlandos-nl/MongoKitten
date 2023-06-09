@@ -1,8 +1,8 @@
 import BSON
 
 /// A MongoDB message header, used to identify the type of message and the length of the message
-public struct MongoMessageHeader: Sendable {
-    public enum OpCode: Int32, Sendable {
+public struct MongoMessageHeader: Sendable, Equatable {
+    public enum OpCode: Int32, Sendable, Equatable {
         case reply = 1
         case update = 2001
         case insert = 2002

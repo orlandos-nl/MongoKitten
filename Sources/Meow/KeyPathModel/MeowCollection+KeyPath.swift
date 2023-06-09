@@ -372,8 +372,8 @@ public struct ModelUpdateQuery<M: KeyPathQueryableModel & MutableModel> {
 /// - `Base` is a `KeyPathQueryableModel`, of which the collection is being grouped
 /// - `Result` is the resulting type in which the results are being accumulated
 public struct ModelGrouper<Base: KeyPathQueryable, Result: KeyPathQueryable> {
-    var document = Document()
-    
+    public var document = Document()
+
     internal init(_id: Primitive) {
         document["_id"] = _id
     }
@@ -382,7 +382,18 @@ public struct ModelGrouper<Base: KeyPathQueryable, Result: KeyPathQueryable> {
     public mutating func setAverage<T: Codable>(of field: KeyPath<Base, QueryableField<T>>, to result: KeyPath<Result, QueryableField<T>>) {
         let field = FieldPath(components: Base.resolveFieldPath(field))
         let result = FieldPath(components: Result.resolveFieldPath(result))
-        document[field.string] = [ "$avg": result.projection ] as Document
+        document[result.string] = [ "$avg": field.projection ] as Document
+    }
+
+    public mutating func setSum(of field: FieldPathRepresentable, to result: FieldPathRepresentable) {
+        let field = field.makeFieldPath()
+        let result = result.makeFieldPath()
+        document[field.string] = [ "$sum": result.projection ] as Document
+    }
+
+    public mutating func setSum(each: Int, to result: FieldPathRepresentable) {
+        let field = result.makeFieldPath()
+        document[field.string] = [ "$sum": each ] as Document
     }
 }
 

@@ -37,7 +37,7 @@ public struct MongoHandshakeResult {
     }
 }
 
-/// A connection to a MongoDB server. 
+/// A connection to a MongoDB server.
 public final actor MongoConnection: @unchecked Sendable {
     /// The NIO channel used for communication
     internal let channel: Channel
@@ -50,6 +50,8 @@ public final actor MongoConnection: @unchecked Sendable {
 
     /// The timeout for queries, defaults to 30 seconds
     public var queryTimeout: TimeAmount? = .seconds(30)
+
+    internal var lastServerActivity: Date?
     
     /// Whether metrics are enabled. When enabled, metrics will be collected for queries using the `Metrics` library.
     public var isMetricsEnabled = false {
@@ -109,6 +111,15 @@ public final actor MongoConnection: @unchecked Sendable {
     public static func addHandlers(to channel: Channel, context: MongoClientContext) -> EventLoopFuture<Void> {
         let parser = ClientConnectionParser(context: context)
         return channel.pipeline.addHandler(ByteToMessageHandler(parser))
+    }
+
+    public func ping() async throws {
+        _ = try await executeCodable(
+            [ "ping": 1 ],
+            decodeAs: OK.self,
+            namespace: .administrativeCommand,
+            sessionId: implicitSessionId
+        )
     }
     
     /// Connects to a MongoDB server using the given settings.
@@ -280,7 +291,9 @@ public final actor MongoConnection: @unchecked Sendable {
             }
         }
         
-        return try await promise.futureResult.get()
+        let result = try await promise.futureResult.get()
+        lastServerActivity = Date()
+        return result
     }
     
     /// Close the connection to the MongoDB server
