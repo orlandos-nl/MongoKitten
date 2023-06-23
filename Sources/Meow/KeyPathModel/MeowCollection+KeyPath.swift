@@ -247,10 +247,10 @@ extension MeowCollection where M: MutableModel & KeyPathQueryableModel {
 
 /// A helper type used to construct type-checked atomic updates
 public struct ModelUpdateQuery<M: KeyPathQueryableModel & MutableModel> {
-    var set = Document()
-    var unset = Document()
-    var inc = Document()
-    var addToSet = [String: [Primitive]]()
+    public var set = Document()
+    public var unset = Document()
+    public var inc = Document()
+    public var addToSet = [String: [Primitive]]()
     
     internal init() {}
     
