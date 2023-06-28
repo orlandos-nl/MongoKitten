@@ -127,6 +127,11 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
     private var completedInitialDiscovery = false
     private var isDiscovering = false
 
+    /// For initializers where additional initialization logic is kicked off in the background, the task in which this happens is stored here.
+    ///
+    /// - Note: To not introduce any race conditions on this property, this task is never nilled.
+    private var initTask: Task<Void, Error>?
+
     private init(
         settings: ConnectionSettings,
         logger: Logger,
@@ -164,7 +169,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         
         self.init(settings: settings, logger: logger, eventLoopGroup: eventLoopGroup)
         
-        Task {
+        initTask = Task {
             // Kick off the connection process
             try await resolveSettings()
             
@@ -436,6 +441,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
 
     /// Gets a connection from the pool, or creates a new one if none are available. The returned connection matches the requirements of the request.
     public func next(for request: ConnectionPoolRequest) async throws -> MongoConnection {
+        try await initTask?.value
         return try await self.makeConnectionRecursively(for: request)
     }
     
