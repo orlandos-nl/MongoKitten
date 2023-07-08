@@ -1,4 +1,5 @@
 import NIO
+import Foundation
 import Logging
 import MongoCore
 
@@ -14,6 +15,7 @@ public final actor MongoClientContext {
 
     /// The server handshake
     internal var serverHandshake: ServerHandshake?
+    internal var lastServerHandshakeDate = Date()
     internal var didError = false
     private var outdatedDB = false
     let logger: Logger
@@ -41,7 +43,8 @@ public final actor MongoClientContext {
     
     internal func setServerHandshake(to handshake: ServerHandshake?) {
         self.serverHandshake = handshake
-        
+        self.lastServerHandshakeDate = Date()
+
         if let version = handshake?.maxWireVersion, version.isDeprecated, !outdatedDB {
             outdatedDB = true
             logger.warning("MongoDB server is outdated, please upgrade MongoDB")

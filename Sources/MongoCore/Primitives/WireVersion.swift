@@ -18,6 +18,7 @@ public struct WireVersion: Codable, Comparable, ExpressibleByIntegerLiteral, Sen
     public static let mongo5_1: WireVersion = 14
     public static let mongo5_2: WireVersion = 15
     public static let mongo5_3: WireVersion = 16
+    public static let mongo6_0: WireVersion = 17
 
     public let version: Int
 
@@ -74,6 +75,6 @@ public struct WireVersion: Codable, Comparable, ExpressibleByIntegerLiteral, Sen
     }
     
     public var isDeprecated: Bool {
-        return self < .mongo4_2
+        return self < .mongo4_4
     }
 }
