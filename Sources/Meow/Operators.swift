@@ -40,8 +40,8 @@ public func == <M: KeyPathQueryableModel, T: Primitive>(lhs: QuerySubject<M, T>,
 // Optionals
 
 @_disfavoredOverload
-public func == <M: KeyPathQueryableModel, BM>(lhs: QuerySubject<M, Reference<BM>?>, rhs: Reference<BM>) -> Document where BM.Identifier: Primitive {
-    return lhs.path.string == rhs.reference
+public func == <M: KeyPathQueryableModel, BM>(lhs: QuerySubject<M, Reference<BM>?>, rhs: Reference<BM>?) -> Document where BM.Identifier: Primitive {
+    return lhs.path.string == rhs?.reference
 }
 
 @_disfavoredOverload
@@ -72,7 +72,7 @@ public func == <M: KeyPathQueryableModel, T: RawRepresentable>(lhs: QuerySubject
 }
 
 @_disfavoredOverload
-public func == <M: KeyPathQueryableModel, T: Primitive>(lhs: QuerySubject<M, T?>, rhs: T) -> Document {
+public func == <M: KeyPathQueryableModel, T: Primitive>(lhs: QuerySubject<M, T?>, rhs: T?) -> Document {
     return lhs.path.string == rhs
 }
 
@@ -92,18 +92,18 @@ public func != <M: KeyPathQueryableModel, T: RawRepresentable>(lhs: QuerySubject
 
 // Optionals
 
-public func != <M: KeyPathQueryableModel, T: Primitive>(lhs: QuerySubject<M, T?>, rhs: T) -> Document {
+public func != <M: KeyPathQueryableModel, T: Primitive>(lhs: QuerySubject<M, T?>, rhs: T?) -> Document {
     return lhs.path.string != rhs
 }
 
 @_disfavoredOverload
-public func != <M: KeyPathQueryableModel, BM>(lhs: QuerySubject<M, Reference<BM>?>, rhs: Reference<BM>) -> Document where BM.Identifier: Primitive {
-    return lhs.path.string != rhs.reference
+public func != <M: KeyPathQueryableModel, BM>(lhs: QuerySubject<M, Reference<BM>?>, rhs: Reference<BM>?) -> Document where BM.Identifier: Primitive {
+    return lhs.path.string != rhs?.reference
 }
 
 @_disfavoredOverload
-public func != <M: KeyPathQueryableModel, T: RawRepresentable>(lhs: QuerySubject<M, T?>, rhs: T) -> Document where T.RawValue: Primitive {
-    return lhs.path.string != rhs.rawValue
+public func != <M: KeyPathQueryableModel, T: RawRepresentable>(lhs: QuerySubject<M, T?>, rhs: T?) -> Document where T.RawValue: Primitive {
+    return lhs.path.string != rhs?.rawValue
 }
 
 // MARK: Comparison

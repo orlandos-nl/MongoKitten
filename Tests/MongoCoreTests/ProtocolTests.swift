@@ -5,14 +5,15 @@ import BSON
 
 class ProtocolTests: XCTestCase {
     let allocator = ByteBufferAllocator()
-    let sampleHeader: [UInt8] = [
-        16 + 5, 0, 0, 0, // message length, header + body
-        32, 0, 0, 0, // requestId
-        0, 0, 0, 0, // responseId
-        212, 7, 0, 0 // query OpCode
-    ]
     
     func testHeaderEncoding() throws {
+        let sampleHeader: [UInt8] = [
+            16 + 5, 0, 0, 0, // message length, header + body
+            32, 0, 0, 0, // requestId
+            0, 0, 0, 0, // responseId
+            212, 7, 0, 0 // query OpCode
+        ]
+
         var buffer = allocator.buffer(capacity: 0)
         let header = MongoMessageHeader(
             messageLength: 16 + 5,
@@ -40,6 +41,13 @@ class ProtocolTests: XCTestCase {
     }
     
     func testHeaderDecoding() throws {
+        let sampleHeader: [UInt8] = [
+            16 + 5, 0, 0, 0, // message length, header + body
+            32, 0, 0, 0, // requestId
+            0, 0, 0, 0, // responseId
+            212, 7, 0, 0 // query OpCode
+        ]
+
         var buffer = allocator.buffer(capacity: sampleHeader.count)
         buffer.writeBytes(sampleHeader)
         
@@ -65,7 +73,8 @@ class ProtocolTests: XCTestCase {
         buffer.writeInteger(0 as UInt8)
         buffer.writeBuffer(&documentBuffer)
         
-        _ = try OpMessage(reading: &buffer, header: header)
+        let message = try OpMessage(reading: &buffer, header: header)
+        XCTAssertEqual(message.header, header)
     }
     
     // TODO: Reimplement this test

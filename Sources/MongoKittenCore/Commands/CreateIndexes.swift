@@ -18,7 +18,7 @@ public struct CreateIndexes: Encodable {
         public var name: String
         public var key: Document
         public var unique: Bool?
-        public var partialFilterExpression: Bool?
+        public var partialFilterExpression: Document?
         public var sparse: Bool?
         public var expireAfterSeconds: Int?
         public var storageEngine: Document?

@@ -70,7 +70,7 @@ public struct Sort<Base: Codable>: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = nil
     
-    public init<T: Comparable>(
+    public init<T: Comparable & Codable>(
         _ type: Base.Type = Base.self,
         by field: KeyPath<Base, QueryableField<T>>,
         direction: Sorting.Order
@@ -101,7 +101,7 @@ public struct Project<Base: Codable, Result: Codable>: AggregateBuilderStage {
         _ type: Base.Type = Base.self,
         as newType: Result.Type = Result.self,
         buildMapping: (inout ModelProjector<Base, Result>) throws -> ()
-    ) rethrows where Base: KeyPathQueryable, Result: KeyPathQueryable {
+    ) rethrows {
         var projector = ModelProjector<Base, Result>()
         try buildMapping(&projector)
         
@@ -216,7 +216,7 @@ extension Unwind where Base == Document, Result == Document {
 }
 
 extension Unwind where Base: KeyPathQueryable, Result: KeyPathQueryable {
-    public init<Value, Values: Sequence>(
+    public init<Value: Codable, Values: Sequence & Codable>(
         from base: KeyPath<Base, QueryableField<Values>>,
         into result: KeyPath<Result, QueryableField<Value>>
     ) where Values.Element == Value {
@@ -229,19 +229,19 @@ extension Unwind where Base: KeyPathQueryable, Result: KeyPathQueryable {
     }
 }
 
-public struct Lookup<Base: Codable, Foreign: KeyPathQueryableModel, Result: KeyPathQueryable>: MeowAggregateStage {
+public struct Lookup<Base: Codable, Foreign: Codable, Result: Codable>: MeowAggregateStage {
     private let lookup: MongoKitten.Lookup
     public var stage: Document { lookup.stage }
     public var minimalVersionRequired: MongoCore.WireVersion? { lookup.minimalVersionRequired }
 }
 
-extension Lookup {
-    public init<FieldValue, FieldValues>(
+extension Lookup where Base: KeyPathQueryable, Foreign: KeyPathQueryableModel, Result: KeyPathQueryable {
+    public init<FieldValue: Codable, FieldValues: Codable>(
         from type: Foreign.Type,
         localField: KeyPath<Base, QueryableField<FieldValue>>,
         foreignField: KeyPath<Foreign, QueryableField<FieldValue>>,
         as asField: KeyPath<Result, QueryableField<FieldValues>>
-    ) where Base: KeyPathQueryableModel, FieldValues: Sequence, FieldValues.Element == Foreign {
+    ) where FieldValues: Sequence, FieldValues.Element == Foreign {
         let localField = FieldPath(components: Base.resolveFieldPath(localField))
         let foreignField = FieldPath(components: Foreign.resolveFieldPath(foreignField))
         let asField = FieldPath(components: Result.resolveFieldPath(asField))
@@ -253,180 +253,214 @@ extension Lookup {
             as: asField
         )
     }
-    
-    public init<FieldValues>(
-        from type: Foreign.Type,
-        localIdentifier: KeyPath<Base, QueryableField<Reference<Foreign>>>,
-        as asField: KeyPath<Result, QueryableField<FieldValues?>>
-    ) where Base: KeyPathQueryableModel, FieldValues: Sequence, FieldValues.Element == Foreign {
-        let localIdentifier = FieldPath(components: Base.resolveFieldPath(localIdentifier))
-        let asField = FieldPath(components: Result.resolveFieldPath(asField))
-        
-        self.lookup = .init(
-            from: type.collectionName,
-            localField: localIdentifier,
-            foreignField: "_id",
-            as: asField
-        )
-    }
-    
-    public init(
-        from type: Foreign.Type,
-        localIdentifier: KeyPath<Base, QueryableField<Reference<Foreign>>>,
-        as asField: FieldPath
-    ) where Base: KeyPathQueryableModel {
-        let localIdentifier = FieldPath(components: Base.resolveFieldPath(localIdentifier))
-        
-        self.lookup = .init(
-            from: type.collectionName,
-            localField: localIdentifier,
-            foreignField: "_id",
-            as: asField
-        )
-    }
-    
-    public init<FieldValues>(
-        from type: Foreign.Type,
-        localIdentifier: KeyPath<Base, QueryableField<Reference<Foreign>>>,
-        as asField: KeyPath<Result, QueryableField<FieldValues>>
-    ) where Base: KeyPathQueryableModel, FieldValues: Sequence, FieldValues.Element == Foreign {
-        let localIdentifier = FieldPath(components: Base.resolveFieldPath(localIdentifier))
-        let asField = FieldPath(components: Result.resolveFieldPath(asField))
-        
-        self.lookup = .init(
-            from: type.collectionName,
-            localField: localIdentifier,
-            foreignField: "_id",
-            as: asField
-        )
-    }
-    
-    public init<FieldValues>(
-        from type: Foreign.Type,
-        localIdentifier: KeyPath<Base, QueryableField<[Reference<Foreign>]>>,
-        as asField: KeyPath<Result, QueryableField<FieldValues>>
-    ) where Base: KeyPathQueryableModel, FieldValues: Sequence, FieldValues.Element == Foreign {
-        let localIdentifier = FieldPath(components: Base.resolveFieldPath(localIdentifier))
-        let asField = FieldPath(components: Result.resolveFieldPath(asField))
-        
-        self.lookup = .init(
-            from: type.collectionName,
-            localField: localIdentifier,
-            foreignField: "_id",
-            as: asField
-        )
-    }
-    
-    public init<FieldValues>(
-        from type: Foreign.Type,
-        localIdentifier: KeyPath<Base, QueryableField<[Reference<Foreign>]>>,
-        as asField: KeyPath<Result, QueryableField<FieldValues?>>
-    ) where Base: KeyPathQueryableModel, FieldValues: Sequence, FieldValues.Element == Foreign {
-        let localIdentifier = FieldPath(components: Base.resolveFieldPath(localIdentifier))
-        let asField = FieldPath(components: Result.resolveFieldPath(asField))
-        
-        self.lookup = .init(
-            from: type.collectionName,
-            localField: localIdentifier,
-            foreignField: "_id",
-            as: asField
-        )
-    }
-    
-    public init<FieldValues>(
-        from type: Foreign.Type,
-        localIdentifier: KeyPath<Base, QueryableField<Reference<Foreign>?>>,
-        as asField: KeyPath<Result, QueryableField<FieldValues?>>
-    ) where Base: KeyPathQueryableModel, FieldValues: Sequence, FieldValues.Element == Foreign {
-        let localIdentifier = FieldPath(components: Base.resolveFieldPath(localIdentifier))
-        let asField = FieldPath(components: Result.resolveFieldPath(asField))
-        
-        self.lookup = .init(
-            from: type.collectionName,
-            localField: localIdentifier,
-            foreignField: "_id",
-            as: asField
-        )
-    }
-    
-    public init<FieldValues>(
-        from type: Foreign.Type,
-        localIdentifier: KeyPath<Base, QueryableField<Reference<Foreign>?>>,
-        as asField: KeyPath<Result, QueryableField<FieldValues>>
-    ) where Base: KeyPathQueryableModel, FieldValues: Sequence, FieldValues.Element == Foreign {
-        let localIdentifier = FieldPath(components: Base.resolveFieldPath(localIdentifier))
-        let asField = FieldPath(components: Result.resolveFieldPath(asField))
-        
-        self.lookup = .init(
-            from: type.collectionName,
-            localField: localIdentifier,
-            foreignField: "_id",
-            as: asField
-        )
-    }
-    
-    public init<FieldValue, FieldValues>(
+
+    public init<FieldValue: Codable, FieldValues: Codable>(
         from type: Foreign.Type,
         localField: KeyPath<Base, QueryableField<FieldValue>>,
         foreignField: KeyPath<Foreign, QueryableField<FieldValue>>,
         as asField: KeyPath<Result, QueryableField<FieldValues?>>
-    ) where Base: KeyPathQueryableModel, FieldValues: Sequence, FieldValues.Element == Foreign {
+    ) where Base: KeyPathQueryable, Foreign: KeyPathQueryableModel, Result: KeyPathQueryable, FieldValues: Sequence, FieldValues.Element == Foreign {
         let localField = FieldPath(components: Base.resolveFieldPath(localField))
         let foreignField = FieldPath(components: Foreign.resolveFieldPath(foreignField))
         let asField = FieldPath(components: Result.resolveFieldPath(asField))
-        
+
         self.lookup = .init(
             from: type.collectionName,
             localField: localField,
             foreignField: foreignField,
+            as: asField
+        )
+    }
+
+    public init<FieldValues: Codable>(
+        from type: Foreign.Type,
+        localIdentifier: KeyPath<Base, QueryableField<Reference<Foreign>>>,
+        as asField: KeyPath<Result, QueryableField<FieldValues?>>
+    ) where FieldValues: Sequence, FieldValues.Element == Foreign {
+        let localIdentifier = FieldPath(components: Base.resolveFieldPath(localIdentifier))
+        let asField = FieldPath(components: Result.resolveFieldPath(asField))
+
+        self.lookup = .init(
+            from: type.collectionName,
+            localField: localIdentifier,
+            foreignField: "_id",
+            as: asField
+        )
+    }
+
+    public init<Match: Codable, Field: Codable>(
+        from type: Foreign.Type,
+        localField: KeyPath<Base, QueryableField<Match>>,
+        foreignField: KeyPath<Foreign, QueryableField<Match>>,
+        @AggregateBuilder uncheckedPipeline: () throws -> [AggregateBuilderStage],
+        as asField: KeyPath<Result, QueryableField<Field>>
+    ) rethrows where Base: KeyPathQueryable, Foreign: KeyPathQueryableModel, Result: KeyPathQueryable {
+        let localField = FieldPath(components: Base.resolveFieldPath(localField))
+        let foreignField = FieldPath(components: Foreign.resolveFieldPath(foreignField))
+        let asField = FieldPath(components: Result.resolveFieldPath(asField))
+        let pipeline = try uncheckedPipeline()
+
+        self.lookup = .init(
+            from: type.collectionName,
+            localField: localField,
+            foreignField: foreignField,
+            pipeline: {
+                return pipeline
+            },
+            as: asField
+        )
+    }
+
+    public init<M, Field: Codable, Fields: Sequence & Codable>(
+        from type: Foreign.Type,
+        localField: KeyPath<Base, QueryableField<M.Identifier>>,
+        foreignField: KeyPath<Foreign, QueryableField<Reference<M>>>,
+        @AggregateBuilder uncheckedPipeline: () throws -> [AggregateBuilderStage],
+        as asField: KeyPath<Result, QueryableField<Fields>>
+    ) rethrows where Base: KeyPathQueryable, Foreign: KeyPathQueryableModel, Result: KeyPathQueryable, Fields.Element == Field {
+        let localField = FieldPath(components: Base.resolveFieldPath(localField))
+        let foreignField = FieldPath(components: Foreign.resolveFieldPath(foreignField))
+        let asField = FieldPath(components: Result.resolveFieldPath(asField))
+        let pipeline = try uncheckedPipeline()
+
+        self.lookup = .init(
+            from: type.collectionName,
+            localField: localField,
+            foreignField: foreignField,
+            pipeline: {
+                return pipeline
+            },
             as: asField
         )
     }
 }
 
 extension Lookup {
-    public init<Match, Field>(
+    public init<
+        LocalIdentifier: FieldPathRepresentable,
+        AsField: FieldPathRepresentable
+    >(
         from type: Foreign.Type,
-        localField: KeyPath<Base, QueryableField<Match>>,
-        foreignField: KeyPath<Foreign, QueryableField<Match>>,
-        @AggregateBuilder uncheckedPipeline: () throws -> [AggregateBuilderStage],
-        as asField: KeyPath<Result, QueryableField<Field>>
-    ) rethrows where Base: KeyPathQueryableModel {
-        let localField = FieldPath(components: Base.resolveFieldPath(localField))
-        let foreignField = FieldPath(components: Foreign.resolveFieldPath(foreignField))
-        let asField = FieldPath(components: Result.resolveFieldPath(asField))
-        let pipeline = try uncheckedPipeline()
+        localIdentifier: LocalIdentifier,
+        as asField: AsField
+    ) where Foreign: ReadableModel {
+        self.lookup = .init(
+            from: type.collectionName,
+            localField: localIdentifier.makeFieldPath(),
+            foreignField: "_id",
+            as: asField.makeFieldPath()
+        )
+    }
+
+    public init<
+        LocalIdentifier: FieldPathRepresentable,
+        AsField: FieldPathRepresentable
+    >(
+        from collection: String,
+        localIdentifier: LocalIdentifier,
+        as asField: AsField
+    ) where Foreign: ReadableModel {
+        self.lookup = .init(
+            from: collection,
+            localField: localIdentifier.makeFieldPath(),
+            foreignField: "_id",
+            as: asField.makeFieldPath()
+        )
+    }
+}
+
+extension Lookup where Base: KeyPathQueryable, Foreign: KeyPathQueryableModel {
+    public init(
+        from type: Foreign.Type,
+        localIdentifier: KeyPath<Base, QueryableField<Reference<Foreign>>>,
+        as asField: FieldPath
+    ) where Base: KeyPathQueryable, Foreign: KeyPathQueryableModel {
+        let localIdentifier = FieldPath(components: Base.resolveFieldPath(localIdentifier))
         
         self.lookup = .init(
             from: type.collectionName,
-            localField: localField,
-            foreignField: foreignField,
-            pipeline: {
-                return pipeline
-            },
+            localField: localIdentifier,
+            foreignField: "_id",
             as: asField
         )
     }
     
-    public init<M, Field, Fields: Sequence>(
+    public init<FieldValues: Codable & Sequence>(
         from type: Foreign.Type,
-        localField: KeyPath<Base, QueryableField<M.Identifier>>,
-        foreignField: KeyPath<Foreign, QueryableField<Reference<M>>>,
-        @AggregateBuilder uncheckedPipeline: () throws -> [AggregateBuilderStage],
-        as asField: KeyPath<Result, QueryableField<Fields>>
-    ) rethrows where Base: KeyPathQueryableModel, Fields.Element == Field {
-        let localField = FieldPath(components: Base.resolveFieldPath(localField))
-        let foreignField = FieldPath(components: Foreign.resolveFieldPath(foreignField))
+        localIdentifier: KeyPath<Base, QueryableField<Reference<Foreign>>>,
+        as asField: KeyPath<Result, QueryableField<FieldValues>>
+    ) where Base: KeyPathQueryable, Result: KeyPathQueryableModel, FieldValues.Element == Foreign {
+        let localIdentifier = FieldPath(components: Base.resolveFieldPath(localIdentifier))
         let asField = FieldPath(components: Result.resolveFieldPath(asField))
-        let pipeline = try uncheckedPipeline()
         
         self.lookup = .init(
             from: type.collectionName,
-            localField: localField,
-            foreignField: foreignField,
-            pipeline: {
-                return pipeline
-            },
+            localField: localIdentifier,
+            foreignField: "_id",
+            as: asField
+        )
+    }
+    
+    public init<FieldValues: Codable & Sequence>(
+        from type: Foreign.Type,
+        localIdentifier: KeyPath<Base, QueryableField<[Reference<Foreign>]>>,
+        as asField: KeyPath<Result, QueryableField<FieldValues>>
+    ) where Base: KeyPathQueryable, Result: KeyPathQueryableModel, FieldValues.Element == Foreign {
+        let localIdentifier = FieldPath(components: Base.resolveFieldPath(localIdentifier))
+        let asField = FieldPath(components: Result.resolveFieldPath(asField))
+        
+        self.lookup = .init(
+            from: type.collectionName,
+            localField: localIdentifier,
+            foreignField: "_id",
+            as: asField
+        )
+    }
+    
+    public init<FieldValues: Codable & Sequence>(
+        from type: Foreign.Type,
+        localIdentifier: KeyPath<Base, QueryableField<[Reference<Foreign>]>>,
+        as asField: KeyPath<Result, QueryableField<FieldValues?>>
+    ) where Base: KeyPathQueryable, Result: KeyPathQueryableModel, FieldValues.Element == Foreign {
+        let localIdentifier = FieldPath(components: Base.resolveFieldPath(localIdentifier))
+        let asField = FieldPath(components: Result.resolveFieldPath(asField))
+        
+        self.lookup = .init(
+            from: type.collectionName,
+            localField: localIdentifier,
+            foreignField: "_id",
+            as: asField
+        )
+    }
+    
+    public init<FieldValues: Codable & Sequence>(
+        from type: Foreign.Type,
+        localIdentifier: KeyPath<Base, QueryableField<Reference<Foreign>?>>,
+        as asField: KeyPath<Result, QueryableField<FieldValues?>>
+    ) where Base: KeyPathQueryable, Result: KeyPathQueryableModel, FieldValues.Element == Foreign {
+        let localIdentifier = FieldPath(components: Base.resolveFieldPath(localIdentifier))
+        let asField = FieldPath(components: Result.resolveFieldPath(asField))
+        
+        self.lookup = .init(
+            from: type.collectionName,
+            localField: localIdentifier,
+            foreignField: "_id",
+            as: asField
+        )
+    }
+    
+    public init<FieldValues: Codable & Sequence>(
+        from type: Foreign.Type,
+        localIdentifier: KeyPath<Base, QueryableField<Reference<Foreign>?>>,
+        as asField: KeyPath<Result, QueryableField<FieldValues>>
+    ) where Base: KeyPathQueryable, Result: KeyPathQueryableModel, FieldValues.Element == Foreign {
+        let localIdentifier = FieldPath(components: Base.resolveFieldPath(localIdentifier))
+        let asField = FieldPath(components: Result.resolveFieldPath(asField))
+        
+        self.lookup = .init(
+            from: type.collectionName,
+            localField: localIdentifier,
+            foreignField: "_id",
             as: asField
         )
     }
@@ -434,13 +468,36 @@ extension Lookup {
 
 #if swift(>=5.7)
 extension Lookup {
-    public init<Match, Field>(
+    public init<
+        LocalIdentifier: FieldPathRepresentable,
+        AsField: FieldPathRepresentable,
+        Field: Codable
+    >(
+        from type: Foreign.Type,
+        localIdentifier: LocalIdentifier,
+        @MeowUncheckedAggregateBuilder<Foreign> uncheckedPipeline: () throws -> MeowAggregate<Foreign, Field>,
+        as asField: AsField
+    ) rethrows where Foreign: KeyPathQueryableModel {
+        let pipeline = try uncheckedPipeline()
+
+        self.lookup = .init(
+            from: type.collectionName,
+            localField: localIdentifier.makeFieldPath(),
+            foreignField: "_id",
+            pipeline: {
+                return pipeline.stages
+            },
+            as: asField.makeFieldPath()
+        )
+    }
+
+    public init<Match: Codable, Field: Codable>(
         from type: Foreign.Type,
         localField: KeyPath<Base, QueryableField<Match>>,
         foreignField: KeyPath<Foreign, QueryableField<Match>>,
         @MeowCheckedAggregateBuilder<Foreign> pipeline: () throws -> MeowAggregate<Foreign, Field>,
         as asField: KeyPath<Result, QueryableField<Field>>
-    ) rethrows where Base: KeyPathQueryableModel {
+    ) rethrows where Base: KeyPathQueryable, Foreign: KeyPathQueryableModel, Result: KeyPathQueryable {
         let localField = FieldPath(components: Base.resolveFieldPath(localField))
         let foreignField = FieldPath(components: Foreign.resolveFieldPath(foreignField))
         let asField = FieldPath(components: Result.resolveFieldPath(asField))
@@ -457,13 +514,13 @@ extension Lookup {
         )
     }
     
-    public init<M, Field, Fields: Sequence>(
+    public init<M: Codable, Field: Codable, Fields: Sequence & Codable>(
         from type: Foreign.Type,
         localField: KeyPath<Base, QueryableField<M.Identifier>>,
         foreignField: KeyPath<Foreign, QueryableField<Reference<M>>>,
         @MeowCheckedAggregateBuilder<Foreign> pipeline: () throws -> MeowAggregate<Foreign, Field>,
         as asField: KeyPath<Result, QueryableField<Fields>>
-    ) rethrows where Base: KeyPathQueryableModel, Fields.Element == Field {
+    ) rethrows where Base: KeyPathQueryable, Foreign: KeyPathQueryableModel, Result: KeyPathQueryable, Fields.Element == Field {
         let localField = FieldPath(components: Base.resolveFieldPath(localField))
         let foreignField = FieldPath(components: Foreign.resolveFieldPath(foreignField))
         let asField = FieldPath(components: Result.resolveFieldPath(asField))

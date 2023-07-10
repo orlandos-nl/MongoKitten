@@ -8,11 +8,14 @@ import NIOConcurrencyHelpers
 import NIOTransportServices
 #endif
 
-/// A reference to a MongoDB database, over a ``MongoConnectionPool``.
+/// A reference to a MongoDB database, over a `MongoConnectionPool`.
 ///
 /// Databases hold collections of documents.
 public class MongoDatabase {
-    internal var transaction: MongoTransaction!
+    internal var transaction: MongoTransaction?
+    public var activeTransaction: MongoTransaction? {
+        transaction
+    }
     public internal(set) var session: MongoClientSession?
     
     private let lock = NIOLock()

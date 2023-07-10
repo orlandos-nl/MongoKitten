@@ -33,7 +33,7 @@ extension MongoCursor {
 }
 
 struct CursorBatch<Element> {
-    typealias Transform = (Document) throws -> Element
+    typealias Transform = (Document) async throws -> Element
 
     internal let isLast: Bool
     internal let batch: [Document]
@@ -48,25 +48,25 @@ struct CursorBatch<Element> {
         self.batchSize = batch.count
     }
 
-    private init<E>(base: CursorBatch<E>, transform: @escaping (E) throws -> Element) {
+    private init<E>(base: CursorBatch<E>, transform: @escaping (E) async throws -> Element) {
         self.batch = base.batch
         self.isLast = base.isLast
         self.batchSize = base.batchSize
         self.currentItem = base.currentItem
-        self.transform = { try transform(base.transform($0)) }
+        self.transform = { try await transform(base.transform($0)) }
     }
 
-    mutating func nextElement() throws -> Element? {
+    mutating func nextElement() async throws -> Element? {
         guard currentItem < batchSize else {
             return nil
         }
 
-        let element = try transform(batch[currentItem])
+        let element = try await transform(batch[currentItem])
         currentItem = currentItem &+ 1
         return element
     }
 
-    func map<T>(_ transform: @escaping (Element) throws -> T) -> CursorBatch<T> {
+    func map<T>(_ transform: @escaping (Element) async throws -> T) -> CursorBatch<T> {
         return CursorBatch<T>(base: self, transform: transform)
     }
 }
@@ -88,7 +88,16 @@ public protocol QueryCursor {
     func execute() async throws -> FinalizedCursor<Self>
 
     /// Transforms a given `Document` to the cursor `Element` type
-    func transformElement(_ element: Document) throws -> Element
+    func transformElement(_ element: Document) async throws -> Element
+}
+
+public protocol CountableCursor: QueryCursor {
+    func count() async throws -> Int
+}
+
+public protocol PaginatableCursor: QueryCursor {
+    func limit(_ limit: Int) -> Self
+    func skip(_ skip: Int) -> Self
 }
 
 extension QueryCursor {
@@ -114,7 +123,7 @@ extension QueryCursor {
     /// Returns a new cursor with the results of mapping the given closure over the cursor's elements. This operation is lazy.
     ///
     /// - parameter transform: A mapping closure. `transform` accepts an element of this cursor as its parameter and returns a transformed value of the same or of a different type.
-    public func map<E>(transform: @escaping (Element) throws -> E) -> MappedCursor<Self, E> {
+    public func map<E>(transform: @escaping (Element) async throws -> E) -> MappedCursor<Self, E> {
         return MappedCursor(underlyingCursor: self, transform: transform, failable: false)
     }
 
@@ -164,14 +173,24 @@ public final class FinalizedCursor<Base: QueryCursor> {
     /// If `failable` is `true`, the returned array will contain only the results that were successfully transformed.
     public func nextBatch(batchSize: Int = 101, failable: Bool = false) async throws -> [Base.Element] {
         let batch = try await cursor.getMore(batchSize: batchSize)
-        
-        if failable {
-            return batch.compactMap { element in
-                return try? self.base.transformElement(element)
+
+        var elements = [Base.Element]()
+        elements.reserveCapacity(batch.count)
+
+        for value in batch {
+            do {
+                let element = try await self.base.transformElement(value)
+                elements.append(element)
+            } catch {
+                if failable {
+                    continue
+                } else {
+                    throw error
+                }
             }
-        } else {
-            return try batch.map(self.base.transformElement)
         }
+
+        return elements
     }
 
     /// Closes the cursor stopping any further data from being read
@@ -195,14 +214,14 @@ extension QueryCursor where Element == Document {
 
 /// A cursor that is the result of mapping another cursor
 public struct MappedCursor<Base: QueryCursor, Element>: QueryCursor {
-    internal typealias Transform<E> = (Base.Element) throws -> E
+    internal typealias Transform<E> = (Base.Element) async throws -> E
 
     /// Gets the connection associated with this cursor
     public func getConnection() async throws -> MongoConnection {
         return try await underlyingCursor.getConnection()
     }
 
-    private let underlyingCursor: Base
+    fileprivate var underlyingCursor: Base
     private let transform: Transform<Element>
 
     internal init(underlyingCursor cursor: Base, transform: @escaping Transform<Element>, failable: Bool) {
@@ -211,9 +230,9 @@ public struct MappedCursor<Base: QueryCursor, Element>: QueryCursor {
     }
 
     /// Transforms a given `Document` to the cursor `Element` type
-    public func transformElement(_ element: Document) throws -> Element {
-        let input = try underlyingCursor.transformElement(element)
-        return try transform(input)
+    public func transformElement(_ element: Document) async throws -> Element {
+        let input = try await underlyingCursor.transformElement(element)
+        return try await transform(input)
     }
 
     /// Executes the cursor, returning a `FinalizedCursor` after the operation has completed.
@@ -224,26 +243,30 @@ public struct MappedCursor<Base: QueryCursor, Element>: QueryCursor {
     }
 }
 
-extension MappedCursor where Base == AggregateBuilderPipeline {
+extension MappedCursor: CountableCursor where Base: CountableCursor {
     /// Counts the number of results in the cursor
     public func count() async throws -> Int {
         return try await underlyingCursor.count()
     }
 }
 
-extension MappedCursor where Base == FindQueryBuilder {
+extension MappedCursor: PaginatableCursor where Base: PaginatableCursor {
     /// Limits the number of results returned by the cursor
     public func limit(_ limit: Int) -> Self {
-        underlyingCursor.command.limit = limit
+        var copy = self
+        copy.underlyingCursor = copy.underlyingCursor.limit(limit)
         return self
     }
 
     /// Skips the given number of results
     public func skip(_ skip: Int) -> Self {
-        underlyingCursor.command.skip = skip
+        var copy = self
+        copy.underlyingCursor = copy.underlyingCursor.skip(skip)
         return self
     }
+}
 
+extension MappedCursor where Base == FindQueryBuilder {
     /// Sorts the results of the cursor
     public func sort(_ sort: Sorting) -> Self {
         underlyingCursor.command.sort = sort.document

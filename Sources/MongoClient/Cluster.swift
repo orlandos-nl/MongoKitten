@@ -1,4 +1,5 @@
 import NIO
+import Foundation
 import NIOConcurrencyHelpers
 import Logging
 import DNSClient
@@ -6,7 +7,6 @@ import MongoCore
 
 #if canImport(NIOTransportServices) && os(iOS)
 import NIOTransportServices
-import Foundation
 
 public typealias _MongoPlatformEventLoopGroup = NIOTSEventLoopGroup
 #else
@@ -126,6 +126,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
     /// Used as a shortcut to not have to set a callback on `isDiscovering`
     private var completedInitialDiscovery = false
     private var isDiscovering = false
+    public var checkLivelinessTimeAmount: TimeInterval?
 
     /// For initializers where additional initialization logic is kicked off in the background, the task in which this happens is stored here.
     ///
@@ -173,7 +174,8 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
             // Kick off the connection process
             try await resolveSettings()
             
-            scheduleDiscovery()
+            await scheduleDiscovery()
+            self.completedInitialDiscovery = true
         }
     }
 
@@ -208,19 +210,20 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         _ = try await _getConnection()
         
         // Establish initial connection
-        scheduleDiscovery()
+        await rediscover()
+        self.completedInitialDiscovery = true
 
         // Check for connectivity
         if self.pool.count == 0, !allowFailure {
             throw MongoError(.cannotConnect, reason: .noAvailableHosts)
         }
 
-        scheduleDiscovery()
+        await scheduleDiscovery()
     }
 
-    @discardableResult
-    private func scheduleDiscovery() -> Task<Void, Error> {
-        return Task {
+    @MainActor private func scheduleDiscovery() {
+        discovering?.cancel()
+        discovering = Task { [heartbeatFrequency] in
             if isDiscovering { return }
             
             isDiscovering = true
@@ -228,11 +231,13 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
             
             while !isClosed {
                 await rediscover()
-                try await Task.sleep(nanoseconds: 1_000_000_000)
+
+                try await Task.sleep(nanoseconds: UInt64(heartbeatFrequency.nanoseconds))
             }
         }
     }
 
+    @MainActor private var discovering: Task<Void, Error>?
     private var _hosts: Set<ConnectionSettings.Host>
     private var hosts: Set<ConnectionSettings.Host> {
         get { lock.withLock { _hosts } }
@@ -380,7 +385,6 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         }
         
         self.timeoutHosts = []
-        self.completedInitialDiscovery = true
     }
 
     private func remove(connection: MongoConnection, error: Error) async {
@@ -419,13 +423,16 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
 
         return matchingConnection
     }
-    
+
+    /// Attempts to create a connection up to `attempts` times
+    /// If all's well, this returns a new connection with the requested specifications
     private func makeConnectionRecursively(for request: ConnectionPoolRequest, attempts: Int = 3) async throws -> MongoConnection {
         var attempts = attempts
         while true {
             do {
                 if request.requirements.contains(.new) || request.requirements.contains(.notPooled) {
-                    return try await self._createNewConnection(forRequest: request)
+                    // There's no satisfying this request with an existing connection
+                    return try await self._createExtraConnection(forRequest: request)
                 } else {
                     return try await self._getConnection(writable: request.requirements.contains(.writable) || !slaveOk)
                 }
@@ -444,8 +451,9 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         try await initTask?.value
         return try await self.makeConnectionRecursively(for: request)
     }
-    
-    private func _createNewConnection(forRequest request: ConnectionPoolRequest, emptyPoolError: Error? = nil) async throws -> MongoConnection {
+
+    /// Creates an extra connection to an already established host
+    private func _createExtraConnection(forRequest request: ConnectionPoolRequest, emptyPoolError: Error? = nil) async throws -> MongoConnection {
         let pooledConnection = try await _getPooledConnection(
             writable: request.requirements.contains(.writable),
             emptyPoolError: emptyPoolError
@@ -463,8 +471,55 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
     }
     
     private func _getPooledConnection(writable: Bool = true, emptyPoolError: Error? = nil) async throws -> PooledConnection {
+        func createAndPoolConnection(toHost host: ConnectionSettings.Host) async throws -> PooledConnection {
+            // make a connection to the provided host and add it to the pool
+            let pooledConnection = try await makeConnection(to: host)
+
+            lock.withLock {
+                self._pool.append(pooledConnection)
+            }
+
+            guard let handshake = await pooledConnection.connection.serverHandshake else {
+                throw MongoError(.cannotConnect, reason: .handshakeFailed)
+            }
+
+            let unwritable = writable && handshake.readOnly == true
+            let unreadable = !self.slaveOk && !handshake.ismaster
+
+            // check if the connection matches our requirements, if not we recursively try again for the next undiscovered host in our list
+            if unwritable || unreadable {
+                return try await self._getPooledConnection(writable: writable)
+            } else {
+                return pooledConnection
+            }
+        }
+
         if let matchingConnection = await findMatchingExistingConnection(writable: writable) {
-            return matchingConnection
+            // If the server has been inactive for longer than `checkLivelinessTimeAmount`
+            // Ping first to ensure it's actually alive
+            // This prevents queries from stalling out and erroring on cloud providers
+            // That proactively kill 'stale' or old TCP connections
+            if
+                let checkLivelinessTimeAmount,
+                let lastQuery = await matchingConnection.connection.lastServerActivity,
+                lastQuery.addingTimeInterval(checkLivelinessTimeAmount) < Date()
+            {
+                do {
+                    // Check if the connection is alive and well
+                    try await matchingConnection.connection.ping()
+
+                    // Return it for use
+                    return matchingConnection
+                } catch {
+                    // Remove the dead connection
+                    await remove(connection: matchingConnection.connection, error: error)
+
+                    // Create a new one instead!
+                    return try await createAndPoolConnection(toHost: matchingConnection.host)
+                }
+            } else {
+                return matchingConnection
+            }
         }
         
         // we grab the first undiscovered host
@@ -478,27 +533,8 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
             self.logger.error("Couldn't find or create a connection to MongoDB with the requested specification. \(timeoutHosts.count) out of \(hosts.count) hosts were in timeout because no TCP connection could be established.")
             throw emptyPoolError ?? MongoError(.cannotConnect, reason: .noAvailableHosts)
         }
-        
-        // make a connection to the provided host and add it to the pool
-        let pooledConnection = try await makeConnection(to: host)
-        
-        lock.withLock {
-            self._pool.append(pooledConnection)
-        }
-        
-        guard let handshake = await pooledConnection.connection.serverHandshake else {
-            throw MongoError(.cannotConnect, reason: .handshakeFailed)
-        }
-        
-        let unwritable = writable && handshake.readOnly == true
-        let unreadable = !self.slaveOk && !handshake.ismaster
-        
-        // check if the connection matches our requirements, if not we recursively try again for the next undiscovered host in our list
-        if unwritable || unreadable {
-            return try await self._getPooledConnection(writable: writable)
-        } else {
-            return pooledConnection
-        }
+
+        return try await createAndPoolConnection(toHost: host)
     }
 
     private func _getConnection(writable: Bool = true, emptyPoolError: Error? = nil) async throws -> MongoConnection {
@@ -515,6 +551,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         logger.debug("Disconnecting MongoDB Cluster")
         self.wireVersion = nil
         self.isClosed = true
+        self.completedInitialDiscovery = false
         let connections = self.pool
         self.pool = []
         self.discoveredHosts = []
@@ -536,6 +573,8 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         self.completedInitialDiscovery = false
         _ = try await self.next(for: .writable)
         await rediscover()
+        self.completedInitialDiscovery = true
+        await scheduleDiscovery()
     }
 }
 

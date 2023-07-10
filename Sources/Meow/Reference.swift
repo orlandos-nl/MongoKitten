@@ -183,3 +183,17 @@ extension Reference: LosslessStringConvertible where M.Identifier: LosslessStrin
         self.init(unsafeTo: id)
     }
 }
+
+extension Reference: RawRepresentable where M.Identifier: RawRepresentable {
+    public init?(rawValue: M.Identifier.RawValue) {
+        guard let reference = M.Identifier(rawValue: rawValue) else {
+            return nil
+        }
+
+        self.init(unsafeTo: reference)
+    }
+
+    public var rawValue: M.Identifier.RawValue {
+        reference.rawValue
+    }
+}

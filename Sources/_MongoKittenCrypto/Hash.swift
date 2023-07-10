@@ -10,6 +10,15 @@ public protocol Hash {
     mutating func update(from pointer: UnsafePointer<UInt8>)
 }
 
+#if swift(<5.8)
+extension UnsafeMutablePointer {
+    func update(from source: UnsafePointer<Pointee>, count: Int) {
+        self.assign(from: source, count: count)
+    }
+}
+#endif
+
+
 extension Hash {
     public mutating func finish(from pointer: UnsafeBufferPointer<UInt8>) -> [UInt8] {
         // Hash size in _bits_
@@ -24,7 +33,7 @@ extension Hash {
         
         var data = [UInt8](repeating: 0, count: needed)
         data.withUnsafeMutableBufferPointer { buffer in
-            buffer.baseAddress!.assign(from: pointer.baseAddress!, count: pointer.count)
+            buffer.baseAddress!.update(from: pointer.baseAddress!, count: pointer.count)
             
             buffer[pointer.count] = 0x80
             
