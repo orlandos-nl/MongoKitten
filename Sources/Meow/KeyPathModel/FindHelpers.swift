@@ -2,7 +2,7 @@ import MongoKitten
 
 extension MappedCursor where Base == FindQueryBuilder, Element: KeyPathQueryableModel {
     /// Allows sorting a result stream based on a comparable value within this model `Element`
-    public func sort<T: Comparable>(
+    public func sort<T: Comparable & Codable>(
         on keyPath: KeyPath<Element, QueryableField<T>>,
         direction: Sorting.Order
     ) -> Self {

@@ -63,7 +63,7 @@ extension MongoCollection {
 }
 
 /// A builder that constructs a ``FindCommand``
-public final class FindQueryBuilder: QueryCursor {
+public final class FindQueryBuilder: CountableCursor, PaginatableCursor {
     public typealias Element = Document
     
     /// The collection this cursor applies to
@@ -105,6 +105,27 @@ public final class FindQueryBuilder: QueryCursor {
     
     public func transformElement(_ element: Document) throws -> Document {
         return element
+    }
+
+    public func count() async throws -> Int {
+        let find = command
+        var count = CountCommand(
+            on: find.collection,
+            where: find.filter
+        )
+        count.limit = find.limit
+        count.skip = find.skip
+        count.readConcern = find.readConcern
+
+        let connection = try await makeConnection()
+        return try await connection.executeCodable(
+            count,
+            decodeAs: CountReply.self,
+            namespace: self.collection.database.commandNamespace,
+            in: self.collection.database.transaction,
+            sessionId: self.collection.database.sessionId ?? connection.implicitSessionId,
+            logMetadata: self.collection.database.logMetadata
+        ).count
     }
 
     /// Limits the amount of documents returned by this cursor
