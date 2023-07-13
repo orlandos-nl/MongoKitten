@@ -68,7 +68,7 @@ extension MeowDatabase {
             return
         }
             
-        print("🐈 Running migration \(description)")
+        raw.logger.info("🐈 Running migration \(description)")
         
         let start = Date()
         try await migration()
@@ -91,7 +91,7 @@ extension MeowDatabase {
             return
         }
         
-        raw.pool.logger.info("🐈 Running migration \(description) on \(M.self)")
+        raw.logger.info("🐈 Running migration \(description) on \(M.self)")
         
         let start = Date()
         let migrator = Migrator<M>(database: self)
