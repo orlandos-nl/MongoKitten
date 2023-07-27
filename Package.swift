@@ -42,7 +42,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.43.0"),
         
         // 📚
-        .package(url: "https://github.com/orlandos-nl/NioDNS.git", from: "2.0.0"),
+        .package(url: "https://github.com/orlandos-nl/DNSClient.git", exact: "2.2.1"),
         
         // 🔑
         .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.0.0"),
@@ -76,7 +76,7 @@ let package = Package(
             dependencies: [
                 "MongoCore",
                 "_MongoKittenCrypto",
-                .product(name: "DNSClient", package: "NioDNS"),
+                .product(name: "DNSClient", package: "DNSClient"),
             ]
         ),
         .testTarget(

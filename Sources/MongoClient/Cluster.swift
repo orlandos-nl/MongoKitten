@@ -13,6 +13,10 @@ public typealias _MongoPlatformEventLoopGroup = NIOTSEventLoopGroup
 public typealias _MongoPlatformEventLoopGroup = EventLoopGroup
 #endif
 
+public struct ClusterState {
+    public let connectionState: MongoConnectionState
+}
+
 /// A high level ``MongoConnectionPool`` type tha is capable of "Service Discovery and Monitoring", automatically connects to new hosts. Is aware of a change in primary/secondary allocation.
 ///
 /// Use this type for connecting to MongoDB unless you have a very specific usecase.
@@ -49,18 +53,25 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
     public private(set) var settings: ConnectionSettings {
         get { lock.withLock { _settings } }
         set {
-            lock.withLockVoid {
-                self._settings = newValue
-            }
+            lock.withLockVoid { self._settings = newValue }
         }
     }
 
     private var dns: DNSClient?
-    
+
     /// Triggers every time the cluster rediscovers
-    ///
-    /// - Note: This is not thread safe outside of the cluster's `eventloop`
-    public var didRediscover: (() -> ())?
+    public var didRediscover: (() -> ())? {
+        get { lock.withLock { _didRediscover } }
+        set { lock.withLockVoid { _didRediscover = newValue } }
+    }
+    private var _didRediscover: (() -> ())?
+
+    /// Triggers every time the cluster rediscovers
+    public var onStateChange: (@Sendable (ClusterState) -> ())? {
+        get { lock.withLock { _onStateChange } }
+        set { lock.withLockVoid { _onStateChange = newValue } }
+    }
+    private var _onStateChange: (@Sendable (ClusterState) -> ())?
     
     public let logger: Logger
     public let sessionManager = MongoSessionManager()
@@ -231,6 +242,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
             
             while !isClosed {
                 await rediscover()
+                didRediscover?()
 
                 try await Task.sleep(nanoseconds: UInt64(heartbeatFrequency.nanoseconds))
             }
@@ -268,13 +280,24 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         var hosts = handshake.hosts ?? []
         hosts += handshake.passives ?? []
 
+        var topologyChanged = false
+
         for host in hosts {
             do {
                 let host = try ConnectionSettings.Host(host, srv: false)
-                lock.withLockVoid {
-                    self._hosts.insert(host)
+                topologyChanged = topologyChanged || lock.withLock {
+                    if !self._hosts.contains(host) {
+                        self._hosts.insert(host)
+                        return true
+                    } else {
+                        return false
+                    }
                 }
             } catch { }
+        }
+
+        if topologyChanged {
+            topologyDidChange()
         }
     }
 
@@ -363,25 +386,34 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
     /// Checks all known hosts for isMaster and writability
     private func rediscover() async {
         if isClosed {
-            logger.info("Rediscovering, but the server is disconnected")
+            logger.info("Rediscovering, but the cluster is disconnected")
             return
         }
 
         self.wireVersion = nil
 
-        for pooledConnection in pool {
-            let connection = pooledConnection.connection
-            
-            do {
-                let handshake = try await connection.doHandshake(
-                    clientDetails: nil,
-                    credentials: settings.authentication
-                )
-                
-                self.updateSDAM(from: handshake)
-            } catch {
-                await self.remove(connection: connection, error: error)
+        await withTaskGroup(of: Void.self) { [settings] taskGroup in
+            for pooledConnection in pool {
+                let connection = pooledConnection.connection
+
+                taskGroup.addTask {
+                    await self.withQueryTimeout(self.heartbeatFrequency) {
+                        do {
+                            let handshake = try await connection.doHandshake(
+                                clientDetails: nil,
+                                credentials: settings.authentication
+                            )
+                            
+                            self.updateSDAM(from: handshake)
+                        } catch {
+                            self.logger.error("Failed to do handshake: \(error)")
+                            await self.remove(connection: connection, error: error)
+                        }
+                    }
+                }
             }
+
+            await taskGroup.waitForAll()
         }
         
         self.timeoutHosts = []
@@ -397,8 +429,17 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
                 return nil
             }
         }
-        
+
+        topologyDidChange()
         await pooledConnection?.connection.context.cancelQueries(error)
+    }
+
+    private func topologyDidChange() {
+        guard let onStateChange else {
+            return
+        }
+
+        onStateChange(.init(connectionState: connectionState))
     }
 
     fileprivate func findMatchingExistingConnection(writable: Bool) async -> PooledConnection? {
@@ -465,6 +506,8 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
             lock.withLock {
                 self._pool.append(newPooledConnection)
             }
+
+            self.topologyDidChange()
         }
         
         return newPooledConnection.connection

@@ -18,6 +18,8 @@ public struct ConnectionPoolRequirement: Hashable, Sendable {
 
     /// A connection that is not pooled and will not be returned to the pool
     public static let notPooled = ConnectionPoolRequirement(raw: .notPooled)
+
+    @TaskLocal fileprivate static var queryTimeout: TimeAmount?
 }
 
 /// A request for a connection from a connection pool
@@ -40,6 +42,14 @@ public protocol MongoConnectionPool {
     var wireVersion: WireVersion? { get async }
     var sessionManager: MongoSessionManager { get }
     var logger: Logger { get }
+}
+
+extension MongoConnectionPool {
+    public func withQueryTimeout<T>(_ timeout: TimeAmount, perform: () async throws -> T) async rethrows -> T {
+        try await ConnectionPoolRequirement.$queryTimeout.withValue(timeout, operation: perform)
+    }
+
+    internal var requestedQueryTimeout: TimeAmount? { ConnectionPoolRequirement.queryTimeout }
 }
 
 /// A connection pool that only ever uses a single connection and does not pool connections

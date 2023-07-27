@@ -153,6 +153,19 @@ public final actor MongoConnection: @unchecked Sendable {
         clientDetails: MongoClientDetails? = nil,
         sessionManager: MongoSessionManager = .init()
     ) async throws -> MongoConnection {
+        guard let host = settings.hosts.first else {
+            logger.critical("Cannot connect to MongoDB: No host specified")
+            throw MongoError(.cannotConnect, reason: .noHostSpecified)
+        }
+
+        if settings.hosts.count > 1 {
+            logger.warning("Attempt to connect to multiple hosts using MongoConnection. Only the first connection will be used. Please use MongoCluster instead.")
+        }
+
+        var logger = logger
+        logger[metadataKey: "mongo-host"] = .string(host.hostname)
+        logger[metadataKey: "mongo-port"] = .string(String(host.port))
+
         let context = MongoClientContext(logger: logger)
         
         #if canImport(NIOTransportServices) && os(iOS)
@@ -165,11 +178,6 @@ public final actor MongoConnection: @unchecked Sendable {
         let bootstrap = ClientBootstrap(group: group)
             .resolver(resolver)
         #endif
-        
-        guard let host = settings.hosts.first else {
-            logger.critical("Cannot connect to MongoDB: No host specified")
-            throw MongoError(.cannotConnect, reason: .noHostSpecified)
-        }
         
         let channel = try await bootstrap
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
@@ -284,7 +292,7 @@ public final actor MongoConnection: @unchecked Sendable {
         message.write(to: &buffer)
         try await self.channel.writeAndFlush(buffer)
         
-        if let queryTimeout = queryTimeout {
+        if let queryTimeout = requestedQueryTimeout ?? queryTimeout {
             Task {
                 try await Task.sleep(nanoseconds: UInt64(queryTimeout.nanoseconds))
                 promise.fail(MongoError(.queryTimeout, reason: nil))
