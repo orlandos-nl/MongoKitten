@@ -66,6 +66,15 @@ struct KeyedTestDecodingContainer<Key: CodingKey>: KeyedDecodingContainerProtoco
     }
 }
 
+struct ArrayElementCodingKey: CodingKey {
+    var stringValue: String { "$" }
+    var intValue: Int? { nil }
+    
+    init() {}
+    init?(intValue: Int) { nil }
+    init?(stringValue: String) { nil }
+}
+
 struct UnkeyedTestDecodingContainer: UnkeyedDecodingContainer {
     let decoder: TestDecoder
     var codingPath: [CodingKey] { decoder.codingPath }
@@ -73,12 +82,17 @@ struct UnkeyedTestDecodingContainer: UnkeyedDecodingContainer {
     var currentIndex: Int { 0 }
     var isAtEnd: Bool { true }
     
-    func decode<T>(_ type: T.Type) throws -> T {
-        throw CannotActuallyDecode()
+    func decode<T: Decodable>(_ type: T.Type) throws -> T {
+        var decoder = self.decoder
+        decoder.codingPath.append(ArrayElementCodingKey())
+        
+        return try T(from: decoder)
     }
     
     func nestedUnkeyedContainer() throws -> UnkeyedDecodingContainer {
-        throw CannotActuallyDecode()
+        var decoder = self.decoder
+        decoder.codingPath.append(ArrayElementCodingKey())
+        return UnkeyedTestDecodingContainer(decoder: decoder)
     }
     
     func decodeNil() throws -> Bool {
@@ -90,7 +104,12 @@ struct UnkeyedTestDecodingContainer: UnkeyedDecodingContainer {
     }
     
     func nestedContainer<NestedKey>(keyedBy type: NestedKey.Type) throws -> KeyedDecodingContainer<NestedKey> where NestedKey : CodingKey {
-        throw CannotActuallyDecode()
+        var decoder = self.decoder
+        decoder.codingPath.append(ArrayElementCodingKey())
+        
+        return KeyedDecodingContainer(
+            KeyedTestDecodingContainer<NestedKey>(decoder: decoder)
+        )
     }
 }
 
