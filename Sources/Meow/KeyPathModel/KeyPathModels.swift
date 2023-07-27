@@ -64,7 +64,11 @@ extension QuerySubject where T: Sequence {
     }
 }
 
-public protocol KeyPathQueryable: Codable {}
+public protocol KeyPathQueryable: Codable {
+    static func resolveFieldPath<T: Codable>(_ field: KeyPath<Self, QueryableField<T>>) -> [String]
+    static func resolveFieldPath<T: Codable>(_ field: KeyPath<Self, Field<T>>) -> [String]
+}
+
 public protocol KeyPathQueryableModel: ReadableModel, KeyPathQueryable {}
 
 extension CodingUserInfoKey {
@@ -272,6 +276,16 @@ public struct QueryableField<Value> {
     
     internal var isInvalid: Bool { key == nil }
     
+    public subscript<T: Codable>(dynamicMember keyPath: KeyPath<Value, QueryableField<T>>) -> QueryableField<T> where Value: KeyPathQueryable {
+        let key = Value.resolveFieldPath(keyPath)
+        
+        return QueryableField<T>(
+            parents: parents + key,
+            key: key.last,
+            value: nil
+        )
+    }
+    
     public subscript<T>(dynamicMember keyPath: KeyPath<Value, QueryableField<T>>) -> QueryableField<T> {
         if let key = key, let value = value {
             let subField = value[keyPath: keyPath]
@@ -288,6 +302,17 @@ public struct QueryableField<Value> {
                 value: nil
             )
         }
+    }
+}
+
+extension QueryableField where Value: Sequence {
+    public subscript<T: Codable>(dynamicMember keyPath: KeyPath<Value.Element, QueryableField<T>>) -> QueryableField<T> where Value.Element: KeyPathQueryable {
+        let key = Value.Element.resolveFieldPath(keyPath)
+        return QueryableField<T>(
+            parents: parents + key,
+            key: key.last,
+            value: nil
+        )
     }
 }
 
