@@ -283,6 +283,24 @@ public struct ModelUpdateQuery<M: KeyPathQueryableModel & MutableModel> {
             unsetField(at: keyPath)
         }
     }
+
+    /// Adds an atomic `$set` to the update query that updates the field corresponding to `keyPath` to the `newValue`
+    public mutating func setField<PE: PrimitiveEncodable & Codable>(at keyPath: KeyPath<M, QueryableField<PE>>, to newValue: PE) throws {
+        let path = M.resolveFieldPath(keyPath).joined(separator: ".")
+        let newValue = try newValue.encodePrimitive()
+        set[path] = newValue
+    }
+    
+    /// Sets the `Result`'s `keyPath` to a constant `newValue`
+    public mutating func setField<PE: PrimitiveEncodable & Codable>(at keyPath: KeyPath<M, QueryableField<PE?>>, to newValue: PE?) throws {
+            let path = M.resolveFieldPath(keyPath).joined(separator: ".")
+        if let newValue = newValue {
+            let newValue = try newValue.encodePrimitive()
+            set[path] = newValue
+        } else {
+            unset[path] = ""
+        }
+    }
     
     /// Adds an atomic `$unset` to the update query that updates the field corresponding to `keyPath` to be removed
     public mutating func unsetField<Value: Codable>(at keyPath: WritableKeyPath<M, QueryableField<Value?>>) {

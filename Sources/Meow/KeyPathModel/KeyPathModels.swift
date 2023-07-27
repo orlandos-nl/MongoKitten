@@ -307,10 +307,15 @@ public struct QueryableField<Value> {
 
 extension QueryableField where Value: Sequence {
     public subscript<T: Codable>(dynamicMember keyPath: KeyPath<Value.Element, QueryableField<T>>) -> QueryableField<T> where Value.Element: KeyPathQueryable {
-        let key = Value.Element.resolveFieldPath(keyPath)
+        let subKeys = Value.Element.resolveFieldPath(keyPath)
+        var parents = parents
+        if let key = self.key {
+            parents.append(key)
+        }
+        parents.append("$")
         return QueryableField<T>(
-            parents: parents + key,
-            key: key.last,
+            parents: parents,
+            key: subKeys.last,
             value: nil
         )
     }
