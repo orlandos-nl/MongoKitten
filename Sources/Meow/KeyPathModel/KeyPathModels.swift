@@ -277,11 +277,12 @@ public struct QueryableField<Value> {
     internal var isInvalid: Bool { key == nil }
     
     public subscript<T: Codable>(dynamicMember keyPath: KeyPath<Value, QueryableField<T>>) -> QueryableField<T> where Value: KeyPathQueryable {
-        let key = Value.resolveFieldPath(keyPath)
+        var subKeys = Value.resolveFieldPath(keyPath)
+        let lastKey = subKeys.isEmpty ? nil : subKeys.removeLast() 
         
         return QueryableField<T>(
-            parents: parents + key,
-            key: key.last,
+            parents: parents + subKeys,
+            key: lastKey,
             value: nil
         )
     }
@@ -307,15 +308,17 @@ public struct QueryableField<Value> {
 
 extension QueryableField where Value: Sequence {
     public subscript<T: Codable>(dynamicMember keyPath: KeyPath<Value.Element, QueryableField<T>>) -> QueryableField<T> where Value.Element: KeyPathQueryable {
-        let subKeys = Value.Element.resolveFieldPath(keyPath)
+        var subKeys = Value.Element.resolveFieldPath(keyPath)
+        let lastKey = subKeys.isEmpty ? nil : subKeys.removeLast()
         var parents = parents
         if let key = self.key {
             parents.append(key)
+            parents.append(contentsOf: subKeys)
         }
         parents.append("$")
         return QueryableField<T>(
             parents: parents,
-            key: subKeys.last,
+            key: lastKey,
             value: nil
         )
     }
