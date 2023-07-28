@@ -107,28 +107,38 @@ public final class PBKDF2 {
             return hash.hash(bytes: outerPadding + innerPaddingHash)
         }
         
-        func calculate(block: UInt32) -> [UInt8] {
+        var output = [UInt8]()
+        output.reserveCapacity(keySize)
+        
+        func calculate(block: UInt32) {
             salt.withUnsafeMutableBytes { salt in
                 salt.baseAddress!.advanced(by: saltSize).assumingMemoryBound(to: UInt32.self).pointee = block.bigEndian
             }
             
-            var ui = authenticate(message: salt), iterations = iterations
+            var ui = authenticate(message: salt)
+            var u1 = ui
             
-            while iterations > 1 {
-                xor(&ui, authenticate(message: ui), count: digestSize)
-                iterations &-= 1
+            if iterations > 1 {
+                for _ in 1..<iterations {
+                    ui = authenticate(message: ui)
+                    xor(&u1, ui, count: digestSize)
+                }
             }
-            return ui
+            
+            output.append(contentsOf: u1)
         }
-        
-        var output = [UInt8]()
-        output.reserveCapacity(keySize)
         
         for block in 1...UInt32((keySize + digestSize - 1) / digestSize) {
-            output.append(contentsOf: calculate(block: block))
+            calculate(block: block)
         }
         
-        output.removeLast(Swift.max(0, output.count &- keySize))
+        let extra = output.count &- keySize
+        
+        if extra >= 0 {
+            output.removeLast(extra)
+            return output
+        }
+        
         return output
     }
 }
