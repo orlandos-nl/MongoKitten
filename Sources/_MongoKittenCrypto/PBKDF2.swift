@@ -76,12 +76,12 @@ public final class PBKDF2 {
         keySize: PBKDF2KeySize = .digestSize
     ) -> [UInt8] {
         precondition(iterations > 0, "You must iterate in PBKDF2 at least once")
-        precondition(password.count > 0, "You cannot hash an empty password")
-        precondition(salt.count > 0, "You cannot hash with an empty salt")
+        precondition(!password.isEmpty, "You cannot hash an empty password")
+        precondition(!salt.isEmpty, "You cannot hash with an empty salt")
         
         let keySize = keySize.size(for: hash)
         
-        precondition(keySize <= Int(((pow(2,32) as Double) - 1) * Double(chunkSize)))
+        precondition(keySize <= Int(Int32.max) * chunkSize)
         
         let saltSize = salt.count
         var salt = salt + [0, 0, 0, 0]
@@ -107,38 +107,28 @@ public final class PBKDF2 {
             return hash.hash(bytes: outerPadding + innerPaddingHash)
         }
         
-        var output = [UInt8]()
-        output.reserveCapacity(keySize)
-        
-        func calculate(block: UInt32) {
+        func calculate(block: UInt32) -> [UInt8] {
             salt.withUnsafeMutableBytes { salt in
                 salt.baseAddress!.advanced(by: saltSize).assumingMemoryBound(to: UInt32.self).pointee = block.bigEndian
             }
             
-            var ui = authenticate(message: salt)
-            var u1 = ui
+            var ui = authenticate(message: salt), iterations = iterations
             
-            if iterations > 1 {
-                for _ in 1..<iterations {
-                    ui = authenticate(message: ui)
-                    xor(&u1, ui, count: digestSize)
-                }
+            while iterations > 1 {
+                xor(&ui, authenticate(message: ui), count: digestSize)
+                iterations &-= 1
             }
-            
-            output.append(contentsOf: u1)
+            return ui
         }
+        
+        var output = [UInt8]()
+        output.reserveCapacity(keySize)
         
         for block in 1...UInt32((keySize + digestSize - 1) / digestSize) {
-            calculate(block: block)
+            output.append(contentsOf: calculate(block: block))
         }
         
-        let extra = output.count &- keySize
-        
-        if extra >= 0 {
-            output.removeLast(extra)
-            return output
-        }
-        
+        output.removeLast(Swift.max(0, output.count &- keySize))
         return output
     }
 }
@@ -146,8 +136,10 @@ public final class PBKDF2 {
 /// XORs the lhs bytes with the rhs bytes on the same index
 ///
 /// Requires lhs and rhs to have an equal count
+@_transparent
 public func xor(_ lhs: UnsafeMutablePointer<UInt8>, _ rhs: UnsafePointer<UInt8>, count: Int) {
-    for i in 0..<count {
-        lhs[i] = lhs[i] ^ rhs[i]
+    var i = 0; while i < count {
+        lhs[i] ^= rhs[i]
+        i &+= 1
     }
 }

@@ -64,10 +64,10 @@ public struct MD5 : Hash {
         func convert(_ int: UInt32) {
             let int = int.littleEndian
             
-            buffer.append(UInt8(int & 0xff))
-            buffer.append(UInt8((int >> 8) & 0xff))
-            buffer.append(UInt8((int >> 16) & 0xff))
-            buffer.append(UInt8((int >> 24) & 0xff))
+            buffer.append(UInt8(truncatingIfNeeded: int & 0xff))
+            buffer.append(UInt8(truncatingIfNeeded: (int &>> 8) & 0xff))
+            buffer.append(UInt8(truncatingIfNeeded: (int &>> 16) & 0xff))
+            buffer.append(UInt8(truncatingIfNeeded: (int &>> 24) & 0xff))
         }
         
         convert(a0)
@@ -84,38 +84,44 @@ public struct MD5 : Hash {
         c1 = c0
         d1 = d0
         
-        for i in 0...63 {
-            switch i {
-            case 0...15:
-                F = (b1 & c1) | ((~b1) & d1)
-                g = i
-            case 16...31:
-                F = (d1 & b1) | ((~d1) & c1)
-                g = (5 &* i &+ 1) % 16
-            case 32...47:
-                F = b1 ^ c1 ^ d1
-                g = (3 &* i &+ 5) % 16
-            default:
-                F = c1 ^ (b1 | (~d1))
-                g = (7 &* i) % 16
+        var i = 0
+        k.withUnsafeBufferPointer { k in
+            s.withUnsafeBufferPointer { s in
+                while i < 64 {
+                    if i < 16 {
+                        F = (b1 & c1) | ((~b1) & d1)
+                        g = i
+                    } else if i < 32 {
+                        F = (d1 & b1) | ((~d1) & c1)
+                        g = (5 &* i &+ 1) % 16
+                    } else if i < 48 {
+                        F = b1 ^ c1 ^ d1
+                        g = (3 &* i &+ 5) % 16
+                    } else {
+                        F = c1 ^ (b1 | (~d1))
+                        g = (7 &* i) % 16
+                    }
+                    
+                    Mg = pointer.advanced(by: g &<< 2).withMemoryRebound(to: UInt32.self, capacity: 1) { $0.pointee }
+                    
+                    F = F &+ a1 &+ k[i] &+ Mg
+                    a1 = d1
+                    d1 = c1
+                    c1 = b1
+                    b1 &+= leftRotate(F, count: s[i])
+                    i &+= 1
+                }
             }
-            
-            Mg = pointer.advanced(by: g << 2).withMemoryRebound(to: UInt32.self, capacity: 1) { $0.pointee }
-            
-            F = F &+ a1 &+ k[i] &+ Mg
-            a1 = d1
-            d1 = c1
-            c1 = b1
-            b1 = b1 &+ leftRotate(F, count: s[i])
         }
         
-        a0 = a0 &+ a1
-        b0 = b0 &+ b1
-        c0 = c0 &+ c1
-        d0 = d0 &+ d1
+        a0 &+= a1
+        b0 &+= b1
+        c0 &+= c1
+        d0 &+= d1
     }
 }
 
+@_transparent
 fileprivate func leftRotate(_ x: UInt32, count c: UInt32) -> UInt32 {
-    return (x << c) | (x >> (32 - c))
+    return (x &<< c) | (x &>> (32 &- c))
 }

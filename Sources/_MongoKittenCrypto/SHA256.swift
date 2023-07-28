@@ -62,10 +62,10 @@ public struct SHA256 : Hash {
         func convert(_ int: UInt32) {
             let int = int.bigEndian
             
-            buffer.append(UInt8(int & 0xff))
-            buffer.append(UInt8((int >> 8) & 0xff))
-            buffer.append(UInt8((int >> 16) & 0xff))
-            buffer.append(UInt8((int >> 24) & 0xff))
+            buffer.append(UInt8(truncatingIfNeeded: int & 0xff))
+            buffer.append(UInt8(truncatingIfNeeded: (int &>> 8) & 0xff))
+            buffer.append(UInt8(truncatingIfNeeded: (int &>> 16) & 0xff))
+            buffer.append(UInt8(truncatingIfNeeded: (int &>> 24) & 0xff))
         }
         
         convert(h0)
@@ -85,21 +85,25 @@ public struct SHA256 : Hash {
     }
     
     public mutating func update(from pointer: UnsafePointer<UInt8>) {
-        var w = [UInt32](repeating: 0, count: 64)
-        
-        pointer.withMemoryRebound(to: UInt32.self, capacity: 16) { pointer in
-            for i in 0...15 {
-                w[i] = pointer[i].bigEndian
+        var i = 16
+        let w = [UInt32](unsafeUninitializedCapacity: 64) { buf, count in
+            buf.initialize(repeating: 0)
+            pointer.withMemoryRebound(to: UInt32.self, capacity: 16, { pointer in
+                (buf[ 0], buf[ 1], buf[ 2], buf[ 3]) = (pointer[ 0].bigEndian, pointer[ 1].bigEndian, pointer[ 2].bigEndian, pointer[ 3].bigEndian)
+                (buf[ 4], buf[ 5], buf[ 6], buf[ 7]) = (pointer[ 4].bigEndian, pointer[ 5].bigEndian, pointer[ 6].bigEndian, pointer[ 7].bigEndian)
+                (buf[ 8], buf[ 9], buf[10], buf[11]) = (pointer[ 8].bigEndian, pointer[ 9].bigEndian, pointer[10].bigEndian, pointer[11].bigEndian)
+                (buf[12], buf[13], buf[14], buf[15]) = (pointer[12].bigEndian, pointer[13].bigEndian, pointer[14].bigEndian, pointer[15].bigEndian)
+            })
+            while i < 64 {
+                let j = i &- 15, k = i &- 2
+                s0 = rightRotate(buf[j], count: 7) ^ rightRotate(buf[j], count: 18) ^ (buf[j] &>> 3)
+                s1 = rightRotate(buf[k], count: 17) ^ rightRotate(buf[k], count: 19) ^ (buf[k] &>> 10)
+                buf[i] = buf[i &- 16] &+ s0 &+ buf[i &- 7] &+ s1
+                i &+= 1
             }
+            count = buf.count
         }
-        
-        for i in 16...63 {
-            s0 = rightRotate(w[i &- 15], count: 7) ^ rightRotate(w[i &- 15], count: 18) ^ (w[i &- 15] >> 3)
-            s1 = rightRotate(w[i &- 2], count: 17) ^ rightRotate(w[i &- 2], count: 19) ^ (w[i &- 2] >> 10)
-            
-            w[i] = w[i &- 16] &+ s0 &+ w[i &- 7] &+ s1
-        }
-        
+
         a = h0
         b = h1
         c = h2
@@ -109,35 +113,42 @@ public struct SHA256 : Hash {
         g = h6
         h = h7
         
-        for i in 0...63 {
-            s1 = rightRotate(e, count: 6) ^ rightRotate(e, count: 11) ^  rightRotate(e, count: 25)
-            ch = (e & f) ^ ((~e) & g)
-            temp1 = h &+ s1 &+ ch &+ k[i] &+ w[i]
-            s0 = rightRotate(a, count: 2) ^  rightRotate(a, count: 13) ^  rightRotate(a, count: 22)
-            maj = (a & b) ^ (a & c) ^ (b & c)
-            temp2 = s0 &+ maj
-            
-            h = g
-            g = f
-            f = e
-            e = d &+ temp1
-            d = c
-            c = b
-            b = a
-            a = temp1 &+ temp2
+        i = 0
+        k.withUnsafeBufferPointer { k in
+            w.withUnsafeBufferPointer { w in
+                while i < 64 {
+                    s1 = rightRotate(e, count: 6) ^ rightRotate(e, count: 11) ^  rightRotate(e, count: 25)
+                    ch = (e & f) ^ ((~e) & g)
+                    temp1 = h &+ s1 &+ ch &+ k[i] &+ w[i]
+                    s0 = rightRotate(a, count: 2) ^  rightRotate(a, count: 13) ^  rightRotate(a, count: 22)
+                    maj = (a & b) ^ (a & c) ^ (b & c)
+                    temp2 = s0 &+ maj
+                    
+                    h = g
+                    g = f
+                    f = e
+                    e = d &+ temp1
+                    d = c
+                    c = b
+                    b = a
+                    a = temp1 &+ temp2
+                    i &+= 1
+                }
+            }
         }
         
-        h0 = h0 &+ a
-        h1 = h1 &+ b
-        h2 = h2 &+ c
-        h3 = h3 &+ d
-        h4 = h4 &+ e
-        h5 = h5 &+ f
-        h6 = h6 &+ g
-        h7 = h7 &+ h
+        h0 &+= a
+        h1 &+= b
+        h2 &+= c
+        h3 &+= d
+        h4 &+= e
+        h5 &+= f
+        h6 &+= g
+        h7 &+= h
     }
 }
 
+@_transparent
 fileprivate func rightRotate(_ x: UInt32, count c: UInt32) -> UInt32 {
-    return (x >> c) | (x << (32 &- c))
+    return (x &>> c) | (x &<< (32 &- c))
 }
