@@ -1,6 +1,10 @@
 #if swift(>=5.7)
 import XCTest
+#if DEBUG
 @testable import Meow
+#else
+import Meow
+#endif
 
 struct UserProfile: Codable, Equatable {
     @Field var firstName: String?
@@ -169,6 +173,7 @@ class MeowTests: XCTestCase {
         }
     }
 
+#if DEBUG
     func testModelUpdater() async throws {
         let user = User(email: "joannis@orlandos.nl", password: "test")
         try await user.save(in: meow)
@@ -188,6 +193,7 @@ class MeowTests: XCTestCase {
         
         XCTAssertEqual(count, 1)
     }
+#endif
 
     /// Given a model, this test will insert it into the database and then fetch it again.
     func testInsertModel() async throws {

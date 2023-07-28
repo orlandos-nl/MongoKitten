@@ -1,11 +1,16 @@
 import XCTest
 import NIO
 import BSON
+#if DEBUG
 @testable import MongoCore
+#else
+import MongoCore
+#endif
 
 class ProtocolTests: XCTestCase {
     let allocator = ByteBufferAllocator()
-    
+
+#if DEBUG
     func testHeaderEncoding() throws {
         let sampleHeader: [UInt8] = [
             16 + 5, 0, 0, 0, // message length, header + body
@@ -39,7 +44,8 @@ class ProtocolTests: XCTestCase {
         
         XCTAssertEqual(bytes, try buffer2.bytes())
     }
-    
+#endif
+
     func testHeaderDecoding() throws {
         let sampleHeader: [UInt8] = [
             16 + 5, 0, 0, 0, // message length, header + body
@@ -57,7 +63,8 @@ class ProtocolTests: XCTestCase {
         XCTAssertEqual(header.responseTo, 0)
         XCTAssertEqual(header.opCode, .query)
     }
-    
+
+#if DEBUG
     func testOpMessageEncoding() throws {
         let header = MongoMessageHeader(
             messageLength: 16 + 5,
@@ -76,7 +83,8 @@ class ProtocolTests: XCTestCase {
         let message = try OpMessage(reading: &buffer, header: header)
         XCTAssertEqual(message.header, header)
     }
-    
+#endif
+
     // TODO: Reimplement this test
     // func testOpMessageDeniesFirstUInt16Flags() throws {
     //     XCTAssertNoThrow(try OpMessage(reading: &buffer, header: header))
