@@ -135,6 +135,17 @@ For hummingbird:
 app.mongo = try MongoDatabase.lazyConnect(to: "mongodb://localhost/my-app")
 ```
 
+## Connect vs. LazyConnect
+
+In MongoKitten, you'll find two main variations of connecting to MongoDB.
+
+- `connect` calls are `async throws`, and will _immediately_ attempt to establish a connection. These functions throw an error if unsuccessful.
+- `lazyConnect` calls are `thorws`, and will defer establishing a connection until it's necessary. Errors are only thrown if the provided credentials are unusable.
+
+Connect's advantage is that a booted server is known to have a connection. Any issues with MongoBD will arise _immediately_, and the error is easily inspectable.
+
+LazyConnect is helpful during development, because connecting to MongoDB can be a time-consuming process in certain setups. LazyConnect allows you to start working with your system almost immediately, without waiting for MongoKitten. Another advantage is that cluster outages or offly timed topology changes do not influence app boot. Therefore, MongoKitten can simply attempt to recover in the background. However, should something go wrong it can be hard to debug this.
+
 ## CRUD (Create, Read, Update, Delete)
 
 Before doing operations, you need access to a collection where you store your models. This is MongoDB's equivalent to a table.
