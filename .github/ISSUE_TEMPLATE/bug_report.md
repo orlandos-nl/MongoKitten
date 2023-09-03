@@ -1,31 +1,55 @@
 ---
+
 name: Bug report
 about: Create a report to help us improve
 title: ''
 labels: bug
 assignees: Joannis
-
+body:
+- type: markdown
+  attributes:
+    value: "## Welcome!"
+- type: markdown
+  attributes:
+    value: |
+      Thanks for taking the time to fill out this bug! If you need real-time help, join us on Discord.
+- type: textarea
+  id: "bug-description"
+  attributes:
+    label: 'Describe the Bug'
+    description: 'A clear and concise description of what the bug is'
+  validations:
+    required: true
+- type: textarea
+  id: "expected-behavior"
+  attributes:
+    label: 'Expected Behavior'
+    description: 'A description of what you expect to happen'
+- type: input
+  id: "operating-system"
+  attributes:
+    label: 'Operating System'
+    description: "One or more OSes that you've experienced this bug on."
+    placeholder: 'macOS Sonoma'
+  validations:
+    required: true
+- type: input
+  id: "swift-version"
+  attributes:
+    label: 'Swift Version'
+    description: "One or more Swift releases that you've experienced this bug on."
+    placeholder: 'Swift 5.8'
+  validations:
+    required: true
+- type: input
+  id: "mongokitten-version"
+  attributes:
+    label: 'MongoKitten Version'
+    description: "One or more MongoKitten releases that you've experienced this bug on."
+- type: textarea
+  id: "additional-context"
+  attributes:
+    label: 'Additional Context'
+    description: 'Add any other context about the problem here.'
+  
 ---
-
-**Describe the bug**
-A clear and concise description of what the bug is.
-
-**To Reproduce**
-Steps to reproduce the behavior.
-
-**Expected behavior**
-A clear and concise description of what you expected to happen.
-
-**Server-side Swift:**
- - OS: [e.g. macOS or Linux]
- - Swift Version: [e.g. 4.2]
- - MongoKitten  Version [e.g. 5.1.1]
-
-**Mobile:**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Swift Version: [e.g. 4.2]
- - MongoKitten Version [e.g. 5.1.1]
-
-**Additional context**
-Add any other context about the problem here.
