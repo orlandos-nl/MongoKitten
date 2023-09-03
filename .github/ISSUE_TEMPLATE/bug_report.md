@@ -16,16 +16,10 @@ Steps to reproduce the behavior.
 **Expected behavior**
 A clear and concise description of what you expected to happen.
 
-**Server-side Swift:**
- - OS: [e.g. macOS or Linux]
- - Swift Version: [e.g. 4.2]
- - MongoKitten  Version [e.g. 5.1.1]
-
-**Mobile:**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Swift Version: [e.g. 4.2]
- - MongoKitten Version [e.g. 5.1.1]
+**Environment:**
+ - OS: [e.g. macOS Sonoma, Linux or Windows]
+ - Swift Version: [e.g. 5.9]
+ - MongoKitten Version [e.g. 7.7.0]
 
 **Additional context**
 Add any other context about the problem here.
