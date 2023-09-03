@@ -14,26 +14,25 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        swift-version: ['5.7', '5.7.1', '5.7.2']
-        mongodb-version: ['4.2', '4.4', '5.0', '6.0']
+        swift-version: ["5.7", "5.8"]
+        mongodb-version: ["4.2", "4.4", "5.0", "6.0", "7.0"]
     steps:
-     - name: Check out  
-       uses: actions/checkout@v3
-        
-     - name: Install Swift
-       uses: swift-actions/setup-swift@v1
-       with:
-         swift-version: ${{ matrix.swift-version }}
-        
-     - name: Start MongoDB
-       uses: supercharge/mongodb-github-action@1.8.0
-       with:
-         mongodb-version: ${{ matrix.mongodb-version }}
-         mongodb-replica-set: mk-rs
-        
-     - name: Run tests
-       run: swift test
-        
+      - name: Check out
+        uses: actions/checkout@v3
+
+      - name: Install Swift
+        uses: swift-actions/setup-swift@v1
+        with:
+          swift-version: ${{ matrix.swift-version }}
+
+      - name: Start MongoDB
+        uses: supercharge/mongodb-github-action@1.8.0
+        with:
+          mongodb-version: ${{ matrix.mongodb-version }}
+          mongodb-replica-set: mk-rs
+
+      - name: Run tests
+        run: swift test
 #  macos:
 #    runs-on: macos-12
 #    steps:
