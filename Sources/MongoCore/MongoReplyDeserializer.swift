@@ -58,7 +58,7 @@ public struct MongoServerReplyDeserializer {
             // >= Wire Version 6
             self.reply = try .message(OpMessage(reading: &buffer, header: header))
         default:
-            logger.error("Mongo Protocol error: OpCode \(header.opCode) in reply is not supported")
+            logger.debug("Mongo Protocol error: OpCode \(header.opCode) in reply is not supported")
             throw MongoProtocolParsingError(reason: .unsupportedOpCode)
         }
 
