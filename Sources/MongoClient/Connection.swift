@@ -3,6 +3,7 @@ import Tracing
 import Foundation
 import MongoCore
 import NIO
+import ServiceContextModule
 import Atomics
 import Logging
 import Metrics
@@ -251,8 +252,7 @@ public final actor MongoConnection: Sendable {
             decodeAs: ServerHandshake.self,
             namespace: .administrativeCommand,
             sessionId: nil,
-            traceLabel: "Handshake",
-            baggage: nil
+            traceLabel: "Handshake"
         )
         
         await context.setServerHandshake(to: result)
@@ -282,7 +282,7 @@ public final actor MongoConnection: Sendable {
         _ message: Request,
         logMetadata: Logger.Metadata? = nil,
         traceLabel: String,
-        baggage: Baggage? = nil
+        serviceContext context: ServiceContext? = nil
     ) async throws -> MongoServerReply {
         if await self.context.didError {
             logger.info("Query could not be executed on this connection because", metadata: logMetadata)
@@ -295,7 +295,7 @@ public final actor MongoConnection: Sendable {
 
         return try await InstrumentationSystem.tracer.withSpan(
             "MongoKitten.\(traceLabel)",
-            baggage: baggage ?? .current ?? .topLevel,
+            context: context ?? .current ?? .topLevel,
             ofKind: .client
         ) { span in
             var buffer = self.channel.allocator.buffer(capacity: Int(message.header.messageLength))

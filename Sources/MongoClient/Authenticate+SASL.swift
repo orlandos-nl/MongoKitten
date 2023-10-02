@@ -151,7 +151,7 @@ extension MongoConnection {
                 namespace: namespace,
                 sessionId: nil,
                 traceLabel: "SASL.Initiate",
-                baggage: span.baggage
+                serviceContext: span.context
             )
 
             if reply.done {
@@ -183,7 +183,7 @@ extension MongoConnection {
                 namespace: namespace,
                 sessionId: nil,
                 traceLabel: "SASL.Continue",
-                baggage: span.baggage
+                serviceContext: span.context
             )
 
             let successReply = try reply.payload.base64Decoded()
@@ -204,7 +204,7 @@ extension MongoConnection {
                 namespace: namespace,
                 sessionId: nil,
                 traceLabel: "SASL.Finalize",
-                baggage: span.baggage
+                serviceContext: span.context
             )
 
             guard reply.done else {

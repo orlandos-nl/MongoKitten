@@ -86,8 +86,8 @@ public final class FindQueryBuilder: CountableCursor, PaginatableCursor {
     public func execute() async throws -> FinalizedCursor<FindQueryBuilder> {
         let connection = try await getConnection()
         let findSpan: any Span
-        if let baggage = collection.baggage {
-            findSpan = InstrumentationSystem.tracer.startAnySpan("Find<\(collection.namespace)>", baggage: baggage)
+        if let context = collection.context {
+            findSpan = InstrumentationSystem.tracer.startAnySpan("Find<\(collection.namespace)>", context: context)
         } else {
             findSpan = InstrumentationSystem.tracer.startAnySpan("Find<\(collection.namespace)>")
         }
@@ -99,7 +99,7 @@ public final class FindQueryBuilder: CountableCursor, PaginatableCursor {
             sessionId: self.collection.sessionId ?? connection.implicitSessionId,
             logMetadata: self.collection.database.logMetadata,
             traceLabel: "Find<\(collection.namespace)>",
-            baggage: findSpan.baggage
+            serviceContext: findSpan.context
         )
         
         let cursor = MongoCursor(
@@ -109,7 +109,7 @@ public final class FindQueryBuilder: CountableCursor, PaginatableCursor {
             session: connection.implicitSession,
             transaction: self.collection.transaction,
             traceLabel: "Find<\(collection.namespace)>",
-            baggage: findSpan.baggage
+            context: findSpan.context
         )
         
         return FinalizedCursor(basedOn: self, cursor: cursor)

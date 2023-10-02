@@ -19,7 +19,7 @@ extension MongoCollection {
             sessionId: self.sessionId ?? connection.implicitSessionId,
             logMetadata: database.logMetadata,
             traceLabel: "Count<\(namespace)>",
-            baggage: baggage
+            serviceContext: context
         ).count
     }
 

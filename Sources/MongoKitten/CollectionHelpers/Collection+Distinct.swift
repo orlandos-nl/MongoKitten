@@ -16,7 +16,7 @@ extension MongoCollection {
             sessionId: self.sessionId ?? connection.implicitSessionId,
             logMetadata: database.logMetadata,
             traceLabel: "Distinct<\(namespace)>",
-            baggage: baggage
+            serviceContext: context
         ).distinctValues
     }
 }

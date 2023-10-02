@@ -12,7 +12,7 @@ public final class MongoTransactionDatabase: MongoDatabase {
             sessionId: self.sessionId,
             logMetadata: logMetadata,
             traceLabel: "CommitTransaction",
-            baggage: baggage
+            serviceContext: context
         )
     }
     

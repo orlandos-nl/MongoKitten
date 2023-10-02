@@ -34,7 +34,7 @@ extension MongoConnection {
                 namespace: namespace,
                 sessionId: nil,
                 traceLabel: "AuthenticateCR.Initiate",
-                baggage: span.baggage
+                serviceContext: span.context
             )
 
             let nonce = nonceReply.nonce
@@ -53,7 +53,7 @@ extension MongoConnection {
                 namespace: namespace,
                 sessionId: nil,
                 traceLabel: "AuthenticateCR.Finalize",
-                baggage: span.baggage
+                serviceContext: span.context
             )
 
             try authenticationReply.assertOK(

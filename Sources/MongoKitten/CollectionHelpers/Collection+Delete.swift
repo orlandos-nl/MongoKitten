@@ -19,7 +19,7 @@ extension MongoCollection {
             sessionId: self.sessionId ?? connection.implicitSessionId,
             logMetadata: database.logMetadata,
             traceLabel: "DeleteOne<\(namespace)>",
-            baggage: baggage
+            serviceContext: context
         )
     }
     
@@ -40,7 +40,7 @@ extension MongoCollection {
             sessionId: self.sessionId ?? connection.implicitSessionId,
             logMetadata: database.logMetadata,
             traceLabel: "DeleteAll<\(namespace)>",
-            baggage: baggage
+            serviceContext: context
         )
     }
     

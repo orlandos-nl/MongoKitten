@@ -89,8 +89,8 @@ public struct AggregateBuilderPipeline: CountableCursor {
         #endif
 
         let aggregateSpan: any Span
-        if let baggage = collection.baggage {
-            aggregateSpan = InstrumentationSystem.tracer.startAnySpan("Aggregate<\(collection.namespace)>", baggage: baggage)
+        if let context = collection.context {
+            aggregateSpan = InstrumentationSystem.tracer.startAnySpan("Aggregate<\(collection.namespace)>", context: context)
         } else {
             aggregateSpan = InstrumentationSystem.tracer.startAnySpan("Aggregate<\(collection.namespace)>")
         }
@@ -103,7 +103,7 @@ public struct AggregateBuilderPipeline: CountableCursor {
             sessionId: self.collection.sessionId ?? connection.implicitSessionId,
             logMetadata: self.collection.database.logMetadata,
             traceLabel: "Aggregate<\(self.collection.namespace)>",
-            baggage: aggregateSpan.baggage
+            serviceContext: aggregateSpan.context
         )
         
         let cursor = MongoCursor(
@@ -113,7 +113,7 @@ public struct AggregateBuilderPipeline: CountableCursor {
             session: self.collection.session ?? connection.implicitSession,
             transaction: self.collection.transaction,
             traceLabel: "Aggregate<\(self.collection.namespace)>",
-            baggage: aggregateSpan.baggage
+            context: aggregateSpan.context
         )
         
         return FinalizedCursor(basedOn: self, cursor: cursor)

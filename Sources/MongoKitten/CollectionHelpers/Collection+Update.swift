@@ -26,7 +26,7 @@ extension MongoCollection {
             sessionId: self.sessionId ?? connection.implicitSessionId,
             logMetadata: database.logMetadata,
             traceLabel: "UpdateOne<\(namespace)>",
-            baggage: baggage
+            serviceContext: context
         )
     }
 
@@ -98,7 +98,7 @@ extension MongoCollection {
             sessionId: self.sessionId ?? connection.implicitSessionId,
             logMetadata: database.logMetadata,
             traceLabel: "UpdateMany<\(namespace)>",
-            baggage: baggage
+            serviceContext: context
         )
     }
 
@@ -172,7 +172,7 @@ extension MongoCollection {
             sessionId: self.sessionId ?? connection.implicitSessionId,
             logMetadata: database.logMetadata,
             traceLabel: "UpdateMany<\(namespace)>",
-            baggage: baggage
+            serviceContext: context
         )
     }
     
@@ -199,7 +199,7 @@ extension MongoCollection {
             sessionId: self.sessionId ?? connection.implicitSessionId,
             logMetadata: database.logMetadata,
             traceLabel: "Upsert<\(namespace)>",
-            baggage: baggage
+            serviceContext: context
         )
     }
 

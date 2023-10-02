@@ -20,8 +20,8 @@ public class MongoDatabase {
     public internal(set) var session: MongoClientSession?
 
     internal var span: (any Span)?
-    internal var baggage: Baggage? {
-        span?.baggage
+    internal var context: ServiceContext? {
+        span?.context
     }
     private let lock = NIOLock()
     private var _logMetadata: Logger.Metadata?
@@ -177,7 +177,7 @@ public class MongoDatabase {
     ///
     /// - returns: The requested collection in this database
     public subscript(collection: String) -> MongoCollection {
-        let collection = MongoCollection(named: collection, in: self, baggage: baggage)
+        let collection = MongoCollection(named: collection, in: self, context: context)
         collection.session = self.session
         collection.transaction = self.transaction
         return collection
@@ -223,7 +223,7 @@ public class MongoDatabase {
             sessionId: connection.implicitSessionId,
             logMetadata: logMetadata,
             traceLabel: "ListCollections",
-            baggage: span.baggage
+            serviceContext: span.context
         )
         
         let cursor = MongoCursor(
@@ -233,11 +233,11 @@ public class MongoDatabase {
             session: connection.implicitSession,
             transaction: self.transaction,
             traceLabel: "ListCollections",
-            baggage: span.baggage
+            context: span.context
         ).decode(CollectionDescription.self)
         
         return try await cursor.drain().map { description in
-            return MongoCollection(named: description.name, in: self, baggage: baggage)
+            return MongoCollection(named: description.name, in: self, context: context)
         }
     }
 }

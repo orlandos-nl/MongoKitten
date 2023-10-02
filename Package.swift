@@ -36,7 +36,6 @@ let package = Package(
         
         // 💾
         .package(url: "https://github.com/orlandos-nl/BSON.git", from: "8.0.9"),
-        //        .package(name: "BSON", path: "../BSON"),
         
         // 🚀
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.43.0"),
@@ -48,10 +47,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.0.0"),
 
         // 🔍
-        .package(url: "https://github.com/apple/swift-distributed-tracing.git", from: "1.0.0-beta.1"),
-
-        // Temporary
-        .package(url: "https://github.com/slashmo/swift-otel", revision: "feature/tracing-1.0"),
+        .package(url: "https://github.com/apple/swift-distributed-tracing.git", from: "1.0.0"),
     ],
     targets: [
         .target(
@@ -82,7 +78,7 @@ let package = Package(
             dependencies: [
                 "MongoCore",
                 "_MongoKittenCrypto",
-                .product(name: "DNSClient", package: "NioDNS"),
+                .product(name: "DNSClient", package: "DNSClient"),
                 .product(name: "Tracing", package: "swift-distributed-tracing")
             ]
         ),
@@ -93,8 +89,6 @@ let package = Package(
             name: "MongoKittenTests",
             dependencies: [
                 "MongoKitten",
-                .product(name: "OpenTelemetry", package: "swift-otel"),
-                .product(name: "OtlpGRPCSpanExporting", package: "swift-otel"),
             ]),
         .testTarget(
             name: "MeowTests",

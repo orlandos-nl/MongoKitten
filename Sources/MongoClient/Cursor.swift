@@ -47,7 +47,7 @@ public final class MongoCursor {
     public let connection: MongoConnection
 
     private let traceLabel: String?
-    private let baggage: Baggage?
+    private let context: ServiceContext?
 
     public init(
         reply: MongoCursorResponse.Cursor,
@@ -57,7 +57,7 @@ public final class MongoCursor {
         session: MongoClientSession,
         transaction: MongoTransaction?,
         traceLabel: String? = nil,
-        baggage: Baggage? = nil
+        context: ServiceContext? = nil
     ) {
         self.id = reply.id
         self.initialBatch = reply.firstBatch
@@ -68,7 +68,7 @@ public final class MongoCursor {
         self.transaction = transaction
         self.closePromise = connection.eventLoop.makePromise()
         self.traceLabel = traceLabel
-        self.baggage = baggage
+        self.context = context
     }
 
     /// Performs a `GetMore` command on the database, requesting the next batch of items
@@ -97,7 +97,7 @@ public final class MongoCursor {
             in: self.transaction,
             sessionId: session?.sessionId,
             traceLabel: "\(traceLabel ?? "UnknownOperation").getMore",
-            baggage: baggage
+            serviceContext: context
         )
         
         self.id = newCursor.cursor.id
@@ -115,7 +115,7 @@ public final class MongoCursor {
             in: self.transaction,
             sessionId: session?.sessionId,
             traceLabel: "KillCursor",
-            baggage: baggage
+            serviceContext: context
         )
         try reply.assertOK()
     }

@@ -27,7 +27,7 @@ extension MongoConnection {
         sessionId: SessionIdentifier?,
         logMetadata: Logger.Metadata? = nil,
         traceLabel: String = "executeCommand",
-        baggage: Baggage? = nil
+        serviceContext context: ServiceContext? = nil
     ) async throws -> D {
         let reply = try await executeEncodable(
             command,
@@ -36,7 +36,7 @@ extension MongoConnection {
             sessionId: sessionId,
             logMetadata: logMetadata,
             traceLabel: traceLabel,
-            baggage: baggage
+            serviceContext: context
         )
 
         let document = try reply.getDocument()
@@ -68,7 +68,7 @@ extension MongoConnection {
         sessionId: SessionIdentifier?,
         logMetadata: Logger.Metadata? = nil,
         traceLabel: String = "executeCommand",
-        baggage: Baggage? = nil
+        serviceContext context: ServiceContext? = nil
     ) async throws -> MongoServerReply {
         let request = try BSONEncoder().encode(command)
         return try await execute(
@@ -78,7 +78,7 @@ extension MongoConnection {
             sessionId: sessionId,
             logMetadata: logMetadata,
             traceLabel: traceLabel,
-            baggage: baggage
+            serviceContext: context
         )
     }
 
@@ -96,7 +96,7 @@ extension MongoConnection {
         sessionId: SessionIdentifier? = nil,
         logMetadata: Logger.Metadata? = nil,
         traceLabel: String = "executeCommand",
-        baggage: Baggage? = nil
+        serviceContext context: ServiceContext? = nil
     ) async throws -> MongoServerReply {
         let startDate = Date()
         let result = try await executeOpMessage(
@@ -106,7 +106,7 @@ extension MongoConnection {
             sessionId: sessionId,
             logMetadata: logMetadata,
             traceLabel: traceLabel,
-            baggage: baggage
+            serviceContext: context
         )
 
         if let queryTimer = queryTimer {
@@ -128,7 +128,7 @@ extension MongoConnection {
         sessionId: SessionIdentifier? = nil,
         logMetadata: Logger.Metadata? = nil,
         traceLabel: String = "executeCommand",
-        baggage: Baggage? = nil
+        serviceContext context: ServiceContext? = nil
     ) async throws -> OpReply {
         query.header.requestId = self.nextRequestId()
         
@@ -139,7 +139,7 @@ extension MongoConnection {
             query,
             logMetadata: logMetadata,
             traceLabel: traceLabel,
-            baggage: baggage
+            serviceContext: context
         ) else {
             self.logger.critical("Protocol Error: Unexpected reply type, expected OpReply format", metadata: logMetadata)
             throw MongoError(.queryFailure, reason: .invalidReplyType)
@@ -161,7 +161,7 @@ extension MongoConnection {
         sessionId: SessionIdentifier? = nil,
         logMetadata: Logger.Metadata? = nil,
         traceLabel: String = "executeCommand",
-        baggage: Baggage? = nil
+        serviceContext context: ServiceContext? = nil
     ) async throws -> OpMessage {
         query.header.requestId = self.nextRequestId()
         
@@ -172,7 +172,7 @@ extension MongoConnection {
             query,
             logMetadata: logMetadata,
             traceLabel: traceLabel,
-            baggage: baggage
+            serviceContext: context
         ) else {
             self.logger.error("Protocol Error: Unexpected reply type, expected OpMessage")
             throw MongoError(.queryFailure, reason: .invalidReplyType)
@@ -188,7 +188,7 @@ extension MongoConnection {
         sessionId: SessionIdentifier? = nil,
         logMetadata: Logger.Metadata? = nil,
         traceLabel: String = "executeCommand",
-        baggage: Baggage? = nil
+        serviceContext context: ServiceContext? = nil
     ) async throws -> MongoServerReply {
         var command = command
 
@@ -212,7 +212,7 @@ extension MongoConnection {
             ),
             logMetadata: logMetadata,
             traceLabel: traceLabel,
-            baggage: baggage
+            serviceContext: context
         )
     }
 
@@ -223,7 +223,7 @@ extension MongoConnection {
         sessionId: SessionIdentifier? = nil,
         logMetadata: Logger.Metadata? = nil,
         traceLabel: String = "executeCommand",
-        baggage: Baggage? = nil
+        serviceContext context: ServiceContext? = nil
     ) async throws -> MongoServerReply {
         var command = command
 
@@ -259,7 +259,7 @@ extension MongoConnection {
             ),
             logMetadata: logMetadata,
             traceLabel: traceLabel,
-            baggage: baggage
+            serviceContext: context
         )
     }
 }

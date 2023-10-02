@@ -32,7 +32,7 @@ extension MongoCollection {
             sessionId: self.sessionId ?? connection.implicitSessionId,
             logMetadata: database.logMetadata,
             traceLabel: "CreateIndexes<\(namespace)>",
-            baggage: baggage
+            serviceContext: context
         )
         
         try reply.assertOK()
@@ -53,8 +53,8 @@ extension MongoCollection {
         
         let connection = try await db.pool.next(for: .basic)
         let listIndexesSpan: any Span
-        if let baggage {
-            listIndexesSpan = InstrumentationSystem.tracer.startAnySpan("ListIndexes<\(namespace)>", baggage: baggage)
+        if let context {
+            listIndexesSpan = InstrumentationSystem.tracer.startAnySpan("ListIndexes<\(namespace)>", context: context)
         } else {
             listIndexesSpan = InstrumentationSystem.tracer.startAnySpan("ListIndexes<\(namespace)>")
         }
@@ -65,7 +65,7 @@ extension MongoCollection {
             sessionId: nil,
             logMetadata: database.logMetadata,
             traceLabel: "ListIndexes<\(namespace)>",
-            baggage: listIndexesSpan.baggage
+            serviceContext: listIndexesSpan.context
         )
         
         return MongoCursor(
@@ -75,7 +75,7 @@ extension MongoCollection {
             session: self.session ?? connection.implicitSession,
             transaction: nil,
             traceLabel: "ListIndexes<\(namespace)>",
-            baggage: listIndexesSpan.baggage
+            context: listIndexesSpan.context
         ).decode(MongoIndex.self)
     }
     

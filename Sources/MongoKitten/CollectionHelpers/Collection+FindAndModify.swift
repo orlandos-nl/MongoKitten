@@ -199,7 +199,7 @@ public final class FindAndModifyBuilder {
             sessionId: self.collection.sessionId ?? connection.implicitSessionId,
             logMetadata: self.collection.database.logMetadata,
             traceLabel: "FindAndModify<\(collection.namespace)>",
-            baggage: collection.baggage
+            serviceContext: collection.context
         )
     }
     
