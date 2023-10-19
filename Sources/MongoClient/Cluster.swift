@@ -332,7 +332,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
     private func resolveSRV(_ host: ConnectionSettings.Host, on client: DNSClient) async throws -> [ConnectionSettings.Host] {
         let prefix = "_mongodb._tcp."
         return try await client.getSRVRecords(from: prefix + host.hostname).get().map { record in
-            return ConnectionSettings.Host(hostname: record.resource.domainName.string, port: host.port)
+            return ConnectionSettings.Host(hostname: record.resource.domainName.string, port: Int(record.resource.port))
         }
     }
     
