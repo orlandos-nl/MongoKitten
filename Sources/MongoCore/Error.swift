@@ -141,10 +141,10 @@ public struct MongoError: Error, CustomStringConvertible, CustomDebugStringConve
             case .internalError: return "A MongoKitten internal error occurred"
             case .scramFailure: return "The SCRAM mechanism rejected the credentials, login failed."
             case .cursorDrained: return "The cursor is fully drained"
-            case .alreadyClosed: return "The cursor was already closed"
+            case .alreadyClosed: return "The cursor was already closed, therefore it cannot be closed again"
             case .noHostSpecified: return "No hosts listed in the connection string"
-            case .noAvailableHosts: return "The connection string could not be used to connect to a host"
-            case .handshakeFailed: return "MongoDB never sent a handshake"
+            case .noAvailableHosts: return "The connection string could not be used to connect to a host. This may be due to a wrong connection string, or all connections are experiencing a timeout."
+            case .handshakeFailed: return "MongoDB never sent a handshake reply back to MongoKitten."
             case .connectionClosed: return "The connection was closed, therefore errors could not be executed. This error may occur during rediscovery if the server isn't available"
             case .invalidReplyType: return "A protocol reply error occurred, rendering the connection unstable. MongoKitten will shut this connection down."
             }
@@ -203,7 +203,7 @@ public struct MongoError: Error, CustomStringConvertible, CustomDebugStringConve
             """
         case .noAvailableHosts:
             return """
-            - Check if your hosts are online, not undergoing maintenance
+            - Check if your hosts are reachable, not undergoing maintenance
             - Check your connection strings for any errors in configuration
             - Check if your server is whitelisted when using MongoDB atlas
             - If using MongoDB atlas, make sure you're connecting with SRV

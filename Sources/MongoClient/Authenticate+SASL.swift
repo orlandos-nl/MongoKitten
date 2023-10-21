@@ -200,7 +200,7 @@ extension MongoConnection {
         )
         
         guard reply.done else {
-            self.logger.error("Authentication to MongoDB failed")
+            self.logger.debug("Authentication to MongoDB failed")
             throw MongoAuthenticationError(reason: .malformedAuthenticationDetails)
         }
     }
