@@ -81,6 +81,7 @@ public struct FindAndModifyCommand: Codable, Sendable {
     }
 }
 
+/// The reply a MongoDB server sends when receiving a ``FindAndModifyCommand``
 public struct FindAndModifyReply: Codable, Error, Sendable {
     private enum CodingKeys: String, CodingKey {
         case ok
@@ -109,6 +110,7 @@ public struct FindAndModifyReply: Codable, Error, Sendable {
     public let lastErrorObject: Document?
 }
 
+/// The expected Document value to receive in ``FindAndModifyReply``
 public enum FindAndModifyReturnValue: String, Codable, Sendable {
     /// Return the modified Document.
     case modified

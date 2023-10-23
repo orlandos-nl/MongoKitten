@@ -82,6 +82,7 @@ public protocol QueryCursor {
     /// The Element type of the cursor
     associatedtype Element
 
+    /// Gets the connection associated with this cursor
     func getConnection() async throws -> MongoConnection
 
     /// Executes the cursor, returning a `FinalizedCursor` after the operation has completed.
@@ -91,12 +92,22 @@ public protocol QueryCursor {
     func transformElement(_ element: Document) async throws -> Element
 }
 
+/// A protocol for cursors that can quickly count their results, without iterating over them
 public protocol CountableCursor: QueryCursor {
+    /// Counts the number of results in the cursor
     func count() async throws -> Int
 }
 
+/// A protocol for cursors that can be paginated using `skip` and `limit`
 public protocol PaginatableCursor: QueryCursor {
+    /// Limits the number of results returned by the cursor
+    /// - Parameter limit: The maximum amount of results to return
+    /// - Returns: A new cursor with the limit applied
     func limit(_ limit: Int) -> Self
+
+    /// Skips the given number of results
+    /// - Parameter skip: The number of results to skip in the cursor before returning results
+    /// - Returns: A new cursor with the skip applied
     func skip(_ skip: Int) -> Self
 }
 
@@ -153,10 +164,17 @@ extension QueryCursor {
     }
 }
 
-/// A concrete cursor, with a corrosponding server side cursor, as the result of a `QueryCursor`
+/// A client-side concrete cursor instance, with a corrosponding server side cursor, as the result of a ``QueryCursor`` executing.
+/// 
+/// This cursor is used to iterate over the results of a query, and is not obtained directly.
+/// Instead, you can execute a `find` or `aggregate` query to obtain this instance.
 public final class FinalizedCursor<Base: QueryCursor> {
     let base: Base
+
+    /// The underlying server-side cursor
     public let cursor: MongoCursor
+
+    /// Whether the cursor has been drained
     public var isDrained: Bool {
         return cursor.isDrained
     }
@@ -193,7 +211,7 @@ public final class FinalizedCursor<Base: QueryCursor> {
         return elements
     }
 
-    /// Closes the cursor stopping any further data from being read
+    /// Closes the cursor stopping any further data from being read, and cleaning up any resources on the server.
     public func close() async throws {
         if isDrained {
             throw MongoError(.cannotCloseCursor, reason: .alreadyClosed)

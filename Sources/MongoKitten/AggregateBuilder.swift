@@ -1,7 +1,7 @@
 import MongoClient
 import NIO
 
-/// A result builder for the `aggregate` command which allows you to create an `AggregateBuilderPipeline` with a fluent syntax
+/// A result builder for the ``MongoCollection/buildAggregate(build:)`` command which allows you to create an `AggregateBuilderPipeline` with a fluent syntax
 @resultBuilder
 public struct AggregateBuilder {
     public static func buildBlock() -> AggregateBuilderPipeline {
@@ -34,17 +34,16 @@ public struct AggregateBuilder {
 }
 
 extension MongoCollection {
-	/// The `aggregate` command will create an `AggregateBuilderPipeline` where data can be aggregated
-	/// and be transformed in multiple `AggregateStage` operations
-	///
-	/// With Swift > 5.1 you can use the function builders instead of the `aggregate(_ stages: [AggregateBuilderStage]) -> AggregateBuilderPipeline` function.
+	/// The `aggregate` command will create an ``AggregateBuilderPipeline`` where data can be aggregated
+	/// and be transformed in multiple ``AggregateBuilderStage`` operations
 	///
 	/// # Example:
-	/// ```
+	/// ```swift
+    /// let superheroes: MongoCollection = ...
 	/// let pipeline = collection.buildAggregate {
-	///    match("name" == "Superman")
-	///    lookup(from: "addresses", "localField": "_id", "foreignField": "superheroID", newName: "address")
-	///    unwind(fieldPath: "$address")
+	///    Match(where: "name" == "Superman")
+	///    Lookup(from: "addresses", "localField": "_id", "foreignField": "superheroID", newName: "address")
+	///    Unwind(fieldPath: "$address")
 	/// }
 	///
 	/// pipeline.decode(SomeDecodableType.self).forEach { yourStruct in
