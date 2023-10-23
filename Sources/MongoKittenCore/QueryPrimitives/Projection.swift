@@ -1,6 +1,16 @@
 import BSON
 import MongoClient
 
+/// A type respresents a MongoDB projection using a fluent syntax.
+/// This type is used as a parameter to the `project` method on `MongoCollection`.
+/// 
+/// # Example:
+/// 
+/// ```swift
+/// let collection: MongoCollection = ...
+/// let projection: Projection = [
+///   "name": .included, // explicitly include the field "name"
+/// ]
 public struct Projection: Encodable, ExpressibleByDictionaryLiteral {
     public internal(set) var document: Document
     public var minimalVersion: WireVersion? {
@@ -19,7 +29,6 @@ public struct Projection: Encodable, ExpressibleByDictionaryLiteral {
         
         return self.document.values.compactMap(valueUnwrapper).max()
     }
-    
 
     /// An expression that can be specified to either include or exclude a field (or some custom value)
     public enum ProjectionExpression: ExpressibleByBooleanLiteral, ExpressibleByStringLiteral, ExpressibleByDictionaryLiteral, PrimitiveEncodable {
@@ -82,30 +91,105 @@ public struct Projection: Encodable, ExpressibleByDictionaryLiteral {
         try document.encode(to: encoder)
     }
 
+    /// Includes the field in the projection
+    /// 
+    /// # Example:
+    /// 
+    /// ```swift
+    /// // explicitly include the field "name"
+    /// var projection: Projection = [
+    ///  "name": .included,
+    /// ]
+    /// 
+    /// // also include the "birthDate" field
+    /// projection.include("birthDate")
+    /// ```
     public mutating func include(_ field: FieldPath) {
         self.document[field.string] = 1 as Int32
     }
 
+    /// Includes the field in the projection
+    /// 
+    /// # Example:
+    /// 
+    /// ```swift
+    /// // explicitly include the field "name", other fields are implicitly excluded
+    /// var projection: Projection = [
+    ///  "name": .included,
+    /// ]
+    /// 
+    /// // also include these fields
+    /// projection.include(["birthDate", "username", "email"])
+    /// ```
     public mutating func include(_ fields: Set<FieldPath>) {
         for field in fields {
             self.document[field.string] = 1 as Int32
         }
     }
 
+    /// Excludes the field from the projection
+    /// 
+    /// ```swift
+    /// // explicitly exclude the field "name", the rest is implcitly still included
+    /// var projection: Projection = [
+    ///  "name": .excuded,
+    /// ]
+    /// 
+    /// // also exclude the "birthdate" field
+    /// projection.exclude("birthdate")
+    /// ```
     public mutating func exclude(_ field: FieldPath) {
         self.document[field.string] = 0 as Int32
     }
 
+    /// Excludes the field from the projection
+    /// 
+    /// ```swift
+    /// // explicitly exclude the field "name", the rest is implcitly still included
+    /// var projection: Projection = [
+    ///  "name": .excuded,
+    /// ]
+    /// 
+    /// // also exclude these fields, non-specified fields are still included
+    /// projection.exclude(["birthdate", "username", "email"])
+    /// ```
     public mutating func exclude(_ fields: Set<FieldPath>) {
         for field in fields {
             self.document[field.string] = 0 as Int32
         }
     }
 
+    /// Renames a field.
+    /// 
+    /// ```swift
+    /// var projection: Projection = [:]
+    /// projection.rename("name", to: "fullName")
+    /// ```
     public mutating func rename(_ field: FieldPath, to newName: FieldPath) {
         self.document[newName.string] = field.projection
     }
     
+    /// Makes the entire document available at a new location.
+    /// 
+    /// # Example
+    /// 
+    /// Given this input:
+    /// 
+    /// ```json
+    /// { "_id": 1, name: "Joannis", "favouritePet: "Dribbel" }
+    /// ````
+    ///
+    /// ```swift
+    /// var projection: Projection = [:]
+    /// projection.include("_id")
+    /// projection.moveRoot(to: "user")
+    /// ````
+    /// 
+    /// The output will be:
+    /// 
+    /// ```json
+    /// { "_id": 1,  "user": { "_id": 1, "name": "Joannis", "favouritePet": "Dribbel" } }
+    /// ```
     public mutating func moveRoot(to field: FieldPath) {
         self.document[field.string] = "$$ROOT"
     }

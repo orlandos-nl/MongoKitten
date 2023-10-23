@@ -46,10 +46,8 @@ extension MongoCollection {
 	///    Unwind(fieldPath: "$address")
 	/// }
 	///
-	/// pipeline.decode(SomeDecodableType.self).forEach { yourStruct in
-	///	    // do sth. with your struct
-	///	}.whenFailure { error in
-	///	    // do sth. with the error
+	/// for try await result in pipeline.decode(SomeDecodableType.self) {
+    ///   print(result)
 	/// }
 	/// ```
 	///

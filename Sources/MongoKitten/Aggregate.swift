@@ -78,13 +78,14 @@ public struct AggregateBuilderPipeline: CountableCursor {
         let connection = try await getConnection()
         
         #if DEBUG
-
         let minimalVersionRequired = stages.compactMap(\.minimalVersionRequired).max()
         
         if let actualVersion = await connection.wireVersion, let minimalVersion = minimalVersionRequired, actualVersion < minimalVersion {
-            connection.logger.debug("Aggregation might fail since one or more aggregation stages require a higher MongoDB version than provided by the current connection.", metadata: collection.database.logMetadata)
+            connection.logger.debug(
+                "Aggregation might fail since one or more aggregation stages require a higher MongoDB version than provided by the current connection.",
+                metadata: collection.database.logMetadata
+            )
         }
-        
         #endif
         
         let cursorReply = try await connection.executeCodable(
