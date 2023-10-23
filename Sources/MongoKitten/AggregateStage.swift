@@ -14,6 +14,7 @@ public protocol AggregateBuilderStage {
 
 /// A $match stage in an aggregation pipeline, used to filter documents
 /// - SeeAlso: https://docs.mongodb.com/manual/reference/operator/aggregation/match/
+
 public struct Match: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = nil
@@ -169,7 +170,7 @@ public struct Sample: AggregateBuilderStage {
     }
 }
 
-/// The `$lookup` aggregation performs a join from another collection in the same database. This aggregation will add a new array to
+/// The **$lookup** aggregation performs a join from another collection in the same database. This aggregation will add a new array to
 /// your document including the matching documents.
 ///
 /// [The MongoDB-Documentation](https://docs.mongodb.com/manual/reference/operator/aggregation/lookup/)
@@ -179,12 +180,17 @@ public struct Sample: AggregateBuilderStage {
 /// There are two collections, named `users` and `userCategories`. In the `users` collection there is a reference to the _id
 /// of the `userCategories`, because every user belongs to a category.
 ///
-/// If you now want to aggregate all users and the corresponding user category, you can use the `$lookup` like this:
+/// If you now want to aggregate all users and the corresponding user category, you can use the **$lookup** like this:
 ///
 /// ```swift
-/// let pipeline = userCollection.aggregate([
-///     Lookup(from: "userCategories", "localField": "categoryID", "foreignField": "_id", newName: "userCategory")
-/// ])
+/// let pipeline = userCollection.buildAggregate {
+///   Lookup(
+///     from: "userCategories",
+///     localField: "categoryID",
+///     foreignField: "_id",
+///     newName: "userCategory"
+///   )
+/// }
 /// ```
 ///
 /// **Hint**
@@ -192,10 +198,33 @@ public struct Sample: AggregateBuilderStage {
 /// Because the matched documents will be inserted as an array no matter if there is only one item or more, you may want to unwind the joined documents:
 ///
 /// ```swift
-/// let pipeline = myCollection.aggregate([
-///     Lookup(from: ..., newName: "newName"),
-///     Unwind(fieldPath: "$newName")
-/// ])
+/// struct User: Codable {
+///   let _id: ObjectId
+///
+///   // All your friends' ids
+///   var friendsList: [ObjectId]
+/// }
+///
+/// let users = db["users"]
+/// let pipeline = users.buildAggregate {
+///   Lookup(
+///     from: "users",
+///     localField: "friendsList",
+///     foreignField: "_id",
+///     as: "friends"
+///   )
+/// }
+///
+/// struct UserWithFriends: Codable {
+///   // Same as User._id
+///   let _id: ObjectId
+///
+///   // Not needed anymore, so should not be decoded
+///   // let friendsList: [ObjectId]
+///
+///   // Your resolved friendsList
+///   let friends: [User]
+/// }
 /// ```
 ///
 /// - Parameters:
@@ -204,10 +233,12 @@ public struct Sample: AggregateBuilderStage {
 ///   - foreignField: the name of the field in the `fromCollection` that shall match the `localField` in the input collection
 ///   - newName: the collecting matches will be inserted as an array to the input collection, named as `newName`
 /// - Returns: an ``AggregateBuilderStage``
+/// - SeeAlso: [The MongoDB-Documentation](https://docs.mongodb.com/manual/reference/operator/aggregation/lookup/)
 public struct Lookup: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = nil
     
+    /// Creates a new MongoDB **$lookup**
     public init(
         from: String,
         localField: FieldPath,
@@ -253,7 +284,7 @@ public struct Lookup: AggregateBuilderStage {
     }
 }
 
-/// The `$unwind` aggregation will deconpublic struct a field, that contains an array. It will return as many documents as are included
+/// The **$unwind** aggregation will deconpublic struct a field, that contains an array. It will return as many documents as are included
 /// in the array and every output includes the original document with each item of the array
 ///
 /// - [The MongoDB-Documentation](https://docs.mongodb.com/manual/reference/operator/aggregation/unwind/)
@@ -269,10 +300,10 @@ public struct Lookup: AggregateBuilderStage {
 /// The command in Swift:
 ///
 /// ```swift
-/// let pipeline = collection.aggregate([
+/// let pipeline = collection.buildAggregate {
 ///     Match("_id" == 1),
 ///     Unwind(fieldPath: "$arrayItem")
-/// ])
+/// }
 /// ```
 ///
 /// This will return three documents:
@@ -287,6 +318,7 @@ public struct Lookup: AggregateBuilderStage {
 ///   - includeArrayIndex: this parameter is optional. If given, the new documents will hold a new field with the name of `includeArrayIndex` and this field will contain the array index
 ///   - preserveNullAndEmptyArrays: this parameter is optional. If it is set to `true`, the aggregation will also include the documents, that don't have an array that can be unwinded. default is `false`, so the `$unwind` aggregation will remove all documents, where there is no value or an empty array at `fieldPath`
 /// - Returns: an ``AggregateBuilderStage``
+/// - SeeAlso: [The MongoDB-Documentation](https://docs.mongodb.com/manual/reference/operator/aggregation/unwind/)
 public struct Unwind: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = .mongo3_2
@@ -342,9 +374,11 @@ public struct GeoNear: AggregateBuilderStage {
         minDistance: Double? = nil,
         key: FieldPath? = nil
     ) {
-        var geoNear: Document = ["distanceField": distanceField,
-                                 "spherical": spherical]
-        
+        var geoNear: Document = [
+            "distanceField": distanceField,
+            "spherical": spherical
+        ]
+
         if useLegacy {
             geoNear["near"] = [longitude, latitude]
         } else {
@@ -352,19 +386,13 @@ public struct GeoNear: AggregateBuilderStage {
         }
         
         geoNear["maxDistance"] = maxDistance
-        
         geoNear["query"] = query
-        
         geoNear["distanceMultiplier"] = distanceMultiplier
-        
         geoNear["includeLocs"] = includeLocs
-        
         geoNear["uniqueDocs"] = uniqueDocuments
-        
         geoNear["minDistance"] = minDistance
-        
         geoNear["key"] = key?.string
-        
+
         self.stage = ["$geoNear": geoNear]
     }
 }

@@ -178,6 +178,23 @@ extension MongoCollection {
     }
 }
 
+/// A builder-pattern type that constructs a ``FindAndModifyCommand``
+/// 
+/// Call ``execute`` or ``decode`` on the configured ``FindAndModifyBuilder`` to execute the operation.
+/// - See Also: [MongoDB Documentation](https://docs.mongodb.com/manual/reference/command/findAndModify/)
+/// 
+/// ```swift
+/// let users: MongoCollection
+/// let userProfile = try await users.findOneAndUpdate(
+///   where: "username" == "Joannis",
+///   to: [
+///     "$inc": [
+///       "profileVies": 1
+///     ]
+///   ],
+///   returnValue: .modified
+/// ).decode(User.self)
+/// ```
 public final class FindAndModifyBuilder {
     /// The underlying command to be executed.
     public var command: FindAndModifyCommand
@@ -238,6 +255,7 @@ public final class FindAndModifyBuilder {
         return self
     }
     
+    /// Applies a collation to the command, specifying language-specific rules for string comparison, such as rules for lettercase and accent marks.
     public func collation(_ collation: Collation) -> FindAndModifyBuilder {
         self.command.collation = collation
         return self
