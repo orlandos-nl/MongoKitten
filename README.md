@@ -8,7 +8,7 @@ MongoKitten is a fully asynchronous driver, which means that it doesn't block an
 
 [Join our Discord](https://discord.gg/H6799jh) for any questions and friendly banter.
 
-If you need hands-on support on your projects, our team is available at [hello@unbeatable.software](mailto:hello@unbeatable.software).
+If you need hands-on support on your projects, our team is available at [joannis@unbeatable.software](mailto:joannis@unbeatable.software).
 
 [Look into Sample Code](https://github.com/orlandos-nl/MongoKitten-Examples) using MongoKitten & Vapor
 
