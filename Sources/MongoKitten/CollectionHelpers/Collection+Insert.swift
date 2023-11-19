@@ -66,7 +66,7 @@ extension MongoCollection {
             return reply
         }
 
-        self.pool.logger.error("MongoDB Insert operation failed with \(reply.writeErrors?.count ?? 0) write errors", metadata: database.logMetadata)
+        self.pool.logger.trace("MongoDB Insert operation failed with \(reply.writeErrors?.count ?? 0) write errors", metadata: database.logMetadata)
         throw reply
     }
 }

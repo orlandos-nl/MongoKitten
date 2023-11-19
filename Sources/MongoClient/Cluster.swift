@@ -175,7 +175,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         eventLoopGroup: _MongoPlatformEventLoopGroup = MongoCluster._newEventLoopGroup()
     ) throws {
         guard settings.hosts.count > 0 else {
-            logger.error("No MongoDB servers were specified while creating a cluster")
+            logger.warning("No MongoDB servers were specified while creating a cluster")
             throw MongoError(.cannotConnect, reason: .noHostSpecified)
         }
         
@@ -209,7 +209,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         eventLoopGroup: _MongoPlatformEventLoopGroup = MongoCluster._newEventLoopGroup()
     ) async throws {
         guard settings.hosts.count > 0 else {
-            logger.error("No MongoDB servers were specified while creating a cluster")
+            logger.debug("No MongoDB servers were specified while creating a cluster")
             throw MongoError(.cannotConnect, reason: .noHostSpecified)
         }
 
@@ -332,7 +332,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
     private func resolveSRV(_ host: ConnectionSettings.Host, on client: DNSClient) async throws -> [ConnectionSettings.Host] {
         let prefix = "_mongodb._tcp."
         return try await client.getSRVRecords(from: prefix + host.hostname).get().map { record in
-            return ConnectionSettings.Host(hostname: record.resource.domainName.string, port: host.port)
+            return ConnectionSettings.Host(hostname: record.resource.domainName.string, port: Int(record.resource.port))
         }
     }
     
@@ -343,7 +343,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
             throw MongoError(.cannotConnect, reason: .connectionClosed)
         }
 
-        logger.info("Creating new connection to \(host)")
+        logger.debug("Creating new connection to \(host)")
         discoveredHosts.insert(host)
         var settings = self.settings
         settings.hosts = [host]
@@ -373,7 +373,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
 
             return PooledConnection(host: host, connection: connection)
         } catch {
-            logger.error("Connection to \(host) disconnected with error \(error)")
+            logger.debug("Connection to \(host) disconnected with error \(error)")
             
             lock.withLockVoid {
                 self._timeoutHosts.insert(host)
@@ -386,7 +386,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
     /// Checks all known hosts for isMaster and writability
     private func rediscover() async {
         if isClosed {
-            logger.info("Rediscovering, but the cluster is disconnected")
+            logger.trace("Rediscovering, but the cluster is disconnected")
             return
         }
 
@@ -406,7 +406,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
                             
                             self.updateSDAM(from: handshake)
                         } catch {
-                            self.logger.error("Failed to do handshake: \(error)")
+                            self.logger.warning("Failed to do handshake: \(error)")
                             await self.remove(connection: connection, error: error)
                         }
                     }
@@ -573,7 +573,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
             // TODO: we can potentially populate a host value from the updated undiscovered host list and continue execution below the guard statement instead of throwing an error
             
             // we throw an error since we could not find a host to connect to
-            self.logger.error("Couldn't find or create a connection to MongoDB with the requested specification. \(timeoutHosts.count) out of \(hosts.count) hosts were in timeout because no TCP connection could be established.")
+            self.logger.warning("Couldn't find or create a connection to MongoDB with the requested specification. \(timeoutHosts.count) out of \(hosts.count) hosts were in timeout because no TCP connection could be established.")
             throw emptyPoolError ?? MongoError(.cannotConnect, reason: .noAvailableHosts)
         }
 

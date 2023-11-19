@@ -45,10 +45,10 @@ extension MongoConnection {
         } catch {
             do {
                 let error = try FastBSONDecoder().decode(MongoGenericErrorReply.self, from: document)
-                logger.error("Failed to execute query id=\(reply.responseTo), errorCode=\(error.code.map(String.init) ?? "nil"), message='\(error.errorMessage ?? "-")'", metadata: logMetadata)
+                logger.debug("Failed to execute query id=\(reply.responseTo), errorCode=\(error.code.map(String.init) ?? "nil"), message='\(error.errorMessage ?? "-")'", metadata: logMetadata)
                 throw error
             } catch {
-                logger.error("Failed to parse MongoDB reply, error format also unknown", metadata: logMetadata)
+                logger.debug("Failed to parse MongoDB reply, error format also unknown", metadata: logMetadata)
                 throw MongoServerError(document: document)
             }
         }
@@ -174,7 +174,7 @@ extension MongoConnection {
             traceLabel: traceLabel,
             serviceContext: context
         ) else {
-            self.logger.error("Protocol Error: Unexpected reply type, expected OpMessage")
+            self.logger.debug("Protocol Error: Unexpected reply type, expected OpMessage")
             throw MongoError(.queryFailure, reason: .invalidReplyType)
         }
         

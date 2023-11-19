@@ -149,9 +149,7 @@ extension MongoConnection {
                 command,
                 decodeAs: SASLReply.self,
                 namespace: namespace,
-                sessionId: nil,
-                traceLabel: "SASL.Initiate",
-                serviceContext: span.context
+                sessionId: nil
             )
 
             if reply.done {
@@ -181,9 +179,7 @@ extension MongoConnection {
                 next,
                 decodeAs: SASLReply.self,
                 namespace: namespace,
-                sessionId: nil,
-                traceLabel: "SASL.Continue",
-                serviceContext: span.context
+                sessionId: nil
             )
 
             let successReply = try reply.payload.base64Decoded()
@@ -202,13 +198,11 @@ extension MongoConnection {
                 final,
                 decodeAs: SASLReply.self,
                 namespace: namespace,
-                sessionId: nil,
-                traceLabel: "SASL.Finalize",
-                serviceContext: span.context
+                sessionId: nil
             )
 
             guard reply.done else {
-                self.logger.error("Authentication to MongoDB failed")
+                self.logger.debug("Authentication to MongoDB failed")
                 throw MongoAuthenticationError(reason: .malformedAuthenticationDetails)
             }
         }

@@ -23,7 +23,7 @@ internal struct ClientConnectionParser: ByteToMessageDecoder {
             if let reply = parser.takeReply() {
                 Task { [context] in
                     if await !context.handleReply(reply) {
-                        context.logger.warning("Reply received from MongoDB, but no request was waiting for the result.")
+                        context.logger.debug("Reply received from MongoDB, but no request was waiting for the result.")
                     }
                 }
             }

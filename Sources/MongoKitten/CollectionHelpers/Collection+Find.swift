@@ -34,7 +34,7 @@ extension MongoCollection {
         return find(query).decode(type)
     }
 
-    /// Finds the first document in this collection matching the given query.
+    /// Finds the first document in this collection matching the given query. Decodes the result into `D.Type`.
     /// - Parameter query: The query to match documents against
     /// - Parameter type: The type to decode the document to
     /// - Returns: The first document matching the query
@@ -42,7 +42,7 @@ extension MongoCollection {
         return try await find(query).limit(1).decode(type).firstResult()
     }
     
-    /// Finds the first document in this collection matching the given query.
+    /// Finds the first document in this collection matching the given query. Decodes the result into `D.Type`.
     /// - Parameter query: The query to match documents against
     /// - Parameter type: The type to decode the document to
     /// - Returns: The first document matching the query
@@ -63,7 +63,41 @@ extension MongoCollection {
     }
 }
 
-/// A builder that constructs a ``FindCommand``
+/// A builder that constructs a ``FindCommand``, created by running ``MongoCollection/find(_:)-e4ca``
+///
+/// ```swift
+/// let users: MongoCollection = ...
+/// let findQueryBuilder = users.find()
+/// ```
+///
+/// Once a find query has been created, it can be modified befure execution.
+///
+/// ```swift
+/// let username = users
+///   .find()
+///   .project(["username": .included])
+/// ```
+///
+/// Queries are not executed until you either run ``FindQueryBuilder/execute()`` or iterate over the results:
+///
+/// ```swift
+/// for try await document in usernames {
+///   print(document)
+/// }
+/// ```
+///
+/// You can combine cursors with transformations, similar to `array.map`. ``QueryCursor/decode(_:using:)`` is one such transformation that used `BSONDecoder` to decode the results into a Codable type.
+///
+/// ```swift
+/// struct UserUsername: Codable {
+///   // Only the `username` field is projected. The rest will not be available
+///   let username: String
+/// }
+///
+/// for try await user in usernames.decode(UserUsername.self) {
+///   print(user.username)
+/// }
+/// ```
 public final class FindQueryBuilder: CountableCursor, PaginatableCursor {
     public typealias Element = Document
     

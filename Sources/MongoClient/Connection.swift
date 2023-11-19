@@ -285,7 +285,7 @@ public final actor MongoConnection: Sendable {
         serviceContext context: ServiceContext? = nil
     ) async throws -> MongoServerReply {
         if await self.context.didError {
-            logger.info("Query could not be executed on this connection because", metadata: logMetadata)
+            logger.info("Query could not be executed on this connection because an error occurred", metadata: logMetadata)
             channel.close(mode: .all, promise: nil)
             throw MongoError(.queryFailure, reason: .connectionClosed)
         }
