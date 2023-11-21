@@ -1,3 +1,4 @@
+import Tracing
 import NIO
 import MongoKittenCore
 import MongoClient
@@ -87,14 +88,23 @@ public struct AggregateBuilderPipeline: CountableCursor {
             )
         }
         #endif
-        
+
+        let aggregateSpan: any Span
+        if let context = collection.context {
+            aggregateSpan = InstrumentationSystem.tracer.startAnySpan("Aggregate<\(collection.namespace)>", context: context)
+        } else {
+            aggregateSpan = InstrumentationSystem.tracer.startAnySpan("Aggregate<\(collection.namespace)>")
+        }
+
         let cursorReply = try await connection.executeCodable(
             command,
             decodeAs: CursorReply.self,
             namespace: self.collection.database.commandNamespace,
             in: self.collection.transaction,
             sessionId: self.collection.sessionId ?? connection.implicitSessionId,
-            logMetadata: self.collection.database.logMetadata
+            logMetadata: self.collection.database.logMetadata,
+            traceLabel: "Aggregate<\(self.collection.namespace)>",
+            serviceContext: aggregateSpan.context
         )
         
         let cursor = MongoCursor(
@@ -102,7 +112,9 @@ public struct AggregateBuilderPipeline: CountableCursor {
             in: self.collection.namespace,
             connection: connection,
             session: self.collection.session ?? connection.implicitSession,
-            transaction: self.collection.transaction
+            transaction: self.collection.transaction,
+            traceLabel: "Aggregate<\(self.collection.namespace)>",
+            context: aggregateSpan.context
         )
         
         return FinalizedCursor(basedOn: self, cursor: cursor)

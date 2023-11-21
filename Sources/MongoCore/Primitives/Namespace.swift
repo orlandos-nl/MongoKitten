@@ -1,9 +1,11 @@
-public struct MongoNamespace: Codable, Sendable {
+public struct MongoNamespace: Codable, Sendable, CustomStringConvertible {
     public let collectionName: String
     public let databaseName: String
     public var fullCollectionName: String {
         return databaseName + "." + collectionName
     }
+
+    public var description: String { fullCollectionName }
 
     public init(to collection: String, inDatabase database: String) {
         self.collectionName = collection

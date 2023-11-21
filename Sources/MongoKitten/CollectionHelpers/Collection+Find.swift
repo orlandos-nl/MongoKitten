@@ -1,3 +1,4 @@
+import Tracing
 import NIO
 import MongoClient
 import MongoKittenCore
@@ -118,13 +119,21 @@ public final class FindQueryBuilder: CountableCursor, PaginatableCursor {
 
     public func execute() async throws -> FinalizedCursor<FindQueryBuilder> {
         let connection = try await getConnection()
+        let findSpan: any Span
+        if let context = collection.context {
+            findSpan = InstrumentationSystem.tracer.startAnySpan("Find<\(collection.namespace)>", context: context)
+        } else {
+            findSpan = InstrumentationSystem.tracer.startAnySpan("Find<\(collection.namespace)>")
+        }
         let response = try await connection.executeCodable(
             self.command,
             decodeAs: MongoCursorResponse.self,
             namespace: MongoNamespace(to: "$cmd", inDatabase: self.collection.database.name),
             in: self.collection.transaction,
             sessionId: self.collection.sessionId ?? connection.implicitSessionId,
-            logMetadata: self.collection.database.logMetadata
+            logMetadata: self.collection.database.logMetadata,
+            traceLabel: "Find<\(collection.namespace)>",
+            serviceContext: findSpan.context
         )
         
         let cursor = MongoCursor(
@@ -132,8 +141,11 @@ public final class FindQueryBuilder: CountableCursor, PaginatableCursor {
             in: self.collection.namespace,
             connection: connection,
             session: connection.implicitSession,
-            transaction: self.collection.transaction
+            transaction: self.collection.transaction,
+            traceLabel: "Find<\(collection.namespace)>",
+            context: findSpan.context
         )
+        
         return FinalizedCursor(basedOn: self, cursor: cursor)
     }
     

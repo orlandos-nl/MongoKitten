@@ -24,7 +24,9 @@ extension MongoCollection {
             namespace: self.database.commandNamespace,
             in: self.transaction,
             sessionId: self.sessionId ?? connection.implicitSessionId,
-            logMetadata: database.logMetadata
+            logMetadata: database.logMetadata,
+            traceLabel: "UpdateOne<\(namespace)>",
+            serviceContext: context
         )
     }
 
@@ -94,7 +96,9 @@ extension MongoCollection {
             namespace: self.database.commandNamespace,
             in: self.transaction,
             sessionId: self.sessionId ?? connection.implicitSessionId,
-            logMetadata: database.logMetadata
+            logMetadata: database.logMetadata,
+            traceLabel: "UpdateMany<\(namespace)>",
+            serviceContext: context
         )
     }
 
@@ -166,7 +170,9 @@ extension MongoCollection {
             namespace: self.database.commandNamespace,
             in: self.transaction,
             sessionId: self.sessionId ?? connection.implicitSessionId,
-            logMetadata: database.logMetadata
+            logMetadata: database.logMetadata,
+            traceLabel: "UpdateMany<\(namespace)>",
+            serviceContext: context
         )
     }
     
@@ -191,7 +197,9 @@ extension MongoCollection {
             namespace: self.database.commandNamespace,
             in: self.transaction,
             sessionId: self.sessionId ?? connection.implicitSessionId,
-            logMetadata: database.logMetadata
+            logMetadata: database.logMetadata,
+            traceLabel: "Upsert<\(namespace)>",
+            serviceContext: context
         )
     }
 

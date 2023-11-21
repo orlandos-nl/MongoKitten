@@ -214,7 +214,9 @@ public final class FindAndModifyBuilder {
             namespace: self.collection.database.commandNamespace,
             in: self.collection.transaction,
             sessionId: self.collection.sessionId ?? connection.implicitSessionId,
-            logMetadata: self.collection.database.logMetadata
+            logMetadata: self.collection.database.logMetadata,
+            traceLabel: "FindAndModify<\(collection.namespace)>",
+            serviceContext: collection.context
         )
     }
     

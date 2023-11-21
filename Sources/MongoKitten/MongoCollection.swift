@@ -1,3 +1,4 @@
+import Tracing
 import NIO
 import MongoClient
 import Foundation
@@ -7,6 +8,7 @@ import Foundation
 /// MongoDB stores documents in collections. Collections are analogous to tables in relational databases.
 public final class MongoCollection {
     // MARK: Properties
+    internal var context: ServiceContext?
     internal var transaction: MongoTransaction?
 
     /// The session this collection is bound to. This is used for creating database commands.
@@ -41,9 +43,10 @@ public final class MongoCollection {
     }
 
     /// Initializes this collection with by the database it's in and the collection name
-    internal init(named name: String, in database: MongoDatabase) {
+    internal init(named name: String, in database: MongoDatabase, context: ServiceContext?) {
         self.name = name
         self.database = database
+        self.context = context
     }
     
     /// Drops this collection from the database it's in and removes all documents from it.

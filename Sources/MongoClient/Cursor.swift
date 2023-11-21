@@ -1,3 +1,4 @@
+import Tracing
 import BSON
 import NIO
 import MongoCore
@@ -45,13 +46,18 @@ public final class MongoCursor {
     /// The connection this cursor is using to communicate with the server
     public let connection: MongoConnection
 
+    private let traceLabel: String?
+    private let context: ServiceContext?
+
     public init(
         reply: MongoCursorResponse.Cursor,
         in namespace: MongoNamespace,
         connection: MongoConnection,
         hoppedEventLoop: EventLoop? = nil,
         session: MongoClientSession,
-        transaction: MongoTransaction?
+        transaction: MongoTransaction?,
+        traceLabel: String? = nil,
+        context: ServiceContext? = nil
     ) {
         self.id = reply.id
         self.initialBatch = reply.firstBatch
@@ -61,6 +67,8 @@ public final class MongoCursor {
         self.session = session
         self.transaction = transaction
         self.closePromise = connection.eventLoop.makePromise()
+        self.traceLabel = traceLabel
+        self.context = context
     }
 
     /// Performs a `GetMore` command on the database, requesting the next batch of items
@@ -81,13 +89,15 @@ public final class MongoCursor {
         )
         command.maxTimeMS = self.maxTimeMS
         command.readConcern = readConcern
-        
+
         let newCursor = try await connection.executeCodable(
             command,
             decodeAs: GetMoreReply.self,
             namespace: namespace,
             in: self.transaction,
-            sessionId: session?.sessionId
+            sessionId: session?.sessionId,
+            traceLabel: "\(traceLabel ?? "UnknownOperation").getMore",
+            serviceContext: context
         )
         
         self.id = newCursor.cursor.id
@@ -103,7 +113,9 @@ public final class MongoCursor {
             command,
             namespace: namespace,
             in: self.transaction,
-            sessionId: session?.sessionId
+            sessionId: session?.sessionId,
+            traceLabel: "KillCursor",
+            serviceContext: context
         )
         try reply.assertOK()
     }
