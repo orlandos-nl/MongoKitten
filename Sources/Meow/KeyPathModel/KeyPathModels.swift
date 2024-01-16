@@ -13,7 +13,7 @@ public struct QueryMatcher<M: KeyPathQueryable> {
 
     public subscript<T: Codable>(dynamicMember keyPath: KeyPath<M, QueryableField<T>>) -> QuerySubject<M, T> {
         let path = M.resolveFieldPath(keyPath)
-        return QuerySubject(path: FieldPath(components: path))
+        return QuerySubject(_path: FieldPath(components: path))
     }
 }
 
@@ -22,11 +22,12 @@ public struct QueryMatcher<M: KeyPathQueryable> {
 /// Used to construct type-checked queries
 @dynamicMemberLookup
 public struct QuerySubject<M: KeyPathQueryable, T: Codable> {
-    internal let path: FieldPath!
+    internal let _path: FieldPath!
+    public var path: FieldPath { _path }
     
     public subscript<New>(dynamicMember keyPath: KeyPath<T, QueryableField<New>>) -> QuerySubject<M, New> where T: KeyPathQueryable {
         let path = T.resolveFieldPath(keyPath)
-        return QuerySubject<M, New>(path: FieldPath(components: self.path.components + path))
+        return QuerySubject<M, New>(_path: FieldPath(components: self.path.components + path))
     }
 }
 
