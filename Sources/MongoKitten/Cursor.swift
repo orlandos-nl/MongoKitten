@@ -114,19 +114,30 @@ public protocol PaginatableCursor: QueryCursor {
 extension QueryCursor {
     /// Executes the given `handler` for every element of the cursor.
     ///
+    /// - parameter failable: Whether to ignore errors when transforming the results
     /// - parameter handler: A handler to execute on every result
     /// - returns: A future that resolves when the operation is complete, or fails if an error is thrown
     @discardableResult
     public func forEach(failable: Bool = false, handler: @escaping @Sendable (Element) async throws -> Void) -> Task<Void, Error> {
         Task {
-            let finalizedCursor = try await execute()
+            try await forEach(failable: failable, handler: handler)
+        }
+    }
+
+    /// Executes the given `handler` for every element of the cursor.
+    /// 
+    /// - parameter failable: Whether to ignore errors when transforming the results
+    /// - parameter handler: A handler to execute on every result
+    /// - returns: When all results have been processed, or an error is thrown
+    @discardableResult
+    public func forEach(failable: Bool = false, handler: @escaping @Sendable (Element) async throws -> Void) async throws {
+        let finalizedCursor = try await execute()
+        
+        while !finalizedCursor.isDrained {
+            try Task.checkCancellation()
             
-            while !finalizedCursor.isDrained {
-                try Task.checkCancellation()
-                
-                for element in try await finalizedCursor.nextBatch(failable: failable) {
-                    try await handler(element)
-                }
+            for element in try await finalizedCursor.nextBatch(failable: failable) {
+                try await handler(element)
             }
         }
     }
