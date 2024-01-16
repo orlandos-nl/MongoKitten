@@ -2,7 +2,7 @@ import NIO
 import BSON
 
 /// The flags for an OP_QUERY message
-public struct OpQueryFlags: OptionSet {
+public struct OpQueryFlags: OptionSet, Sendable {
     public var rawValue: UInt32
     
     public init(rawValue: UInt32) {
