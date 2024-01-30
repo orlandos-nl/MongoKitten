@@ -1,7 +1,7 @@
 import BSON
 import NIO
 
-public protocol MongoMessage {
+public protocol MongoMessage: Sendable {
     var header: MongoMessageHeader { get set }
     
     init(reading buffer: inout ByteBuffer, header: MongoMessageHeader) throws

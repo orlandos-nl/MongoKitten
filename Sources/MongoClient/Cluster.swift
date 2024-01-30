@@ -229,10 +229,10 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
             throw MongoError(.cannotConnect, reason: .noAvailableHosts)
         }
 
-        await scheduleDiscovery()
+        scheduleDiscovery()
     }
 
-    @MainActor private func scheduleDiscovery() {
+    private func scheduleDiscovery() {
         discovering?.cancel()
         discovering = Task { [heartbeatFrequency] in
             if isDiscovering { return }
@@ -249,7 +249,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         }
     }
 
-    @MainActor private var discovering: Task<Void, Error>?
+    private var discovering: Task<Void, Error>?
     private var _hosts: Set<ConnectionSettings.Host>
     private var hosts: Set<ConnectionSettings.Host> {
         get { lock.withLock { _hosts } }
