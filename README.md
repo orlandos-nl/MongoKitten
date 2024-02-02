@@ -140,7 +140,7 @@ app.mongo = try MongoDatabase.lazyConnect(to: "mongodb://localhost/my-app")
 In MongoKitten, you'll find two main variations of connecting to MongoDB.
 
 - `connect` calls are `async throws`, and will _immediately_ attempt to establish a connection. These functions throw an error if unsuccessful.
-- `lazyConnect` calls are `thorws`, and will defer establishing a connection until it's necessary. Errors are only thrown if the provided credentials are unusable.
+- `lazyConnect` calls are `throws`, and will defer establishing a connection until it's necessary. Errors are only thrown if the provided credentials are unusable.
 
 Connect's advantage is that a booted server is known to have a connection. Any issues with MongoBD will arise _immediately_, and the error is easily inspectable.
 
