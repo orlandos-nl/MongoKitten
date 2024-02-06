@@ -309,12 +309,10 @@ public final actor MongoConnection: Sendable {
                 }
             }
 
-            return try await promise.futureResult.get()
+            let result = try await promise.futureResult.get()
+            lastServerActivity = Date()
+            return result
         }
-        
-        let result = try await promise.futureResult.get()
-        lastServerActivity = Date()
-        return result
     }
     
     /// Close the connection to the MongoDB server

@@ -5,7 +5,7 @@ import Dispatch
 import NIO
 
 /// A Meow wrapper around `MongoDatabase`, that allows subscripting with a `Model` type to get a `MeowCollection`
-/// A MeowDatabase can exist in a ransaction state, at which point it's actually a subclass names `MeowTransactionDatabase`.
+/// A MeowDatabase can exist in a transaction state, at which point it's actually a subclass named `MeowTransactionDatabase`.
 ///
 /// Example usage:
 ///
