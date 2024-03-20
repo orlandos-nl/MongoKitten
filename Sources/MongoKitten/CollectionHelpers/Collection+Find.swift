@@ -34,6 +34,13 @@ extension MongoCollection {
         return find(query).decode(type)
     }
 
+    /// Finds documents in this collection matching the given query. If no query is given, it returns all documents in the collection. Decodes the results to the given type.
+    /// - Parameter query: The query to match documents against
+    /// - Returns: A cursor to iterate over the results
+    public func find<D: Decodable, Query: MongoKittenQuery>(_ query: Query, as type: D.Type) -> MappedCursor<FindQueryBuilder, D> {
+        return find(query).decode(type)
+    }
+
     /// Finds the first document in this collection matching the given query. Decodes the result into `D.Type`.
     /// - Parameter query: The query to match documents against
     /// - Parameter type: The type to decode the document to
