@@ -1,4 +1,6 @@
-# <img height="200px" style="float: right;" src="https://user-images.githubusercontent.com/1951674/224335889-c6345081-fef9-4b01-95ba-c3a718aa91e9.png" /> MongoKitten
+<img src="./assets/Header.png" />
+
+<img src="./assets/Descriptions.gif" />
 
 A fast, pure swift [MongoDB](https://mongodb.com) driver based on [Swift NIO](https://github.com/apple/swift-nio) built for Server Side Swift. It features a great API and a battle-tested core. Supporting both MongoDB in server and embedded environments.
 
