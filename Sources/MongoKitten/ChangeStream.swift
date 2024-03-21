@@ -115,6 +115,18 @@ extension MongoCollection {
     }
 }
 
+public struct ChangeStreamPollingResult {
+    internal enum _Result {
+        case continuePolling
+        case stopPolling
+    }
+
+    let result: _Result
+
+    public static let `continue` = ChangeStreamPollingResult(result: .continuePolling)
+    public static let stop = ChangeStreamPollingResult(result: .stopPolling)
+}
+
 /// A change stream is a stream of change notifications for a collection or database
 public struct ChangeStream<T: Decodable> {
     public typealias Notification = ChangeStreamNotification<T>
@@ -139,24 +151,44 @@ public struct ChangeStream<T: Decodable> {
     }
     
     /// Iterates over the change stream notifications and calls the given handler for each notification
+    /// If the handler throws an error, or when a network error occurs, the task will be failed with that error
+    /// 
     /// - Parameter handler: The handler to call for each notification
     /// - Returns: A task that will be completed when the change stream is drained. Can be cancelled to stop the change stream
-    /// - Throws: If the handler throws an error, the task will be failed with that error
     @discardableResult
+    @available(*, deprecated, message: "Use `forEach` returning `ChangeStreamPollingResult` instead")
     public func forEach(handler: @escaping @Sendable (Notification) async throws -> Bool) -> Task<Void, Error> {
         Task {
-            while !cursor.isDrained {
-                for element in try await cursor.nextBatch() {
-                    if try await !handler(element) {
-                        return
-                    }
-                }
-                
-                if let getMoreInterval = self.getMoreInterval {
-                    try await Task.sleep(nanoseconds: UInt64(getMoreInterval.nanoseconds))
+            try await forEach { notification in
+                if try await handler(notification) {
+                    return .continue
                 } else {
-                    try Task.checkCancellation()
+                    return .stop
                 }
+            }
+        }
+    }
+
+    /// Iterates over the change stream notifications and calls the given handler for each notification
+    /// 
+    /// - Parameter handler: The handler to call for each notification
+    /// - Throws: When the handler throws an error or a network error occurs
+    /// - Returns: When the change stream ends, due to Task cancellation or a closed cursor
+    public func forEach(handler: @escaping @Sendable (Notification) async throws -> ChangeStreamPollingResult) async throws {
+        while !cursor.isDrained {
+            for element in try await cursor.nextBatch() {
+                switch try await handler(element).result {
+                case .continuePolling:
+                    ()
+                case .stopPolling:
+                    return
+                }
+            }
+            
+            if let getMoreInterval = self.getMoreInterval {
+                try await Task.sleep(nanoseconds: UInt64(getMoreInterval.nanoseconds))
+            } else {
+                try Task.checkCancellation()
             }
         }
     }
