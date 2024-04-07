@@ -116,8 +116,9 @@ extension MongoCollection {
 }
 
 /// A change stream is a stream of change notifications for a collection or database
-public struct ChangeStream<T: Decodable> {
+public struct ChangeStream<T: Decodable>: AsyncSequence {
     public typealias Notification = ChangeStreamNotification<T>
+    public typealias Element = Notification
     typealias InputCursor = FinalizedCursor<MappedCursor<AggregateBuilderPipeline, Notification>>
     
     internal let cursor: InputCursor
@@ -136,6 +137,24 @@ public struct ChangeStream<T: Decodable> {
     /// Then provide a window of `getMoreInterval` during which queries will be processed and no change events can be processed.
     public mutating func setGetMoreInterval(to interval: TimeAmount? = nil) {
         self.getMoreInterval = interval
+    }
+
+    public struct AsyncIterator: AsyncIteratorProtocol {
+        public typealias Element = Notification
+        
+        private var iterator: InputCursor.AsyncIterator
+        
+        init(iterator: InputCursor.AsyncIterator) {
+            self.iterator = iterator
+        }
+        
+        public mutating func next() async throws -> Element? {
+            try await iterator.next()
+        }
+    }
+
+    public func makeAsyncIterator() -> AsyncIterator {
+        AsyncIterator(iterator: cursor.makeAsyncIterator())
     }
     
     /// Iterates over the change stream notifications and calls the given handler for each notification

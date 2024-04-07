@@ -90,16 +90,21 @@ public final class MongoCursor {
         command.maxTimeMS = self.maxTimeMS
         command.readConcern = readConcern
 
-        let newCursor = try await connection.executeCodable(
-            command,
-            decodeAs: GetMoreReply.self,
-            namespace: namespace,
-            in: self.transaction,
-            sessionId: session?.sessionId,
-            traceLabel: "\(traceLabel ?? "UnknownOperation").getMore",
-            serviceContext: context
-        )
-        
+        let newCursor = try await withTaskCancellationHandler {
+            try await connection.executeCodable(
+                command,
+                decodeAs: GetMoreReply.self,
+                namespace: namespace,
+                in: self.transaction,
+                sessionId: session?.sessionId,
+                traceLabel: "\(traceLabel ?? "UnknownOperation").getMore",
+                serviceContext: context
+            )
+        } onCancel: {
+            Task {
+                try await self.close()
+            }
+        }
         self.id = newCursor.cursor.id
         return newCursor.cursor.nextBatch
     }
