@@ -185,7 +185,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
             // Kick off the connection process
             try await resolveSettings()
             
-            await scheduleDiscovery()
+            scheduleDiscovery()
             self.completedInitialDiscovery = true
         }
     }
@@ -617,7 +617,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         _ = try await self.next(for: .writable)
         await rediscover()
         self.completedInitialDiscovery = true
-        await scheduleDiscovery()
+        scheduleDiscovery()
     }
 }
 

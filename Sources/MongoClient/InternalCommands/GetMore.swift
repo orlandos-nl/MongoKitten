@@ -16,8 +16,8 @@ public struct GetMore: Codable, Sendable {
     }
 }
 
-public struct GetMoreReply: Codable {
-    public struct CursorDetails: Codable {
+public struct GetMoreReply: Codable, Sendable {
+    public struct CursorDetails: Codable, Sendable {
         public var id: Int64
         public var ns: String
         public var nextBatch: [Document]

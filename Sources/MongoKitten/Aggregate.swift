@@ -74,7 +74,7 @@ public struct AggregateBuilderPipeline: CountableCursor {
     }
     
     /// Executes the pipeline and returns a cursor
-    public func execute() async throws -> FinalizedCursor<AggregateBuilderPipeline> {
+    @Sendable public func execute() async throws -> FinalizedCursor<AggregateBuilderPipeline> {
         let command = makeCommand()
         let connection = try await getConnection()
         

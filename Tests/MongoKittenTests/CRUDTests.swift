@@ -635,4 +635,25 @@ class CrudTests : XCTestCase {
         
         XCTAssertEqual(count, 1)
     }
+
+    func testIteratorInTaskGroup() async throws {
+        try await testBulkCreateDummyAccounts()
+        let schema = mongo[DummyAccount.collectionName]
+
+        let docs = try await withThrowingTaskGroup(of: Document.self) { taskGroup in
+            for try await document in schema.find() {
+                taskGroup.addTask {
+                    document
+                }
+            }
+
+            return try await taskGroup.reduce(into: [Document]()) { partialResult, doc in
+                partialResult.append(doc)
+            }
+        }
+
+        let count = try await schema.count()
+        XCTAssertNotEqual(count, 0)
+        XCTAssertEqual(docs.count, count)
+    }
 }

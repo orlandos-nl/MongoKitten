@@ -27,14 +27,14 @@ fileprivate struct AuthenticateCR: Encodable {
 
 extension MongoConnection {
     internal func authenticateCR(_ username: String, password: String, namespace: MongoNamespace) async throws  {
-        try await InstrumentationSystem.tracer.withSpan("MongoKitten.AuthenticateCR", ofKind: .client) { span in
+        try await _withSpan("MongoKitten.AuthenticateCR", context: .current ?? .topLevel, ofKind: .client) { spanContext in
             let nonceReply = try await self.executeCodable(
                 GetNonce(),
                 decodeAs: GetNonceResult.self,
                 namespace: namespace,
                 sessionId: nil,
                 traceLabel: "AuthenticateCR.Initiate",
-                serviceContext: span.context
+                serviceContext: spanContext
             )
 
             let nonce = nonceReply.nonce
@@ -53,7 +53,7 @@ extension MongoConnection {
                 namespace: namespace,
                 sessionId: nil,
                 traceLabel: "AuthenticateCR.Finalize",
-                serviceContext: span.context
+                serviceContext: spanContext
             )
 
             try authenticationReply.assertOK(

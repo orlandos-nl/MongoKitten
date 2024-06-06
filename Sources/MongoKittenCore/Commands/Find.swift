@@ -1,7 +1,7 @@
 import BSON
 import MongoCore
 
-public struct FindCommand: Codable {
+public struct FindCommand: Codable, Sendable {
     /// This variable _must_ be the first encoded value, so keep it above all others
     private let find: String
     public var collection: String { return find }

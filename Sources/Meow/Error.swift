@@ -1,7 +1,7 @@
 import MongoKitten
 
 /// Generic errors thrown by the generator
-public enum MeowModelError<M: BaseModel>: Swift.Error {
+public enum MeowModelError<M: BaseModel>: Swift.Error, @unchecked Sendable {
     /// The value for the given key is missing, or invalid
     case missingOrInvalidValue(key: String, expected: Any.Type, got: Any?)
     
@@ -29,7 +29,7 @@ public enum MeowModelError<M: BaseModel>: Swift.Error {
     case brokenFileReference(ObjectId)
 }
 
-enum MeowError: Swift.Error {
+enum MeowError: Swift.Error, @unchecked Sendable {
     /// A reference to `type` with id `id` cannot be resolved
     case referenceError(id: Any, type: Any.Type)
     

@@ -1,4 +1,5 @@
 import Tracing
+import MongoCore
 
 public final class MongoTransactionDatabase: MongoDatabase {
     /// Commits the transaction and ends the session.

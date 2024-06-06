@@ -136,7 +136,7 @@ extension MongoConnection {
     ///
     /// The Hasher `H` specifies the hashing algorithm used with SCRAM.
     func authenticateSASL<H: SASLHash>(hasher: H, namespace: MongoNamespace, username: String, password: String) async throws {
-        try await InstrumentationSystem.tracer.withSpan("MongoKitten.AuthenticateSASL", ofKind: .client) { span in
+        try await _withSpan("MongoKitten.AuthenticateSASL", ofKind: .client) { @Sendable span in
             let context = SCRAM<H>(hasher)
 
             let rawRequest = try context.authenticationString(forUser: username)

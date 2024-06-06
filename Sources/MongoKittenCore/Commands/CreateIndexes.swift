@@ -1,8 +1,8 @@
 import BSON
 import MongoCore
 
-public struct CreateIndexes: Encodable {
-    public struct Index: Encodable {
+public struct CreateIndexes: Encodable, Sendable {
+    public struct Index: Encodable, Sendable {
         private enum CodingKeys: String, CodingKey {
             case name, key, unique, partialFilterExpression, sparse
             case expireAfterSeconds, storageEngine, weights
