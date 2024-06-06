@@ -278,18 +278,24 @@ public final actor MongoConnection: Sendable {
         try await self.authenticate(to: authenticationDatabase, serverHandshake: handshake, with: credentials)
     }
 
-    package func _withSpan<T: Sendable>(
+    @Sendable nonisolated package func _withSpan<T: Sendable>(
         _ label: String,
         context: ServiceContext? = nil,
         ofKind kind: SpanKind,
-        perform: (ServiceContext) async throws -> T
+        perform: @Sendable (ServiceContext) async throws -> T
     ) async throws -> T {
+        let context = context ?? .current ?? .topLevel
+
 #if swift(<5.10)
-        return try await withSpan(label, context: context, ofKind: kind) {
-            perform(context ?? .current ?? .topLevel)
+        return try await withSpan(
+            label,
+            context: context,
+            ofKind: kind
+        ) { _ in
+            try await perform(context)
         }
 #else
-        return try await perform(context ?? .current ?? .topLevel)
+        return try await perform(context)
 #endif
     }
 
@@ -312,7 +318,7 @@ public final actor MongoConnection: Sendable {
             "MongoKitten.\(traceLabel)",
             context: context,
             ofKind: .client
-        ) { _ in
+        ) { [queryTimeout] _ in
             var buffer = self.channel.allocator.buffer(capacity: Int(message.header.messageLength))
             message.write(to: &buffer)
             try await self.channel.writeAndFlush(buffer)
@@ -328,10 +334,15 @@ public final actor MongoConnection: Sendable {
                 }
 
                 let result = try await promise.futureResult.get()
-                lastServerActivity = Date()
+                taskGroup.cancelAll()
+                await self.logActivity()
                 return result
             }
         }
+    }
+
+    private func logActivity() {
+        self.lastServerActivity = Date()
     }
 
     /// Close the connection to the MongoDB server
