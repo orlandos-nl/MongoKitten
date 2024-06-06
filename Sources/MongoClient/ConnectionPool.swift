@@ -35,7 +35,7 @@ public struct ConnectionPoolRequest: Sendable, ExpressibleByArrayLiteral {
 }
 
 /// A connection pool that can be used to get connections from
-public protocol MongoConnectionPool {
+public protocol MongoConnectionPool: Sendable {
     /// Gets a connection from the pool that matches the provided `request`
     func next(for request: ConnectionPoolRequest) async throws -> MongoConnection
 

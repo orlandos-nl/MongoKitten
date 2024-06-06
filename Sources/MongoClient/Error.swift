@@ -1,6 +1,6 @@
 /// An error that occurs when a connection fails during authentication
-public struct MongoAuthenticationError: Error, CustomStringConvertible {
-    public enum Reason: String, Codable, CustomStringConvertible, Equatable {
+public struct MongoAuthenticationError: Error, CustomStringConvertible, Sendable {
+    public enum Reason: String, Codable, CustomStringConvertible, Equatable, Sendable {
         case missingServerHandshake
         case anyAuthenticationFailure
         case unsupportedAuthenticationMechanism

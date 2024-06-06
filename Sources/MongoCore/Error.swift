@@ -1,6 +1,6 @@
 /// An error that occurs when a connection fails due to a protocol error.
 public struct MongoProtocolParsingError: Error, Codable, CustomStringConvertible {
-    public enum Reason: String, Codable, CustomStringConvertible, Equatable {
+    public enum Reason: String, Codable, CustomStringConvertible, Equatable, Sendable {
         case unsupportedOpCode
         case unexpectedValue
         case missingDocumentBody
@@ -31,7 +31,7 @@ public struct MongoProtocolParsingError: Error, Codable, CustomStringConvertible
 /// An error that occurs when a connection fails during protocol serialization
 public struct MongoProtocolSerializationError: Error, Codable, CustomStringConvertible {
     /// The reason why the error occurred
-    public enum Reason: String, Codable, CustomStringConvertible, Equatable {
+    public enum Reason: String, Codable, CustomStringConvertible, Equatable, Sendable {
         case commandSizeTooLarge
         case unexpectedOpCode
         case unsupportedOpCode
@@ -62,7 +62,7 @@ public struct MongoProtocolSerializationError: Error, Codable, CustomStringConve
 }
 
 public struct MongoInvalidUriError: Error, Codable, CustomStringConvertible {
-    public enum Reason: String, Codable, CustomStringConvertible, Equatable {
+    public enum Reason: String, Codable, CustomStringConvertible, Equatable, Sendable {
         case srvCannotSpecifyPort
         case missingMongoDBScheme
         case uriIsMalformed
@@ -101,7 +101,7 @@ internal struct MongoOptionalUnwrapFailure: Error, CustomStringConvertible {
 
 /// A regular error that occurs when a query fails.
 public struct MongoError: Error, CustomStringConvertible, CustomDebugStringConvertible {
-    public enum Kind: String, Codable, CustomStringConvertible, Equatable {
+    public enum Kind: String, Codable, CustomStringConvertible, Equatable, Sendable {
         case authenticationFailure
         case cannotGetMore
         case cannotConnect
@@ -123,7 +123,7 @@ public struct MongoError: Error, CustomStringConvertible, CustomDebugStringConve
         }
     }
 
-    public enum Reason: String, Codable, CustomStringConvertible, Equatable {
+    public enum Reason: String, Codable, CustomStringConvertible, Equatable, Sendable {
         case internalError
         case unexpectedSASLPhase
         case scramFailure

@@ -15,7 +15,7 @@ fileprivate extension Bool {
 }
 
 /// Describes the settings for a MongoDB connection, most of which can be represented in a connection string
-public struct ConnectionSettings: Equatable {
+public struct ConnectionSettings: Equatable, Sendable {
     /// The authentication details to use with the database
     public enum Authentication: Equatable, Sendable {
         /// Unauthenticated
@@ -35,7 +35,7 @@ public struct ConnectionSettings: Equatable {
     }
 
     /// Defines a MongoDB host
-    public struct Host: Hashable {
+    public struct Host: Hashable, Sendable {
         /// The hostname, like "localhost", "example.com" or "127.0.0.1"
         public var hostname: String
 

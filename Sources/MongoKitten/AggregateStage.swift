@@ -4,7 +4,7 @@ import MongoKittenCore
 import Foundation
 
 /// A stage in an aggregation pipeline
-public protocol AggregateBuilderStage {
+public protocol AggregateBuilderStage: Sendable {
     /// The stage as a document to be sent to the server
     var stage: Document { get }
 

@@ -6,13 +6,13 @@ import Foundation
 /// A reference to a collection in a `MongoDatabase`.
 ///
 /// MongoDB stores documents in collections. Collections are analogous to tables in relational databases.
-public final class MongoCollection {
+public final class MongoCollection: Sendable {
     // MARK: Properties
-    internal var context: ServiceContext?
-    internal var transaction: MongoTransaction?
+    internal let context: ServiceContext?
+    internal let transaction: MongoTransaction?
 
     /// The session this collection is bound to. This is used for creating database commands.
-    public internal(set) var session: MongoClientSession?
+    public let session: MongoClientSession?
 
     /// The `SessionIdentifier` of the session this collection is bound to.
     /// If `nil`, this collection is not bound to a session.
@@ -43,10 +43,18 @@ public final class MongoCollection {
     }
 
     /// Initializes this collection with by the database it's in and the collection name
-    internal init(named name: String, in database: MongoDatabase, context: ServiceContext?) {
+    internal init(
+        named name: String,
+        in database: MongoDatabase,
+        context: ServiceContext?,
+        transaction: MongoTransaction?,
+        session: MongoClientSession?
+    ) {
         self.name = name
         self.database = database
         self.context = context
+        self.transaction = transaction
+        self.session = session
     }
     
     /// Drops this collection from the database it's in and removes all documents from it.

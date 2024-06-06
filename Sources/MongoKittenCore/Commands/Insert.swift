@@ -1,7 +1,7 @@
 import BSON
 import MongoCore
 
-public struct InsertCommand: Codable {
+public struct InsertCommand: Codable, Sendable {
     /// This variable _must_ be the first encoded value, so keep it above all others
     private let insert: String
     public var collection: String { return insert }
@@ -17,7 +17,7 @@ public struct InsertCommand: Codable {
     }
 }
 
-public struct InsertReply: Decodable, Error, CustomDebugStringConvertible {
+public struct InsertReply: Decodable, Error, CustomDebugStringConvertible, Sendable {
     private enum CodingKeys: String, CodingKey {
         case ok, writeErrors, writeConcernError
         case insertCount = "n"

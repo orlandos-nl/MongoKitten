@@ -1,6 +1,7 @@
 import Tracing
 import BSON
 import NIO
+import NIOConcurrencyHelpers
 import MongoCore
 
 /// A cursor returned from a query, used to iterate over the results.
@@ -10,11 +11,24 @@ import MongoCore
 ///    while let doc = try await cursor.next() {
 ///       print(doc)
 ///    }
-public final class MongoCursor {
-    /// The id of the cursor, used for `getMore` requests
-    public private(set) var id: Int64
+public final class MongoCursor: Sendable {
+    private let _id: NIOLockedValueBox<Int64>
+    private let _initialBatch: NIOLockedValueBox<[Document]?>
+    private let _hoppedEventLoop: NIOLockedValueBox<EventLoop?>
+    private let _maxTimeMS: NIOLockedValueBox<Int32?>
+    private let _readConcern: NIOLockedValueBox<ReadConcern?>
 
-    private var initialBatch: [Document]?
+    /// The id of the cursor, used for `getMore` requests
+    public private(set) var id: Int64 {
+        get { _id.withLockedValue { $0 } }
+        set { _id.withLockedValue { $0 = newValue } }
+    }
+
+    private var initialBatch: [Document]? {
+        get { _initialBatch.withLockedValue { $0 } }
+        set { _initialBatch.withLockedValue { $0 = newValue } }
+    }
+
     internal let closePromise: EventLoopPromise<Void>
 
     /// A future that will be completed when the cursor is closed
@@ -29,7 +43,10 @@ public final class MongoCursor {
     public let namespace: MongoNamespace
 
     /// The event loop this cursor is bound to and will return results on
-    public var hoppedEventLoop: EventLoop?
+    public var hoppedEventLoop: EventLoop? {
+        get { _hoppedEventLoop.withLockedValue { $0 } }
+        set { _hoppedEventLoop.withLockedValue { $0 = newValue } }
+    }
 
     /// The transaction this cursor is associated with, if any
     public let transaction: MongoTransaction?
@@ -38,10 +55,16 @@ public final class MongoCursor {
     public let session: MongoClientSession?
 
     /// The maximum amount of time to allow the server to spend on this cursor
-    public var maxTimeMS: Int32?
+    public var maxTimeMS: Int32? {
+        get { _maxTimeMS.withLockedValue { $0 } }
+        set { _maxTimeMS.withLockedValue { $0 = newValue } }
+    }
 
     /// The read concern to use for this cursor
-    public var readConcern: ReadConcern?
+    public var readConcern: ReadConcern? {
+        get { _readConcern.withLockedValue { $0 } }
+        set { _readConcern.withLockedValue { $0 = newValue } }
+    }
 
     /// The connection this cursor is using to communicate with the server
     public let connection: MongoConnection
@@ -59,16 +82,18 @@ public final class MongoCursor {
         traceLabel: String? = nil,
         context: ServiceContext? = nil
     ) {
-        self.id = reply.id
-        self.initialBatch = reply.firstBatch
+        self._id = NIOLockedValueBox(reply.id)
+        self._initialBatch = NIOLockedValueBox(reply.firstBatch)
         self.namespace = namespace
-        self.hoppedEventLoop = hoppedEventLoop
+        self._hoppedEventLoop = NIOLockedValueBox(hoppedEventLoop)
         self.connection = connection
         self.session = session
         self.transaction = transaction
         self.closePromise = connection.eventLoop.makePromise()
         self.traceLabel = traceLabel
         self.context = context
+        self._maxTimeMS = NIOLockedValueBox(nil)
+        self._readConcern = NIOLockedValueBox(nil)
     }
 
     /// Performs a `GetMore` command on the database, requesting the next batch of items

@@ -1,4 +1,4 @@
-public protocol Hash {
+public protocol Hash: Sendable {
     static var littleEndian: Bool { get }
     static var chunkSize: Int { get }
     static var digestSize: Int { get }

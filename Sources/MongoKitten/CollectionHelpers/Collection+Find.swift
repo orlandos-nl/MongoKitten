@@ -1,5 +1,6 @@
 import Tracing
 import NIO
+import NIOConcurrencyHelpers
 import MongoClient
 import MongoKittenCore
 
@@ -110,12 +111,16 @@ public final class FindQueryBuilder: CountableCursor, PaginatableCursor {
     
     /// The collection this cursor applies to
     private let makeConnection: @Sendable () async throws -> MongoConnection
-    public var command: FindCommand
+    private let _command: NIOLockedValueBox<FindCommand>
+    public var command: FindCommand {
+        get { _command.withLockedValue { $0} }
+        set { _command.withLockedValue { $0 = newValue } }
+    }
     private let collection: MongoCollection
     public var isDrained: Bool { false }
 
     init(command: FindCommand, collection: MongoCollection, makeConnection: @Sendable @escaping () async throws -> MongoConnection, transaction: MongoTransaction? = nil) {
-        self.command = command
+        self._command = NIOLockedValueBox(command)
         self.makeConnection = makeConnection
         self.collection = collection
     }
@@ -124,7 +129,7 @@ public final class FindQueryBuilder: CountableCursor, PaginatableCursor {
         return try await makeConnection()
     }
 
-    public func execute() async throws -> FinalizedCursor<FindQueryBuilder> {
+    @Sendable public func execute() async throws -> FinalizedCursor<FindQueryBuilder> {
         let connection = try await getConnection()
         let findSpan: any Span
         if let context = collection.context {

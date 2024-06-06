@@ -78,7 +78,7 @@ fileprivate extension CursorBatch where Element == Document {
 }
 
 /// A cursor with results from a query. Implemented by `FindCursor` and `AggregateCursor`.
-public protocol QueryCursor {
+public protocol QueryCursor: Sendable {
     /// The Element type of the cursor
     associatedtype Element
 
@@ -86,7 +86,7 @@ public protocol QueryCursor {
     func getConnection() async throws -> MongoConnection
 
     /// Executes the cursor, returning a `FinalizedCursor` after the operation has completed.
-    func execute() async throws -> FinalizedCursor<Self>
+    @Sendable func execute() async throws -> FinalizedCursor<Self>
 
     /// Transforms a given `Document` to the cursor `Element` type
     func transformElement(_ element: Document) async throws -> Element
@@ -95,7 +95,7 @@ public protocol QueryCursor {
 /// A protocol for cursors that can quickly count their results, without iterating over them
 public protocol CountableCursor: QueryCursor {
     /// Counts the number of results in the cursor
-    func count() async throws -> Int
+    @Sendable func count() async throws -> Int
 }
 
 /// A protocol for cursors that can be paginated using `skip` and `limit`
@@ -134,7 +134,7 @@ extension QueryCursor {
     /// Returns a new cursor with the results of mapping the given closure over the cursor's elements. This operation is lazy.
     ///
     /// - parameter transform: A mapping closure. `transform` accepts an element of this cursor as its parameter and returns a transformed value of the same or of a different type.
-    public func map<E>(transform: @escaping (Element) async throws -> E) -> MappedCursor<Self, E> {
+    public func map<E>(transform: @escaping @Sendable (Element) async throws -> E) -> MappedCursor<Self, E> {
         return MappedCursor(underlyingCursor: self, transform: transform, failable: false)
     }
 
@@ -168,7 +168,7 @@ extension QueryCursor {
 /// 
 /// This cursor is used to iterate over the results of a query, and is not obtained directly.
 /// Instead, you can execute a `find` or `aggregate` query to obtain this instance.
-public final class FinalizedCursor<Base: QueryCursor> {
+public final class FinalizedCursor<Base: QueryCursor>: Sendable {
     let base: Base
 
     /// The underlying server-side cursor
@@ -232,7 +232,7 @@ extension QueryCursor where Element == Document {
 
 /// A cursor that is the result of mapping another cursor
 public struct MappedCursor<Base: QueryCursor, Element>: QueryCursor {
-    internal typealias Transform<E> = (Base.Element) async throws -> E
+    internal typealias Transform<E> = @Sendable (Base.Element) async throws -> E
 
     /// Gets the connection associated with this cursor
     public func getConnection() async throws -> MongoConnection {

@@ -4,7 +4,7 @@ import NIO
 /// A GridFS file writer that can be used to upload a file to GridFS. This writer is not thread-safe.
 public final class GridFSFileWriter {
     static let allocator = ByteBufferAllocator()
-    static let encoder = BSONEncoder()
+    static var encoder: BSONEncoder { BSONEncoder() }
     
     let fs: GridFSBucket
     let fileId: Primitive

@@ -2,14 +2,14 @@ import MongoClient
 import NIO
 
 /// The options for a change stream
-public struct ChangeStreamOptions: Encodable {
+public struct ChangeStreamOptions: Encodable, Sendable {
     private enum CodingKeys: String, CodingKey {
         case batchSize
         case collation
         case fullDocument
     }
     
-    public enum FullDocument: String, Encodable {
+    public enum FullDocument: String, Encodable, Sendable {
         case `default`, updateLookup, whenAvailable, required
     }
     
@@ -116,7 +116,7 @@ extension MongoCollection {
 }
 
 /// A change stream is a stream of change notifications for a collection or database
-public struct ChangeStream<T: Decodable>: AsyncSequence {
+public struct ChangeStream<T: Decodable>: AsyncSequence, Sendable {
     public typealias Notification = ChangeStreamNotification<T>
     public typealias Element = Notification
     typealias InputCursor = FinalizedCursor<MappedCursor<AggregateBuilderPipeline, Notification>>
