@@ -285,7 +285,7 @@ public final actor MongoConnection: Sendable {
         perform: (ServiceContext) async throws -> T
     ) async throws -> T {
 #if swift(<5.10)
-        return try await _withSpan(label, context: context, ofKind: kind) {
+        return try await withSpan(label, context: context, ofKind: kind) {
             perform(context ?? .current ?? .topLevel)
         }
 #else
