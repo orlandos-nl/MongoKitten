@@ -240,9 +240,10 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
             isDiscovering = true
             defer { isDiscovering = false }
             
-            while !isClosed {
-                await rediscover()
-                didRediscover?()
+            weak var `self` = self
+            while let self, !self.isClosed {
+                await self.rediscover()
+                self.didRediscover?()
 
                 try await Task.sleep(nanoseconds: UInt64(heartbeatFrequency.nanoseconds))
             }
@@ -592,6 +593,10 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
     /// - Warning: Any outstanding query results may be cancelled, but the sent query might still be executed.
     public func disconnect() async {
         logger.debug("Disconnecting MongoDB Cluster")
+
+        discovering?.cancel()
+        discovering = nil
+
         self.wireVersion = nil
         self.isClosed = true
         self.completedInitialDiscovery = false
