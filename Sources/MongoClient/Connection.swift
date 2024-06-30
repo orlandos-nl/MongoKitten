@@ -278,7 +278,7 @@ public final actor MongoConnection: Sendable {
         try await self.authenticate(to: authenticationDatabase, serverHandshake: handshake, with: credentials)
     }
 
-    @Sendable nonisolated package func _withSpan<T: Sendable>(
+    @Sendable nonisolated func _withSpan<T: Sendable>(
         _ label: String,
         context: ServiceContext? = nil,
         ofKind kind: SpanKind,
