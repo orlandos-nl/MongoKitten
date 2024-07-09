@@ -157,15 +157,16 @@ public struct ModelUpdater<M: KeyPathQueryableModel & MutableModel> {
         )
     }
     
-    public subscript<P: Primitive>(dynamicMember keyPath: WritableKeyPath<M, QueryableField<P>>) -> P {
+    public subscript<P: PrimitiveEncodable & Codable>(dynamicMember keyPath: WritableKeyPath<M, QueryableField<P>>) -> P {
         get {
             update.model[keyPath: keyPath].value!
         }
         set {
             update.model[keyPath: keyPath].value = newValue
-            
-            let path = M.resolveFieldPath(keyPath)
-            update.changes[path] = newValue
+            update.setField(
+                at: M.resolveFieldPath(keyPath),
+                to: try newValue.encodePrimitive()
+            )
         }
     }
 }
@@ -177,7 +178,17 @@ public struct ModelUpdater<M: KeyPathQueryableModel & MutableModel> {
 ///     }.apply(on: meow[User.self])
 public struct PartialUpdate<M: KeyPathQueryableModel & MutableModel> {
     var model: M
-    var changes = Document()
+    var valuesForSetting: [[String]: () throws -> Primitive] = [:]
+    
+    mutating func setField(at path: [String], to newValue: @autoclosure @escaping () throws -> Primitive) {
+        valuesForSetting[path] = newValue
+    }
+    
+    var changes: Document {
+        get throws {
+            try valuesForSetting.reduce(into: Document()) { doc, change in doc[change.key] = try change.value() }
+        }
+    }
     
     /// Applies the changes and returns an updated model
     public func apply(on collection: MeowCollection<M>) async throws -> M {
@@ -189,6 +200,11 @@ public struct PartialUpdate<M: KeyPathQueryableModel & MutableModel> {
         }
         
         return model
+    }
+    
+    /// Applies the changes and returns an updated model
+    public func apply(in database: MeowDatabase) async throws -> M {
+        try await apply(on: database.collection(for: M.self))
     }
 }
 
