@@ -40,6 +40,21 @@ struct User: Model, Equatable {
     }
 }
 
+struct SomeData: Model, Equatable {
+    struct MyValue: RawRepresentable, Codable, Equatable, PrimitiveEncodable {
+        var rawValue: String
+
+        func encodePrimitive() throws -> Primitive {
+            return try rawValue.encodePrimitive()
+        }
+    }
+
+    @Field var _id: ObjectId
+    @Field var text: String?
+    @Field var date: Date?
+    @Field var value: MyValue?
+}
+
 class MeowTests: XCTestCase {
     let settings = try! ConnectionSettings("mongodb://\(ProcessInfo.processInfo.environment["MONGO_HOSTNAME_A"] ?? "localhost")/meow-tests")
     var meow: MeowDatabase!
@@ -173,7 +188,6 @@ class MeowTests: XCTestCase {
         }
     }
 
-#if DEBUG
     func testModelUpdater() async throws {
         let user = User(email: "joannis@orlandos.nl", password: "test")
         try await user.save(in: meow)
@@ -182,7 +196,7 @@ class MeowTests: XCTestCase {
             user.$password = "Hunter2"
         }
         
-        XCTAssertEqual(update.changes, ["password": "Hunter2"])
+        XCTAssertEqual(try update.changes, ["password": "Hunter2"])
         let updatedUser = try await update.apply(on: meow[User.self])
         XCTAssertEqual(updatedUser.password, "Hunter2")
         
@@ -193,7 +207,37 @@ class MeowTests: XCTestCase {
         
         XCTAssertEqual(count, 1)
     }
-#endif
+
+    func testPrimitiveEncodableModelUpdater() async throws {
+        let data = SomeData(_id: .init())
+        try await data.save(in: meow)
+
+        let date: Date = .now
+
+        let update = await data.makePartialUpdate { data in
+            data.$date = date
+            data.$text = "foo"
+            data.$value = .init(rawValue: "bar")
+        }
+
+        try XCTAssertEqual(update.changes, [
+            "date": date,
+            "text": "foo",
+            "value": "bar",
+        ])
+
+        let updatedData = try await update.apply(in: meow)
+        let fetchedData = try await Reference(to: data).resolve(in: meow)
+
+        XCTAssertEqual(updatedData.date, date)
+        XCTAssertEqual(updatedData.text, "foo")
+        XCTAssertEqual(updatedData.value, .init(rawValue: "bar"))
+
+        XCTAssertEqual(fetchedData._id, updatedData._id)
+        XCTAssertEqual(fetchedData.text, updatedData.text)
+        XCTAssertEqual(fetchedData.value, updatedData.value)
+        XCTAssertEqual(fetchedData.date?.timeIntervalSinceReferenceDate ?? 0, date.timeIntervalSinceReferenceDate, accuracy: 1)
+    }
 
     /// Given a model, this test will insert it into the database and then fetch it again.
     func testInsertModel() async throws {
