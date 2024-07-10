@@ -12,7 +12,7 @@ import NIO
 ///     let mongodb: MongoDatabase = mongoCluster["superapp"]
 ///     let meow = MeowDatabase(mongodb)
 ///     let users: MeowCollection<User> = meow[User.self]
-public class MeowDatabase {
+public class MeowDatabase: @unchecked Sendable {
     public let raw: MongoDatabase
     
     public init(_ database: MongoDatabase) {
