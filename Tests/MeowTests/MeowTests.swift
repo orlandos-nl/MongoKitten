@@ -221,7 +221,7 @@ class MeowTests: XCTestCase {
         }
 
         try XCTAssertEqual(update.changes, [
-            "date": try! date.encodePrimitive(),
+            "date": date,
             "text": "foo",
             "value": "bar",
         ])
