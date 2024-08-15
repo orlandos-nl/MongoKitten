@@ -1,7 +1,7 @@
 import Tracing
 import MongoCore
 
-public final class MongoTransactionDatabase: MongoDatabase {
+public final class MongoTransactionDatabase: MongoDatabase, @unchecked Sendable {
     /// Commits the transaction and ends the session.
     public func commit() async throws {
         span?.addEvent(.init(name: "Commit Transaction"))
