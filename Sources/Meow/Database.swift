@@ -57,7 +57,7 @@ public class MeowDatabase: @unchecked Sendable {
 ///     let mongodb: MongoDatabase = mongoCluster["superapp"]
 ///     let meow = MeowDatabase(mongodb)
 ///     let users: MeowCollection<User> = meow[User.self]
-public final class MeowTransactionDatabase: MeowDatabase {
+public final class MeowTransactionDatabase: MeowDatabase, @unchecked Sendable {
     private let transaction: MongoTransactionDatabase
     
     fileprivate init(_ transaction: MongoTransactionDatabase) {
