@@ -27,6 +27,18 @@ extension MongoConnection {
         in transaction: MongoTransaction? = nil,
         sessionId: SessionIdentifier? = nil
     ) -> EventLoopFuture<MongoServerReply> {
+        var command = command
+
+        var isHandshake: Bool = false
+        if let handshakeFlag = command["isHandshake"] as? Bool {
+            isHandshake = handshakeFlag
+            command.removeValue(forKey: "isHandshake")
+        }
+
+        if !isHandshake {
+            isInUse = true
+        }
+        
         let result: EventLoopFuture<MongoServerReply>
         
         if
@@ -42,6 +54,12 @@ extension MongoConnection {
             let date = Date()
             result.whenComplete { _ in
                 queryTimer.record(-date.timeIntervalSinceNow)
+            }
+        }
+        
+        result.whenComplete { [weak self, isHandshake] _ in
+            if !isHandshake {
+                self?.isInUse = false
             }
         }
         
@@ -127,6 +145,7 @@ extension MongoConnection {
                 command.appendValue(true, forKey: "startTransaction")
             }
         }
+        
         return self.executeMessage(
             OpMessage(
                 body: command,

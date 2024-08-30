@@ -35,7 +35,7 @@ public final class MongoConnection {
     var queryTimer: Metrics.Timer?
     public internal(set) var lastHeartbeat: MongoHandshakeResult?
     public var queryTimeout: TimeAmount = .seconds(30)
-    
+    public var isInUse: Bool = false
     public var isMetricsEnabled = false {
         didSet {
             if isMetricsEnabled, !oldValue {
@@ -143,6 +143,8 @@ public final class MongoConnection {
                 sessionManager: sessionManager
             )
             
+            connection.queryTimeout = .seconds(Int64(settings.connectTimeout))
+            
             return connection.authenticate(
                 clientDetails: clientDetails,
                 using: settings.authentication,
@@ -173,7 +175,8 @@ public final class MongoConnection {
         let result = self.executeCodable(
             IsMaster(
                 clientDetails: clientDetails,
-                userNamespace: userNamespace
+                userNamespace: userNamespace,
+                isHandshake: true
             ),
             namespace: .administrativeCommand,
             sessionId: nil

@@ -2,6 +2,7 @@ import NIO
 import Logging
 import DNSClient
 import MongoCore
+import NIOConcurrencyHelpers
 
 #if canImport(NIOTransportServices) && os(iOS)
 import NIOTransportServices
@@ -84,7 +85,17 @@ public final class MongoCluster: MongoConnectionPool {
     /// A list of currently open connections
     ///
     /// This is not thread safe outside of the cluster's eventloop
-    private var pool: [PooledConnection]
+    private var pool: [PooledConnection] {
+        didSet {
+            if oldValue.count > pool.count {
+                self.poolRequestedCounter.sub(1)
+            }
+        }
+    }
+    
+    private var poolBalancerCounter: NIOAtomic<Int64> = .makeAtomic(value: 0)
+    private var poolRequestedCounter: NIOAtomic<Int8> = .makeAtomic(value: 0)
+    
     private let group: _MongoPlatformEventLoopGroup
     public let eventLoop: EventLoop
     
@@ -347,24 +358,54 @@ public final class MongoCluster: MongoConnectionPool {
     fileprivate func findMatchingConnection(writable: Bool) -> PooledConnection? {
         var matchingConnection: PooledConnection?
 
-        nextConnection: for pooledConnection in pool {
-            let connection = pooledConnection.connection
-
-            guard let handshakeResult = connection.serverHandshake else {
-                continue nextConnection
+        if poolRequestedCounter.load() < settings.maximumNumberOfConnections {
+            for pooledConnection in pool {
+                let connection = pooledConnection.connection
+                
+                guard let handshakeResult = connection.serverHandshake else {
+                    continue
+                }
+                
+                let unwritable = writable && handshakeResult.readOnly ?? false
+                let unreadable = !self.slaveOk && !handshakeResult.ismaster
+                
+                if unwritable || unreadable || connection.isInUse {
+                    continue
+                }
+                
+                matchingConnection = pooledConnection
             }
-
-            let unwritable = writable && handshakeResult.readOnly ?? false
-            let unreadable = !self.slaveOk && !handshakeResult.ismaster
-
-            if unwritable || unreadable {
-                continue nextConnection
+            
+            if matchingConnection == nil {
+                poolRequestedCounter.add(1)
             }
-
-            matchingConnection = pooledConnection
+            
+            return matchingConnection
+        } else {
+            var poolBalanceCounter = Int(self.poolBalancerCounter.load())
+            for i in 0..<pool.count {
+                let pooledConnection = pool[poolBalanceCounter % pool.count]
+                let connection = pooledConnection.connection
+                
+                guard let handshakeResult = connection.serverHandshake else {
+                    poolBalanceCounter += 1
+                    continue
+                }
+                
+                let unwritable = writable && handshakeResult.readOnly ?? false
+                let unreadable = !self.slaveOk && !handshakeResult.ismaster
+                
+                if unwritable || unreadable {
+                    poolBalanceCounter += 1
+                    continue
+                }
+                
+                poolBalancerCounter.exchange(with: Int64(i + 1))
+                return pooledConnection
+            }
+            
+            return nil
         }
-
-        return matchingConnection
     }
     
     private func makeConnectionRecursively(for request: MongoConnectionPoolRequest, emptyPoolError: Error?, attempts: Int = 3) -> EventLoopFuture<MongoConnection> {
@@ -391,8 +432,8 @@ public final class MongoCluster: MongoConnectionPool {
         if let matchingConnection = findMatchingConnection(writable: writable) {
             return eventLoop.makeSucceededFuture(matchingConnection.connection)
         }
-
-        guard let host = undiscoveredHosts.first else {
+        
+        guard let host = undiscoveredHosts.first ?? discoveredHosts.first else {
             return self.rediscover().flatMapThrowing { _ in
                 guard let match = self.findMatchingConnection(writable: writable) else {
                     self.logger.error("Couldn't find or create a connection to MongoDB with the requested specification")

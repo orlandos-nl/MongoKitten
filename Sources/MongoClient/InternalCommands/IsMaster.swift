@@ -64,9 +64,11 @@ internal struct IsMaster: Encodable {
     private let isMaster: Int32 = 1
     internal var saslSupportedMechs: String?
     internal var client: MongoClientDetails?
+    internal var isHandshake: Bool
 
-    internal init(clientDetails: MongoClientDetails?, userNamespace: String?) {
+    internal init(clientDetails: MongoClientDetails?, userNamespace: String?, isHandshake: Bool = false) {
         self.client = clientDetails
         self.saslSupportedMechs = userNamespace
+        self.isHandshake = isHandshake
     }
 }
