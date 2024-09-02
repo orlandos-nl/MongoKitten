@@ -52,16 +52,20 @@ extension MongoConnection {
 
         if let queryTimer = queryTimer {
             let date = Date()
-            result.whenComplete { _ in
+            result.whenComplete { [ weak self, isHandshake ] _ in
                 queryTimer.record(-date.timeIntervalSinceNow)
+                if !isHandshake {
+                    self?.isInUse = false
+                }
+            }
+        } else {
+            result.whenComplete { [weak self, isHandshake] _ in
+                if !isHandshake {
+                    self?.isInUse = false
+                }
             }
         }
         
-        result.whenComplete { [weak self, isHandshake] _ in
-            if !isHandshake {
-                self?.isInUse = false
-            }
-        }
         
         return result
     }
