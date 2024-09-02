@@ -88,7 +88,10 @@ public final class MongoCluster: MongoConnectionPool {
     private var pool: [PooledConnection] {
         didSet {
             if oldValue.count > pool.count {
-                self.poolRequestedCounter.sub(1)
+                let diff = abs(oldValue.count - pool.count)
+                let result = max(0, Int8(diff) - poolRequestedCounter.load())
+                
+                _ = self.poolRequestedCounter.exchange(with: result)
             }
         }
     }
