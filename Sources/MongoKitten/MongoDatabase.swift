@@ -281,7 +281,7 @@ public class MongoDatabase: @unchecked Sendable {
     }
 }
 
-extension EventLoopFuture {
+extension EventLoopFuture where Value: Sendable {
     internal func _mongoHop(to eventLoop: EventLoop?) -> EventLoopFuture<Value> {
         guard let eventLoop = eventLoop else {
             return self

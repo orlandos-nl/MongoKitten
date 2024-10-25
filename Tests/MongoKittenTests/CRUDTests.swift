@@ -8,9 +8,9 @@ import XCTest
 import MongoCore
 
 let dbName = "KittenTest"
-fileprivate var initialized = false
+@MainActor fileprivate var initialized = false
 
-func initializeLoggingTracing() async throws {
+@MainActor func initializeLoggingTracing() async throws {
     if initialized { return }
 
 //    LoggingSystem.bootstrap { label in
