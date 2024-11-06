@@ -41,6 +41,17 @@ public struct AddFields: AggregateBuilderStage {
 
 /// A $group stage in an aggregation pipeline, used to group documents
 /// - SeeAlso: https://docs.mongodb.com/manual/reference/operator/aggregation/group/
+public struct Group: AggregateBuilderStage {
+    public internal(set) var stage: Document
+    public internal(set) var minimalVersionRequired: WireVersion? = nil
+    
+    public init(_ document: Document) {
+        self.stage = ["$group": document]
+    }
+}
+
+/// A $project stage in an aggregation pipeline, used to project documents
+/// - SeeAlso: https://docs.mongodb.com/manual/reference/operator/aggregation/project/
 public struct Project: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion?
