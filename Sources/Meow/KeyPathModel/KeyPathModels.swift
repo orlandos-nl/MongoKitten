@@ -316,7 +316,7 @@ extension QueryableField: _QueryableFieldRepresentable where Value: Codable {
 
 /// The `@Field` property wrapper is used on all stored properties of a ``Model`` to allow key path based queries.
 @propertyWrapper
-public struct Field<C: Codable>: Codable, _QueryableFieldRepresentable {
+public struct Field<C: Codable>: Codable, _QueryableFieldRepresentable, Sendable {
     public typealias Value = C
     public let key: String?
     private var _wrappedValue: C?
