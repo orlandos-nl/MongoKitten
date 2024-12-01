@@ -13,7 +13,7 @@ import NIO
 ///         let post: Post = try await postRef.resolve(in: req.meow)
 ///         return post
 ///     }
-public struct Reference<M: ReadableModel>: Resolvable, Hashable, PrimitiveEncodable {
+public struct Reference<M: ReadableModel>: Resolvable, Hashable, PrimitiveEncodable, Sendable where M.Identifier: Sendable {
     /// The referenced id
     public let reference: M.Identifier
     
