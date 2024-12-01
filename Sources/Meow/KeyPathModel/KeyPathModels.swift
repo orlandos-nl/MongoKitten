@@ -361,6 +361,9 @@ public struct Field<C: Codable>: Codable, _QueryableFieldRepresentable {
     }
 }
 
+// Add conditional Sendable conformance
+extension Field: Sendable where C: Sendable {}
+
 extension Field: Equatable where C: Equatable {
     public static func ==(lhs: Self, rhs: Self) -> Bool {
         lhs.wrappedValue == rhs.wrappedValue
