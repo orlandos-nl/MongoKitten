@@ -316,7 +316,7 @@ extension QueryableField: _QueryableFieldRepresentable where Value: Codable {
 
 /// The `@Field` property wrapper is used on all stored properties of a ``Model`` to allow key path based queries.
 @propertyWrapper
-public struct Field<C: Codable>: Codable, _QueryableFieldRepresentable, Sendable {
+public struct Field<C: Codable>: Codable, _QueryableFieldRepresentable {
     public typealias Value = C
     public let key: String?
     private var _wrappedValue: C?
@@ -360,6 +360,9 @@ public struct Field<C: Codable>: Codable, _QueryableFieldRepresentable, Sendable
         try container.encode(_wrappedValue!)
     }
 }
+
+// Add conditional Sendable conformance
+extension Field: Sendable where C: Sendable {}
 
 extension Field: Equatable where C: Equatable {
     public static func ==(lhs: Self, rhs: Self) -> Bool {
