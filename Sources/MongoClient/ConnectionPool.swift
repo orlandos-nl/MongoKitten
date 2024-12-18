@@ -34,7 +34,7 @@ public struct ConnectionPoolRequest: Sendable, ExpressibleByArrayLiteral {
     public static let basic: ConnectionPoolRequest = []
 }
 
-/// A connection pool that can be used to get connections from
+/// A connection pool that can be used to get connections to a MongoDB server
 public protocol MongoConnectionPool: Sendable {
     /// Gets a connection from the pool that matches the provided `request`
     func next(for request: ConnectionPoolRequest) async throws -> MongoConnection

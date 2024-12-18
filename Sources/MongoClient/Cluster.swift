@@ -13,25 +13,98 @@ public typealias _MongoPlatformEventLoopGroup = NIOTSEventLoopGroup
 public typealias _MongoPlatformEventLoopGroup = EventLoopGroup
 #endif
 
+/// The current state of the cluster's connection pool
 public struct ClusterState {
     public let connectionState: MongoConnectionState
 }
 
-/// A high level ``MongoConnectionPool`` type tha is capable of "Service Discovery and Monitoring", automatically connects to new hosts. Is aware of a change in primary/secondary allocation.
+/// A high-level connection pool that implements MongoDB's Service Discovery and Monitoring (SDAM) specification.
 ///
-/// Use this type for connecting to MongoDB unless you have a very specific usecase.
+/// ``MongoCluster`` is the recommended way to connect to MongoDB as it provides:
 ///
-/// The ``MongoCluster`` uses ``MongoConnection`` instances under the hood to connect to specific servers, and run specific queries.s
+/// - **Service Discovery and Monitoring (SDAM)**: Automatically discovers all nodes in a replica set or sharded cluster
+///   and monitors their status. This allows the driver to route operations to the appropriate nodes and handle failover scenarios.
 ///
-/// **Usage**
+/// - **Connection Pooling**: Maintains a pool of ``MongoConnection`` instances to each discovered server. This improves performance
+///   by reusing existing connections rather than creating new ones for each operation.
 ///
+/// - **Automatic Connection Management**: Handles connection lifecycle including:
+///   - Initial connection and authentication
+///   - Automatic reconnection on failure
+///   - Connection health monitoring via heartbeats
+///   - Graceful connection cleanup on shutdown
+///
+/// - **Read Preference Handling**: Supports configuring read preferences via the `slaveOk` property to enable reads from secondary nodes
+///   in a replica set.
+///
+/// - **Heartbeat Monitoring**: Regularly checks server status via heartbeats (configurable via `heartbeatFrequency`).
+///   This enables quick detection of topology changes and server status updates.
+///
+/// ### Usage Examples
+///
+/// Basic connection to a standalone server:
 /// ```swift
-/// let cluster = try await MongoCluster(
+/// // Create cluster with lazy connection
+/// let cluster = try MongoCluster(
 ///     lazyConnectingTo: ConnectionSettings("mongodb://localhost")
 /// )
-/// let database = cluster["testapp"]
+///
+/// // Access database and collections
+/// let database = cluster["myapp"]
 /// let users = database["users"]
 /// ```
+///
+/// Connection with authentication to a replica set:
+/// ```swift
+/// let settings = ConnectionSettings(
+///     "mongodb://username:password@host1:27017,host2:27017,host3:27017/myapp?replicaSet=myrs"
+/// )
+/// let cluster = try await MongoCluster(
+///     connectingTo: settings,
+///     allowFailure: false // Ensures initial connection succeeds
+/// )
+/// ```
+///
+/// Custom configuration:
+/// ```swift
+/// let cluster = try MongoCluster(
+///     lazyConnectingTo: settings,
+///     logger: Logger(label: "com.myapp.mongo"),
+///     eventLoopGroup: existingEventLoopGroup
+/// )
+///
+/// // Configure read preference
+/// cluster.slaveOk = true
+///
+/// // Adjust heartbeat frequency
+/// cluster.heartbeatFrequency = .seconds(5)
+///
+/// // Monitor cluster connection state changes
+/// cluster.onStateChange = { state in
+///     print("Cluster state changed: \(state)")
+/// }
+/// ```
+///
+/// ### Architecture
+///
+/// The cluster uses several components to manage MongoDB connections:
+///
+/// - ``ConnectionSettings``: Defines connection parameters including hosts, credentials, and options
+/// - ``MongoConnection``: Low-level connection to a single MongoDB server
+/// - ``MongoConnectionPool``: Interface for connection pooling functionality
+///
+/// The cluster maintains the topology by:
+/// 1. Resolving initial hosts (including SRV records if applicable)
+/// 2. Establishing connections to discovered servers
+/// 3. Running periodic heartbeats to monitor server status
+/// 4. Updating the topology based on server responses
+/// 5. Managing the connection pool based on topology changes
+///
+/// This design ensures that the cluster is always aware of the current state of the MongoDB cluster,
+/// and can automatically handle failover scenarios.
+///
+/// For more advanced use cases, consider using the lower-level components like ``MongoConnection``
+/// and ``MongoConnectionPool`` directly.
 public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
     public static func _newEventLoopGroup() -> _MongoPlatformEventLoopGroup {
         #if canImport(NIOTransportServices) && os(iOS)

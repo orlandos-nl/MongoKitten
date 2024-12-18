@@ -78,6 +78,47 @@ fileprivate extension CursorBatch where Element == Document {
 }
 
 /// A cursor with results from a query. Implemented by `FindCursor` and `AggregateCursor`.
+/// 
+/// Cursors in MongoKitten provide a way to iterate over query results efficiently, fetching documents in batches
+/// from the server. This helps manage memory usage when dealing with large result sets.
+///
+/// ## Basic Usage
+/// ```swift
+/// // Iterate over results using async/await
+/// for try await document in collection.find() {
+///     print(document)
+/// }
+///
+/// // Get all results at once (use with caution on large result sets)
+/// let allDocuments = try await collection.find().drain()
+///
+/// // Get just the first result
+/// let firstDocument = try await collection.find().firstResult()
+/// ```
+///
+/// ## Transforming Results
+/// Cursors can be transformed using `map` or `decode`:
+/// ```swift
+/// // Map documents to a specific field
+/// let names = collection.find().map { doc in
+///     doc["name"] as String? ?? ""
+/// }
+///
+/// // Decode documents into a Codable type
+/// struct User: Codable {
+///     let name: String
+///     let age: Int
+/// }
+/// let users = collection.find().decode(User.self)
+/// ```
+///
+/// ## Error Handling
+/// By default, if any document fails to transform (e.g., during decoding),
+/// the entire operation fails. You can make transformations failable:
+/// ```swift
+/// // Only successfully decoded documents will be included
+/// let users = try await collection.find().decode(User.self).drain(failable: true)
+/// ```
 public protocol QueryCursor: Sendable {
     /// The Element type of the cursor
     associatedtype Element
@@ -92,13 +133,33 @@ public protocol QueryCursor: Sendable {
     func transformElement(_ element: Document) async throws -> Element
 }
 
-/// A protocol for cursors that can quickly count their results, without iterating over them
+/// A protocol for cursors that can quickly count their results, without iterating over them.
+/// This allows for efficient counting of results using MongoDB's count command rather than
+/// iterating through all documents.
+///
+/// ## Example
+/// ```swift
+/// let userCount = try await users.find("age" > 18).count()
+/// ```
 public protocol CountableCursor: QueryCursor {
     /// Counts the number of results in the cursor
     @Sendable func count() async throws -> Int
 }
 
-/// A protocol for cursors that can be paginated using `skip` and `limit`
+/// A protocol for cursors that can be paginated using `skip` and `limit`.
+/// This is useful for implementing pagination in applications.
+///
+/// ## Example
+/// ```swift
+/// // Get the second page of 20 items
+/// let pageSize = 20
+/// let page = 2
+/// let results = try await collection.find()
+///     .sort("createdAt", .descending)
+///     .skip((page - 1) * pageSize)
+///     .limit(pageSize)
+///     .drain()
+/// ```
 public protocol PaginatableCursor: QueryCursor {
     /// Limits the number of results returned by the cursor
     /// - Parameter limit: The maximum amount of results to return
@@ -114,8 +175,25 @@ public protocol PaginatableCursor: QueryCursor {
 extension QueryCursor {
     /// Executes the given `handler` for every element of the cursor.
     ///
-    /// - parameter handler: A handler to execute on every result
-    /// - returns: A future that resolves when the operation is complete, or fails if an error is thrown
+    /// This method allows you to process each document as it's received from the server,
+    /// which is memory-efficient for large result sets.
+    ///
+    /// - Parameters:
+    ///   - failable: If `true`, errors during element transformation will be ignored
+    ///   - handler: A closure that processes each element
+    /// - Returns: A task that completes when all elements have been processed
+    ///
+    /// ## Example
+    /// ```swift
+    /// try await users.find().forEach { user in
+    ///     print("Processing user: \(user["name"])")
+    /// }
+    ///
+    /// // With error handling for transformations
+    /// try await users.find().decode(User.self).forEach(failable: true) { user in
+    ///     print("Processing user: \(user.name)")
+    /// }
+    /// ```
     @discardableResult
     public func forEach(failable: Bool = false, handler: @escaping @Sendable (Element) async throws -> Void) -> Task<Void, Error> {
         Task {
@@ -131,22 +209,65 @@ extension QueryCursor {
         }
     }
 
-    /// Returns a new cursor with the results of mapping the given closure over the cursor's elements. This operation is lazy.
+    /// Returns a new cursor with the results of mapping the given closure over the cursor's elements.
     ///
-    /// - parameter transform: A mapping closure. `transform` accepts an element of this cursor as its parameter and returns a transformed value of the same or of a different type.
+    /// The transformation is lazy - it only occurs when the cursor is iterated.
+    /// This means you can chain multiple transformations without performance penalty.
+    ///
+    /// - Parameter transform: A mapping closure that transforms each element
+    /// - Returns: A new cursor with transformed elements
+    ///
+    /// ## Example
+    /// ```swift
+    /// let userAges = users.find().map { doc in
+    ///     doc["age"] as Int? ?? 0
+    /// }
+    ///
+    /// for try await age in userAges {
+    ///     print("User age: \(age)")
+    /// }
+    /// ```
     public func map<E>(transform: @escaping @Sendable (Element) async throws -> E) -> MappedCursor<Self, E> {
         return MappedCursor(underlyingCursor: self, transform: transform, failable: false)
     }
 
-    /// Executes the cursor and returns the first result
-    /// Always uses a batch size of 1
+    /// Executes the cursor and returns the first result.
+    ///
+    /// This is optimized to only fetch a single document from the server.
+    /// Useful when you only need the first matching document.
+    ///
+    /// - Returns: The first element, or nil if no results exist
+    ///
+    /// ## Example
+    /// ```swift
+    /// // Find the oldest user
+    /// let oldestUser = try await users.find()
+    ///     .sort("age", .descending)
+    ///     .firstResult()
+    /// ```
     public func firstResult() async throws -> Element? {
         let finalizedCursor = try await execute()
         return try await finalizedCursor.nextBatch(batchSize: 1).first
     }
 
-    /// Executes the cursor and returns all results as an array
-    /// Please be aware that this may consume a large amount of memory or time with a large number of results
+    /// Executes the cursor and returns all results as an array.
+    ///
+    /// - Warning: This method loads all results into memory at once.
+    ///   For large result sets, consider using `forEach` or async iteration instead.
+    ///
+    /// - Parameter failable: If `true`, transformation errors will be ignored
+    /// - Returns: Array containing all results
+    ///
+    /// ## Example
+    /// ```swift
+    /// // Get all adult users
+    /// let adults = try await users.find("age" >= 18).drain()
+    ///
+    /// // Get all valid user objects, skipping any that fail to decode
+    /// let users = try await users.find()
+    ///     .decode(User.self)
+    ///     .drain(failable: true)
+    /// ```
     public func drain(failable: Bool = false) async throws -> [Element] {
         let finalizedCursor = try await execute()
         var results = [Element]()
@@ -164,10 +285,32 @@ extension QueryCursor {
     }
 }
 
-/// A client-side concrete cursor instance, with a corrosponding server side cursor, as the result of a ``QueryCursor`` executing.
-/// 
-/// This cursor is used to iterate over the results of a query, and is not obtained directly.
-/// Instead, you can execute a `find` or `aggregate` query to obtain this instance.
+/// A client-side concrete cursor instance with a corresponding server-side cursor.
+///
+/// This cursor is created when a query is executed and provides methods to iterate
+/// over the results in batches. It manages the server-side cursor lifecycle and
+/// automatically fetches more results as needed.
+///
+/// ## Batch Processing
+/// ```swift
+/// let cursor = try await users.find().execute()
+///
+/// while !cursor.isDrained {
+///     let batch = try await cursor.nextBatch(batchSize: 100)
+///     for document in batch {
+///         // Process each document
+///     }
+/// }
+///
+/// // Don't forget to close the cursor when done early
+/// try await cursor.close()
+/// ```
+///
+/// The cursor will be automatically closed when:
+/// - All results have been consumed
+/// - An error occurs
+/// - The cursor is explicitly closed
+/// - The task is cancelled
 public final class FinalizedCursor<Base: QueryCursor>: Sendable {
     let base: Base
 
@@ -222,7 +365,38 @@ public final class FinalizedCursor<Base: QueryCursor>: Sendable {
 }
 
 extension QueryCursor where Element == Document {
-    /// Generates a `MappedCursor` with decoded instances of `D` as its element type, using the given `decoder`.
+    /// Generates a `MappedCursor` with decoded instances of `D` as its element type.
+    ///
+    /// This is a convenient way to decode MongoDB documents into your custom types.
+    /// The decoding is performed lazily as documents are fetched from the server.
+    ///
+    /// - Parameters:
+    ///   - type: The `Decodable` type to decode documents into
+    ///   - decoder: The decoder to use for decoding documents (defaults to `BSONDecoder()`)
+    /// - Returns: A cursor that yields decoded instances of the specified type
+    ///
+    /// ## Example
+    /// ```swift
+    /// struct User: Codable {
+    ///     let id: ObjectId
+    ///     let name: String
+    ///     let email: String
+    ///     let age: Int
+    /// }
+    ///
+    /// // Find all adult users and decode them
+    /// let adults = try await users.find("age" >= 18)
+    ///     .decode(User.self)
+    ///     .drain()
+    ///
+    /// // Use a custom decoder
+    /// let decoder = BSONDecoder()
+    /// decoder.dateDecodingStrategy = .millisecondsSince1970
+    ///
+    /// let results = try await users.find()
+    ///     .decode(User.self, using: decoder)
+    ///     .drain()
+    /// ```
     public func decode<D: Decodable>(_ type: D.Type, using decoder: BSONDecoder = BSONDecoder()) -> MappedCursor<Self, D> {
         return self.map { document in
             return try decoder.decode(D.self, from: document)
@@ -230,7 +404,66 @@ extension QueryCursor where Element == Document {
     }
 }
 
-/// A cursor that is the result of mapping another cursor
+/// A cursor that transforms the elements of another cursor using a mapping function.
+///
+/// `MappedCursor` allows you to transform the elements of a cursor without loading
+/// all results into memory at once. The transformation is performed lazily as
+/// documents are fetched from the server.
+///
+/// ## Basic Usage
+/// ```swift
+/// // Map documents to extract specific fields
+/// let userNames = users.find().map { doc in
+///     doc["name"] as String? ?? "Unknown"
+/// }
+///
+/// // Chain multiple transformations
+/// let userAgeGroups = users.find()
+///     .map { doc in doc["age"] as Int? ?? 0 }
+///     .map { age in
+///         switch age {
+///         case 0..<18: return "Minor"
+///         case 18..<65: return "Adult"
+///         default: return "Senior"
+///         }
+///     }
+/// ```
+///
+/// ## Decoding Documents
+/// The most common use of `MappedCursor` is through the `decode` method,
+/// which creates a `MappedCursor` that decodes documents into your custom types:
+///
+/// ```swift
+/// struct User: Codable {
+///     let id: ObjectId
+///     let name: String
+///     let age: Int
+/// }
+///
+/// // Find and decode users
+/// let adults = try await users.find("age" >= 18)
+///     .decode(User.self)
+///     .drain()
+/// ```
+///
+/// ## Error Handling
+/// By default, if any transformation fails, the entire operation fails.
+/// You can make transformations failable using the `failable` parameter
+/// in methods like `drain` and `forEach`:
+///
+/// ```swift
+/// // Skip documents that fail to decode
+/// let validUsers = try await users.find()
+///     .decode(User.self)
+///     .drain(failable: true)
+///
+/// // Process only successfully decoded users
+/// try await users.find()
+///     .decode(User.self)
+///     .forEach(failable: true) { user in
+///         print("Processing user: \(user.name)")
+///     }
+/// ```
 public struct MappedCursor<Base: QueryCursor, Element>: QueryCursor {
     internal typealias Transform<E> = @Sendable (Base.Element) async throws -> E
 
