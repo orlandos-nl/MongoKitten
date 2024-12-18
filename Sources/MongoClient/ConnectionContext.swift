@@ -8,7 +8,7 @@ internal struct MongoResponseContext {
 }
 
 public final class MongoClientContext {
-    private var queries = [MongoResponseContext]()
+    private var queries = [Int32: MongoResponseContext]()
     internal var serverHandshake: ServerHandshake? {
         didSet {
             if let version = serverHandshake?.maxWireVersion, version.isDeprecated {
@@ -20,18 +20,16 @@ public final class MongoClientContext {
     let logger: Logger
 
     internal func handleReply(_ reply: MongoServerReply) -> Bool {
-        guard let index = queries.firstIndex(where: { $0.requestId == reply.responseTo }) else {
+        guard let query = queries.removeValue(forKey: reply.responseTo) else {
             return false
         }
 
-        let query = queries[index]
-        queries.remove(at: index)
         query.result.succeed(reply)
         return true
     }
 
     internal func awaitReply(toRequestId requestId: Int32, completing result: EventLoopPromise<MongoServerReply>) {
-        queries.append(MongoResponseContext(requestId: requestId, result: result))
+        queries[requestId] = MongoResponseContext(requestId: requestId, result: result)
     }
     
     deinit {
@@ -39,21 +37,19 @@ public final class MongoClientContext {
     }
     
     public func failQuery(byRequestId requestId: Int32, error: Error) {
-        guard let index = queries.firstIndex(where: { $0.requestId == requestId }) else {
+        guard let query = queries.removeValue(forKey: requestId) else {
             return
         }
-
-        let query = queries[index]
-        queries.remove(at: index)
+        
         query.result.fail(error)
     }
 
     public func cancelQueries(_ error: Error) {
-        for query in queries {
+        for query in queries.values {
             query.result.fail(error)
         }
 
-        queries = []
+        queries = [:]
     }
 
     public init(logger: Logger) {
