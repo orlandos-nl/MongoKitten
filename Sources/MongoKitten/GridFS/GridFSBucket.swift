@@ -7,6 +7,72 @@ extension CodingUserInfoKey {
 
 /// A GridFS Bucket that can be used to upload and download files to and from GridFS in a MongoDB database.
 /// 
+/// GridFS is MongoDB's specification for storing and retrieving large files such as images,
+/// audio files, video files, or other binary data that exceeds the BSON document size limit of 16MB.
+///
+/// ## Basic Usage
+/// ```swift
+/// // Create a GridFS bucket
+/// let gridFS = GridFSBucket(in: database)
+///
+/// // Upload a file
+/// let file = try await gridFS.upload(
+///     fileData,
+///     filename: "document.pdf",
+///     metadata: [
+///         "contentType": "application/pdf",
+///         "uploadedBy": "user123",
+///         "category": "documents"
+///     ]
+/// )
+///
+/// // Find and download a file
+/// if let file = try await gridFS.findFile("filename" == "document.pdf") {
+///     let data = try await file.reader.readData()
+///     // Process the file data
+/// }
+/// ```
+///
+/// ## Chunked Uploads
+/// For large files or streaming uploads:
+/// ```swift
+/// let writer = try await GridFSFileWriter(toBucket: gridFS)
+///
+/// // Stream data chunks
+/// for chunk in dataChunks {
+///     try await writer.write(data: chunk)
+/// }
+///
+/// // Finalize the upload
+/// let file = try await writer.finalize(
+///     filename: "large-video.mp4",
+///     metadata: ["contentType": "video/mp4"]
+/// )
+/// ```
+///
+/// ## File Operations
+/// ```swift
+/// // List all PDF files
+/// let pdfs = gridFS.find([
+///     "filename": ["$regex": ".*\\.pdf$"],
+///     "metadata.contentType": "application/pdf"
+/// ])
+///
+/// // Delete a file
+/// try await gridFS.deleteFile(byId: fileId)
+/// ```
+///
+/// ## Performance Considerations
+/// - The default chunk size is 255KB, which is suitable for most use cases
+/// - Larger chunk sizes reduce the number of chunks but increase memory usage
+/// - Smaller chunk sizes are better for streaming but create more database operations
+/// - GridFS automatically creates indexes on the files and chunks collections
+///
+/// ## Implementation Details
+/// GridFS stores files in two collections:
+/// - `{bucketName}.files`: Stores file metadata
+/// - `{bucketName}.chunks`: Stores the actual file data in chunks
+///
 /// [See the specification](https://github.com/mongodb/specifications/blob/master/source/gridfs/gridfs-spec.rst#indexes)
 public final class GridFSBucket {
     /// The default chunk size for GridFS files in bytes (255 kB)
