@@ -3,18 +3,56 @@ import MongoCore
 import MongoKittenCore
 import Foundation
 
-/// A stage in an aggregation pipeline
+/// A stage in an aggregation pipeline.
+///
+/// Each stage performs a specific operation on the input documents and passes
+/// the results to the next stage. Stages can filter, transform, group, sort,
+/// or join documents.
+///
+/// MongoKitten provides several built-in stages:
+/// - `Match`: Filters documents
+/// - `Group`: Groups documents and performs aggregations
+/// - `Sort`: Sorts documents
+/// - `Project`: Reshapes documents
+/// - `Lookup`: Joins with another collection
+/// - `Unwind`: Deconstructs arrays
+/// - `AddFields`: Adds computed fields
+/// - `Count`: Counts documents
+/// - `Skip`: Skips documents
+/// - `Out`: Writes results to a collection
 public protocol AggregateBuilderStage: Sendable {
     /// The stage as a document to be sent to the server
     var stage: Document { get }
 
-    /// The minimal version required for this stage to work
+    /// The minimal MongoDB wire protocol version required for this stage
     var minimalVersionRequired: WireVersion? { get }
 }
 
-/// A $match stage in an aggregation pipeline, used to filter documents
-/// - SeeAlso: https://docs.mongodb.com/manual/reference/operator/aggregation/match/
-
+/// Filters documents based on specified conditions.
+///
+/// The `Match` stage is similar to a find query's filter and should be used
+/// early in the pipeline to reduce the number of documents to process.
+///
+/// ## Examples
+/// ```swift
+/// // Basic comparison
+/// Match(where: "age" >= 18)
+///
+/// // Multiple conditions
+/// Match(where: "status" == "active" && "age" >= 18)
+///
+/// // Complex query
+/// Match(where: [
+///     "category": "electronics",
+///     "price": ["$lt": 1000],
+///     "inStock": true
+/// ])
+/// ```
+///
+/// ## Performance Tips
+/// - Place `Match` stages early in the pipeline
+/// - Ensure fields used in the match conditions are indexed
+/// - Use dot notation to match on embedded document fields
 public struct Match: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = nil
@@ -28,8 +66,31 @@ public struct Match: AggregateBuilderStage {
     }
 }
 
-/// An $addFields stage in an aggregation pipeline, used to add new fields to documents
-/// - SeeAlso: https://docs.mongodb.com/manual/reference/operator/aggregation/addFields/
+/// Adds new fields to documents.
+///
+/// The `AddFields` stage adds new fields to documents. These fields can be
+/// computed from existing fields or can be constant values.
+///
+/// ## Examples
+/// ```swift
+/// // Add a constant field
+/// AddFields([
+///     "category": "user"
+/// ])
+///
+/// // Compute fields
+/// AddFields([
+///     "totalPrice": ["$multiply": ["$price", "$quantity"]],
+///     "discountedPrice": ["$multiply": ["$price", 0.9]]
+/// ])
+///
+/// // Add fields from other fields
+/// AddFields([
+///     "fullName": ["$concat": ["$firstName", " ", "$lastName"]]
+/// ])
+/// ```
+///
+/// - Note: Requires MongoDB 3.4 or later
 public struct AddFields: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = .mongo3_4
@@ -39,8 +100,48 @@ public struct AddFields: AggregateBuilderStage {
     }
 }
 
-/// A $group stage in an aggregation pipeline, used to group documents
-/// - SeeAlso: https://docs.mongodb.com/manual/reference/operator/aggregation/group/
+/// Groups documents by a specified key and can perform aggregations.
+///
+/// The `Group` stage is used to group documents together and perform
+/// calculations across each group.
+///
+/// ## Examples
+/// ```swift
+/// // Group by category and count items
+/// Group([
+///     "_id": "$category",
+///     "count": ["$sum": 1]
+/// ])
+///
+/// // Group by multiple fields
+/// Group([
+///     "_id": [
+///         "category": "$category",
+///         "supplier": "$supplier"
+///     ],
+///     "count": ["$sum": 1],
+///     "avgPrice": ["$avg": "$price"]
+/// ])
+///
+/// // Calculate statistics
+/// Group([
+///     "_id": "$department",
+///     "totalSalary": ["$sum": "$salary"],
+///     "avgSalary": ["$avg": "$salary"],
+///     "minSalary": ["$min": "$salary"],
+///     "maxSalary": ["$max": "$salary"],
+///     "employeeCount": ["$sum": 1]
+/// ])
+/// ```
+///
+/// ## Common Aggregation Operators
+/// - `$sum`: Calculates sum
+/// - `$avg`: Calculates average
+/// - `$min`: Finds minimum value
+/// - `$max`: Finds maximum value
+/// - `$first`: First value in group
+/// - `$last`: Last value in group
+/// - `$push`: Creates an array of values
 public struct Group: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = nil
@@ -50,8 +151,37 @@ public struct Group: AggregateBuilderStage {
     }
 }
 
-/// A $project stage in an aggregation pipeline, used to project documents
-/// - SeeAlso: https://docs.mongodb.com/manual/reference/operator/aggregation/project/
+/// Projects (reshapes) documents by including, excluding, or transforming fields.
+///
+/// The `Project` stage can modify the shape of documents, compute new fields,
+/// rename fields, and include or exclude fields.
+///
+/// ## Examples
+/// ```swift
+/// // Include specific fields
+/// Project(projection: [
+///     "name": 1,
+///     "email": 1,
+///     "_id": 0  // Exclude _id
+/// ])
+///
+/// // Compute new fields
+/// Project(projection: [
+///     "fullName": ["$concat": ["$firstName", " ", "$lastName"]],
+///     "age": ["$subtract": [2023, "$birthYear"]]
+/// ])
+///
+/// // Include array elements
+/// Project(projection: [
+///     "firstTag": ["$arrayElemAt": ["$tags", 0]],
+///     "tagCount": ["$size": "$tags"]
+/// ])
+/// ```
+///
+/// ## Tips
+/// - Use 1 to include a field, 0 to exclude
+/// - You can't mix inclusion and exclusion except for `_id`
+/// - Use expressions to compute new field values
 public struct Project: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion?
@@ -71,8 +201,31 @@ public struct Project: AggregateBuilderStage {
     }
 }
 
-/// A $sort stage in an aggregation pipeline, used to sort documents
-/// - SeeAlso: https://docs.mongodb.com/manual/reference/operator/aggregation/sort/
+/// Sorts documents based on specified fields.
+///
+/// The `Sort` stage reorders documents based on one or more fields
+/// in ascending or descending order.
+///
+/// ## Examples
+/// ```swift
+/// // Sort by a single field
+/// Sort(by: "age", direction: .ascending)
+///
+/// // Sort by multiple fields
+/// Sort([
+///     "lastName": .ascending,
+///     "firstName": .ascending,
+///     "age": .descending
+/// ])
+///
+/// // Sort by computed field
+/// Sort(by: "totalAmount", direction: .descending)
+/// ```
+///
+/// ## Performance Tips
+/// - Create indexes for commonly sorted fields
+/// - Place `Sort` after filtering stages to reduce documents sorted
+/// - Consider using `allowDiskUse()` for large sorts
 public struct Sort: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = nil
@@ -92,8 +245,28 @@ public struct Sort: AggregateBuilderStage {
     }
 }
 
-/// A $count stage in an aggregation pipeline, used to count documents and add the count to a field
-/// - SeeAlso: https://docs.mongodb.com/manual/reference/operator/aggregation/count/
+/// Counts the number of documents at this stage in the pipeline.
+///
+/// The `Count` stage outputs a single document containing the count
+/// of documents that reached this stage.
+///
+/// ## Examples
+/// ```swift
+/// // Basic count
+/// Count(to: "total")
+///
+/// // Count with filtering
+/// Match(where: "status" == "active")
+/// Count(to: "activeUsers")
+///
+/// // Count by group
+/// Group([
+///     "_id": "$category",
+///     "count": ["$sum": 1]
+/// ])
+/// ```
+///
+/// - Note: Requires MongoDB 3.4 or later
 public struct Count: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = .mongo3_4
@@ -103,8 +276,25 @@ public struct Count: AggregateBuilderStage {
     }
 }
 
-/// A $skip stage in an aggregation pipeline, used to skip a number of documents
-/// - SeeAlso: https://docs.mongodb.com/manual/reference/operator/aggregation/skip/
+/// Skips the specified number of documents.
+///
+/// The `Skip` stage is often used with `Sort` and `Limit` for pagination.
+///
+/// ## Examples
+/// ```swift
+/// // Skip first 20 documents
+/// Skip(20)
+///
+/// // Pagination example
+/// Sort(by: "createdAt", direction: .descending)
+/// Skip((page - 1) * pageSize)
+/// Limit(pageSize)
+/// ```
+///
+/// ## Performance Tips
+/// - Large skip values can be inefficient
+/// - Consider using range queries on indexed fields instead
+/// - Use with `Limit` for pagination
 public struct Skip: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = nil
@@ -114,8 +304,25 @@ public struct Skip: AggregateBuilderStage {
     }
 }
 
-/// An $out stage in an aggregation pipeline, used to write the results to a collection
-/// - SeeAlso: https://docs.mongodb.com/manual/reference/operator/aggregation/out/
+/// Writes the pipeline results to a collection.
+///
+/// The `Out` stage must be the last stage in the pipeline. It writes
+/// all documents to a specified collection, replacing its contents.
+///
+/// ## Examples
+/// ```swift
+/// // Write to a collection in the same database
+/// Out(toCollection: "processedOrders")
+///
+/// // Write to a collection in a different database (MongoDB 4.4+)
+/// Out(toCollection: "archive", in: "analyticsDB")
+/// ```
+///
+/// ## Important Notes
+/// - Must be the last stage in the pipeline
+/// - Creates the target collection if it doesn't exist
+/// - Replaces all existing documents in the target collection
+/// - Indexes from the source collection are not copied
 public struct Out: AggregateBuilderStage {
     public internal(set) var stage: Document
     public internal(set) var minimalVersionRequired: WireVersion? = nil

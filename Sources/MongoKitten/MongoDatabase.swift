@@ -11,7 +11,43 @@ import NIOTransportServices
 
 /// A reference to a MongoDB database, over a `MongoConnectionPool`.
 ///
-/// Databases hold collections of documents.
+/// `MongoDatabase` is the primary entry point for interacting with a MongoDB database.
+/// It provides functionality for managing collections, executing transactions, and performing database-level operations.
+///
+/// ## Connection Methods
+/// There are two ways to connect to a MongoDB database:
+/// - `connect`: Immediately establishes a connection and throws an error if unsuccessful
+/// - `lazyConnect`: Defers connection until the first operation, useful during development
+///
+/// ## Basic Usage
+/// ```swift
+/// // Connect to a database
+/// let db = try await MongoDatabase.connect(to: "mongodb://localhost/myapp")
+///
+/// // Access a collection
+/// let users = db["users"]
+///
+/// // List all collections
+/// let collections = try await db.listCollections()
+/// ```
+///
+/// ## Transactions
+/// The database supports MongoDB transactions for multi-document operations:
+/// ```swift
+/// let transaction = try await db.startTransaction(autoCommitChanges: false)
+/// let users = transaction["users"]
+/// // Perform operations...
+/// try await transaction.commit()
+/// ```
+///
+/// ## Logging and Tracing
+/// The database supports structured logging and distributed tracing:
+/// ```swift
+/// // Add request-specific metadata
+/// let dbWithMetadata = db.adoptingLogMetadata([
+///     "request_id": "123"
+/// ])
+/// ```
 public class MongoDatabase: @unchecked Sendable {
     internal let transaction: MongoTransaction?
     public var activeTransaction: MongoTransaction? {
@@ -41,20 +77,36 @@ public class MongoDatabase: @unchecked Sendable {
         return self.transaction != nil
     }
 
-    /// The name of the database
+    /// The name of the database in MongoDB
     public let name: String
 
+    /// The connection pool used to communicate with MongoDB servers
     public let pool: MongoConnectionPool
     
+    /// The logger instance used for database operations
     public var logger: Logger {
         pool.logger
     }
 
-    /// The collection to execute commands on
+    /// The namespace used for executing database commands
+    ///
+    /// This is typically `$cmd` in the current database
     public var commandNamespace: MongoNamespace {
         return MongoNamespace(to: "$cmd", inDatabase: self.name)
     }
     
+    /// Creates a new database instance with the specified logging metadata
+    ///
+    /// This is useful for adding request-specific context to logs:
+    /// ```swift
+    /// let dbWithRequestId = db.adoptingLogMetadata([
+    ///     "request_id": "123",
+    ///     "user_id": "456"
+    /// ])
+    /// ```
+    ///
+    /// - Parameter metadata: The logging metadata to attach to database operations
+    /// - Returns: A new database instance with the specified metadata
     public func adoptingLogMetadata(_ metadata: Logger.Metadata) -> MongoDatabase {
         let copy = MongoDatabase(
             named: name,
@@ -83,45 +135,51 @@ public class MongoDatabase: @unchecked Sendable {
 
     deinit { span?.end() }
     
-    /// Connect to the database at the given `uri` using ``MongoCluster``
+    /// Connect to a MongoDB database using a connection string
     ///
-    /// - parameter uri: A MongoDB URI that contains at least a database component
+    /// This method immediately attempts to establish a connection and will throw an error if unsuccessful.
+    /// This is preferred in production as connection issues are discovered immediately.
     ///
-    /// - Note: LazyConnecting while failing to connect will still result in a usable object, though queries will fail.
+    /// - Parameters:
+    ///   - uri: A MongoDB connection string (e.g. "mongodb://localhost/myapp")
+    ///   - logger: Optional logger for database operations
+    /// - Returns: A connected database instance
     ///
-    /// **Usage:**
-    ///
+    /// Example:
     /// ```swift
-    /// let database = MongoDatabase.lazyConnect(
-    ///     to: "mongodb://localhost/myapp
-    /// )
-    /// ```
-    public static func lazyConnect(to uri: String, logger: Logger = Logger(label: "org.orlandos-nl.mongokitten")) throws -> MongoDatabase {
-        try lazyConnect(to: ConnectionSettings(uri), logger: logger)
-    }
-
-    /// Connect to the database at the given `uri` using ``MongoCluster``
-    ///
-    /// - parameter uri: A MongoDB URI that contains at least a database component
-    ///
-    /// **Usage:**
-    ///
-    /// ```swift
-    /// let database = MongoDatabase.lazyConnect(
-    ///     to: "mongodb://localhost/myapp
+    /// let db = try await MongoDatabase.connect(
+    ///     to: "mongodb://user:pass@localhost/myapp"
     /// )
     /// ```
     public static func connect(to uri: String, logger: Logger = Logger(label: "org.orlandos-nl.mongokitten")) async throws -> MongoDatabase {
         try await connect(to: ConnectionSettings(uri), logger: logger)
     }
+    /// Connect lazily to a MongoDB database using a connection string
+    ///
+    /// Unlike `connect`, this method does not immediately establish a connection.
+    /// The connection will be established when the first database operation is performed.
+    /// This can be useful in development or testing scenarios where the database
+    /// might not be immediately available.
+    ///
+    /// - Parameters:
+    ///   - uri: A MongoDB connection string (e.g. "mongodb://localhost/myapp")
+    ///   - logger: Optional logger for database operations
+    /// - Returns: A database instance that will connect lazily
+    public static func lazyConnect(to uri: String, logger: Logger = Logger(label: "org.orlandos-nl.mongokitten")) throws -> MongoDatabase {
+        try lazyConnect(to: ConnectionSettings(uri), logger: logger)
+    }
     
-    /// Connect to the database with the given settings _lazily_. You can also use `lazyConnect(_:on:)` to connect by using a connection string.
+    /// Connect lazily to a MongoDB database using connection settings
     ///
-    /// Will postpone queries until initial discovery is complete. Since the cluster is lazily initialized, you'll only know of a failure in connecting (such as wrong credentials) during queries
+    /// Unlike `connect`, this method does not immediately establish a connection.
+    /// The connection will be established when the first database operation is performed.
+    /// Use this when you need fine-grained control over connection parameters and
+    /// want to defer the actual connection.
     ///
-    /// - Note: LazyConnecting while failing to connect will still result in a usable object, though queries will fail.
-    ///
-    /// - parameter settings: The connection settings, which must include a database name
+    /// - Parameters:
+    ///   - settings: Connection settings including authentication and target database
+    ///   - logger: Optional logger for database operations
+    /// - Returns: A database instance that will connect lazily
     public static func lazyConnect(
         to settings: ConnectionSettings,
         logger: Logger = Logger(label: "org.orlandos-nl.mongokitten")
@@ -140,11 +198,15 @@ public class MongoDatabase: @unchecked Sendable {
         )
     }
 
-    /// Connect to the database with the given settings. You can also use `connect(_:on:)` to connect by using a connection string.
+    /// Connect to a MongoDB database using connection settings
     ///
-    /// Will postpone queries until initial discovery is complete. Since the cluster is lazily initialized, you'll only know of a failure in connecting (such as wrong credentials) during queries
+    /// This method immediately attempts to establish a connection and will throw an error if unsuccessful.
+    /// Use this when you need fine-grained control over connection parameters.
     ///
-    /// - parameter settings: The connection settings, which must include a database name
+    /// - Parameters:
+    ///   - settings: Connection settings including authentication and target database
+    ///   - logger: Optional logger for database operations
+    /// - Returns: A connected database instance
     public static func connect(
         to settings: ConnectionSettings,
         logger: Logger = Logger(label: "org.orlandos-nl.mongokitten")
@@ -173,10 +235,30 @@ public class MongoDatabase: @unchecked Sendable {
     /// // This users object is under the same transaction
     /// let users = transaction["users"]
     /// ```
+
+    /// Start a new MongoDB transaction
     ///
-    /// - returns: A ``MongoTransactionDatabase`` which works just like a regular MongoDatabase, except all queries are under Matransaction.
+    /// Transactions allow you to execute multiple operations atomically.
+    /// All operations within a transaction either succeed together or fail together.
     ///
-    /// - Note: `startTransaction` only affects queries made on the database object returned from the `startTransaction` call.
+    /// - Parameters:
+    ///   - autoCommit: If true, the transaction will automatically commit after successful operations
+    ///   - options: Session options for the transaction
+    ///   - transactionOptions: Optional transaction-specific options
+    /// - Returns: A transaction database that executes operations within the transaction
+    /// - Throws: `MongoKittenError` if transactions are not supported by the server
+    ///
+    /// Example:
+    /// ```swift
+    /// let transaction = try await db.startTransaction(autoCommitChanges: false)
+    /// 
+    /// // All operations are part of the transaction
+    /// let users = transaction["users"]
+    /// try await users.insertOne(["name": "Alice"])
+    /// 
+    /// // Commit the transaction
+    /// try await transaction.commit()
+    /// ```
     public func startTransaction(
         autoCommitChanges autoCommit: Bool,
         with options: MongoSessionOptions = .init(),
@@ -201,11 +283,19 @@ public class MongoDatabase: @unchecked Sendable {
         )
     }
 
-    /// Get a `MongoCollection` by providing a collection name as a `String`
+    /// Get a collection in this database
     ///
-    /// - parameter collection: The collection/bucket to return
+    /// Collections are analogous to tables in relational databases.
+    /// They store documents and support CRUD operations.
     ///
-    /// - returns: The requested collection in this database
+    /// - Parameter collection: The name of the collection
+    /// - Returns: A collection instance for performing operations
+    ///
+    /// Example:
+    /// ```swift
+    /// let users = db["users"]
+    /// let products = db["products"]
+    /// ```
     public subscript(collection: String) -> MongoCollection {
         MongoCollection(
             named: collection,
@@ -235,12 +325,19 @@ public class MongoDatabase: @unchecked Sendable {
         )
         try reply.assertOK()
     }
-
-    /// Lists all collections your user has knowledge of
+    /// This method returns all collections that the authenticated user has access to.
+    /// It cannot be used within a transaction.
     ///
-    /// - Returns: All MongoKitten Collection which you can query
-    /// 
-    /// See https://docs.mongodb.com/manual/reference/command/listCollections/
+    /// - Returns: An array of collections in this database
+    /// - Throws: `MongoKittenError` if used within a transaction or if the operation fails
+    ///
+    /// Example:
+    /// ```swift
+    /// let collections = try await db.listCollections()
+    /// for collection in collections {
+    ///     print(collection.name)
+    /// }
+    /// ```
     public func listCollections() async throws -> [MongoCollection] {
         guard transaction == nil else {
             throw MongoKittenError(.unsupportedFeatureByServer, reason: .transactionForUnsupportedQuery)

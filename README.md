@@ -6,6 +6,90 @@ A fast, pure swift [MongoDB](https://mongodb.com) driver based on [Swift NIO](ht
 
 MongoKitten is a fully asynchronous driver, which means that it doesn't block any threads. This also means that it can be used in any asynchronous environment, such as [Vapor](https://github.com/vapor/vapor) or [Hummingbird](https://github.com/hummingbird-project/hummingbird).
 
+## Table of Contents
+
+- [Docs \& Community](#docs--community)
+    - [Projects](#projects)
+- [Installation](#installation)
+  - [Set up MongoDB server](#set-up-mongodb-server)
+  - [Add MongoKitten to your Swift project 🚀](#add-mongokitten-to-your-swift-project-)
+    - [Add Meow (Optional)](#add-meow-optional)
+- [Basic usage](#basic-usage)
+  - [Connect vs. LazyConnect](#connect-vs-lazyconnect)
+  - [CRUD](#crud)
+    - [Create](#create)
+    - [Read](#read)
+      - [Cursors](#cursors)
+        - [Fetching results](#fetching-results)
+        - [Cursors are generic](#cursors-are-generic)
+    - [Update \& Delete](#update--delete)
+  - [Indexes](#indexes)
+  - [Aggregation](#aggregation)
+  - [Transactions](#transactions)
+  - [GridFS](#gridfs)
+- [About BSON](#about-bson)
+  - [Literals](#literals)
+  - [Just Another Collection](#just-another-collection)
+    - [Think twice before converting between `Document` and `Dictionary`](#think-twice-before-converting-between-document-and-dictionary)
+  - [Codable](#codable)
+- [Advanced Features](#advanced-features)
+  - [Change Streams](#change-streams)
+  - [Logging and Monitoring](#logging-and-monitoring)
+  - [Best Practices](#best-practices)
+    - [Connection Management](#connection-management)
+    - [Performance Optimizations](#performance-optimizations)
+- [Troubleshooting](#troubleshooting)
+- [Meow ORM](#meow-orm)
+  - [Setting up with Vapor](#setting-up-with-vapor)
+  - [Setting up with Hummingbird](#setting-up-with-hummingbird)
+  - [Models](#models)
+    - [Queries](#queries)
+    - [References](#references)
+  - [Backers](#backers)
+
+## Quick Start
+
+Get up and running in under 5 minutes:
+
+```swift
+// Add to Package.swift
+.package(url: "https://github.com/orlandos-nl/MongoKitten.git", from: "7.2.0")
+
+// In your code
+import MongoKitten
+
+// Connect to database
+let db = try await MongoDatabase.connect(to: "mongodb://localhost/my_database")
+
+// Insert a document
+try await db["users"].insert(["name": "Alice", "age": 30])
+
+// Query documents
+let users = try await db["users"].find("age" >= 18).drain()
+
+// Use with Codable
+struct User: Codable {
+    let name: String
+    let age: Int
+}
+
+let typedUsers = try await db["users"]
+    .find()
+    .decode(User.self)
+    .drain()
+```
+
+### Key Requirements
+
+- **Swift**: 5.5 or later (for async/await support)
+- **MongoDB**: 3.6 or later
+- **Platforms**: macOS, iOS, Linux
+
+### Optional Features Requirements
+
+- **Change Streams**: MongoDB 3.6+ (replica set or sharded cluster)
+- **Transactions**: MongoDB 4.0+ (replica set or sharded cluster)
+
 # Docs & Community
 
 [Join our Discord](https://discord.gg/H6799jh) for any questions and friendly banter.
@@ -22,7 +106,7 @@ A couple of MongoKitten based projects have arisen, check them out!
 - [Vapor's Fluent + MongoDB](https://github.com/vapor/fluent-mongo-driver)
 - [MongoDB + Vapor Queues](https://github.com/vapor-community/queues-mongo-driver)
 
-# 🕶 Installation
+# Installation
 
 ## Set up MongoDB server
 
@@ -54,16 +138,7 @@ Meow is an ORM that resides in this same package.
 .product(name: "Meow", package: "MongoKitten"),
 ```
 
-# FAQ
-
-<details>
-  <summary>I can't connect to MongoDB, authentication fails!</summary>
-  
-  1. Make sure you've specified `authSource=admin`, unless you know what your authSource is. MongoDB's default value is really confusing.
-  2. If you've specified an `authMechanism`, try removing it. MongoKitten can detect the correct one automatically.
-</details>
-
-# 🚲 Basic usage
+# Basic usage
 
 First, connect to a database:
 
@@ -148,7 +223,7 @@ Connect's advantage is that a booted server is known to have a connection. Any i
 
 LazyConnect is helpful during development, because connecting to MongoDB can be a time-consuming process in certain setups. LazyConnect allows you to start working with your system almost immediately, without waiting for MongoKitten. Another advantage is that cluster outages or offly timed topology changes do not influence app boot. Therefore, MongoKitten can simply attempt to recover in the background. However, should something go wrong it can be hard to debug this.
 
-## CRUD (Create, Read, Update, Delete)
+## CRUD
 
 Before doing operations, you need access to a collection where you store your models. This is MongoDB's equivalent to a table.
 
@@ -157,7 +232,7 @@ Before doing operations, you need access to a collection where you store your mo
 let users = db["users"]
 ```
 
-### Create (insert)
+### Create
 
 ```swift
 // Create a document to insert
@@ -168,7 +243,7 @@ let myUser: Document = ["username": "kitty", "password": "meow"]
 try await users.insert(myUser)
 ```
 
-### Read (find) and the query builder
+### Read
 
 To perform the following query in MongoDB:
 
@@ -239,7 +314,7 @@ let users: [User] = try await users.find().decode(User.self).drain()
 
 ### Update & Delete
 
-You can do updateOne/many and deleteOne/many the same way you'd see in the MongoDB docs.
+You can do update and delete entities the same way you'd see in the MongoDB docs.
 
 ```swift
 try await users.updateMany(where: "username" == "kitty", setting: ["age": 3], unsetting: nil)
@@ -309,9 +384,18 @@ for try await user in pipeline {
 
 ## Transactions
 
-```swift  
-try await db.transaction { transaction in
-  // Do something with the transaction
+
+Execute multiple operations atomically:
+
+```swift
+try await db.transaction { session in
+    let users = db["users"]
+    let accounts = db["accounts"]
+    
+    try await users.insert(newUser)
+    try await accounts.insert(newAccount)
+    
+    // Changes are only committed if no errors occur
 }
 ```
 
@@ -383,7 +467,7 @@ for try await chunk in file {
 }
 ```
 
-# 📦 About BSON & Documents
+# About BSON
 
 MongoDB is a document database that uses BSON under the hood to store JSON-like data. MongoKitten implements the [BSON specification](http://bsonspec.org) in its companion project, [OpenKitten/BSON](https://github.com/OpenKitten/BSON). You can find out more about our BSON implementation in the separate BSON repository, but here are the basics:
 
@@ -428,7 +512,7 @@ let username = documentA["username"] as? String
 
 Our `Document` type is implemented in an optimized, efficient way and provides many useful features to read and manipulate data, including features not present on the Swift `Dictionary` type. On top of that, `Document` also implements most APIs present on `Dictionary`, so there is very little learning curve.
 
-# 💾 Codable
+## Codable
 
 MongoKitten supports the `Encodable` and `Decodable` (`Codable`) protocols by providing the `BSONEncoder` and `BSONDecoder` types. Working with our encoders and decoders is very similar to working with the Foundation `JSONEncoder` and `JSONDecoder` classes, with the difference being that `BSONEncoder` produces instances of `Document` and `BSONDecoder` accepts instances of `Document`, instead of `Data`.
 
@@ -468,7 +552,103 @@ A few notes:
 	- Nested structs and classes are most often encoded as embedded documents
 - You can customize the representations using encoding/decoding strategies
 
-# Meow
+# Advanced Features
+
+## Change Streams
+
+MongoKitten provides powerful support for MongoDB Change Streams, allowing you to monitor real-time changes to your collections:
+
+```swift
+// Basic change stream usage
+let stream = try await users.watch()
+
+for try await change in stream {
+    switch change.operationType {
+    case .insert:
+        print("New document: \(change.fullDocument)")
+    case .update:
+        print("Updated fields: \(change.updateDescription?.updatedFields)")
+    case .delete:
+        print("Deleted document: \(change.documentKey)")
+    default:
+        break
+    }
+}
+
+// Type-safe change streams
+struct User: Codable {
+    let id: ObjectId
+    let name: String
+    let email: String
+}
+
+let typedStream = try await users.watch(type: User.self)
+for try await change in typedStream {
+    if let user = change.fullDocument {
+        print("User modified: \(user.name)")
+    }
+}
+```
+
+## Logging and Monitoring
+
+MongoKitten provides built-in support for logging and monitoring:
+
+```swift
+// Add logging metadata
+let loggedDb = db.adoptingLogMetadata([
+    "service": "user-api",
+    "environment": "production"
+])
+
+// Use the logged database
+let users = loggedDb["users"]
+```
+
+## Best Practices
+
+### Connection Management
+
+- Use `lazyConnect` for development and non-critical services
+- Use `connect` for production services where immediate feedback is important
+- Always specify `authSource` in your connection string
+- Use connection pooling for better performance
+
+### Performance Optimizations
+
+- Use appropriate indexes for your queries
+- Limit result sets when possible
+- Use projection to fetch only needed fields
+- Consider using change streams instead of polling
+- Use batch operations for bulk updates/inserts
+
+# Troubleshooting
+
+<details>
+  <summary>I can't connect to MongoDB, authentication fails!</summary>
+  
+  1. Make sure you've specified `authSource=admin`, unless you know what your authSource is. MongoDB's default value is really confusing.
+  2. If you've specified an `authMechanism`, try removing it. MongoKitten can detect the correct one automatically.
+</details>
+
+<details>
+  <summary>Change streams not working</summary>
+  
+  1. Ensure you're connected to a replica set or sharded cluster
+  2. Check that your user has the required privileges
+  3. Verify that you're not trying to watch system collections
+</details>
+
+<details>
+  <summary>Performance issues</summary>
+  
+  1. Check your indexes using `explain()`
+  2. Monitor connection pool usage
+  3. Ensure you're not fetching unnecessary fields
+  4. Use appropriate batch sizes for bulk operations
+</details>
+
+# Meow ORM
 
 Meow works as a lightweight but powerful ORM layer around MongoKitten.
 
@@ -592,10 +772,6 @@ app.get("users", ":id") { req async throws -> User in
 }
 ```
 
-# ☠️ License
-
-MongoKitten is licensed under the MIT license.
-
-#### Backers
+## Backers
 
 <a href="https://github.com/ultim8p"><img src="https://avatars3.githubusercontent.com/u/4804985?s=460&v=4" width="128" height="128" /></a>

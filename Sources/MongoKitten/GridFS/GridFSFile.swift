@@ -1,6 +1,52 @@
 import Foundation
 
 /// A GridFS file that can be downloaded from GridFS or uploaded to GridFS.
+///
+/// `GridFSFile` represents a file stored in GridFS and provides access to both
+/// the file's metadata and its contents. It implements `AsyncSequence`, allowing
+/// you to stream the file's contents chunk by chunk.
+///
+/// ## File Metadata
+/// ```swift
+/// let file: GridFSFile = ...
+///
+/// // Basic properties
+/// print(file.filename) // Optional filename
+/// print(file.length) // File size in bytes
+/// print(file.uploadDate) // When the file was uploaded
+/// print(file.chunkSize) // Size of each chunk
+///
+/// // Custom metadata
+/// if let metadata = file.metadata {
+///     print(metadata["contentType"] as? String)
+///     print(metadata["category"] as? String)
+/// }
+/// ```
+///
+/// ## Reading File Contents
+/// ```swift
+/// // Read entire file into memory
+/// let data = try await file.reader.readData()
+/// let buffer = try await file.reader.readByteBuffer()
+///
+/// // Stream file contents chunk by chunk
+/// for try await chunk in file {
+///     // Process each chunk (ByteBuffer)
+///     processChunk(chunk)
+/// }
+/// ```
+///
+/// ## Performance Considerations
+/// - Use streaming (AsyncSequence) for large files to manage memory usage
+/// - The `reader` property provides methods for reading the entire file at once
+/// - Each chunk is a `ByteBuffer` containing up to `chunkSize` bytes
+/// - The MD5 hash is available for file integrity verification
+///
+/// ## Implementation Details
+/// - Files are stored in chunks in the `{bucketName}.chunks` collection
+/// - Metadata is stored in the `{bucketName}.files` collection
+/// - The `_id` field uniquely identifies the file
+/// - Chunks are ordered by the `n` field for proper reassembly
 public struct GridFSFile: Codable, AsyncSequence {
     public typealias Element = ByteBuffer
     public struct AsyncIterator: AsyncIteratorProtocol {
