@@ -111,8 +111,10 @@ public final actor MongoConnection: Sendable {
 
     /// Registers MongoKitten's handlers on the channel
     public static func addHandlers(to channel: Channel, context: MongoClientContext) -> EventLoopFuture<Void> {
-        let parser = ClientConnectionParser(context: context)
-        return channel.pipeline.addHandler(ByteToMessageHandler(parser))
+        channel.eventLoop.makeCompletedFuture {
+            let parser = ClientConnectionParser(context: context)
+            return try channel.pipeline.syncOperations.addHandler(ByteToMessageHandler(parser))
+        }
     }
 
     public func ping() async throws {
@@ -137,7 +139,7 @@ public final actor MongoConnection: Sendable {
     public static func connect(
         settings: ConnectionSettings,
         logger: Logger = Logger(label: "org.orlandos-nl.mongokitten.connection"),
-        resolver: Resolver? = nil,
+        resolver: (Resolver & Sendable)? = nil,
         clientDetails: MongoClientDetails? = nil
     ) async throws -> MongoConnection {
 #if canImport(NIOTransportServices) && os(iOS)
@@ -151,7 +153,7 @@ public final actor MongoConnection: Sendable {
         settings: ConnectionSettings,
         logger: Logger = Logger(label: "org.orlandos-nl.mongokitten.connection"),
         onGroup group: _MongoPlatformEventLoopGroup,
-        resolver: Resolver? = nil,
+        resolver: (Resolver & Sendable)? = nil,
         clientDetails: MongoClientDetails? = nil,
         sessionManager: MongoSessionManager = .init()
     ) async throws -> MongoConnection {
@@ -187,21 +189,19 @@ public final actor MongoConnection: Sendable {
 #if canImport(NIOTransportServices) && os(iOS)
 #else
                 if settings.useSSL {
-                    do {
-                        var configuration = TLSConfiguration.clientDefault
+                    var configuration = TLSConfiguration.clientDefault
 
-                        if let caCert = settings.sslCaCertificate {
-                            configuration.trustRoots = NIOSSLTrustRoots.certificates([caCert])
-                        } else if let caCertPath = settings.sslCaCertificatePath {
-                            configuration.trustRoots = NIOSSLTrustRoots.file(caCertPath)
-                        }
+                    if let caCert = settings.sslCaCertificate {
+                        configuration.trustRoots = NIOSSLTrustRoots.certificates([caCert])
+                    } else if let caCertPath = settings.sslCaCertificatePath {
+                        configuration.trustRoots = NIOSSLTrustRoots.file(caCertPath)
+                    }
 
+                    return channel.eventLoop.makeCompletedFuture {
                         let handler = try NIOSSLClientHandler(context: NIOSSLContext(configuration: configuration), serverHostname: host.hostname)
-                        return channel.pipeline.addHandler(handler).flatMap {
-                            return MongoConnection.addHandlers(to: channel, context: context)
-                        }
-                    } catch {
-                        return channel.eventLoop.makeFailedFuture(error)
+                        try channel.pipeline.syncOperations.addHandler(handler)
+                    }.flatMap {
+                        return MongoConnection.addHandlers(to: channel, context: context)
                     }
                 }
 #endif
