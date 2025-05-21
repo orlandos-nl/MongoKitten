@@ -57,6 +57,7 @@ public struct MD5 : Hash {
         reset()
     }
     
+    @_optimize(speed)
     public var hashValue: [UInt8] {
         var buffer = [UInt8]()
         buffer.reserveCapacity(16)
@@ -78,6 +79,7 @@ public struct MD5 : Hash {
         return buffer
     }
     
+    @_optimize(speed)
     public mutating func update(from pointer: UnsafePointer<UInt8>) {
         a1 = a0
         b1 = b0

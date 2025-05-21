@@ -20,6 +20,7 @@ extension UnsafeMutablePointer {
 
 
 extension Hash {
+    @_optimize(speed)
     public mutating func finish(from pointer: UnsafeBufferPointer<UInt8>) -> [UInt8] {
         // Hash size in _bits_
         let hashSize = (UInt64(pointer.count) &+ processedBytes) &* 8
@@ -56,7 +57,8 @@ extension Hash {
         
         return self.hashValue
     }
-    
+
+    @_optimize(speed)
     public mutating func hash(bytes data: [UInt8]) -> [UInt8] {
         defer {
             self.reset()
@@ -67,6 +69,7 @@ extension Hash {
         }
     }
     
+    @_optimize(speed)
     public mutating func hash(_ data: UnsafePointer<UInt8>, count: Int) -> [UInt8] {
         defer {
             self.reset()

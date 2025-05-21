@@ -2,6 +2,7 @@ import Foundation
 
 extension Array where Element == UInt8 {
     /// The 12 bytes represented as 24-character hex-string
+    @_optimize(speed)
     public var hexString: String {
         var data = Data()
         data.reserveCapacity(self.count * 2)

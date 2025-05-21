@@ -7,6 +7,7 @@ public struct HMAC<H: Hash> {
         self.chunkSize = H.chunkSize
     }
     
+    @_optimize(speed)
     public mutating func authenticate(_ message: [UInt8], withKey key: [UInt8]) -> [UInt8] {
         let keyLength = key.count
         var key = key
