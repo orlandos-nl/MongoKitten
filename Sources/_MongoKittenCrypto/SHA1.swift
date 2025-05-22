@@ -30,6 +30,7 @@ public struct SHA1 : Hash {
         processedBytes = 0
     }
     
+    @_optimize(speed)
     public var hashValue: [UInt8] {
         var buffer = [UInt8]()
         buffer.reserveCapacity(20)
@@ -56,6 +57,7 @@ public struct SHA1 : Hash {
         reset()
     }
     
+    @_optimize(speed)
     public mutating func update(from pointer: UnsafePointer<UInt8>) {
         var i = 16
         let w = [UInt32](unsafeUninitializedCapacity: 80) { buf, count in
@@ -116,6 +118,7 @@ public struct SHA1 : Hash {
 }
 
 @_transparent
+@_optimize(speed)
 fileprivate func leftRotate(_ x: UInt32, count c: UInt32) -> UInt32 {
     return (x &<< c) | (x &>> (32 &- c))
 }

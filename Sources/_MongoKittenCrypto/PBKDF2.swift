@@ -69,6 +69,7 @@ public final class PBKDF2 {
     }
     
     /// Derives a key with up to `keySize` of bytes
+    @_optimize(speed)
     public func hash(
         _ password: [UInt8],
         salt: [UInt8],
@@ -147,6 +148,7 @@ public final class PBKDF2 {
 ///
 /// Requires lhs and rhs to have an equal count
 @_transparent
+@_optimize(speed)
 public func xor(_ lhs: UnsafeMutablePointer<UInt8>, _ rhs: UnsafePointer<UInt8>, count: Int) {
     var i = 0; while i < count {
         lhs[i] ^= rhs[i]
