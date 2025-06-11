@@ -647,6 +647,10 @@ extension Request {
 }
 ```
 
+## Setting up with Hummingbird
+
+Hummingbird doesn't require special setup for external dependencies, and uses [explicit dependency injection](https://docs.hummingbird.codes/2.0/documentation/hummingbird/migratingtov2#Application). Consult [the Hummingbird + MongoDB tutorial](https://docs.hummingbird.codes/2.0/tutorials/hummingbird/mongokitten-1-setup/) on setting things up.
+
 ## Models
 
 There are two main types of models in Meow, these docs will focus on the most common one.
