@@ -177,7 +177,7 @@ extension Application {
     }
 }
 ```
-Make sure to instatiate the database driver before starting your application.
+Make sure to instantiate the database driver before starting your application.
 ```
 try app.initializeMongoDB(connectionString: "mongodb://localhost/my-app")
 ```
