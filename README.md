@@ -53,7 +53,7 @@ Get up and running in under 5 minutes:
 
 ```swift
 // Add to Package.swift
-.package(url: "https://github.com/orlandos-nl/MongoKitten.git", from: "7.2.0")
+.package(url: "https://github.com/orlandos-nl/MongoKitten.git", from: "7.9.0")
 
 // In your code
 import MongoKitten
@@ -122,7 +122,7 @@ Alternatively, make use of a DAAS (Database-as-a-service) like [MongoDB Atlas](h
 
 MongoKitten uses the [Swift Package Manager](https://swift.org/getting-started/#using-the-package-manager). Add MongoKitten to your dependencies in your **Package.swift** file:
 
-`.package(url: "https://github.com/orlandos-nl/MongoKitten.git", from: "7.2.0")`
+`.package(url: "https://github.com/orlandos-nl/MongoKitten.git", from: "7.9.0")`
 
 Also, don't forget to add the product `"MongoKitten"` as a dependency for your target.
 
@@ -148,8 +148,7 @@ import MongoKitten
 let db = try await MongoDatabase.connect(to: "mongodb://localhost/my_database")
 ```
 
-Vapor users should register the database as a service:
-
+Vapor users only should register the database as service:
 ```swift
 extension Request {
     public var mongo: MongoDatabase {
@@ -178,39 +177,11 @@ extension Application {
     }
 }
 ```
-
-The same goes for Hummingbird users:
-
-```swift
-extension HBApplication {
-    public var mongo: MongoDatabase {
-        get { extensions.get(\.mongo) }
-        set { extensions.set(\.mongo, value: newValue) }
-    }
-}
-
-extension HBRequest {
-    public var mongo: MongoDatabase {
-        application.mongo.adoptingLogMetadata([
-            "hb_id": .string(id)
-        ])
-    }
-}
-```
-
 Make sure to instantiate the database driver before starting your application.
-
-For Vapor:
-
-```swift
+```
 try app.initializeMongoDB(connectionString: "mongodb://localhost/my-app")
 ```
 
-For hummingbird:
-
-```swift
-app.mongo = try MongoDatabase.lazyConnect(to: "mongodb://localhost/my-app")
-```
 
 ## Connect vs. LazyConnect
 
@@ -652,8 +623,16 @@ let users = loggedDb["users"]
 
 Meow works as a lightweight but powerful ORM layer around MongoKitten.
 
+## Setting up Meow
+Add the product `"Meow"` as a dependency for your target.
+```swift
+.product(name: "Meow", package: "MongoKitten"),
+```
+Import `"Meow"` before using it.
+```swift
+import Meow
+```
 ## Setting up with Vapor
-
 ```swift
 extension Application {
     public var meow: MeowDatabase {
@@ -662,23 +641,6 @@ extension Application {
 }
 
 extension Request {
-    public var meow: MeowDatabase {
-        MeowDatabase(mongo)
-    }
-}
-
-```
-
-## Setting up with Hummingbird
-
-```swift
-extension HBApplication {
-    public var meow: MeowDatabase {
-        MeowDatabase(mongo)
-    }
-}
-
-extension HBRequest {
     public var meow: MeowDatabase {
         MeowDatabase(mongo)
     }
