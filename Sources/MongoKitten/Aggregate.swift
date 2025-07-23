@@ -80,6 +80,7 @@ public struct AggregateBuilderPipeline: CountableCursor {
     internal var _allowDiskUse: Bool?
     internal var _collation: Collation?
     internal var _readConcern: ReadConcern?
+    internal var _batchSize: Int32?
     
     /// Enables disk usage for large datasets that exceed memory limits.
     ///
@@ -167,6 +168,14 @@ public struct AggregateBuilderPipeline: CountableCursor {
         pipeline._readConcern = readConcern
         return pipeline
     }
+
+    /// Sets the batch size for cursor operations
+    public func batchSize(_ batchSize: Int) -> AggregateBuilderPipeline {
+        precondition(batchSize > 0, "Batch size must be positive")
+        var pipeline = self
+        pipeline._batchSize = Int32(batchSize)
+        return pipeline
+    }
     
     internal func makeCommand() -> AggregateCommand {
         var documents = [Document]()
@@ -185,6 +194,9 @@ public struct AggregateBuilderPipeline: CountableCursor {
         command.allowDiskUse = _allowDiskUse
         command.collation = _collation
         command.readConcern = _readConcern
+        if let batchSize = _batchSize {
+            command.cursor.batchSize = batchSize
+        }
         
         return command
     }
