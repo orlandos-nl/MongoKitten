@@ -218,6 +218,6 @@ public final class GridFSFileWriter {
         }
         
         // Trim the buffer to the current size
-        buffer = buffer.slice()
+        buffer.discardReadBytes()
     }
 }
