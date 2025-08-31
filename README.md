@@ -1,5 +1,3 @@
-<a href="https://unbeatable.software"><img src="./assets/Header.png" /></a>
-
 <img src="./assets/Descriptions.gif" />
 
 A fast, pure swift [MongoDB](https://mongodb.com) driver based on [Swift NIO](https://github.com/apple/swift-nio) built for Server Side Swift. It features a great API and a battle-tested core. Supporting both MongoDB in server and embedded environments.
