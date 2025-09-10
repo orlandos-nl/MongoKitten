@@ -49,12 +49,12 @@ extension MongoServerReply {
 }
 
 internal extension Decodable {
-    init(reply: MongoServerReply, assertOk: Bool = true) throws {
+    init(reply: MongoServerReply, assertOk: Bool = true, decoder: BSONDecoder = BSONDecoder()) throws {
         if assertOk {
             try reply.assertOK()
         }
         
-        self = try BSONDecoder().decode(Self.self, from: reply.getDocument())
+        self = try decoder.decode(Self.self, from: reply.getDocument())
     }
 }
 
