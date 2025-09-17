@@ -62,7 +62,7 @@ struct SASLStart: Codable {
 
     init(mechanism: SASLMechanism, payload: String) {
         self.mechanism = mechanism
-        self.payload = .string(payload)
+        self.payload = .binary(Binary(buffer: ByteBuffer(string: payload)))
     }
 }
 
@@ -88,7 +88,7 @@ struct SASLContinue: Codable {
 
     init(conversation: Int32, payload: String) {
         self.conversationId = conversation
-        self.payload = .string(payload)
+        self.payload = .binary(Binary(buffer: ByteBuffer(string: payload)))
     }
 }
 
@@ -112,8 +112,7 @@ extension MongoConnection {
         try await _withSpan("MongoKitten.AuthenticateSASL", ofKind: .client) { @Sendable span in
             let context = SCRAM<H>(hasher)
 
-            let rawRequest = try context.authenticationString(forUser: username)
-            let request = Data(rawRequest.utf8).base64EncodedString()
+            let request = try context.authenticationString(forUser: username)
             let command = SASLStart(mechanism: H.algorithm, payload: request)
 
             // NO session must be used here: https://github.com/mongodb/specifications/blob/master/source/sessions/driver-sessions.rst#when-opening-and-authenticating-a-connection
@@ -138,10 +137,9 @@ extension MongoConnection {
             } else {
                 preppedPassword = password
             }
-
-            let challenge = try reply.payload.base64Decoded()
-            let rawResponse = try context.respond(toChallenge: challenge, password: preppedPassword)
-            let response = Data(rawResponse.utf8).base64EncodedString()
+            
+            let challenge = reply.payload.string ?? ""
+            let response = try context.respond(toChallenge: challenge, password: preppedPassword)
 
             let next = SASLContinue(
                 conversation: reply.conversationId,
@@ -155,7 +153,7 @@ extension MongoConnection {
                 sessionId: nil
             )
 
-            let successReply = try reply.payload.base64Decoded()
+            let successReply = reply.payload.string ?? ""
             try context.completeAuthentication(withResponse: successReply)
 
             if reply.done {
