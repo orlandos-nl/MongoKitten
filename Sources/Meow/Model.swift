@@ -57,7 +57,7 @@ public protocol BaseModel {
 /// All Meow models must have an identifier that is `Codable` and `Hashable`, as well as representable by a Primitive.
 ///
 /// When implementing `PrimitiveEncodable` using `BSONEncoder`, this allows you to use any `struct` as an `_id` so long as it's not an "unkeyedContainer". Array-like (sequence) types are rejected on insertion by MongoDB.
-public protocol ReadableModel: BaseModel, Decodable {
+public protocol ReadableModel: BaseModel, Decodable, Sendable {
     static func decode(from document: Document) throws -> Self
     static var decoder: BSONDecoder { get }
 }

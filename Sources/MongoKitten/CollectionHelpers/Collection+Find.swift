@@ -31,14 +31,14 @@ extension MongoCollection {
     /// Finds documents in this collection matching the given query. If no query is given, it returns all documents in the collection. Decodes the results to the given type.
     /// - Parameter query: The query to match documents against
     /// - Returns: A cursor to iterate over the results
-    public func find<D: Decodable>(_ query: Document = [:], as type: D.Type) -> MappedCursor<FindQueryBuilder, D> {
+    public func find<D: Decodable & Sendable>(_ query: Document = [:], as type: D.Type) -> MappedCursor<FindQueryBuilder, D> {
         return find(query).decode(type)
     }
 
     /// Finds documents in this collection matching the given query. If no query is given, it returns all documents in the collection. Decodes the results to the given type.
     /// - Parameter query: The query to match documents against
     /// - Returns: A cursor to iterate over the results
-    public func find<D: Decodable, Query: MongoKittenQuery>(_ query: Query, as type: D.Type) -> MappedCursor<FindQueryBuilder, D> {
+    public func find<D: Decodable & Sendable, Query: MongoKittenQuery>(_ query: Query, as type: D.Type) -> MappedCursor<FindQueryBuilder, D> {
         return find(query).decode(type)
     }
 
@@ -46,7 +46,7 @@ extension MongoCollection {
     /// - Parameter query: The query to match documents against
     /// - Parameter type: The type to decode the document to
     /// - Returns: The first document matching the query
-    public func findOne<D: Decodable>(_ query: Document = [:], as type: D.Type) async throws -> D? {
+    public func findOne<D: Decodable & Sendable>(_ query: Document = [:], as type: D.Type) async throws -> D? {
         return try await find(query).limit(1).decode(type).firstResult()
     }
     
@@ -54,7 +54,7 @@ extension MongoCollection {
     /// - Parameter query: The query to match documents against
     /// - Parameter type: The type to decode the document to
     /// - Returns: The first document matching the query
-    public func findOne<D: Decodable, Query: MongoKittenQuery>(_ query: Query, as type: D.Type) async throws -> D? {
+    public func findOne<D: Decodable & Sendable, Query: MongoKittenQuery>(_ query: Query, as type: D.Type) async throws -> D? {
         return try await findOne(query.makeDocument(), as: type)
     }
 

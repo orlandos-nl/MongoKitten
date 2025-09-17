@@ -77,33 +77,6 @@ struct SASLReply: Decodable {
     let conversationId: Int32
     let done: Bool
     let payload: BinaryOrString
-
-    init(reply: MongoServerReply) throws {
-        try reply.assertOK(or: MongoAuthenticationError(reason: .anyAuthenticationFailure))
-        let doc = try reply.getDocument()
-
-        if let conversationId = doc["conversationId"] as? Int {
-            self.conversationId = Int32(conversationId)
-        } else if let conversationId = doc["conversationId"] as? Int32 {
-            self.conversationId = conversationId
-        } else {
-            throw try MongoGenericErrorReply(reply: reply)
-        }
-
-        guard let done = doc["done"] as? Bool else {
-            throw try MongoGenericErrorReply(reply: reply)
-        }
-
-        self.done = done
-
-        if let payload = doc["payload"] as? String {
-            self.payload = .string(payload)
-        } else  if let payload = doc["payload"] as? Binary {
-            self.payload = .binary(payload)
-        } else {
-            throw try MongoGenericErrorReply(reply: reply)
-        }
-    }
 }
 
 /// A SASLContinue message contains the previous conversationId (from the SASLReply to SASLStart).
