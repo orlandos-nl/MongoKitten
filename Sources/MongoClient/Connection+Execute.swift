@@ -40,11 +40,13 @@ extension MongoConnection {
         )
 
         let document = try reply.getDocument()
+        var decoder = BSONDecoder()
+        decoder.settings.decodeDateFromTimestamp = true
         do {
-            return try FastBSONDecoder().decode(D.self, from: document)
+            return try decoder.decode(D.self, from: document)
         } catch {
             do {
-                let error = try FastBSONDecoder().decode(MongoGenericErrorReply.self, from: document)
+                let error = try decoder.decode(MongoGenericErrorReply.self, from: document)
                 logger.debug("Failed to execute query id=\(reply.responseTo), errorCode=\(error.code.map(String.init) ?? "nil"), message='\(error.errorMessage ?? "-")'", metadata: logMetadata)
                 throw error
             } catch {

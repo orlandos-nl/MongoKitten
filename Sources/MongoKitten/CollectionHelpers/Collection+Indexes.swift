@@ -220,7 +220,7 @@ extension MongoCollection {
 }
 
 /// A single index to be created
-public struct MongoIndex: Decodable {
+public struct MongoIndex: Decodable, Sendable {
     private enum CodingKeys: String, CodingKey {
         case version = "v"
         case namespace = "ns"
