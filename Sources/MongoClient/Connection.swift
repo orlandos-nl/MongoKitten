@@ -286,17 +286,19 @@ public final actor MongoConnection: Sendable {
     ) async throws -> T {
         let context = context ?? .current ?? .topLevel
 
-#if swift(<5.10)
-        return try await withSpan(
-            label,
-            context: context,
-            ofKind: kind
-        ) { _ in
-            try await perform(context)
+        #if compiler(<5.10) || compiler(>=6.0)
+        if #available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, *) {
+            return try await withSpan(
+                label,
+                context: context,
+                ofKind: kind
+            ) { _ in
+                try await perform(context)
+            }
         }
-#else
+        #endif
+
         return try await perform(context)
-#endif
     }
 
     func executeMessage<Request: MongoRequestMessage>(
