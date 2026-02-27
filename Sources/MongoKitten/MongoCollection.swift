@@ -68,7 +68,6 @@ import Foundation
 public final class MongoCollection: Sendable {
     // MARK: Properties
     internal let context: ServiceContext?
-    internal let transaction: MongoTransaction?
 
     /// The session this collection is bound to
     ///
@@ -83,6 +82,11 @@ public final class MongoCollection: Sendable {
     public var sessionId: SessionIdentifier? {
         return session?.sessionId
     }
+    
+    /// The transaction this collection is currently a part of
+    ///
+    /// If `nil`, the collection is not part of a transaction.
+    public let transaction: MongoTransaction?
     
     /// Whether this collection is part of a transaction
     ///
