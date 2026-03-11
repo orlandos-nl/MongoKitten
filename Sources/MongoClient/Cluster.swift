@@ -208,8 +208,8 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
     }
     private var _isMetricsEnabled = false
 
-    /// Whether tracing is enabled for handshake operations. Defaults to `true`.
-    /// Set to `false` to suppress the noisy `MongoKitten.Handshake` spans.
+    /// Whether tracing is enabled for handshake operations. Defaults to `false`.
+    /// Set to `true` to enable `MongoKitten.Handshake` spans.
     /// Setting this property will also update all existing pooled connections.
     public var isHandshakeTracingEnabled: Bool {
         get { lock.withLock { _isHandshakeTracingEnabled } }

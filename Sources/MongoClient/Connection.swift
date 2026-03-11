@@ -71,8 +71,8 @@ public final actor MongoConnection: Sendable {
         self.isMetricsEnabled = enabled
     }
 
-    /// Whether tracing is enabled for handshake operations. Defaults to `true`.
-    /// Set to `false` to suppress the noisy `MongoKitten.Handshake` spans.
+    /// Whether tracing is enabled for handshake operations. Defaults to `false`.
+    /// Set to `true` to enable `MongoKitten.Handshake` spans.
     public var isHandshakeTracingEnabled = false
 
     /// Sets the `isHandshakeTracingEnabled` property. This method is useful for setting the property from a non-isolated context.
