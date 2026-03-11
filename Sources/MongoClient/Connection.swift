@@ -66,6 +66,20 @@ public final actor MongoConnection: Sendable {
         }
     }
 
+    /// Sets the `isMetricsEnabled` property. This method is useful for setting the property from a non-isolated context.
+    public func setMetricsEnabled(to enabled: Bool) {
+        self.isMetricsEnabled = enabled
+    }
+
+    /// Whether tracing is enabled for handshake operations. Defaults to `false`.
+    /// Set to `true` to enable `MongoKitten.Handshake` spans.
+    public var isHandshakeTracingEnabled = false
+
+    /// Sets the `isHandshakeTracingEnabled` property. This method is useful for setting the property from a non-isolated context.
+    public func setHandshakeTracingEnabled(to enabled: Bool) {
+        self.isHandshakeTracingEnabled = enabled
+    }
+
     /// A LIFO (Last In, First Out) holder for sessions
     public let sessionManager: MongoSessionManager
 
@@ -282,12 +296,13 @@ public final actor MongoConnection: Sendable {
         _ label: String,
         context: ServiceContext? = nil,
         ofKind kind: SpanKind,
+        skipTracing: Bool = false,
         perform: @Sendable (ServiceContext) async throws -> T
     ) async throws -> T {
         let context = context ?? .current ?? .topLevel
 
         #if compiler(<5.10) || compiler(>=6.0)
-        if #available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, *) {
+        if !skipTracing, #available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, *) {
             return try await withSpan(
                 label,
                 context: context,
@@ -316,10 +331,12 @@ public final actor MongoConnection: Sendable {
         let promise = self.eventLoop.makePromise(of: MongoServerReply.self)
         await self.context.setReplyCallback(forRequestId: message.header.requestId, completing: promise)
 
+        let skipTracing = traceLabel == "Handshake" && !isHandshakeTracingEnabled
         return try await _withSpan(
             "MongoKitten.\(traceLabel)",
             context: context,
-            ofKind: .client
+            ofKind: .client,
+            skipTracing: skipTracing
         ) { [queryTimeout] _ in
             var buffer = self.channel.allocator.buffer(capacity: Int(message.header.messageLength))
             message.write(to: &buffer)
