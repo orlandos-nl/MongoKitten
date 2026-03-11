@@ -66,6 +66,11 @@ public final actor MongoConnection: Sendable {
         }
     }
 
+    /// Sets the `isMetricsEnabled` property. This method is useful for setting the property from a non-isolated context.
+    public func setMetricsEnabled(to enabled: Bool) {
+        self.isMetricsEnabled = enabled
+    }
+
     /// A LIFO (Last In, First Out) holder for sessions
     public let sessionManager: MongoSessionManager
 

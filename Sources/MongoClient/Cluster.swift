@@ -192,6 +192,22 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
         }
     }
 
+    /// Whether metrics are enabled. When enabled, metrics will be collected for queries using the `Metrics` library.
+    /// Setting this property will also update all existing pooled connections.
+    public var isMetricsEnabled: Bool {
+        get { lock.withLock { _isMetricsEnabled } }
+        set {
+            lock.withLockVoid { _isMetricsEnabled = newValue }
+            for connection in pool {
+                let connection = connection.connection
+                Task {
+                    await connection.setMetricsEnabled(to: newValue)
+                }
+            }
+        }
+    }
+    private var _isMetricsEnabled = false
+
     private let lock = NIOLock()
     
     /// A list of currently open connections
@@ -431,6 +447,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
                 sessionManager: sessionManager
             )
             connection.slaveOk.store(slaveOk, ordering: .relaxed)
+            await connection.setMetricsEnabled(to: self.isMetricsEnabled)
 
             /// Ensures we default to the cluster's lowest version
             if let connectionHandshake = await connection.serverHandshake {
