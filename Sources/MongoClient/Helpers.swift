@@ -73,9 +73,3 @@ extension String {
         return string
     }
 }
-
-extension EventLoopFuture where Value == MongoServerReply {
-    func decode<D: Decodable>(_ type: D.Type) -> EventLoopFuture<D> {
-        return flatMapThrowing { try D.init(reply:$0) }
-    }
-}

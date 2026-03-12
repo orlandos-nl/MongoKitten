@@ -62,7 +62,7 @@ struct SASLStart: Codable {
 
     init(mechanism: SASLMechanism, payload: String) {
         self.mechanism = mechanism
-        self.payload = .string(payload)
+        self.payload = .binary(Binary(buffer: ByteBuffer(string: payload)))
     }
 }
 
@@ -77,33 +77,6 @@ struct SASLReply: Decodable {
     let conversationId: Int32
     let done: Bool
     let payload: BinaryOrString
-
-    init(reply: MongoServerReply) throws {
-        try reply.assertOK(or: MongoAuthenticationError(reason: .anyAuthenticationFailure))
-        let doc = try reply.getDocument()
-
-        if let conversationId = doc["conversationId"] as? Int {
-            self.conversationId = Int32(conversationId)
-        } else if let conversationId = doc["conversationId"] as? Int32 {
-            self.conversationId = conversationId
-        } else {
-            throw try MongoGenericErrorReply(reply: reply)
-        }
-
-        guard let done = doc["done"] as? Bool else {
-            throw try MongoGenericErrorReply(reply: reply)
-        }
-
-        self.done = done
-
-        if let payload = doc["payload"] as? String {
-            self.payload = .string(payload)
-        } else  if let payload = doc["payload"] as? Binary {
-            self.payload = .binary(payload)
-        } else {
-            throw try MongoGenericErrorReply(reply: reply)
-        }
-    }
 }
 
 /// A SASLContinue message contains the previous conversationId (from the SASLReply to SASLStart).
@@ -115,7 +88,7 @@ struct SASLContinue: Codable {
 
     init(conversation: Int32, payload: String) {
         self.conversationId = conversation
-        self.payload = .string(payload)
+        self.payload = .binary(Binary(buffer: ByteBuffer(string: payload)))
     }
 }
 
@@ -139,8 +112,7 @@ extension MongoConnection {
         try await _withSpan("MongoKitten.AuthenticateSASL", ofKind: .client) { @Sendable span in
             let context = SCRAM<H>(hasher)
 
-            let rawRequest = try context.authenticationString(forUser: username)
-            let request = Data(rawRequest.utf8).base64EncodedString()
+            let request = try context.authenticationString(forUser: username)
             let command = SASLStart(mechanism: H.algorithm, payload: request)
 
             // NO session must be used here: https://github.com/mongodb/specifications/blob/master/source/sessions/driver-sessions.rst#when-opening-and-authenticating-a-connection
@@ -165,10 +137,9 @@ extension MongoConnection {
             } else {
                 preppedPassword = password
             }
-
-            let challenge = try reply.payload.base64Decoded()
-            let rawResponse = try context.respond(toChallenge: challenge, password: preppedPassword)
-            let response = Data(rawResponse.utf8).base64EncodedString()
+            
+            let challenge = reply.payload.string ?? ""
+            let response = try context.respond(toChallenge: challenge, password: preppedPassword)
 
             let next = SASLContinue(
                 conversation: reply.conversationId,
@@ -182,7 +153,7 @@ extension MongoConnection {
                 sessionId: nil
             )
 
-            let successReply = try reply.payload.base64Decoded()
+            let successReply = reply.payload.string ?? ""
             try context.completeAuthentication(withResponse: successReply)
 
             if reply.done {
