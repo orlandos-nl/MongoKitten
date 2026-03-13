@@ -185,6 +185,24 @@ public final class FindQueryBuilder: CountableCursor, PaginatableCursor {
             logMetadata: self.collection.database.logMetadata
         ).count
     }
+    
+    public func explain(verbosity: ExplainVerbosity = .allPlansExecution) async throws -> Document {
+        let explain = ExplainCommand(
+            command: self.command,
+            verbosity: verbosity
+        )
+        
+        let connection = try await getConnection()
+        return try await connection.executeCodable(
+            explain,
+            decodeAs: Document.self,
+            namespace: self.collection.database.commandNamespace,
+            in: self.collection.database.transaction,
+            sessionId: self.collection.database.sessionId ?? connection.implicitSessionId,
+            logMetadata: self.collection.database.logMetadata,
+            traceLabel: "Explain<\(collection.namespace)>"
+        )
+    }
 
     /// Limits the amount of documents returned by this cursor
     public func limit(_ limit: Int) -> FindQueryBuilder {
