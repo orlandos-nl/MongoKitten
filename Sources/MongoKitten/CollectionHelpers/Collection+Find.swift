@@ -186,7 +186,7 @@ public final class FindQueryBuilder: CountableCursor, PaginatableCursor {
         ).count
     }
     
-    public func explain(verbosity: ExplainVerbosity = .executionStats) async throws -> Document {
+    public func explain(verbosity: ExplainVerbosity = .allPlansExecution) async throws -> Document {
         let explain = ExplainCommand(
             command: self.command,
             verbosity: verbosity
