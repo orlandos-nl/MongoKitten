@@ -182,7 +182,7 @@ extension MongoCollection {
             context: listIndexesSpan.context
         ).decode(MongoIndex.self)
     }
-    
+
     /// Creates indexes using a builder pattern
     ///
     /// This is the recommended way to create indexes as it provides
@@ -212,12 +212,34 @@ extension MongoCollection {
     ///     TextScoreIndex(named: "search-index", field: "description")
     /// }
     /// ```
-    /// 
+    ///
     /// See also: [CreateIndexes Command](https://docs.mongodb.com/manual/reference/command/createIndexes/)
     public func buildIndexes(@MongoIndexBuilder build: () -> _MongoIndexes) async throws {
         return try await createIndexes(build().indexes)
     }
 
+    /// Drops one or more indexes from the collection.
+    ///
+    ///
+    /// ### Examples
+    /// ```swift
+    /// // Drop a single index by name
+    /// try await collection.dropIndex(.name("email_1"))
+    ///
+    /// // Drop multiple specific indexes
+    /// try await collection.dropIndex(.names(["category_1", "status_1"]))
+    ///
+    /// // Drop all indexes (except the default _id index)
+    /// try await collection.dropIndex(.all)
+    /// ```
+    ///
+    /// - Note: MongoDB does not support dropping indexes within a multi-document transaction.
+    /// - Parameter specifier: A case-specific enum defining which index(es) to remove.
+    ///   - `.name(String)`: Drops a single index by its name.
+    ///   - `.all`: Drops all indexes except for the default `_id` index.
+    ///   - `.names([String])`: Iteratively drops multiple specific indexes.
+    /// - Throws: `MongoKittenError` if called within a transaction or if the server returns an error.
+    /// See also: [DropIndexes Command](https://www.mongodb.com/docs/manual/reference/command/dropIndexes/)
     public func dropIndex(_ specifier: IndexSpecifier) async throws {
         guard transaction == nil else {
             throw MongoKittenError(.unsupportedFeatureByServer, reason: .transactionForUnsupportedQuery)
@@ -234,6 +256,9 @@ extension MongoCollection {
         }
     }
 
+    /// Internal helper to execute the `dropIndexes` command for a specific identifier.
+    /// - Parameter index: The name of the index or `"*"` for all.
+    /// See also: [DropIndexes Command](https://www.mongodb.com/docs/manual/reference/command/dropIndexes/)
     private func dropIndexInternal(_ index: String) async throws {
         let connection = try await database.pool.next(for: .writable)
         let reply = try await connection.executeEncodable(
@@ -251,6 +276,32 @@ extension MongoCollection {
         try reply.assertOK()
     }
 
+    /// Modifies the configuration of an existing index.
+    ///
+    /// Use this method to change properties like TTL (`expireAfterSeconds`), index visibility (`hidden`),
+    /// or to convert an existing index into a unique index (MongoDB 6.0+).
+    ///
+    /// ### Examples
+    /// ```swift
+    /// // Hide an index from the query planner
+    /// let hiddenIdx = CollMod.Index(name: "orders_idx", hidden: true)
+    /// try await collection.modifyIndex(hiddenIdx)
+    ///
+    /// // Change a TTL index expiration time to 1 hour (3600 seconds)
+    /// let ttlIdx = CollMod.Index(name: "sessions_ttl", expireAfterSeconds: 3600)
+    /// try await collection.modifyIndex(ttlIdx)
+    ///
+    /// // Convert an index to unique (MongoDB 6.0+) with a dry run check
+    /// let uniqueIdx = CollMod.Index(name: "email_idx", unique: true)
+    /// try await collection.modifyIndex(uniqueIdx, dryRun: true)
+    /// ```
+    ///
+    /// - Parameters:
+    ///   - index: A `CollMod.Index` configuration specifying which index to change and the new settings.
+    ///   - dryRun: If `true`, checks for unique constraint violations without applying changes.
+    ///     Only applicable when converting to a unique index.
+    /// - Throws: A server error if the index does not exist or the modification is invalid.
+    /// See also: [CollMod Command](https://www.mongodb.com/docs/manual/reference/command/collMod/)
     public func modifyIndex(
         _ index: CollMod.Index,
         dryRun: Bool? = nil
