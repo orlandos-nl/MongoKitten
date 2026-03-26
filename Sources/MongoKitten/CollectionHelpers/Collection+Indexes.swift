@@ -217,6 +217,60 @@ extension MongoCollection {
     public func buildIndexes(@MongoIndexBuilder build: () -> _MongoIndexes) async throws {
         return try await createIndexes(build().indexes)
     }
+
+    public func dropIndex(_ specifier: IndexSpecifier) async throws {
+        guard transaction == nil else {
+            throw MongoKittenError(.unsupportedFeatureByServer, reason: .transactionForUnsupportedQuery)
+        }
+        switch specifier {
+        case .name(let name):
+            try await dropIndexInternal(name)
+        case .all:
+            try await dropIndexInternal("*")
+        case .names(let names):
+            for name in names {
+                try await dropIndexInternal(name)
+            }
+        }
+    }
+
+    private func dropIndexInternal(_ index: String) async throws {
+        let connection = try await database.pool.next(for: .writable)
+        let reply = try await connection.executeEncodable(
+            DropIndexes(
+                collection: self.name,
+                index: .name(index)
+            ),
+            namespace: self.database.commandNamespace,
+            in: self.transaction,
+            sessionId: self.sessionId ?? connection.implicitSessionId,
+            logMetadata: database.logMetadata,
+            traceLabel: "DropIndexes<\(namespace)>",
+            serviceContext: context
+        )
+        try reply.assertOK()
+    }
+
+    public func modifyIndex(
+        _ index: CollMod.Index,
+        dryRun: Bool? = nil
+    ) async throws {
+        let connection = try await database.pool.next(for: .writable)
+        let reply = try await connection.executeEncodable(
+            CollMod(
+                collection: self.name,
+                index: index,
+                dryRun: dryRun
+            ),
+            namespace: self.database.commandNamespace,
+            in: self.transaction,
+            sessionId: self.sessionId ?? connection.implicitSessionId,
+            logMetadata: database.logMetadata,
+            traceLabel: "CollMod<\(namespace)>",
+            serviceContext: context
+        )
+        try reply.assertOK()
+    }
 }
 
 /// A single index to be created
