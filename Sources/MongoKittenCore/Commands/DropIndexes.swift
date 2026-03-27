@@ -30,7 +30,20 @@ public struct DropIndexes: Encodable, Sendable {
     }
 }
 
-// MARK: - Index Specifier
+extension DropIndexes {
+    /// Defines the keys used to encode the `DropIndexes` command for MongoDB.
+    ///
+    /// - `dropIndexes`: The name of the collection from which indexes should be dropped.
+    /// - `index`: The indexes to drop, as specified by `IndexSpecifier`.
+    /// - `writeConcern`: Optional write concern controlling acknowledgment of the drop operation.
+    private enum CodingKeys: String, CodingKey {
+        case dropIndexes
+        case index
+        case writeConcern
+    }
+}
+
+// MARK: - IndexSpecifier
 
 /// Specifies which MongoDB indexes should be targeted in an operation.
 ///
@@ -41,7 +54,6 @@ public struct DropIndexes: Encodable, Sendable {
 ///
 /// It also supports convenient literal initialization via string and array literals.
 public enum IndexSpecifier: Encodable, Sendable {
-
     /// A single index name.
     ///
     /// Example:
@@ -49,7 +61,6 @@ public enum IndexSpecifier: Encodable, Sendable {
     /// .name("username_1")
     /// ```
     case name(String)
-
     /// Multiple index names.
     ///
     /// Example:
@@ -59,14 +70,11 @@ public enum IndexSpecifier: Encodable, Sendable {
     ///
     /// - Complexity: O(n), where `n` is the number of index names.
     case names([String])
-
     /// All indexes in the collection.
     ///
     /// This is typically encoded as `"*"`.
     case all
 }
-
-// MARK: - Literal Extensions
 
 extension IndexSpecifier: ExpressibleByStringLiteral {
     /// Creates an `IndexSpecifier` from a string literal.
@@ -102,5 +110,27 @@ extension IndexSpecifier: ExpressibleByArrayLiteral {
     /// - Complexity: O(n), where `n` is the number of elements.
     public init(arrayLiteral elements: String...) {
         self = .names(elements)
+    }
+}
+
+extension IndexSpecifier {
+    /// Encodes the `IndexSpecifier` into the appropriate format for MongoDB.
+    ///
+    /// - `.name(String)` encodes as a single string (the index name).
+    /// - `.names([String])` encodes as an array of strings (multiple index names).
+    /// - `.all` encodes as `"*"` to indicate all indexes.
+    ///
+    /// - Parameter encoder: The encoder to write data to.
+    /// - Throws: An error if encoding fails.
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .name(let name):
+            try container.encode(name)
+        case .names(let names):
+            try container.encode(names)
+        case .all:
+            try container.encode("*")
+        }
     }
 }

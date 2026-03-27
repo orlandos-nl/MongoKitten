@@ -39,6 +39,14 @@ public struct CollMod: Encodable, Sendable {
 public extension CollMod {
     /// Configuration details for modifying an index's properties.
     struct Index: Encodable, Sendable {
+        private enum CodingKeys: String, CodingKey {
+            case name
+            case keyPattern
+            case expireAfterSeconds
+            case hidden
+            case unique
+            case prepareUnique
+        }
         /// The name of the index to be modified.
         public var name: String?
 
@@ -110,3 +118,4 @@ public extension CollMod {
         }
     }
 }
+
