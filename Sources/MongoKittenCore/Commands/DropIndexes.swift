@@ -113,24 +113,24 @@ extension IndexSpecifier: ExpressibleByArrayLiteral {
     }
 }
 
-extension IndexSpecifier {
-    /// Encodes the `IndexSpecifier` into the appropriate format for MongoDB.
-    ///
-    /// - `.name(String)` encodes as a single string (the index name).
-    /// - `.names([String])` encodes as an array of strings (multiple index names).
-    /// - `.all` encodes as `"*"` to indicate all indexes.
-    ///
-    /// - Parameter encoder: The encoder to write data to.
-    /// - Throws: An error if encoding fails.
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        switch self {
-        case .name(let name):
-            try container.encode(name)
-        case .names(let names):
-            try container.encode(names)
-        case .all:
-            try container.encode("*")
-        }
-    }
-}
+//extension IndexSpecifier {
+//    /// Encodes the `IndexSpecifier` into the appropriate format for MongoDB.
+//    ///
+//    /// - `.name(String)` encodes as a single string (the index name).
+//    /// - `.names([String])` encodes as an array of strings (multiple index names).
+//    /// - `.all` encodes as `"*"` to indicate all indexes.
+//    ///
+//    /// - Parameter encoder: The encoder to write data to.
+//    /// - Throws: An error if encoding fails.
+//    public func encode(to encoder: Encoder) throws {
+//        var container = encoder.singleValueContainer()
+//        switch self {
+//        case .name(let name):
+//            try container.encode(name)
+//        case .names(let names):
+//            try container.encode(names)
+//        case .all:
+//            try container.encode("*")
+//        }
+//    }
+//}
