@@ -30,38 +30,77 @@ public struct DropIndexes: Encodable, Sendable {
     }
 }
 
-extension DropIndexes {
-    private enum CodingKeys: String, CodingKey {
-        case dropIndexes
-        case index
-        case writeConcern
+// MARK: - Index Specifier
+
+/// Specifies which MongoDB indexes should be targeted in an operation.
+///
+/// `IndexSpecifier` provides a flexible way to reference indexes by:
+/// - a single name
+/// - multiple names
+/// - or all indexes in a collection
+///
+/// It also supports convenient literal initialization via string and array literals.
+public enum IndexSpecifier: Encodable, Sendable {
+
+    /// A single index name.
+    ///
+    /// Example:
+    /// ```swift
+    /// .name("username_1")
+    /// ```
+    case name(String)
+
+    /// Multiple index names.
+    ///
+    /// Example:
+    /// ```swift
+    /// .names(["username_1", "email_1"])
+    /// ```
+    ///
+    /// - Complexity: O(n), where `n` is the number of index names.
+    case names([String])
+
+    /// All indexes in the collection.
+    ///
+    /// This is typically encoded as `"*"`.
+    case all
+}
+
+// MARK: - Literal Extensions
+
+extension IndexSpecifier: ExpressibleByStringLiteral {
+    /// Creates an `IndexSpecifier` from a string literal.
+    ///
+    /// - If the value is `"*"`, it maps to `.all`
+    /// - Otherwise, it maps to `.name(value)`
+    ///
+    /// Example:
+    /// ```swift
+    /// let spec: IndexSpecifier = "username_1" // .name("username_1")
+    /// let all: IndexSpecifier = "*"           // .all
+    /// ```
+    public init(stringLiteral value: String) {
+        if value == "*" {
+            self = .all
+        } else {
+            self = .name(value)
+        }
     }
 }
 
-// MARK: - Index Specifier
-
-/// Describes which index or indexes should be dropped in a `DropIndexes` command.
-///
-/// Can be a single index, multiple indexes, or all indexes in the collection.
-public enum IndexSpecifier: Encodable, Sendable {
-    /// Drop a single index by name.
-    case name(String)
-
-    /// Drop multiple indexes by names.
-    case names([String])
-
-    /// Drop all indexes in the collection.
-    case all
-
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        switch self {
-        case .name(let name):
-            try container.encode(name)
-        case .names(let names):
-            try container.encode(names)
-        case .all:
-            try container.encode("*")
-        }
+extension IndexSpecifier: ExpressibleByArrayLiteral {
+    /// The element type for array literal initialization.
+    public typealias ArrayLiteralElement = String
+    /// Creates an `IndexSpecifier` from an array literal of index names.
+    ///
+    /// Example:
+    /// ```swift
+    /// let spec: IndexSpecifier = ["username_1", "email_1"]
+    /// // Equivalent to .names(["username_1", "email_1"])
+    /// ```
+    ///
+    /// - Complexity: O(n), where `n` is the number of elements.
+    public init(arrayLiteral elements: String...) {
+        self = .names(elements)
     }
 }
