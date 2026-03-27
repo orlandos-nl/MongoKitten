@@ -330,7 +330,7 @@ extension MongoCollection {
     ///   - dryRun: If `true`, checks for unique constraint violations without applying changes.
     ///     Only applicable when converting to a unique index.
     /// - Throws: A server error if the index does not exist or the modification is invalid.
-    /// See also: [CollMod Command](https://www.mongodb.com/docs/manual/reference/command/collMod/)
+    /// - SeeAlso: https://www.mongodb.com/docs/manual/reference/command/collMod/
     public func modifyIndex(_ index: CollMod.Index, dryRun: Bool? = nil) async throws {
         let connection = try await database.pool.next(for: .writable)
         let reply = try await connection.executeEncodable(
