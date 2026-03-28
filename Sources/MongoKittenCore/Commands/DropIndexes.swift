@@ -30,19 +30,6 @@ public struct DropIndexes: Encodable, Sendable {
     }
 }
 
-extension DropIndexes {
-    /// Defines the keys used to encode the `DropIndexes` command for MongoDB.
-    ///
-    /// - `dropIndexes`: The name of the collection from which indexes should be dropped.
-    /// - `index`: The indexes to drop, as specified by `IndexSpecifier`.
-    /// - `writeConcern`: Optional write concern controlling acknowledgment of the drop operation.
-    private enum CodingKeys: String, CodingKey {
-        case dropIndexes
-        case index
-        case writeConcern
-    }
-}
-
 // MARK: - IndexSpecifier
 
 /// Specifies which MongoDB indexes should be targeted in an operation.
