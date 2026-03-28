@@ -218,61 +218,6 @@ extension MongoCollection {
         return try await createIndexes(build().indexes)
     }
 
-    /// Drops one or more indexes from the collection.
-    ///
-    /// This method executes the MongoDB `dropIndexes` command using the provided
-    /// `IndexSpecifier`. It supports dropping:
-    /// - a single index by name
-    /// - multiple indexes (executed sequentially)
-    /// - all indexes in the collection
-    ///
-    /// - Parameter specifier: Specifies which indexes to drop.
-    ///   See `IndexSpecifier` for available options.
-    ///
-    /// - Throws:
-    ///   - `MongoKittenError.unsupportedFeatureByServer` if called inside an active transaction.
-    ///   - Any error returned by MongoDB during command execution.
-    ///   - Connection or encoding errors.
-    ///
-    /// - Important:
-    ///   MongoDB does **not** support dropping multiple indexes in a single command.
-    ///   When `.names([String])` is provided, this method issues multiple sequential
-    ///   `dropIndexes` commands (one per index).
-    ///
-    /// - Note:
-    ///   Dropping all indexes (`.all`) is executed as a single command using `"*"`
-    ///   and is significantly more efficient than dropping indexes individually.
-    ///
-    /// - Complexity:
-    ///   - `.name`: O(1)
-    ///   - `.all`: O(1)
-    ///   - `.names`: O(n), where *n* is the number of index names.
-    ///
-    /// - Example:
-    /// ```swift
-    /// try await collection.dropIndex("email_1")
-    /// try await collection.dropIndex(["email_1", "name_1"])
-    /// try await collection.dropIndex(.all)
-    /// ```
-    public func dropIndex(_ specifier: IndexSpecifier) async throws {
-        guard transaction == nil else {
-            throw MongoKittenError(.unsupportedFeatureByServer, reason: .transactionForUnsupportedQuery)
-        }
-
-        switch specifier {
-        case .name:
-            try await dropIndexInternal(specifier)
-
-        case .names(let names):
-            for name in names {
-                try await dropIndexInternal(.name(name))
-            }
-
-        case .all:
-            try await dropIndexInternal(.all)
-        }
-    }
-
     /// Executes the MongoDB `dropIndexes` command for the given index specifier.
     ///
     /// This is a low-level helper that sends the command directly to MongoDB.
@@ -286,7 +231,10 @@ extension MongoCollection {
     ///   - Connection, encoding, or session-related errors.
     ///
     /// - SeeAlso: https://www.mongodb.com/docs/manual/reference/command/dropIndexes/
-    private func dropIndexInternal(_ specifier: IndexSpecifier) async throws {
+    public func dropIndex(_ specifier: IndexSpecifier) async throws {
+        guard transaction == nil else {
+            throw MongoKittenError(.unsupportedFeatureByServer, reason: .transactionForUnsupportedQuery)
+        }
         let connection = try await database.pool.next(for: .writable)
 
         let reply = try await connection.executeEncodable(
