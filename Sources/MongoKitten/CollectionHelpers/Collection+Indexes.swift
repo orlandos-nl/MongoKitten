@@ -182,7 +182,7 @@ extension MongoCollection {
             context: listIndexesSpan.context
         ).decode(MongoIndex.self)
     }
-    
+
     /// Creates indexes using a builder pattern
     ///
     /// This is the recommended way to create indexes as it provides
@@ -212,10 +212,89 @@ extension MongoCollection {
     ///     TextScoreIndex(named: "search-index", field: "description")
     /// }
     /// ```
-    /// 
+    ///
     /// See also: [CreateIndexes Command](https://docs.mongodb.com/manual/reference/command/createIndexes/)
     public func buildIndexes(@MongoIndexBuilder build: () -> _MongoIndexes) async throws {
         return try await createIndexes(build().indexes)
+    }
+
+    /// Executes the MongoDB `dropIndexes` command for the given index specifier.
+    ///
+    /// This is a low-level helper that sends the command directly to MongoDB.
+    /// It accepts a fully-formed `IndexSpecifier`, which is encoded according
+    /// to MongoDB command requirements.
+    ///
+    /// - Parameter specifier: The index specifier describing which indexes to drop.
+    ///
+    /// - Throws:
+    ///   - Any error returned by MongoDB.
+    ///   - Connection, encoding, or session-related errors.
+    ///
+    /// - SeeAlso: https://www.mongodb.com/docs/manual/reference/command/dropIndexes/
+    public func dropIndex(_ specifier: IndexSpecifier) async throws {
+        guard transaction == nil else {
+            throw MongoKittenError(.unsupportedFeatureByServer, reason: .transactionForUnsupportedQuery)
+        }
+        let connection = try await database.pool.next(for: .writable)
+
+        let reply = try await connection.executeEncodable(
+            DropIndexes(
+                collection: self.name,
+                index: specifier
+            ),
+            namespace: self.database.commandNamespace,
+            in: self.transaction,
+            sessionId: self.sessionId ?? connection.implicitSessionId,
+            logMetadata: database.logMetadata,
+            traceLabel: "DropIndexes<\(namespace)>",
+            serviceContext: context
+        )
+
+        try reply.assertOK()
+    }
+
+    /// Modifies the configuration of an existing index.
+    ///
+    /// Use this method to change properties like TTL (`expireAfterSeconds`), index visibility (`hidden`),
+    /// or to convert an existing index into a unique index (MongoDB 6.0+).
+    ///
+    /// ### Examples
+    /// ```swift
+    /// // Hide an index from the query planner
+    /// let hiddenIdx = CollMod.Index(name: "orders_idx", hidden: true)
+    /// try await collection.modifyIndex(hiddenIdx)
+    ///
+    /// // Change a TTL index expiration time to 1 hour (3600 seconds)
+    /// let ttlIdx = CollMod.Index(name: "sessions_ttl", expireAfterSeconds: 3600)
+    /// try await collection.modifyIndex(ttlIdx)
+    ///
+    /// // Convert an index to unique (MongoDB 6.0+) with a dry run check
+    /// let uniqueIdx = CollMod.Index(name: "email_idx", unique: true)
+    /// try await collection.modifyIndex(uniqueIdx, dryRun: true)
+    /// ```
+    ///
+    /// - Parameters:
+    ///   - index: A `CollMod.Index` configuration specifying which index to change and the new settings.
+    ///   - dryRun: If `true`, checks for unique constraint violations without applying changes.
+    ///     Only applicable when converting to a unique index.
+    /// - Throws: A server error if the index does not exist or the modification is invalid.
+    /// - SeeAlso: https://www.mongodb.com/docs/manual/reference/command/collMod/
+    public func modifyIndex(_ index: CollMod.Index, dryRun: Bool? = nil) async throws {
+        let connection = try await database.pool.next(for: .writable)
+        let reply = try await connection.executeEncodable(
+            CollMod(
+                collection: self.name,
+                index: index,
+                dryRun: dryRun
+            ),
+            namespace: self.database.commandNamespace,
+            in: self.transaction,
+            sessionId: self.sessionId ?? connection.implicitSessionId,
+            logMetadata: database.logMetadata,
+            traceLabel: "CollMod<\(namespace)>",
+            serviceContext: context
+        )
+        try reply.assertOK()
     }
 }
 
