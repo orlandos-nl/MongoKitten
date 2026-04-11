@@ -1,5 +1,3 @@
-import Tracing
-import NIO
 import MongoClient
 
 extension MongoDatabase {
@@ -22,17 +20,6 @@ extension MongoDatabase {
         let namespace = MongoNamespace(to: "$cmd", inDatabase: self.name)
 
         let connection = try await pool.next(for: .basic)
-        let listIndexesSpan: any Span
-        if let context {
-            listIndexesSpan = InstrumentationSystem.tracer.startAnySpan(
-                "BuildInfo<\(namespace)>",
-                context: context
-            )
-        } else {
-            listIndexesSpan = InstrumentationSystem.tracer.startAnySpan(
-                "BuildInfo<\(namespace)>"
-            )
-        }
         let response = try await connection.executeCodable(
             request,
             decodeAs: BuildInfo.self,
@@ -40,7 +27,7 @@ extension MongoDatabase {
             sessionId: nil,
             logMetadata: logMetadata,
             traceLabel: "BuildInfo<\(namespace)>",
-            serviceContext: listIndexesSpan.context
+            serviceContext: context
         )
         return response
     }
