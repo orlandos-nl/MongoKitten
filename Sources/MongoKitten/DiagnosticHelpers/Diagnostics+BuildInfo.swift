@@ -27,7 +27,7 @@ extension MongoDatabase {
             sessionId: nil,
             logMetadata: logMetadata,
             traceLabel: "BuildInfo<\(namespace)>",
-            serviceContext: context
+            serviceContext: nil
         )
         return response
     }
