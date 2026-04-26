@@ -47,7 +47,7 @@ import Foundation
 /// - Metadata is stored in the `{bucketName}.files` collection
 /// - The `_id` field uniquely identifies the file
 /// - Chunks are ordered by the `n` field for proper reassembly
-public struct GridFSFile: Codable, AsyncSequence {
+public struct GridFSFile: Codable, AsyncSequence, Sendable {
     public typealias Element = ByteBuffer
     public struct AsyncIterator: AsyncIteratorProtocol {
         private var cursor: QueryCursorAsyncIterator<MappedCursor<FindQueryBuilder, ByteBuffer>>
@@ -67,7 +67,7 @@ public struct GridFSFile: Codable, AsyncSequence {
         }
     }
 
-    internal var fs: GridFSBucket
+    internal nonisolated(unsafe) let fs: GridFSBucket
     
     /// The file's ID
     public let _id: Primitive
