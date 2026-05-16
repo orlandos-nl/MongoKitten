@@ -8,7 +8,7 @@ extension MongoDatabase {
     ///
     /// - Returns: A `ConnectionStats` structure with current connection metrics.
     /// - Throws: An error if the command execution or decoding fails.
-    public func connections() async throws -> ConnectionStats {
+    public func getConnectionStats() async throws -> ConnectionStats {
         struct Request: Codable, Sendable {
             let serverStatus: Int
         }
