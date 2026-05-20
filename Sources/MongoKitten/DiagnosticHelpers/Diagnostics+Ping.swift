@@ -8,20 +8,16 @@ extension MongoDatabase {
     ///
     /// - Returns: `"ok"` if the database responds successfully.
     /// - Throws: An error if the command execution or decoding fails.
-    public func checkConnection() async throws -> String {
+    public func checkConnection() async throws {
         struct Request: Codable, Sendable {
             let ping: Int
         }
-
         struct Response: Decodable, Sendable {
             let ok: Double
         }
-
         let request = Request(ping: 1)
         let namespace = MongoNamespace(to: "$cmd", inDatabase: self.name)
-
         let connection = try await pool.next(for: .basic)
-
         let response = try await connection.executeCodable(
             request,
             decodeAs: Response.self,
@@ -31,7 +27,8 @@ extension MongoDatabase {
             traceLabel: "Ping<\(namespace)>",
             serviceContext: nil
         )
-
-        return response.ok == 1 ? "connected" : "disconnected"
+        guard response.ok == 1 else {
+            throw MongoError(.cannotConnect, reason: .connectionClosed)
+        }
     }
 }
