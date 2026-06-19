@@ -397,7 +397,7 @@ extension QueryCursor where Element == Document {
     ///     .decode(User.self, using: decoder)
     ///     .drain()
     /// ```
-    public func decode<D: Decodable>(_ type: D.Type, using decoder: BSONDecoder = BSONDecoder()) -> MappedCursor<Self, D> {
+    public func decode<D: Decodable & Sendable>(_ type: D.Type, using decoder: BSONDecoder = BSONDecoder()) -> MappedCursor<Self, D> {
         return self.map { document in
             return try decoder.decode(D.self, from: document)
         }

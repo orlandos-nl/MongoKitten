@@ -34,7 +34,7 @@ public protocol MeowAggregateStage: AggregateBuilderStage {
 
 #if swift(>=5.7)
 extension MeowCollection where M: KeyPathQueryableModel {
-    public func buildCheckedAggregate<Result: Codable>(
+    public func buildCheckedAggregate<Result: Codable & Sendable>(
         @MeowCheckedAggregateBuilder<M> build: () throws -> MeowAggregate<M, Result>
     ) rethrows -> MappedCursor<AggregateBuilderPipeline, Result> {
         return try AggregateBuilderPipeline(
@@ -46,7 +46,7 @@ extension MeowCollection where M: KeyPathQueryableModel {
 #endif
 
 extension MeowCollection where M: ReadableModel {
-    public func buildAggregate<Result: Codable>(
+    public func buildAggregate<Result: Codable & Sendable>(
         @MeowUncheckedAggregateBuilder<M> build: () throws -> MeowAggregate<M, Result>
     ) rethrows -> MappedCursor<AggregateBuilderPipeline, Result> {
         return try AggregateBuilderPipeline(

@@ -141,7 +141,7 @@ extension MongoCollection {
     /// - type: The type to decode the change stream notifications into
     /// - decoder: The decoder to use for decoding the change stream notifications
     /// - build: The aggregation pipeline to use for this change stream
-    public func buildChangeStream<T: Decodable>(
+    public func buildChangeStream<T: Decodable & Sendable>(
         options: ChangeStreamOptions = .init(),
         ofType type: T.Type,
         using decoder: BSONDecoder = BSONDecoder(),
@@ -354,10 +354,10 @@ extension MongoCollection {
 ///     }
 /// }
 /// ```
-public struct ChangeStream<T: Decodable>: AsyncSequence, Sendable {
+public struct ChangeStream<T: Decodable & Sendable>: AsyncSequence, Sendable {
     public typealias Notification = ChangeStreamNotification<T>
     public typealias Element = Notification
-    typealias InputCursor = FinalizedCursor<MappedCursor<AggregateBuilderPipeline, Notification>>
+    typealias InputCursor = FinalizedCursor<MappedCursor<AggregateBuilderPipeline, Notification>> & Sendable
     
     internal let cursor: InputCursor
     internal let options: ChangeStreamOptions
@@ -400,7 +400,9 @@ public struct ChangeStream<T: Decodable>: AsyncSequence, Sendable {
     /// - Returns: A task that will be completed when the change stream is drained. Can be cancelled to stop the change stream
     /// - Throws: If the handler throws an error, the task will be failed with that error
     @discardableResult
-    public func forEach(handler: @escaping @Sendable (Notification) async throws -> Bool) -> Task<Void, Error> {
+    public func forEach(
+        handler: @escaping @Sendable (Notification) async throws -> Bool
+    ) -> Task<Void, Error> {
         Task {
             while !cursor.isDrained {
                 for element in try await cursor.nextBatch() {
@@ -491,11 +493,11 @@ public struct ChangeStream<T: Decodable>: AsyncSequence, Sendable {
 /// - `updateDescription` is only present for update operations
 public struct ChangeStreamNotification<T: Decodable>: Decodable {
     /// The type of operation that caused this notification
-    public enum OperationType: String, Codable {
+    public enum OperationType: String, Codable, Sendable {
         case insert, update, replace, delete, invalidate, drop, dropDatabase, rename
     }
     
-    public struct ChangeStreamNamespace: Codable {
+    public struct ChangeStreamNamespace: Codable, Sendable {
         private enum CodingKeys: String, CodingKey {
             case database = "db", collection = "coll"
         }
@@ -508,7 +510,7 @@ public struct ChangeStreamNotification<T: Decodable>: Decodable {
     }
     
     /// The update description for this change
-    public struct UpdateDescription: Codable {
+    public struct UpdateDescription: Codable, Sendable {
         /// The fields that were updated
         public let updatedFields: Document
 
@@ -534,3 +536,5 @@ public struct ChangeStreamNotification<T: Decodable>: Decodable {
     /// The full document that was changed
     public let fullDocument: T?
 }
+
+extension ChangeStreamNotification: Sendable where T: Sendable {}
