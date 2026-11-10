@@ -90,3 +90,18 @@ public struct ServerHandshake: Codable, Sendable {
     /// A unique identifier for each election. Included only in the output of isMaster for the primary. Used by clients to determine when elections occur.
     public let electionId: ObjectId?
 }
+
+extension ServerHandshake {
+    /// Whether this node can serve a write.
+    ///
+    /// `ismaster` is the authoritative flag: it is `true` for a replica-set primary, a
+    /// mongos, and a writable standalone mongod. `readOnly` is only set for a standalone
+    /// mongod started with `--readOnly`, and is *not* set for replica-set secondaries.
+    ///
+    /// Checking only `readOnly` therefore treats a secondary as writable whenever
+    /// `slaveOk` allows it into the pool, so writes are routed to a node that has just
+    /// been demoted and fail with `NotWritablePrimary` (code 10107) after a failover.
+    public var isWritable: Bool {
+        readOnly != true && ismaster
+    }
+}

@@ -561,7 +561,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
                 continue nextConnection
             }
 
-            let unwritable = writable && handshakeResult.readOnly ?? false
+            let unwritable = writable && !handshakeResult.isWritable
             let unreadable = !self.slaveOk && !handshakeResult.ismaster
 
             if unwritable || unreadable {
@@ -635,7 +635,7 @@ public final class MongoCluster: MongoConnectionPool, @unchecked Sendable {
                 throw MongoError(.cannotConnect, reason: .handshakeFailed)
             }
 
-            let unwritable = writable && handshake.readOnly == true
+            let unwritable = writable && !handshake.isWritable
             let unreadable = !self.slaveOk && !handshake.ismaster
 
             // check if the connection matches our requirements, if not we recursively try again for the next undiscovered host in our list
