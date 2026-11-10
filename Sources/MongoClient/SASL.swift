@@ -241,13 +241,7 @@ fileprivate extension String {
         let maxCharacterIndex = allowedCharacters.count
 
         for _ in 0..<24 {
-            let randomNumber: Int
-
-            #if os(macOS) || os(iOS)
-            randomNumber = Int(arc4random_uniform(UInt32(maxCharacterIndex)))
-            #else
-            randomNumber = Int(random() % maxCharacterIndex)
-            #endif
+            let randomNumber = Int.random(in: 0..<maxCharacterIndex)
 
             let letter = allowedCharacters[allowedCharacters.index(baseIndex, offsetBy: randomNumber)]
 
