@@ -12,7 +12,8 @@ on:
 
 jobs:
   linux:
-    runs-on: ubuntu-latest
+    # Swift 5.10 and 6.0 have Ubuntu 22.04 toolchains; keep the runner compatible.
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -20,7 +21,7 @@ jobs:
         mongodb-version: ["4.4", "5.0", "6.0"]
     steps:
       - name: Check out
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
 
       - name: Install Swift
         uses: swift-actions/setup-swift@v2
